@@ -1,0 +1,19 @@
+[package]
+name = "hylo-sdk"
+version = "0.1.9"
+edition = "2021"
+description = "Rust SDK for the Hylo stablecoin protocol"
+license = "MPL-2.0"
+homepage = "https://hylo.so"
+include = ["../../idls", "src/"]
+
+[dependencies]
+anyhow = "1.0.98"
+anchor-client = { version = "0.31.1", features = ["async"] }
+anchor-spl.workspace = true
+anchor-lang.workspace = true
+hylo-fix.workspace = true
+pyth-solana-receiver-sdk.workspace = true
+base64 = "0.22.1"
+serde_json = "1.0.140"
+tokio.workspace = true
