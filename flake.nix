@@ -30,17 +30,14 @@
             ]);
         in {
           devShells.nightly = mkShell {
-            packages = [
-              rust-bin.nightly.latest.default
-              nodejs_20
-              nodePackages.pnpm
-            ];
+            packages =
+              [ rust-bin.nightly.latest.default ];
             buildInputs = sharedBuildInputs;
           };
           devShells.default = mkShell {
-            packages = [ rust-bin.stable."1.88.0".default ] ++ lib.optionals stdenv.isDarwin [
-              rust-analyzer
-            ];
+            packages = [ rust-bin.stable."1.88.0".default ]
+              ++ lib.optionals stdenv.isDarwin [ rust-analyzer ];
+            buildInputs = sharedBuildInputs;
           };
         };
     };
