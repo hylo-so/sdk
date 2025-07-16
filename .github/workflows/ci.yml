@@ -41,11 +41,11 @@ jobs:
     - run: nix develop --command ./bin/build.sh
 
   publish:
-    needs: build-lint-test
+    needs: build
     if: |
       always() &&
       github.event_name == 'push' &&
-      needs.build-lint-test.result == 'success'
+      needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
