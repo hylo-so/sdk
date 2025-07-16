@@ -1,0 +1,56 @@
+name: "Hylo SDK CI"
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+env:
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+jobs:
+  check-sdk-version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Check SDK version
+      run: ./bin/check-sdk-version.sh
+
+  build:
+    needs: check-sdk-version
+    if: |
+      always() &&
+      (github.event_name == 'push' || needs.check-sdk-version.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/github-script@v6
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL);
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN);
+    - uses: DeterminateSystems/nix-installer-action@main
+    - uses: DeterminateSystems/flakehub-cache-action@main
+    - uses: mozilla-actions/sccache-action@v0.0.9
+    - run: nix develop .#nightly --command ./bin/lint.sh
+    - run: nix develop --command ./bin/build.sh
+
+  publish:
+    needs: build-lint-test
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.build-lint-test.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: DeterminateSystems/nix-installer-action@main
+    - uses: DeterminateSystems/flakehub-cache-action@main
+    - uses: mozilla-actions/sccache-action@v0.0.9
+    - run: nix develop --command ./bin/publish.sh
+
