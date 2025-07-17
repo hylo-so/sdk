@@ -1,7 +1,7 @@
 use crate::{exchange, stability_pool};
 
 use anchor_client::solana_sdk::bpf_loader;
-use anchor_lang::prelude::{pubkey, Pubkey};
+use anchor_lang::prelude::Pubkey;
 use anchor_spl::associated_token::get_associated_token_address;
 
 macro_rules! pda {
@@ -13,9 +13,6 @@ macro_rules! pda {
       .0
   };
 }
-
-pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
 #[must_use]
 pub fn hylo() -> Pubkey {

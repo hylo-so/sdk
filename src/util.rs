@@ -20,6 +20,9 @@ pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
   pubkey!("9Mb2Mt76AN7eNY3BBA4LgfTicARXhcEEokTBfsN47noK");
 
+pub const SOL_USD_PYTH_FEED: Pubkey =
+  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+
 /// Default configuration to use in simulated transactions.
 #[must_use]
 pub fn simulation_config() -> RpcSimulateTransactionConfig {

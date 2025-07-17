@@ -1,7 +1,8 @@
-use crate::pda::SOL_USD_PYTH_FEED;
 use crate::stability_pool::client::{accounts, args};
 use crate::stability_pool::events::StabilityPoolStats;
-use crate::util::{simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE};
+use crate::util::{
+  simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
+};
 use crate::{exchange, pda, stability_pool};
 
 use std::sync::Arc;

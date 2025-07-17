@@ -1,12 +1,11 @@
 use crate::exchange::client::{accounts, args};
 use crate::exchange::events::ExchangeStats;
 use crate::exchange::types::SlippageConfig;
-use crate::pda::{self, LST_REGISTRY, SOL_USD_PYTH_FEED};
 use crate::util::{
   simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE,
-  LST_REGISTRY_LOOKUP_TABLE,
+  LST_REGISTRY_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
 };
-use crate::{exchange, stability_pool};
+use crate::{exchange, pda, stability_pool};
 
 use std::sync::Arc;
 
@@ -251,7 +250,7 @@ impl ExchangeClient {
     let accounts = accounts::UpdateLstPrices {
       payer: self.program.payer(),
       hylo: pda::hylo(),
-      lst_registry: LST_REGISTRY,
+      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       event_authority: pda::event_auth(exchange::ID),
       program: exchange::ID,
@@ -291,7 +290,7 @@ impl ExchangeClient {
       pool_auth: pda::pool_auth(),
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       hylo_stability_pool: stability_pool::ID,
-      lst_registry: LST_REGISTRY,
+      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       associated_token_program: associated_token::ID,
       token_program: token::ID,
