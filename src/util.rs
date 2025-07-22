@@ -114,7 +114,8 @@ pub trait ProgramClient: Sized {
     Ok(sig)
   }
 
-  /// Creates `remaining_accounts` array from LST registry table with all headers writable.
+  /// Creates `remaining_accounts` array from LST registry table with all
+  /// headers writable.
   ///
   /// # Errors
   /// - Lookup table account doesn't exist
