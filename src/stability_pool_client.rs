@@ -2,6 +2,7 @@ use crate::stability_pool::client::{accounts, args};
 use crate::stability_pool::events::StabilityPoolStats;
 use crate::util::{
   simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
+  STABILITY_POOL_LOOKUP_TABLE,
 };
 use crate::{exchange, pda, stability_pool};
 
@@ -72,8 +73,12 @@ impl StabilityPoolClient {
       .accounts(accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables =
-      self.load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE]).await?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
     let sig = self
       .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
@@ -112,8 +117,12 @@ impl StabilityPoolClient {
       .accounts(accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables =
-      self.load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE]).await?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
     let sig = self
       .send_v0_transaction(&instructions, &lookup_tables)
       .await?;

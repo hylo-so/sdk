@@ -85,8 +85,12 @@ impl ExchangeClient {
       .accounts(accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables =
-      self.load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE]).await?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
     let sig = self
       .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
@@ -134,8 +138,12 @@ impl ExchangeClient {
       .accounts(accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables =
-      self.load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE]).await?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
     let sig = self
       .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
@@ -184,8 +192,12 @@ impl ExchangeClient {
       .accounts(accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables =
-      self.load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE]).await?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
     let sig = self
       .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
@@ -234,8 +246,12 @@ impl ExchangeClient {
       .accounts(accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables =
-      self.load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE]).await?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
     let sig = self
       .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
@@ -256,17 +272,17 @@ impl ExchangeClient {
       program: exchange::ID,
     };
     let args = args::UpdateLstPrices {};
+    let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instructions = self
       .program
       .request()
       .accounts(accounts)
+      .accounts(remaining_accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables = self
-      .load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE])
-      .await?;
+    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
+      .send_v0_transaction(&instructions, &[registry_lut, exchange_lut])
       .await?;
     Ok(sig)
   }
@@ -299,17 +315,17 @@ impl ExchangeClient {
       program: exchange::ID,
     };
     let args = args::HarvestYield {};
+    let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instructions = self
       .program
       .request()
       .accounts(accounts)
+      .accounts(remaining_accounts)
       .args(args)
       .instructions()?;
-    let lookup_tables = self
-      .load_lookup_tables(&[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE])
-      .await?;
+    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
+      .send_v0_transaction(&instructions, &[registry_lut, exchange_lut])
       .await?;
     Ok(sig)
   }
