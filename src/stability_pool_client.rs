@@ -1,10 +1,12 @@
-use crate::pda::SOL_USD_PYTH_FEED;
 use crate::stability_pool::client::{accounts, args};
 use crate::stability_pool::events::StabilityPoolStats;
-use crate::util::{simulation_config, ProgramClient};
+use crate::util::{
+  simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
+  STABILITY_POOL_LOOKUP_TABLE,
+};
 use crate::{exchange, pda, stability_pool};
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
@@ -15,14 +17,26 @@ use anyhow::{anyhow, Result};
 use base64::prelude::{Engine, BASE64_STANDARD};
 
 pub struct StabilityPoolClient {
-  program: Program<Rc<Keypair>>,
+  program: Program<Arc<Keypair>>,
+  keypair: Arc<Keypair>,
 }
 
 impl ProgramClient for StabilityPoolClient {
   const PROGRAM_ID: Pubkey = stability_pool::ID;
 
-  fn build_client(program: Program<Rc<Keypair>>) -> StabilityPoolClient {
-    StabilityPoolClient { program }
+  fn build_client(
+    program: Program<Arc<Keypair>>,
+    keypair: Arc<Keypair>,
+  ) -> StabilityPoolClient {
+    StabilityPoolClient { program, keypair }
+  }
+
+  fn program(&self) -> &Program<Arc<Keypair>> {
+    &self.program
+  }
+
+  fn keypair(&self) -> Arc<Keypair> {
+    self.keypair.clone()
   }
 }
 
@@ -53,12 +67,20 @@ impl StabilityPoolClient {
       program: stability_pool::ID,
     };
     let args = args::RebalanceStableToLever {};
-    let sig = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .send()
+      .instructions()?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
     Ok(sig)
   }
@@ -89,12 +111,20 @@ impl StabilityPoolClient {
       program: stability_pool::ID,
     };
     let args = args::RebalanceLeverToStable {};
-    let sig = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .send()
+      .instructions()?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
     Ok(sig)
   }

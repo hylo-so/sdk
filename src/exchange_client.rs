@@ -1,12 +1,15 @@
-use crate::exchange;
 use crate::exchange::client::{accounts, args};
 use crate::exchange::events::ExchangeStats;
 use crate::exchange::types::SlippageConfig;
-use crate::pda::{self, SOL_USD_PYTH_FEED};
-use crate::util::{simulation_config, ProgramClient};
+use crate::util::{
+  simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE,
+  LST_REGISTRY_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
+};
+use crate::{exchange, pda, stability_pool};
 
-use std::rc::Rc;
+use std::sync::Arc;
 
+use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE_PROGRAM;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
@@ -17,14 +20,26 @@ use base64::prelude::{Engine, BASE64_STANDARD};
 use fix::prelude::*;
 
 pub struct ExchangeClient {
-  program: Program<Rc<Keypair>>,
+  program: Program<Arc<Keypair>>,
+  keypair: Arc<Keypair>,
 }
 
 impl ProgramClient for ExchangeClient {
   const PROGRAM_ID: Pubkey = exchange::ID;
 
-  fn build_client(program: Program<Rc<Keypair>>) -> ExchangeClient {
-    ExchangeClient { program }
+  fn build_client(
+    program: Program<Arc<Keypair>>,
+    keypair: Arc<Keypair>,
+  ) -> ExchangeClient {
+    ExchangeClient { program, keypair }
+  }
+
+  fn program(&self) -> &Program<Arc<Keypair>> {
+    &self.program
+  }
+
+  fn keypair(&self) -> Arc<Keypair> {
+    self.keypair.clone()
   }
 }
 
@@ -64,12 +79,20 @@ impl ExchangeClient {
       amount_lst_to_deposit: amount_lst.bits,
       slippage_config,
     };
-    let sig = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .send()
+      .instructions()?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
     Ok(sig)
   }
@@ -109,12 +132,20 @@ impl ExchangeClient {
       amount_to_redeem: amount_stablecoin.bits,
       slippage_config,
     };
-    let sig = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .send()
+      .instructions()?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
     Ok(sig)
   }
@@ -155,12 +186,20 @@ impl ExchangeClient {
       amount_lst_to_deposit: amount_lst.bits,
       slippage_config,
     };
-    let sig = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .send()
+      .instructions()?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &lookup_tables)
       .await?;
     Ok(sig)
   }
@@ -201,12 +240,92 @@ impl ExchangeClient {
       amount_to_redeem: amount_levercoin.bits,
       slippage_config,
     };
-    let sig = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .send()
+      .instructions()?;
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+      ])
+      .await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &lookup_tables)
+      .await?;
+    Ok(sig)
+  }
+
+  /// Runs exchange's LST price oracle crank.
+  ///
+  /// # Errors
+  /// - Transaction failure
+  pub async fn update_lst_prices(&self) -> Result<Signature> {
+    let accounts = accounts::UpdateLstPrices {
+      payer: self.program.payer(),
+      hylo: pda::hylo(),
+      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
+      lut_program: LOOKUP_TABLE_PROGRAM,
+      event_authority: pda::event_auth(exchange::ID),
+      program: exchange::ID,
+    };
+    let args = args::UpdateLstPrices {};
+    let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
+    let instructions = self
+      .program
+      .request()
+      .accounts(accounts)
+      .accounts(remaining_accounts)
+      .args(args)
+      .instructions()?;
+    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &[registry_lut, exchange_lut])
+      .await?;
+    Ok(sig)
+  }
+
+  /// Harvests yield from LST vaults to stability pool.
+  ///
+  /// # Errors
+  /// - Transaction failure
+  pub async fn harvest_yield(&self) -> Result<Signature> {
+    let accounts = accounts::HarvestYield {
+      payer: self.program.payer(),
+      hylo: pda::hylo(),
+      stablecoin_mint: pda::hyusd(),
+      stablecoin_auth: pda::hyusd_auth(),
+      levercoin_mint: pda::xsol(),
+      levercoin_auth: pda::xsol_auth(),
+      fee_auth: pda::fee_auth(pda::hyusd()),
+      fee_vault: pda::fee_vault(pda::hyusd()),
+      stablecoin_pool: pda::hyusd_pool(),
+      levercoin_pool: pda::xsol_pool(),
+      pool_auth: pda::pool_auth(),
+      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
+      hylo_stability_pool: stability_pool::ID,
+      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
+      lut_program: LOOKUP_TABLE_PROGRAM,
+      associated_token_program: associated_token::ID,
+      token_program: token::ID,
+      system_program: system_program::ID,
+      event_authority: pda::event_auth(exchange::ID),
+      program: exchange::ID,
+    };
+    let args = args::HarvestYield {};
+    let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
+    let instructions = self
+      .program
+      .request()
+      .accounts(accounts)
+      .accounts(remaining_accounts)
+      .args(args)
+      .instructions()?;
+    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
+    let sig = self
+      .send_v0_transaction(&instructions, &[registry_lut, exchange_lut])
       .await?;
     Ok(sig)
   }
