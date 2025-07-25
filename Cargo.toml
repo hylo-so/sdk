@@ -1,6 +1,6 @@
 [package]
 name = "hylo-sdk"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 description = "Rust SDK for the Hylo stablecoin protocol"
 license = "MPL-2.0"
