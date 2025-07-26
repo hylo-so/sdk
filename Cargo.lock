@@ -1756,7 +1756,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-sdk"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "anchor-client",
  "anchor-lang",
