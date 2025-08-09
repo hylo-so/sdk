@@ -12,9 +12,11 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
-use anchor_lang::prelude::AccountMeta;
+use anchor_lang::prelude::{AccountDeserialize, AccountMeta};
 use anyhow::{anyhow, Result};
+use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
+use jupiter_amm_interface::AccountMap;
 
 use crate::hylo_exchange;
 
@@ -199,4 +201,17 @@ pub trait ProgramClient: Sized {
       })
       .try_collect()
   }
+}
+
+pub fn get_account<A: AccountDeserialize>(
+  account_map: &AccountMap,
+  key: &Pubkey,
+) -> Result<A> {
+  let account = account_map
+    .get(key)
+    .ok_or(anyhow!("Account not found {}", key))?;
+  let decoded = BASE64_STANDARD.decode(&account.data)?;
+  let mut bytes = decoded.as_slice();
+  let out = A::try_deserialize(&mut bytes)?;
+  Ok(out)
 }

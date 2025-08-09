@@ -8,3 +8,8 @@ homepage.workspace = true
 [dependencies]
 hylo-fix.workspace = true
 anchor-lang.workspace = true
+pyth-solana-receiver-sdk.workspace = true
+jupiter-amm-interface.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

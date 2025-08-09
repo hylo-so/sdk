@@ -22,4 +22,21 @@ pub enum CoreError {
   LstSolPriceOutdated,
   #[msg("Overflow while computing LstSolPrice conversion.")]
   LstSolPriceConversion,
+  // `pyth`
+  #[msg("Orajkcle confidence interval is too wide.")]
+  PythOracleConfidence,
+  #[msg("Oracle exponent is out of range.")]
+  PythOracleExponent,
+  #[msg("Oracle yielded a negative price which can't be unsigned.")]
+  PythOracleNegativePrice,
+  #[msg("Oracle time is negative.")]
+  PythOracleNegativeTime,
+  #[msg("Oracle did not yield a price within the configured age window.")]
+  PythOracleOutdated,
+  #[msg("Oracle price is out of range.")]
+  PythOraclePriceRange,
+  #[msg("Oracle publish slot greater than current slot.")]
+  PythOracleSlotInvalid,
+  #[msg("Oracle price update is not fully verified.")]
+  PythOracleVerificationLevel,
 }

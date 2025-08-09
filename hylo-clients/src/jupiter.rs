@@ -1,7 +1,5 @@
-use anchor_lang::AccountDeserialize;
 use anchor_lang::{prelude::Pubkey, AnchorDeserialize};
 use anchor_spl::token::TokenAccount;
-use anyhow::anyhow;
 use anyhow::Result;
 use base64::prelude::{Engine, BASE64_STANDARD};
 use fix::prelude::*;
@@ -14,20 +12,7 @@ use crate::exchange::accounts::{Hylo, LstHeader, PriceUpdateV2};
 use crate::exchange::types::{LevercoinFees, StablecoinFees};
 use crate::hylo_exchange;
 use crate::pda;
-use crate::util::{JITOSOL_MINT, SOL_USD_PYTH_FEED};
-
-fn get_account<A: AccountDeserialize>(
-  account_map: &AccountMap,
-  key: &Pubkey,
-) -> Result<A> {
-  let account = account_map
-    .get(key)
-    .ok_or(anyhow!("Account not found {}", key))?;
-  let decoded = BASE64_STANDARD.decode(&account.data)?;
-  let mut bytes = decoded.as_slice();
-  let out = A::try_deserialize(&mut bytes)?;
-  Ok(out)
-}
+use crate::util::{get_account, JITOSOL_MINT, SOL_USD_PYTH_FEED};
 
 pub struct HyloExchangeState {
   pub total_sol: UFix64<N9>,
