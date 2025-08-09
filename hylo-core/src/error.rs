@@ -23,7 +23,7 @@ pub enum CoreError {
   #[msg("Overflow while computing LstSolPrice conversion.")]
   LstSolPriceConversion,
   // `pyth`
-  #[msg("Orajkcle confidence interval is too wide.")]
+  #[msg("Oracle confidence interval is too wide.")]
   PythOracleConfidence,
   #[msg("Oracle exponent is out of range.")]
   PythOracleExponent,
@@ -39,4 +39,24 @@ pub enum CoreError {
   PythOracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
   PythOracleVerificationLevel,
+  // `nav`
+  #[msg("Overflow while computing collateral ratio.")]
+  CollateralRatio,
+  #[msg("Arithmetic error while computing max mintable stablecoin.")]
+  MaxMintable,
+  #[msg("Arithmetic error while computing max swappable stablecoin.")]
+  MaxSwappable,
+  #[msg("Arithmetic error while computing stability pool capitalization.")]
+  StabilityPoolCap,
+  #[msg("Arithmetic error while computing depegged stablecoin NAV.")]
+  StablecoinNav,
+  #[msg("Unable to compute max mintable stablecoin with target CR < 1.")]
+  TargetCollateralRatioTooLow,
+  #[msg("Overflow while computing total value locked in USD.")]
+  TotalValueLocked,
+  // `slippage_config`
+  #[msg("Over/underflow while computing acceptable token amount.")]
+  SlippageArithmetic,
+  #[msg("Token output amount exceeds provided slippage configuration.")]
+  SlippageExceeded,
 }
