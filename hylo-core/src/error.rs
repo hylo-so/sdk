@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::error_code;
 
 #[error_code]
 pub enum CoreError {
@@ -59,4 +59,16 @@ pub enum CoreError {
   SlippageArithmetic,
   #[msg("Token output amount exceeds provided slippage configuration.")]
   SlippageExceeded,
+  // `stability_mode`
+  #[msg("Stability modes failed validation.")]
+  StabilityValidation,
+  // `conversion`
+  #[msg("Arithmetic error in conversion from levercoin to stablecoin.")]
+  LeverToStable,
+  #[msg("Arithmetic error in conversion from stablecoin to levercoin.")]
+  StableToLever,
+  #[msg("Arithmetic error in conversion from LST to protocol token.")]
+  LstToToken,
+  #[msg("Arithmetic error in conversion from protocol token to LST.")]
+  TokenToLst,
 }

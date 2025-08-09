@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod proptest {
+pub mod proptest {
   use crate::nav::collateral_ratio;
   use proptest::prelude::*;
 
@@ -133,6 +133,9 @@ mod proptest {
 
 #[cfg(test)]
 mod tests {
+  use crate::error::CoreError::SlippageExceeded;
+  use crate::slippage_config::SlippageConfig;
+
   use fix::aliases::si::{Micro, Nano};
   use fix::prelude::*;
 
