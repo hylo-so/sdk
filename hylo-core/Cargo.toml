@@ -1,8 +1,10 @@
 [package]
-name = "hylo-nav"
+name = "hylo-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 
 [dependencies]
+hylo-fix.workspace = true
+anchor-lang.workspace = true

@@ -10,7 +10,7 @@ use jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 
-use crate::exchange::accounts::{Hylo, PriceUpdateV2};
+use crate::exchange::accounts::{Hylo, LstHeader, PriceUpdateV2};
 use crate::exchange::types::{LevercoinFees, StablecoinFees};
 use crate::hylo_exchange;
 use crate::pda;
@@ -76,12 +76,19 @@ impl Amm for HyloExchangeState {
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
-    vec![pda::hyusd(), pda::xsol(), SOL_USD_PYTH_FEED]
+    vec![
+      pda::hyusd(),
+      pda::xsol(),
+      pda::lst_header(JITOSOL_MINT),
+      SOL_USD_PYTH_FEED,
+    ]
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     let hyusd: TokenAccount = get_account(account_map, &pda::hyusd())?;
     let xsol: TokenAccount = get_account(account_map, &pda::xsol())?;
+    let jitosol_header: LstHeader =
+      get_account(account_map, &pda::lst_header(JITOSOL_MINT))?;
     let sol_usd: PriceUpdateV2 = get_account(account_map, &SOL_USD_PYTH_FEED)?;
     todo!()
   }

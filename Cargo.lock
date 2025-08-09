@@ -1819,6 +1819,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "hylo-core"
+version = "0.1.11"
+dependencies = [
+ "anchor-lang",
+ "hylo-fix",
+]
+
+[[package]]
 name = "hylo-fix"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1832,10 +1840,6 @@ dependencies = [
  "quote",
  "typenum",
 ]
-
-[[package]]
-name = "hylo-nav"
-version = "0.1.11"
 
 [[package]]
 name = "hyper"

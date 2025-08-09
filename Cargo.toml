@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "hylo-clients",
-  "hylo-nav",
+  "hylo-core",
 ]
 resolver = "2"
 
