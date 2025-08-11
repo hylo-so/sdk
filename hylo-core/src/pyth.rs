@@ -17,6 +17,24 @@ pub const SOL_USD: FeedId = [
   13, 47, 142, 208, 198, 199, 188, 15, 76, 250, 200, 194, 128, 181, 109,
 ];
 
+pub struct OracleConfig<Exp> {
+  pub interval_secs: u64,
+  pub conf_tolerance: UFix64<Exp>,
+}
+
+impl<Exp> OracleConfig<Exp> {
+  #[must_use]
+  pub fn new(
+    interval_secs: u64,
+    conf_tolerance: UFix64<Exp>,
+  ) -> OracleConfig<Exp> {
+    OracleConfig {
+      interval_secs,
+      conf_tolerance,
+    }
+  }
+}
+
 /// Spread of an asset price, with a lower and upper quote.
 /// Use lower in minting, higher in redeeming.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -137,8 +155,10 @@ fn validate_verification_level(level: VerificationLevel) -> Result<()> {
 pub fn query_pyth_price<Exp: Integer, C: SolanaClock>(
   clock: &C,
   oracle: &PriceUpdateV2,
-  oracle_interval: u64,
-  conf_tolerance: UFix64<Exp>,
+  OracleConfig {
+    interval_secs,
+    conf_tolerance,
+  }: OracleConfig<Exp>,
 ) -> Result<PriceRange<Exp>>
 where
   UFix64<Exp>: FixExt,
@@ -147,10 +167,10 @@ where
   validate_verification_level(oracle.verification_level)?;
   validate_publish_time(
     oracle.price_message.publish_time,
-    oracle_interval,
+    interval_secs,
     clock.unix_timestamp(),
   )?;
-  validate_posted_slot(oracle.posted_slot, oracle_interval, clock.slot())?;
+  validate_posted_slot(oracle.posted_slot, interval_secs, clock.slot())?;
 
   // Build spot range
   let spot_price =

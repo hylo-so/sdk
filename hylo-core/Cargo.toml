@@ -8,6 +8,7 @@ homepage.workspace = true
 [dependencies]
 hylo-fix.workspace = true
 anchor-lang.workspace = true
+anchor-spl.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 jupiter-amm-interface.workspace = true
 

@@ -71,4 +71,28 @@ pub enum CoreError {
   LstToToken,
   #[msg("Arithmetic error in conversion from protocol token to LST.")]
   TokenToLst,
+  // `fee_controller`
+  #[msg("Over/underflow while computing fee extraction for transaction.")]
+  FeeExtraction,
+  #[msg("No valid mint fee for levercoin. Projected stability mode is Depeg.")]
+  NoValidLevercoinMintFee,
+  #[msg("No valid redeem fee for levercoin due to Depeg.")]
+  NoValidLevercoinRedeemFee,
+  #[msg("No valid mint fee for stablecoin due to Mode2 or Depeg.")]
+  NoValidStablecoinMintFee,
+  #[msg("No valid fee for swap due to Mode2 or Depeg.")]
+  NoValidSwapFee,
+  // `exchange_context`
+  #[msg("Arithmetic error while computing levercoin NAV.")]
+  LevercoinNav,
+  #[msg("Over/underflow while computing total SOL for destination fee.")]
+  DestinationFeeSol,
+  #[msg(
+    "Over/underflow while computing total stablecoin for destination fee."
+  )]
+  DestinationFeeStablecoin,
+  #[msg("There is no next stability threshold; current mode is Depeg.")]
+  NoNextStabilityThreshold,
+  #[msg("Requested amount of stablecoin over max mintable limit.")]
+  RequestedStablecoinOverMaxMintable,
 }
