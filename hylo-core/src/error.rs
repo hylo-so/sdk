@@ -95,4 +95,13 @@ pub enum CoreError {
   NoNextStabilityThreshold,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
   RequestedStablecoinOverMaxMintable,
+  // `stability_pool_math`
+  #[msg("Arithmetic error while computing LP token NAV.")]
+  LpTokenNav,
+  #[msg("Arithmetic error while computing LP token amount to give to user.")]
+  LpTokenOut,
+  #[msg("Arithmetic error while computing amount of stablecoin to swap.")]
+  StablecoinToSwap,
+  #[msg("Arithmetic error while computing amount of token to withdraw.")]
+  TokenWithdraw,
 }

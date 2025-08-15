@@ -1,5 +1,5 @@
 use crate::error::CoreError::{
-  CollateralRatio, MaxMintable, MaxSwappable, StabilityPoolCap, StablecoinNav,
+  CollateralRatio, MaxMintable, MaxSwappable, StablecoinNav,
   TargetCollateralRatioTooLow, TotalValueLocked,
 };
 
@@ -129,32 +129,12 @@ pub fn depeg_stablecoin_nav(
     .ok_or(StablecoinNav.into())
 }
 
-/// Calculates total dollar value of stablecoin and levercoin in stability pool.
-///
-/// ```txt                
-/// stability_pool_cap = stable_nav * stable_in_pool + lever_nav * lever_in_pool
-/// ```
-pub fn stability_pool_cap(
-  stablecoin_nav: UFix64<N6>,
-  stablecoin_in_pool: UFix64<N6>,
-  levercoin_nav: UFix64<N6>,
-  levercoin_in_pool: UFix64<N6>,
-) -> Result<UFix64<N6>> {
-  let stable_cap =
-    stablecoin_nav.mul_div_ceil(stablecoin_in_pool, UFix64::one());
-  let lever_cap = levercoin_nav.mul_div_ceil(levercoin_in_pool, UFix64::one());
-  stable_cap
-    .zip(lever_cap)
-    .and_then(|(s, l)| s.checked_add(&l))
-    .ok_or(StabilityPoolCap.into())
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
 
   use crate::eq_tolerance;
-  use crate::error::ErrorCode::LevercoinNav;
+  use crate::error::CoreError::LevercoinNav;
   use crate::util::proptest::*;
 
   use anchor_lang::prelude::Result;

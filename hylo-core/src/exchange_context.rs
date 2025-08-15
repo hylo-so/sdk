@@ -3,18 +3,18 @@ use crate::error::CoreError::{
   DestinationFeeSol, DestinationFeeStablecoin, LevercoinNav,
   NoNextStabilityThreshold, RequestedStablecoinOverMaxMintable,
 };
+use crate::exchange_math::{
+  collateral_ratio, depeg_stablecoin_nav, max_mintable_stablecoin,
+  max_swappable_stablecoin, next_levercoin_nav, total_value_locked,
+};
 use crate::fee_controller::{
   FeeController, FeeExtract, LevercoinFees, StablecoinFees,
 };
 use crate::lst_sol_price::LstSolPrice;
-use crate::nav::{
-  collateral_ratio, depeg_stablecoin_nav, max_mintable_stablecoin,
-  max_swappable_stablecoin, next_levercoin_nav, stability_pool_cap,
-  total_value_locked,
-};
 use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
+use crate::stability_pool_math::stability_pool_cap;
 use crate::total_sol_cache::TotalSolCache;
 
 use anchor_lang::prelude::*;
