@@ -10,7 +10,6 @@ macro_rules! lazy {
   };
 }
 
-#[macro_export]
 macro_rules! pda {
   ($program_id:expr, $base:expr) => {
     Pubkey::find_program_address(&[$base.as_ref()], &$program_id).0
@@ -28,15 +27,6 @@ macro_rules! ata {
   };
 }
 
-pub static HYLO: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::HYLO));
-
-pub static HYUSD: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::HYUSD));
-
-pub static XSOL: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::XSOL));
-
 #[must_use]
 pub fn hyusd_ata(auth: Pubkey) -> Pubkey {
   ata!(&auth, &HYUSD)
@@ -51,6 +41,40 @@ pub fn xsol_ata(auth: Pubkey) -> Pubkey {
 pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
   ata!(&auth, &SHYUSD)
 }
+
+#[must_use]
+pub fn vault(mint: Pubkey) -> Pubkey {
+  ata!(&vault_auth(mint), &mint)
+}
+
+#[must_use]
+pub fn vault_auth(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::VAULT_AUTH, mint)
+}
+
+#[must_use]
+pub fn lst_header(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::LST_HEADER, mint)
+}
+
+#[must_use]
+pub fn fee_vault(mint: Pubkey) -> Pubkey {
+  ata!(&fee_auth(mint), &mint)
+}
+
+#[must_use]
+pub fn fee_auth(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::FEE_AUTH, mint)
+}
+
+pub static HYLO: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::HYLO));
+
+pub static HYUSD: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::HYUSD));
+
+pub static XSOL: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::XSOL));
 
 pub static HYUSD_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, *HYUSD));
@@ -91,33 +115,3 @@ pub static STABILITY_POOL_PROGRAM_DATA: LazyLock<Pubkey> =
 
 pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
   lazy!(pda!(bpf_loader::ID, exchange::ID));
-
-#[must_use]
-pub fn vault(mint: Pubkey) -> Pubkey {
-  ata!(&vault_auth(mint), &mint)
-}
-
-#[must_use]
-pub fn vault_auth(mint: Pubkey) -> Pubkey {
-  pda!(exchange::ID, exchange::constants::VAULT_AUTH, mint)
-}
-
-#[must_use]
-pub fn lst_header(mint: Pubkey) -> Pubkey {
-  pda!(exchange::ID, exchange::constants::LST_HEADER, mint)
-}
-
-#[must_use]
-pub fn fee_vault(mint: Pubkey) -> Pubkey {
-  ata!(&fee_auth(mint), &mint)
-}
-
-#[must_use]
-pub fn fee_auth(mint: Pubkey) -> Pubkey {
-  pda!(exchange::ID, exchange::constants::FEE_AUTH, mint)
-}
-
-#[must_use]
-pub fn event_auth(program: Pubkey) -> Pubkey {
-  pda!(program, "__event_authority")
-}
