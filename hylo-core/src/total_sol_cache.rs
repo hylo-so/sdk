@@ -6,7 +6,7 @@ use crate::error::CoreError::{
   TotalSolCacheOverflow, TotalSolCacheUnderflow,
 };
 
-#[derive(AnchorSerialize, AnchorDeserialize, InitSpace)]
+#[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone)]
 pub struct TotalSolCache {
   pub current_update_epoch: u64,
   pub total_sol: UFixValue64,

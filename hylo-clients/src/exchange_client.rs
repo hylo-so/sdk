@@ -1,3 +1,4 @@
+use crate::ata;
 use crate::exchange::client::{accounts, args};
 use crate::exchange::events::ExchangeStats;
 use crate::exchange::types::SlippageConfig;
@@ -57,17 +58,17 @@ impl ExchangeClient {
   ) -> Result<Signature> {
     let accounts = accounts::MintStablecoin {
       user,
-      hylo: pda::hylo(),
+      hylo: *pda::HYLO,
       fee_auth: pda::fee_auth(lst_mint),
       vault_auth: pda::vault_auth(lst_mint),
-      stablecoin_auth: pda::hyusd_auth(),
+      stablecoin_auth: *pda::HYUSD_AUTH,
       fee_vault: pda::fee_vault(lst_mint),
       lst_vault: pda::vault(lst_mint),
       lst_header: pda::lst_header(lst_mint),
-      user_lst_ata: pda::ata(user, lst_mint),
-      user_stablecoin_ata: pda::ata(user, pda::hyusd()),
+      user_lst_ata: ata!(user, lst_mint),
+      user_stablecoin_ata: pda::hyusd_ata(user),
       lst_mint,
-      stablecoin_mint: pda::hyusd(),
+      stablecoin_mint: *pda::HYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -110,16 +111,16 @@ impl ExchangeClient {
   ) -> Result<Signature> {
     let accounts = accounts::RedeemStablecoin {
       user,
-      hylo: pda::hylo(),
+      hylo: *pda::HYLO,
       fee_auth: pda::fee_auth(lst_mint),
       vault_auth: pda::vault_auth(lst_mint),
-      stablecoin_auth: pda::hyusd_auth(),
+      stablecoin_auth: *pda::HYUSD_AUTH,
       fee_vault: pda::fee_vault(lst_mint),
       lst_vault: pda::vault(lst_mint),
       lst_header: pda::lst_header(lst_mint),
-      user_stablecoin_ata: pda::ata(user, pda::hyusd()),
-      user_lst_ata: pda::ata(user, lst_mint),
-      stablecoin_mint: pda::hyusd(),
+      user_stablecoin_ata: pda::hyusd_ata(user),
+      user_lst_ata: ata!(user, lst_mint),
+      stablecoin_mint: *pda::HYUSD,
       lst_mint,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
@@ -163,18 +164,18 @@ impl ExchangeClient {
   ) -> Result<Signature> {
     let accounts = accounts::MintLevercoin {
       user,
-      hylo: pda::hylo(),
+      hylo: *pda::HYLO,
       fee_auth: pda::fee_auth(lst_mint),
       vault_auth: pda::vault_auth(lst_mint),
-      levercoin_auth: pda::xsol_auth(),
+      levercoin_auth: *pda::XSOL_AUTH,
       fee_vault: pda::fee_vault(lst_mint),
       lst_vault: pda::vault(lst_mint),
       lst_header: pda::lst_header(lst_mint),
-      user_lst_ata: pda::ata(user, lst_mint),
-      user_levercoin_ata: pda::ata(user, pda::xsol()),
+      user_lst_ata: ata!(user, lst_mint),
+      user_levercoin_ata: pda::xsol_ata(user),
       lst_mint,
-      levercoin_mint: pda::xsol(),
-      stablecoin_mint: pda::hyusd(),
+      levercoin_mint: *pda::XSOL,
+      stablecoin_mint: *pda::HYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -217,17 +218,17 @@ impl ExchangeClient {
   ) -> Result<Signature> {
     let accounts = accounts::RedeemLevercoin {
       user,
-      hylo: pda::hylo(),
+      hylo: *pda::HYLO,
       fee_auth: pda::fee_auth(lst_mint),
       vault_auth: pda::vault_auth(lst_mint),
-      levercoin_auth: pda::xsol_auth(),
+      levercoin_auth: *pda::XSOL_AUTH,
       fee_vault: pda::fee_vault(lst_mint),
       lst_vault: pda::vault(lst_mint),
       lst_header: pda::lst_header(lst_mint),
-      user_levercoin_ata: pda::ata(user, pda::xsol()),
-      user_lst_ata: pda::ata(user, lst_mint),
-      levercoin_mint: pda::xsol(),
-      stablecoin_mint: pda::hyusd(),
+      user_levercoin_ata: pda::xsol_ata(user),
+      user_lst_ata: ata!(user, lst_mint),
+      levercoin_mint: *pda::XSOL,
+      stablecoin_mint: *pda::HYUSD,
       lst_mint,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
@@ -265,7 +266,7 @@ impl ExchangeClient {
   pub async fn update_lst_prices(&self) -> Result<Signature> {
     let accounts = accounts::UpdateLstPrices {
       payer: self.program.payer(),
-      hylo: pda::hylo(),
+      hylo: *pda::HYLO,
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       event_authority: pda::event_auth(exchange::ID),
@@ -294,16 +295,16 @@ impl ExchangeClient {
   pub async fn harvest_yield(&self) -> Result<Signature> {
     let accounts = accounts::HarvestYield {
       payer: self.program.payer(),
-      hylo: pda::hylo(),
-      stablecoin_mint: pda::hyusd(),
-      stablecoin_auth: pda::hyusd_auth(),
-      levercoin_mint: pda::xsol(),
-      levercoin_auth: pda::xsol_auth(),
-      fee_auth: pda::fee_auth(pda::hyusd()),
-      fee_vault: pda::fee_vault(pda::hyusd()),
-      stablecoin_pool: pda::hyusd_pool(),
-      levercoin_pool: pda::xsol_pool(),
-      pool_auth: pda::pool_auth(),
+      hylo: *pda::HYLO,
+      stablecoin_mint: *pda::HYUSD,
+      stablecoin_auth: *pda::HYUSD_AUTH,
+      levercoin_mint: *pda::XSOL,
+      levercoin_auth: *pda::XSOL_AUTH,
+      fee_auth: pda::fee_auth(*pda::HYUSD),
+      fee_vault: pda::fee_vault(*pda::HYUSD),
+      stablecoin_pool: *pda::HYUSD_POOL,
+      levercoin_pool: *pda::XSOL_POOL,
+      pool_auth: *pda::POOL_AUTH,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       hylo_stability_pool: stability_pool::ID,
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
@@ -337,9 +338,9 @@ impl ExchangeClient {
   /// - Return data access or deserialization
   pub async fn simulate_get_stats(&self) -> Result<ExchangeStats> {
     let accounts = accounts::GetStats {
-      hylo: pda::hylo(),
-      stablecoin_mint: pda::hyusd(),
-      levercoin_mint: pda::xsol(),
+      hylo: *pda::HYLO,
+      stablecoin_mint: *pda::HYUSD,
+      levercoin_mint: *pda::XSOL,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     };
     let args = args::GetStats {};

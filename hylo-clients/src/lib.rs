@@ -6,6 +6,7 @@ anchor_lang::declare_program!(hylo_exchange);
 anchor_lang::declare_program!(hylo_stability_pool);
 
 mod exchange_client;
+pub mod idl_type_bridge;
 pub mod jupiter;
 pub mod pda;
 mod stability_pool_client;

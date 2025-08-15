@@ -16,6 +16,10 @@ pub struct FeePair {
 }
 
 impl FeePair {
+  pub fn new(mint: UFixValue64, redeem: UFixValue64) -> FeePair {
+    FeePair { mint, redeem }
+  }
+
   pub fn mint(&self) -> Result<UFix64<N4>> {
     self.mint.try_into()
   }
@@ -62,6 +66,12 @@ impl<Exp> FeeExtract<Exp> {
 pub struct StablecoinFees {
   normal: FeePair,
   mode_1: FeePair,
+}
+
+impl StablecoinFees {
+  pub fn new(normal: FeePair, mode_1: FeePair) -> StablecoinFees {
+    StablecoinFees { normal, mode_1 }
+  }
 }
 
 impl FeeController for StablecoinFees {
@@ -117,6 +127,18 @@ impl FeeController for LevercoinFees {
 }
 
 impl LevercoinFees {
+  pub fn new(
+    normal: FeePair,
+    mode_1: FeePair,
+    mode_2: FeePair,
+  ) -> LevercoinFees {
+    LevercoinFees {
+      normal,
+      mode_1,
+      mode_2,
+    }
+  }
+
   /// Fees to charge in the levercoin to stablecoin swap.
   pub fn swap_to_stablecoin_fee(
     &self,

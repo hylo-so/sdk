@@ -2,8 +2,15 @@ use crate::{exchange, stability_pool};
 
 use anchor_client::solana_sdk::bpf_loader;
 use anchor_lang::prelude::Pubkey;
-use anchor_spl::associated_token::get_associated_token_address;
+use std::sync::LazyLock;
 
+macro_rules! lazy {
+  ($x:expr) => {
+    LazyLock::new(|| $x)
+  };
+}
+
+#[macro_export]
 macro_rules! pda {
   ($program_id:expr, $base:expr) => {
     Pubkey::find_program_address(&[$base.as_ref()], &$program_id).0
@@ -14,14 +21,80 @@ macro_rules! pda {
   };
 }
 
+#[macro_export]
+macro_rules! ata {
+  ($auth:expr, $mint:expr) => {
+    anchor_spl::associated_token::get_associated_token_address(&$auth, &$mint)
+  };
+}
+
+pub static HYLO: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::HYLO));
+
+pub static HYUSD: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::HYUSD));
+
+pub static XSOL: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::XSOL));
+
 #[must_use]
-pub fn hylo() -> Pubkey {
-  pda!(exchange::ID, exchange::constants::HYLO)
+pub fn hyusd_ata(auth: Pubkey) -> Pubkey {
+  ata!(&auth, &HYUSD)
 }
 
 #[must_use]
+pub fn xsol_ata(auth: Pubkey) -> Pubkey {
+  ata!(&auth, &XSOL)
+}
+
+#[must_use]
+pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
+  ata!(&auth, &SHYUSD)
+}
+
+pub static HYUSD_AUTH: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, *HYUSD));
+
+pub static XSOL_AUTH: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, *XSOL));
+
+pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
+
+pub static EXCHANGE_EVENT_AUTH: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, "__event_authority"));
+
+pub static STABILITY_POOL_EVENT_AUTH: LazyLock<Pubkey> =
+  lazy!(pda!(stability_pool::ID, "__event_authority"));
+
+pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
+  stability_pool::ID,
+  stability_pool::constants::POOL_CONFIG
+));
+
+pub static SHYUSD: LazyLock<Pubkey> = lazy!(pda!(
+  stability_pool::ID,
+  stability_pool::constants::STAKED_HYUSD
+));
+
+pub static POOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
+  stability_pool::ID,
+  stability_pool::constants::POOL_AUTH
+));
+
+pub static HYUSD_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, HYUSD));
+
+pub static XSOL_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, XSOL));
+
+pub static STABILITY_POOL_PROGRAM_DATA: LazyLock<Pubkey> =
+  lazy!(pda!(bpf_loader::ID, stability_pool::ID));
+
+pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
+  lazy!(pda!(bpf_loader::ID, exchange::ID));
+
+#[must_use]
 pub fn vault(mint: Pubkey) -> Pubkey {
-  get_associated_token_address(&vault_auth(mint), &mint)
+  ata!(&vault_auth(mint), &mint)
 }
 
 #[must_use]
@@ -36,7 +109,7 @@ pub fn lst_header(mint: Pubkey) -> Pubkey {
 
 #[must_use]
 pub fn fee_vault(mint: Pubkey) -> Pubkey {
-  get_associated_token_address(&fee_auth(mint), &mint)
+  ata!(&fee_auth(mint), &mint)
 }
 
 #[must_use]
@@ -45,86 +118,6 @@ pub fn fee_auth(mint: Pubkey) -> Pubkey {
 }
 
 #[must_use]
-pub fn ata(auth: Pubkey, mint: Pubkey) -> Pubkey {
-  get_associated_token_address(&auth, &mint)
-}
-
-#[must_use]
-pub fn hyusd() -> Pubkey {
-  pda!(exchange::ID, exchange::constants::HYUSD)
-}
-
-#[must_use]
-pub fn hyusd_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, hyusd())
-}
-
-#[must_use]
-pub fn xsol() -> Pubkey {
-  pda!(exchange::ID, exchange::constants::XSOL)
-}
-
-#[must_use]
-pub fn xsol_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, xsol())
-}
-
-#[must_use]
-pub fn hyusd_auth() -> Pubkey {
-  pda!(exchange::ID, exchange::constants::MINT_AUTH, hyusd())
-}
-
-#[must_use]
-pub fn xsol_auth() -> Pubkey {
-  pda!(exchange::ID, exchange::constants::MINT_AUTH, xsol())
-}
-
-#[must_use]
-pub fn lst_registry_auth() -> Pubkey {
-  pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH)
-}
-
-#[must_use]
 pub fn event_auth(program: Pubkey) -> Pubkey {
   pda!(program, "__event_authority")
-}
-
-#[must_use]
-pub fn pool_config() -> Pubkey {
-  pda!(stability_pool::ID, stability_pool::constants::POOL_CONFIG)
-}
-
-#[must_use]
-pub fn shyusd() -> Pubkey {
-  pda!(stability_pool::ID, stability_pool::constants::STAKED_HYUSD)
-}
-
-#[must_use]
-pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, shyusd())
-}
-
-#[must_use]
-pub fn pool_auth() -> Pubkey {
-  pda!(stability_pool::ID, stability_pool::constants::POOL_AUTH)
-}
-
-#[must_use]
-pub fn hyusd_pool() -> Pubkey {
-  ata(pool_auth(), hyusd())
-}
-
-#[must_use]
-pub fn xsol_pool() -> Pubkey {
-  ata(pool_auth(), xsol())
-}
-
-#[must_use]
-pub fn stability_pool_program_data() -> Pubkey {
-  pda!(bpf_loader::ID, stability_pool::ID)
-}
-
-#[must_use]
-pub fn exchange_program_data() -> Pubkey {
-  pda!(bpf_loader::ID, exchange::ID)
 }

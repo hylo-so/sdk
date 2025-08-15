@@ -18,8 +18,6 @@ use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
 use jupiter_amm_interface::AccountMap;
 
-use crate::hylo_exchange;
-
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
 
@@ -34,16 +32,6 @@ pub const SOL_USD_PYTH_FEED: Pubkey =
 
 pub const JITOSOL_MINT: Pubkey =
   pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
-
-/// IDL copies `UFixValue64` as a unique type. This converts to the canonical one from `fix`.
-impl From<hylo_exchange::types::UFixValue64> for fix::prelude::UFixValue64 {
-  fn from(val: hylo_exchange::types::UFixValue64) -> Self {
-    fix::prelude::UFixValue64 {
-      bits: val.bits,
-      exp: val.exp,
-    }
-  }
-}
 
 /// Default configuration to use in simulated transactions.
 #[must_use]
