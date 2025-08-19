@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod proptest {
-  use crate::nav::collateral_ratio;
+  use crate::exchange_math::collateral_ratio;
   use proptest::prelude::*;
 
   use fix::prelude::*;

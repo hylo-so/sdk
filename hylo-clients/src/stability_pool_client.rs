@@ -60,10 +60,10 @@ impl StabilityPoolClient {
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
-      hylo_event_authority: pda::event_auth(exchange::ID),
+      hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
       hylo_exchange_program: exchange::ID,
       token_program: token::ID,
-      event_authority: pda::event_auth(stability_pool::ID),
+      event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
       program: stability_pool::ID,
     };
     let args = args::RebalanceStableToLever {};
@@ -104,10 +104,10 @@ impl StabilityPoolClient {
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
-      hylo_event_authority: pda::event_auth(exchange::ID),
+      hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
       hylo_exchange_program: exchange::ID,
       token_program: token::ID,
-      event_authority: pda::event_auth(stability_pool::ID),
+      event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
       program: stability_pool::ID,
     };
     let args = args::RebalanceLeverToStable {};

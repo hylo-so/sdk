@@ -22,3 +22,5 @@ async-trait.workspace = true
 futures.workspace = true
 itertools.workspace = true
 jupiter-amm-interface.workspace = true
+rust_decimal = "1.37.2"
+bincode = "1.3.3"

@@ -17,7 +17,7 @@ pub const SOL_USD: FeedId = [
   13, 47, 142, 208, 198, 199, 188, 15, 76, 250, 200, 194, 128, 181, 109,
 ];
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct OracleConfig<Exp> {
   pub interval_secs: u64,
   pub conf_tolerance: UFix64<Exp>,

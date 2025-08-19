@@ -73,7 +73,7 @@ impl ExchangeClient {
       token_program: token::ID,
       associated_token_program: associated_token::ID,
       system_program: system_program::ID,
-      event_authority: pda::event_auth(exchange::ID),
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: exchange::ID,
     };
     let args = args::MintStablecoin {
@@ -126,7 +126,7 @@ impl ExchangeClient {
       system_program: system_program::ID,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
-      event_authority: pda::event_auth(exchange::ID),
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: exchange::ID,
     };
     let args = args::RedeemStablecoin {
@@ -180,7 +180,7 @@ impl ExchangeClient {
       token_program: token::ID,
       associated_token_program: associated_token::ID,
       system_program: system_program::ID,
-      event_authority: pda::event_auth(exchange::ID),
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: exchange::ID,
     };
     let args = args::MintLevercoin {
@@ -234,7 +234,7 @@ impl ExchangeClient {
       system_program: system_program::ID,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
-      event_authority: pda::event_auth(exchange::ID),
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: exchange::ID,
     };
     let args = args::RedeemLevercoin {
@@ -269,7 +269,7 @@ impl ExchangeClient {
       hylo: *pda::HYLO,
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
-      event_authority: pda::event_auth(exchange::ID),
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: exchange::ID,
     };
     let args = args::UpdateLstPrices {};
@@ -312,7 +312,7 @@ impl ExchangeClient {
       associated_token_program: associated_token::ID,
       token_program: token::ID,
       system_program: system_program::ID,
-      event_authority: pda::event_auth(exchange::ID),
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: exchange::ID,
     };
     let args = args::HarvestYield {};

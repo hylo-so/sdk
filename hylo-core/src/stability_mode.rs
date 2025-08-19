@@ -29,7 +29,7 @@ impl Display for StabilityMode {
   }
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct StabilityController {
   pub stability_threshold_1: UFix64<N2>,
   pub stability_threshold_2: UFix64<N2>,
