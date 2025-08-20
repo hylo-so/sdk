@@ -12,13 +12,9 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
-use anchor_lang::prelude::{AccountDeserialize, AccountMeta};
+use anchor_lang::prelude::AccountMeta;
 use anyhow::{anyhow, Result};
-use fix::prelude::*;
-use fix::typenum::{IsLess, NInt, NonZero, Unsigned, U20};
 use itertools::Itertools;
-use jupiter_amm_interface::AccountMap;
-use rust_decimal::Decimal;
 
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
@@ -29,12 +25,6 @@ pub const STABILITY_POOL_LOOKUP_TABLE: Pubkey =
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
   pubkey!("9Mb2Mt76AN7eNY3BBA4LgfTicARXhcEEokTBfsN47noK");
 
-pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
-
-pub const JITOSOL_MINT: Pubkey =
-  pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
-
 /// Default configuration to use in simulated transactions.
 #[must_use]
 pub fn simulation_config() -> RpcSimulateTransactionConfig {
@@ -44,20 +34,6 @@ pub fn simulation_config() -> RpcSimulateTransactionConfig {
     commitment: Some(CommitmentConfig::confirmed()),
     ..Default::default()
   }
-}
-
-/// Computes fee percentage in Jupiter's favored `Decimal` type.
-pub fn fee_pct_decimal<Exp>(
-  fees_extracted: UFix64<NInt<Exp>>,
-  total_in: UFix64<NInt<Exp>>,
-) -> Result<Decimal>
-where
-  Exp: Unsigned + NonZero + IsLess<U20>,
-{
-  let pct_fix = fees_extracted
-    .mul_div_floor(UFix64::one(), total_in)
-    .ok_or(anyhow!("Arithmetic error in fee_pct calculation"))?;
-  Ok(Decimal::new(pct_fix.bits.try_into()?, Exp::to_u32()))
 }
 
 /// Deserializes an account into an address lookup table.
@@ -205,16 +181,4 @@ pub trait ProgramClient: Sized {
       })
       .try_collect()
   }
-}
-
-pub fn get_account<A: AccountDeserialize>(
-  account_map: &AccountMap,
-  key: &Pubkey,
-) -> Result<A> {
-  let account = account_map
-    .get(key)
-    .ok_or(anyhow!("Account not found {}", key))?;
-  let mut bytes = account.data.as_slice();
-  let out = A::try_deserialize(&mut bytes)?;
-  Ok(out)
 }

@@ -1,9 +1,11 @@
-use anchor_lang::{prelude::Pubkey, AnchorDeserialize};
+use anchor_lang::prelude::{AnchorDeserialize, Pubkey};
 use anchor_spl::token::Mint;
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::{FeeExtract, LevercoinFees, StablecoinFees};
+use hylo_core::idl::exchange;
+use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::stability_mode::StabilityController;
 use hylo_core::total_sol_cache::TotalSolCache;
@@ -13,12 +15,11 @@ use jupiter_amm_interface::{
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use crate::exchange::accounts::{Hylo, LstHeader};
-use crate::hylo_exchange;
-use crate::pda;
-use crate::util::{
-  fee_pct_decimal, get_account, JITOSOL_MINT, SOL_USD_PYTH_FEED,
-};
+// HANG: Separate IDL into its own crate with conversions?
+use crate::util::{account_map_get, fee_pct_decimal, JITOSOL_MINT};
+use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
+use hylo_core::idl::pda;
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 #[derive(Clone)]
 pub struct HyloExchangeState {
@@ -136,11 +137,11 @@ impl Amm for HyloExchangeState {
     let hylo = Hylo::try_from_slice(&keyed_account.account.data[8..])?;
     let oracle_config = OracleConfig::new(
       hylo.oracle_interval_secs,
-      Into::<UFixValue64>::into(hylo.oracle_conf_tolerance).try_into()?,
+      convert_ufixvalue64(hylo.oracle_conf_tolerance).try_into()?,
     );
     let stability_controller = StabilityController::new(
-      Into::<UFixValue64>::into(hylo.stability_threshold_1).try_into()?,
-      Into::<UFixValue64>::into(hylo.stability_threshold_2).try_into()?,
+      convert_ufixvalue64(hylo.stability_threshold_1).try_into()?,
+      convert_ufixvalue64(hylo.stability_threshold_2).try_into()?,
     )?;
     Ok(HyloExchangeState {
       clock: amm_context.clock_ref.clone(),
@@ -161,7 +162,7 @@ impl Amm for HyloExchangeState {
   }
 
   fn program_id(&self) -> Pubkey {
-    hylo_exchange::ID
+    exchange::ID
   }
 
   fn key(&self) -> Pubkey {
@@ -182,11 +183,12 @@ impl Amm for HyloExchangeState {
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-    let stablecoin_mint: Mint = get_account(account_map, &pda::HYUSD)?;
-    let levercoin_mint: Mint = get_account(account_map, &pda::XSOL)?;
+    let stablecoin_mint: Mint = account_map_get(account_map, &pda::HYUSD)?;
+    let levercoin_mint: Mint = account_map_get(account_map, &pda::XSOL)?;
     let jitosol_header: LstHeader =
-      get_account(account_map, &pda::lst_header(JITOSOL_MINT))?;
-    let sol_usd: PriceUpdateV2 = get_account(account_map, &SOL_USD_PYTH_FEED)?;
+      account_map_get(account_map, &pda::lst_header(JITOSOL_MINT))?;
+    let sol_usd: PriceUpdateV2 =
+      account_map_get(account_map, &SOL_USD_PYTH_FEED)?;
     self.stablecoin_mint = Some(stablecoin_mint);
     self.levercoin_mint = Some(levercoin_mint);
     self.jitosol_header = Some(jitosol_header);
@@ -217,31 +219,9 @@ impl Amm for HyloExchangeState {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::util::{load_account_map, load_amm_context};
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
-  use anchor_lang::solana_program::sysvar::clock::{self, Clock};
   use jupiter_amm_interface::SwapMode;
-
-  async fn load_account_map(pubkeys: &[Pubkey]) -> Result<AccountMap> {
-    let rpc_url = std::env::var("RPC_URL")?;
-    let client = RpcClient::new(rpc_url);
-    let accounts = client.get_multiple_accounts(pubkeys).await?;
-    pubkeys
-      .iter()
-      .zip(accounts)
-      .map(|(pubkey, account)| {
-        account
-          .ok_or_else(|| anyhow!("Account not found: {pubkey}"))
-          .map(|acc| (*pubkey, acc))
-      })
-      .collect::<Result<AccountMap>>()
-  }
-
-  async fn load_amm_context(client: &RpcClient) -> Result<AmmContext> {
-    let clock_account = client.get_account(&clock::ID).await?;
-    let clock: Clock = bincode::deserialize(&clock_account.data)?;
-    let clock_ref = ClockRef::from(clock);
-    Ok(AmmContext { clock_ref })
-  }
 
   #[tokio::test]
   async fn quote() -> Result<()> {
@@ -259,7 +239,7 @@ mod tests {
     let mut exchange =
       HyloExchangeState::from_keyed_account(&jupiter_account, &amm_context)?;
     let accounts_to_update = exchange.get_accounts_to_update();
-    let account_map = load_account_map(&accounts_to_update).await?;
+    let account_map = load_account_map(&client, &accounts_to_update).await?;
     exchange.update(&account_map)?;
     let quote_params = QuoteParams {
       amount: UFix64::<N9>::one().bits,

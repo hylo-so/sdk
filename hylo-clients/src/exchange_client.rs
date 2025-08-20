@@ -1,12 +1,12 @@
-use crate::ata;
-use crate::exchange::client::{accounts, args};
-use crate::exchange::events::ExchangeStats;
-use crate::exchange::types::SlippageConfig;
 use crate::util::{
   simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE,
-  LST_REGISTRY_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
+  LST_REGISTRY_LOOKUP_TABLE,
 };
-use crate::{exchange, pda, stability_pool};
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use hylo_idl::exchange::client::{accounts, args};
+use hylo_idl::exchange::events::ExchangeStats;
+use hylo_idl::exchange::types::SlippageConfig;
+use hylo_idl::{ata, exchange, pda, stability_pool};
 
 use std::sync::Arc;
 

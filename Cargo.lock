@@ -1840,14 +1840,12 @@ dependencies = [
  "anyhow",
  "async-trait",
  "base64 0.22.1",
- "bincode",
  "futures",
  "hylo-core",
  "hylo-fix",
+ "hylo-idl",
  "itertools 0.14.0",
- "jupiter-amm-interface",
  "pyth-solana-receiver-sdk",
- "rust_decimal",
  "serde_json",
  "tokio",
 ]
@@ -1859,6 +1857,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "hylo-fix",
+ "hylo-idl",
  "jupiter-amm-interface",
  "proptest",
  "pyth-solana-receiver-sdk",
@@ -1877,6 +1876,32 @@ dependencies = [
  "paste",
  "quote",
  "typenum",
+]
+
+[[package]]
+name = "hylo-idl"
+version = "0.1.11"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+]
+
+[[package]]
+name = "hylo-jupiter"
+version = "0.1.11"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "bincode",
+ "hylo-clients",
+ "hylo-core",
+ "hylo-fix",
+ "jupiter-amm-interface",
+ "pyth-solana-receiver-sdk",
+ "rust_decimal",
+ "tokio",
 ]
 
 [[package]]

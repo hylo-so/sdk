@@ -11,6 +11,11 @@ anchor-lang.workspace = true
 anchor-spl.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 jupiter-amm-interface.workspace = true
+hylo-idl = { path = "../hylo-idl", optional = true }
+
+[features]
+default = []
+offchain = ["dep:hylo-idl"]
 
 [dev-dependencies]
 proptest.workspace = true

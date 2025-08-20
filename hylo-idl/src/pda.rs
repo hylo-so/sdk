@@ -1,7 +1,7 @@
 use crate::{exchange, stability_pool};
 
-use anchor_client::solana_sdk::bpf_loader;
 use anchor_lang::prelude::Pubkey;
+use anchor_lang::solana_program::bpf_loader;
 use std::sync::LazyLock;
 
 macro_rules! lazy {

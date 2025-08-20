@@ -5,7 +5,8 @@ use crate::error::CoreError::{
 };
 use crate::solana_clock::SolanaClock;
 
-use anchor_lang::prelude::Result;
+use anchor_lang::prelude::{Pubkey, Result};
+use anchor_lang::solana_program::pubkey;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
@@ -16,6 +17,9 @@ pub const SOL_USD: FeedId = [
   239, 13, 139, 111, 218, 44, 235, 164, 29, 161, 93, 64, 149, 209, 218, 57, 42,
   13, 47, 142, 208, 198, 199, 188, 15, 76, 250, 200, 194, 128, 181, 109,
 ];
+
+pub const SOL_USD_PYTH_FEED: Pubkey =
+  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
 #[derive(Copy, Clone)]
 pub struct OracleConfig<Exp> {

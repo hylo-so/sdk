@@ -1,20 +1,20 @@
-use crate::stability_pool::client::{accounts, args};
-use crate::stability_pool::events::StabilityPoolStats;
 use crate::util::{
-  simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE, SOL_USD_PYTH_FEED,
+  simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE,
   STABILITY_POOL_LOOKUP_TABLE,
 };
-use crate::{exchange, pda, stability_pool};
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 use std::sync::Arc;
 
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::AnchorDeserialize;
+use anchor_lang::prelude::{AnchorDeserialize, Pubkey};
 use anchor_spl::token;
 use anyhow::{anyhow, Result};
 use base64::prelude::{Engine, BASE64_STANDARD};
+use hylo_idl::stability_pool::client::{accounts, args};
+use hylo_idl::stability_pool::events::StabilityPoolStats;
+use hylo_idl::{exchange, pda, stability_pool};
 
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
