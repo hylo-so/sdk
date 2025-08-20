@@ -3,6 +3,7 @@ use crate::lst_sol_price::LstSolPrice;
 use crate::total_sol_cache::TotalSolCache;
 use fix::prelude::UFixValue64;
 
+#[must_use]
 pub fn convert_ufixvalue64(
   idl: hylo_idl::hylo_exchange::types::UFixValue64,
 ) -> UFixValue64 {

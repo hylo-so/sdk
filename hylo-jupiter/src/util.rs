@@ -11,6 +11,10 @@ pub const JITOSOL_MINT: Pubkey =
   pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
 
 /// Computes fee percentage in Jupiter's favored `Decimal` type.
+///
+/// # Errors
+/// * Arithmetic error for percentage
+/// * u64 to i64 conversion
 pub fn fee_pct_decimal<Exp>(
   fees_extracted: UFix64<NInt<Exp>>,
   total_in: UFix64<NInt<Exp>>,
@@ -25,6 +29,10 @@ where
 }
 
 /// Finds and deserializes an account in Jupiter's `AccountMap`.
+///
+/// # Errors
+/// * Account not found in map
+/// * Deserialization to `A` fails
 pub fn account_map_get<A: AccountDeserialize>(
   account_map: &AccountMap,
   key: &Pubkey,
@@ -37,6 +45,11 @@ pub fn account_map_get<A: AccountDeserialize>(
   Ok(out)
 }
 
+/// Calls RPC to load given accounts into a map.
+///
+/// # Errors
+/// * RPC fails
+/// * One of the accounts is missing
 pub async fn load_account_map(
   client: &RpcClient,
   pubkeys: &[Pubkey],
@@ -53,6 +66,11 @@ pub async fn load_account_map(
     .collect::<Result<AccountMap>>()
 }
 
+/// Loads Solana clock information from RPC.
+///
+/// # Errors
+/// * RPC fails
+/// * Deserialization fails
 pub async fn load_amm_context(client: &RpcClient) -> Result<AmmContext> {
   let clock_account = client.get_account(&clock::ID).await?;
   let clock: Clock = bincode::deserialize(&clock_account.data)?;

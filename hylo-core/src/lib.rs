@@ -1,3 +1,5 @@
+#![allow(clippy::missing_errors_doc)]
+
 pub mod conversion;
 pub mod error;
 pub mod exchange_context;

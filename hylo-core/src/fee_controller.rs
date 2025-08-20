@@ -16,6 +16,7 @@ pub struct FeePair {
 }
 
 impl FeePair {
+  #[must_use]
   pub fn new(mint: UFixValue64, redeem: UFixValue64) -> FeePair {
     FeePair { mint, redeem }
   }
@@ -69,6 +70,7 @@ pub struct StablecoinFees {
 }
 
 impl StablecoinFees {
+  #[must_use]
   pub fn new(normal: FeePair, mode_1: FeePair) -> StablecoinFees {
     StablecoinFees { normal, mode_1 }
   }
@@ -127,6 +129,7 @@ impl FeeController for LevercoinFees {
 }
 
 impl LevercoinFees {
+  #[must_use]
   pub fn new(
     normal: FeePair,
     mode_1: FeePair,
