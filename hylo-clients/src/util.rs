@@ -1,20 +1,18 @@
-use std::sync::Arc;
-
 use anchor_client::solana_client::rpc_config::RpcSimulateTransactionConfig;
+use anchor_client::solana_client::rpc_response::{
+  Response, RpcSimulateTransactionResult,
+};
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::address_lookup_table::state::AddressLookupTable;
 use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
-use anchor_client::solana_sdk::instruction::Instruction;
-use anchor_client::solana_sdk::message::{v0, VersionedMessage};
-use anchor_client::solana_sdk::pubkey;
 use anchor_client::solana_sdk::pubkey::Pubkey;
-use anchor_client::solana_sdk::signature::{Keypair, Signature};
-use anchor_client::solana_sdk::transaction::VersionedTransaction;
-use anchor_client::{Client, Cluster, Program};
-use anchor_lang::prelude::AccountMeta;
+use anchor_client::solana_sdk::{bs58, pubkey};
+use anchor_lang::AnchorDeserialize;
 use anyhow::{anyhow, Result};
-use itertools::Itertools;
+use solana_transaction_status_client_types::{
+  UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
+};
 
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
@@ -40,7 +38,7 @@ pub fn simulation_config() -> RpcSimulateTransactionConfig {
 ///
 /// # Errors
 /// - Account data cannot be deserialized
-fn deserialize_lookup_table(
+pub fn deserialize_lookup_table(
   key: &Pubkey,
   account: &Account,
 ) -> Result<AddressLookupTableAccount> {
@@ -51,134 +49,35 @@ fn deserialize_lookup_table(
   })
 }
 
-/// Abstracts the construction of client structs with `anchor_client::Program`.
-#[async_trait::async_trait]
-pub trait ProgramClient: Sized {
-  const PROGRAM_ID: Pubkey;
-
-  fn build_client(
-    program: Program<Arc<Keypair>>,
-    keypair: Arc<Keypair>,
-  ) -> Self;
-
-  fn program(&self) -> &Program<Arc<Keypair>>;
-
-  fn keypair(&self) -> Arc<Keypair>;
-
-  /// Constructs the given client with ID `Self::PROGRAM_ID`.
-  ///
-  /// # Errors
-  /// - Underlying Anchor program creation
-  fn new_from_keypair(
-    cluster: Cluster,
-    keypair: Keypair,
-    config: CommitmentConfig,
-  ) -> Result<Self> {
-    let keypair = Arc::new(keypair);
-    let client = Client::new_with_options(cluster, keypair.clone(), config);
-    let program = client.program(Self::PROGRAM_ID)?;
-    Ok(Self::build_client(program, keypair))
-  }
-
-  /// Builds a versioned transaction from instructions and lookup tables.
-  ///
-  /// # Errors
-  /// - Failed to get the latest blockhash
-  /// - Failed to compile the message
-  /// - Failed to create the transaction
-  /// - Failed to send the transaction
-  async fn send_v0_transaction(
-    &self,
-    instructions: &[Instruction],
-    lookup_tables: &[AddressLookupTableAccount],
-  ) -> Result<Signature> {
-    let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
-    let message = v0::Message::try_compile(
-      &self.program().payer(),
-      instructions,
-      lookup_tables,
-      recent_blockhash,
-    )?;
-    let tx = VersionedTransaction::try_new(
-      VersionedMessage::V0(message),
-      &[self.keypair()],
-    )?;
-    let sig = self
-      .program()
-      .rpc()
-      .send_and_confirm_transaction(&tx)
-      .await?;
-    Ok(sig)
-  }
-
-  /// Creates `remaining_accounts` array from LST registry table with all
-  /// headers writable.
-  ///
-  /// # Errors
-  /// - Lookup table account doesn't exist
-  /// - Malformed structure (preamble cannot be split at 16)
-  async fn load_lst_registry(
-    &self,
-  ) -> Result<(Vec<AccountMeta>, AddressLookupTableAccount)> {
-    let table = self.load_lookup_table(&LST_REGISTRY_LOOKUP_TABLE).await?;
-    if let Some((preamble, blocks)) = table.addresses.split_at_checked(16) {
-      let preamble = preamble
-        .iter()
-        .map(|key| AccountMeta::new_readonly(*key, false));
-      let blocks =
-        blocks
-          .iter()
-          .tuples()
-          .flat_map(|(header, mint, vault, pool_state)| {
-            [
-              AccountMeta::new(*header, false),
-              AccountMeta::new_readonly(*mint, false),
-              AccountMeta::new_readonly(*vault, false),
-              AccountMeta::new_readonly(*pool_state, false),
-            ]
-          });
-      let remaining_accounts = preamble.chain(blocks).collect_vec();
-      Ok((remaining_accounts, table))
-    } else {
-      Err(anyhow!("Malformed LST registry preamble."))
-    }
-  }
-
-  /// Loads an address lookup table by public key.
-  ///
-  /// # Errors
-  /// - Failed to fetch the account
-  /// - Failed to deserialize account data
-  async fn load_lookup_table(
-    &self,
-    key: &Pubkey,
-  ) -> Result<AddressLookupTableAccount> {
-    let account = self.program().rpc().get_account(key).await?;
-    deserialize_lookup_table(key, &account)
-  }
-
-  /// Loads address lookup tables at given addresses.
-  /// # Errors
-  /// - Failed to fetch lookup table account
-  /// - Failed to deserialize
-  async fn load_multiple_lookup_tables(
-    &self,
-    pubkeys: &[Pubkey],
-  ) -> Result<Vec<AddressLookupTableAccount>> {
-    self
-      .program()
-      .rpc()
-      .get_multiple_accounts(pubkeys)
-      .await?
+/// Parses event type `E` from a simulated RPC call.
+///
+/// # Errors
+/// * No inner instructions found
+/// * No parseable event found from target program
+pub fn parse_event<E>(
+  from_program_id: Pubkey,
+  result: Response<RpcSimulateTransactionResult>,
+) -> Result<E>
+where
+  E: AnchorDeserialize,
+{
+  if let Some(ixs) = result.value.inner_instructions {
+    ixs
       .iter()
-      .zip(pubkeys)
-      .map(|(opt, key)| {
-        if let Some(account) = opt {
-          deserialize_lookup_table(key, account)
-        } else {
-          Err(anyhow!("No lookup table found at address {key}."))
-        }
+      .flat_map(|ix| ix.instructions.iter())
+      .find_map(|ix| match ix {
+        UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
+          UiPartiallyDecodedInstruction {
+            program_id, data, ..
+          },
+        )) if *program_id == from_program_id.to_string() => bs58::decode(data)
+          .into_vec()
+          .ok()
+          .and_then(|decoded| E::try_from_slice(&decoded).ok()),
+        _ => None,
       })
-      .try_collect()
+      .ok_or(anyhow!("Parseable event not found"))
+  } else {
+    Err(anyhow!("Inner instructions not found"))
   }
 }

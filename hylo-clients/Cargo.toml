@@ -21,3 +21,4 @@ tokio.workspace = true
 async-trait.workspace = true
 futures.workspace = true
 itertools.workspace = true
+solana-transaction-status-client-types = "2.3.7"

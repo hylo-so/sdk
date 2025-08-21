@@ -1,6 +1,6 @@
+use crate::program_client::ProgramClient;
 use crate::util::{
-  simulation_config, ProgramClient, EXCHANGE_LOOKUP_TABLE,
-  STABILITY_POOL_LOOKUP_TABLE,
+  simulation_config, EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE,
 };
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 

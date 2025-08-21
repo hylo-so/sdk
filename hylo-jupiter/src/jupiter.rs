@@ -46,7 +46,7 @@ impl HyloExchangeState {
       self.levercoin_fees,
       self.sol_usd()?,
       self.stablecoin_mint()?,
-      self.levercoin_mint()?,
+      self.levercoin_mint().ok(),
     )?;
     Ok(ctx)
   }
