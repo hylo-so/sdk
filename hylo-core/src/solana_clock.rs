@@ -1,4 +1,5 @@
 use anchor_lang::prelude::Clock;
+#[cfg(feature = "offchain")]
 use jupiter_amm_interface::ClockRef;
 use std::sync::atomic::Ordering;
 
@@ -33,6 +34,7 @@ impl SolanaClock for Clock {
   }
 }
 
+#[cfg(feature = "offchain")]
 impl SolanaClock for ClockRef {
   fn slot(&self) -> u64 {
     self.slot.load(Ordering::Relaxed)
