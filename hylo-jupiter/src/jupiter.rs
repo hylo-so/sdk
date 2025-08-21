@@ -3,7 +3,7 @@ use anchor_spl::token::Mint;
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
-use hylo_core::fee_controller::{FeeExtract, LevercoinFees, StablecoinFees};
+use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
 use hylo_core::idl::exchange;
 use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::pyth::OracleConfig;
@@ -15,8 +15,8 @@ use jupiter_amm_interface::{
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-// HANG: Separate IDL into its own crate with conversions?
-use crate::util::{account_map_get, fee_pct_decimal, JITOSOL_MINT};
+use crate::quote;
+use crate::util::{account_map_get, JITOSOL_MINT};
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::pda;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
@@ -74,54 +74,6 @@ impl HyloExchangeState {
       .jitosol_header
       .as_ref()
       .ok_or(anyhow!("`jitosol_header` not set"))
-  }
-
-  fn quote_from_token_pair(
-    &self,
-    in_amount: UFix64<N9>,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    let ctx = self.load_exchange_ctx()?;
-    match (input_mint, output_mint) {
-      (JITOSOL_MINT, token) if token == *pda::HYUSD => {
-        let jitosol_price = self.jitosol_header()?.price_sol.into();
-        let FeeExtract {
-          fees_extracted,
-          amount_remaining,
-        } = ctx.stablecoin_mint_fee(&jitosol_price, in_amount)?;
-        let stablecoin_nav = ctx.stablecoin_nav()?;
-        let hyusd_out = ctx
-          .token_conversion(&jitosol_price)?
-          .lst_to_token(amount_remaining, stablecoin_nav)?;
-        Ok(Quote {
-          in_amount: in_amount.bits,
-          out_amount: hyusd_out.bits,
-          fee_amount: fees_extracted.bits,
-          fee_mint: input_mint,
-          fee_pct: fee_pct_decimal(fees_extracted, in_amount)?,
-        })
-      }
-      (JITOSOL_MINT, token) if token == *pda::XSOL => {
-        let jitosol_price = self.jitosol_header()?.price_sol.into();
-        let FeeExtract {
-          fees_extracted,
-          amount_remaining,
-        } = ctx.levercoin_mint_fee(&jitosol_price, in_amount)?;
-        let levercoin_mint_nav = ctx.levercoin_mint_nav()?;
-        let xsol_out = ctx
-          .token_conversion(&jitosol_price)?
-          .lst_to_token(amount_remaining, levercoin_mint_nav)?;
-        Ok(Quote {
-          in_amount: in_amount.bits,
-          out_amount: xsol_out.bits,
-          fee_amount: fees_extracted.bits,
-          fee_mint: input_mint,
-          fee_pct: fee_pct_decimal(fees_extracted, in_amount)?,
-        })
-      }
-      _ => Err(anyhow!("Unsupported quote pair")),
-    }
   }
 }
 
@@ -196,12 +148,39 @@ impl Amm for HyloExchangeState {
     Ok(())
   }
 
-  fn quote(&self, quote_params: &QuoteParams) -> Result<Quote> {
-    self.quote_from_token_pair(
-      UFix64::new(quote_params.amount),
-      quote_params.input_mint,
-      quote_params.output_mint,
-    )
+  fn quote(
+    &self,
+    QuoteParams {
+      amount,
+      input_mint,
+      output_mint,
+      swap_mode: _,
+    }: &QuoteParams,
+  ) -> Result<Quote> {
+    let ctx = self.load_exchange_ctx()?;
+    match (*input_mint, *output_mint) {
+      (JITOSOL_MINT, token) if token == *pda::HYUSD => {
+        quote::hyusd_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
+      }
+      (token, JITOSOL_MINT) if token == *pda::HYUSD => {
+        quote::hyusd_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
+      }
+      (JITOSOL_MINT, token) if token == *pda::XSOL => {
+        quote::xsol_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
+      }
+      (token, JITOSOL_MINT) if token == *pda::XSOL => {
+        quote::xsol_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
+      }
+      (token_in, token_out) => {
+        if token_in == *pda::HYUSD && token_out == *pda::XSOL {
+          quote::hyusd_xsol_swap(&ctx, UFix64::new(*amount))
+        } else if token_in == *pda::XSOL && token_out == *pda::HYUSD {
+          quote::xsol_hyusd_swap(&ctx, UFix64::new(*amount))
+        } else {
+          Err(anyhow!("Unsupported quote pair"))
+        }
+      }
+    }
   }
 
   fn get_swap_and_account_metas(
