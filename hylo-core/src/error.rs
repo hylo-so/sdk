@@ -83,7 +83,7 @@ pub enum CoreError {
   #[msg("No valid fee for swap due to Mode2 or Depeg.")]
   NoValidSwapFee,
   // `exchange_context`
-  #[msg("Arithmetic error while computing levercoin NAV.")]
+  #[msg("Arithmetic error or missing data while computing levercoin NAV.")]
   LevercoinNav,
   #[msg("Over/underflow while computing total SOL for destination fee.")]
   DestinationFeeSol,

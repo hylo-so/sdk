@@ -28,7 +28,7 @@ pub struct ExchangeContext<C> {
   pub total_sol: UFix64<N9>,
   pub sol_usd_price: PriceRange<N8>,
   pub stablecoin_supply: UFix64<N6>,
-  pub levercoin_supply: UFix64<N6>,
+  levercoin_supply: Option<UFix64<N6>>,
   pub collateral_ratio: UFix64<N9>,
   pub stability_controller: StabilityController,
   pub stability_mode: StabilityMode,
@@ -48,13 +48,13 @@ impl<C: SolanaClock> ExchangeContext<C> {
     levercoin_fees: LevercoinFees,
     sol_usd_pyth_feed: &PriceUpdateV2,
     stablecoin_mint: &Mint,
-    levercoin_mint: &Mint,
+    levercoin_mint: Option<&Mint>,
   ) -> Result<ExchangeContext<C>> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
     let sol_usd_price =
       query_pyth_price(&clock, sol_usd_pyth_feed, oracle_config)?;
     let stablecoin_supply = UFix64::new(stablecoin_mint.supply);
-    let levercoin_supply = UFix64::new(levercoin_mint.supply);
+    let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
       collateral_ratio(total_sol, sol_usd_price.lower, stablecoin_supply)?;
     let stability_mode =
@@ -78,13 +78,17 @@ impl<C: SolanaClock> ExchangeContext<C> {
     total_value_locked(self.total_sol, self.sol_usd_price.lower)
   }
 
+  pub fn levercoin_supply(&self) -> Result<UFix64<N6>> {
+    self.levercoin_supply.ok_or(LevercoinNav.into())
+  }
+
   pub fn levercoin_mint_nav(&self) -> Result<UFix64<N6>> {
     next_levercoin_nav(
       self.total_sol,
       self.sol_usd_price.upper,
       self.stablecoin_supply,
       self.stablecoin_nav()?,
-      self.levercoin_supply,
+      self.levercoin_supply()?,
     )
     .ok_or(LevercoinNav.into())
   }
@@ -95,7 +99,7 @@ impl<C: SolanaClock> ExchangeContext<C> {
       self.sol_usd_price.lower,
       self.stablecoin_supply,
       self.stablecoin_nav()?,
-      self.levercoin_supply,
+      self.levercoin_supply()?,
     )
     .ok_or(LevercoinNav.into())
   }
