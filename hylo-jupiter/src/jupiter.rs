@@ -309,7 +309,7 @@ mod tests {
     let hylo = build_exchange_client().await?;
     let quote = jup.quote(&quote_params)?;
     let args = hylo
-      .mint_stablecoin_args(amount_lst, JITOSOL_MINT, TESTER, None)
+      .mint_hyusd_args(amount_lst, JITOSOL_MINT, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -321,9 +321,9 @@ mod tests {
 
   #[tokio::test]
   async fn redeem_hyusd_check() -> Result<()> {
-    let amount_stablecoin = UFix64::<N6>::one();
+    let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
-      amount: amount_stablecoin.bits,
+      amount: amount_hyusd.bits,
       input_mint: *pda::HYUSD,
       output_mint: JITOSOL_MINT,
       swap_mode: SwapMode::ExactIn,
@@ -332,7 +332,7 @@ mod tests {
     let hylo = build_exchange_client().await?;
     let quote = jup.quote(&quote_params)?;
     let args = hylo
-      .redeem_stablecoin_args(amount_stablecoin, JITOSOL_MINT, TESTER, None)
+      .redeem_hyusd_args(amount_hyusd, JITOSOL_MINT, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -355,7 +355,7 @@ mod tests {
     let hylo = build_exchange_client().await?;
     let quote = jup.quote(&quote_params)?;
     let args = hylo
-      .mint_levercoin_args(amount_lst, JITOSOL_MINT, TESTER, None)
+      .mint_xsol_args(amount_lst, JITOSOL_MINT, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -378,7 +378,7 @@ mod tests {
     let hylo = build_exchange_client().await?;
     let quote = jup.quote(&quote_params)?;
     let args = hylo
-      .redeem_levercoin_args(amount_xsol, JITOSOL_MINT, TESTER, None)
+      .redeem_xsol_args(amount_xsol, JITOSOL_MINT, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo

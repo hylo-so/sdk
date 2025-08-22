@@ -42,11 +42,11 @@ impl ProgramClient for ExchangeClient {
 }
 
 impl ExchangeClient {
-  /// Builds `mint_stablecoin` transaction arguments.
+  /// Builds `mint_hyusd` transaction arguments.
   ///
   /// # Errors
   /// - Failed to build instructions or load lookup tables
-  pub async fn mint_stablecoin_args(
+  pub async fn mint_hyusd_args(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
@@ -95,11 +95,11 @@ impl ExchangeClient {
     })
   }
 
-  /// Mints stablecoin using the given LST.
+  /// Mints hyUSD from the given LST.
   ///
   /// # Errors
   /// - Failed to send transaction
-  pub async fn mint_stablecoin(
+  pub async fn mint_hyusd(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
@@ -107,7 +107,7 @@ impl ExchangeClient {
     slippage_config: Option<SlippageConfig>,
   ) -> Result<Signature> {
     let args = self
-      .mint_stablecoin_args(amount_lst, lst_mint, user, slippage_config)
+      .mint_hyusd_args(amount_lst, lst_mint, user, slippage_config)
       .await?;
     let tx = self.build_v0_transaction(&args).await?;
     let sig = self
@@ -118,13 +118,13 @@ impl ExchangeClient {
     Ok(sig)
   }
 
-  /// Builds `redeem_stablecoin` transaction arguments.
+  /// Builds `redeem_hyusd` transaction arguments.
   ///
   /// # Errors
   /// - Failed to build instructions or load lookup tables
-  pub async fn redeem_stablecoin_args(
+  pub async fn redeem_hyusd_args(
     &self,
-    amount_stablecoin: UFix64<N6>,
+    amount_hyusd: UFix64<N6>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
@@ -150,7 +150,7 @@ impl ExchangeClient {
       program: exchange::ID,
     };
     let args = args::RedeemStablecoin {
-      amount_to_redeem: amount_stablecoin.bits,
+      amount_to_redeem: amount_hyusd.bits,
       slippage_config,
     };
     let instructions = self
@@ -171,34 +171,29 @@ impl ExchangeClient {
     })
   }
 
-  /// Redeems stablecoin into the given LST.
+  /// Redeems hyUSD into the given LST.
   ///
   /// # Errors
   /// - Failed to send transaction
-  pub async fn redeem_stablecoin(
+  pub async fn redeem_hyusd(
     &self,
-    amount_stablecoin: UFix64<N6>,
+    amount_hyusd: UFix64<N6>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
   ) -> Result<Signature> {
     let args = self
-      .redeem_stablecoin_args(
-        amount_stablecoin,
-        lst_mint,
-        user,
-        slippage_config,
-      )
+      .redeem_hyusd_args(amount_hyusd, lst_mint, user, slippage_config)
       .await?;
     let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
-  /// Builds `mint_levercoin` transaction arguments.
+  /// Builds `mint_xsol` transaction arguments.
   ///
   /// # Errors
   /// - Failed to build instructions or load lookup tables
-  pub async fn mint_levercoin_args(
+  pub async fn mint_xsol_args(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
@@ -248,11 +243,11 @@ impl ExchangeClient {
     })
   }
 
-  /// Mints levercoin against the given LST.
+  /// Mints xSOL against the given LST.
   ///
   /// # Errors
   /// - Failed to send transaction
-  pub async fn mint_levercoin(
+  pub async fn mint_xsol(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
@@ -260,19 +255,19 @@ impl ExchangeClient {
     slippage_config: Option<SlippageConfig>,
   ) -> Result<Signature> {
     let args = self
-      .mint_levercoin_args(amount_lst, lst_mint, user, slippage_config)
+      .mint_xsol_args(amount_lst, lst_mint, user, slippage_config)
       .await?;
     let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
-  /// Builds `redeem_levercoin` transaction arguments.
+  /// Builds `redeem_xsol` transaction arguments.
   ///
   /// # Errors
   /// - Failed to build instructions or load lookup tables
-  pub async fn redeem_levercoin_args(
+  pub async fn redeem_xsol_args(
     &self,
-    amount_levercoin: UFix64<N6>,
+    amount_xsol: UFix64<N6>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
@@ -299,7 +294,7 @@ impl ExchangeClient {
       program: exchange::ID,
     };
     let args = args::RedeemLevercoin {
-      amount_to_redeem: amount_levercoin.bits,
+      amount_to_redeem: amount_xsol.bits,
       slippage_config,
     };
     let instructions = self
@@ -320,20 +315,76 @@ impl ExchangeClient {
     })
   }
 
-  /// Redeems levercoin into the given LST.
+  /// Redeems xSOL into the given LST.
   ///
   /// # Errors
   /// - Failed to send transaction
-  pub async fn redeem_levercoin(
+  pub async fn redeem_xsol(
     &self,
-    amount_levercoin: UFix64<N6>,
+    amount_xsol: UFix64<N6>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
   ) -> Result<Signature> {
     let args = self
-      .redeem_levercoin_args(amount_levercoin, lst_mint, user, slippage_config)
+      .redeem_xsol_args(amount_xsol, lst_mint, user, slippage_config)
       .await?;
+    let sig = self.send_v0_transaction(&args).await?;
+    Ok(sig)
+  }
+
+  /// Builds `swap_hyusd_to_xsol` transaction arguments.
+  ///
+  /// # Errors
+  /// - Failed to build instructions or load lookup tables
+  pub async fn swap_hyusd_to_xsol_args(
+    &self,
+    amount_hyusd: UFix64<N6>,
+    user: Pubkey,
+  ) -> Result<VersionedTransactionArgs> {
+    let accounts = accounts::SwapStableToLever {
+      user,
+      hylo: *pda::HYLO,
+      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
+      stablecoin_mint: *pda::HYUSD,
+      stablecoin_auth: *pda::HYUSD_AUTH,
+      fee_auth: pda::fee_auth(*pda::HYUSD),
+      fee_vault: pda::fee_vault(*pda::HYUSD),
+      user_stablecoin_ata: pda::hyusd_ata(user),
+      levercoin_mint: *pda::XSOL,
+      levercoin_auth: *pda::XSOL_AUTH,
+      user_levercoin_ata: pda::xsol_ata(user),
+      token_program: token::ID,
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
+      program: exchange::ID,
+    };
+    let args = args::SwapStableToLever {
+      amount_stablecoin: amount_hyusd.bits,
+    };
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let lookup_tables =
+      vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Swaps hyUSD to xSOL.
+  ///
+  /// # Errors
+  /// - Failed to send transaction
+  pub async fn swap_hyusd_to_xsol(
+    &self,
+    amount_hyusd: UFix64<N6>,
+    user: Pubkey,
+  ) -> Result<Signature> {
+    let args = self.swap_hyusd_to_xsol_args(amount_hyusd, user).await?;
     let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
