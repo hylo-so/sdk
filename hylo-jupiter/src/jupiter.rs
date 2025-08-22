@@ -22,7 +22,7 @@ use hylo_core::idl::pda;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 #[derive(Clone)]
-pub struct HyloExchangeState {
+pub struct HyloJupiterClient {
   clock: ClockRef,
   total_sol_cache: TotalSolCache,
   stability_controller: StabilityController,
@@ -35,7 +35,7 @@ pub struct HyloExchangeState {
   sol_usd: Option<PriceUpdateV2>,
 }
 
-impl HyloExchangeState {
+impl HyloJupiterClient {
   fn load_exchange_ctx(&self) -> Result<ExchangeContext<ClockRef>> {
     let ctx = ExchangeContext::load(
       self.clock.clone(),
@@ -77,7 +77,7 @@ impl HyloExchangeState {
   }
 }
 
-impl Amm for HyloExchangeState {
+impl Amm for HyloJupiterClient {
   fn from_keyed_account(
     keyed_account: &KeyedAccount,
     amm_context: &AmmContext,
@@ -95,7 +95,7 @@ impl Amm for HyloExchangeState {
       convert_ufixvalue64(hylo.stability_threshold_1).try_into()?,
       convert_ufixvalue64(hylo.stability_threshold_2).try_into()?,
     )?;
-    Ok(HyloExchangeState {
+    Ok(HyloJupiterClient {
       clock: amm_context.clock_ref.clone(),
       total_sol_cache: hylo.total_sol_cache.into(),
       stability_controller,
@@ -200,34 +200,84 @@ mod tests {
   use super::*;
   use crate::util::{load_account_map, load_amm_context};
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
-  use jupiter_amm_interface::SwapMode;
+  use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
+  use anchor_client::solana_sdk::signature::Keypair;
+  use anchor_client::Cluster;
+  use anchor_lang::pubkey;
+  use hylo_clients::exchange_client::ExchangeClient;
+  use hylo_clients::program_client::ProgramClient;
+  use hylo_core::idl::exchange::events::MintStablecoinEventV2;
+  use jupiter_amm_interface::{KeyedAccount, SwapMode};
 
-  #[tokio::test]
-  async fn quote() -> Result<()> {
-    let rpc_url = std::env::var("RPC_URL")?;
-    let client = RpcClient::new(rpc_url);
+  macro_rules! compare_quotes {
+    ($sim:expr, $quote:expr) => {
+      assert_eq!($sim.minted.bits, $quote.out_amount);
+      assert_eq!($sim.fees_deposited.bits, $quote.fee_amount);
+      assert_eq!(
+        $sim
+          .collateral_deposited
+          .bits
+          .checked_add($sim.fees_deposited.bits),
+        Some($quote.in_amount)
+      );
+    };
+  }
+
+  const TESTER: Pubkey =
+    pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
+
+  async fn build_exchange_client() -> Result<ExchangeClient> {
+    let client = ExchangeClient::new_from_keypair(
+      Cluster::Mainnet,
+      Keypair::new(),
+      CommitmentConfig::confirmed(),
+    )?;
+    Ok(client)
+  }
+
+  async fn build_jupiter_client() -> Result<HyloJupiterClient> {
+    let url = std::env::var("RPC_URL")?;
+    let client = RpcClient::new(url);
     let account = client.get_account(&pda::HYLO).await?;
-
-    // Jupiter's KeyedAccount expects data as base64 string
-    let jupiter_account = jupiter_amm_interface::KeyedAccount {
+    let jupiter_account = KeyedAccount {
       key: *pda::HYLO,
       account,
       params: None,
     };
     let amm_context = load_amm_context(&client).await?;
-    let mut exchange =
-      HyloExchangeState::from_keyed_account(&jupiter_account, &amm_context)?;
-    let accounts_to_update = exchange.get_accounts_to_update();
+    let mut hylo =
+      HyloJupiterClient::from_keyed_account(&jupiter_account, &amm_context)?;
+    let accounts_to_update = hylo.get_accounts_to_update();
     let account_map = load_account_map(&client, &accounts_to_update).await?;
-    exchange.update(&account_map)?;
+    hylo.update(&account_map)?;
+    Ok(hylo)
+  }
+
+  #[tokio::test]
+  async fn mint_hyusd_check() -> Result<()> {
+    let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
-      amount: UFix64::<N9>::one().bits,
+      amount: amount_lst.bits,
       input_mint: JITOSOL_MINT,
       output_mint: *pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
-    let quote = exchange.quote(&quote_params)?;
-    println!("{quote:?}");
+    let jup = build_jupiter_client().await?;
+    let hylo = build_exchange_client().await?;
+    let quote = jup.quote(&quote_params)?;
+    let args = hylo
+      .mint_stablecoin_transaction_args(amount_lst, JITOSOL_MINT, TESTER, None)
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_event::<MintStablecoinEventV2>(tx)
+      .await?;
+    compare_quotes!(sim, quote);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn redeem_hyusd_check() -> Result<()> {
     Ok(())
   }
 }

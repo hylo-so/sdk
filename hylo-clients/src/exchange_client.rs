@@ -46,7 +46,7 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build instructions or load lookup tables
-  pub async fn mint_stablecoin_tx(
+  pub async fn mint_stablecoin_args(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
@@ -98,7 +98,7 @@ impl ExchangeClient {
   /// Mints stablecoin using the given LST.
   ///
   /// # Errors
-  /// - Transaction failure
+  /// - Failed to send transaction
   pub async fn mint_stablecoin(
     &self,
     amount_lst: UFix64<N9>,
@@ -106,15 +106,10 @@ impl ExchangeClient {
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
   ) -> Result<Signature> {
-    let VersionedTransactionArgs {
-      instructions,
-      lookup_tables,
-    } = self
-      .mint_stablecoin_tx(amount_lst, lst_mint, user, slippage_config)
+    let args = self
+      .mint_stablecoin_args(amount_lst, lst_mint, user, slippage_config)
       .await?;
-    let tx = self
-      .build_v0_transaction(&instructions, &lookup_tables)
-      .await?;
+    let tx = self.build_v0_transaction(&args).await?;
     let sig = self
       .program()
       .rpc()
@@ -123,17 +118,17 @@ impl ExchangeClient {
     Ok(sig)
   }
 
-  /// Redeems stablecoin into the given LST.
+  /// Builds `redeem_stablecoin` transaction arguments.
   ///
   /// # Errors
-  /// - Transaction failure
-  pub async fn redeem_stablecoin(
+  /// - Failed to build instructions or load lookup tables
+  pub async fn redeem_stablecoin_args(
     &self,
     amount_stablecoin: UFix64<N6>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
-  ) -> Result<Signature> {
+  ) -> Result<VersionedTransactionArgs> {
     let accounts = accounts::RedeemStablecoin {
       user,
       hylo: *pda::HYLO,
@@ -170,23 +165,46 @@ impl ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Redeems stablecoin into the given LST.
+  ///
+  /// # Errors
+  /// - Failed to send transaction
+  pub async fn redeem_stablecoin(
+    &self,
+    amount_stablecoin: UFix64<N6>,
+    lst_mint: Pubkey,
+    user: Pubkey,
+    slippage_config: Option<SlippageConfig>,
+  ) -> Result<Signature> {
+    let args = self
+      .redeem_stablecoin_args(
+        amount_stablecoin,
+        lst_mint,
+        user,
+        slippage_config,
+      )
       .await?;
+    let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
-  /// Mints levercoin against the given LST.
+  /// Builds `mint_levercoin` transaction arguments.
   ///
   /// # Errors
-  /// - Transaction failure
-  pub async fn mint_levercoin(
+  /// - Failed to build instructions or load lookup tables
+  pub async fn mint_levercoin_args(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
-  ) -> Result<Signature> {
+  ) -> Result<VersionedTransactionArgs> {
     let accounts = accounts::MintLevercoin {
       user,
       hylo: *pda::HYLO,
@@ -224,23 +242,41 @@ impl ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Mints levercoin against the given LST.
+  ///
+  /// # Errors
+  /// - Failed to send transaction
+  pub async fn mint_levercoin(
+    &self,
+    amount_lst: UFix64<N9>,
+    lst_mint: Pubkey,
+    user: Pubkey,
+    slippage_config: Option<SlippageConfig>,
+  ) -> Result<Signature> {
+    let args = self
+      .mint_levercoin_args(amount_lst, lst_mint, user, slippage_config)
       .await?;
+    let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
-  /// Redeems levercoin into the given LST.
+  /// Builds `redeem_levercoin` transaction arguments.
   ///
   /// # Errors
-  /// - Transaction failure
-  pub async fn redeem_levercoin(
+  /// - Failed to build instructions or load lookup tables
+  pub async fn redeem_levercoin_args(
     &self,
     amount_levercoin: UFix64<N6>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
-  ) -> Result<Signature> {
+  ) -> Result<VersionedTransactionArgs> {
     let accounts = accounts::RedeemLevercoin {
       user,
       hylo: *pda::HYLO,
@@ -278,16 +314,34 @@ impl ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Redeems levercoin into the given LST.
+  ///
+  /// # Errors
+  /// - Failed to send transaction
+  pub async fn redeem_levercoin(
+    &self,
+    amount_levercoin: UFix64<N6>,
+    lst_mint: Pubkey,
+    user: Pubkey,
+    slippage_config: Option<SlippageConfig>,
+  ) -> Result<Signature> {
+    let args = self
+      .redeem_levercoin_args(amount_levercoin, lst_mint, user, slippage_config)
       .await?;
+    let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
   /// Runs exchange's LST price oracle crank.
   ///
   /// # Errors
-  /// - Transaction failure
+  /// - Failed to send transaction
   pub async fn update_lst_prices(&self) -> Result<Signature> {
     let accounts = accounts::UpdateLstPrices {
       payer: self.program.payer(),
@@ -307,16 +361,19 @@ impl ExchangeClient {
       .args(args)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &[registry_lut, exchange_lut])
-      .await?;
+    let lookup_tables = vec![registry_lut, exchange_lut];
+    let args = VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    };
+    let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
   /// Harvests yield from LST vaults to stability pool.
   ///
   /// # Errors
-  /// - Transaction failure
+  /// - Failed to send transaction
   pub async fn harvest_yield(&self) -> Result<Signature> {
     let accounts = accounts::HarvestYield {
       payer: self.program.payer(),
@@ -350,17 +407,20 @@ impl ExchangeClient {
       .args(args)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &[registry_lut, exchange_lut])
-      .await?;
+    let lookup_tables = vec![registry_lut, exchange_lut];
+    let args = VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    };
+    let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
 
-  /// Simulates the `get_stats` instruction on the exchange.
+  /// Gets exchange stats via RPC simulation.
   ///
   /// # Errors
-  /// - Simulation failure
-  /// - Return data access or deserialization
+  /// - Failed to simulate transaction
+  /// - Failed to deserialize return data
   pub async fn get_stats(&self) -> Result<ExchangeStats> {
     let accounts = accounts::GetStats {
       hylo: *pda::HYLO,

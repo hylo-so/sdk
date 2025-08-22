@@ -4,6 +4,7 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::bpf_loader;
 use std::sync::LazyLock;
 
+#[macro_export]
 macro_rules! lazy {
   ($x:expr) => {
     LazyLock::new(|| $x)

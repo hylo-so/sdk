@@ -61,8 +61,10 @@ pub trait ProgramClient: Sized {
   /// - Failed to create transaction
   async fn build_v0_transaction(
     &self,
-    instructions: &[Instruction],
-    lookup_tables: &[AddressLookupTableAccount],
+    VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    }: &VersionedTransactionArgs,
   ) -> Result<VersionedTransaction> {
     let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
     let message = v0::Message::try_compile(
@@ -87,8 +89,10 @@ pub trait ProgramClient: Sized {
   async fn build_simulation_transaction(
     &self,
     for_user: &Pubkey,
-    instructions: &[Instruction],
-    lookup_tables: &[AddressLookupTableAccount],
+    VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    }: &VersionedTransactionArgs,
   ) -> Result<VersionedTransaction> {
     let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
     let message = v0::Message::try_compile(
@@ -113,12 +117,9 @@ pub trait ProgramClient: Sized {
   /// - Failed to send and confirm transaction
   async fn send_v0_transaction(
     &self,
-    instructions: &[Instruction],
-    lookup_tables: &[AddressLookupTableAccount],
+    args: &VersionedTransactionArgs,
   ) -> Result<Signature> {
-    let tx = self
-      .build_v0_transaction(instructions, lookup_tables)
-      .await?;
+    let tx = self.build_v0_transaction(args).await?;
     let sig = self
       .program()
       .rpc()
