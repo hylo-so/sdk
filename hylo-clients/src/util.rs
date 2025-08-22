@@ -30,6 +30,7 @@ pub fn simulation_config() -> RpcSimulateTransactionConfig {
     sig_verify: false,
     replace_recent_blockhash: true,
     commitment: Some(CommitmentConfig::confirmed()),
+    inner_instructions: true,
     ..Default::default()
   }
 }
@@ -50,12 +51,12 @@ pub fn deserialize_lookup_table(
 }
 
 /// Parses event type `E` from a simulated RPC call.
+/// NB: Drops 16 bytes for header and discriminator.
 ///
 /// # Errors
 /// * No inner instructions found
 /// * No parseable event found from target program
 pub fn parse_event<E>(
-  from_program_id: Pubkey,
   result: Response<RpcSimulateTransactionResult>,
 ) -> Result<E>
 where
@@ -67,13 +68,11 @@ where
       .flat_map(|ix| ix.instructions.iter())
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
-          UiPartiallyDecodedInstruction {
-            program_id, data, ..
-          },
-        )) if *program_id == from_program_id.to_string() => bs58::decode(data)
+          UiPartiallyDecodedInstruction { data, .. },
+        )) => bs58::decode(data)
           .into_vec()
           .ok()
-          .and_then(|decoded| E::try_from_slice(&decoded).ok()),
+          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
         _ => None,
       })
       .ok_or(anyhow!("Parseable event not found"))

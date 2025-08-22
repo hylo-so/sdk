@@ -1,7 +1,5 @@
-use crate::program_client::ProgramClient;
-use crate::util::{
-  simulation_config, EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
-};
+use crate::program_client::{ProgramClient, VersionedTransactionArgs};
+use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::ExchangeStats;
@@ -14,10 +12,9 @@ use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
-use anchor_lang::{system_program, AnchorDeserialize};
+use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
-use anyhow::{anyhow, Result};
-use base64::prelude::{Engine, BASE64_STANDARD};
+use anyhow::Result;
 use fix::prelude::*;
 
 pub struct ExchangeClient {
@@ -45,17 +42,17 @@ impl ProgramClient for ExchangeClient {
 }
 
 impl ExchangeClient {
-  /// Mints stablecoin against the given LST.
+  /// Builds `mint_stablecoin` transaction arguments.
   ///
   /// # Errors
-  /// - Transaction failure
-  pub async fn mint_stablecoin(
+  /// - Failed to build instructions or load lookup tables
+  pub async fn mint_stablecoin_tx(
     &self,
     amount_lst: UFix64<N9>,
     lst_mint: Pubkey,
     user: Pubkey,
     slippage_config: Option<SlippageConfig>,
-  ) -> Result<Signature> {
+  ) -> Result<VersionedTransactionArgs> {
     let accounts = accounts::MintStablecoin {
       user,
       hylo: *pda::HYLO,
@@ -92,8 +89,36 @@ impl ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Mints stablecoin using the given LST.
+  ///
+  /// # Errors
+  /// - Transaction failure
+  pub async fn mint_stablecoin(
+    &self,
+    amount_lst: UFix64<N9>,
+    lst_mint: Pubkey,
+    user: Pubkey,
+    slippage_config: Option<SlippageConfig>,
+  ) -> Result<Signature> {
+    let VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    } = self
+      .mint_stablecoin_tx(amount_lst, lst_mint, user, slippage_config)
+      .await?;
+    let tx = self
+      .build_v0_transaction(&instructions, &lookup_tables)
+      .await?;
     let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
+      .program()
+      .rpc()
+      .send_and_confirm_transaction(&tx)
       .await?;
     Ok(sig)
   }
@@ -336,7 +361,7 @@ impl ExchangeClient {
   /// # Errors
   /// - Simulation failure
   /// - Return data access or deserialization
-  pub async fn simulate_get_stats(&self) -> Result<ExchangeStats> {
+  pub async fn get_stats(&self) -> Result<ExchangeStats> {
     let accounts = accounts::GetStats {
       hylo: *pda::HYLO,
       stablecoin_mint: *pda::HYUSD,
@@ -351,17 +376,7 @@ impl ExchangeClient {
       .args(args)
       .signed_transaction()
       .await?;
-    let rpc = self.program.rpc();
-    let result = rpc
-      .simulate_transaction_with_config(&tx, simulation_config())
-      .await?;
-    let (data, _) = result
-      .value
-      .return_data
-      .ok_or(anyhow!("No return data for `get_stats`"))?
-      .data;
-    let bytes = BASE64_STANDARD.decode(data)?;
-    let stats = ExchangeStats::try_from_slice(&bytes)?;
+    let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
   }
 }

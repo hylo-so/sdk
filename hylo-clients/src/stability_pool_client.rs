@@ -1,17 +1,14 @@
 use crate::program_client::ProgramClient;
-use crate::util::{
-  simulation_config, EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE,
-};
+use crate::util::{EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 use std::sync::Arc;
 
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
-use anchor_lang::prelude::{AnchorDeserialize, Pubkey};
+use anchor_lang::prelude::Pubkey;
 use anchor_spl::token;
-use anyhow::{anyhow, Result};
-use base64::prelude::{Engine, BASE64_STANDARD};
+use anyhow::Result;
 use hylo_idl::stability_pool::client::{accounts, args};
 use hylo_idl::stability_pool::events::StabilityPoolStats;
 use hylo_idl::{exchange, pda, stability_pool};
@@ -134,7 +131,7 @@ impl StabilityPoolClient {
   /// # Errors
   /// - Simulation failure
   /// - Return data access or deserialization
-  pub async fn simulate_get_stats(&self) -> Result<StabilityPoolStats> {
+  pub async fn get_stats(&self) -> Result<StabilityPoolStats> {
     let accounts = accounts::GetStats {
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
@@ -154,16 +151,7 @@ impl StabilityPoolClient {
       .args(args)
       .signed_transaction()
       .await?;
-    let rpc = self.program.rpc();
-    let (data, _) = rpc
-      .simulate_transaction_with_config(&tx, simulation_config())
-      .await?
-      .value
-      .return_data
-      .ok_or(anyhow!("No return data for `get_stats`"))?
-      .data;
-    let bytes = BASE64_STANDARD.decode(data)?;
-    let stats = StabilityPoolStats::try_from_slice(&bytes)?;
+    let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
   }
 }

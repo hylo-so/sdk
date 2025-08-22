@@ -9,10 +9,20 @@ use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
 use anchor_lang::prelude::AccountMeta;
+use anchor_lang::AnchorDeserialize;
 use anyhow::{anyhow, Result};
+use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
 
-use crate::util::{deserialize_lookup_table, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{
+  deserialize_lookup_table, parse_event, simulation_config,
+  LST_REGISTRY_LOOKUP_TABLE,
+};
+
+pub struct VersionedTransactionArgs {
+  pub instructions: Vec<Instruction>,
+  pub lookup_tables: Vec<AddressLookupTableAccount>,
+}
 
 /// Abstracts the construction of client structs with `anchor_client::Program`.
 #[async_trait::async_trait]
@@ -65,6 +75,34 @@ pub trait ProgramClient: Sized {
       VersionedMessage::V0(message),
       &[self.keypair()],
     )?;
+    Ok(tx)
+  }
+
+  /// Builds versioned transaction with dummy signatures for simulation.
+  ///
+  /// # Errors
+  /// - Failed to get latest blockhash
+  /// - Failed to compile message
+  /// - Failed to create transaction
+  async fn build_simulation_transaction(
+    &self,
+    for_user: &Pubkey,
+    instructions: &[Instruction],
+    lookup_tables: &[AddressLookupTableAccount],
+  ) -> Result<VersionedTransaction> {
+    let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
+    let message = v0::Message::try_compile(
+      for_user,
+      instructions,
+      lookup_tables,
+      recent_blockhash,
+    )?;
+    let num_sigs = message.header.num_required_signatures.into();
+    let dummy_signatures = vec![Signature::default(); num_sigs];
+    let tx = VersionedTransaction {
+      message: VersionedMessage::V0(message),
+      signatures: dummy_signatures,
+    };
     Ok(tx)
   }
 
@@ -158,5 +196,47 @@ pub trait ProgramClient: Sized {
         }
       })
       .try_collect()
+  }
+
+  /// Simulates transaction and returns deserialized return data.
+  ///
+  /// # Errors
+  /// * Transaction simulation fails
+  /// * No return data found in simulation result
+  /// * Base64 decoding of return data fails
+  /// * Deserialization of return data fails
+  async fn simulate_transaction_return<R: AnchorDeserialize>(
+    &self,
+    tx: VersionedTransaction,
+  ) -> Result<R> {
+    let rpc = self.program().rpc();
+    let result = rpc
+      .simulate_transaction_with_config(&tx, simulation_config())
+      .await?;
+    let (data, _) = result
+      .value
+      .return_data
+      .ok_or(anyhow!("Return data not found"))?
+      .data;
+    let bytes = BASE64_STANDARD.decode(data)?;
+    let ret = R::try_from_slice(&bytes)?;
+    Ok(ret)
+  }
+
+  /// Simulates transaction and extracts event from CPI instructions.
+  ///
+  /// # Errors
+  /// * Transaction simulation fails
+  /// * Event parsing from CPI instructions fails
+  /// * Event deserialization fails
+  async fn simulate_transaction_event<E: AnchorDeserialize>(
+    &self,
+    tx: VersionedTransaction,
+  ) -> Result<E> {
+    let rpc = self.program().rpc();
+    let result = rpc
+      .simulate_transaction_with_config(&tx, simulation_config())
+      .await?;
+    parse_event(result)
   }
 }
