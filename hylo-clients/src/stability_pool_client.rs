@@ -1,4 +1,4 @@
-use crate::program_client::ProgramClient;
+use crate::program_client::{ProgramClient, VersionedTransactionArgs};
 use crate::util::{EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
@@ -76,9 +76,11 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
-      .await?;
+    let tx_args = VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    };
+    let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
   }
 
@@ -120,9 +122,11 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    let sig = self
-      .send_v0_transaction(&instructions, &lookup_tables)
-      .await?;
+    let tx_args = VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    };
+    let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
   }
 

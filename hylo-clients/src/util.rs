@@ -69,10 +69,12 @@ where
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
           UiPartiallyDecodedInstruction { data, .. },
-        )) => bs58::decode(data)
-          .into_vec()
-          .ok()
-          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
+        )) => {
+          bs58::decode(data)
+            .into_vec()
+            .ok()
+            .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok())
+        }
         _ => None,
       })
       .ok_or(anyhow!("Parseable event not found"))
