@@ -211,7 +211,8 @@ mod tests {
   use hylo_clients::program_client::ProgramClient;
   use hylo_core::idl::exchange::events::{
     MintLevercoinEventV2, MintStablecoinEventV2, RedeemLevercoinEventV2,
-    RedeemStablecoinEventV2,
+    RedeemStablecoinEventV2, SwapLeverToStableEventV1,
+    SwapStableToLeverEventV1,
   };
   use jupiter_amm_interface::{KeyedAccount, SwapMode};
 
@@ -307,7 +308,6 @@ mod tests {
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
-    let quote = jup.quote(&quote_params)?;
     let args = hylo
       .mint_hyusd_args(amount_lst, JITOSOL_MINT, TESTER, None)
       .await?;
@@ -315,6 +315,7 @@ mod tests {
     let sim = hylo
       .simulate_transaction_event::<MintStablecoinEventV2>(tx)
       .await?;
+    let quote = jup.quote(&quote_params)?;
     assert_mint!(sim, quote);
     Ok(())
   }
@@ -330,7 +331,6 @@ mod tests {
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
-    let quote = jup.quote(&quote_params)?;
     let args = hylo
       .redeem_hyusd_args(amount_hyusd, JITOSOL_MINT, TESTER, None)
       .await?;
@@ -338,6 +338,7 @@ mod tests {
     let sim = hylo
       .simulate_transaction_event::<RedeemStablecoinEventV2>(tx)
       .await?;
+    let quote = jup.quote(&quote_params)?;
     assert_redeem!(sim, quote);
     Ok(())
   }
@@ -353,7 +354,6 @@ mod tests {
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
-    let quote = jup.quote(&quote_params)?;
     let args = hylo
       .mint_xsol_args(amount_lst, JITOSOL_MINT, TESTER, None)
       .await?;
@@ -361,6 +361,7 @@ mod tests {
     let sim = hylo
       .simulate_transaction_event::<MintLevercoinEventV2>(tx)
       .await?;
+    let quote = jup.quote(&quote_params)?;
     assert_mint!(sim, quote);
     Ok(())
   }
@@ -376,7 +377,6 @@ mod tests {
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
-    let quote = jup.quote(&quote_params)?;
     let args = hylo
       .redeem_xsol_args(amount_xsol, JITOSOL_MINT, TESTER, None)
       .await?;
@@ -384,6 +384,7 @@ mod tests {
     let sim = hylo
       .simulate_transaction_event::<RedeemLevercoinEventV2>(tx)
       .await?;
+    let quote = jup.quote(&quote_params)?;
     assert_redeem!(sim, quote);
     Ok(())
   }
@@ -393,14 +394,72 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
+      input_mint: *pda::HYUSD,
+      output_mint: *pda::XSOL,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_client().await?;
+    let hylo = build_exchange_client().await?;
+    let args = hylo.swap_hyusd_to_xsol_args(amount_hyusd, TESTER).await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_event::<SwapStableToLeverEventV1>(tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+
+    // Input
+    let fees: UFix64<N6> =
+      convert_ufixvalue64(sim.stablecoin_fees).try_into()?;
+    let burned = convert_ufixvalue64(sim.stablecoin_burned).try_into()?;
+    let total_in = fees.checked_add(&burned).ok_or(anyhow!("total_in"))?;
+    assert_eq!(total_in.bits, quote.in_amount);
+
+    // Output
+    assert_eq!(sim.levercoin_minted.bits, quote.out_amount);
+
+    // Fees extracted
+    assert_eq!(sim.stablecoin_fees.bits, quote.fee_amount);
+
+    // Fee percentage
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn xsol_hyusd_swap_check() -> Result<()> {
+    let amount_xsol = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_xsol.bits,
       input_mint: *pda::XSOL,
       output_mint: *pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
+    let args = hylo.swap_xsol_to_hyusd_args(amount_xsol, TESTER).await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_event::<SwapLeverToStableEventV1>(tx)
+      .await?;
     let quote = jup.quote(&quote_params)?;
-    todo!("hyusd_xsol_swap_check");
+
+    // Input
+    assert_eq!(sim.levercoin_burned.bits, quote.in_amount);
+
+    // Output
+    assert_eq!(sim.stablecoin_minted_user.bits, quote.out_amount);
+
+    // Fees extracted
+    assert_eq!(sim.stablecoin_minted_fees.bits, quote.fee_amount);
+
+    // Fee percentage
+    let fees: UFix64<N6> =
+      convert_ufixvalue64(sim.stablecoin_minted_fees).try_into()?;
+    let out = convert_ufixvalue64(sim.stablecoin_minted_user).try_into()?;
+    let total_in = fees.checked_add(&out).ok_or(anyhow!("total_in"))?;
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    assert_eq!(fee_pct, quote.fee_pct);
     Ok(())
   }
 }

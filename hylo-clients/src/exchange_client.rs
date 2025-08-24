@@ -389,6 +389,64 @@ impl ExchangeClient {
     Ok(sig)
   }
 
+  /// Builds `swap_xsol_to_hyusd` transaction arguments.
+  ///
+  /// # Errors
+  /// - Failed to build instructions or load lookup tables
+  pub async fn swap_xsol_to_hyusd_args(
+    &self,
+    amount_xsol: UFix64<N6>,
+    user: Pubkey,
+  ) -> Result<VersionedTransactionArgs> {
+    let accounts = accounts::SwapLeverToStable {
+      user,
+      hylo: *pda::HYLO,
+      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
+      stablecoin_mint: *pda::HYUSD,
+      stablecoin_auth: *pda::HYUSD_AUTH,
+      fee_auth: pda::fee_auth(*pda::HYUSD),
+      fee_vault: pda::fee_vault(*pda::HYUSD),
+      user_stablecoin_ata: pda::hyusd_ata(user),
+      levercoin_mint: *pda::XSOL,
+      levercoin_auth: *pda::XSOL_AUTH,
+      user_levercoin_ata: pda::xsol_ata(user),
+      token_program: token::ID,
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
+      program: exchange::ID,
+    };
+    let args = args::SwapLeverToStable {
+      amount_levercoin: amount_xsol.bits,
+    };
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let lookup_tables =
+      vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Swaps xSOL to hyUSD.
+  ///
+  /// # Errors
+  /// - Failed to send transaction
+  pub async fn swap_xsol_to_hyusd(
+    &self,
+    amount_xsol: UFix64<N6>,
+    user: Pubkey,
+  ) -> Result<Signature> {
+    let args = self
+      .swap_xsol_to_hyusd_args(amount_xsol, user)
+      .await?;
+    let sig = self.send_v0_transaction(&args).await?;
+    Ok(sig)
+  }
+
   /// Runs exchange's LST price oracle crank.
   ///
   /// # Errors
