@@ -102,6 +102,12 @@ pub static SHYUSD: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::constants::STAKED_HYUSD
 ));
 
+pub static SHYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
+  stability_pool::ID,
+  exchange::constants::MINT_AUTH,
+  *SHYUSD
+));
+
 pub static POOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::ID,
   stability_pool::constants::POOL_AUTH

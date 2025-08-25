@@ -1,5 +1,5 @@
 use anchor_lang::prelude::{AnchorDeserialize, Pubkey};
-use anchor_spl::token::Mint;
+use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
@@ -16,7 +16,7 @@ use jupiter_amm_interface::{
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::quote;
-use crate::util::{account_map_get, JITOSOL_MINT};
+use crate::util::{account_map_get, JITOSOL};
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::pda;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
@@ -27,12 +27,15 @@ pub struct HyloJupiterClient {
   total_sol_cache: TotalSolCache,
   stability_controller: StabilityController,
   oracle_config: OracleConfig<N8>,
-  stablecoin_fees: StablecoinFees,
-  levercoin_fees: LevercoinFees,
-  stablecoin_mint: Option<Mint>,
-  levercoin_mint: Option<Mint>,
+  hyusd_fees: StablecoinFees,
+  xsol_fees: LevercoinFees,
+  hyusd_mint: Option<Mint>,
+  xsol_mint: Option<Mint>,
+  shyusd_mint: Option<Mint>,
   jitosol_header: Option<LstHeader>,
   sol_usd: Option<PriceUpdateV2>,
+  hyusd_pool: Option<TokenAccount>,
+  xsol_pool: Option<TokenAccount>,
 }
 
 impl HyloJupiterClient {
@@ -42,11 +45,11 @@ impl HyloJupiterClient {
       &self.total_sol_cache,
       self.stability_controller,
       self.oracle_config,
-      self.stablecoin_fees,
-      self.levercoin_fees,
+      self.hyusd_fees,
+      self.xsol_fees,
       self.sol_usd()?,
-      self.stablecoin_mint()?,
-      self.levercoin_mint().ok(),
+      self.hyusd_mint()?,
+      self.xsol_mint().ok(),
     )?;
     Ok(ctx)
   }
@@ -55,16 +58,16 @@ impl HyloJupiterClient {
     self.sol_usd.as_ref().ok_or(anyhow!("`sol_usd` not set"))
   }
 
-  fn stablecoin_mint(&self) -> Result<&Mint> {
+  fn hyusd_mint(&self) -> Result<&Mint> {
     self
-      .stablecoin_mint
+      .hyusd_mint
       .as_ref()
       .ok_or(anyhow!("`stablecoin_mint` not set"))
   }
 
-  fn levercoin_mint(&self) -> Result<&Mint> {
+  fn xsol_mint(&self) -> Result<&Mint> {
     self
-      .levercoin_mint
+      .xsol_mint
       .as_ref()
       .ok_or(anyhow!("`levercoin_mint` not set"))
   }
@@ -74,6 +77,27 @@ impl HyloJupiterClient {
       .jitosol_header
       .as_ref()
       .ok_or(anyhow!("`jitosol_header` not set"))
+  }
+
+  fn shyusd_mint(&self) -> Result<&Mint> {
+    self
+      .shyusd_mint
+      .as_ref()
+      .ok_or(anyhow!("`shyusd_mint` not set"))
+  }
+
+  fn hyusd_pool(&self) -> Result<&TokenAccount> {
+    self
+      .hyusd_pool
+      .as_ref()
+      .ok_or(anyhow!("`hyusd_pool` not set"))
+  }
+
+  fn xsol_pool(&self) -> Result<&TokenAccount> {
+    self
+      .xsol_pool
+      .as_ref()
+      .ok_or(anyhow!("`xsol_pool` not set"))
   }
 }
 
@@ -100,12 +124,15 @@ impl Amm for HyloJupiterClient {
       total_sol_cache: hylo.total_sol_cache.into(),
       stability_controller,
       oracle_config,
-      stablecoin_fees: hylo.stablecoin_fees.into(),
-      levercoin_fees: hylo.levercoin_fees.into(),
-      stablecoin_mint: None,
-      levercoin_mint: None,
+      hyusd_fees: hylo.stablecoin_fees.into(),
+      xsol_fees: hylo.levercoin_fees.into(),
+      hyusd_mint: None,
+      xsol_mint: None,
+      shyusd_mint: None,
       jitosol_header: None,
       sol_usd: None,
+      hyusd_pool: None,
+      xsol_pool: None,
     })
   }
 
@@ -122,29 +149,40 @@ impl Amm for HyloJupiterClient {
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    vec![*pda::HYUSD, *pda::XSOL, JITOSOL_MINT]
+    vec![*pda::HYUSD, *pda::XSOL, JITOSOL]
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
     vec![
       *pda::HYUSD,
       *pda::XSOL,
-      pda::lst_header(JITOSOL_MINT),
+      pda::lst_header(JITOSOL),
       SOL_USD_PYTH_FEED,
+      *pda::SHYUSD,
+      *pda::HYUSD_POOL,
+      *pda::XSOL_POOL,
     ]
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-    let stablecoin_mint: Mint = account_map_get(account_map, &pda::HYUSD)?;
-    let levercoin_mint: Mint = account_map_get(account_map, &pda::XSOL)?;
+    let hyusd_mint: Mint = account_map_get(account_map, &pda::HYUSD)?;
+    let xsol_mint: Mint = account_map_get(account_map, &pda::XSOL)?;
     let jitosol_header: LstHeader =
-      account_map_get(account_map, &pda::lst_header(JITOSOL_MINT))?;
+      account_map_get(account_map, &pda::lst_header(JITOSOL))?;
     let sol_usd: PriceUpdateV2 =
       account_map_get(account_map, &SOL_USD_PYTH_FEED)?;
-    self.stablecoin_mint = Some(stablecoin_mint);
-    self.levercoin_mint = Some(levercoin_mint);
+    let shyusd_mint: Mint = account_map_get(account_map, &pda::SHYUSD)?;
+    let hyusd_pool: TokenAccount =
+      account_map_get(account_map, &pda::HYUSD_POOL)?;
+    let xsol_pool: TokenAccount =
+      account_map_get(account_map, &pda::XSOL_POOL)?;
+    self.hyusd_mint = Some(hyusd_mint);
+    self.xsol_mint = Some(xsol_mint);
+    self.shyusd_mint = Some(shyusd_mint);
     self.jitosol_header = Some(jitosol_header);
     self.sol_usd = Some(sol_usd);
+    self.hyusd_pool = Some(hyusd_pool);
+    self.xsol_pool = Some(xsol_pool);
     Ok(())
   }
 
@@ -159,16 +197,16 @@ impl Amm for HyloJupiterClient {
   ) -> Result<Quote> {
     let ctx = self.load_exchange_ctx()?;
     match (*input_mint, *output_mint) {
-      (JITOSOL_MINT, token) if token == *pda::HYUSD => {
+      (JITOSOL, token) if token == *pda::HYUSD => {
         quote::hyusd_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (token, JITOSOL_MINT) if token == *pda::HYUSD => {
+      (token, JITOSOL) if token == *pda::HYUSD => {
         quote::hyusd_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (JITOSOL_MINT, token) if token == *pda::XSOL => {
+      (JITOSOL, token) if token == *pda::XSOL => {
         quote::xsol_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (token, JITOSOL_MINT) if token == *pda::XSOL => {
+      (token, JITOSOL) if token == *pda::XSOL => {
         quote::xsol_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
       (token_in, token_out) => {
@@ -176,6 +214,14 @@ impl Amm for HyloJupiterClient {
           quote::hyusd_xsol_swap(&ctx, UFix64::new(*amount))
         } else if token_in == *pda::XSOL && token_out == *pda::HYUSD {
           quote::xsol_hyusd_swap(&ctx, UFix64::new(*amount))
+        } else if token_in == *pda::HYUSD && token_out == *pda::SHYUSD {
+          quote::shyusd_mint(
+            &ctx,
+            self.shyusd_mint()?,
+            self.hyusd_pool()?,
+            self.xsol_pool()?,
+            UFix64::new(*amount),
+          )
         } else {
           Err(anyhow!("Unsupported quote pair"))
         }
@@ -302,14 +348,14 @@ mod tests {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
-      input_mint: JITOSOL_MINT,
+      input_mint: JITOSOL,
       output_mint: *pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
     let args = hylo
-      .mint_hyusd_args(amount_lst, JITOSOL_MINT, TESTER, None)
+      .mint_hyusd_args(amount_lst, JITOSOL, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -326,13 +372,13 @@ mod tests {
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
       input_mint: *pda::HYUSD,
-      output_mint: JITOSOL_MINT,
+      output_mint: JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
     let args = hylo
-      .redeem_hyusd_args(amount_hyusd, JITOSOL_MINT, TESTER, None)
+      .redeem_hyusd_args(amount_hyusd, JITOSOL, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -348,14 +394,14 @@ mod tests {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
-      input_mint: JITOSOL_MINT,
+      input_mint: JITOSOL,
       output_mint: *pda::XSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
     let args = hylo
-      .mint_xsol_args(amount_lst, JITOSOL_MINT, TESTER, None)
+      .mint_xsol_args(amount_lst, JITOSOL, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -372,13 +418,13 @@ mod tests {
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
       input_mint: *pda::XSOL,
-      output_mint: JITOSOL_MINT,
+      output_mint: JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_exchange_client().await?;
     let args = hylo
-      .redeem_xsol_args(amount_xsol, JITOSOL_MINT, TESTER, None)
+      .redeem_xsol_args(amount_xsol, JITOSOL, TESTER, None)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo

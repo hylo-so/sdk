@@ -1,10 +1,15 @@
+use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::Result;
 use fix::prelude::*;
-use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::idl::exchange::accounts::LstHeader;
 use hylo_core::idl::pda;
+use hylo_core::stability_pool_math::lp_token_out;
+use hylo_core::{
+  exchange_context::ExchangeContext, stability_pool_math::lp_token_nav,
+};
 use jupiter_amm_interface::{ClockRef, Quote};
+use rust_decimal::Decimal;
 
 use crate::util::fee_pct_decimal;
 
@@ -182,4 +187,45 @@ pub fn xsol_hyusd_swap(
     fee_mint: *pda::HYUSD,
     fee_pct: fee_pct_decimal(fees_extracted, hyusd_total)?,
   })
+}
+
+pub fn shyusd_mint(
+  ctx: &ExchangeContext<ClockRef>,
+  shyusd_mint: &Mint,
+  hyusd_pool: &TokenAccount,
+  xsol_pool: &TokenAccount,
+  hyusd_in: UFix64<N6>,
+) -> Result<Quote> {
+  let shyusd_nav = lp_token_nav(
+    ctx.stablecoin_nav()?,
+    UFix64::new(hyusd_pool.amount),
+    ctx.levercoin_mint_nav()?,
+    UFix64::new(xsol_pool.amount),
+    UFix64::new(shyusd_mint.supply),
+  )?;
+  let shyusd_out = lp_token_out(hyusd_in, shyusd_nav)?;
+  Ok(Quote {
+    in_amount: hyusd_in.bits,
+    out_amount: shyusd_out.bits,
+    fee_amount: u64::MIN,
+    fee_mint: *pda::HYUSD,
+    fee_pct: Decimal::ZERO,
+  })
+}
+
+pub fn shyusd_redeem(
+  ctx: &ExchangeContext<ClockRef>,
+  shyusd_mint: &Mint,
+  hyusd_pool: &TokenAccount,
+  xsol_pool: &TokenAccount,
+  shyusd_in: UFix64<N6>,
+) -> Result<Quote> {
+  let shyusd_nav = lp_token_nav(
+    ctx.stablecoin_nav()?,
+    UFix64::new(hyusd_pool.amount),
+    ctx.levercoin_mint_nav()?,
+    UFix64::new(xsol_pool.amount),
+    UFix64::new(shyusd_mint.supply),
+  )?;
+  todo!("")
 }
