@@ -1,5 +1,8 @@
+use crate::exchange_client::ExchangeClient;
 use crate::program_client::{ProgramClient, VersionedTransactionArgs};
-use crate::util::{EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE};
+use crate::util::{
+  EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE,
+};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 use std::sync::Arc;
@@ -13,7 +16,9 @@ use anyhow::Result;
 use fix::prelude::{UFix64, N6};
 use hylo_idl::pda::{HYUSD, SHYUSD, XSOL};
 use hylo_idl::stability_pool::client::{accounts, args};
-use hylo_idl::stability_pool::events::StabilityPoolStats;
+use hylo_idl::stability_pool::events::{
+  StabilityPoolStats, UserWithdrawEventV1,
+};
 use hylo_idl::{exchange, pda, stability_pool};
 
 pub struct StabilityPoolClient {
@@ -177,6 +182,88 @@ impl StabilityPoolClient {
     user: Pubkey,
   ) -> Result<Signature> {
     let args = self.redeem_shyusd_args(amount_shyusd, user).await?;
+    let tx = self.build_v0_transaction(&args).await?;
+    let sig = self
+      .program()
+      .rpc()
+      .send_and_confirm_transaction(&tx)
+      .await?;
+    Ok(sig)
+  }
+
+  /// Build redeem transaction from sHYUSD directly to an LST via xSOL and
+  /// hyUSD, useful for liquidation.
+  ///
+  /// # Errors
+  /// - Transaction argument building
+  /// - Simulation failures
+  /// - Account loading
+  pub async fn redeem_shyusd_lst_args(
+    &self,
+    exchange: &ExchangeClient,
+    amount_shyusd: UFix64<N6>,
+    user: Pubkey,
+    lst_mint: Pubkey,
+  ) -> Result<VersionedTransactionArgs> {
+    let redeem_shyusd_args =
+      self.redeem_shyusd_args(amount_shyusd, user).await?;
+    let redeem_shyusd_tx = self
+      .build_simulation_transaction(&user, &redeem_shyusd_args)
+      .await?;
+    let redeem_shyusd_sim = self
+      .simulate_transaction_event::<UserWithdrawEventV1>(&redeem_shyusd_tx)
+      .await?;
+    let redeem_hyusd_args = exchange
+      .redeem_hyusd_args(
+        UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
+        lst_mint,
+        user,
+        None,
+      )
+      .await?;
+    let redeem_xsol_args = exchange
+      .redeem_xsol_args(
+        UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
+        lst_mint,
+        user,
+        None,
+      )
+      .await?;
+    let instructions = [
+      redeem_shyusd_args.instructions,
+      redeem_hyusd_args.instructions,
+      redeem_xsol_args.instructions,
+    ]
+    .concat();
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
+    Ok(VersionedTransactionArgs {
+      instructions,
+      lookup_tables,
+    })
+  }
+
+  /// Execute redeem transaction from sHYUSD directly to an LST via xSOL and
+  /// hyUSD, useful for liquidation.
+  ///
+  /// # Errors
+  /// - Transaction building
+  /// - Transaction sending and confirmation
+  pub async fn redeem_shyusd_lst(
+    &self,
+    exchange: &ExchangeClient,
+    amount_shyusd: UFix64<N6>,
+    user: Pubkey,
+    lst_mint: Pubkey,
+  ) -> Result<Signature> {
+    let args = self
+      .redeem_shyusd_lst_args(exchange, amount_shyusd, user, lst_mint)
+      .await?;
     let tx = self.build_v0_transaction(&args).await?;
     let sig = self
       .program()

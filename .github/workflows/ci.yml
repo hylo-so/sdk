@@ -53,4 +53,3 @@ jobs:
     - uses: DeterminateSystems/flakehub-cache-action@main
     - uses: mozilla-actions/sccache-action@v0.0.9
     - run: nix develop --command ./bin/publish.sh
-

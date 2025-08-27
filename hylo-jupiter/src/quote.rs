@@ -2,16 +2,15 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
 use fix::num_traits::Zero;
 use fix::prelude::*;
+use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::idl::exchange::accounts::LstHeader;
 use hylo_core::idl::pda::HYUSD;
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::stability_pool_math::{
-  amount_token_to_withdraw, lp_token_out, stablecoin_withdrawal_fee,
-};
-use hylo_core::{
-  exchange_context::ExchangeContext, stability_pool_math::lp_token_nav,
+  amount_token_to_withdraw, lp_token_nav, lp_token_out,
+  stablecoin_withdrawal_fee,
 };
 use jupiter_amm_interface::{ClockRef, Quote};
 use rust_decimal::Decimal;
@@ -194,6 +193,11 @@ pub fn xsol_hyusd_swap(
   })
 }
 
+/// Generates mint quote from hyUSD for sHYUSD.
+///
+/// # Errors
+/// - LP token calculations
+/// - Stability pool NAV calculation
 pub fn shyusd_mint(
   ctx: &ExchangeContext<ClockRef>,
   shyusd_mint: &Mint,

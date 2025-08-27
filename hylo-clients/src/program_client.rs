@@ -6,10 +6,11 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::message::{v0, VersionedMessage};
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
+use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
 use anchor_lang::prelude::AccountMeta;
-use anchor_lang::AnchorDeserialize;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::{anyhow, Result};
 use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
@@ -68,15 +69,16 @@ pub trait ProgramClient: Sized {
   ) -> Result<VersionedTransaction> {
     let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
     let message = v0::Message::try_compile(
-      &self.program().payer(),
+      &self.keypair().pubkey(),
       instructions,
       lookup_tables,
       recent_blockhash,
     )?;
-    let tx = VersionedTransaction::try_new(
-      VersionedMessage::V0(message),
-      &[self.keypair()],
-    )?;
+    let signatures = vec![self.keypair().sign_message(&message.serialize())];
+    let tx = VersionedTransaction {
+      message: VersionedMessage::V0(message),
+      signatures,
+    };
     Ok(tx)
   }
 
@@ -230,14 +232,14 @@ pub trait ProgramClient: Sized {
   /// * Transaction simulation fails
   /// * Event parsing from CPI instructions fails
   /// * Event deserialization fails
-  async fn simulate_transaction_event<E: AnchorDeserialize>(
+  async fn simulate_transaction_event<E: AnchorDeserialize + Discriminator>(
     &self,
-    tx: VersionedTransaction,
+    tx: &VersionedTransaction,
   ) -> Result<E> {
     let rpc = self.program().rpc();
     let result = rpc
-      .simulate_transaction_with_config(&tx, simulation_config())
+      .simulate_transaction_with_config(tx, simulation_config())
       .await?;
-    parse_event(result)
+    parse_event(&result)
   }
 }

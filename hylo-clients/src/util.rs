@@ -8,7 +8,7 @@ use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::{bs58, pubkey};
-use anchor_lang::AnchorDeserialize;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::{anyhow, Result};
 use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
@@ -57,24 +57,23 @@ pub fn deserialize_lookup_table(
 /// * No inner instructions found
 /// * No parseable event found from target program
 pub fn parse_event<E>(
-  result: Response<RpcSimulateTransactionResult>,
+  result: &Response<RpcSimulateTransactionResult>,
 ) -> Result<E>
 where
-  E: AnchorDeserialize,
+  E: AnchorDeserialize + Discriminator,
 {
-  if let Some(ixs) = result.value.inner_instructions {
+  if let Some(ixs) = &result.value.inner_instructions {
     ixs
       .iter()
       .flat_map(|ix| ix.instructions.iter())
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
           UiPartiallyDecodedInstruction { data, .. },
-        )) => {
-          bs58::decode(data)
-            .into_vec()
-            .ok()
-            .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok())
-        }
+        )) => bs58::decode(data)
+          .into_vec()
+          .ok()
+          .filter(|decoded| &decoded[8..16] == E::DISCRIMINATOR)
+          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
         _ => None,
       })
       .ok_or(anyhow!("Parseable event not found"))

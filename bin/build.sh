@@ -2,3 +2,4 @@
 set -eu pipefail
 
 cargo build
+cargo test
