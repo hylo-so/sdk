@@ -4,6 +4,7 @@ use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::types::SlippageConfig;
+use hylo_idl::pda::{HYUSD, XSOL};
 use hylo_idl::{ata, exchange, pda, stability_pool};
 
 use std::sync::Arc;
@@ -65,7 +66,7 @@ impl ExchangeClient {
       user_lst_ata: ata!(user, lst_mint),
       user_stablecoin_ata: pda::hyusd_ata(user),
       lst_mint,
-      stablecoin_mint: *pda::HYUSD,
+      stablecoin_mint: HYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -140,7 +141,7 @@ impl ExchangeClient {
       lst_header: pda::lst_header(lst_mint),
       user_stablecoin_ata: pda::hyusd_ata(user),
       user_lst_ata: ata!(user, lst_mint),
-      stablecoin_mint: *pda::HYUSD,
+      stablecoin_mint: HYUSD,
       lst_mint,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
@@ -212,8 +213,8 @@ impl ExchangeClient {
       user_lst_ata: ata!(user, lst_mint),
       user_levercoin_ata: pda::xsol_ata(user),
       lst_mint,
-      levercoin_mint: *pda::XSOL,
-      stablecoin_mint: *pda::HYUSD,
+      levercoin_mint: XSOL,
+      stablecoin_mint: HYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -283,8 +284,8 @@ impl ExchangeClient {
       lst_header: pda::lst_header(lst_mint),
       user_levercoin_ata: pda::xsol_ata(user),
       user_lst_ata: ata!(user, lst_mint),
-      levercoin_mint: *pda::XSOL,
-      stablecoin_mint: *pda::HYUSD,
+      levercoin_mint: XSOL,
+      stablecoin_mint: HYUSD,
       lst_mint,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
@@ -346,12 +347,12 @@ impl ExchangeClient {
       user,
       hylo: *pda::HYLO,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      stablecoin_mint: *pda::HYUSD,
+      stablecoin_mint: HYUSD,
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_auth: pda::fee_auth(*pda::HYUSD),
-      fee_vault: pda::fee_vault(*pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD),
+      fee_vault: pda::fee_vault(HYUSD),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      levercoin_mint: *pda::XSOL,
+      levercoin_mint: XSOL,
       levercoin_auth: *pda::XSOL_AUTH,
       user_levercoin_ata: pda::xsol_ata(user),
       token_program: token::ID,
@@ -402,12 +403,12 @@ impl ExchangeClient {
       user,
       hylo: *pda::HYLO,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      stablecoin_mint: *pda::HYUSD,
+      stablecoin_mint: HYUSD,
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_auth: pda::fee_auth(*pda::HYUSD),
-      fee_vault: pda::fee_vault(*pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD),
+      fee_vault: pda::fee_vault(HYUSD),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      levercoin_mint: *pda::XSOL,
+      levercoin_mint: XSOL,
       levercoin_auth: *pda::XSOL_AUTH,
       user_levercoin_ata: pda::xsol_ata(user),
       token_program: token::ID,
@@ -440,9 +441,7 @@ impl ExchangeClient {
     amount_xsol: UFix64<N6>,
     user: Pubkey,
   ) -> Result<Signature> {
-    let args = self
-      .swap_xsol_to_hyusd_args(amount_xsol, user)
-      .await?;
+    let args = self.swap_xsol_to_hyusd_args(amount_xsol, user).await?;
     let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
   }
@@ -487,12 +486,12 @@ impl ExchangeClient {
     let accounts = accounts::HarvestYield {
       payer: self.program.payer(),
       hylo: *pda::HYLO,
-      stablecoin_mint: *pda::HYUSD,
+      stablecoin_mint: HYUSD,
       stablecoin_auth: *pda::HYUSD_AUTH,
-      levercoin_mint: *pda::XSOL,
+      levercoin_mint: XSOL,
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_auth: pda::fee_auth(*pda::HYUSD),
-      fee_vault: pda::fee_vault(*pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD),
+      fee_vault: pda::fee_vault(HYUSD),
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
       pool_auth: *pda::POOL_AUTH,
@@ -533,8 +532,8 @@ impl ExchangeClient {
   pub async fn get_stats(&self) -> Result<ExchangeStats> {
     let accounts = accounts::GetStats {
       hylo: *pda::HYLO,
-      stablecoin_mint: *pda::HYUSD,
-      levercoin_mint: *pda::XSOL,
+      stablecoin_mint: HYUSD,
+      levercoin_mint: XSOL,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     };
     let args = args::GetStats {};

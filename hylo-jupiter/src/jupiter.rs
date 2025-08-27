@@ -5,6 +5,7 @@ use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
 use hylo_core::idl::exchange;
+use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::stability_mode::StabilityController;
@@ -18,7 +19,7 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use crate::quote;
 use crate::util::{account_map_get, JITOSOL};
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
-use hylo_core::idl::pda;
+use hylo_core::idl::pda::{self, HYUSD, SHYUSD, XSOL};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 #[derive(Clone)]
@@ -36,6 +37,7 @@ pub struct HyloJupiterClient {
   sol_usd: Option<PriceUpdateV2>,
   hyusd_pool: Option<TokenAccount>,
   xsol_pool: Option<TokenAccount>,
+  pool_config: Option<PoolConfig>,
 }
 
 impl HyloJupiterClient {
@@ -93,6 +95,13 @@ impl HyloJupiterClient {
       .ok_or(anyhow!("`hyusd_pool` not set"))
   }
 
+  fn pool_config(&self) -> Result<&PoolConfig> {
+    self
+      .pool_config
+      .as_ref()
+      .ok_or(anyhow!("`pool_config` not set"))
+  }
+
   fn xsol_pool(&self) -> Result<&TokenAccount> {
     self
       .xsol_pool
@@ -133,6 +142,7 @@ impl Amm for HyloJupiterClient {
       sol_usd: None,
       hyusd_pool: None,
       xsol_pool: None,
+      pool_config: None,
     })
   }
 
@@ -149,18 +159,19 @@ impl Amm for HyloJupiterClient {
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    vec![*pda::HYUSD, *pda::XSOL, JITOSOL]
+    vec![HYUSD, XSOL, JITOSOL]
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
     vec![
-      *pda::HYUSD,
-      *pda::XSOL,
+      HYUSD,
+      XSOL,
       pda::lst_header(JITOSOL),
       SOL_USD_PYTH_FEED,
-      *pda::SHYUSD,
+      SHYUSD,
       *pda::HYUSD_POOL,
       *pda::XSOL_POOL,
+      *pda::POOL_CONFIG,
     ]
   }
 
@@ -176,6 +187,8 @@ impl Amm for HyloJupiterClient {
       account_map_get(account_map, &pda::HYUSD_POOL)?;
     let xsol_pool: TokenAccount =
       account_map_get(account_map, &pda::XSOL_POOL)?;
+    let pool_config: PoolConfig =
+      account_map_get(account_map, &pda::POOL_CONFIG)?;
     self.hyusd_mint = Some(hyusd_mint);
     self.xsol_mint = Some(xsol_mint);
     self.shyusd_mint = Some(shyusd_mint);
@@ -183,6 +196,7 @@ impl Amm for HyloJupiterClient {
     self.sol_usd = Some(sol_usd);
     self.hyusd_pool = Some(hyusd_pool);
     self.xsol_pool = Some(xsol_pool);
+    self.pool_config = Some(pool_config);
     Ok(())
   }
 
@@ -197,35 +211,44 @@ impl Amm for HyloJupiterClient {
   ) -> Result<Quote> {
     let ctx = self.load_exchange_ctx()?;
     match (*input_mint, *output_mint) {
-      (JITOSOL, token) if token == *pda::HYUSD => {
+      (JITOSOL, HYUSD) => {
         quote::hyusd_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (token, JITOSOL) if token == *pda::HYUSD => {
+      (HYUSD, JITOSOL) => {
         quote::hyusd_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (JITOSOL, token) if token == *pda::XSOL => {
+      (JITOSOL, XSOL) => {
         quote::xsol_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (token, JITOSOL) if token == *pda::XSOL => {
+      (XSOL, JITOSOL) => {
         quote::xsol_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (token_in, token_out) => {
-        if token_in == *pda::HYUSD && token_out == *pda::XSOL {
-          quote::hyusd_xsol_swap(&ctx, UFix64::new(*amount))
-        } else if token_in == *pda::XSOL && token_out == *pda::HYUSD {
-          quote::xsol_hyusd_swap(&ctx, UFix64::new(*amount))
-        } else if token_in == *pda::HYUSD && token_out == *pda::SHYUSD {
-          quote::shyusd_mint(
-            &ctx,
-            self.shyusd_mint()?,
-            self.hyusd_pool()?,
-            self.xsol_pool()?,
-            UFix64::new(*amount),
-          )
-        } else {
-          Err(anyhow!("Unsupported quote pair"))
-        }
-      }
+      (HYUSD, XSOL) => quote::hyusd_xsol_swap(&ctx, UFix64::new(*amount)),
+      (XSOL, HYUSD) => quote::xsol_hyusd_swap(&ctx, UFix64::new(*amount)),
+      (HYUSD, SHYUSD) => quote::shyusd_mint(
+        &ctx,
+        self.shyusd_mint()?,
+        self.hyusd_pool()?,
+        self.xsol_pool()?,
+        UFix64::new(*amount),
+      ),
+      (SHYUSD, HYUSD) => quote::shyusd_redeem(
+        self.shyusd_mint()?,
+        self.hyusd_pool()?,
+        self.xsol_pool()?,
+        self.pool_config()?,
+        UFix64::new(*amount),
+      ),
+      (SHYUSD, JITOSOL) => quote::shyusd_redeem_lst(
+        &ctx,
+        self.shyusd_mint()?,
+        self.hyusd_pool()?,
+        self.xsol_pool()?,
+        self.pool_config()?,
+        self.jitosol_header()?,
+        UFix64::new(*amount),
+      ),
+      _ => Err(anyhow!("Unsupported quote pair")),
     }
   }
 
@@ -349,7 +372,7 @@ mod tests {
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
       input_mint: JITOSOL,
-      output_mint: *pda::HYUSD,
+      output_mint: HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -371,7 +394,7 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: *pda::HYUSD,
+      input_mint: HYUSD,
       output_mint: JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
@@ -395,7 +418,7 @@ mod tests {
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
       input_mint: JITOSOL,
-      output_mint: *pda::XSOL,
+      output_mint: XSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -417,7 +440,7 @@ mod tests {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
-      input_mint: *pda::XSOL,
+      input_mint: XSOL,
       output_mint: JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
@@ -440,8 +463,8 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: *pda::HYUSD,
-      output_mint: *pda::XSOL,
+      input_mint: HYUSD,
+      output_mint: XSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -477,8 +500,8 @@ mod tests {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
-      input_mint: *pda::XSOL,
-      output_mint: *pda::HYUSD,
+      input_mint: XSOL,
+      output_mint: HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;

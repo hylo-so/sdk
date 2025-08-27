@@ -1,10 +1,9 @@
 use crate::{exchange, stability_pool};
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::bpf_loader;
+use anchor_lang::solana_program::{bpf_loader, pubkey};
 use std::sync::LazyLock;
 
-#[macro_export]
 macro_rules! lazy {
   ($x:expr) => {
     LazyLock::new(|| $x)
@@ -71,17 +70,20 @@ pub fn fee_auth(mint: Pubkey) -> Pubkey {
 pub static HYLO: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::HYLO));
 
-pub static HYUSD: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::HYUSD));
+pub const SHYUSD: Pubkey =
+  pubkey!("HnnGv3HrSqjRpgdFmx7vQGjntNEoex1SU4e9Lxcxuihz");
 
-pub static XSOL: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::XSOL));
+pub const HYUSD: Pubkey =
+  pubkey!("5YMkXAYccHSGnHn9nob9xEvv6Pvka9DZWH7nTbotTu9E");
+
+pub const XSOL: Pubkey =
+  pubkey!("4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs");
 
 pub static HYUSD_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, *HYUSD));
+  lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, HYUSD));
 
 pub static XSOL_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, *XSOL));
+  lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, XSOL));
 
 pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
@@ -97,15 +99,10 @@ pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::constants::POOL_CONFIG
 ));
 
-pub static SHYUSD: LazyLock<Pubkey> = lazy!(pda!(
-  stability_pool::ID,
-  stability_pool::constants::STAKED_HYUSD
-));
-
 pub static SHYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::ID,
   exchange::constants::MINT_AUTH,
-  *SHYUSD
+  SHYUSD
 ));
 
 pub static POOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
