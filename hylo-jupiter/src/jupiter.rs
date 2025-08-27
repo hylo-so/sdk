@@ -118,7 +118,6 @@ impl Amm for HyloJupiterClient {
   where
     Self: Sized,
   {
-    // Account data is already raw bytes, skip the 8-byte Anchor discriminator
     let hylo = Hylo::try_from_slice(&keyed_account.account.data[8..])?;
     let oracle_config = OracleConfig::new(
       hylo.oracle_interval_secs,
