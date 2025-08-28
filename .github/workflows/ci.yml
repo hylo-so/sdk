@@ -9,6 +9,8 @@ env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
   CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  RPC_URL: ${{ secrets.RPC_URL }}
+  RPC_WS_URL: ${{ secrets.RPC_WS_URL }}
 
 jobs:
   check-sdk-version:
