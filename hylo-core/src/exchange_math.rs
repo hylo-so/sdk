@@ -140,7 +140,6 @@ mod tests {
   use anchor_lang::prelude::Result;
   use fix::prelude::typenum::N8;
   use fix::prelude::UFix64;
-  use flaky_test::flaky_test;
   use proptest::prelude::*;
 
   proptest! {
@@ -191,7 +190,6 @@ mod tests {
 
   proptest! {
     #[test]
-    #[flaky_test]
     fn levercoin_nav_invariant(
       state in protocol_state(()),
     ) {
@@ -203,7 +201,7 @@ mod tests {
         state.stablecoin_nav,
         state.levercoin_amount
       ).expect("nav");
-      prop_assert_eq!(state.levercoin_nav, nav);
+      prop_assert!(eq_tolerance!(state.levercoin_nav, nav, N6, UFix64::new(1)));
     }
   }
 

@@ -345,9 +345,15 @@ mod tests {
   const TESTER: Pubkey =
     pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
 
+  fn cluster() -> Result<Cluster> {
+    let url = std::env::var("RPC_URL")?;
+    let ws_url = std::env::var("RPC_WS_URL")?;
+    Ok(Cluster::Custom(url, ws_url))
+  }
+
   fn build_exchange_client() -> Result<ExchangeClient> {
     let client = ExchangeClient::new_from_keypair(
-      Cluster::Mainnet,
+      cluster()?,
       Keypair::new(),
       CommitmentConfig::confirmed(),
     )?;
@@ -356,7 +362,7 @@ mod tests {
 
   fn build_stability_pool_client() -> Result<StabilityPoolClient> {
     let client = StabilityPoolClient::new_from_keypair(
-      Cluster::Mainnet,
+      cluster()?,
       Keypair::new(),
       CommitmentConfig::confirmed(),
     )?;
