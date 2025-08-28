@@ -20,4 +20,4 @@ anchor-spl.workspace = true
 anchor-client.workspace = true
 
 [dev-dependencies]
-flaky_test = "0.2.2"
+flaky_test.workspace = true

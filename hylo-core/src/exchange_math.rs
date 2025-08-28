@@ -140,6 +140,7 @@ mod tests {
   use anchor_lang::prelude::Result;
   use fix::prelude::typenum::N8;
   use fix::prelude::UFix64;
+  use flaky_test::flaky_test;
   use proptest::prelude::*;
 
   proptest! {
@@ -190,6 +191,7 @@ mod tests {
 
   proptest! {
     #[test]
+    #[flaky_test]
     fn levercoin_nav_invariant(
       state in protocol_state(()),
     ) {

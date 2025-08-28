@@ -16,6 +16,7 @@ anyhow = "1.0.98"
 anchor-client = { version = "0.31.1", features = ["async"] }
 anchor-spl = "0.31.1"
 anchor-lang = "0.31.1"
+flaky_test = "0.2.2"
 hylo-fix = "0.4.0"
 pyth-solana-receiver-sdk = "0.6.1"
 base64 = "0.22.1"

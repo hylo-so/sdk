@@ -19,3 +19,4 @@ offchain = ["dep:hylo-idl", "dep:jupiter-amm-interface"]
 
 [dev-dependencies]
 proptest.workspace = true
+flaky_test.workspace = true

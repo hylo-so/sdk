@@ -1878,6 +1878,7 @@ version = "0.1.12"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "flaky_test",
  "hylo-fix",
  "hylo-idl",
  "jupiter-amm-interface",

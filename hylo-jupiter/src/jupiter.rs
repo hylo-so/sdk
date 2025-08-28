@@ -158,7 +158,7 @@ impl Amm for HyloJupiterClient {
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    vec![HYUSD, XSOL, JITOSOL]
+    vec![HYUSD, XSOL, SHYUSD, JITOSOL]
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
