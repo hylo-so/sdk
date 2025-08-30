@@ -1,8 +1,13 @@
 use crate::program_client::{ProgramClient, VersionedTransactionArgs};
-use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{
+  EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
+};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::exchange::client::{accounts, args};
-use hylo_idl::exchange::events::ExchangeStats;
+use hylo_idl::exchange::events::{
+  ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
+  RedeemLevercoinEventV2, RedeemStablecoinEventV2,
+};
 use hylo_idl::exchange::types::SlippageConfig;
 use hylo_idl::pda::{HYUSD, XSOL};
 use hylo_idl::{ata, exchange, pda, stability_pool};
@@ -546,5 +551,83 @@ impl ExchangeClient {
       .await?;
     let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
+  }
+
+  /// Quotes redemption to LST for 1 unit of hyUSD via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  pub async fn quote_hyusd_redeem(
+    &self,
+    lst_mint: Pubkey,
+  ) -> Result<UFix64<N9>> {
+    let args = self
+      .redeem_hyusd_args(UFix64::one(), lst_mint, REFERENCE_WALLET, None)
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let event = self
+      .simulate_transaction_event::<RedeemStablecoinEventV2>(&tx)
+      .await?;
+    Ok(UFix64::new(event.collateral_withdrawn.bits))
+  }
+
+  /// Quotes minting of hyUSD for 1 unit of LST via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  pub async fn quote_hyusd_mint(&self, lst_mint: Pubkey) -> Result<UFix64<N6>> {
+    let args = self
+      .mint_hyusd_args(UFix64::one(), lst_mint, REFERENCE_WALLET, None)
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let event = self
+      .simulate_transaction_event::<MintStablecoinEventV2>(&tx)
+      .await?;
+    Ok(UFix64::new(event.minted.bits))
+  }
+
+  /// Quotes redemption to LST for 1 unit of xSOL via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  pub async fn quote_xsol_redeem(
+    &self,
+    lst_mint: Pubkey,
+  ) -> Result<UFix64<N9>> {
+    let args = self
+      .redeem_xsol_args(UFix64::one(), lst_mint, REFERENCE_WALLET, None)
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let event = self
+      .simulate_transaction_event::<RedeemLevercoinEventV2>(&tx)
+      .await?;
+    Ok(UFix64::new(event.collateral_withdrawn.bits))
+  }
+
+  /// Quotes minting of xSOL for 1 unit of LST via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  pub async fn quote_xsol_mint(&self, lst_mint: Pubkey) -> Result<UFix64<N6>> {
+    let args = self
+      .mint_xsol_args(UFix64::one(), lst_mint, REFERENCE_WALLET, None)
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let event = self
+      .simulate_transaction_event::<MintLevercoinEventV2>(&tx)
+      .await?;
+    Ok(UFix64::new(event.minted.bits))
   }
 }

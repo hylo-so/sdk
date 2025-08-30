@@ -1,9 +1,13 @@
 use crate::exchange_client::ExchangeClient;
 use crate::program_client::{ProgramClient, VersionedTransactionArgs};
 use crate::util::{
-  EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE,
+  parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
+  LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
 };
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use hylo_idl::exchange::events::{
+  RedeemLevercoinEventV2, RedeemStablecoinEventV2,
+};
 
 use std::sync::Arc;
 
@@ -12,12 +16,12 @@ use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
-use anyhow::Result;
-use fix::prelude::{UFix64, N6};
+use anyhow::{anyhow, Result};
+use fix::prelude::{UFix64, N6, *};
 use hylo_idl::pda::{HYUSD, SHYUSD, XSOL};
 use hylo_idl::stability_pool::client::{accounts, args};
 use hylo_idl::stability_pool::events::{
-  StabilityPoolStats, UserWithdrawEventV1,
+  StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
 use hylo_idl::{exchange, pda, stability_pool};
 
@@ -213,28 +217,29 @@ impl StabilityPoolClient {
     let redeem_shyusd_sim = self
       .simulate_transaction_event::<UserWithdrawEventV1>(&redeem_shyusd_tx)
       .await?;
-    let redeem_hyusd_args = exchange
-      .redeem_hyusd_args(
-        UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
-        lst_mint,
-        user,
-        None,
-      )
-      .await?;
-    let redeem_xsol_args = exchange
-      .redeem_xsol_args(
-        UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
-        lst_mint,
-        user,
-        None,
-      )
-      .await?;
-    let instructions = [
-      redeem_shyusd_args.instructions,
-      redeem_hyusd_args.instructions,
-      redeem_xsol_args.instructions,
-    ]
-    .concat();
+    let mut instructions = redeem_shyusd_args.instructions;
+    if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
+      let redeem_hyusd_args = exchange
+        .redeem_hyusd_args(
+          UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
+          lst_mint,
+          user,
+          None,
+        )
+        .await?;
+      instructions.extend(redeem_hyusd_args.instructions);
+    }
+    if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
+      let redeem_xsol_args = exchange
+        .redeem_xsol_args(
+          UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
+          lst_mint,
+          user,
+          None,
+        )
+        .await?;
+      instructions.extend(redeem_xsol_args.instructions);
+    }
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -392,5 +397,86 @@ impl StabilityPoolClient {
       .await?;
     let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
+  }
+
+  /// Quotes minting of sHYUSD for 1 unit of hyUSD via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  pub async fn quote_shyusd_mint(&self) -> Result<UFix64<N6>> {
+    let args = self
+      .mint_shyusd_args(UFix64::one(), REFERENCE_WALLET)
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let event = self
+      .simulate_transaction_event::<UserDepositEvent>(&tx)
+      .await?;
+    Ok(UFix64::new(event.lp_token_minted.bits))
+  }
+
+  /// Quotes redemption to hyUSD for 1 unit of sHYUSD via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  /// - Levercoin present in pool
+  pub async fn quote_shyusd_redeem(&self) -> Result<UFix64<N6>> {
+    let args = self
+      .redeem_shyusd_args(UFix64::one(), REFERENCE_WALLET)
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let event = self
+      .simulate_transaction_event::<UserWithdrawEventV1>(&tx)
+      .await?;
+    if event.levercoin_withdrawn.bits > 0 {
+      return Err(anyhow!(
+        "Cannot quote sHYUSD/hyUSD: levercoin present in pool"
+      ));
+    }
+    Ok(UFix64::new(event.stablecoin_withdrawn.bits))
+  }
+
+  /// Quotes redemption to LST for 1 unit of sHYUSD via simulation.
+  ///
+  /// # Errors
+  /// - Transaction simulation
+  /// - Event parsing
+  pub async fn quote_shyusd_redeem_lst(
+    &self,
+    exchange: &ExchangeClient,
+    lst_mint: Pubkey,
+  ) -> Result<UFix64<N9>> {
+    let args = self
+      .redeem_shyusd_lst_args(
+        exchange,
+        UFix64::one(),
+        REFERENCE_WALLET,
+        lst_mint,
+      )
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let rpc = self.program().rpc();
+    let sim_result = rpc
+      .simulate_transaction_with_config(&tx, simulation_config())
+      .await?;
+    let from_xsol = parse_event::<RedeemLevercoinEventV2>(&sim_result)
+      .map_or(UFix64::zero(), |e| {
+        UFix64::<N9>::new(e.collateral_withdrawn.bits)
+      });
+    let from_hyusd = parse_event::<RedeemStablecoinEventV2>(&sim_result)
+      .map_or(UFix64::zero(), |e| {
+        UFix64::<N9>::new(e.collateral_withdrawn.bits)
+      });
+    let total_out = from_hyusd
+      .checked_add(&from_xsol)
+      .ok_or(anyhow!("total_out overflow"))?;
+    Ok(total_out)
   }
 }

@@ -270,16 +270,14 @@ mod tests {
   use crate::util::{fee_pct_decimal, load_account_map, load_amm_context};
 
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
-  use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
-  use anchor_client::solana_sdk::signature::Keypair;
-  use anchor_client::Cluster;
   use anchor_lang::pubkey;
   use fix::typenum::U9;
   use flaky_test::flaky_test;
-  use hylo_clients::exchange_client::ExchangeClient;
   use hylo_clients::program_client::ProgramClient;
-  use hylo_clients::stability_pool_client::StabilityPoolClient;
-  use hylo_clients::util::{parse_event, simulation_config};
+  use hylo_clients::util::{
+    build_test_exchange_client, build_test_stability_pool_client, parse_event,
+    simulation_config,
+  };
   use hylo_core::idl::exchange::events::{
     MintLevercoinEventV2, MintStablecoinEventV2, RedeemLevercoinEventV2,
     RedeemStablecoinEventV2, SwapLeverToStableEventV1,
@@ -345,30 +343,6 @@ mod tests {
   const TESTER: Pubkey =
     pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
 
-  fn cluster() -> Result<Cluster> {
-    let url = std::env::var("RPC_URL")?;
-    let ws_url = std::env::var("RPC_WS_URL")?;
-    Ok(Cluster::Custom(url, ws_url))
-  }
-
-  fn build_exchange_client() -> Result<ExchangeClient> {
-    let client = ExchangeClient::new_from_keypair(
-      cluster()?,
-      Keypair::new(),
-      CommitmentConfig::confirmed(),
-    )?;
-    Ok(client)
-  }
-
-  fn build_stability_pool_client() -> Result<StabilityPoolClient> {
-    let client = StabilityPoolClient::new_from_keypair(
-      cluster()?,
-      Keypair::new(),
-      CommitmentConfig::confirmed(),
-    )?;
-    Ok(client)
-  }
-
   async fn build_jupiter_client() -> Result<HyloJupiterClient> {
     let url = std::env::var("RPC_URL")?;
     let client = RpcClient::new(url);
@@ -397,7 +371,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_exchange_client()?;
+    let hylo = build_test_exchange_client()?;
     let args = hylo
       .mint_hyusd_args(amount_lst, JITOSOL, TESTER, None)
       .await?;
@@ -420,7 +394,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_exchange_client()?;
+    let hylo = build_test_exchange_client()?;
     let args = hylo
       .redeem_hyusd_args(amount_hyusd, JITOSOL, TESTER, None)
       .await?;
@@ -443,7 +417,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_exchange_client()?;
+    let hylo = build_test_exchange_client()?;
     let args = hylo
       .mint_xsol_args(amount_lst, JITOSOL, TESTER, None)
       .await?;
@@ -466,7 +440,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_exchange_client()?;
+    let hylo = build_test_exchange_client()?;
     let args = hylo
       .redeem_xsol_args(amount_xsol, JITOSOL, TESTER, None)
       .await?;
@@ -489,7 +463,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_exchange_client()?;
+    let hylo = build_test_exchange_client()?;
     let args = hylo.swap_hyusd_to_xsol_args(amount_hyusd, TESTER).await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -526,7 +500,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_exchange_client()?;
+    let hylo = build_test_exchange_client()?;
     let args = hylo.swap_xsol_to_hyusd_args(amount_xsol, TESTER).await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -563,7 +537,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_stability_pool_client()?;
+    let hylo = build_test_stability_pool_client()?;
     let args = hylo.mint_shyusd_args(amount_hyusd, TESTER).await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -595,7 +569,7 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let hylo = build_stability_pool_client()?;
+    let hylo = build_test_stability_pool_client()?;
     let args = hylo.redeem_shyusd_args(amount_shyusd, TESTER).await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -631,8 +605,8 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
-    let exchange = build_exchange_client()?;
-    let hylo = build_stability_pool_client()?;
+    let exchange = build_test_exchange_client()?;
+    let hylo = build_test_stability_pool_client()?;
     let args = hylo
       .redeem_shyusd_lst_args(&exchange, amount_shyusd, TESTER, JITOSOL)
       .await?;
