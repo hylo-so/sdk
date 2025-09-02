@@ -12,6 +12,7 @@ use anchor_client::solana_sdk::{bs58, pubkey};
 use anchor_client::Cluster;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::{anyhow, Result};
+use hylo_idl::pda;
 use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
 };
@@ -19,6 +20,10 @@ use solana_transaction_status_client_types::{
 use crate::exchange_client::ExchangeClient;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
+
+pub enum Token {
+  XSOL(Pubkey),
+}
 
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");

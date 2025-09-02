@@ -17,9 +17,9 @@ use jupiter_amm_interface::{
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::quote;
-use crate::util::{account_map_get, JITOSOL};
+use crate::util::account_map_get;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
-use hylo_core::idl::pda::{self, HYUSD, SHYUSD, XSOL};
+use hylo_core::idl::pda::{self, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 #[derive(Clone)]
@@ -274,6 +274,9 @@ mod tests {
   use fix::typenum::U9;
   use flaky_test::flaky_test;
   use hylo_clients::program_client::ProgramClient;
+  use hylo_clients::simulate_price::{
+    Mint, MintArgs, RedeemArgs, SwapArgs, HYUSD, JITOSOL, XSOL,
+  };
   use hylo_clients::util::{
     build_test_exchange_client, build_test_stability_pool_client, parse_event,
     simulation_config,
@@ -366,14 +369,19 @@ mod tests {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
-      input_mint: JITOSOL,
-      output_mint: HYUSD,
+      input_mint: pda::JITOSOL,
+      output_mint: pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_exchange_client()?;
     let args = hylo
-      .mint_hyusd_args(amount_lst, JITOSOL, TESTER, None)
+      .build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
+        amount: amount_lst,
+        lst_mint: pda::JITOSOL,
+        user: TESTER,
+        slippage_config: None,
+      })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -389,14 +397,19 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: HYUSD,
-      output_mint: JITOSOL,
+      input_mint: pda::HYUSD,
+      output_mint: pda::JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_exchange_client()?;
     let args = hylo
-      .redeem_hyusd_args(amount_hyusd, JITOSOL, TESTER, None)
+      .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
+        amount: amount_hyusd,
+        lst_mint: pda::JITOSOL,
+        user: TESTER,
+        slippage_config: None,
+      })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -412,14 +425,19 @@ mod tests {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
-      input_mint: JITOSOL,
-      output_mint: XSOL,
+      input_mint: pda::JITOSOL,
+      output_mint: pda::XSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_exchange_client()?;
     let args = hylo
-      .mint_xsol_args(amount_lst, JITOSOL, TESTER, None)
+      .build_transaction_data::<JITOSOL, XSOL>(MintArgs {
+        amount: amount_lst,
+        lst_mint: pda::JITOSOL,
+        user: TESTER,
+        slippage_config: None,
+      })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -435,14 +453,19 @@ mod tests {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
-      input_mint: XSOL,
-      output_mint: JITOSOL,
+      input_mint: pda::XSOL,
+      output_mint: pda::JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_exchange_client()?;
     let args = hylo
-      .redeem_xsol_args(amount_xsol, JITOSOL, TESTER, None)
+      .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
+        amount: amount_xsol,
+        lst_mint: pda::JITOSOL,
+        user: TESTER,
+        slippage_config: None,
+      })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
@@ -458,13 +481,18 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: HYUSD,
-      output_mint: XSOL,
+      input_mint: pda::HYUSD,
+      output_mint: pda::XSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_exchange_client()?;
-    let args = hylo.swap_hyusd_to_xsol_args(amount_hyusd, TESTER).await?;
+    let args = hylo
+      .build_transaction_data::<HYUSD, XSOL>(SwapArgs {
+        amount: amount_hyusd,
+        user: TESTER,
+      })
+      .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
       .simulate_transaction_event::<SwapStableToLeverEventV1>(&tx)
@@ -495,13 +523,18 @@ mod tests {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
-      input_mint: XSOL,
-      output_mint: HYUSD,
+      input_mint: pda::XSOL,
+      output_mint: pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_exchange_client()?;
-    let args = hylo.swap_xsol_to_hyusd_args(amount_xsol, TESTER).await?;
+    let args = hylo
+      .build_transaction_data::<XSOL, HYUSD>(SwapArgs {
+        amount: amount_xsol,
+        user: TESTER,
+      })
+      .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
       .simulate_transaction_event::<SwapLeverToStableEventV1>(&tx)
@@ -532,7 +565,7 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: HYUSD,
+      input_mint: pda::HYUSD,
       output_mint: SHYUSD,
       swap_mode: SwapMode::ExactIn,
     };
@@ -565,7 +598,7 @@ mod tests {
     let quote_params = QuoteParams {
       amount: amount_shyusd.bits,
       input_mint: SHYUSD,
-      output_mint: HYUSD,
+      output_mint: pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -600,15 +633,15 @@ mod tests {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_shyusd.bits,
-      input_mint: SHYUSD,
-      output_mint: JITOSOL,
+      input_mint: pda::SHYUSD,
+      output_mint: pda::JITOSOL,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let exchange = build_test_exchange_client()?;
     let hylo = build_test_stability_pool_client()?;
     let args = hylo
-      .redeem_shyusd_lst_args(&exchange, amount_shyusd, TESTER, JITOSOL)
+      .redeem_shyusd_lst_args(&exchange, amount_shyusd, TESTER, JITOSOL::MINT)
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let rpc = hylo.program().rpc();

@@ -1,5 +1,6 @@
 use crate::exchange_client::ExchangeClient;
-use crate::program_client::{ProgramClient, VersionedTransactionArgs};
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::simulate_price::{RedeemArgs, HYUSD, JITOSOL, XSOL};
 use crate::util::{
   parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
   LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
@@ -18,7 +19,6 @@ use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
-use hylo_idl::pda::{HYUSD, SHYUSD, XSOL};
 use hylo_idl::stability_pool::client::{accounts, args};
 use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
@@ -58,20 +58,20 @@ impl StabilityPoolClient {
     &self,
     amount_hyusd: UFix64<N6>,
     user: Pubkey,
-  ) -> Result<VersionedTransactionArgs> {
+  ) -> Result<VersionedTransactionData> {
     let accounts = accounts::UserDeposit {
       user,
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD,
-      levercoin_mint: XSOL,
+      stablecoin_mint: pda::HYUSD,
+      levercoin_mint: pda::XSOL,
       user_stablecoin_ata: pda::hyusd_ata(user),
       user_lp_token_ata: pda::shyusd_ata(user),
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
       lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: SHYUSD,
+      lp_token_mint: pda::SHYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
       hylo_exchange_program: exchange::ID,
@@ -96,7 +96,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionArgs {
+    Ok(VersionedTransactionData {
       instructions,
       lookup_tables,
     })
@@ -129,23 +129,23 @@ impl StabilityPoolClient {
     &self,
     amount_shyusd: UFix64<N6>,
     user: Pubkey,
-  ) -> Result<VersionedTransactionArgs> {
+  ) -> Result<VersionedTransactionData> {
     let accounts = accounts::UserWithdraw {
       user,
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD,
+      stablecoin_mint: pda::HYUSD,
       user_stablecoin_ata: pda::hyusd_ata(user),
-      fee_auth: pda::fee_auth(HYUSD),
-      fee_vault: pda::fee_vault(HYUSD),
+      fee_auth: pda::fee_auth(pda::HYUSD),
+      fee_vault: pda::fee_vault(pda::HYUSD),
       user_lp_token_ata: pda::shyusd_ata(user),
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_mint: XSOL,
+      levercoin_mint: pda::XSOL,
       levercoin_pool: *pda::XSOL_POOL,
       user_levercoin_ata: pda::xsol_ata(user),
       lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: SHYUSD,
+      lp_token_mint: pda::SHYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
       hylo_exchange_program: exchange::ID,
@@ -170,7 +170,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionArgs {
+    Ok(VersionedTransactionData {
       instructions,
       lookup_tables,
     })
@@ -208,7 +208,7 @@ impl StabilityPoolClient {
     amount_shyusd: UFix64<N6>,
     user: Pubkey,
     lst_mint: Pubkey,
-  ) -> Result<VersionedTransactionArgs> {
+  ) -> Result<VersionedTransactionData> {
     let redeem_shyusd_args =
       self.redeem_shyusd_args(amount_shyusd, user).await?;
     let redeem_shyusd_tx = self
@@ -220,23 +220,23 @@ impl StabilityPoolClient {
     let mut instructions = redeem_shyusd_args.instructions;
     if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
       let redeem_hyusd_args = exchange
-        .redeem_hyusd_args(
-          UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
+        .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
+          amount: UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
           lst_mint,
           user,
-          None,
-        )
+          slippage_config: None,
+        })
         .await?;
       instructions.extend(redeem_hyusd_args.instructions);
     }
     if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
       let redeem_xsol_args = exchange
-        .redeem_xsol_args(
-          UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
+        .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
+          amount: UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
           lst_mint,
           user,
-          None,
-        )
+          slippage_config: None,
+        })
         .await?;
       instructions.extend(redeem_xsol_args.instructions);
     }
@@ -247,7 +247,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionArgs {
+    Ok(VersionedTransactionData {
       instructions,
       lookup_tables,
     })
@@ -287,13 +287,13 @@ impl StabilityPoolClient {
       payer: self.program.payer(),
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD,
+      stablecoin_mint: pda::HYUSD,
       stablecoin_pool: *pda::HYUSD_POOL,
       pool_auth: *pda::POOL_AUTH,
       levercoin_pool: *pda::XSOL_POOL,
-      fee_auth: pda::fee_auth(HYUSD),
-      fee_vault: pda::fee_vault(HYUSD),
-      levercoin_mint: XSOL,
+      fee_auth: pda::fee_auth(pda::HYUSD),
+      fee_vault: pda::fee_vault(pda::HYUSD),
+      levercoin_mint: pda::XSOL,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
@@ -316,7 +316,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    let tx_args = VersionedTransactionArgs {
+    let tx_args = VersionedTransactionData {
       instructions,
       lookup_tables,
     };
@@ -333,13 +333,13 @@ impl StabilityPoolClient {
       payer: self.program.payer(),
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD,
+      stablecoin_mint: pda::HYUSD,
       stablecoin_pool: *pda::HYUSD_POOL,
       pool_auth: *pda::POOL_AUTH,
       levercoin_pool: *pda::XSOL_POOL,
-      fee_auth: pda::fee_auth(HYUSD),
-      fee_vault: pda::fee_vault(HYUSD),
-      levercoin_mint: XSOL,
+      fee_auth: pda::fee_auth(pda::HYUSD),
+      fee_vault: pda::fee_vault(pda::HYUSD),
+      levercoin_mint: pda::XSOL,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
@@ -362,7 +362,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    let tx_args = VersionedTransactionArgs {
+    let tx_args = VersionedTransactionData {
       instructions,
       lookup_tables,
     };
@@ -379,12 +379,12 @@ impl StabilityPoolClient {
     let accounts = accounts::GetStats {
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD,
-      levercoin_mint: XSOL,
+      stablecoin_mint: pda::HYUSD,
+      levercoin_mint: pda::XSOL,
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
-      lp_token_mint: SHYUSD,
+      lp_token_mint: pda::SHYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     };
     let args = args::GetStats {};
@@ -478,5 +478,25 @@ impl StabilityPoolClient {
       .checked_add(&from_xsol)
       .ok_or(anyhow!("total_out overflow"))?;
     Ok(total_out)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::util::{
+    build_test_exchange_client, build_test_stability_pool_client,
+  };
+
+  use anchor_lang::solana_program::pubkey;
+  use anyhow::Result;
+
+  #[tokio::test]
+  async fn print_quote() -> Result<()> {
+    let jitosol = pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
+    let client = build_test_stability_pool_client()?;
+    let exchange = build_test_exchange_client()?;
+    let quote = client.quote_shyusd_redeem_lst(&exchange, jitosol).await?;
+    println!("{quote:?}");
+    Ok(())
   }
 }

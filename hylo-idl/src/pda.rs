@@ -79,6 +79,9 @@ pub const HYUSD: Pubkey =
 pub const XSOL: Pubkey =
   pubkey!("4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs");
 
+pub const JITOSOL: Pubkey =
+  pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
+
 pub static HYUSD_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::MINT_AUTH, HYUSD));
 

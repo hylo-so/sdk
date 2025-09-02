@@ -20,7 +20,7 @@ use crate::util::{
   LST_REGISTRY_LOOKUP_TABLE,
 };
 
-pub struct VersionedTransactionArgs {
+pub struct VersionedTransactionData {
   pub instructions: Vec<Instruction>,
   pub lookup_tables: Vec<AddressLookupTableAccount>,
 }
@@ -62,10 +62,10 @@ pub trait ProgramClient: Sized {
   /// - Failed to create transaction
   async fn build_v0_transaction(
     &self,
-    VersionedTransactionArgs {
+    VersionedTransactionData {
       instructions,
       lookup_tables,
-    }: &VersionedTransactionArgs,
+    }: &VersionedTransactionData,
   ) -> Result<VersionedTransaction> {
     let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
     let message = v0::Message::try_compile(
@@ -91,10 +91,10 @@ pub trait ProgramClient: Sized {
   async fn build_simulation_transaction(
     &self,
     for_user: &Pubkey,
-    VersionedTransactionArgs {
+    VersionedTransactionData {
       instructions,
       lookup_tables,
-    }: &VersionedTransactionArgs,
+    }: &VersionedTransactionData,
   ) -> Result<VersionedTransaction> {
     let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
     let message = v0::Message::try_compile(
@@ -119,7 +119,7 @@ pub trait ProgramClient: Sized {
   /// - Failed to send and confirm transaction
   async fn send_v0_transaction(
     &self,
-    args: &VersionedTransactionArgs,
+    args: &VersionedTransactionData,
   ) -> Result<Signature> {
     let tx = self.build_v0_transaction(args).await?;
     let sig = self
