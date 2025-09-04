@@ -275,7 +275,8 @@ mod tests {
   use flaky_test::flaky_test;
   use hylo_clients::program_client::ProgramClient;
   use hylo_clients::simulate_price::{
-    Mint, MintArgs, RedeemArgs, SwapArgs, HYUSD, JITOSOL, XSOL,
+    MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs, TransactionSyntax,
+    HYUSD, JITOSOL, SHYUSD, XSOL,
   };
   use hylo_clients::util::{
     build_test_exchange_client, build_test_stability_pool_client, parse_event,
@@ -378,7 +379,6 @@ mod tests {
     let args = hylo
       .build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
         amount: amount_lst,
-        lst_mint: pda::JITOSOL,
         user: TESTER,
         slippage_config: None,
       })
@@ -406,7 +406,6 @@ mod tests {
     let args = hylo
       .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
         amount: amount_hyusd,
-        lst_mint: pda::JITOSOL,
         user: TESTER,
         slippage_config: None,
       })
@@ -434,7 +433,6 @@ mod tests {
     let args = hylo
       .build_transaction_data::<JITOSOL, XSOL>(MintArgs {
         amount: amount_lst,
-        lst_mint: pda::JITOSOL,
         user: TESTER,
         slippage_config: None,
       })
@@ -462,7 +460,6 @@ mod tests {
     let args = hylo
       .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
         amount: amount_xsol,
-        lst_mint: pda::JITOSOL,
         user: TESTER,
         slippage_config: None,
       })
@@ -566,12 +563,17 @@ mod tests {
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
       input_mint: pda::HYUSD,
-      output_mint: SHYUSD,
+      output_mint: pda::SHYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_stability_pool_client()?;
-    let args = hylo.mint_shyusd_args(amount_hyusd, TESTER).await?;
+    let args = hylo
+      .build_transaction_data::<HYUSD, SHYUSD>(StabilityPoolArgs {
+        amount: amount_hyusd,
+        user: TESTER,
+      })
+      .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
       .simulate_transaction_event::<UserDepositEvent>(&tx)
@@ -597,13 +599,18 @@ mod tests {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_shyusd.bits,
-      input_mint: SHYUSD,
+      input_mint: pda::SHYUSD,
       output_mint: pda::HYUSD,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
     let hylo = build_test_stability_pool_client()?;
-    let args = hylo.redeem_shyusd_args(amount_shyusd, TESTER).await?;
+    let args = hylo
+      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
+        amount: amount_shyusd,
+        user: TESTER,
+      })
+      .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
       .simulate_transaction_event::<UserWithdrawEventV1>(&tx)
@@ -641,7 +648,13 @@ mod tests {
     let exchange = build_test_exchange_client()?;
     let hylo = build_test_stability_pool_client()?;
     let args = hylo
-      .redeem_shyusd_lst_args(&exchange, amount_shyusd, TESTER, JITOSOL::MINT)
+      .build_transaction_data::<SHYUSD, JITOSOL>((
+        exchange,
+        StabilityPoolArgs {
+          amount: amount_shyusd,
+          user: TESTER,
+        },
+      ))
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let rpc = hylo.program().rpc();

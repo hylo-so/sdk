@@ -1,7 +1,7 @@
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::simulate_price::{
-  BuildTransactionData, Mint, MintArgs, RedeemArgs, RunTransaction,
-  SimulatePrice, SwapArgs, HYUSD, JITOSOL, XSOL,
+  BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
+  TransactionSyntax, HYUSD, JITOSOL, XSOL,
 };
 use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
@@ -20,7 +20,7 @@ use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
-use anchor_lang::system_program;
+use anchor_lang::{system_program, Id};
 use anchor_spl::{associated_token, token};
 use anyhow::Result;
 use fix::prelude::*;
@@ -50,35 +50,6 @@ impl ProgramClient for ExchangeClient {
 }
 
 impl ExchangeClient {
-  pub async fn run_transaction<I, O>(
-    &self,
-    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> Result<Signature>
-  where
-    Self: RunTransaction<I, O>,
-  {
-    self.run(inputs).await
-  }
-
-  pub async fn build_transaction_data<I, O>(
-    &self,
-    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> Result<VersionedTransactionData>
-  where
-    Self: BuildTransactionData<I, O>,
-  {
-    self.build(inputs).await
-  }
-
-  pub async fn quote<I, O>(
-    &self,
-  ) -> Result<UFix64<<Self as SimulatePrice<I, O>>::OutExp>>
-  where
-    Self: SimulatePrice<I, O>,
-  {
-    self.simulate().await
-  }
-
   /// Runs exchange's LST price oracle crank.
   ///
   /// # Errors
@@ -186,20 +157,10 @@ impl ExchangeClient {
 impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
   type Inputs = RedeemArgs;
 
-  fn quote_inputs(&self, user: Pubkey) -> RedeemArgs {
-    RedeemArgs {
-      amount: UFix64::one(),
-      lst_mint: JITOSOL::MINT,
-      user,
-      slippage_config: None,
-    }
-  }
-
   async fn build(
     &self,
     RedeemArgs {
       amount,
-      lst_mint,
       user,
       slippage_config,
     }: RedeemArgs,
@@ -207,16 +168,16 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
     let accounts = accounts::RedeemStablecoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(lst_mint),
-      vault_auth: pda::vault_auth(lst_mint),
+      fee_auth: pda::fee_auth(JITOSOL::id()),
+      vault_auth: pda::vault_auth(JITOSOL::id()),
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(lst_mint),
-      lst_vault: pda::vault(lst_mint),
-      lst_header: pda::lst_header(lst_mint),
+      fee_vault: pda::fee_vault(JITOSOL::id()),
+      lst_vault: pda::vault(JITOSOL::id()),
+      lst_header: pda::lst_header(JITOSOL::id()),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lst_ata: ata!(user, lst_mint),
+      user_lst_ata: ata!(user, JITOSOL::id()),
       stablecoin_mint: pda::HYUSD,
-      lst_mint,
+      lst_mint: JITOSOL::id(),
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
       token_program: token::ID,
@@ -250,8 +211,8 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
 impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemStablecoinEventV2;
-  fn from_event(e: &Self::Event) -> UFix64<N9> {
-    UFix64::new(e.collateral_withdrawn.bits)
+  fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
+    Ok(UFix64::new(e.collateral_withdrawn.bits))
   }
 }
 
@@ -259,20 +220,10 @@ impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
 impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
   type Inputs = RedeemArgs;
 
-  fn quote_inputs(&self, user: Pubkey) -> RedeemArgs {
-    RedeemArgs {
-      amount: UFix64::one(),
-      lst_mint: JITOSOL::MINT,
-      user,
-      slippage_config: None,
-    }
-  }
-
   async fn build(
     &self,
     RedeemArgs {
       amount,
-      lst_mint,
       user,
       slippage_config,
     }: RedeemArgs,
@@ -280,17 +231,17 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
     let accounts = accounts::RedeemLevercoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(lst_mint),
-      vault_auth: pda::vault_auth(lst_mint),
+      fee_auth: pda::fee_auth(JITOSOL::id()),
+      vault_auth: pda::vault_auth(JITOSOL::id()),
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(lst_mint),
-      lst_vault: pda::vault(lst_mint),
-      lst_header: pda::lst_header(lst_mint),
+      fee_vault: pda::fee_vault(JITOSOL::id()),
+      lst_vault: pda::vault(JITOSOL::id()),
+      lst_header: pda::lst_header(JITOSOL::id()),
       user_levercoin_ata: pda::xsol_ata(user),
-      user_lst_ata: ata!(user, lst_mint),
+      user_lst_ata: ata!(user, JITOSOL::id()),
       levercoin_mint: pda::XSOL,
       stablecoin_mint: pda::HYUSD,
-      lst_mint,
+      lst_mint: JITOSOL::id(),
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
       token_program: token::ID,
@@ -324,8 +275,8 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
 impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemLevercoinEventV2;
-  fn from_event(e: &Self::Event) -> UFix64<N9> {
-    UFix64::new(e.collateral_withdrawn.bits)
+  fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
+    Ok(UFix64::new(e.collateral_withdrawn.bits))
   }
 }
 
@@ -333,20 +284,10 @@ impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
 impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
   type Inputs = MintArgs;
 
-  fn quote_inputs(&self, user: Pubkey) -> MintArgs {
-    MintArgs {
-      amount: UFix64::one(),
-      lst_mint: JITOSOL::MINT,
-      user,
-      slippage_config: None,
-    }
-  }
-
   async fn build(
     &self,
     MintArgs {
       amount,
-      lst_mint,
       user,
       slippage_config,
     }: MintArgs,
@@ -354,15 +295,15 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
     let accounts = accounts::MintStablecoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(lst_mint),
-      vault_auth: pda::vault_auth(lst_mint),
+      fee_auth: pda::fee_auth(JITOSOL::id()),
+      vault_auth: pda::vault_auth(JITOSOL::id()),
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(lst_mint),
-      lst_vault: pda::vault(lst_mint),
-      lst_header: pda::lst_header(lst_mint),
-      user_lst_ata: ata!(user, lst_mint),
+      fee_vault: pda::fee_vault(JITOSOL::id()),
+      lst_vault: pda::vault(JITOSOL::id()),
+      lst_header: pda::lst_header(JITOSOL::id()),
+      user_lst_ata: ata!(user, JITOSOL::id()),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      lst_mint,
+      lst_mint: JITOSOL::id(),
       stablecoin_mint: pda::HYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
@@ -397,8 +338,8 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
 impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = MintStablecoinEventV2;
-  fn from_event(e: &Self::Event) -> UFix64<N6> {
-    UFix64::new(e.minted.bits)
+  fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
+    Ok(UFix64::new(e.minted.bits))
   }
 }
 
@@ -406,20 +347,10 @@ impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
 impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
   type Inputs = MintArgs;
 
-  fn quote_inputs(&self, user: Pubkey) -> MintArgs {
-    MintArgs {
-      amount: UFix64::one(),
-      lst_mint: JITOSOL::MINT,
-      user,
-      slippage_config: None,
-    }
-  }
-
   async fn build(
     &self,
     MintArgs {
       amount,
-      lst_mint,
       user,
       slippage_config,
     }: MintArgs,
@@ -427,15 +358,15 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
     let accounts = accounts::MintLevercoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(lst_mint),
-      vault_auth: pda::vault_auth(lst_mint),
+      fee_auth: pda::fee_auth(JITOSOL::id()),
+      vault_auth: pda::vault_auth(JITOSOL::id()),
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(lst_mint),
-      lst_vault: pda::vault(lst_mint),
-      lst_header: pda::lst_header(lst_mint),
-      user_lst_ata: ata!(user, lst_mint),
+      fee_vault: pda::fee_vault(JITOSOL::id()),
+      lst_vault: pda::vault(JITOSOL::id()),
+      lst_header: pda::lst_header(JITOSOL::id()),
+      user_lst_ata: ata!(user, JITOSOL::id()),
       user_levercoin_ata: pda::xsol_ata(user),
-      lst_mint,
+      lst_mint: JITOSOL::id(),
       levercoin_mint: pda::XSOL,
       stablecoin_mint: pda::HYUSD,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
@@ -471,21 +402,14 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
 impl SimulatePrice<JITOSOL, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = MintLevercoinEventV2;
-  fn from_event(e: &Self::Event) -> UFix64<N6> {
-    UFix64::new(e.minted.bits)
+  fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
+    Ok(UFix64::new(e.minted.bits))
   }
 }
 
 #[async_trait::async_trait]
 impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
   type Inputs = SwapArgs;
-
-  fn quote_inputs(&self, user: Pubkey) -> SwapArgs {
-    SwapArgs {
-      amount: UFix64::one(),
-      user,
-    }
-  }
 
   async fn build(
     &self,
@@ -528,21 +452,14 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
 impl SimulatePrice<HYUSD, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = SwapStableToLeverEventV1;
-  fn from_event(e: &Self::Event) -> UFix64<N6> {
-    UFix64::new(e.levercoin_minted.bits)
+  fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
+    Ok(UFix64::new(e.levercoin_minted.bits))
   }
 }
 
 #[async_trait::async_trait]
 impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
   type Inputs = SwapArgs;
-
-  fn quote_inputs(&self, user: Pubkey) -> SwapArgs {
-    SwapArgs {
-      amount: UFix64::one(),
-      user,
-    }
-  }
 
   async fn build(
     &self,
@@ -585,13 +502,10 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
 impl SimulatePrice<XSOL, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = SwapLeverToStableEventV1;
-  fn from_event(e: &Self::Event) -> UFix64<N6> {
-    UFix64::new(e.stablecoin_minted_user.bits)
+  fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
+    Ok(UFix64::new(e.stablecoin_minted_user.bits))
   }
 }
 
 #[async_trait::async_trait]
-impl<I, O> RunTransaction<I, O> for ExchangeClient where
-  Self: BuildTransactionData<I, O>
-{
-}
+impl TransactionSyntax for ExchangeClient {}

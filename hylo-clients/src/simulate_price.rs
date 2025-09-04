@@ -5,73 +5,118 @@ use crate::util::REFERENCE_WALLET;
 
 use anchor_client::solana_sdk::signature::Signature;
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_lang::{AnchorDeserialize, Discriminator, Id};
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_idl::exchange::types::SlippageConfig;
 use hylo_idl::pda;
 
-pub trait Mint {
-  const MINT: Pubkey;
-}
-
 pub struct XSOL;
 
-impl Mint for XSOL {
-  const MINT: Pubkey = pda::XSOL;
+impl Id for XSOL {
+  fn id() -> Pubkey {
+    pda::XSOL
+  }
 }
 
 pub struct HYUSD;
 
-impl Mint for HYUSD {
-  const MINT: Pubkey = pda::HYUSD;
+impl Id for HYUSD {
+  fn id() -> Pubkey {
+    pda::HYUSD
+  }
 }
 
 pub struct SHYUSD;
 
-impl Mint for SHYUSD {
-  const MINT: Pubkey = pda::SHYUSD;
+impl Id for SHYUSD {
+  fn id() -> Pubkey {
+    pda::SHYUSD
+  }
 }
 
 pub struct JITOSOL;
 
-impl Mint for JITOSOL {
-  const MINT: Pubkey = pda::JITOSOL;
+impl Id for JITOSOL {
+  fn id() -> Pubkey {
+    pda::JITOSOL
+  }
 }
 
 /// Price oracle for Hylo token pairs.
 #[async_trait::async_trait]
 pub trait SimulatePrice<I, O>:
   BuildTransactionData<I, O> + ProgramClient
+where
+  <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
 {
   type OutExp;
   type Event: AnchorDeserialize + Discriminator;
 
-  fn from_event(e: &Self::Event) -> UFix64<Self::OutExp>;
+  fn from_event(e: &Self::Event) -> Result<UFix64<Self::OutExp>>;
 
   /// Gets price quote for 1 unit of input token to output token.
   async fn simulate(&self) -> Result<UFix64<Self::OutExp>> {
-    let args = self.build(self.quote_inputs(REFERENCE_WALLET)).await?;
+    let args = self
+      .build(<Self as BuildTransactionData<I, O>>::Inputs::quote_input(
+        REFERENCE_WALLET,
+      ))
+      .await?;
     let tx = self
       .build_simulation_transaction(&REFERENCE_WALLET, &args)
       .await?;
     let event = self.simulate_transaction_event::<Self::Event>(&tx).await?;
-    Ok(Self::from_event(&event))
+    Self::from_event(&event)
   }
+}
+
+#[async_trait::async_trait]
+pub trait SimulatePriceWithEnv<I, O>
+where
+  Self: BuildTransactionData<I, O>,
+{
+  type OutExp;
+  type Env: Send;
+  async fn simulate_with_env(
+    &self,
+    env: Self::Env,
+  ) -> Result<UFix64<Self::OutExp>>;
+}
+
+pub trait QuoteInput {
+  fn quote_input(user: Pubkey) -> Self;
 }
 
 pub struct MintArgs {
   pub amount: UFix64<N9>,
-  pub lst_mint: Pubkey,
   pub user: Pubkey,
   pub slippage_config: Option<SlippageConfig>,
 }
 
+impl QuoteInput for MintArgs {
+  fn quote_input(user: Pubkey) -> Self {
+    MintArgs {
+      amount: UFix64::one(),
+      user,
+      slippage_config: None,
+    }
+  }
+}
+
 pub struct RedeemArgs {
   pub amount: UFix64<N6>,
-  pub lst_mint: Pubkey,
   pub user: Pubkey,
   pub slippage_config: Option<SlippageConfig>,
+}
+
+impl QuoteInput for RedeemArgs {
+  fn quote_input(user: Pubkey) -> Self {
+    RedeemArgs {
+      amount: UFix64::one(),
+      user,
+      slippage_config: None,
+    }
+  }
 }
 
 pub struct SwapArgs {
@@ -79,11 +124,32 @@ pub struct SwapArgs {
   pub user: Pubkey,
 }
 
+impl QuoteInput for SwapArgs {
+  fn quote_input(user: Pubkey) -> Self {
+    SwapArgs {
+      amount: UFix64::one(),
+      user,
+    }
+  }
+}
+
+pub struct StabilityPoolArgs {
+  pub amount: UFix64<N6>,
+  pub user: Pubkey,
+}
+
+impl QuoteInput for StabilityPoolArgs {
+  fn quote_input(user: Pubkey) -> Self {
+    StabilityPoolArgs {
+      amount: UFix64::one(),
+      user,
+    }
+  }
+}
+
 #[async_trait::async_trait]
 pub trait BuildTransactionData<I, O> {
   type Inputs: Send + Sync + 'static;
-
-  fn quote_inputs(&self, user: Pubkey) -> Self::Inputs;
 
   async fn build(
     &self,
@@ -92,15 +158,46 @@ pub trait BuildTransactionData<I, O> {
 }
 
 #[async_trait::async_trait]
-pub trait RunTransaction<I, O>:
-  BuildTransactionData<I, O> + ProgramClient
-{
-  async fn run(
+pub trait TransactionSyntax {
+  async fn run_transaction<I, O>(
     &self,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> Result<Signature> {
+  ) -> Result<Signature>
+  where
+    Self: BuildTransactionData<I, O> + ProgramClient,
+  {
     let args = self.build(inputs).await?;
     let sig = self.send_v0_transaction(&args).await?;
     Ok(sig)
+  }
+
+  async fn build_transaction_data<I, O>(
+    &self,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> Result<VersionedTransactionData>
+  where
+    Self: BuildTransactionData<I, O>,
+  {
+    self.build(inputs).await
+  }
+
+  async fn quote<I, O>(
+    &self,
+  ) -> Result<UFix64<<Self as SimulatePrice<I, O>>::OutExp>>
+  where
+    Self: SimulatePrice<I, O>,
+    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
+  {
+    self.simulate().await
+  }
+
+  async fn quote_with_env<I, O>(
+    &self,
+    env: <Self as SimulatePriceWithEnv<I, O>>::Env,
+  ) -> Result<UFix64<<Self as SimulatePriceWithEnv<I, O>>::OutExp>>
+  where
+    Self: SimulatePriceWithEnv<I, O>,
+  {
+    self.simulate_with_env(env).await
   }
 }
