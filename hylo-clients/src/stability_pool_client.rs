@@ -18,12 +18,12 @@ use hylo_idl::stability_pool::events::{
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_idl::{exchange, pda, stability_pool};
 
-use crate::core::{
+use crate::exchange_client::ExchangeClient;
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
   SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
 };
-use crate::exchange_client::ExchangeClient;
-use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::{
   parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
   LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,

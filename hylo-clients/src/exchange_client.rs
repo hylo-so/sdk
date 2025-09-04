@@ -18,11 +18,11 @@ use hylo_idl::exchange::events::{
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
 use hylo_idl::{ata, exchange, pda, stability_pool};
 
-use crate::core::{
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::transaction::{
   BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
   TransactionSyntax,
 };
-use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
 /// Client for interacting with the Hylo Exchange program.
