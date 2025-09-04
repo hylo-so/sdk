@@ -272,11 +272,11 @@ mod tests {
   use anchor_lang::pubkey;
   use fix::typenum::U9;
   use flaky_test::flaky_test;
-  use hylo_clients::program_client::ProgramClient;
-  use hylo_clients::simulate_price::{
+  use hylo_clients::prelude::{
     MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs, TransactionSyntax,
     HYUSD, JITOSOL, SHYUSD, XSOL,
   };
+  use hylo_clients::program_client::ProgramClient;
   use hylo_clients::util::{
     build_test_exchange_client, build_test_stability_pool_client, parse_event,
     simulation_config,

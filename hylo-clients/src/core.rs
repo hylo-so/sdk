@@ -11,14 +11,16 @@ pub use hylo_idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::REFERENCE_WALLET;
 
-/// Simulates one unit of token pair exchange via RPC simulation against protocol.
+/// Simulates one unit of token pair exchange via RPC simulation against
+/// protocol.
 ///
 /// # Type Parameters
 /// - `I`: Input token (e.g., `JITOSOL`, `HYUSD`, `XSOL`, `SHYUSD`)
 /// - `O`: Output token
 ///
 /// # Associated Types
-/// - `OutExp`: Fixed point precision exponent for the output amount (e.g. `N6` for `UFix64<N6>`)
+/// - `OutExp`: Fixed point precision exponent for the output amount (e.g. `N6`
+///   for `UFix64<N6>`)
 /// - `Event`: IDL event type emitted by the simulated transaction
 #[async_trait::async_trait]
 pub trait SimulatePrice<I, O>:
@@ -29,6 +31,10 @@ where
   type OutExp;
   type Event: AnchorDeserialize + Discriminator;
 
+  /// Extracts the output amount from a simulation event.
+  ///
+  /// # Errors
+  /// Event parsing or conversion errors
   fn from_event(e: &Self::Event) -> Result<UFix64<Self::OutExp>>;
 
   /// Gets price quote for 1 unit of input token to output token.
@@ -145,7 +151,8 @@ impl QuoteInput for StabilityPoolArgs {
 /// - `O`: Output token
 ///
 /// # Associated Types
-/// - `Inputs`: Parameter type for building transactions (e.g., `MintArgs`, `SwapArgs`)
+/// - `Inputs`: Parameter type for building transactions (e.g., `MintArgs`,
+///   `SwapArgs`)
 #[async_trait::async_trait]
 pub trait BuildTransactionData<I, O> {
   type Inputs: Send + Sync + 'static;
@@ -160,6 +167,7 @@ pub trait BuildTransactionData<I, O> {
 /// High-level API for transaction operations.
 #[async_trait::async_trait]
 pub trait TransactionSyntax {
+  /// Executes transaction by building and sending it.
   async fn run_transaction<I, O>(
     &self,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
@@ -172,6 +180,7 @@ pub trait TransactionSyntax {
     Ok(sig)
   }
 
+  /// Builds transaction data without executing.
   async fn build_transaction_data<I, O>(
     &self,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
@@ -182,6 +191,7 @@ pub trait TransactionSyntax {
     self.build(inputs).await
   }
 
+  /// Gets price quote using unit input simulation.
   async fn quote<I, O>(
     &self,
   ) -> Result<UFix64<<Self as SimulatePrice<I, O>>::OutExp>>
@@ -192,6 +202,7 @@ pub trait TransactionSyntax {
     self.simulate().await
   }
 
+  /// Gets price quote with external environment context.
   async fn quote_with_env<I, O>(
     &self,
     env: <Self as SimulatePriceWithEnv<I, O>>::Env,

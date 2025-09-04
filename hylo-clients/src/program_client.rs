@@ -39,7 +39,8 @@ pub trait ProgramClient: Sized {
 
   fn keypair(&self) -> Arc<Keypair>;
 
-  /// Constructs the given client with ID `Self::PROGRAM_ID`.
+  /// Constructs the program client with a given keypair and associated program
+  /// ID.
   ///
   /// # Errors
   /// - Underlying Anchor program creation
@@ -52,6 +53,18 @@ pub trait ProgramClient: Sized {
     let client = Client::new_with_options(cluster, keypair.clone(), config);
     let program = client.program(Self::PROGRAM_ID)?;
     Ok(Self::build_client(program, keypair))
+  }
+
+  /// Constructs the program client with a random keypair.
+  ///
+  /// # Errors
+  /// - Underlying Anchor program creation
+  fn new_random_keypair(
+    cluster: Cluster,
+    config: CommitmentConfig,
+  ) -> Result<Self> {
+    let keypair = Keypair::new();
+    Self::new_from_keypair(cluster, keypair, config)
   }
 
   /// Builds a versioned transaction from instructions and lookup tables.

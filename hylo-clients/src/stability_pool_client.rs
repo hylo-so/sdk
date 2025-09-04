@@ -18,17 +18,63 @@ use hylo_idl::stability_pool::events::{
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_idl::{exchange, pda, stability_pool};
 
-use crate::exchange_client::ExchangeClient;
-use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::simulate_price::{
+use crate::core::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
   SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
 };
+use crate::exchange_client::ExchangeClient;
+use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::{
   parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
   LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
 };
 
+/// Client for interacting with the Hylo Stability Pool program.
+///
+/// Provides functionality for depositing and withdrawing sHYUSD from the
+/// stability pool. Supports transaction execution and price simulation for
+/// offchain quoting.
+///
+/// # Examples
+///
+/// ## Setup
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # fn setup_client() -> Result<StabilityPoolClient> {
+/// let client = StabilityPoolClient::new_random_keypair(
+///   Cluster::Mainnet,
+///   CommitmentConfig::confirmed(),
+/// )?;
+/// # Ok(client)
+/// # }
+/// ```
+///
+/// ## Transaction Execution
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # async fn execute_transaction(client: StabilityPoolClient) -> Result<Signature> {
+/// // Deposit HYUSD → sHYUSD
+/// let user = Pubkey::new_unique();
+/// let signature = client.run_transaction::<HYUSD, SHYUSD>(StabilityPoolArgs {
+///   amount: UFix64::new(100),
+///   user,
+/// }).await?;
+/// # Ok(signature)
+/// # }
+/// ```
+///
+/// ## Price Quote
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # async fn simulate_price(client: StabilityPoolClient) -> Result<()> {
+/// // Get price quote for 1 HYUSD → sHYUSD
+/// let price = client.quote::<HYUSD, SHYUSD>().await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

@@ -18,13 +18,77 @@ use hylo_idl::exchange::events::{
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
 use hylo_idl::{ata, exchange, pda, stability_pool};
 
-use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::simulate_price::{
+use crate::core::{
   BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
   TransactionSyntax,
 };
+use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
+/// Client for interacting with the Hylo Exchange program.
+///
+/// Provides functionality for minting/redeem/swap between hyUSD and xSOL and
+/// LST collateral. Supports transaction execution and price simulation for
+/// offchain quoting.
+///
+/// # Examples
+///
+/// ## Setup
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # fn setup_client() -> Result<ExchangeClient> {
+/// let client = ExchangeClient::new_random_keypair(
+///   Cluster::Mainnet,
+///   CommitmentConfig::confirmed(),
+/// )?;
+/// # Ok(client)
+/// # }
+/// ```
+///
+/// ## Transaction Execution
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # async fn execute_transaction(client: ExchangeClient) -> Result<Signature> {
+/// // Mint JITOSOL → hyUSD
+/// let user = Pubkey::new_unique();
+/// let signature = client.run_transaction::<JITOSOL, HYUSD>(MintArgs {
+///   amount: UFix64::one(),
+///   user,
+///   slippage_config: None,
+/// }).await?;
+/// # Ok(signature)
+/// # }
+/// ```
+///
+/// ## Transaction Building
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # async fn build_transaction(client: ExchangeClient) -> Result<()> {
+/// let user = Pubkey::new_unique();
+///
+/// // Build transaction data without executing
+/// let tx_data = client.build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
+///   amount: UFix64::new(50),
+///   user,
+///   slippage_config: None,
+/// }).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// ## Price Quote
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+/// #
+/// # async fn simulate_price(client: ExchangeClient) -> Result<()> {
+/// // Get price quote for 1 JITOSOL → hyUSD
+/// let price = client.quote::<JITOSOL, HYUSD>().await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
