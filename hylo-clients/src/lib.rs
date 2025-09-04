@@ -22,8 +22,10 @@
 //!
 //! ## Clients
 //!
-//! - [`exchange_client::ExchangeClient`] - Mint/redeem/swap operations for hyUSD and xSOL
-//! - [`stability_pool_client::StabilityPoolClient`] - Deposit/withdraw operations for sHYUSD
+//! - [`exchange_client::ExchangeClient`] - Mint/redeem/swap operations for
+//!   hyUSD and xSOL
+//! - [`stability_pool_client::StabilityPoolClient`] - Deposit/withdraw
+//!   operations for sHYUSD
 
 pub mod exchange_client;
 pub mod prelude;
