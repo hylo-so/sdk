@@ -1,10 +1,13 @@
-use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::simulate_price::{
-  BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
-  TransactionSyntax, HYUSD, JITOSOL, XSOL,
-};
-use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
+use std::sync::Arc;
 
+use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE_PROGRAM;
+use anchor_client::solana_sdk::pubkey::Pubkey;
+use anchor_client::solana_sdk::signature::{Keypair, Signature};
+use anchor_client::Program;
+use anchor_lang::system_program;
+use anchor_spl::{associated_token, token};
+use anyhow::Result;
+use fix::prelude::*;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::{
@@ -12,18 +15,15 @@ use hylo_idl::exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
+use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
 use hylo_idl::{ata, exchange, pda, stability_pool};
 
-use std::sync::Arc;
-
-use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE_PROGRAM;
-use anchor_client::solana_sdk::pubkey::Pubkey;
-use anchor_client::solana_sdk::signature::{Keypair, Signature};
-use anchor_client::Program;
-use anchor_lang::{system_program, Id};
-use anchor_spl::{associated_token, token};
-use anyhow::Result;
-use fix::prelude::*;
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::simulate_price::{
+  BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
+  TransactionSyntax,
+};
+use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
@@ -90,12 +90,12 @@ impl ExchangeClient {
     let accounts = accounts::HarvestYield {
       payer: self.program.payer(),
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
+      stablecoin_mint: HYUSD::MINT,
       stablecoin_auth: *pda::HYUSD_AUTH,
-      levercoin_mint: pda::XSOL,
+      levercoin_mint: XSOL::MINT,
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_auth: pda::fee_auth(pda::HYUSD),
-      fee_vault: pda::fee_vault(pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD::MINT),
+      fee_vault: pda::fee_vault(HYUSD::MINT),
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
       pool_auth: *pda::POOL_AUTH,
@@ -136,8 +136,8 @@ impl ExchangeClient {
   pub async fn get_stats(&self) -> Result<ExchangeStats> {
     let accounts = accounts::GetStats {
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
-      levercoin_mint: pda::XSOL,
+      stablecoin_mint: HYUSD::MINT,
+      levercoin_mint: XSOL::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     };
     let args = args::GetStats {};
@@ -168,16 +168,16 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
     let accounts = accounts::RedeemStablecoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::id()),
-      vault_auth: pda::vault_auth(JITOSOL::id()),
+      fee_auth: pda::fee_auth(JITOSOL::MINT),
+      vault_auth: pda::vault_auth(JITOSOL::MINT),
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::id()),
-      lst_vault: pda::vault(JITOSOL::id()),
-      lst_header: pda::lst_header(JITOSOL::id()),
+      fee_vault: pda::fee_vault(JITOSOL::MINT),
+      lst_vault: pda::vault(JITOSOL::MINT),
+      lst_header: pda::lst_header(JITOSOL::MINT),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::id()),
-      stablecoin_mint: pda::HYUSD,
-      lst_mint: JITOSOL::id(),
+      user_lst_ata: ata!(user, JITOSOL::MINT),
+      stablecoin_mint: HYUSD::MINT,
+      lst_mint: JITOSOL::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
       token_program: token::ID,
@@ -231,17 +231,17 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
     let accounts = accounts::RedeemLevercoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::id()),
-      vault_auth: pda::vault_auth(JITOSOL::id()),
+      fee_auth: pda::fee_auth(JITOSOL::MINT),
+      vault_auth: pda::vault_auth(JITOSOL::MINT),
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::id()),
-      lst_vault: pda::vault(JITOSOL::id()),
-      lst_header: pda::lst_header(JITOSOL::id()),
+      fee_vault: pda::fee_vault(JITOSOL::MINT),
+      lst_vault: pda::vault(JITOSOL::MINT),
+      lst_header: pda::lst_header(JITOSOL::MINT),
       user_levercoin_ata: pda::xsol_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::id()),
-      levercoin_mint: pda::XSOL,
-      stablecoin_mint: pda::HYUSD,
-      lst_mint: JITOSOL::id(),
+      user_lst_ata: ata!(user, JITOSOL::MINT),
+      levercoin_mint: XSOL::MINT,
+      stablecoin_mint: HYUSD::MINT,
+      lst_mint: JITOSOL::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
       token_program: token::ID,
@@ -295,16 +295,16 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
     let accounts = accounts::MintStablecoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::id()),
-      vault_auth: pda::vault_auth(JITOSOL::id()),
+      fee_auth: pda::fee_auth(JITOSOL::MINT),
+      vault_auth: pda::vault_auth(JITOSOL::MINT),
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::id()),
-      lst_vault: pda::vault(JITOSOL::id()),
-      lst_header: pda::lst_header(JITOSOL::id()),
-      user_lst_ata: ata!(user, JITOSOL::id()),
+      fee_vault: pda::fee_vault(JITOSOL::MINT),
+      lst_vault: pda::vault(JITOSOL::MINT),
+      lst_header: pda::lst_header(JITOSOL::MINT),
+      user_lst_ata: ata!(user, JITOSOL::MINT),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      lst_mint: JITOSOL::id(),
-      stablecoin_mint: pda::HYUSD,
+      lst_mint: JITOSOL::MINT,
+      stablecoin_mint: HYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -358,17 +358,17 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
     let accounts = accounts::MintLevercoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::id()),
-      vault_auth: pda::vault_auth(JITOSOL::id()),
+      fee_auth: pda::fee_auth(JITOSOL::MINT),
+      vault_auth: pda::vault_auth(JITOSOL::MINT),
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::id()),
-      lst_vault: pda::vault(JITOSOL::id()),
-      lst_header: pda::lst_header(JITOSOL::id()),
-      user_lst_ata: ata!(user, JITOSOL::id()),
+      fee_vault: pda::fee_vault(JITOSOL::MINT),
+      lst_vault: pda::vault(JITOSOL::MINT),
+      lst_header: pda::lst_header(JITOSOL::MINT),
+      user_lst_ata: ata!(user, JITOSOL::MINT),
       user_levercoin_ata: pda::xsol_ata(user),
-      lst_mint: JITOSOL::id(),
-      levercoin_mint: pda::XSOL,
-      stablecoin_mint: pda::HYUSD,
+      lst_mint: JITOSOL::MINT,
+      levercoin_mint: XSOL::MINT,
+      stablecoin_mint: HYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -419,12 +419,12 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
       user,
       hylo: *pda::HYLO,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      stablecoin_mint: pda::HYUSD,
+      stablecoin_mint: HYUSD::MINT,
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_auth: pda::fee_auth(pda::HYUSD),
-      fee_vault: pda::fee_vault(pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD::MINT),
+      fee_vault: pda::fee_vault(HYUSD::MINT),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      levercoin_mint: pda::XSOL,
+      levercoin_mint: XSOL::MINT,
       levercoin_auth: *pda::XSOL_AUTH,
       user_levercoin_ata: pda::xsol_ata(user),
       token_program: token::ID,
@@ -469,12 +469,12 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
       user,
       hylo: *pda::HYLO,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      stablecoin_mint: pda::HYUSD,
+      stablecoin_mint: HYUSD::MINT,
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_auth: pda::fee_auth(pda::HYUSD),
-      fee_vault: pda::fee_vault(pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD::MINT),
+      fee_vault: pda::fee_vault(HYUSD::MINT),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      levercoin_mint: pda::XSOL,
+      levercoin_mint: XSOL::MINT,
       levercoin_auth: *pda::XSOL_AUTH,
       user_levercoin_ata: pda::xsol_ata(user),
       token_program: token::ID,

@@ -1,10 +1,10 @@
+use anchor_lang::prelude::*;
+use fix::prelude::*;
+
 use crate::error::CoreError::{
   LstSolPriceConversion, LstSolPriceDelta, LstSolPriceEpochOrder,
   LstSolPriceOutdated,
 };
-
-use anchor_lang::prelude::*;
-use fix::prelude::*;
 
 /// Captures the true LST price in SOL for the current epoch.
 #[derive(

@@ -1,12 +1,12 @@
+use anchor_lang::prelude::*;
+use fix::prelude::*;
+
 use crate::conversion::SwapConversion;
 use crate::error::CoreError::{
   LpTokenNav, LpTokenOut, StabilityPoolCap, StablecoinToSwap, TokenWithdraw,
 };
 use crate::fee_controller::FeeExtract;
 use crate::pyth::PriceRange;
-
-use anchor_lang::prelude::*;
-use fix::prelude::*;
 
 /// Calculates total dollar value of stablecoin and levercoin in stability pool.
 ///
@@ -153,10 +153,11 @@ pub fn stablecoin_withdrawal_fee(
 
 #[cfg(test)]
 mod tests {
+  use proptest::prelude::*;
+
   use super::*;
   use crate::eq_tolerance;
   use crate::util::proptest::{protocol_state, ProtocolState};
-  use proptest::prelude::*;
 
   fn token_amount() -> BoxedStrategy<UFix64<N6>> {
     (1u64..u64::MAX).prop_map(UFix64::new).boxed()

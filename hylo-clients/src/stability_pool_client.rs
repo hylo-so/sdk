@@ -1,19 +1,3 @@
-use crate::exchange_client::ExchangeClient;
-use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::simulate_price::{
-  BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
-  SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax, HYUSD, JITOSOL,
-  SHYUSD, XSOL,
-};
-use crate::util::{
-  parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
-  LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
-};
-use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::exchange::events::{
-  RedeemLevercoinEventV2, RedeemStablecoinEventV2,
-};
-
 use std::sync::Arc;
 
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
@@ -23,11 +7,27 @@ use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use hylo_idl::exchange::events::{
+  RedeemLevercoinEventV2, RedeemStablecoinEventV2,
+};
 use hylo_idl::stability_pool::client::{accounts, args};
 use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
+use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_idl::{exchange, pda, stability_pool};
+
+use crate::exchange_client::ExchangeClient;
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::simulate_price::{
+  BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
+  SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
+};
+use crate::util::{
+  parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
+  LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
+};
 
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
@@ -63,13 +63,13 @@ impl StabilityPoolClient {
       payer: self.program.payer(),
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
+      stablecoin_mint: HYUSD::MINT,
       stablecoin_pool: *pda::HYUSD_POOL,
       pool_auth: *pda::POOL_AUTH,
       levercoin_pool: *pda::XSOL_POOL,
-      fee_auth: pda::fee_auth(pda::HYUSD),
-      fee_vault: pda::fee_vault(pda::HYUSD),
-      levercoin_mint: pda::XSOL,
+      fee_auth: pda::fee_auth(HYUSD::MINT),
+      fee_vault: pda::fee_vault(HYUSD::MINT),
+      levercoin_mint: XSOL::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
@@ -109,13 +109,13 @@ impl StabilityPoolClient {
       payer: self.program.payer(),
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
+      stablecoin_mint: HYUSD::MINT,
       stablecoin_pool: *pda::HYUSD_POOL,
       pool_auth: *pda::POOL_AUTH,
       levercoin_pool: *pda::XSOL_POOL,
-      fee_auth: pda::fee_auth(pda::HYUSD),
-      fee_vault: pda::fee_vault(pda::HYUSD),
-      levercoin_mint: pda::XSOL,
+      fee_auth: pda::fee_auth(HYUSD::MINT),
+      fee_vault: pda::fee_vault(HYUSD::MINT),
+      levercoin_mint: XSOL::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
@@ -155,12 +155,12 @@ impl StabilityPoolClient {
     let accounts = accounts::GetStats {
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
-      levercoin_mint: pda::XSOL,
+      stablecoin_mint: HYUSD::MINT,
+      levercoin_mint: XSOL::MINT,
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
-      lp_token_mint: pda::SHYUSD,
+      lp_token_mint: SHYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     };
     let args = args::GetStats {};
@@ -188,15 +188,15 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
       user,
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
-      levercoin_mint: pda::XSOL,
+      stablecoin_mint: HYUSD::MINT,
+      levercoin_mint: XSOL::MINT,
       user_stablecoin_ata: pda::hyusd_ata(user),
       user_lp_token_ata: pda::shyusd_ata(user),
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
       lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: pda::SHYUSD,
+      lp_token_mint: SHYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
       hylo_exchange_program: exchange::ID,
@@ -248,18 +248,18 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
       user,
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
-      stablecoin_mint: pda::HYUSD,
+      stablecoin_mint: HYUSD::MINT,
       user_stablecoin_ata: pda::hyusd_ata(user),
-      fee_auth: pda::fee_auth(pda::HYUSD),
-      fee_vault: pda::fee_vault(pda::HYUSD),
+      fee_auth: pda::fee_auth(HYUSD::MINT),
+      fee_vault: pda::fee_vault(HYUSD::MINT),
       user_lp_token_ata: pda::shyusd_ata(user),
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_mint: pda::XSOL,
+      levercoin_mint: XSOL::MINT,
       levercoin_pool: *pda::XSOL_POOL,
       user_levercoin_ata: pda::xsol_ata(user),
       lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: pda::SHYUSD,
+      lp_token_mint: SHYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
       hylo_exchange_program: exchange::ID,
@@ -401,23 +401,3 @@ impl SimulatePriceWithEnv<SHYUSD, JITOSOL> for StabilityPoolClient {
 
 #[async_trait::async_trait]
 impl TransactionSyntax for StabilityPoolClient {}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use crate::{
-    simulate_price::{JITOSOL, SHYUSD},
-    util::{build_test_exchange_client, build_test_stability_pool_client},
-  };
-
-  use anyhow::Result;
-
-  #[tokio::test]
-  async fn print_quote() -> Result<()> {
-    let client = build_test_stability_pool_client()?;
-    let exchange = build_test_exchange_client()?;
-    let quote = client.quote_with_env::<SHYUSD, JITOSOL>(exchange).await?;
-    println!("{quote:?}");
-    Ok(())
-  }
-}

@@ -1,7 +1,8 @@
+use std::sync::atomic::Ordering;
+
 use anchor_lang::prelude::Clock;
 #[cfg(feature = "offchain")]
 use jupiter_amm_interface::ClockRef;
-use std::sync::atomic::Ordering;
 
 /// Abstracts the concept of Solana's onchain clock.
 pub trait SolanaClock {

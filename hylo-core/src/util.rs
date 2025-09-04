@@ -1,10 +1,10 @@
 #[cfg(test)]
 pub mod proptest {
-  use crate::exchange_math::collateral_ratio;
-  use proptest::prelude::*;
-
   use fix::prelude::*;
   use fix::typenum::{N2, N6, N8, N9};
+  use proptest::prelude::*;
+
+  use crate::exchange_math::collateral_ratio;
 
   #[macro_export]
   macro_rules! eq_tolerance {
@@ -133,11 +133,11 @@ pub mod proptest {
 
 #[cfg(test)]
 mod tests {
-  use crate::error::CoreError::SlippageExceeded;
-  use crate::slippage_config::SlippageConfig;
-
   use fix::aliases::si::{Micro, Nano};
   use fix::prelude::*;
+
+  use crate::error::CoreError::SlippageExceeded;
+  use crate::slippage_config::SlippageConfig;
 
   #[test]
   fn one_nano() {

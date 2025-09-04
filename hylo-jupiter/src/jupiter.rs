@@ -4,10 +4,12 @@ use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
-use hylo_core::idl::exchange;
+use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
+use hylo_core::idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_core::idl::{exchange, pda};
 use hylo_core::idl_type_bridge::convert_ufixvalue64;
-use hylo_core::pyth::OracleConfig;
+use hylo_core::pyth::{OracleConfig, SOL_USD_PYTH_FEED};
 use hylo_core::stability_mode::StabilityController;
 use hylo_core::total_sol_cache::TotalSolCache;
 use jupiter_amm_interface::{
@@ -18,9 +20,6 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::quote;
 use crate::util::account_map_get;
-use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
-use hylo_core::idl::pda::{self, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 #[derive(Clone)]
 pub struct HyloJupiterClient {
@@ -158,16 +157,16 @@ impl Amm for HyloJupiterClient {
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    vec![HYUSD, XSOL, SHYUSD, JITOSOL]
+    vec![HYUSD::MINT, XSOL::MINT, SHYUSD::MINT, JITOSOL::MINT]
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
     vec![
-      HYUSD,
-      XSOL,
-      pda::lst_header(JITOSOL),
+      HYUSD::MINT,
+      XSOL::MINT,
+      pda::lst_header(JITOSOL::MINT),
       SOL_USD_PYTH_FEED,
-      SHYUSD,
+      SHYUSD::MINT,
       *pda::HYUSD_POOL,
       *pda::XSOL_POOL,
       *pda::POOL_CONFIG,
@@ -175,13 +174,13 @@ impl Amm for HyloJupiterClient {
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-    let hyusd_mint: Mint = account_map_get(account_map, &pda::HYUSD)?;
-    let xsol_mint: Mint = account_map_get(account_map, &pda::XSOL)?;
+    let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
+    let xsol_mint: Mint = account_map_get(account_map, &XSOL::MINT)?;
     let jitosol_header: LstHeader =
-      account_map_get(account_map, &pda::lst_header(JITOSOL))?;
+      account_map_get(account_map, &pda::lst_header(JITOSOL::MINT))?;
     let sol_usd: PriceUpdateV2 =
       account_map_get(account_map, &SOL_USD_PYTH_FEED)?;
-    let shyusd_mint: Mint = account_map_get(account_map, &pda::SHYUSD)?;
+    let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
     let xsol_pool: TokenAccount =
@@ -210,35 +209,39 @@ impl Amm for HyloJupiterClient {
   ) -> Result<Quote> {
     let ctx = self.load_exchange_ctx()?;
     match (*input_mint, *output_mint) {
-      (JITOSOL, HYUSD) => {
+      (JITOSOL::MINT, HYUSD::MINT) => {
         quote::hyusd_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (HYUSD, JITOSOL) => {
+      (HYUSD::MINT, JITOSOL::MINT) => {
         quote::hyusd_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (JITOSOL, XSOL) => {
+      (JITOSOL::MINT, XSOL::MINT) => {
         quote::xsol_mint(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (XSOL, JITOSOL) => {
+      (XSOL::MINT, JITOSOL::MINT) => {
         quote::xsol_redeem(&ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (HYUSD, XSOL) => quote::hyusd_xsol_swap(&ctx, UFix64::new(*amount)),
-      (XSOL, HYUSD) => quote::xsol_hyusd_swap(&ctx, UFix64::new(*amount)),
-      (HYUSD, SHYUSD) => quote::shyusd_mint(
+      (HYUSD::MINT, XSOL::MINT) => {
+        quote::hyusd_xsol_swap(&ctx, UFix64::new(*amount))
+      }
+      (XSOL::MINT, HYUSD::MINT) => {
+        quote::xsol_hyusd_swap(&ctx, UFix64::new(*amount))
+      }
+      (HYUSD::MINT, SHYUSD::MINT) => quote::shyusd_mint(
         &ctx,
         self.shyusd_mint()?,
         self.hyusd_pool()?,
         self.xsol_pool()?,
         UFix64::new(*amount),
       ),
-      (SHYUSD, HYUSD) => quote::shyusd_redeem(
+      (SHYUSD::MINT, HYUSD::MINT) => quote::shyusd_redeem(
         self.shyusd_mint()?,
         self.hyusd_pool()?,
         self.xsol_pool()?,
         self.pool_config()?,
         UFix64::new(*amount),
       ),
-      (SHYUSD, JITOSOL) => quote::shyusd_redeem_lst(
+      (SHYUSD::MINT, JITOSOL::MINT) => quote::shyusd_redeem_lst(
         &ctx,
         self.shyusd_mint()?,
         self.hyusd_pool()?,
@@ -265,10 +268,6 @@ impl Amm for HyloJupiterClient {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
-
-  use crate::util::{fee_pct_decimal, load_account_map, load_amm_context};
-
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
   use anchor_lang::pubkey;
   use fix::typenum::U9;
@@ -292,6 +291,9 @@ mod tests {
   };
   use jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
+
+  use super::*;
+  use crate::util::{fee_pct_decimal, load_account_map, load_amm_context};
 
   macro_rules! assert_mint {
     ($sim:expr, $quote:expr) => {
@@ -370,8 +372,8 @@ mod tests {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
-      input_mint: pda::JITOSOL,
-      output_mint: pda::HYUSD,
+      input_mint: JITOSOL::MINT,
+      output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -397,8 +399,8 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: pda::HYUSD,
-      output_mint: pda::JITOSOL,
+      input_mint: HYUSD::MINT,
+      output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -424,8 +426,8 @@ mod tests {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
       amount: amount_lst.bits,
-      input_mint: pda::JITOSOL,
-      output_mint: pda::XSOL,
+      input_mint: JITOSOL::MINT,
+      output_mint: XSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -451,8 +453,8 @@ mod tests {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
-      input_mint: pda::XSOL,
-      output_mint: pda::JITOSOL,
+      input_mint: XSOL::MINT,
+      output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -478,8 +480,8 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: pda::HYUSD,
-      output_mint: pda::XSOL,
+      input_mint: HYUSD::MINT,
+      output_mint: XSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -520,8 +522,8 @@ mod tests {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_xsol.bits,
-      input_mint: pda::XSOL,
-      output_mint: pda::HYUSD,
+      input_mint: XSOL::MINT,
+      output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -562,8 +564,8 @@ mod tests {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_hyusd.bits,
-      input_mint: pda::HYUSD,
-      output_mint: pda::SHYUSD,
+      input_mint: HYUSD::MINT,
+      output_mint: SHYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -599,8 +601,8 @@ mod tests {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_shyusd.bits,
-      input_mint: pda::SHYUSD,
-      output_mint: pda::HYUSD,
+      input_mint: SHYUSD::MINT,
+      output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;
@@ -640,8 +642,8 @@ mod tests {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
       amount: amount_shyusd.bits,
-      input_mint: pda::SHYUSD,
-      output_mint: pda::JITOSOL,
+      input_mint: SHYUSD::MINT,
+      output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_client().await?;

@@ -1,10 +1,10 @@
+use anchor_lang::prelude::*;
+use fix::prelude::*;
+
 use crate::error::CoreError::{
   LeverToStable, LstToToken, StableToLever, TokenToLst,
 };
 use crate::pyth::PriceRange;
-
-use anchor_lang::prelude::*;
-use fix::prelude::*;
 
 /// Provides conversions between an LST and protocol tokens.
 pub struct Conversion {
@@ -96,11 +96,11 @@ impl SwapConversion {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use proptest::prelude::*;
 
+  use super::*;
   use crate::eq_tolerance;
   use crate::util::proptest::*;
-  use proptest::prelude::*;
 
   proptest! {
     #[test]

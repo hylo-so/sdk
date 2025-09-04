@@ -1,8 +1,8 @@
-use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
-
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 use fix::typenum::Integer;
+
+use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
 
 /// Client specified slippage tolerance paired with expected token amount.
 #[derive(Debug, AnchorSerialize, AnchorDeserialize)]

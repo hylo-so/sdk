@@ -1,10 +1,10 @@
+use anchor_lang::prelude::*;
+use fix::prelude::*;
+
 use crate::error::CoreError::{
   CollateralRatio, MaxMintable, MaxSwappable, StablecoinNav,
   TargetCollateralRatioTooLow, TotalValueLocked,
 };
-
-use anchor_lang::prelude::*;
-use fix::prelude::*;
 
 /// Computes the current collateral ratio (CR) of the protocol.
 ///   `CR = total_sol_usd / stablecoin_cap`
@@ -131,16 +131,15 @@ pub fn depeg_stablecoin_nav(
 
 #[cfg(test)]
 mod tests {
-  use super::*;
-
-  use crate::eq_tolerance;
-  use crate::error::CoreError::LevercoinNav;
-  use crate::util::proptest::*;
-
   use anchor_lang::prelude::Result;
   use fix::prelude::typenum::N8;
   use fix::prelude::UFix64;
   use proptest::prelude::*;
+
+  use super::*;
+  use crate::eq_tolerance;
+  use crate::error::CoreError::LevercoinNav;
+  use crate::util::proptest::*;
 
   proptest! {
     #[test]

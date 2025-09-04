@@ -1,47 +1,15 @@
 #![allow(clippy::upper_case_acronyms)]
 
-use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::util::REFERENCE_WALLET;
-
 use anchor_client::solana_sdk::signature::Signature;
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::{AnchorDeserialize, Discriminator, Id};
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_idl::exchange::types::SlippageConfig;
-use hylo_idl::pda;
+pub use hylo_idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 
-pub struct XSOL;
-
-impl Id for XSOL {
-  fn id() -> Pubkey {
-    pda::XSOL
-  }
-}
-
-pub struct HYUSD;
-
-impl Id for HYUSD {
-  fn id() -> Pubkey {
-    pda::HYUSD
-  }
-}
-
-pub struct SHYUSD;
-
-impl Id for SHYUSD {
-  fn id() -> Pubkey {
-    pda::SHYUSD
-  }
-}
-
-pub struct JITOSOL;
-
-impl Id for JITOSOL {
-  fn id() -> Pubkey {
-    pda::JITOSOL
-  }
-}
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::util::REFERENCE_WALLET;
 
 /// Price oracle for Hylo token pairs.
 #[async_trait::async_trait]

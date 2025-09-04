@@ -1,10 +1,11 @@
+use anchor_lang::prelude::*;
+use fix::prelude::*;
+
 use crate::error::CoreError::{
   FeeExtraction, NoValidLevercoinMintFee, NoValidLevercoinRedeemFee,
   NoValidStablecoinMintFee, NoValidSwapFee,
 };
 use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
-use anchor_lang::prelude::*;
-use fix::prelude::*;
 
 /// Represents the spread of fees between mint and redeem for protocol tokens.
 /// All fees must be in basis points to represent a fractional percentage

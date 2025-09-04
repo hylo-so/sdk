@@ -1,3 +1,8 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
+use fix::prelude::*;
+use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+
 use crate::conversion::{Conversion, SwapConversion};
 use crate::error::CoreError::{
   DestinationFeeSol, DestinationFeeStablecoin, LevercoinNav,
@@ -16,11 +21,6 @@ use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::stability_pool_math::stability_pool_cap;
 use crate::total_sol_cache::TotalSolCache;
-
-use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
-use fix::prelude::*;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 /// Container for common values needed in an exchange transaction.
 pub struct ExchangeContext<C> {

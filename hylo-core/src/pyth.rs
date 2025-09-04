@@ -1,10 +1,3 @@
-use crate::error::CoreError::{
-  PythOracleConfidence, PythOracleExponent, PythOracleNegativePrice,
-  PythOracleNegativeTime, PythOracleOutdated, PythOraclePriceRange,
-  PythOracleSlotInvalid, PythOracleVerificationLevel,
-};
-use crate::solana_clock::SolanaClock;
-
 use anchor_lang::prelude::{Pubkey, Result};
 use anchor_lang::solana_program::pubkey;
 use fix::prelude::*;
@@ -12,6 +5,13 @@ use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
   FeedId, PriceUpdateV2, VerificationLevel,
 };
+
+use crate::error::CoreError::{
+  PythOracleConfidence, PythOracleExponent, PythOracleNegativePrice,
+  PythOracleNegativeTime, PythOracleOutdated, PythOraclePriceRange,
+  PythOracleSlotInvalid, PythOracleVerificationLevel,
+};
+use crate::solana_clock::SolanaClock;
 
 pub const SOL_USD: FeedId = [
   239, 13, 139, 111, 218, 44, 235, 164, 29, 161, 93, 64, 149, 209, 218, 57, 42,
@@ -190,9 +190,10 @@ where
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use fix::typenum::N8;
   use proptest::prelude::*;
+
+  use super::*;
 
   const INTERVAL_SECS: u64 = 60;
 

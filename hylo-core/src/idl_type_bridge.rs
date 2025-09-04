@@ -1,7 +1,8 @@
+use fix::prelude::UFixValue64;
+
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
 use crate::total_sol_cache::TotalSolCache;
-use fix::prelude::UFixValue64;
 
 #[must_use]
 pub fn convert_ufixvalue64(

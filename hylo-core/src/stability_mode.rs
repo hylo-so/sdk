@@ -1,10 +1,10 @@
-use crate::error::CoreError::StabilityValidation;
-use crate::stability_mode::StabilityMode::{Depeg, Mode1, Mode2, Normal};
+use std::fmt::Display;
 
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 
-use std::fmt::Display;
+use crate::error::CoreError::StabilityValidation;
+use crate::stability_mode::StabilityMode::{Depeg, Mode1, Mode2, Normal};
 
 /// Mode of operation based on the protocol's current collateral ratio.
 /// See whitepaper for more.
