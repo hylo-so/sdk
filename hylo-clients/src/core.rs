@@ -11,7 +11,15 @@ pub use hylo_idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::REFERENCE_WALLET;
 
-/// Price oracle for Hylo token pairs.
+/// Simulates one unit of token pair exchange via RPC simulation against protocol.
+///
+/// # Type Parameters
+/// - `I`: Input token (e.g., `JITOSOL`, `HYUSD`, `XSOL`, `SHYUSD`)
+/// - `O`: Output token
+///
+/// # Associated Types
+/// - `OutExp`: Fixed point precision exponent for the output amount (e.g. `N6` for `UFix64<N6>`)
+/// - `Event`: IDL event type emitted by the simulated transaction
 #[async_trait::async_trait]
 pub trait SimulatePrice<I, O>:
   BuildTransactionData<I, O> + ProgramClient
@@ -38,6 +46,15 @@ where
   }
 }
 
+/// Price simulation requiring external environment context.
+///
+/// # Type Parameters
+/// - `I`: Input token
+/// - `O`: Output token
+///
+/// # Associated Types
+/// - `OutExp`: Fixed point precision exponent for the output amount
+/// - `Env`: Environment type required for simulation (e.g., `ExchangeClient`)
 #[async_trait::async_trait]
 pub trait SimulatePriceWithEnv<I, O>
 where
@@ -51,10 +68,13 @@ where
   ) -> Result<UFix64<Self::OutExp>>;
 }
 
+/// Creates quote inputs with unit amounts for price simulation.
 pub trait QuoteInput {
+  /// Creates quote input with unit amount.
   fn quote_input(user: Pubkey) -> Self;
 }
 
+/// Arguments for minting operations that deposit LST to mint hyUSD or xSOL.
 pub struct MintArgs {
   pub amount: UFix64<N9>,
   pub user: Pubkey,
@@ -71,6 +91,7 @@ impl QuoteInput for MintArgs {
   }
 }
 
+/// Arguments for redemption operations that burn hyUSD or xSOL to withdraw LST.
 pub struct RedeemArgs {
   pub amount: UFix64<N6>,
   pub user: Pubkey,
@@ -87,6 +108,7 @@ impl QuoteInput for RedeemArgs {
   }
 }
 
+/// Arguments for swap operations between hyUSD and xSOL.
 pub struct SwapArgs {
   pub amount: UFix64<N6>,
   pub user: Pubkey,
@@ -101,6 +123,7 @@ impl QuoteInput for SwapArgs {
   }
 }
 
+/// Arguments for stability pool operations (deposit/withdraw sHYUSD).
 pub struct StabilityPoolArgs {
   pub amount: UFix64<N6>,
   pub user: Pubkey,
@@ -115,16 +138,26 @@ impl QuoteInput for StabilityPoolArgs {
   }
 }
 
+/// Builds transaction data (instructions and lookup tables) for operations.
+///
+/// # Type Parameters
+/// - `I`: Input token
+/// - `O`: Output token
+///
+/// # Associated Types
+/// - `Inputs`: Parameter type for building transactions (e.g., `MintArgs`, `SwapArgs`)
 #[async_trait::async_trait]
 pub trait BuildTransactionData<I, O> {
   type Inputs: Send + Sync + 'static;
 
+  /// Builds versioned transaction data for the token pair operation.
   async fn build(
     &self,
     inputs: Self::Inputs,
   ) -> Result<VersionedTransactionData>;
 }
 
+/// High-level API for transaction operations.
 #[async_trait::async_trait]
 pub trait TransactionSyntax {
   async fn run_transaction<I, O>(
