@@ -36,7 +36,7 @@ use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 /// ## Setup
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+/// 
 /// # fn setup_client() -> Result<ExchangeClient> {
 /// let client = ExchangeClient::new_random_keypair(
 ///   Cluster::Mainnet,
@@ -49,7 +49,7 @@ use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 /// ## Transaction Execution
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+/// 
 /// # async fn execute_transaction(client: ExchangeClient) -> Result<Signature> {
 /// // Mint JITOSOL → hyUSD
 /// let user = Pubkey::new_unique();
@@ -65,7 +65,7 @@ use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 /// ## Transaction Building
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+/// 
 /// # async fn build_transaction(client: ExchangeClient) -> Result<()> {
 /// let user = Pubkey::new_unique();
 ///
@@ -82,7 +82,7 @@ use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 /// ## Price Quote
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+///
 /// # async fn simulate_price(client: ExchangeClient) -> Result<()> {
 /// // Get price quote for 1 JITOSOL → hyUSD
 /// let price = client.quote::<JITOSOL, HYUSD>().await?;

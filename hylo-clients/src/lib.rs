@@ -1,6 +1,6 @@
 //! # Hylo Clients
 //!
-//! Offchain Rust clients for interacting with Hylo protocol programs on Solana.
+//! Offchain clients for Hylo protocol transactions and quotes.
 //!
 //! ## Quick Start
 //!
@@ -8,7 +8,7 @@
 //! use hylo_clients::prelude::*;
 //!
 //! # async fn example() -> Result<()> {
-//! // Create an exchange client
+//! // Create Hylo exchange client
 //! let client = ExchangeClient::new_random_keypair(
 //!     Cluster::Mainnet,
 //!     CommitmentConfig::confirmed(),
@@ -22,8 +22,8 @@
 //!
 //! ## Clients
 //!
-//! - [`ExchangeClient`] - Mint/redeem/swap operations for hyUSD and xSOL
-//! - [`StabilityPoolClient`] - Deposit/withdraw operations for sHYUSD
+//! - [`exchange_client::ExchangeClient`] - Mint/redeem/swap operations for hyUSD and xSOL
+//! - [`stability_pool_client::StabilityPoolClient`] - Deposit/withdraw operations for sHYUSD
 
 pub mod exchange_client;
 pub mod prelude;

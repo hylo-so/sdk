@@ -40,7 +40,7 @@ use crate::util::{
 /// ## Setup
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+/// 
 /// # fn setup_client() -> Result<StabilityPoolClient> {
 /// let client = StabilityPoolClient::new_random_keypair(
 ///   Cluster::Mainnet,
@@ -53,7 +53,7 @@ use crate::util::{
 /// ## Transaction Execution
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+/// 
 /// # async fn execute_transaction(client: StabilityPoolClient) -> Result<Signature> {
 /// // Deposit HYUSD → sHYUSD
 /// let user = Pubkey::new_unique();
@@ -68,7 +68,7 @@ use crate::util::{
 /// ## Price Quote
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
-/// #
+/// 
 /// # async fn simulate_price(client: StabilityPoolClient) -> Result<()> {
 /// // Get price quote for 1 HYUSD → sHYUSD
 /// let price = client.quote::<HYUSD, SHYUSD>().await?;
