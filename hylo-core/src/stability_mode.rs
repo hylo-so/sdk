@@ -68,7 +68,7 @@ impl StabilityController {
     )
   }
 
-  /// Like [`next_stability_threshold`] but in reverse order.
+  /// Like [`Self::next_stability_threshold`] but in reverse order.
   /// Yields the previously higher threshold.
   #[must_use]
   pub fn prev_stability_threshold(
