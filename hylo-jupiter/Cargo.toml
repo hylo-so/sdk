@@ -1,0 +1,23 @@
+[package]
+name = "hylo-jupiter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+rust_decimal.workspace = true
+bincode.workspace = true
+hylo-fix.workspace = true
+anyhow.workspace = true
+anchor-lang.workspace = true
+jupiter-amm-interface.workspace = true
+hylo-core = { path = "../hylo-core", features = ["offchain"] }
+hylo-clients = { path = "../hylo-clients" }
+pyth-solana-receiver-sdk.workspace = true
+tokio.workspace = true
+anchor-spl.workspace = true
+anchor-client.workspace = true
+
+[dev-dependencies]
+flaky_test.workspace = true

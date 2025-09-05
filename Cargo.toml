@@ -1,17 +1,22 @@
-[package]
-name = "hylo-sdk"
-version = "0.1.11"
+[workspace]
+members = [
+  "hylo-clients",
+  "hylo-core", "hylo-idl", "hylo-jupiter",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.12"
 edition = "2021"
-description = "Rust SDK for the Hylo stablecoin protocol"
 license = "MPL-2.0"
 homepage = "https://hylo.so"
-include = ["idls/", "src/"]
 
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.98"
 anchor-client = { version = "0.31.1", features = ["async"] }
 anchor-spl = "0.31.1"
 anchor-lang = "0.31.1"
+flaky_test = "0.2.2"
 hylo-fix = "0.4.0"
 pyth-solana-receiver-sdk = "0.6.1"
 base64 = "0.22.1"
@@ -20,3 +25,7 @@ tokio = "1.36.0"
 async-trait = "0.1.88"
 futures = "0.3.31"
 itertools = "0.14.0"
+jupiter-amm-interface = "0.6.0"
+proptest = "1.5.0"
+rust_decimal = "1.37.2"
+bincode = "1.3.3"

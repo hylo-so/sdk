@@ -1,0 +1,22 @@
+[package]
+name = "hylo-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+hylo-fix.workspace = true
+anchor-lang.workspace = true
+anchor-spl.workspace = true
+pyth-solana-receiver-sdk.workspace = true
+jupiter-amm-interface = { workspace = true, optional = true }
+hylo-idl = { path = "../hylo-idl", optional = true }
+
+[features]
+default = []
+offchain = ["dep:hylo-idl", "dep:jupiter-amm-interface"]
+
+[dev-dependencies]
+proptest.workspace = true
+flaky_test.workspace = true

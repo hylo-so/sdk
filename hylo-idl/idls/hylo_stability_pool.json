@@ -2482,6 +2482,95 @@
       ]
     },
     {
+      "name": "update_withdrawal_fee",
+      "discriminator": [
+        165,
+        235,
+        231,
+        25,
+        127,
+        99,
+        244,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pool_config"
+          ]
+        },
+        {
+          "name": "pool_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_withdrawal_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "user_deposit",
       "discriminator": [
         186,
@@ -3413,6 +3502,157 @@
           }
         },
         {
+          "name": "fee_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "fee_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "fee_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
           "name": "user_lp_token_ata",
           "writable": true,
           "pda": {
@@ -4054,6 +4294,19 @@
       ]
     },
     {
+      "name": "UpdateWithdrawalFeeEvent",
+      "discriminator": [
+        204,
+        60,
+        32,
+        187,
+        54,
+        211,
+        107,
+        115
+      ]
+    },
+    {
       "name": "UserDepositEvent",
       "discriminator": [
         70,
@@ -4067,16 +4320,29 @@
       ]
     },
     {
-      "name": "UserWithdrawEvent",
+      "name": "UserWithdrawEventV0",
       "discriminator": [
-        133,
-        189,
-        140,
-        255,
-        132,
-        211,
-        143,
-        89
+        142,
+        135,
+        121,
+        155,
+        248,
+        252,
+        59,
+        161
+      ]
+    },
+    {
+      "name": "UserWithdrawEventV1",
+      "discriminator": [
+        51,
+        241,
+        35,
+        135,
+        62,
+        237,
+        83,
+        122
       ]
     }
   ],
@@ -4329,11 +4595,19 @@
             "type": "u8"
           },
           {
+            "name": "withdrawal_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                55
               ]
             }
           }
@@ -4625,6 +4899,30 @@
       }
     },
     {
+      "name": "UpdateWithdrawalFeeEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_withdrawal_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_withdrawal_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UserDepositEvent",
       "type": {
         "kind": "struct",
@@ -4657,7 +4955,7 @@
       }
     },
     {
-      "name": "UserWithdrawEvent",
+      "name": "UserWithdrawEventV0",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4679,6 +4977,62 @@
           },
           {
             "name": "levercoin_withdrawn",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserWithdrawEventV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lp_token_burned",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_withdrawn",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_nav",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "levercoin_withdrawn",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "levercoin_nav",
             "type": {
               "defined": {
                 "name": "UFixValue64"

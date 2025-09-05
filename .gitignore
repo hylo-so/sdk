@@ -3,3 +3,4 @@
 target/
 .git/
 .direnv/
+.claude/
