@@ -2,6 +2,7 @@
 name = "hylo-jupiter"
 version.workspace = true
 edition.workspace = true
+description = "Jupiter integration for Hylo Exchange and Stability Pool."
 license.workspace = true
 homepage.workspace = true
 

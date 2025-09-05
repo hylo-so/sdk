@@ -2,6 +2,7 @@
 name = "hylo-core"
 version.workspace = true
 edition.workspace = true
+description = "Core protocol data types, math, and utilities."
 license.workspace = true
 homepage.workspace = true
 

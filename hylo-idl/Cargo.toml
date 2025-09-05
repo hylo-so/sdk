@@ -2,6 +2,7 @@
 name = "hylo-idl"
 version.workspace = true
 edition.workspace = true
+description = "Protocol IDL definitions"
 license.workspace = true
 homepage.workspace = true
 include = ["idls/", "src/"]
