@@ -1854,6 +1854,8 @@ checksum = "9b112acc8b3adf4b107a8ec20977da0273a8c386765a3ec0229bd500a1443f9f"
 [[package]]
 name = "hylo-clients"
 version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c1068a5dd4a8520980284996a972bbeced01ead63e15b33cefced3ee3f2865d"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1862,9 +1864,30 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "futures",
- "hylo-core",
+ "hylo-core 0.1.12",
  "hylo-fix",
- "hylo-idl",
+ "hylo-idl 0.1.12",
+ "itertools 0.14.0",
+ "pyth-solana-receiver-sdk",
+ "serde_json",
+ "solana-transaction-status-client-types",
+ "tokio",
+]
+
+[[package]]
+name = "hylo-clients"
+version = "0.1.13"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "futures",
+ "hylo-core 0.1.12",
+ "hylo-fix",
+ "hylo-idl 0.1.12",
  "itertools 0.14.0",
  "pyth-solana-receiver-sdk",
  "serde_json",
@@ -1875,12 +1898,26 @@ dependencies = [
 [[package]]
 name = "hylo-core"
 version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c54dfc7d5c4c3e163afb7485e0fac46cc93f774600e5f0a7f56af4b94ce734a"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "hylo-fix",
+ "hylo-idl 0.1.12",
+ "jupiter-amm-interface",
+ "pyth-solana-receiver-sdk",
+]
+
+[[package]]
+name = "hylo-core"
+version = "0.1.13"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "flaky_test",
  "hylo-fix",
- "hylo-idl",
+ "hylo-idl 0.1.12",
  "jupiter-amm-interface",
  "proptest",
  "pyth-solana-receiver-sdk",
@@ -1904,6 +1941,16 @@ dependencies = [
 [[package]]
 name = "hylo-idl"
 version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e79aa4c0ec834dbe0bdfe9f1c0cef59db2d9576533c44fc92ae0f9b76f197d0c"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+]
+
+[[package]]
+name = "hylo-idl"
+version = "0.1.13"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1911,7 +1958,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1919,8 +1966,8 @@ dependencies = [
  "anyhow",
  "bincode",
  "flaky_test",
- "hylo-clients",
- "hylo-core",
+ "hylo-clients 0.1.12",
+ "hylo-core 0.1.12",
  "hylo-fix",
  "jupiter-amm-interface",
  "pyth-solana-receiver-sdk",
