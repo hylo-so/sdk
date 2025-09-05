@@ -29,8 +29,8 @@ pub const STABILITY_POOL_LOOKUP_TABLE: Pubkey =
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
   pubkey!("9Mb2Mt76AN7eNY3BBA4LgfTicARXhcEEokTBfsN47noK");
 
-/// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and sHYUSD.
-/// Useful for simulations of mint and redemption.
+/// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and
+/// sHYUSD. Useful for simulations of mint and redemption.
 pub const REFERENCE_WALLET: Pubkey =
   pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
 
