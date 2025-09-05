@@ -20,6 +20,7 @@ use crate::util::{
   LST_REGISTRY_LOOKUP_TABLE,
 };
 
+/// Components from which a [`VersionedTransaction`] can be built.
 pub struct VersionedTransactionData {
   pub instructions: Vec<Instruction>,
   pub lookup_tables: Vec<AddressLookupTableAccount>,

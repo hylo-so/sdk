@@ -20,10 +20,6 @@ use crate::exchange_client::ExchangeClient;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
-pub enum Token {
-  XSOL(Pubkey),
-}
-
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
 
@@ -33,7 +29,7 @@ pub const STABILITY_POOL_LOOKUP_TABLE: Pubkey =
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
   pubkey!("9Mb2Mt76AN7eNY3BBA4LgfTicARXhcEEokTBfsN47noK");
 
-/// This wallet should at least one unit of jitoSOL, xSOL, hyUSD, and sHYUSD.
+/// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and sHYUSD.
 /// Useful for simulations of mint and redemption.
 pub const REFERENCE_WALLET: Pubkey =
   pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
