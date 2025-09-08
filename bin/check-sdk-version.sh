@@ -1,6 +1,12 @@
 #!/bin/bash
 set -eu pipefail
 
+# Check if there are any changes using cargo workspaces
+cargo workspaces changed --error-on-empty >/dev/null 2>&1 || {
+  echo "No changes detected in workspaces. Skipping version check."
+  exit 0
+}
+
 function check-sdk-version() {
   CURRENT_VERSION=$1
   MAIN_VERSION=$2
