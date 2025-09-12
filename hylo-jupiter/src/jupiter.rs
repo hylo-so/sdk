@@ -18,8 +18,8 @@ use jupiter_amm_interface::{
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use crate::quote;
-use crate::util::account_map_get;
+use crate::util::{account_map_get, validate_swap_params};
+use crate::{account_metas, quote};
 
 #[derive(Clone)]
 pub struct HyloJupiterClient {
@@ -256,9 +256,53 @@ impl Amm for HyloJupiterClient {
 
   fn get_swap_and_account_metas(
     &self,
-    _swap_params: &SwapParams,
+    p: &SwapParams,
   ) -> Result<SwapAndAccountMetas> {
-    todo!()
+    let SwapParams {
+      source_mint,
+      destination_mint,
+      token_transfer_authority: user,
+      ..
+    } = validate_swap_params(p)?;
+    match (*source_mint, *destination_mint) {
+      (JITOSOL::MINT, HYUSD::MINT) => {
+        Ok(account_metas::mint_stablecoin(*user, JITOSOL::MINT))
+      }
+      (HYUSD::MINT, JITOSOL::MINT) => {
+        Ok(account_metas::redeem_stablecoin(*user, JITOSOL::MINT))
+      }
+      (JITOSOL::MINT, XSOL::MINT) => {
+        Ok(account_metas::mint_levercoin(*user, JITOSOL::MINT))
+      }
+      (XSOL::MINT, JITOSOL::MINT) => {
+        Ok(account_metas::redeem_levercoin(*user, JITOSOL::MINT))
+      }
+      (HYUSD::MINT, XSOL::MINT) => {
+        Ok(account_metas::swap_stable_to_lever(*user))
+      }
+      (XSOL::MINT, HYUSD::MINT) => {
+        Ok(account_metas::swap_lever_to_stable(*user))
+      }
+      (HYUSD::MINT, SHYUSD::MINT) => {
+        Ok(account_metas::stability_pool_deposit(*user))
+      }
+      (SHYUSD::MINT, HYUSD::MINT) => {
+        Ok(account_metas::stability_pool_withdraw(*user))
+      }
+      (SHYUSD::MINT, JITOSOL::MINT) => {
+        // More accounts if liquidating both hyUSD and xSOL
+        let acc = if self.xsol_pool()?.amount > 0 {
+          account_metas::stability_pool_liquidate_levercoin(
+            *user,
+            JITOSOL::MINT,
+          )
+        } else {
+          account_metas::stability_pool_liquidate(*user, JITOSOL::MINT)
+        };
+        Ok(acc)
+      }
+      _ => Err(anyhow!("Unsupported swap pair"))?,
+    }
   }
 
   fn clone_amm(&self) -> Box<dyn Amm + Send + Sync> {

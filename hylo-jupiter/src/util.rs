@@ -4,7 +4,9 @@ use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use fix::typenum::{IsLess, NInt, NonZero, Unsigned, U20};
-use jupiter_amm_interface::{AccountMap, AmmContext, ClockRef};
+use jupiter_amm_interface::{
+  AccountMap, AmmContext, ClockRef, SwapMode, SwapParams,
+};
 use rust_decimal::Decimal;
 
 /// Computes fee percentage in Jupiter's favored `Decimal` type.
@@ -73,4 +75,20 @@ pub async fn load_amm_context(client: &RpcClient) -> Result<AmmContext> {
   let clock: Clock = bincode::deserialize(&clock_account.data)?;
   let clock_ref = ClockRef::from(clock);
   Ok(AmmContext { clock_ref })
+}
+
+/// Validates Jupiter swap parameters for Hylo compatibility.
+///
+/// # Errors
+/// * `ExactOut` mode or dynamic accounts used
+pub fn validate_swap_params<'a>(
+  params: &'a SwapParams<'a, 'a>,
+) -> Result<&'a SwapParams<'a, 'a>> {
+  if params.swap_mode == SwapMode::ExactOut {
+    Err(anyhow!("ExactOut not supported"))
+  } else if params.missing_dynamic_accounts_as_default {
+    Err(anyhow!("Dynamic accounts replacement not supported"))
+  } else {
+    Ok(params)
+  }
 }
