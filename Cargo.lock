@@ -1853,29 +1853,6 @@ checksum = "9b112acc8b3adf4b107a8ec20977da0273a8c386765a3ec0229bd500a1443f9f"
 
 [[package]]
 name = "hylo-clients"
-version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c1068a5dd4a8520980284996a972bbeced01ead63e15b33cefced3ee3f2865d"
-dependencies = [
- "anchor-client",
- "anchor-lang",
- "anchor-spl",
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "futures",
- "hylo-core 0.1.12",
- "hylo-fix",
- "hylo-idl 0.1.12",
- "itertools 0.14.0",
- "pyth-solana-receiver-sdk",
- "serde_json",
- "solana-transaction-status-client-types",
- "tokio",
-]
-
-[[package]]
-name = "hylo-clients"
 version = "0.1.13"
 dependencies = [
  "anchor-client",
@@ -1905,7 +1882,7 @@ dependencies = [
  "anchor-spl",
  "hylo-fix",
  "hylo-idl 0.1.12",
- "jupiter-amm-interface",
+ "jupiter-amm-interface 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pyth-solana-receiver-sdk",
 ]
 
@@ -1918,7 +1895,7 @@ dependencies = [
  "flaky_test",
  "hylo-fix",
  "hylo-idl 0.1.12",
- "jupiter-amm-interface",
+ "jupiter-amm-interface 0.6.0",
  "proptest",
  "pyth-solana-receiver-sdk",
 ]
@@ -1954,6 +1931,8 @@ version = "0.1.13"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "anyhow",
+ "paste",
 ]
 
 [[package]]
@@ -1966,10 +1945,11 @@ dependencies = [
  "anyhow",
  "bincode",
  "flaky_test",
- "hylo-clients 0.1.12",
- "hylo-core 0.1.12",
+ "hylo-clients",
+ "hylo-core 0.1.13",
  "hylo-fix",
- "jupiter-amm-interface",
+ "hylo-idl 0.1.13",
+ "jupiter-amm-interface 0.6.0",
  "pyth-solana-receiver-sdk",
  "rust_decimal",
  "tokio",
@@ -2301,6 +2281,19 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "jupiter-amm-interface"
+version = "0.6.0"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "solana-account-decoder",
+ "solana-sdk",
 ]
 
 [[package]]

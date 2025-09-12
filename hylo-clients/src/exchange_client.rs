@@ -9,15 +9,16 @@ use anchor_spl::{associated_token, token};
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::exchange::client::{accounts, args};
-use hylo_idl::exchange::events::{
+use hylo_idl::hylo_exchange::client::{accounts, args};
+use hylo_idl::hylo_exchange::events::{
   ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
-use hylo_idl::{ata, exchange, pda, stability_pool};
+use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
 
+use crate::instruction_accounts;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
   BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
@@ -95,7 +96,7 @@ pub struct ExchangeClient {
 }
 
 impl ProgramClient for ExchangeClient {
-  const PROGRAM_ID: Pubkey = exchange::ID;
+  const PROGRAM_ID: Pubkey = hylo_exchange::ID;
 
   fn build_client(
     program: Program<Arc<Keypair>>,
@@ -125,7 +126,7 @@ impl ExchangeClient {
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::UpdateLstPrices {};
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
@@ -164,14 +165,14 @@ impl ExchangeClient {
       levercoin_pool: *pda::XSOL_POOL,
       pool_auth: *pda::POOL_AUTH,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_stability_pool: stability_pool::ID,
+      hylo_stability_pool: hylo_stability_pool::ID,
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       associated_token_program: associated_token::ID,
       token_program: token::ID,
       system_program: system_program::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::HarvestYield {};
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
@@ -229,26 +230,7 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       slippage_config,
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::RedeemStablecoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
-      stablecoin_mint: HYUSD::MINT,
-      lst_mint: JITOSOL::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      system_program: system_program::ID,
-      token_program: token::ID,
-      associated_token_program: associated_token::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
+    let accounts = instruction_accounts::redeem_stablecoin(user, JITOSOL::MINT);
     let args = args::RedeemStablecoin {
       amount_to_redeem: amount.bits,
       slippage_config,
@@ -292,27 +274,7 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       slippage_config,
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::RedeemLevercoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_levercoin_ata: pda::xsol_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
-      levercoin_mint: XSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      lst_mint: JITOSOL::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      system_program: system_program::ID,
-      token_program: token::ID,
-      associated_token_program: associated_token::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
+    let accounts = instruction_accounts::redeem_levercoin(user, JITOSOL::MINT);
     let args = args::RedeemLevercoin {
       amount_to_redeem: amount.bits,
       slippage_config,
@@ -356,26 +318,7 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
       slippage_config,
     }: MintArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::MintStablecoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      lst_mint: JITOSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: token::ID,
-      associated_token_program: associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
+    let accounts = instruction_accounts::mint_stablecoin(user, JITOSOL::MINT);
     let args = args::MintStablecoin {
       amount_lst_to_deposit: amount.bits,
       slippage_config,
@@ -419,27 +362,7 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
       slippage_config,
     }: MintArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::MintLevercoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
-      user_levercoin_ata: pda::xsol_ata(user),
-      lst_mint: JITOSOL::MINT,
-      levercoin_mint: XSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: token::ID,
-      associated_token_program: associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
+    let accounts = instruction_accounts::mint_levercoin(user, JITOSOL::MINT);
     let args = args::MintLevercoin {
       amount_lst_to_deposit: amount.bits,
       slippage_config,
@@ -479,22 +402,7 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
     &self,
     SwapArgs { amount, user }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::SwapStableToLever {
-      user,
-      hylo: *pda::HYLO,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      stablecoin_mint: HYUSD::MINT,
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      levercoin_mint: XSOL::MINT,
-      levercoin_auth: *pda::XSOL_AUTH,
-      user_levercoin_ata: pda::xsol_ata(user),
-      token_program: token::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
+    let accounts = instruction_accounts::swap_stable_to_lever(user);
     let args = args::SwapStableToLever {
       amount_stablecoin: amount.bits,
     };
@@ -529,22 +437,7 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
     &self,
     SwapArgs { amount, user }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::SwapLeverToStable {
-      user,
-      hylo: *pda::HYLO,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      stablecoin_mint: HYUSD::MINT,
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      levercoin_mint: XSOL::MINT,
-      levercoin_auth: *pda::XSOL_AUTH,
-      user_levercoin_ata: pda::xsol_ata(user),
-      token_program: token::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
+    let accounts = instruction_accounts::swap_lever_to_stable(user);
     let args = args::SwapLeverToStable {
       amount_levercoin: amount.bits,
     };
