@@ -1866,7 +1866,7 @@ dependencies = [
  "hylo-fix",
  "hylo-idl 0.1.12",
  "itertools 0.14.0",
- "pyth-solana-receiver-sdk 1.0.1",
+ "pyth-solana-receiver-sdk",
  "serde_json",
  "solana-transaction-status-client-types",
  "tokio",
@@ -1883,7 +1883,7 @@ dependencies = [
  "hylo-fix",
  "hylo-idl 0.1.12",
  "jupiter-amm-interface 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pyth-solana-receiver-sdk 0.6.1",
+ "pyth-solana-receiver-sdk",
 ]
 
 [[package]]
@@ -1897,7 +1897,7 @@ dependencies = [
  "hylo-idl 0.1.12",
  "jupiter-amm-interface 0.6.0",
  "proptest",
- "pyth-solana-receiver-sdk 1.0.1",
+ "pyth-solana-receiver-sdk",
 ]
 
 [[package]]
@@ -1950,7 +1950,7 @@ dependencies = [
  "hylo-fix",
  "hylo-idl 0.1.13",
  "jupiter-amm-interface 0.6.0",
- "pyth-solana-receiver-sdk 1.0.1",
+ "pyth-solana-receiver-sdk",
  "rust_decimal",
  "tokio",
 ]
@@ -2983,17 +2983,6 @@ dependencies = [
  "hex",
  "pythnet-sdk",
  "solana-program",
-]
-
-[[package]]
-name = "pyth-solana-receiver-sdk"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66596ab94606146630358bbf8b7187ac7353b766ab92028ecec7478a79a6059d"
-dependencies = [
- "anchor-lang",
- "hex",
- "pythnet-sdk",
 ]
 
 [[package]]
