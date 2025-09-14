@@ -4,8 +4,8 @@ use fix::num_traits::Zero;
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
-use hylo_core::idl::exchange::accounts::LstHeader;
-use hylo_core::idl::stability_pool::accounts::PoolConfig;
+use hylo_core::idl::hylo_exchange::accounts::LstHeader;
+use hylo_core::idl::hylo_stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{TokenMint, HYUSD};
 use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::stability_pool_math::{

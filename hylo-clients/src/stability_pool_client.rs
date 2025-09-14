@@ -7,15 +7,15 @@ use anchor_spl::token;
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::exchange::events::{
+use hylo_idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2,
 };
-use hylo_idl::stability_pool::client::{accounts, args};
-use hylo_idl::stability_pool::events::{
+use hylo_idl::hylo_stability_pool::client::{accounts, args};
+use hylo_idl::hylo_stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_idl::{exchange, pda, stability_pool};
+use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
 
 use crate::exchange_client::ExchangeClient;
 use crate::instruction_accounts;
@@ -81,7 +81,7 @@ pub struct StabilityPoolClient {
 }
 
 impl ProgramClient for StabilityPoolClient {
-  const PROGRAM_ID: Pubkey = stability_pool::ID;
+  const PROGRAM_ID: Pubkey = hylo_stability_pool::ID;
 
   fn build_client(
     program: Program<Arc<Keypair>>,
@@ -120,10 +120,10 @@ impl StabilityPoolClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: exchange::ID,
+      hylo_exchange_program: hylo_exchange::ID,
       token_program: token::ID,
       event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
+      program: hylo_stability_pool::ID,
     };
     let args = args::RebalanceStableToLever {};
     let instructions = self
@@ -166,10 +166,10 @@ impl StabilityPoolClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: exchange::ID,
+      hylo_exchange_program: hylo_exchange::ID,
       token_program: token::ID,
       event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
+      program: hylo_stability_pool::ID,
     };
     let args = args::RebalanceLeverToStable {};
     let instructions = self

@@ -4,10 +4,10 @@ use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
-use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
-use hylo_core::idl::stability_pool::accounts::PoolConfig;
+use hylo_core::idl::hylo_exchange::accounts::{Hylo, LstHeader};
+use hylo_core::idl::hylo_stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_core::idl::{exchange, pda};
+use hylo_core::idl::{hylo_exchange, pda};
 use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::pyth::{OracleConfig, SOL_USD_PYTH_FEED};
 use hylo_core::stability_mode::StabilityController;
@@ -149,7 +149,7 @@ impl Amm for HyloJupiterClient {
   }
 
   fn program_id(&self) -> Pubkey {
-    exchange::ID
+    hylo_exchange::ID
   }
 
   fn key(&self) -> Pubkey {
@@ -325,12 +325,12 @@ mod tests {
     build_test_exchange_client, build_test_stability_pool_client, parse_event,
     simulation_config,
   };
-  use hylo_core::idl::exchange::events::{
+  use hylo_core::idl::hylo_exchange::events::{
     MintLevercoinEventV2, MintStablecoinEventV2, RedeemLevercoinEventV2,
     RedeemStablecoinEventV2, SwapLeverToStableEventV1,
     SwapStableToLeverEventV1,
   };
-  use hylo_core::idl::stability_pool::events::{
+  use hylo_core::idl::hylo_stability_pool::events::{
     UserDepositEvent, UserWithdrawEventV1,
   };
   use jupiter_amm_interface::{KeyedAccount, SwapMode};

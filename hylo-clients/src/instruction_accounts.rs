@@ -2,13 +2,15 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::exchange::client::accounts::{
+use hylo_idl::hylo_exchange::client::accounts::{
   MintLevercoin, MintStablecoin, RedeemLevercoin, RedeemStablecoin,
   SwapLeverToStable, SwapStableToLever,
 };
-use hylo_idl::stability_pool::client::accounts::{UserDeposit, UserWithdraw};
+use hylo_idl::hylo_stability_pool::client::accounts::{
+  UserDeposit, UserWithdraw,
+};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
-use hylo_idl::{ata, exchange, pda, stability_pool};
+use hylo_idl::{ata, hylo_exchange, hylo_stability_pool, pda};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
 #[must_use]
@@ -31,7 +33,7 @@ pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> MintStablecoin {
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
+    program: hylo_exchange::ID,
   }
 }
 
@@ -57,7 +59,7 @@ pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> MintLevercoin {
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
+    program: hylo_exchange::ID,
   }
 }
 
@@ -82,7 +84,7 @@ pub fn redeem_stablecoin(user: Pubkey, lst_mint: Pubkey) -> RedeemStablecoin {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
+    program: hylo_exchange::ID,
   }
 }
 
@@ -108,7 +110,7 @@ pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> RedeemLevercoin {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
+    program: hylo_exchange::ID,
   }
 }
 
@@ -129,7 +131,7 @@ pub fn swap_stable_to_lever(user: Pubkey) -> SwapStableToLever {
     user_levercoin_ata: pda::xsol_ata(user),
     token_program: token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
+    program: hylo_exchange::ID,
   }
 }
 
@@ -150,7 +152,7 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
     user_levercoin_ata: pda::xsol_ata(user),
     token_program: token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
+    program: hylo_exchange::ID,
   }
 }
 
@@ -172,12 +174,12 @@ pub fn stability_pool_deposit(user: Pubkey) -> UserDeposit {
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    hylo_exchange_program: exchange::ID,
+    hylo_exchange_program: hylo_exchange::ID,
     system_program: system_program::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: stability_pool::ID,
+    program: hylo_stability_pool::ID,
   }
 }
 
@@ -202,11 +204,11 @@ pub fn stability_pool_withdraw(user: Pubkey) -> UserWithdraw {
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
     hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    hylo_exchange_program: exchange::ID,
+    hylo_exchange_program: hylo_exchange::ID,
     system_program: system_program::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: stability_pool::ID,
+    program: hylo_stability_pool::ID,
   }
 }
