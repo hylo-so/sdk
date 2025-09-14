@@ -3,22 +3,22 @@ use std::sync::Arc;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::system_program;
-use anchor_spl::{associated_token, token};
+use anchor_spl::token;
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::exchange::events::{
+use hylo_idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2,
 };
-use hylo_idl::stability_pool::client::{accounts, args};
-use hylo_idl::stability_pool::events::{
+use hylo_idl::hylo_stability_pool::client::{accounts, args};
+use hylo_idl::hylo_stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_idl::{exchange, pda, stability_pool};
+use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
 
 use crate::exchange_client::ExchangeClient;
+use crate::instruction_accounts;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
@@ -81,7 +81,7 @@ pub struct StabilityPoolClient {
 }
 
 impl ProgramClient for StabilityPoolClient {
-  const PROGRAM_ID: Pubkey = stability_pool::ID;
+  const PROGRAM_ID: Pubkey = hylo_stability_pool::ID;
 
   fn build_client(
     program: Program<Arc<Keypair>>,
@@ -120,10 +120,10 @@ impl StabilityPoolClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: exchange::ID,
+      hylo_exchange_program: hylo_exchange::ID,
       token_program: token::ID,
       event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
+      program: hylo_stability_pool::ID,
     };
     let args = args::RebalanceStableToLever {};
     let instructions = self
@@ -166,10 +166,10 @@ impl StabilityPoolClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_auth: *pda::XSOL_AUTH,
       hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: exchange::ID,
+      hylo_exchange_program: hylo_exchange::ID,
       token_program: token::ID,
       event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
+      program: hylo_stability_pool::ID,
     };
     let args = args::RebalanceLeverToStable {};
     let instructions = self
@@ -230,28 +230,7 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     &self,
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::UserDeposit {
-      user,
-      pool_config: *pda::POOL_CONFIG,
-      hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      levercoin_mint: XSOL::MINT,
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lp_token_ata: pda::shyusd_ata(user),
-      pool_auth: *pda::POOL_AUTH,
-      stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_pool: *pda::XSOL_POOL,
-      lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: SHYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: exchange::ID,
-      system_program: system_program::ID,
-      token_program: token::ID,
-      associated_token_program: associated_token::ID,
-      event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
-    };
+    let accounts = instruction_accounts::stability_pool_deposit(user);
     let args = args::UserDeposit {
       amount_stablecoin: amount.bits,
     };
@@ -290,31 +269,7 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     &self,
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = accounts::UserWithdraw {
-      user,
-      pool_config: *pda::POOL_CONFIG,
-      hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
-      user_lp_token_ata: pda::shyusd_ata(user),
-      pool_auth: *pda::POOL_AUTH,
-      stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_mint: XSOL::MINT,
-      levercoin_pool: *pda::XSOL_POOL,
-      user_levercoin_ata: pda::xsol_ata(user),
-      lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: SHYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: exchange::ID,
-      system_program: system_program::ID,
-      token_program: token::ID,
-      associated_token_program: associated_token::ID,
-      event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
-    };
+    let accounts = instruction_accounts::stability_pool_withdraw(user);
     let args = args::UserWithdraw {
       amount_lp_token: amount.bits,
     };
