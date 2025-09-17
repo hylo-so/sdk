@@ -2010,6 +2010,7 @@ dependencies = [
  "jupiter-amm-interface",
  "proptest",
  "pyth-solana-receiver-sdk",
+ "serde",
 ]
 
 [[package]]

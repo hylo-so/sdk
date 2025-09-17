@@ -13,6 +13,7 @@ anchor-spl.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 jupiter-amm-interface = { workspace = true, optional = true }
 hylo-idl = { path = "../hylo-idl", optional = true }
+serde.workspace = true
 
 [features]
 default = []
