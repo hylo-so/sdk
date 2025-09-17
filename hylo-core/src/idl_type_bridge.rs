@@ -2,6 +2,7 @@ use fix::prelude::UFixValue64;
 
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
+use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
 
 #[must_use]
@@ -11,6 +12,16 @@ pub fn convert_ufixvalue64(
   UFixValue64 {
     bits: idl.bits,
     exp: idl.exp,
+  }
+}
+
+#[must_use]
+pub fn reconvert_ufixvalue64(
+  val: UFixValue64,
+) -> hylo_idl::hylo_exchange::types::UFixValue64 {
+  hylo_idl::hylo_exchange::types::UFixValue64 {
+    bits: val.bits,
+    exp: val.exp,
   }
 }
 
@@ -46,6 +57,15 @@ impl From<hylo_idl::hylo_exchange::types::TotalSolCache> for TotalSolCache {
     TotalSolCache {
       current_update_epoch: idl.current_update_epoch,
       total_sol: convert_ufixvalue64(idl.total_sol),
+    }
+  }
+}
+
+impl From<SlippageConfig> for hylo_idl::hylo_exchange::types::SlippageConfig {
+  fn from(val: SlippageConfig) -> Self {
+    hylo_idl::hylo_exchange::types::SlippageConfig {
+      expected_token_out: reconvert_ufixvalue64(val.expected_token_out),
+      slippage_tolerance: reconvert_ufixvalue64(val.slippage_tolerance),
     }
   }
 }

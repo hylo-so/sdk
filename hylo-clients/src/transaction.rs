@@ -5,7 +5,7 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
 use fix::prelude::*;
-use hylo_idl::hylo_exchange::types::SlippageConfig;
+use hylo_core::slippage_config::SlippageConfig;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::REFERENCE_WALLET;

@@ -251,7 +251,7 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
     };
     let args = args::RedeemStablecoin {
       amount_to_redeem: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -315,7 +315,7 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
     };
     let args = args::RedeemLevercoin {
       amount_to_redeem: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -378,7 +378,7 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
     };
     let args = args::MintStablecoin {
       amount_lst_to_deposit: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -442,7 +442,7 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
     };
     let args = args::MintLevercoin {
       amount_lst_to_deposit: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
