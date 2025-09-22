@@ -9,14 +9,14 @@ use anchor_spl::{associated_token, token};
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::exchange::client::{accounts, args};
-use hylo_idl::exchange::events::{
+use hylo_idl::hylo_exchange::client::{accounts, args};
+use hylo_idl::hylo_exchange::events::{
   ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
-use hylo_idl::{ata, exchange, pda, stability_pool};
+use hylo_idl::{ata, hylo_exchange, hylo_stability_pool, pda};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
@@ -95,7 +95,7 @@ pub struct ExchangeClient {
 }
 
 impl ProgramClient for ExchangeClient {
-  const PROGRAM_ID: Pubkey = exchange::ID;
+  const PROGRAM_ID: Pubkey = hylo_exchange::ID;
 
   fn build_client(
     program: Program<Arc<Keypair>>,
@@ -125,7 +125,7 @@ impl ExchangeClient {
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::UpdateLstPrices {};
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
@@ -164,14 +164,14 @@ impl ExchangeClient {
       levercoin_pool: *pda::XSOL_POOL,
       pool_auth: *pda::POOL_AUTH,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_stability_pool: stability_pool::ID,
+      hylo_stability_pool: hylo_stability_pool::ID,
       lst_registry: LST_REGISTRY_LOOKUP_TABLE,
       lut_program: LOOKUP_TABLE_PROGRAM,
       associated_token_program: associated_token::ID,
       token_program: token::ID,
       system_program: system_program::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::HarvestYield {};
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
@@ -247,11 +247,11 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       token_program: token::ID,
       associated_token_program: associated_token::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::RedeemStablecoin {
       amount_to_redeem: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -311,11 +311,11 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       token_program: token::ID,
       associated_token_program: associated_token::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::RedeemLevercoin {
       amount_to_redeem: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -374,11 +374,11 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
       associated_token_program: associated_token::ID,
       system_program: system_program::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::MintStablecoin {
       amount_lst_to_deposit: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -438,11 +438,11 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
       associated_token_program: associated_token::ID,
       system_program: system_program::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::MintLevercoin {
       amount_lst_to_deposit: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
     let instructions = self
       .program
@@ -493,7 +493,7 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
       user_levercoin_ata: pda::xsol_ata(user),
       token_program: token::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::SwapStableToLever {
       amount_stablecoin: amount.bits,
@@ -543,7 +543,7 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
       user_levercoin_ata: pda::xsol_ata(user),
       token_program: token::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
+      program: hylo_exchange::ID,
     };
     let args = args::SwapLeverToStable {
       amount_levercoin: amount.bits,
