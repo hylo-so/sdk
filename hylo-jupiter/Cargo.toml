@@ -21,3 +21,4 @@ anchor-client.workspace = true
 
 [dev-dependencies]
 flaky_test.workspace = true
+hylo-clients = { path = "../hylo-clients" }

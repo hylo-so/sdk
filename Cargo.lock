@@ -2047,6 +2047,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "flaky_test",
+ "hylo-clients",
  "hylo-core",
  "hylo-fix",
  "jupiter-amm-interface",
