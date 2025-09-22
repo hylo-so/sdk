@@ -29,7 +29,7 @@
         in {
           devShells.nightly = mkShell {
             packages =
-              [ rust-bin.nightly.latest.default ];
+              [ rust-bin.nightly.latest.default cargo-udeps ];
             buildInputs = sharedBuildInputs;
           };
           devShells.default = mkShell {
