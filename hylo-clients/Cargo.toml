@@ -11,8 +11,8 @@ anyhow.workspace = true
 anchor-client.workspace = true
 anchor-spl.workspace = true
 anchor-lang.workspace = true
-hylo-core = { version = "0.1.14", features = ["offchain"] }
-hylo-idl = "0.1.14"
+hylo-core = { version = "0.1.14", path = "../hylo-core", features = ["offchain"] }
+hylo-idl = { version = "0.1.14", path = "../hylo-idl" }
 hylo-fix.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 base64.workspace = true
