@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
-  FeeExtraction, NoValidLevercoinMintFee, NoValidLevercoinRedeemFee,
-  NoValidStablecoinMintFee, NoValidSwapFee,
+  FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
+  NoValidLevercoinRedeemFee, NoValidStablecoinMintFee, NoValidSwapFee,
 };
 use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 
@@ -28,6 +28,15 @@ impl FeePair {
 
   pub fn redeem(&self) -> Result<UFix64<N4>> {
     self.redeem.try_into()
+  }
+
+  pub fn validate(&self) -> Result<()> {
+    let one = UFix64::one();
+    if self.mint()? < one && self.redeem()? < one {
+      Ok(())
+    } else {
+      Err(InvalidFees.into())
+    }
   }
 }
 
