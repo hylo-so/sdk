@@ -13,7 +13,7 @@ hylo-fix.workspace = true
 anyhow.workspace = true
 anchor-lang.workspace = true
 jupiter-amm-interface.workspace = true
-hylo-core = { path = "../hylo-core", features = ["offchain"] }
+hylo-core = { version = "0.1.14", features = ["offchain"] }
 pyth-solana-receiver-sdk.workspace = true
 tokio.workspace = true
 anchor-spl.workspace = true
@@ -21,4 +21,4 @@ anchor-client.workspace = true
 
 [dev-dependencies]
 flaky_test.workspace = true
-hylo-clients = { path = "../hylo-clients" }
+hylo-clients = "0.1.14"

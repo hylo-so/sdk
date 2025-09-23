@@ -1990,7 +1990,7 @@ dependencies = [
  "futures",
  "hylo-core",
  "hylo-fix",
- "hylo-idl",
+ "hylo-idl 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.14.0",
  "pyth-solana-receiver-sdk",
  "serde_json",
@@ -2006,7 +2006,7 @@ dependencies = [
  "anchor-spl",
  "flaky_test",
  "hylo-fix",
- "hylo-idl",
+ "hylo-idl 0.1.14",
  "jupiter-amm-interface",
  "proptest",
  "pyth-solana-receiver-sdk",
@@ -2032,6 +2032,16 @@ dependencies = [
 [[package]]
 name = "hylo-idl"
 version = "0.1.14"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+]
+
+[[package]]
+name = "hylo-idl"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f49061426b092669dca769040455e84c64616dfb0d91e0b871a1745b282ff817"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
