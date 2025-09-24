@@ -99,13 +99,11 @@ pub fn next_levercoin_nav(
   total_sol: UFix64<N9>,
   sol_usd_price: UFix64<N8>,
   stablecoin_supply: UFix64<N6>,
-  stablecoin_nav: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
   levercoin_supply: UFix64<N6>,
-) -> Option<UFix64<N6>> {
+) -> Option<UFix64<N9>> {
   if levercoin_supply == UFix64::zero() {
     Some(UFix64::one())
-  } else if stablecoin_nav < UFix64::one() {
-    Some(UFix64::zero())
   } else {
     let collateral_value =
       total_sol.mul_div_floor(sol_usd_price, UFix64::one())?;
@@ -114,7 +112,7 @@ pub fn next_levercoin_nav(
     let free_collateral =
       collateral_value.checked_sub(&stablecoin_value.convert())?;
     let nav = free_collateral.mul_div_ceil(UFix64::one(), levercoin_supply)?;
-    Some(nav.convert())
+    Some(nav)
   }
 }
 
@@ -125,10 +123,9 @@ pub fn depeg_stablecoin_nav(
   total_collateral_sol: UFix64<N9>,
   sol_usd_price: UFix64<N8>,
   stablecoin_supply: UFix64<N6>,
-) -> Result<UFix64<N6>> {
+) -> Result<UFix64<N9>> {
   total_collateral_sol
     .mul_div_floor(sol_usd_price.convert::<N8>(), stablecoin_supply.convert())
-    .map(UFix64::convert)
     .ok_or(StablecoinNav.into())
 }
 
@@ -253,7 +250,7 @@ mod tests {
     let amount_stablecoin = UFix64::<N6>::new(974_113_420_200);
     let nav =
       depeg_stablecoin_nav(total_sol, usd_sol_price, amount_stablecoin)?;
-    assert_eq!(UFix64::new(13), nav);
+    assert_eq!(UFix64::new(13_179), nav);
     Ok(())
   }
 
@@ -264,7 +261,7 @@ mod tests {
     let amount_stablecoin = UFix64::<N6>::new(97_411_342);
     let nav =
       depeg_stablecoin_nav(total_sol, usd_sol_price, amount_stablecoin)?;
-    assert_eq!(UFix64::new(843_670), nav);
+    assert_eq!(UFix64::new(843_670_604), nav);
     Ok(())
   }
 

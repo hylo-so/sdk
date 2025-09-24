@@ -82,7 +82,7 @@ impl<C: SolanaClock> ExchangeContext<C> {
     self.levercoin_supply.ok_or(LevercoinNav.into())
   }
 
-  pub fn levercoin_mint_nav(&self) -> Result<UFix64<N6>> {
+  pub fn levercoin_mint_nav(&self) -> Result<UFix64<N9>> {
     next_levercoin_nav(
       self.total_sol,
       self.sol_usd_price.upper,
@@ -93,7 +93,7 @@ impl<C: SolanaClock> ExchangeContext<C> {
     .ok_or(LevercoinNav.into())
   }
 
-  pub fn levercoin_redeem_nav(&self) -> Result<UFix64<N6>> {
+  pub fn levercoin_redeem_nav(&self) -> Result<UFix64<N9>> {
     next_levercoin_nav(
       self.total_sol,
       self.sol_usd_price.lower,
@@ -104,7 +104,7 @@ impl<C: SolanaClock> ExchangeContext<C> {
     .ok_or(LevercoinNav.into())
   }
 
-  pub fn stablecoin_nav(&self) -> Result<UFix64<N6>> {
+  pub fn stablecoin_nav(&self) -> Result<UFix64<N9>> {
     match self.stability_mode {
       StabilityMode::Depeg => depeg_stablecoin_nav(
         self.total_sol,

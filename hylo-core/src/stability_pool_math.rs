@@ -14,14 +14,14 @@ use crate::pyth::PriceRange;
 /// stability_pool_cap = stable_nav * stable_in_pool + lever_nav * lever_in_pool
 /// ```
 pub fn stability_pool_cap(
-  stablecoin_nav: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
   stablecoin_in_pool: UFix64<N6>,
-  levercoin_nav: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
   levercoin_in_pool: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
   let stable_cap =
-    stablecoin_nav.mul_div_ceil(stablecoin_in_pool, UFix64::one());
-  let lever_cap = levercoin_nav.mul_div_ceil(levercoin_in_pool, UFix64::one());
+    stablecoin_in_pool.mul_div_ceil(stablecoin_nav, UFix64::one());
+  let lever_cap = levercoin_in_pool.mul_div_ceil(levercoin_nav, UFix64::one());
   stable_cap
     .zip(lever_cap)
     .and_then(|(s, l)| s.checked_add(&l))
@@ -37,9 +37,9 @@ pub fn stability_pool_cap(
 ///                   lp_token_supply
 /// ```
 pub fn lp_token_nav(
-  stablecoin_nav: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
   stablecoin_in_pool: UFix64<N6>,
-  levercoin_nav: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
   levercoin_in_pool: UFix64<N6>,
   lp_token_supply: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
@@ -106,7 +106,7 @@ pub fn amount_stable_to_swap(
 /// Compares to max mintable stablecoin and returns lesser of the two.
 pub fn amount_lever_to_swap(
   levercoin_in_pool: UFix64<N6>,
-  levercoin_nav: PriceRange<N6>,
+  levercoin_nav: PriceRange<N9>,
   max_swappable_stablecoin: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
   let conversion = SwapConversion::new(UFix64::one(), levercoin_nav);
@@ -128,9 +128,9 @@ pub fn amount_lever_to_swap(
 pub fn stablecoin_withdrawal_fee(
   stablecoin_in_pool: UFix64<N6>,
   stablecoin_to_withdraw: UFix64<N6>,
-  stablecoin_nav: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
   levercoin_to_withdraw: UFix64<N6>,
-  levercoin_nav: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
   withdrawal_fee: UFix64<N4>,
 ) -> Result<FeeExtract<N6>> {
   let allocation_cap = stability_pool_cap(
@@ -183,8 +183,8 @@ mod tests {
     pub stablecoin_in_pool: UFix64<N6>,
     pub levercoin_in_pool: UFix64<N6>,
     pub lp_token_supply: UFix64<N6>,
-    pub stablecoin_nav: UFix64<N6>,
-    pub levercoin_nav: UFix64<N6>,
+    pub stablecoin_nav: UFix64<N9>,
+    pub levercoin_nav: UFix64<N9>,
   }
 
   fn pct_staked(min: UFix64<N2>, max: UFix64<N2>) -> BoxedStrategy<UFix64<N2>> {
@@ -396,7 +396,7 @@ mod tests {
   fn amount_lever_to_swap_more() -> Result<()> {
     let levercoin_in_pool = UFix64::new(78_119_200_118);
     let max_swappable_stablecoin = UFix64::new(619_882_000);
-    let levercoin_nav = PriceRange::one(UFix64::new(149_106));
+    let levercoin_nav = PriceRange::one(UFix64::new(149_106_000));
     let expected = max_swappable_stablecoin
       .mul_div_floor(UFix64::one(), levercoin_nav.lower)
       .expect("max_levercoin");
