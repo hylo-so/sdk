@@ -30,6 +30,7 @@ impl FeePair {
     self.redeem.try_into()
   }
 
+  /// Fees must be less than 100%
   pub fn validate(&self) -> Result<()> {
     let one = UFix64::one();
     if self.mint()? < one && self.redeem()? < one {
