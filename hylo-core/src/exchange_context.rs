@@ -130,6 +130,19 @@ impl<C: SolanaClock> ExchangeContext<C> {
     self.stability_controller.stability_mode(projected_cr)
   }
 
+  /// Selects stability mode to be used in fee selection.
+  /// Transactions improving the stability mode should only pay fees in the current mode.
+  pub fn select_stability_mode_for_fees(
+    &self,
+    projected_stability_mode: StabilityMode,
+  ) -> StabilityMode {
+    if projected_stability_mode < self.stability_mode {
+      self.stability_mode
+    } else {
+      projected_stability_mode
+    }
+  }
+
   /// Extracts fees from input LST based on stability mode impact from minting
   /// new stablecoin.
   pub fn stablecoin_mint_fee(
@@ -151,13 +164,15 @@ impl<C: SolanaClock> ExchangeContext<C> {
       .checked_add(&self.stablecoin_supply)
       .ok_or(DestinationFeeStablecoin)?;
 
-    // Base fee calculation on projected stability mode
-    let projected_stability_mode =
-      self.projected_stability_mode(new_total_sol, new_total_stablecoin)?;
+    let stability_mode_for_fees = {
+      let projected =
+        self.projected_stability_mode(new_total_sol, new_total_stablecoin)?;
+      self.select_stability_mode_for_fees(projected)
+    };
 
     self
       .stablecoin_fees
-      .mint_fee(projected_stability_mode)
+      .mint_fee(stability_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_lst))
   }
 
@@ -184,13 +199,15 @@ impl<C: SolanaClock> ExchangeContext<C> {
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationFeeStablecoin)?;
 
-    // Base fee calculation on projected stability mode
-    let projected_stability_mode =
-      self.projected_stability_mode(new_total_sol, new_total_stablecoin)?;
+    let stability_mode_for_fees = {
+      let projected =
+        self.projected_stability_mode(new_total_sol, new_total_stablecoin)?;
+      self.select_stability_mode_for_fees(projected)
+    };
 
     self
       .stablecoin_fees
-      .redeem_fee(projected_stability_mode)
+      .redeem_fee(stability_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_lst))
   }
 
@@ -206,13 +223,15 @@ impl<C: SolanaClock> ExchangeContext<C> {
       .checked_add(&new_sol)
       .ok_or(DestinationFeeSol)?;
 
-    // Base fee calculation on projected stability mode
-    let projected_stability_mode =
-      self.projected_stability_mode(new_total_sol, self.stablecoin_supply)?;
+    let stability_mode_for_fees = {
+      let projected =
+        self.projected_stability_mode(new_total_sol, self.stablecoin_supply)?;
+      self.select_stability_mode_for_fees(projected)
+    };
 
     self
       .levercoin_fees
-      .mint_fee(projected_stability_mode)
+      .mint_fee(stability_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_lst))
   }
 
@@ -228,13 +247,15 @@ impl<C: SolanaClock> ExchangeContext<C> {
       .checked_sub(&sol_rm)
       .ok_or(DestinationFeeSol)?;
 
-    // Base fee calculation on projected stability mode
-    let projected_stability_mode =
-      self.projected_stability_mode(new_total_sol, self.stablecoin_supply)?;
+    let stability_mode_for_fees = {
+      let projected =
+        self.projected_stability_mode(new_total_sol, self.stablecoin_supply)?;
+      self.select_stability_mode_for_fees(projected)
+    };
 
     self
       .levercoin_fees
-      .redeem_fee(projected_stability_mode)
+      .redeem_fee(stability_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_lst))
   }
 
@@ -248,13 +269,15 @@ impl<C: SolanaClock> ExchangeContext<C> {
       .checked_add(&amount_stablecoin)
       .ok_or(DestinationFeeStablecoin)?;
 
-    // Base fee calculation on projected stability mode
-    let projected_stability_mode =
-      self.projected_stability_mode(self.total_sol, new_total_stablecoin)?;
+    let stability_mode_for_fees = {
+      let projected =
+        self.projected_stability_mode(self.total_sol, new_total_stablecoin)?;
+      self.select_stability_mode_for_fees(projected)
+    };
 
     self
       .levercoin_fees
-      .swap_to_stablecoin_fee(projected_stability_mode)
+      .swap_to_stablecoin_fee(stability_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_stablecoin))
   }
 
@@ -268,13 +291,16 @@ impl<C: SolanaClock> ExchangeContext<C> {
       .checked_sub(&amount_stablecoin)
       .ok_or(DestinationFeeStablecoin)?;
 
-    // Base fee calculation on projected stability mode
-    let projected_stability_mode =
+    let stability_mode_for_fees = {
+      let projected =
+        self.projected_stability_mode(self.total_sol, new_total_stablecoin)?;
       self.projected_stability_mode(self.total_sol, new_total_stablecoin)?;
+      self.select_stability_mode_for_fees(projected)
+    };
 
     self
       .levercoin_fees
-      .swap_from_stablecoin_fee(projected_stability_mode)
+      .swap_from_stablecoin_fee(stability_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_stablecoin))
   }
 
