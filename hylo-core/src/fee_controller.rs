@@ -45,6 +45,7 @@ impl FeePair {
 pub trait FeeController {
   fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
   fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
+  fn validate(&self) -> Result<()>;
 }
 
 /// Combines fee multiplication for a token amount with the remaining token
@@ -106,6 +107,12 @@ impl FeeController for StablecoinFees {
       Mode2 | Depeg => Ok(UFix64::zero()),
     }
   }
+
+  /// Run validations
+  fn validate(&self) -> Result<()> {
+    self.normal.validate()?;
+    self.mode_1.validate()
+  }
 }
 
 #[derive(Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize)]
@@ -136,6 +143,13 @@ impl FeeController for LevercoinFees {
       Mode2 => self.mode_2.redeem.try_into(),
       Depeg => Err(NoValidLevercoinRedeemFee.into()),
     }
+  }
+
+  /// Run validations
+  fn validate(&self) -> Result<()> {
+    self.normal.validate()?;
+    self.mode_1.validate()?;
+    self.mode_2.validate()
   }
 }
 
