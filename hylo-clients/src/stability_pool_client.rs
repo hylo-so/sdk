@@ -255,16 +255,14 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     let args = args::UserDeposit {
       amount_stablecoin: amount.bits,
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &SHYUSD::MINT)],
-      self
-        .program()
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &SHYUSD::MINT)];
+    let program = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -322,19 +320,17 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     let args = args::UserWithdraw {
       amount_lp_token: amount.bits,
     };
-    let instructions = [
-      vec![
-        user_ata_instruction(&user, &HYUSD::MINT),
-        user_ata_instruction(&user, &XSOL::MINT),
-      ],
-      self
-        .program()
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![
+      user_ata_instruction(&user, &HYUSD::MINT),
+      user_ata_instruction(&user, &XSOL::MINT),
+    ];
+    let program = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,

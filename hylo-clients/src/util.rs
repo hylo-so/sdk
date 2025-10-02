@@ -134,6 +134,8 @@ pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
   Ok(client)
 }
 
+/// Builds ATA creation instruction for a user and mint.
+#[must_use]
 pub fn user_ata_instruction(user: &Pubkey, mint: &Pubkey) -> Instruction {
   create_associated_token_account_idempotent(user, user, mint, &token::ID)
 }

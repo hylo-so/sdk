@@ -255,16 +255,14 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &JITOSOL::MINT)],
-      self
-        .program
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &JITOSOL::MINT)];
+    let program = self
+      .program
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -323,16 +321,14 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &JITOSOL::MINT)],
-      self
-        .program
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &JITOSOL::MINT)];
+    let program = self
+      .program
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -390,16 +386,14 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
       amount_lst_to_deposit: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &HYUSD::MINT)],
-      self
-        .program
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &HYUSD::MINT)];
+    let program = self
+      .program
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -458,16 +452,14 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
       amount_lst_to_deposit: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &XSOL::MINT)],
-      self
-        .program
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &XSOL::MINT)];
+    let program = self
+      .program
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -516,16 +508,14 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
     let args = args::SwapStableToLever {
       amount_stablecoin: amount.bits,
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &XSOL::MINT)],
-      self
-        .program()
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &XSOL::MINT)];
+    let program = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
     Ok(VersionedTransactionData {
@@ -570,16 +560,14 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
     let args = args::SwapLeverToStable {
       amount_levercoin: amount.bits,
     };
-    let instructions = [
-      vec![user_ata_instruction(&user, &HYUSD::MINT)],
-      self
-        .program()
-        .request()
-        .accounts(accounts)
-        .args(args)
-        .instructions()?,
-    ]
-    .concat();
+    let ata = vec![user_ata_instruction(&user, &HYUSD::MINT)];
+    let program = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
     Ok(VersionedTransactionData {
