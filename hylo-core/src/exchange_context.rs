@@ -294,7 +294,6 @@ impl<C: SolanaClock> ExchangeContext<C> {
     let stability_mode_for_fees = {
       let projected =
         self.projected_stability_mode(self.total_sol, new_total_stablecoin)?;
-      self.projected_stability_mode(self.total_sol, new_total_stablecoin)?;
       self.select_stability_mode_for_fees(projected)
     };
 
