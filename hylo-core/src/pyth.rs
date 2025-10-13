@@ -79,7 +79,6 @@ impl<Exp: Integer> PriceRange<Exp> {
 
 /// Checks the ratio of `conf / price` against given tolerance.
 /// Guards against unusually large spreads in the oracle price.
-#[allow(unused)]
 fn validate_conf<Exp>(
   price: UFix64<Exp>,
   conf: UFix64<Exp>,
@@ -161,7 +160,10 @@ fn validate_verification_level(level: VerificationLevel) -> Result<()> {
 pub fn query_pyth_price<Exp: Integer, C: SolanaClock>(
   clock: &C,
   oracle: &PriceUpdateV2,
-  config: OracleConfig<Exp>,
+  OracleConfig {
+    interval_secs,
+    conf_tolerance,
+  }: OracleConfig<Exp>,
 ) -> Result<PriceRange<Exp>>
 where
   UFix64<Exp>: FixExt,
@@ -170,15 +172,19 @@ where
   validate_verification_level(oracle.verification_level)?;
   validate_publish_time(
     oracle.price_message.publish_time,
-    config.interval_secs,
+    interval_secs,
     clock.unix_timestamp(),
   )?;
-  validate_posted_slot(oracle.posted_slot, config.interval_secs, clock.slot())?;
+  validate_posted_slot(oracle.posted_slot, interval_secs, clock.slot())?;
 
   // Build spot range
   let spot_price =
     validate_price(oracle.price_message.price, oracle.price_message.exponent)?;
-  let spot_conf = UFix64::new(oracle.price_message.conf);
+  let spot_conf = validate_conf(
+    spot_price,
+    UFix64::new(oracle.price_message.conf),
+    conf_tolerance,
+  )?;
   PriceRange::from_conf(spot_price, spot_conf)
 }
 
