@@ -131,7 +131,8 @@ impl<C: SolanaClock> ExchangeContext<C> {
   }
 
   /// Selects stability mode to be used in fee selection.
-  /// Transactions improving the stability mode should only pay fees in the current mode.
+  /// Transactions improving the stability mode should only pay fees in the
+  /// current mode.
   pub fn select_stability_mode_for_fees(
     &self,
     projected_stability_mode: StabilityMode,
