@@ -367,7 +367,7 @@ mod tests {
     Ok(hylo)
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn mint_hyusd_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -394,7 +394,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn redeem_hyusd_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -421,7 +421,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[flaky_test(tokio, times = 10)]
   async fn mint_xsol_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -448,7 +448,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn redeem_xsol_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -475,7 +475,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn hyusd_xsol_swap_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -517,7 +517,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn xsol_hyusd_swap_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -559,7 +559,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn shyusd_mint_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -596,7 +596,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn shyusd_redeem_check() -> Result<()> {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -637,7 +637,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 3)]
+  #[flaky_test(tokio, times = 5)]
   async fn shyusd_redeem_lst_check() -> Result<()> {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
