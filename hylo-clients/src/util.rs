@@ -6,11 +6,14 @@ use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::address_lookup_table::state::AddressLookupTable;
 use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
+use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::{bs58, pubkey};
 use anchor_client::Cluster;
 use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
+use anchor_spl::token;
 use anyhow::{anyhow, Result};
 use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
@@ -129,4 +132,10 @@ pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
     CommitmentConfig::confirmed(),
   )?;
   Ok(client)
+}
+
+/// Builds ATA creation instruction for a user and mint.
+#[must_use]
+pub fn user_ata_instruction(user: &Pubkey, mint: &Pubkey) -> Instruction {
+  create_associated_token_account_idempotent(user, user, mint, &token::ID)
 }

@@ -25,7 +25,7 @@ use crate::transaction::{
   SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
 };
 use crate::util::{
-  parse_event, simulation_config, EXCHANGE_LOOKUP_TABLE,
+  parse_event, simulation_config, user_ata_instruction, EXCHANGE_LOOKUP_TABLE,
   LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
 };
 
@@ -255,12 +255,14 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     let args = args::UserDeposit {
       amount_stablecoin: amount.bits,
     };
-    let instructions = self
+    let ata = vec![user_ata_instruction(&user, &SHYUSD::MINT)];
+    let program = self
       .program()
       .request()
       .accounts(accounts)
       .args(args)
       .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -318,12 +320,17 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     let args = args::UserWithdraw {
       amount_lp_token: amount.bits,
     };
-    let instructions = self
+    let ata = vec![
+      user_ata_instruction(&user, &HYUSD::MINT),
+      user_ata_instruction(&user, &XSOL::MINT),
+    ];
+    let program = self
       .program()
       .request()
       .accounts(accounts)
       .args(args)
       .instructions()?;
+    let instructions = [ata, program].concat();
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
@@ -374,7 +381,10 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
     let redeem_shyusd_sim = self
       .simulate_transaction_event::<UserWithdrawEventV1>(&redeem_shyusd_tx)
       .await?;
-    let mut instructions = redeem_shyusd_args.instructions;
+    let mut instructions = vec![user_ata_instruction(&user, &JITOSOL::MINT)];
+    instructions.extend(redeem_shyusd_args.instructions);
+
+    // If simulated transaction yields hyUSD, redeem it to jitoSOL
     if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
       let redeem_hyusd_args = exchange
         .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
@@ -383,8 +393,11 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
           slippage_config: None,
         })
         .await?;
+      instructions.extend(vec![user_ata_instruction(&user, &HYUSD::MINT)]);
       instructions.extend(redeem_hyusd_args.instructions);
     }
+
+    // If simulated transaction yields xSOL, redeem it to jitoSOL
     if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
       let redeem_xsol_args = exchange
         .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
@@ -393,6 +406,7 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
           slippage_config: None,
         })
         .await?;
+      instructions.extend(vec![user_ata_instruction(&user, &XSOL::MINT)]);
       instructions.extend(redeem_xsol_args.instructions);
     }
     let lookup_tables = self
