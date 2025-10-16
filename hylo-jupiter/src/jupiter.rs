@@ -421,9 +421,7 @@ mod tests {
     Ok(())
   }
 
-  // TODO: Temporarily disabled to allow program upgrade
-  //#[flaky_test(tokio, times = 10)]
-  #[allow(unused)]
+  #[flaky_test(tokio, times = 10)]
   async fn mint_xsol_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -450,9 +448,7 @@ mod tests {
     Ok(())
   }
 
-  // TODO: Temporarily disabled to allow program upgrade
-  //#[flaky_test(tokio, times = 10)]
-  #[allow(unused)]
+  #[flaky_test(tokio, times = 10)]
   async fn redeem_xsol_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
