@@ -421,7 +421,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 10)]
+  #[flaky_test(tokio, times = 5)]
   async fn mint_xsol_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -448,7 +448,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 10)]
+  #[flaky_test(tokio, times = 5)]
   async fn redeem_xsol_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
