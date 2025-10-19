@@ -10,7 +10,8 @@ use crate::error::CoreError::{
 };
 use crate::exchange_math::{
   collateral_ratio, depeg_stablecoin_nav, max_mintable_stablecoin,
-  max_swappable_stablecoin, next_levercoin_nav, total_value_locked,
+  max_swappable_stablecoin, next_levercoin_mint_nav, next_levercoin_redeem_nav,
+  total_value_locked,
 };
 use crate::fee_controller::{
   FeeController, FeeExtract, LevercoinFees, StablecoinFees,
@@ -83,9 +84,9 @@ impl<C: SolanaClock> ExchangeContext<C> {
   }
 
   pub fn levercoin_mint_nav(&self) -> Result<UFix64<N9>> {
-    next_levercoin_nav(
+    next_levercoin_mint_nav(
       self.total_sol,
-      self.sol_usd_price.upper,
+      self.sol_usd_price,
       self.stablecoin_supply,
       self.stablecoin_nav()?,
       self.levercoin_supply()?,
@@ -94,9 +95,9 @@ impl<C: SolanaClock> ExchangeContext<C> {
   }
 
   pub fn levercoin_redeem_nav(&self) -> Result<UFix64<N9>> {
-    next_levercoin_nav(
+    next_levercoin_redeem_nav(
       self.total_sol,
-      self.sol_usd_price.lower,
+      self.sol_usd_price,
       self.stablecoin_supply,
       self.stablecoin_nav()?,
       self.levercoin_supply()?,

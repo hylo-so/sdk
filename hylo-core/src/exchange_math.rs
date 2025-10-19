@@ -5,6 +5,7 @@ use crate::error::CoreError::{
   CollateralRatio, MaxMintable, MaxSwappable, StablecoinNav,
   TargetCollateralRatioTooLow, TotalValueLocked,
 };
+use crate::pyth::PriceRange;
 
 /// Computes the current collateral ratio (CR) of the protocol.
 ///   `CR = total_sol_usd / stablecoin_cap`
@@ -85,19 +86,17 @@ pub fn max_swappable_stablecoin(
     .ok_or(MaxSwappable.into())
 }
 
-/// Computes the next net asset value for the Hylo levercoin, given the total
-/// collateral stored in the protocol.
+/// Computes upper bound of levercoin NAV for minting.
 ///
 /// If the current supply of the levercoin is zero, the price is $1.
-/// If stablecoin NAV is less than $1, the price is $0.
 ///
 /// Otherwise its NAV is computed as:
 ///   `free_collateral = (n_collateral * p_collateral) - (n_stable * p_stable)`
 ///   `new_nav = free_collateral / n_lever`
 #[must_use]
-pub fn next_levercoin_nav(
+pub fn next_levercoin_mint_nav(
   total_sol: UFix64<N9>,
-  sol_usd_price: UFix64<N8>,
+  sol_usd_price: PriceRange<N8>,
   stablecoin_supply: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
   levercoin_supply: UFix64<N6>,
@@ -106,12 +105,35 @@ pub fn next_levercoin_nav(
     Some(UFix64::one())
   } else {
     let collateral_value =
-      total_sol.mul_div_floor(sol_usd_price, UFix64::one())?;
+      total_sol.mul_div_ceil(sol_usd_price.upper, UFix64::one())?;
+    let stablecoin_value =
+      stablecoin_supply.mul_div_floor(stablecoin_nav, UFix64::one())?;
+    let free_collateral =
+      collateral_value.checked_sub(&stablecoin_value.convert())?;
+    let nav = free_collateral.mul_div_ceil(UFix64::one(), levercoin_supply)?;
+    Some(nav)
+  }
+}
+
+/// Computes lower bound of levercoin NAV for redemption.
+#[must_use]
+pub fn next_levercoin_redeem_nav(
+  total_sol: UFix64<N9>,
+  sol_usd_price: PriceRange<N8>,
+  stablecoin_supply: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
+  levercoin_supply: UFix64<N6>,
+) -> Option<UFix64<N9>> {
+  if levercoin_supply == UFix64::zero() {
+    Some(UFix64::one())
+  } else {
+    let collateral_value =
+      total_sol.mul_div_floor(sol_usd_price.lower, UFix64::one())?;
     let stablecoin_value =
       stablecoin_supply.mul_div_ceil(stablecoin_nav, UFix64::one())?;
     let free_collateral =
       collateral_value.checked_sub(&stablecoin_value.convert())?;
-    let nav = free_collateral.mul_div_ceil(UFix64::one(), levercoin_supply)?;
+    let nav = free_collateral.mul_div_floor(UFix64::one(), levercoin_supply)?;
     Some(nav)
   }
 }
@@ -193,9 +215,9 @@ mod tests {
       state in protocol_state(()),
     ) {
       let total_sol = state.total_sol().expect("total_sol");
-      let nav = next_levercoin_nav(
+      let nav = next_levercoin_mint_nav(
         total_sol,
-        state.usd_sol_price,
+        PriceRange::one(state.usd_sol_price),
         state.stablecoin_amount,
         state.stablecoin_nav,
         state.levercoin_amount
@@ -206,14 +228,14 @@ mod tests {
 
   #[test]
   fn levercoin_supply_zero() -> Result<()> {
-    let jitosol_amount = UFix64::new(1010u64);
-    let jitosol_price = UFix64::new(20_133_670_123_u64);
+    let total_sol = UFix64::new(1010u64);
+    let sol_usd_price = PriceRange::one(UFix64::new(20_133_670_123_u64));
     let stablecoin_supply = UFix64::new(100u64);
     let stablecoin_nav = UFix64::one();
     let levercoin_supply = UFix64::new(0u64);
-    let nav = next_levercoin_nav(
-      jitosol_amount,
-      jitosol_price,
+    let nav = next_levercoin_mint_nav(
+      total_sol,
+      sol_usd_price,
       stablecoin_supply,
       stablecoin_nav,
       levercoin_supply,
@@ -266,21 +288,50 @@ mod tests {
   }
 
   #[test]
-  fn depeg_stablecoin_dust() -> Result<()> {
+  fn depeg_stablecoin_redeem_dust() -> Result<()> {
     // Depeg setup at `$200 / 210 = $0.93`, levercoin should be $0
     let total_sol = UFix64::<N9>::new(1_000_000_000);
-    let usd_sol_price = UFix64::<N8>::new(20_000_000_000);
+    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(20_000_000_000));
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
-    let cr = collateral_ratio(total_sol, usd_sol_price, amount_stablecoin)?;
+    let cr =
+      collateral_ratio(total_sol, usd_sol_price.lower, amount_stablecoin)?;
     assert!(cr < UFix64::one());
 
     let stablecoin_nav =
-      depeg_stablecoin_nav(total_sol, usd_sol_price, amount_stablecoin)?;
+      depeg_stablecoin_nav(total_sol, usd_sol_price.lower, amount_stablecoin)?;
     assert!(stablecoin_nav < UFix64::one());
 
-    let levercoin_nav = next_levercoin_nav(
+    let levercoin_nav = next_levercoin_redeem_nav(
+      total_sol,
+      usd_sol_price,
+      amount_stablecoin,
+      stablecoin_nav,
+      lever_supply,
+    )
+    .ok_or(LevercoinNav)?;
+    assert_eq!(UFix64::zero(), levercoin_nav);
+    Ok(())
+  }
+
+  #[test]
+  fn depeg_stablecoin_mint_dust() -> Result<()> {
+    // Depeg setup at `$200 / 210 = $0.93`, levercoin should be $0
+    let total_sol = UFix64::<N9>::new(1_000_000_000);
+    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(20_000_000_000));
+    let amount_stablecoin = UFix64::<N6>::new(210_000_000);
+    let lever_supply = UFix64::<N6>::new(1_000_000);
+
+    let cr =
+      collateral_ratio(total_sol, usd_sol_price.lower, amount_stablecoin)?;
+    assert!(cr < UFix64::one());
+
+    let stablecoin_nav =
+      depeg_stablecoin_nav(total_sol, usd_sol_price.lower, amount_stablecoin)?;
+    assert!(stablecoin_nav < UFix64::one());
+
+    let levercoin_nav = next_levercoin_redeem_nav(
       total_sol,
       usd_sol_price,
       amount_stablecoin,
