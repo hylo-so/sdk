@@ -26,12 +26,12 @@ impl Conversion {
   pub fn lst_to_token(
     &self,
     amount_lst: UFix64<N9>,
-    token_nav: UFix64<N6>,
+    token_nav: UFix64<N9>,
   ) -> Result<UFix64<N6>> {
     amount_lst
       .mul_div_floor(self.lst_sol_price, UFix64::one())
       .and_then(|sol| {
-        sol.mul_div_floor(self.usd_sol_price.lower, token_nav.convert::<N8>())
+        sol.mul_div_floor(self.usd_sol_price.lower.convert(), token_nav)
       })
       .map(UFix64::convert)
       .ok_or(LstToToken.into())
@@ -42,28 +42,27 @@ impl Conversion {
   pub fn token_to_lst(
     &self,
     amount_token: UFix64<N6>,
-    token_nav: UFix64<N6>,
+    token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
     amount_token
       .convert::<N9>()
-      .mul_div_floor(token_nav.convert::<N8>(), self.usd_sol_price.upper)
+      .mul_div_floor(token_nav, self.usd_sol_price.upper.convert())
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
-      .map(UFix64::convert)
       .ok_or(TokenToLst.into())
   }
 }
 
 /// Conversions between the protocol's tokens.
 pub struct SwapConversion {
-  pub stablecoin_nav: UFix64<N6>,
-  pub levercoin_nav: PriceRange<N6>,
+  pub stablecoin_nav: UFix64<N9>,
+  pub levercoin_nav: PriceRange<N9>,
 }
 
 impl SwapConversion {
   #[must_use]
   pub fn new(
-    stablecoin_nav: UFix64<N6>,
-    levercoin_nav: PriceRange<N6>,
+    stablecoin_nav: UFix64<N9>,
+    levercoin_nav: PriceRange<N9>,
   ) -> Self {
     SwapConversion {
       stablecoin_nav,
@@ -173,7 +172,7 @@ mod tests {
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount_in = UFix64::<N9>::new(50_123_303_006);
-    let nav = UFix64::<N6>::new(100_232_580);
+    let nav = UFix64::<N9>::new(100_232_580_000);
     let out = conversion.lst_to_token(amount_in, nav)?;
     assert_eq!(UFix64::new(148_546_300), out);
     Ok(())
@@ -206,7 +205,7 @@ mod tests {
     let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
-    let nav = UFix64::<N6>::new(137_992_981);
+    let nav = UFix64::<N9>::new(137_992_981_000);
     let amount = UFix64::<N6>::new(543_150_099);
     let lst_out: UFix64<N9> = conversion.token_to_lst(amount, nav)?;
     assert_eq!(UFix64::new(394_639_480_798), lst_out);
