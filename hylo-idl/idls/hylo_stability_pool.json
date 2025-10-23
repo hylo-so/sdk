@@ -2399,12 +2399,9 @@
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "payer",
           "writable": true,
-          "signer": true,
-          "relations": [
-            "pool_config"
-          ]
+          "signer": true
         },
         {
           "name": "upgrade_authority",
@@ -2772,184 +2769,12 @@
           }
         },
         {
-          "name": "user_stablecoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_stablecoin_ta",
+          "writable": true
         },
         {
-          "name": "user_lp_token_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lp_token_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_lp_token_ta",
+          "writable": true
         },
         {
           "name": "pool_auth",
@@ -3205,13 +3030,6 @@
           "name": "sol_usd_pyth_feed"
         },
         {
-          "name": "hylo_event_authority"
-        },
-        {
-          "name": "hylo_exchange_program",
-          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -3412,94 +3230,8 @@
           }
         },
         {
-          "name": "user_stablecoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_stablecoin_ta",
+          "writable": true
         },
         {
           "name": "fee_auth",
@@ -3653,94 +3385,8 @@
           }
         },
         {
-          "name": "user_lp_token_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lp_token_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_lp_token_ta",
+          "writable": true
         },
         {
           "name": "pool_auth",
@@ -3997,94 +3643,8 @@
           }
         },
         {
-          "name": "user_levercoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_levercoin_ta",
+          "writable": true
         },
         {
           "name": "lp_token_auth",
@@ -4349,31 +3909,11 @@
   "errors": [
     {
       "code": 6000,
-      "name": "TokenWithdraw",
-      "msg": "Arithmetic error while computing amount of token to withdraw."
-    },
-    {
-      "code": 6001,
-      "name": "LpTokenNav",
-      "msg": "Arithmetic error while computing LP token NAV."
-    },
-    {
-      "code": 6002,
-      "name": "LpTokenOut",
-      "msg": "Arithmetic error while computing LP token amount to give to user."
-    },
-    {
-      "code": 6003,
       "name": "RebalanceDisabled",
       "msg": "Rebalance is disabled due to stability or pool amount constraint not \\\n     being met."
     },
     {
-      "code": 6004,
-      "name": "StablecoinToSwap",
-      "msg": "Arithmetic error while computing amount of stablecoin to swap."
-    },
-    {
-      "code": 6005,
+      "code": 6001,
       "name": "DepositDisabled",
       "msg": "Deposits to pool disabled due to active rebalancing."
     }
@@ -4530,11 +4070,15 @@
             }
           },
           {
+            "name": "sol_usd_oracle",
+            "type": "pubkey"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                119
+                87
               ]
             }
           }
