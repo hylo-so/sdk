@@ -13,9 +13,9 @@ homepage = "https://hylo.so"
 
 [workspace.dependencies]
 anyhow = "1.0.98"
-anchor-client = { version = "0.31.1", features = ["async"] }
-anchor-spl = "0.31.1"
-anchor-lang = "0.31.1"
+anchor-client = { version = "0.32.1", features = ["async"] }
+anchor-spl = "0.32.1"
+anchor-lang = "0.32.1"
 flaky_test = "0.2.2"
 hylo-fix = "0.4.2"
 pyth-solana-receiver-sdk = "1.0.1"
