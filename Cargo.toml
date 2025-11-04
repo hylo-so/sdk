@@ -17,7 +17,7 @@ anchor-client = { version = "0.32.1", features = ["async"] }
 anchor-spl = "0.32.1"
 anchor-lang = "0.32.1"
 flaky_test = "0.2.2"
-hylo-fix = { git = "https://github.com/hylo-so/fix", branch "upgrade-anchor" }
+hylo-fix = { git = "https://github.com/hylo-so/fix", branch = "upgrade-anchor" }
 pyth-solana-receiver-sdk = "1.0.1"
 base64 = "0.22.1"
 serde_json = "1.0.140"

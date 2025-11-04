@@ -1910,11 +1910,10 @@ dependencies = [
 
 [[package]]
 name = "hylo-fix"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70b1ef680e00c33e08ae39edd05e2394a431637d09e82e2c58d7578819a9700a"
+version = "0.5.0"
+source = "git+https://github.com/hylo-so/fix?branch=upgrade-anchor#dd9c237929abcb05cf96d68840b9f8ff60818b8f"
 dependencies = [
- "anchor-lang 0.31.1",
+ "anchor-lang 0.32.1",
  "anyhow",
  "muldiv",
  "num-traits",
