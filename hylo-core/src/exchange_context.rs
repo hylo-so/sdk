@@ -396,6 +396,13 @@ impl<C: SolanaClock> ExchangeContext<C> {
     conversion.lst_to_token(amount_sol, nav)
   }
 
+  /// Special case conversion from raw SOL to levercoin.
+  pub fn sol_to_levercoin(&self, amount_sol: UFix64<N9>) -> Result<UFix64<N6>> {
+    let nav = self.levercoin_mint_nav()?;
+    let conversion = Conversion::new(self.sol_usd_price, UFix64::one());
+    conversion.lst_to_token(amount_sol, nav)
+  }
+
   /// Computes total capitalization of stablecoin and levercoin in stability
   /// pool.
   pub fn stability_pool_cap(
