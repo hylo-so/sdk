@@ -1,3 +1,4 @@
+use std::iter::once;
 use std::sync::Arc;
 
 use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
@@ -110,6 +111,38 @@ pub trait ProgramClient: Sized {
       recent_blockhash,
     )?;
     let signatures = vec![self.keypair().sign_message(&message.serialize())];
+    let tx = VersionedTransaction {
+      message: VersionedMessage::V0(message),
+      signatures,
+    };
+    Ok(tx)
+  }
+
+  /// Builds a versioned transaction with additional signers.
+  ///
+  /// # Errors
+  /// - Failed to get latest blockhash
+  /// - Failed to compile message
+  /// - Failed to create transaction
+  async fn build_v0_transaction_extra_signers(
+    &self,
+    VersionedTransactionData {
+      instructions,
+      lookup_tables,
+    }: &VersionedTransactionData,
+    additional_signers: Vec<Keypair>,
+  ) -> Result<VersionedTransaction> {
+    let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
+    let message = v0::Message::try_compile(
+      &self.keypair().pubkey(),
+      instructions,
+      lookup_tables,
+      recent_blockhash,
+    )?;
+    let signatures = once(self.keypair().as_ref())
+      .chain(additional_signers.iter())
+      .map(|signer| signer.sign_message(&message.serialize()))
+      .collect_vec();
     let tx = VersionedTransaction {
       message: VersionedMessage::V0(message),
       signatures,
