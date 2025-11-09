@@ -290,7 +290,7 @@ mod tests {
   };
   use jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
-  use solana_rpc_client::rpc_client::RpcClient;
+  use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
   use super::*;
   use crate::util::{fee_pct_decimal, load_account_map, load_amm_context};
