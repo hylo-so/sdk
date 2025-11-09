@@ -119,6 +119,10 @@ impl ProgramClient for ExchangeClient {
 }
 
 impl ExchangeClient {
+  /// Initializes the Hylo exchange protocol.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
   pub fn initialize_protocol(
     &self,
     args: args::InitializeProtocol,
@@ -141,6 +145,10 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::no_lookup(instructions))
   }
 
+  /// Initializes hyUSD and xSOL token mints.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
   pub fn initialize_mints(&self) -> Result<VersionedTransactionData> {
     let accounts = accounts::InitializeMints {
       admin: self.program.payer(),
@@ -166,6 +174,11 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::no_lookup(instructions))
   }
 
+  /// Initializes the LST registry lookup table.
+  ///
+  /// # Errors
+  /// - Failed to get current slot
+  /// - Failed to build transaction instructions
   pub async fn initialize_lst_registry(
     &self,
   ) -> Result<VersionedTransactionData> {
@@ -188,6 +201,10 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::no_lookup(instructions))
   }
 
+  /// Initializes LST price calculators in registry.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
   pub fn initialize_lst_registry_calculators(
     &self,
   ) -> Result<VersionedTransactionData> {
@@ -200,6 +217,52 @@ impl ExchangeClient {
       system_program: system_program::ID,
     };
     let args = args::InitializeLstRegistryCalculators {};
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    Ok(VersionedTransactionData::no_lookup(instructions))
+  }
+
+  /// Registers a new LST for mint/redeem.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn register_lst(
+    &self,
+    lst_mint: Pubkey,
+    lst_stake_pool_state: Pubkey,
+    sanctum_calculator_program: Pubkey,
+    sanctum_calculator_state: Pubkey,
+    stake_pool_program: Pubkey,
+    stake_pool_program_data: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let args = args::RegisterLst {};
+    let accounts = accounts::RegisterLst {
+      admin: self.program.payer(),
+      hylo: *pda::HYLO,
+      lst_header: pda::lst_header(lst_mint),
+      fee_auth: pda::fee_auth(lst_mint),
+      vault_auth: pda::vault_auth(lst_mint),
+      registry_auth: *pda::LST_REGISTRY_AUTH,
+      fee_vault: pda::fee_vault(lst_mint),
+      lst_vault: pda::vault(lst_mint),
+      lst_mint,
+      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
+      lst_stake_pool_state,
+      sanctum_calculator_program,
+      sanctum_calculator_state,
+      stake_pool_program_data,
+      stake_pool_program,
+      lut_program: address_lookup_table::ID,
+      associated_token_program: associated_token::ID,
+      token_program: token::ID,
+      system_program: system_program::ID,
+      event_authority: *pda::EXCHANGE_EVENT_AUTH,
+      program: hylo_exchange::ID,
+    };
     let instructions = self
       .program()
       .request()
@@ -236,7 +299,8 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 
-  /// Builds transaction data for harvesting yield from LST vaults to stability pool.
+  /// Builds transaction data for harvesting yield from LST vaults to stability
+  /// pool.
   ///
   /// # Errors
   /// - Failed to build transaction data

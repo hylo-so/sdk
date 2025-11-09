@@ -27,6 +27,7 @@ pub struct VersionedTransactionData {
 }
 
 impl VersionedTransactionData {
+  #[must_use]
   pub fn no_lookup(instructions: Vec<Instruction>) -> VersionedTransactionData {
     VersionedTransactionData {
       instructions,
@@ -34,6 +35,7 @@ impl VersionedTransactionData {
     }
   }
 
+  #[must_use]
   pub fn new(
     instructions: Vec<Instruction>,
     lookup_tables: Vec<AddressLookupTableAccount>,
