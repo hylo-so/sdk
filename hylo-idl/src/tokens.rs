@@ -1,5 +1,5 @@
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::pubkey;
 
 pub trait TokenMint {
   const MINT: Pubkey;

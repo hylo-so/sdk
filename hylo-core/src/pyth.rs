@@ -1,5 +1,5 @@
 use anchor_lang::prelude::{Pubkey, Result};
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::pubkey;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
