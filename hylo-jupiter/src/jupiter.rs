@@ -268,7 +268,6 @@ impl Amm for HyloJupiterClient {
 
 #[cfg(test)]
 mod tests {
-  use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
   use anchor_lang::pubkey;
   use fix::typenum::U9;
   use flaky_test::flaky_test;
@@ -291,6 +290,7 @@ mod tests {
   };
   use jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
+  use solana_rpc_client::rpc_client::RpcClient;
 
   use super::*;
   use crate::util::{fee_pct_decimal, load_account_map, load_amm_context};
@@ -490,6 +490,7 @@ mod tests {
       .build_transaction_data::<HYUSD, XSOL>(SwapArgs {
         amount: amount_hyusd,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
@@ -532,6 +533,7 @@ mod tests {
       .build_transaction_data::<XSOL, HYUSD>(SwapArgs {
         amount: amount_xsol,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
