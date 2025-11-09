@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
+use anchor_client::solana_sdk::hash::Hash;
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::message::{v0, VersionedMessage};
 use anchor_client::solana_sdk::pubkey::Pubkey;
@@ -131,8 +132,8 @@ pub trait ProgramClient: Sized {
       lookup_tables,
     }: &VersionedTransactionData,
     additional_signers: Vec<Keypair>,
+    recent_blockhash: Hash,
   ) -> Result<VersionedTransaction> {
-    let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
     let message = v0::Message::try_compile(
       &self.keypair().pubkey(),
       instructions,
