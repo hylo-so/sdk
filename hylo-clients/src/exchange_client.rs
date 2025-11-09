@@ -182,8 +182,8 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub async fn initialize_lst_registry(
     &self,
+    slot: u64,
   ) -> Result<VersionedTransactionData> {
-    let slot = self.program().rpc().get_slot().await?;
     let accounts = accounts::InitializeLstRegistry {
       admin: self.program.payer(),
       hylo: *pda::HYLO,
