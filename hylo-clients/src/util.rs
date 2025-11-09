@@ -1,5 +1,5 @@
-use solana_rpc_client_api::config::RpcSimulateTransactionConfig;
-use solana_rpc_client_api::response::{
+use anchor_client::solana_client::rpc_config::RpcSimulateTransactionConfig;
+use anchor_client::solana_client::rpc_response::{
   Response, RpcSimulateTransactionResult,
 };
 use anchor_client::solana_sdk::account::Account;

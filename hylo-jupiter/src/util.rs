@@ -5,7 +5,7 @@ use fix::prelude::*;
 use fix::typenum::{IsLess, NInt, NonZero, Unsigned, U20};
 use jupiter_amm_interface::{AccountMap, AmmContext, ClockRef};
 use rust_decimal::Decimal;
-use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 
 /// Computes fee percentage in Jupiter's favored `Decimal` type.
 ///

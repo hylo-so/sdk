@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::bpf_loader_upgradeable as bpf_loader;
+use anchor_lang::solana_program::bpf_loader;
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
