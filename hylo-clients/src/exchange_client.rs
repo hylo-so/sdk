@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE_PROGRAM;
 use anchor_client::solana_sdk::pubkey::Pubkey;
-use anchor_client::solana_sdk::signature::{Keypair, Signature};
+use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
@@ -14,9 +14,11 @@ use hylo_core::idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
+use hylo_core::idl::pda::{self, metadata};
 use hylo_core::idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
-use hylo_core::idl::{ata, hylo_exchange, hylo_stability_pool, pda};
+use hylo_core::idl::{ata, hylo_exchange, hylo_stability_pool};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
@@ -25,6 +27,7 @@ use crate::transaction::{
 };
 use crate::util::{
   user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
+  TREASURY, UPGRADE_AUTHORITY,
 };
 
 /// Client for interacting with the Hylo Exchange program.
@@ -116,11 +119,101 @@ impl ProgramClient for ExchangeClient {
 }
 
 impl ExchangeClient {
-  /// Runs exchange's LST price oracle crank.
+  pub fn initialize_protocol(
+    &self,
+    args: args::InitializeProtocol,
+  ) -> Result<VersionedTransactionData> {
+    let accounts = accounts::InitializeProtocol {
+      admin: self.program.payer(),
+      upgrade_authority: UPGRADE_AUTHORITY,
+      hylo: *pda::HYLO,
+      treasury: TREASURY,
+      system_program: system_program::ID,
+      program_data: pda::program_data(hylo_exchange::ID),
+      hylo_exchange: hylo_exchange::ID,
+    };
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    Ok(VersionedTransactionData::no_lookup(instructions))
+  }
+
+  pub fn initialize_mints(&self) -> Result<VersionedTransactionData> {
+    let accounts = accounts::InitializeMints {
+      admin: self.program.payer(),
+      hylo: *pda::HYLO,
+      stablecoin_auth: *pda::HYUSD_AUTH,
+      levercoin_auth: *pda::XSOL_AUTH,
+      stablecoin_mint: HYUSD::MINT,
+      levercoin_mint: XSOL::MINT,
+      stablecoin_metadata: metadata(HYUSD::MINT),
+      levercoin_metadata: metadata(XSOL::MINT),
+      metadata_program: mpl_token_metadata::ID,
+      token_program: token::ID,
+      associated_token_program: associated_token::ID,
+      system_program: system_program::ID,
+    };
+    let args = args::InitializeMints {};
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    Ok(VersionedTransactionData::no_lookup(instructions))
+  }
+
+  pub async fn initialize_lst_registry(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let slot = self.program().rpc().get_slot().await?;
+    let accounts = accounts::InitializeLstRegistry {
+      admin: self.program.payer(),
+      hylo: *pda::HYLO,
+      registry_auth: *pda::LST_REGISTRY_AUTH,
+      lst_registry: pda::new_lst_registry(slot),
+      lut_program: address_lookup_table::ID,
+      system_program: system_program::ID,
+    };
+    let args = args::InitializeLstRegistry { slot };
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    Ok(VersionedTransactionData::no_lookup(instructions))
+  }
+
+  pub fn initialize_lst_registry_calculators(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let accounts = accounts::InitializeLstRegistryCalculators {
+      admin: self.program.payer(),
+      hylo: *pda::HYLO,
+      lst_registry_auth: *pda::LST_REGISTRY_AUTH,
+      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
+      lut_program: address_lookup_table::ID,
+      system_program: system_program::ID,
+    };
+    let args = args::InitializeLstRegistryCalculators {};
+    let instructions = self
+      .program()
+      .request()
+      .accounts(accounts)
+      .args(args)
+      .instructions()?;
+    Ok(VersionedTransactionData::no_lookup(instructions))
+  }
+
+  /// Builds transaction data for LST price oracle crank.
   ///
   /// # Errors
-  /// - Failed to send transaction
-  pub async fn update_lst_prices(&self) -> Result<Signature> {
+  /// - Failed to build transaction data
+  pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
     let accounts = accounts::UpdateLstPrices {
       payer: self.program.payer(),
       hylo: *pda::HYLO,
@@ -140,19 +233,14 @@ impl ExchangeClient {
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
-    let args = VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    };
-    let sig = self.send_v0_transaction(&args).await?;
-    Ok(sig)
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 
-  /// Harvests yield from LST vaults to stability pool.
+  /// Builds transaction data for harvesting yield from LST vaults to stability pool.
   ///
   /// # Errors
-  /// - Failed to send transaction
-  pub async fn harvest_yield(&self) -> Result<Signature> {
+  /// - Failed to build transaction data
+  pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
     let accounts = accounts::HarvestYield {
       payer: self.program.payer(),
       hylo: *pda::HYLO,
@@ -160,8 +248,6 @@ impl ExchangeClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       levercoin_mint: XSOL::MINT,
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
       pool_auth: *pda::POOL_AUTH,
@@ -174,6 +260,10 @@ impl ExchangeClient {
       system_program: system_program::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: hylo_exchange::ID,
+      stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
+      stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
+      levercoin_fee_auth: pda::fee_auth(XSOL::MINT),
+      levercoin_fee_vault: pda::fee_vault(XSOL::MINT),
     };
     let args = args::HarvestYield {};
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
@@ -186,12 +276,7 @@ impl ExchangeClient {
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
-    let args = VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    };
-    let sig = self.send_v0_transaction(&args).await?;
-    Ok(sig)
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 
   /// Gets exchange stats via RPC simulation.
@@ -236,12 +321,11 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       hylo: *pda::HYLO,
       fee_auth: pda::fee_auth(JITOSOL::MINT),
       vault_auth: pda::vault_auth(JITOSOL::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
       fee_vault: pda::fee_vault(JITOSOL::MINT),
       lst_vault: pda::vault(JITOSOL::MINT),
       lst_header: pda::lst_header(JITOSOL::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
+      user_stablecoin_ta: pda::hyusd_ata(user),
+      user_lst_ta: ata!(user, JITOSOL::MINT),
       stablecoin_mint: HYUSD::MINT,
       lst_mint: JITOSOL::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
@@ -269,10 +353,7 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -301,12 +382,11 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       hylo: *pda::HYLO,
       fee_auth: pda::fee_auth(JITOSOL::MINT),
       vault_auth: pda::vault_auth(JITOSOL::MINT),
-      levercoin_auth: *pda::XSOL_AUTH,
       fee_vault: pda::fee_vault(JITOSOL::MINT),
       lst_vault: pda::vault(JITOSOL::MINT),
       lst_header: pda::lst_header(JITOSOL::MINT),
-      user_levercoin_ata: pda::xsol_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
+      user_levercoin_ta: pda::xsol_ata(user),
+      user_lst_ta: ata!(user, JITOSOL::MINT),
       levercoin_mint: XSOL::MINT,
       stablecoin_mint: HYUSD::MINT,
       lst_mint: JITOSOL::MINT,
@@ -335,10 +415,7 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -371,8 +448,8 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
       fee_vault: pda::fee_vault(JITOSOL::MINT),
       lst_vault: pda::vault(JITOSOL::MINT),
       lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
+      user_lst_ta: ata!(user, JITOSOL::MINT),
+      user_stablecoin_ta: pda::hyusd_ata(user),
       lst_mint: JITOSOL::MINT,
       stablecoin_mint: HYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
@@ -400,10 +477,7 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -436,8 +510,8 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
       fee_vault: pda::fee_vault(JITOSOL::MINT),
       lst_vault: pda::vault(JITOSOL::MINT),
       lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
-      user_levercoin_ata: pda::xsol_ata(user),
+      user_lst_ta: ata!(user, JITOSOL::MINT),
+      user_levercoin_ta: pda::xsol_ata(user),
       lst_mint: JITOSOL::MINT,
       levercoin_mint: XSOL::MINT,
       stablecoin_mint: HYUSD::MINT,
@@ -466,10 +540,7 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -487,7 +558,11 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
 
   async fn build(
     &self,
-    SwapArgs { amount, user }: SwapArgs,
+    SwapArgs {
+      amount,
+      user,
+      slippage_config,
+    }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
     let accounts = accounts::SwapStableToLever {
       user,
@@ -497,16 +572,17 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       fee_auth: pda::fee_auth(HYUSD::MINT),
       fee_vault: pda::fee_vault(HYUSD::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
+      user_stablecoin_ta: pda::hyusd_ata(user),
       levercoin_mint: XSOL::MINT,
       levercoin_auth: *pda::XSOL_AUTH,
-      user_levercoin_ata: pda::xsol_ata(user),
+      user_levercoin_ta: pda::xsol_ata(user),
       token_program: token::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: hylo_exchange::ID,
     };
     let args = args::SwapStableToLever {
       amount_stablecoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
     };
     let ata = vec![user_ata_instruction(&user, &XSOL::MINT)];
     let program = self
@@ -518,10 +594,7 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
     let instructions = [ata, program].concat();
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -539,7 +612,11 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
 
   async fn build(
     &self,
-    SwapArgs { amount, user }: SwapArgs,
+    SwapArgs {
+      amount,
+      user,
+      slippage_config,
+    }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
     let accounts = accounts::SwapLeverToStable {
       user,
@@ -549,16 +626,17 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
       stablecoin_auth: *pda::HYUSD_AUTH,
       fee_auth: pda::fee_auth(HYUSD::MINT),
       fee_vault: pda::fee_vault(HYUSD::MINT),
-      user_stablecoin_ata: pda::hyusd_ata(user),
+      user_stablecoin_ta: pda::hyusd_ata(user),
       levercoin_mint: XSOL::MINT,
       levercoin_auth: *pda::XSOL_AUTH,
-      user_levercoin_ata: pda::xsol_ata(user),
+      user_levercoin_ta: pda::xsol_ata(user),
       token_program: token::ID,
       event_authority: *pda::EXCHANGE_EVENT_AUTH,
       program: hylo_exchange::ID,
     };
     let args = args::SwapLeverToStable {
       amount_levercoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
     };
     let ata = vec![user_ata_instruction(&user, &HYUSD::MINT)];
     let program = self
@@ -570,10 +648,7 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
     let instructions = [ata, program].concat();
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 

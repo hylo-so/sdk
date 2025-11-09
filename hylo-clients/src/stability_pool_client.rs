@@ -138,10 +138,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    let tx_args = VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    };
+    let tx_args = VersionedTransactionData::new(instructions, lookup_tables);
     let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
   }
@@ -184,10 +181,7 @@ impl StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    let tx_args = VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    };
+    let tx_args = VersionedTransactionData::new(instructions, lookup_tables);
     let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
   }
@@ -236,16 +230,14 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
       hylo: *pda::HYLO,
       stablecoin_mint: HYUSD::MINT,
       levercoin_mint: XSOL::MINT,
-      user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lp_token_ata: pda::shyusd_ata(user),
+      user_stablecoin_ta: pda::hyusd_ata(user),
+      user_lp_token_ta: pda::shyusd_ata(user),
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_pool: *pda::XSOL_POOL,
       lp_token_auth: *pda::SHYUSD_AUTH,
       lp_token_mint: SHYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      hylo_exchange_program: hylo_exchange::ID,
       system_program: system_program::ID,
       token_program: token::ID,
       associated_token_program: associated_token::ID,
@@ -269,10 +261,7 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -297,15 +286,15 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
       pool_config: *pda::POOL_CONFIG,
       hylo: *pda::HYLO,
       stablecoin_mint: HYUSD::MINT,
-      user_stablecoin_ata: pda::hyusd_ata(user),
+      user_stablecoin_ta: pda::hyusd_ata(user),
       fee_auth: pda::fee_auth(HYUSD::MINT),
       fee_vault: pda::fee_vault(HYUSD::MINT),
-      user_lp_token_ata: pda::shyusd_ata(user),
+      user_lp_token_ta: pda::shyusd_ata(user),
       pool_auth: *pda::POOL_AUTH,
       stablecoin_pool: *pda::HYUSD_POOL,
       levercoin_mint: XSOL::MINT,
       levercoin_pool: *pda::XSOL_POOL,
-      user_levercoin_ata: pda::xsol_ata(user),
+      user_levercoin_ta: pda::xsol_ata(user),
       lp_token_auth: *pda::SHYUSD_AUTH,
       lp_token_mint: SHYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
@@ -337,10 +326,7 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -416,10 +402,7 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 

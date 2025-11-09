@@ -10,3 +10,5 @@ include = ["idls/", "src/"]
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
+mpl-token-metadata.workspace = true
+solana-address-lookup-table-interface.workspace = true

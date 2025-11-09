@@ -26,6 +26,25 @@ pub struct VersionedTransactionData {
   pub lookup_tables: Vec<AddressLookupTableAccount>,
 }
 
+impl VersionedTransactionData {
+  pub fn no_lookup(instructions: Vec<Instruction>) -> VersionedTransactionData {
+    VersionedTransactionData {
+      instructions,
+      lookup_tables: vec![],
+    }
+  }
+
+  pub fn new(
+    instructions: Vec<Instruction>,
+    lookup_tables: Vec<AddressLookupTableAccount>,
+  ) -> VersionedTransactionData {
+    VersionedTransactionData {
+      instructions,
+      lookup_tables,
+    }
+  }
+}
+
 /// Abstracts the construction of client structs with `anchor_client::Program`.
 #[async_trait::async_trait]
 pub trait ProgramClient: Sized {

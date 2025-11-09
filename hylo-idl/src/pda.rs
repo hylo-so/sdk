@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::bpf_loader;
+use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use crate::{hylo_exchange, hylo_stability_pool};
@@ -27,6 +28,24 @@ macro_rules! ata {
   ($auth:expr, $mint:expr) => {
     anchor_spl::associated_token::get_associated_token_address(&$auth, &$mint)
   };
+}
+
+#[must_use]
+pub fn program_data(program: Pubkey) -> Pubkey {
+  pda!(program, bpf_loader::ID)
+}
+
+#[must_use]
+pub fn metadata(mint: Pubkey) -> Pubkey {
+  Pubkey::find_program_address(
+    &[
+      "metadata".as_ref(),
+      mpl_token_metadata::ID.as_ref(),
+      mint.as_ref(),
+    ],
+    &mpl_token_metadata::ID,
+  )
+  .0
 }
 
 #[must_use]
@@ -56,6 +75,15 @@ pub fn vault_auth(mint: Pubkey) -> Pubkey {
     hylo_exchange::constants::VAULT_AUTH,
     mint
   )
+}
+
+#[must_use]
+pub fn new_lst_registry(slot: u64) -> Pubkey {
+  Pubkey::find_program_address(
+    &[LST_REGISTRY_AUTH.as_ref(), &slot.to_le_bytes()],
+    &address_lookup_table::ID,
+  )
+  .0
 }
 
 #[must_use]

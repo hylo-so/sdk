@@ -117,6 +117,7 @@ impl QuoteInput for RedeemArgs {
 pub struct SwapArgs {
   pub amount: UFix64<N6>,
   pub user: Pubkey,
+  pub slippage_config: Option<SlippageConfig>,
 }
 
 impl QuoteInput for SwapArgs {
@@ -124,6 +125,7 @@ impl QuoteInput for SwapArgs {
     SwapArgs {
       amount: UFix64::one(),
       user,
+      slippage_config: None,
     }
   }
 }
