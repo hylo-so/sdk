@@ -27,7 +27,6 @@ use crate::transaction::{
 };
 use crate::util::{
   user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
-  TREASURY, UPGRADE_AUTHORITY,
 };
 
 /// Client for interacting with the Hylo Exchange program.
@@ -125,13 +124,15 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn initialize_protocol(
     &self,
+    upgrade_authority: Pubkey,
+    treasury: Pubkey,
     args: args::InitializeProtocol,
   ) -> Result<VersionedTransactionData> {
     let accounts = accounts::InitializeProtocol {
       admin: self.program.payer(),
-      upgrade_authority: UPGRADE_AUTHORITY,
+      upgrade_authority,
       hylo: *pda::HYLO,
-      treasury: TREASURY,
+      treasury,
       system_program: system_program::ID,
       program_data: pda::program_data(hylo_exchange::ID),
       hylo_exchange: hylo_exchange::ID,

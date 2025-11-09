@@ -23,12 +23,6 @@ use crate::exchange_client::ExchangeClient;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
-pub const UPGRADE_AUTHORITY: Pubkey =
-  pubkey!("DLkcqeNNX8nRQgD87DN7LjHkcLQd9K2wuqaCbhkERJxL");
-
-pub const TREASURY: Pubkey =
-  pubkey!("mAQQ9BphDL82kcA5unrA5PJ6ekYh5PxKVh7UBwtgVyV");
-
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
 
