@@ -180,7 +180,7 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to get current slot
   /// - Failed to build transaction instructions
-  pub async fn initialize_lst_registry(
+  pub fn initialize_lst_registry(
     &self,
     slot: u64,
   ) -> Result<VersionedTransactionData> {
