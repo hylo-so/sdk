@@ -131,7 +131,7 @@ pub trait ProgramClient: Sized {
       instructions,
       lookup_tables,
     }: &VersionedTransactionData,
-    additional_signers: Vec<Keypair>,
+    additional_signers: &[Keypair],
     recent_blockhash: Hash,
   ) -> Result<VersionedTransaction> {
     let message = v0::Message::try_compile(
