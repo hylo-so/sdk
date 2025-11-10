@@ -125,7 +125,7 @@ pub trait ProgramClient: Sized {
   /// - Failed to get latest blockhash
   /// - Failed to compile message
   /// - Failed to create transaction
-  async fn build_v0_transaction_extra_signers(
+  fn build_v0_transaction_extra_signers(
     &self,
     VersionedTransactionData {
       instructions,
