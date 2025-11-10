@@ -134,7 +134,7 @@ impl ExchangeClient {
       hylo: *pda::HYLO,
       treasury,
       system_program: system_program::ID,
-      program_data: pda::program_data(hylo_exchange::ID),
+      program_data: *pda::EXCHANGE_PROGRAM_DATA,
       hylo_exchange: hylo_exchange::ID,
     };
     let instructions = self
