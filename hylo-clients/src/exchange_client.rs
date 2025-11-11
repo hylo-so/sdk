@@ -208,12 +208,13 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn initialize_lst_registry_calculators(
     &self,
+    lst_registry: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let accounts = accounts::InitializeLstRegistryCalculators {
       admin: self.program.payer(),
       hylo: *pda::HYLO,
       lst_registry_auth: *pda::LST_REGISTRY_AUTH,
-      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
+      lst_registry,
       lut_program: address_lookup_table::ID,
       system_program: system_program::ID,
     };
