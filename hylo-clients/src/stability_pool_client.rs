@@ -14,7 +14,7 @@ use hylo_core::idl::hylo_stability_pool::client::{accounts, args};
 use hylo_core::idl::hylo_stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
-use hylo_core::idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_core::idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use hylo_core::idl::{hylo_exchange, hylo_stability_pool, pda};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
@@ -26,7 +26,8 @@ use crate::transaction::{
 };
 use crate::util::{
   parse_event, simulation_config, user_ata_instruction, EXCHANGE_LOOKUP_TABLE,
-  LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
+  LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
+  STABILITY_POOL_LOOKUP_TABLE,
 };
 
 /// Client for interacting with the Hylo Stability Pool program.
@@ -359,7 +360,7 @@ impl SimulatePrice<SHYUSD, HYUSD> for StabilityPoolClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
+impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
   type Inputs = (ExchangeClient, StabilityPoolArgs);
 
   async fn build(
@@ -381,13 +382,13 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
     let redeem_shyusd_sim = self
       .simulate_transaction_event::<UserWithdrawEventV1>(&redeem_shyusd_tx)
       .await?;
-    let mut instructions = vec![user_ata_instruction(&user, &JITOSOL::MINT)];
+    let mut instructions = vec![user_ata_instruction(&user, &OUT::MINT)];
     instructions.extend(redeem_shyusd_args.instructions);
 
     // If simulated transaction yields hyUSD, redeem it to jitoSOL
     if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
       let redeem_hyusd_args = exchange
-        .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
+        .build_transaction_data::<HYUSD, OUT>(RedeemArgs {
           amount: UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
           user,
           slippage_config: None,
@@ -400,7 +401,7 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
     // If simulated transaction yields xSOL, redeem it to jitoSOL
     if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
       let redeem_xsol_args = exchange
-        .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
+        .build_transaction_data::<XSOL, OUT>(RedeemArgs {
           amount: UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
           user,
           slippage_config: None,
@@ -424,7 +425,7 @@ impl BuildTransactionData<SHYUSD, JITOSOL> for StabilityPoolClient {
 }
 
 #[async_trait::async_trait]
-impl SimulatePriceWithEnv<SHYUSD, JITOSOL> for StabilityPoolClient {
+impl<OUT: LST> SimulatePriceWithEnv<SHYUSD, OUT> for StabilityPoolClient {
   type OutExp = N9;
   type Env = ExchangeClient;
   async fn simulate_with_env(
@@ -432,7 +433,7 @@ impl SimulatePriceWithEnv<SHYUSD, JITOSOL> for StabilityPoolClient {
     exchange: ExchangeClient,
   ) -> Result<UFix64<N9>> {
     let args = self
-      .build_transaction_data::<SHYUSD, JITOSOL>((
+      .build_transaction_data::<SHYUSD, OUT>((
         exchange,
         StabilityPoolArgs::quote_input(REFERENCE_WALLET),
       ))
