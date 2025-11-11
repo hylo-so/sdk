@@ -11,6 +11,8 @@ hylo-fix.workspace = true
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 pyth-solana-receiver-sdk.workspace = true
+switchboard-on-demand = { workspace = true, features = ["anchor"] }
+rust_decimal.workspace = true
 jupiter-amm-interface = { workspace = true, optional = true }
 hylo-idl = { version = "0.1.16", optional = true }
 serde.workspace = true

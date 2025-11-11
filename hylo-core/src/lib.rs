@@ -10,6 +10,7 @@ pub mod idl_type_bridge;
 pub mod lst_sol_price;
 pub mod pyth;
 pub mod slippage_config;
+pub mod switchboard;
 pub mod solana_clock;
 pub mod stability_mode;
 pub mod stability_pool_math;

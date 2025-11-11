@@ -39,6 +39,17 @@ pub enum CoreError {
   PythOracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
   PythOracleVerificationLevel,
+  // `switchboard`
+  #[msg("Switchboard feed is stale and exceeds max staleness.")]
+  SwitchboardOracleStale,
+  #[msg("Switchboard feed has insufficient oracle responses.")]
+  SwitchboardOracleInsufficientSamples,
+  #[msg("Switchboard feed value is missing or invalid.")]
+  SwitchboardOracleInvalidValue,
+  #[msg("Switchboard oracle standard deviation exceeds tolerance.")]
+  SwitchboardOracleStdDevTooHigh,
+  #[msg("Switchboard oracle price range calculation overflow.")]
+  SwitchboardOraclePriceRange,
   // `nav`
   #[msg("Overflow while computing collateral ratio.")]
   CollateralRatio,
