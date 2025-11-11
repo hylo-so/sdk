@@ -6,7 +6,7 @@ use crate::error::CoreError::{
   LpTokenNav, LpTokenOut, StabilityPoolCap, StablecoinToSwap, TokenWithdraw,
 };
 use crate::fee_controller::FeeExtract;
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 
 /// Calculates total dollar value of stablecoin and levercoin in stability pool.
 ///

@@ -9,7 +9,8 @@ use hylo_core::idl::hylo_stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_core::idl::{hylo_exchange, pda};
 use hylo_core::idl_type_bridge::convert_ufixvalue64;
-use hylo_core::pyth::{OracleConfig, SOL_USD_PYTH_FEED};
+use hylo_core::oracle::OracleConfig;
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_core::stability_mode::StabilityController;
 use hylo_core::total_sol_cache::TotalSolCache;
 use jupiter_amm_interface::{
