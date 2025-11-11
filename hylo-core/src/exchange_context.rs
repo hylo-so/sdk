@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::conversion::{Conversion, SwapConversion};
 use crate::error::CoreError::{
@@ -17,7 +16,7 @@ use crate::fee_controller::{
   FeeController, FeeExtract, LevercoinFees, StablecoinFees,
 };
 use crate::lst_sol_price::LstSolPrice;
-use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
+use crate::oracle::{OracleConfig, OraclePrice, PriceRange};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::stability_pool_math::stability_pool_cap;
@@ -40,20 +39,19 @@ pub struct ExchangeContext<C> {
 impl<C: SolanaClock> ExchangeContext<C> {
   /// Creates main context for exchange operations from account data.
   #[allow(clippy::too_many_arguments)]
-  pub fn load(
+  pub fn load<O: OraclePrice>(
     clock: C,
     total_sol_cache: &TotalSolCache,
     stability_controller: StabilityController,
     oracle_config: OracleConfig<N8>,
     stablecoin_fees: StablecoinFees,
     levercoin_fees: LevercoinFees,
-    sol_usd_pyth_feed: &PriceUpdateV2,
+    sol_usd_oracle: &O,
     stablecoin_mint: &Mint,
     levercoin_mint: Option<&Mint>,
   ) -> Result<ExchangeContext<C>> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
-    let sol_usd_price =
-      query_pyth_price(&clock, sol_usd_pyth_feed, oracle_config)?;
+    let sol_usd_price = sol_usd_oracle.query_price(&clock, oracle_config)?;
     let stablecoin_supply = UFix64::new(stablecoin_mint.supply);
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =

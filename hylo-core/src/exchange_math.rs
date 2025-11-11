@@ -5,7 +5,7 @@ use crate::error::CoreError::{
   CollateralRatio, MaxMintable, MaxSwappable, StablecoinNav,
   TargetCollateralRatioTooLow, TotalValueLocked,
 };
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 
 /// Computes the current collateral ratio (CR) of the protocol.
 ///   `CR = total_sol_usd / stablecoin_cap`

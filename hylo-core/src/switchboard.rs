@@ -7,11 +7,11 @@ use crate::error::CoreError::{
   SwitchboardOracleInvalidValue, SwitchboardOraclePriceRange,
   SwitchboardOracleStale,
 };
-use crate::pyth::{OracleConfig, PriceRange};
+use crate::oracle::{OracleConfig, PriceRange};
 use crate::solana_clock::SolanaClock;
 
 /// Fetches price range from a Switchboard oracle with validations.
-/// Uses the same OracleConfig and PriceRange as Pyth for consistency.
+/// Uses the common OracleConfig and PriceRange types.
 /// Note: Switchboard doesn't provide std_dev, so we assume zero confidence interval.
 pub fn query_switchboard_price<Exp: Integer, C: SolanaClock>(
   clock: &C,

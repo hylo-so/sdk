@@ -4,7 +4,7 @@ use fix::prelude::*;
 use crate::error::CoreError::{
   LeverToStable, LstToToken, StableToLever, TokenToLst,
 };
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 
 /// Provides conversions between an LST and protocol tokens.
 pub struct Conversion {
