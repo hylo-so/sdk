@@ -14,7 +14,7 @@ use hylo_core::idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
-use hylo_core::idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
+use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
 use hylo_core::idl::{ata, hylo_exchange, hylo_stability_pool, pda};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
@@ -24,7 +24,7 @@ use crate::transaction::{
   TransactionSyntax,
 };
 use crate::util::{
-  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
 };
 
 /// Client for interacting with the Hylo Exchange program.
@@ -220,7 +220,7 @@ impl ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
+impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
   type Inputs = RedeemArgs;
 
   async fn build(
@@ -234,16 +234,16 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
     let accounts = accounts::RedeemStablecoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
+      fee_auth: pda::fee_auth(OUT::MINT),
+      vault_auth: pda::vault_auth(OUT::MINT),
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
+      fee_vault: pda::fee_vault(OUT::MINT),
+      lst_vault: pda::vault(OUT::MINT),
+      lst_header: pda::lst_header(OUT::MINT),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
+      user_lst_ata: ata!(user, OUT::MINT),
       stablecoin_mint: HYUSD::MINT,
-      lst_mint: JITOSOL::MINT,
+      lst_mint: OUT::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
       token_program: token::ID,
@@ -255,7 +255,7 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let ata = vec![user_ata_instruction(&user, &JITOSOL::MINT)];
+    let ata = vec![user_ata_instruction(&user, &OUT::MINT)];
     let program = self
       .program
       .request()
@@ -276,7 +276,7 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
+impl<OUT: LST> SimulatePrice<HYUSD, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
@@ -285,7 +285,7 @@ impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
+impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
   type Inputs = RedeemArgs;
 
   async fn build(
@@ -299,17 +299,17 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
     let accounts = accounts::RedeemLevercoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
+      fee_auth: pda::fee_auth(OUT::MINT),
+      vault_auth: pda::vault_auth(OUT::MINT),
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
+      fee_vault: pda::fee_vault(OUT::MINT),
+      lst_vault: pda::vault(OUT::MINT),
+      lst_header: pda::lst_header(OUT::MINT),
       user_levercoin_ata: pda::xsol_ata(user),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
+      user_lst_ata: ata!(user, OUT::MINT),
       levercoin_mint: XSOL::MINT,
       stablecoin_mint: HYUSD::MINT,
-      lst_mint: JITOSOL::MINT,
+      lst_mint: OUT::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       system_program: system_program::ID,
       token_program: token::ID,
@@ -321,7 +321,7 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let ata = vec![user_ata_instruction(&user, &JITOSOL::MINT)];
+    let ata = vec![user_ata_instruction(&user, &OUT::MINT)];
     let program = self
       .program
       .request()
@@ -342,7 +342,7 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
+impl<OUT: LST> SimulatePrice<XSOL, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
@@ -351,7 +351,7 @@ impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
+impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
   type Inputs = MintArgs;
 
   async fn build(
@@ -365,15 +365,15 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
     let accounts = accounts::MintStablecoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
+      fee_auth: pda::fee_auth(IN::MINT),
+      vault_auth: pda::vault_auth(IN::MINT),
       stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
+      fee_vault: pda::fee_vault(IN::MINT),
+      lst_vault: pda::vault(IN::MINT),
+      lst_header: pda::lst_header(IN::MINT),
+      user_lst_ata: ata!(user, IN::MINT),
       user_stablecoin_ata: pda::hyusd_ata(user),
-      lst_mint: JITOSOL::MINT,
+      lst_mint: IN::MINT,
       stablecoin_mint: HYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
       token_program: token::ID,
@@ -407,7 +407,7 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
+impl<IN: LST> SimulatePrice<IN, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = MintStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
@@ -416,7 +416,7 @@ impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
+impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
   type Inputs = MintArgs;
 
   async fn build(
@@ -430,15 +430,15 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
     let accounts = accounts::MintLevercoin {
       user,
       hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
+      fee_auth: pda::fee_auth(IN::MINT),
+      vault_auth: pda::vault_auth(IN::MINT),
       levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ata: ata!(user, JITOSOL::MINT),
+      fee_vault: pda::fee_vault(IN::MINT),
+      lst_vault: pda::vault(IN::MINT),
+      lst_header: pda::lst_header(IN::MINT),
+      user_lst_ata: ata!(user, IN::MINT),
       user_levercoin_ata: pda::xsol_ata(user),
-      lst_mint: JITOSOL::MINT,
+      lst_mint: IN::MINT,
       levercoin_mint: XSOL::MINT,
       stablecoin_mint: HYUSD::MINT,
       sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
@@ -473,7 +473,7 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<JITOSOL, XSOL> for ExchangeClient {
+impl<IN: LST> SimulatePrice<IN, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = MintLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {

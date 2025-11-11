@@ -2053,7 +2053,7 @@ checksum = "135b12329e5e3ce057a9f972339ea52bc954fe1e9358ef27f95e89716fbc5424"
 
 [[package]]
 name = "hylo-clients"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anchor-client",
  "anchor-lang 0.31.1",
@@ -2073,13 +2073,13 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
  "flaky_test",
  "hylo-fix",
- "hylo-idl 0.1.16",
+ "hylo-idl",
  "jupiter-amm-interface",
  "proptest",
  "pyth-solana-receiver-sdk",
@@ -2104,17 +2104,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-idl"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "627703c4f21f9be73e42213a6bfc41f0ebaf988277b20245b9b243c00692ce9e"
-dependencies = [
- "anchor-lang 0.31.1",
- "anchor-spl",
-]
-
-[[package]]
-name = "hylo-idl"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
@@ -2122,7 +2112,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "0.1.19"
+version = "0.1.20"
 dependencies = [
  "anchor-client",
  "anchor-lang 0.31.1",

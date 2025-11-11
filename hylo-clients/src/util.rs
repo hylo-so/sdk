@@ -15,6 +15,7 @@ use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
 use anyhow::{anyhow, Result};
+use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
 };
@@ -22,6 +23,10 @@ use solana_transaction_status_client_types::{
 use crate::exchange_client::ExchangeClient;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
+
+pub trait LST: TokenMint {}
+impl LST for JITOSOL {}
+impl LST for HYLOSOL {}
 
 pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
   pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
