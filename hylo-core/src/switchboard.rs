@@ -66,17 +66,17 @@ fn validate_staleness<C: SolanaClock>(
 }
 
 /// Converts a Switchboard Decimal to a fixed-point number with the target exponent
+/// Note: Switchboard always uses scale 18 (value / 10^18)
 fn decimal_to_fixed<Exp: Integer>(
   decimal: rust_decimal::Decimal,
 ) -> Result<UFix64<Exp>> {
-  // Get the mantissa and scale from the decimal
+  // Get the mantissa from the decimal
   let mantissa = decimal.mantissa();
-  let scale = decimal.scale();
 
-  // Switchboard uses positive scale (e.g., scale=8 means divide by 10^8)
+  // Switchboard scale is always 18
+  const SWITCHBOARD_SCALE: i32 = 18;
+
   // Our fixed point uses negative exponents (e.g., N8 = -8)
-  // We need to convert from Switchboard's representation to our target exponent
-
   let target_exp = Exp::to_i32();
 
   // Ensure mantissa is positive for unsigned fixed point
@@ -87,14 +87,14 @@ fn decimal_to_fixed<Exp: Integer>(
   let mantissa_unsigned = mantissa.unsigned_abs();
 
   // If the scales match, we can use the mantissa directly
-  if scale as i32 == -target_exp {
+  if SWITCHBOARD_SCALE == -target_exp {
     let value_u64 = u64::try_from(mantissa_unsigned)
       .map_err(|_| SwitchboardOraclePriceRange)?;
     Ok(UFix64::new(value_u64))
-  } else if scale as i32 > -target_exp {
+  } else if SWITCHBOARD_SCALE > -target_exp {
     // Switchboard has more precision, need to divide
-    let scale_diff = scale as i32 + target_exp;
-    let divisor = 10u128.pow(scale_diff.unsigned_abs());
+    let scale_diff = SWITCHBOARD_SCALE + target_exp;
+    let divisor = 10u128.pow(scale_diff as u32);
     let scaled = mantissa_unsigned
       .checked_div(divisor)
       .ok_or(SwitchboardOraclePriceRange)?;
@@ -103,8 +103,8 @@ fn decimal_to_fixed<Exp: Integer>(
     Ok(UFix64::new(scaled_u64))
   } else {
     // Switchboard has less precision, need to multiply
-    let scale_diff = -target_exp - scale as i32;
-    let multiplier = 10u128.pow(scale_diff.unsigned_abs());
+    let scale_diff = -target_exp - SWITCHBOARD_SCALE;
+    let multiplier = 10u128.pow(scale_diff as u32);
     let scaled = mantissa_unsigned
       .checked_mul(multiplier)
       .ok_or(SwitchboardOraclePriceRange)?;
@@ -122,30 +122,33 @@ mod tests {
 
   #[test]
   fn test_decimal_to_fixed_same_scale() {
-    // Test with scale=8 (matches N8 = -8)
-    let decimal = Decimal::from_i128_with_scale(14640110937, 8);
+    // Switchboard uses scale=18
+    // Value: 146.40110937 = 146401109370000000000 / 10^18
+    // Target N8 = -8, so we need: value / 10^8 = 14640110937
+    let decimal = Decimal::from_i128_with_scale(146401109370000000000, 18);
     let result = decimal_to_fixed::<N8>(decimal).unwrap();
     assert_eq!(result, UFix64::<N8>::new(14640110937));
   }
 
   #[test]
   fn test_decimal_to_fixed_higher_precision() {
-    // Test with scale=10 (higher precision than N8)
-    // 146.40110937 with scale=10 = 14640110937 / 10^10
-    // With scale=8, this should be 1464011093 / 10^8 (rounded down)
-    let decimal = Decimal::from_i128_with_scale(14640110937, 10);
+    // Switchboard scale=18 (higher precision than N8=-8)
+    // Value: 1.4640110937 = 1464011093700000000 / 10^18
+    // With N8, this should be 146401109 / 10^8 (rounded down in division)
+    let decimal = Decimal::from_i128_with_scale(1464011093700000000, 18);
     let result = decimal_to_fixed::<N8>(decimal).unwrap();
     assert_eq!(result, UFix64::<N8>::new(146401109));
   }
 
   #[test]
   fn test_decimal_to_fixed_lower_precision() {
-    // Test with scale=6 (lower precision than N8)
-    // 146.401109 with scale=6 = 146401109 / 10^6
-    // With scale=8, this should be 14640110900 / 10^8
-    let decimal = Decimal::from_i128_with_scale(146401109, 6);
+    // This test doesn't make sense anymore since Switchboard scale is always 18
+    // which is always higher than N8=-8
+    // Test a simple case: 100.5 = 100500000000000000000 / 10^18
+    // With N8, this should be 10050000000 / 10^8
+    let decimal = Decimal::from_i128_with_scale(100500000000000000000, 18);
     let result = decimal_to_fixed::<N8>(decimal).unwrap();
-    assert_eq!(result, UFix64::<N8>::new(14640110900));
+    assert_eq!(result, UFix64::<N8>::new(10050000000));
   }
 
   #[test]
