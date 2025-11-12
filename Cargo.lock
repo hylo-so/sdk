@@ -1863,6 +1863,7 @@ dependencies = [
  "futures",
  "hylo-core",
  "hylo-fix",
+ "hylo-idl",
  "itertools 0.14.0",
  "mpl-token-metadata",
  "pyth-solana-receiver-sdk",
