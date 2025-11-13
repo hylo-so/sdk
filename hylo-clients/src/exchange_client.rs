@@ -178,8 +178,10 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
+  #[allow(clippy::too_many_arguments)]
   pub fn register_lst(
     &self,
+    lst_registry: Pubkey,
     lst_mint: Pubkey,
     lst_stake_pool_state: Pubkey,
     sanctum_calculator_program: Pubkey,
@@ -194,7 +196,7 @@ impl ExchangeClient {
       sanctum_calculator_state,
       stake_pool_program,
       stake_pool_program_data,
-      LST_REGISTRY_LOOKUP_TABLE,
+      lst_registry,
       self.program.payer(),
     );
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
