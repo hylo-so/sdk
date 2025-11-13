@@ -34,3 +34,7 @@ serde = "1.0.225"
 mpl-token-metadata = "5.1.1"
 solana-address-lookup-table-interface = "=2.2.2"
 solana-loader-v3-interface = "5.0.0"
+hylo-core = { version = "0.1.20", path = "hylo-core" }
+hylo-idl = { version = "0.1.20", path = "hylo-idl" }
+hylo-clients = { version = "0.1.20", path = "hylo-clients" }
+hylo-jupiter = { version = "0.1.20", path = "hylo-jupiter" }

@@ -18,6 +18,9 @@ use hylo_idl::instructions::exchange;
 use hylo_idl::pda::SOL_USD_PYTH_FEED;
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
 use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
+use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_core::idl::{ata, hylo_exchange, hylo_stability_pool, pda};
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
@@ -25,7 +28,7 @@ use crate::transaction::{
   TransactionSyntax,
 };
 use crate::util::{
-  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
 };
 
 /// Client for interacting with the Hylo Exchange program.
@@ -297,7 +300,7 @@ impl ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
+impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
   type Inputs = RedeemArgs;
 
   async fn build(
@@ -308,11 +311,11 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       slippage_config,
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &JITOSOL::MINT);
+    let ata = user_ata_instruction(&user, &OUT::MINT);
     let instruction = exchange::redeem_stablecoin(
       amount.bits,
       user,
-      JITOSOL::MINT,
+      OUT::MINT,
       slippage_config.map(Into::into),
     );
     let instructions = vec![ata, instruction];
@@ -326,7 +329,7 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
+impl<OUT: LST> SimulatePrice<HYUSD, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
@@ -335,7 +338,7 @@ impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
+impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
   type Inputs = RedeemArgs;
 
   async fn build(
@@ -346,11 +349,11 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       slippage_config,
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &JITOSOL::MINT);
+    let ata = user_ata_instruction(&user, &OUT::MINT);
     let instruction = exchange::redeem_levercoin(
       amount.bits,
       user,
-      JITOSOL::MINT,
+      OUT::MINT,
       slippage_config.map(Into::into),
     );
     let instructions = vec![ata, instruction];
@@ -364,7 +367,7 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
+impl<OUT: LST> SimulatePrice<XSOL, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
@@ -373,7 +376,7 @@ impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
+impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
   type Inputs = MintArgs;
 
   async fn build(
@@ -388,7 +391,7 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
     let instruction = exchange::mint_stablecoin(
       amount.bits,
       user,
-      JITOSOL::MINT,
+      OUT::MINT,
       slippage_config.map(Into::into),
     );
     let instructions = vec![ata, instruction];
@@ -402,7 +405,7 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
+impl<IN: LST> SimulatePrice<IN, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = MintStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
@@ -411,7 +414,7 @@ impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
+impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
   type Inputs = MintArgs;
 
   async fn build(
@@ -426,7 +429,7 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
     let instruction = exchange::mint_levercoin(
       amount.bits,
       user,
-      JITOSOL::MINT,
+      OUT::MINT,
       slippage_config.map(Into::into),
     );
     let instructions = vec![ata, instruction];
@@ -440,7 +443,7 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
   }
 }
 
-impl SimulatePrice<JITOSOL, XSOL> for ExchangeClient {
+impl<IN: LST> SimulatePrice<IN, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = MintLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
