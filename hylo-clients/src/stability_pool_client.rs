@@ -13,7 +13,7 @@ use hylo_idl::hylo_stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
 use hylo_idl::instructions::stability_pool;
-use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::exchange_client::ExchangeClient;
 use crate::program_client::{ProgramClient, VersionedTransactionData};

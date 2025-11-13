@@ -8,6 +8,9 @@ use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 use anyhow::Result;
 use fix::prelude::*;
+use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_core::idl::{hylo_exchange, hylo_stability_pool, pda};
+use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::hylo_exchange::client::{accounts, args};
 use hylo_idl::hylo_exchange::events::{
   ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
@@ -15,12 +18,6 @@ use hylo_idl::hylo_exchange::events::{
   SwapStableToLeverEventV1,
 };
 use hylo_idl::instructions::exchange;
-use hylo_idl::pda::SOL_USD_PYTH_FEED;
-use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
-use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
-use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
-use hylo_core::idl::{ata, hylo_exchange, hylo_stability_pool, pda};
-use hylo_core::pyth::SOL_USD_PYTH_FEED;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
@@ -391,7 +388,7 @@ impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
     let instruction = exchange::mint_stablecoin(
       amount.bits,
       user,
-      OUT::MINT,
+      IN::MINT,
       slippage_config.map(Into::into),
     );
     let instructions = vec![ata, instruction];
@@ -429,7 +426,7 @@ impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
     let instruction = exchange::mint_levercoin(
       amount.bits,
       user,
-      OUT::MINT,
+      IN::MINT,
       slippage_config.map(Into::into),
     );
     let instructions = vec![ata, instruction];
