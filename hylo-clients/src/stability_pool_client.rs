@@ -178,6 +178,19 @@ impl StabilityPoolClient {
       stability_pool::initialize_lp_token_mint(self.program.payer());
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
   }
+
+  /// Updates the withdrawal fee for the stability pool.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_withdrawal_fee(
+    &self,
+    args: &args::UpdateWithdrawalFee,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      stability_pool::update_withdrawal_fee(self.program.payer(), args);
+    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+  }
 }
 
 #[async_trait::async_trait]

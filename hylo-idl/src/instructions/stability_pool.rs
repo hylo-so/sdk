@@ -200,3 +200,21 @@ pub fn initialize_lp_token_mint(admin: Pubkey) -> Instruction {
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn update_withdrawal_fee(
+  admin: Pubkey,
+  args: &args::UpdateWithdrawalFee,
+) -> Instruction {
+  let accounts = accounts::UpdateWithdrawalFee {
+    admin,
+    pool_config: *pda::POOL_CONFIG,
+    event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
+    program: hylo_stability_pool::ID,
+  };
+  Instruction {
+    program_id: hylo_stability_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
