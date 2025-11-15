@@ -362,3 +362,62 @@ pub fn register_lst(
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn update_oracle_conf_tolerance(
+  admin: Pubkey,
+  new_oracle_conf_tolerance: crate::hylo_exchange::types::UFixValue64,
+) -> Instruction {
+  let accounts = accounts::UpdateOracleConfTolerance {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: hylo_exchange::ID,
+  };
+  let args = args::UpdateOracleConfTolerance {
+    new_oracle_conf_tolerance,
+  };
+  Instruction {
+    program_id: hylo_exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_sol_usd_oracle(
+  admin: Pubkey,
+  new_oracle: Pubkey,
+) -> Instruction {
+  let accounts = accounts::UpdateSolUsdOracle {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: hylo_exchange::ID,
+  };
+  let args = args::UpdateSolUsdOracle { new_oracle };
+  Instruction {
+    program_id: hylo_exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_stability_pool(
+  admin: Pubkey,
+  new_stability_pool: Pubkey,
+) -> Instruction {
+  let accounts = accounts::UpdateStabilityPool {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: hylo_exchange::ID,
+  };
+  let args = args::UpdateStabilityPool { new_stability_pool };
+  Instruction {
+    program_id: hylo_exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}

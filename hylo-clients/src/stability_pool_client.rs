@@ -157,7 +157,6 @@ impl StabilityPoolClient {
 #[async_trait::async_trait]
 impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
   type Inputs = StabilityPoolArgs;
-
   async fn build(
     &self,
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
@@ -186,7 +185,6 @@ impl SimulatePrice<HYUSD, SHYUSD> for StabilityPoolClient {
 #[async_trait::async_trait]
 impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
   type Inputs = StabilityPoolArgs;
-
   async fn build(
     &self,
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,

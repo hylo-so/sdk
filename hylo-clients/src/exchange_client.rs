@@ -296,6 +296,47 @@ impl ExchangeClient {
     let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
   }
+
+  /// Updates the oracle confidence tolerance.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_oracle_conf_tolerance(
+    &self,
+    new_oracle_conf_tolerance: hylo_idl::hylo_exchange::types::UFixValue64,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = exchange::update_oracle_conf_tolerance(
+      self.program.payer(),
+      new_oracle_conf_tolerance,
+    );
+    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+  }
+
+  /// Updates the SOL/USD oracle address.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_sol_usd_oracle(
+    &self,
+    new_oracle: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      exchange::update_sol_usd_oracle(self.program.payer(), new_oracle);
+    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+  }
+
+  /// Updates the stability pool address.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_stability_pool(
+    &self,
+    new_stability_pool: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      exchange::update_stability_pool(self.program.payer(), new_stability_pool);
+    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+  }
 }
 
 #[async_trait::async_trait]
