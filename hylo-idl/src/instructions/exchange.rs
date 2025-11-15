@@ -7,7 +7,7 @@ use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::hylo_exchange::client::{accounts, args};
-use crate::hylo_exchange::types::SlippageConfig;
+use crate::hylo_exchange::types::{SlippageConfig, UFixValue64};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, hylo_exchange};
@@ -366,7 +366,7 @@ pub fn register_lst(
 #[must_use]
 pub fn update_oracle_conf_tolerance(
   admin: Pubkey,
-  new_oracle_conf_tolerance: crate::hylo_exchange::types::UFixValue64,
+  new_oracle_conf_tolerance: UFixValue64,
 ) -> Instruction {
   let accounts = accounts::UpdateOracleConfTolerance {
     admin,
@@ -385,10 +385,7 @@ pub fn update_oracle_conf_tolerance(
 }
 
 #[must_use]
-pub fn update_sol_usd_oracle(
-  admin: Pubkey,
-  new_oracle: Pubkey,
-) -> Instruction {
+pub fn update_sol_usd_oracle(admin: Pubkey, new_oracle: Pubkey) -> Instruction {
   let accounts = accounts::UpdateSolUsdOracle {
     admin,
     hylo: *pda::HYLO,
