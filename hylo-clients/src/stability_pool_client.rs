@@ -9,6 +9,7 @@ use hylo_idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2,
 };
 use hylo_idl::hylo_stability_pool;
+use hylo_idl::hylo_stability_pool::client::args;
 use hylo_idl::hylo_stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
@@ -152,6 +153,33 @@ impl StabilityPoolClient {
     let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
   }
+
+  /// Initializes the stability pool.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn initialize_stability_pool(
+    &self,
+    upgrade_authority: Pubkey,
+    program_data: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = stability_pool::initialize_stability_pool(
+      self.program.payer(),
+      upgrade_authority,
+      program_data,
+    );
+    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+  }
+
+  /// Initializes the LP token mint for the stability pool.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn initialize_lp_token_mint(&self) -> Result<VersionedTransactionData> {
+    let instruction =
+      stability_pool::initialize_lp_token_mint(self.program.payer());
+    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+  }
 }
 
 #[async_trait::async_trait]
@@ -162,7 +190,10 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &SHYUSD::MINT);
-    let instruction = stability_pool::user_deposit(amount.bits, user);
+    let args = args::UserDeposit {
+      amount_stablecoin: amount.bits,
+    };
+    let instruction = stability_pool::user_deposit(user, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -191,7 +222,10 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
   ) -> Result<VersionedTransactionData> {
     let hyusd_ata = user_ata_instruction(&user, &HYUSD::MINT);
     let xsol_ata = user_ata_instruction(&user, &XSOL::MINT);
-    let instruction = stability_pool::user_withdraw(amount.bits, user);
+    let args = args::UserWithdraw {
+      amount_lp_token: amount.bits,
+    };
+    let instruction = stability_pool::user_withdraw(user, &args);
     let instructions = vec![hyusd_ata, xsol_ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[

@@ -7,17 +7,15 @@ use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::hylo_exchange::client::{accounts, args};
-use crate::hylo_exchange::types::SlippageConfig;
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, hylo_exchange};
 
 #[must_use]
 pub fn mint_stablecoin(
-  amount_lst_to_deposit: u64,
   user: Pubkey,
   lst_mint: Pubkey,
-  slippage_config: Option<SlippageConfig>,
+  args: &args::MintStablecoin,
 ) -> Instruction {
   let accounts = accounts::MintStablecoin {
     user,
@@ -39,23 +37,18 @@ pub fn mint_stablecoin(
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
-  let instruction_args = args::MintStablecoin {
-    amount_lst_to_deposit,
-    slippage_config,
-  };
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
 pub fn mint_levercoin(
-  amount_lst_to_deposit: u64,
   user: Pubkey,
   lst_mint: Pubkey,
-  slippage_config: Option<SlippageConfig>,
+  args: &args::MintLevercoin,
 ) -> Instruction {
   let accounts = accounts::MintLevercoin {
     user,
@@ -78,23 +71,18 @@ pub fn mint_levercoin(
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
-  let instruction_args = args::MintLevercoin {
-    amount_lst_to_deposit,
-    slippage_config,
-  };
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
 pub fn redeem_stablecoin(
-  amount_to_redeem: u64,
   user: Pubkey,
   lst_mint: Pubkey,
-  slippage_config: Option<SlippageConfig>,
+  args: &args::RedeemStablecoin,
 ) -> Instruction {
   let accounts = accounts::RedeemStablecoin {
     user,
@@ -115,23 +103,18 @@ pub fn redeem_stablecoin(
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
-  let instruction_args = args::RedeemStablecoin {
-    amount_to_redeem,
-    slippage_config,
-  };
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
 pub fn redeem_levercoin(
-  amount_to_redeem: u64,
   user: Pubkey,
   lst_mint: Pubkey,
-  slippage_config: Option<SlippageConfig>,
+  args: &args::RedeemLevercoin,
 ) -> Instruction {
   let accounts = accounts::RedeemLevercoin {
     user,
@@ -154,23 +137,17 @@ pub fn redeem_levercoin(
     program: hylo_exchange::ID,
   };
 
-  let instruction_args = args::RedeemLevercoin {
-    amount_to_redeem,
-    slippage_config,
-  };
-
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
 pub fn swap_stable_to_lever(
-  amount_stablecoin: u64,
   user: Pubkey,
-  slippage_config: Option<SlippageConfig>,
+  args: &args::SwapStableToLever,
 ) -> Instruction {
   let accounts = accounts::SwapStableToLever {
     user,
@@ -189,23 +166,17 @@ pub fn swap_stable_to_lever(
     program: hylo_exchange::ID,
   };
 
-  let instruction_args = args::SwapStableToLever {
-    amount_stablecoin,
-    slippage_config,
-  };
-
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
 pub fn swap_lever_to_stable(
-  amount_levercoin: u64,
   user: Pubkey,
-  slippage_config: Option<SlippageConfig>,
+  args: &args::SwapLeverToStable,
 ) -> Instruction {
   let accounts = accounts::SwapLeverToStable {
     user,
@@ -223,23 +194,19 @@ pub fn swap_lever_to_stable(
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
-  let instruction_args = args::SwapLeverToStable {
-    amount_levercoin,
-    slippage_config,
-  };
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
 pub fn initialize_protocol(
+  admin: Pubkey,
   upgrade_authority: Pubkey,
   treasury: Pubkey,
   args: &args::InitializeProtocol,
-  admin: Pubkey,
 ) -> Instruction {
   let accounts = accounts::InitializeProtocol {
     admin,

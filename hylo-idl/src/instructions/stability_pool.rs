@@ -10,7 +10,7 @@ use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use crate::{hylo_exchange, hylo_stability_pool, pda};
 
 #[must_use]
-pub fn user_deposit(amount_stablecoin: u64, user: Pubkey) -> Instruction {
+pub fn user_deposit(user: Pubkey, args: &args::UserDeposit) -> Instruction {
   let accounts = accounts::UserDeposit {
     user,
     pool_config: *pda::POOL_CONFIG,
@@ -31,16 +31,15 @@ pub fn user_deposit(amount_stablecoin: u64, user: Pubkey) -> Instruction {
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
     program: hylo_stability_pool::ID,
   };
-  let instruction_args = args::UserDeposit { amount_stablecoin };
   Instruction {
     program_id: hylo_stability_pool::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
 #[must_use]
-pub fn user_withdraw(amount_lp_token: u64, user: Pubkey) -> Instruction {
+pub fn user_withdraw(user: Pubkey, args: &args::UserWithdraw) -> Instruction {
   let accounts = accounts::UserWithdraw {
     user,
     pool_config: *pda::POOL_CONFIG,
@@ -66,11 +65,10 @@ pub fn user_withdraw(amount_lp_token: u64, user: Pubkey) -> Instruction {
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
     program: hylo_stability_pool::ID,
   };
-  let instruction_args = args::UserWithdraw { amount_lp_token };
   Instruction {
     program_id: hylo_stability_pool::ID,
     accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
+    data: args.data(),
   }
 }
 
@@ -152,5 +150,54 @@ pub fn get_stats() -> Instruction {
     program_id: hylo_stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: instruction_args.data(),
+  }
+}
+
+#[must_use]
+pub fn initialize_stability_pool(
+  admin: Pubkey,
+  upgrade_authority: Pubkey,
+  program_data: Pubkey,
+) -> Instruction {
+  let accounts = accounts::InitializeStabilityPool {
+    admin,
+    upgrade_authority,
+    pool_config: *pda::POOL_CONFIG,
+    pool_auth: *pda::POOL_AUTH,
+    stablecoin_pool: *pda::HYUSD_POOL,
+    levercoin_pool: *pda::XSOL_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    levercoin_mint: XSOL::MINT,
+    associated_token_program: associated_token::ID,
+    token_program: token::ID,
+    system_program: system_program::ID,
+    program_data,
+    hylo_stability_pool: hylo_stability_pool::ID,
+  };
+  let args = args::InitializeStabilityPool {};
+  Instruction {
+    program_id: hylo_stability_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn initialize_lp_token_mint(admin: Pubkey) -> Instruction {
+  let accounts = accounts::InitializeLpTokenMint {
+    admin,
+    pool_config: *pda::POOL_CONFIG,
+    lp_token_auth: *pda::SHYUSD_AUTH,
+    lp_token_mint: SHYUSD::MINT,
+    lp_token_metadata: pda::metadata(SHYUSD::MINT),
+    metadata_program: mpl_token_metadata::ID,
+    token_program: token::ID,
+    system_program: system_program::ID,
+  };
+  let args = args::InitializeLpTokenMint {};
+  Instruction {
+    program_id: hylo_stability_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
   }
 }

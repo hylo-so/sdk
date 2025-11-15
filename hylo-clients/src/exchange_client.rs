@@ -128,10 +128,10 @@ impl ExchangeClient {
     args: &args::InitializeProtocol,
   ) -> Result<VersionedTransactionData> {
     let instruction = exchange::initialize_protocol(
+      self.program.payer(),
       upgrade_authority,
       treasury,
       args,
-      self.program.payer(),
     );
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
   }
@@ -350,12 +350,11 @@ impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &OUT::MINT);
-    let instruction = exchange::redeem_stablecoin(
-      amount.bits,
-      user,
-      OUT::MINT,
-      slippage_config.map(Into::into),
-    );
+    let args = args::RedeemStablecoin {
+      amount_to_redeem: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = exchange::redeem_stablecoin(user, OUT::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -388,12 +387,11 @@ impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &OUT::MINT);
-    let instruction = exchange::redeem_levercoin(
-      amount.bits,
-      user,
-      OUT::MINT,
-      slippage_config.map(Into::into),
-    );
+    let args = args::RedeemLevercoin {
+      amount_to_redeem: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = exchange::redeem_levercoin(user, OUT::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -426,12 +424,11 @@ impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
     }: MintArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let instruction = exchange::mint_stablecoin(
-      amount.bits,
-      user,
-      IN::MINT,
-      slippage_config.map(Into::into),
-    );
+    let args = args::MintStablecoin {
+      amount_lst_to_deposit: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = exchange::mint_stablecoin(user, IN::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -464,12 +461,11 @@ impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
     }: MintArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let instruction = exchange::mint_levercoin(
-      amount.bits,
-      user,
-      IN::MINT,
-      slippage_config.map(Into::into),
-    );
+    let args = args::MintLevercoin {
+      amount_lst_to_deposit: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = exchange::mint_levercoin(user, IN::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -502,11 +498,11 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
     }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let instruction = exchange::swap_stable_to_lever(
-      amount.bits,
-      user,
-      slippage_config.map(Into::into),
-    );
+    let args = args::SwapStableToLever {
+      amount_stablecoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = exchange::swap_stable_to_lever(user, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
@@ -535,11 +531,11 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
     }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
     let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let instruction = exchange::swap_lever_to_stable(
-      amount.bits,
-      user,
-      slippage_config.map(Into::into),
-    );
+    let args = args::SwapLeverToStable {
+      amount_levercoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = exchange::swap_lever_to_stable(user, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
