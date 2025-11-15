@@ -303,12 +303,10 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_oracle_conf_tolerance(
     &self,
-    new_oracle_conf_tolerance: hylo_idl::hylo_exchange::types::UFixValue64,
+    args: &args::UpdateOracleConfTolerance,
   ) -> Result<VersionedTransactionData> {
-    let instruction = exchange::update_oracle_conf_tolerance(
-      self.program.payer(),
-      new_oracle_conf_tolerance,
-    );
+    let instruction =
+      exchange::update_oracle_conf_tolerance(self.program.payer(), args);
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
   }
 
@@ -318,10 +316,10 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_sol_usd_oracle(
     &self,
-    new_oracle: Pubkey,
+    args: &args::UpdateSolUsdOracle,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      exchange::update_sol_usd_oracle(self.program.payer(), new_oracle);
+      exchange::update_sol_usd_oracle(self.program.payer(), args);
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
   }
 
@@ -331,10 +329,10 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_stability_pool(
     &self,
-    new_stability_pool: Pubkey,
+    args: &args::UpdateStabilityPool,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      exchange::update_stability_pool(self.program.payer(), new_stability_pool);
+      exchange::update_stability_pool(self.program.payer(), args);
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
   }
 }

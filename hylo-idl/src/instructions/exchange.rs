@@ -7,7 +7,7 @@ use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::hylo_exchange::client::{accounts, args};
-use crate::hylo_exchange::types::{SlippageConfig, UFixValue64};
+use crate::hylo_exchange::types::SlippageConfig;
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, hylo_exchange};
@@ -366,16 +366,13 @@ pub fn register_lst(
 #[must_use]
 pub fn update_oracle_conf_tolerance(
   admin: Pubkey,
-  new_oracle_conf_tolerance: UFixValue64,
+  args: &args::UpdateOracleConfTolerance,
 ) -> Instruction {
   let accounts = accounts::UpdateOracleConfTolerance {
     admin,
     hylo: *pda::HYLO,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
-  };
-  let args = args::UpdateOracleConfTolerance {
-    new_oracle_conf_tolerance,
   };
   Instruction {
     program_id: hylo_exchange::ID,
@@ -385,14 +382,16 @@ pub fn update_oracle_conf_tolerance(
 }
 
 #[must_use]
-pub fn update_sol_usd_oracle(admin: Pubkey, new_oracle: Pubkey) -> Instruction {
+pub fn update_sol_usd_oracle(
+  admin: Pubkey,
+  args: &args::UpdateSolUsdOracle,
+) -> Instruction {
   let accounts = accounts::UpdateSolUsdOracle {
     admin,
     hylo: *pda::HYLO,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
-  let args = args::UpdateSolUsdOracle { new_oracle };
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -403,7 +402,7 @@ pub fn update_sol_usd_oracle(admin: Pubkey, new_oracle: Pubkey) -> Instruction {
 #[must_use]
 pub fn update_stability_pool(
   admin: Pubkey,
-  new_stability_pool: Pubkey,
+  args: &args::UpdateStabilityPool,
 ) -> Instruction {
   let accounts = accounts::UpdateStabilityPool {
     admin,
@@ -411,7 +410,6 @@ pub fn update_stability_pool(
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
-  let args = args::UpdateStabilityPool { new_stability_pool };
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
