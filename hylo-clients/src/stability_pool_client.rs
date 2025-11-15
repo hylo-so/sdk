@@ -161,12 +161,10 @@ impl StabilityPoolClient {
   pub fn initialize_stability_pool(
     &self,
     upgrade_authority: Pubkey,
-    program_data: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = stability_pool::initialize_stability_pool(
       self.program.payer(),
       upgrade_authority,
-      program_data,
     );
     Ok(VersionedTransactionData::no_lookup(vec![instruction]))
   }

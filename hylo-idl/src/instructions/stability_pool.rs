@@ -157,7 +157,6 @@ pub fn get_stats() -> Instruction {
 pub fn initialize_stability_pool(
   admin: Pubkey,
   upgrade_authority: Pubkey,
-  program_data: Pubkey,
 ) -> Instruction {
   let accounts = accounts::InitializeStabilityPool {
     admin,
@@ -171,7 +170,7 @@ pub fn initialize_stability_pool(
     associated_token_program: associated_token::ID,
     token_program: token::ID,
     system_program: system_program::ID,
-    program_data,
+    program_data: *pda::STABILITY_POOL_PROGRAM_DATA,
     hylo_stability_pool: hylo_stability_pool::ID,
   };
   let args = args::InitializeStabilityPool {};
