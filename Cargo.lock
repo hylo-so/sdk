@@ -2143,7 +2143,7 @@ checksum = "135b12329e5e3ce057a9f972339ea52bc954fe1e9358ef27f95e89716fbc5424"
 
 [[package]]
 name = "hylo-clients"
-version = "0.1.20"
+version = "0.2.0"
 dependencies = [
  "anchor-client",
  "anchor-lang 0.31.1",
@@ -2166,7 +2166,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "0.1.20"
+version = "0.2.0"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
@@ -2197,7 +2197,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-idl"
-version = "0.1.20"
+version = "0.2.0"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
@@ -2208,7 +2208,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "0.1.20"
+version = "0.2.0"
 dependencies = [
  "anchor-client",
  "anchor-lang 0.31.1",
