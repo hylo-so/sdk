@@ -4,12 +4,10 @@ use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
-use anchor_lang::system_program;
-use anchor_spl::{associated_token, token};
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
-use hylo_core::idl::{hylo_exchange, hylo_stability_pool, pda};
+use hylo_core::idl::{hylo_exchange, pda};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::hylo_exchange::client::{accounts, args};
 use hylo_idl::hylo_exchange::events::{
@@ -235,38 +233,14 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction data
   pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
-    let accounts = accounts::HarvestYield {
-      payer: self.program.payer(),
-      hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      levercoin_mint: XSOL::MINT,
-      levercoin_auth: *pda::XSOL_AUTH,
-      stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_pool: *pda::XSOL_POOL,
-      pool_auth: *pda::POOL_AUTH,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_stability_pool: hylo_stability_pool::ID,
-      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
-      lut_program: LOOKUP_TABLE_PROGRAM,
-      associated_token_program: associated_token::ID,
-      token_program: token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: hylo_exchange::ID,
-      stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
-      stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
-      levercoin_fee_auth: pda::fee_auth(XSOL::MINT),
-      levercoin_fee_vault: pda::fee_vault(XSOL::MINT),
-    };
-    let args = args::HarvestYield {};
+    let instruction =
+      exchange::harvest_yield(self.program.payer(), LST_REGISTRY_LOOKUP_TABLE);
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instructions = self
-      .program
+      .program()
       .request()
-      .accounts(accounts)
+      .instruction(instruction)
       .accounts(remaining_accounts)
-      .args(args)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];

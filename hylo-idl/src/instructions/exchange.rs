@@ -9,7 +9,7 @@ use solana_address_lookup_table_interface::program as address_lookup_table;
 use crate::hylo_exchange::client::{accounts, args};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
-use crate::{ata, hylo_exchange};
+use crate::{ata, hylo_exchange, hylo_stability_pool};
 
 #[must_use]
 pub fn mint_stablecoin(
@@ -377,6 +377,40 @@ pub fn update_stability_pool(
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: hylo_exchange::ID,
   };
+  Instruction {
+    program_id: hylo_exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn harvest_yield(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
+  let accounts = accounts::HarvestYield {
+    payer,
+    hylo: *pda::HYLO,
+    stablecoin_mint: HYUSD::MINT,
+    stablecoin_auth: *pda::HYUSD_AUTH,
+    levercoin_mint: XSOL::MINT,
+    levercoin_auth: *pda::XSOL_AUTH,
+    stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
+    stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
+    levercoin_fee_auth: pda::fee_auth(XSOL::MINT),
+    levercoin_fee_vault: pda::fee_vault(XSOL::MINT),
+    stablecoin_pool: *pda::HYUSD_POOL,
+    levercoin_pool: *pda::XSOL_POOL,
+    pool_auth: *pda::POOL_AUTH,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    hylo_stability_pool: hylo_stability_pool::ID,
+    lst_registry,
+    lut_program: address_lookup_table::ID,
+    associated_token_program: associated_token::ID,
+    token_program: token::ID,
+    system_program: system_program::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: hylo_exchange::ID,
+  };
+  let args = args::HarvestYield {};
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
