@@ -417,3 +417,21 @@ pub fn harvest_yield(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn update_lst_prices(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
+  let accounts = accounts::UpdateLstPrices {
+    payer,
+    hylo: *pda::HYLO,
+    lst_registry,
+    lut_program: address_lookup_table::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: hylo_exchange::ID,
+  };
+  let args = args::UpdateLstPrices {};
+  Instruction {
+    program_id: hylo_exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}

@@ -155,3 +155,4 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+

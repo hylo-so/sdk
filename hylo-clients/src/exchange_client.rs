@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE_PROGRAM;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
@@ -15,7 +14,7 @@ use hylo_idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
-use hylo_idl::instructions::exchange;
+use hylo_idl::instructions::{exchange, update_lst_prices};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
@@ -205,22 +204,14 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction data
   pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
-    let accounts = accounts::UpdateLstPrices {
-      payer: self.program.payer(),
-      hylo: *pda::HYLO,
-      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
-      lut_program: LOOKUP_TABLE_PROGRAM,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: hylo_exchange::ID,
-    };
-    let args = args::UpdateLstPrices {};
+    let instruction =
+      update_lst_prices(self.program().payer(), LST_REGISTRY_LOOKUP_TABLE);
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instructions = self
       .program
       .request()
-      .accounts(accounts)
+      .instruction(instruction)
       .accounts(remaining_accounts)
-      .args(args)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
