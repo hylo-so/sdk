@@ -340,3 +340,102 @@ pub fn shyusd_redeem_lst(
     fee_pct: fee_pct_decimal(total_fees_lst, total_out_lst)?,
   })
 }
+
+/// Generates swap quote for sHYUSD to XSOL.
+///
+/// # Errors
+/// - Pro-rata withdrawal calculations
+/// - Fee extraction and swap conversions
+/// - Arithmetic overflow
+pub fn shyusd_xsol_swap(
+  ctx: &ExchangeContext<ClockRef>,
+  shyusd_mint: &Mint,
+  hyusd_pool: &TokenAccount,
+  xsol_pool: &TokenAccount,
+  pool_config: &PoolConfig,
+  shyusd_in: UFix64<N6>,
+) -> Result<Quote> {
+  let shyusd_supply = UFix64::new(shyusd_mint.supply);
+  let hyusd_in_pool = UFix64::new(hyusd_pool.amount);
+  let hyusd_to_withdraw =
+    amount_token_to_withdraw(shyusd_in, shyusd_supply, hyusd_in_pool)?;
+  let xsol_in_pool = UFix64::new(xsol_pool.amount);
+  let xsol_to_withdraw =
+    amount_token_to_withdraw(shyusd_in, shyusd_supply, xsol_in_pool)?;
+  let withdrawal_fee = UFix64::new(pool_config.withdrawal_fee.bits);
+  let hyusd_nav = ctx.stablecoin_nav()?;
+  let xsol_nav = ctx.levercoin_mint_nav()?;
+  let FeeExtract {
+    fees_extracted: withdrawal_fee_hyusd,
+    amount_remaining: hyusd_after_fee,
+  } = stablecoin_withdrawal_fee(
+    hyusd_in_pool,
+    hyusd_to_withdraw,
+    hyusd_nav,
+    xsol_to_withdraw,
+    xsol_nav,
+    withdrawal_fee,
+  )?;
+  let FeeExtract {
+    fees_extracted: swap_fee_hyusd,
+    amount_remaining: hyusd_for_swap,
+  } = ctx.stablecoin_to_levercoin_fee(hyusd_after_fee)?;
+  let xsol_from_hyusd =
+    ctx.swap_conversion()?.stable_to_lever(hyusd_for_swap)?;
+  let total_xsol_out = xsol_from_hyusd
+    .checked_add(&xsol_to_withdraw)
+    .ok_or(anyhow!("xSOL total overflow"))?;
+  let total_fee_hyusd = withdrawal_fee_hyusd
+    .checked_add(&swap_fee_hyusd)
+    .ok_or(anyhow!("Fee overflow: withdrawal + swap"))?;
+  let fee_pct = if hyusd_to_withdraw.bits == 0 {
+    Decimal::ZERO
+  } else {
+    fee_pct_decimal(total_fee_hyusd, hyusd_to_withdraw)?
+  };
+  Ok(Quote {
+    in_amount: shyusd_in.bits,
+    out_amount: total_xsol_out.bits,
+    fee_amount: total_fee_hyusd.bits,
+    fee_mint: HYUSD::MINT,
+    fee_pct,
+  })
+}
+
+/// Generates swap quote for XSOL to sHYUSD.
+///
+/// # Errors
+/// - Swap conversion and validation
+/// - Fee extraction
+/// - LP token math
+pub fn xsol_shyusd_swap(
+  ctx: &ExchangeContext<ClockRef>,
+  shyusd_mint: &Mint,
+  hyusd_pool: &TokenAccount,
+  xsol_pool: &TokenAccount,
+  xsol_in: UFix64<N6>,
+) -> Result<Quote> {
+  let hyusd_total = {
+    let converted = ctx.swap_conversion()?.lever_to_stable(xsol_in)?;
+    ctx.validate_stablecoin_swap_amount(converted)
+  }?;
+  let FeeExtract {
+    fees_extracted,
+    amount_remaining: hyusd_after_fee,
+  } = ctx.levercoin_to_stablecoin_fee(hyusd_total)?;
+  let shyusd_nav = lp_token_nav(
+    ctx.stablecoin_nav()?,
+    UFix64::new(hyusd_pool.amount),
+    ctx.levercoin_mint_nav()?,
+    UFix64::new(xsol_pool.amount),
+    UFix64::new(shyusd_mint.supply),
+  )?;
+  let shyusd_out = lp_token_out(hyusd_after_fee, shyusd_nav)?;
+  Ok(Quote {
+    in_amount: xsol_in.bits,
+    out_amount: shyusd_out.bits,
+    fee_amount: fees_extracted.bits,
+    fee_mint: HYUSD::MINT,
+    fee_pct: fee_pct_decimal(fees_extracted, hyusd_total)?,
+  })
+}

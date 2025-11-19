@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
@@ -8,7 +9,8 @@ use anchor_spl::{associated_token, token};
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
 use hylo_core::idl::hylo_exchange::events::{
-  RedeemLevercoinEventV2, RedeemStablecoinEventV2,
+  RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
+  SwapStableToLeverEventV1,
 };
 use hylo_core::idl::hylo_stability_pool::client::{accounts, args};
 use hylo_core::idl::hylo_stability_pool::events::{
@@ -22,7 +24,7 @@ use crate::exchange_client::ExchangeClient;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
-  SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
+  SimulatePriceWithEnv, StabilityPoolArgs, SwapArgs, TransactionSyntax,
 };
 use crate::util::{
   parse_event, simulation_config, user_ata_instruction, EXCHANGE_LOOKUP_TABLE,
@@ -360,6 +362,129 @@ impl SimulatePrice<SHYUSD, HYUSD> for StabilityPoolClient {
 }
 
 #[async_trait::async_trait]
+impl BuildTransactionData<XSOL, SHYUSD> for StabilityPoolClient {
+  type Inputs = (ExchangeClient, SwapArgs);
+
+  /// Builds a composite transaction that swaps xSOL to hyUSD on the exchange
+  /// program, then deposits the resulting hyUSD into the stability pool to mint
+  /// sHYUSD.
+  async fn build(
+    &self,
+    (exchange, SwapArgs { amount, user }): (ExchangeClient, SwapArgs),
+  ) -> Result<VersionedTransactionData> {
+    // First, figure out how much hyUSD the swap will mint so we can deposit
+    // exactly that amount of hyUSD into the pool.
+    let swap_args = exchange
+      .build_transaction_data::<XSOL, HYUSD>(SwapArgs { amount, user })
+      .await?;
+    let swap_tx = exchange
+      .build_simulation_transaction(&user, &swap_args)
+      .await?;
+    let swap_event = exchange
+      .simulate_transaction_event::<SwapLeverToStableEventV1>(&swap_tx)
+      .await?;
+    let hyusd_out = UFix64::new(swap_event.stablecoin_minted_user.bits);
+    if hyusd_out.bits == 0 {
+      return Err(anyhow!("Swap produced zero hyUSD to deposit"));
+    }
+    // With the minted hyUSD known, build the stability-pool deposit leg.
+    let deposit_args = self
+      .build_transaction_data::<HYUSD, SHYUSD>(StabilityPoolArgs {
+        amount: hyusd_out,
+        user,
+      })
+      .await?;
+    let VersionedTransactionData {
+      mut instructions,
+      mut lookup_tables,
+    } = swap_args;
+    instructions.extend(deposit_args.instructions);
+    lookup_tables.extend(deposit_args.lookup_tables);
+    let lookup_tables = dedup_lookup_tables(lookup_tables);
+    Ok(VersionedTransactionData {
+      instructions,
+      lookup_tables,
+    })
+  }
+}
+
+#[async_trait::async_trait]
+impl SimulatePriceWithEnv<XSOL, SHYUSD> for StabilityPoolClient {
+  type OutExp = N6;
+  type Env = ExchangeClient;
+
+  /// Quotes the composite xSOL→sHYUSD flow by simulating the swap+deposit
+  /// transaction with a reference wallet.
+  async fn simulate_with_env(
+    &self,
+    exchange: ExchangeClient,
+  ) -> Result<UFix64<N6>> {
+    let args = self
+      .build_transaction_data::<XSOL, SHYUSD>((
+        exchange,
+        SwapArgs::quote_input(REFERENCE_WALLET),
+      ))
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let deposit = self
+      .simulate_transaction_event::<UserDepositEvent>(&tx)
+      .await?;
+    Ok(UFix64::new(deposit.lp_token_minted.bits))
+  }
+}
+
+#[async_trait::async_trait]
+impl BuildTransactionData<SHYUSD, XSOL> for StabilityPoolClient {
+  type Inputs = (ExchangeClient, StabilityPoolArgs);
+
+  /// Builds a composite transaction that withdraws sHYUSD liquidity and swaps
+  /// any resulting hyUSD into xSOL. Direct xSOL withdrawals from the pool are
+  /// already handled by the base withdraw instruction.
+  async fn build(
+    &self,
+    (exchange, StabilityPoolArgs { amount, user }): (
+      ExchangeClient,
+      StabilityPoolArgs,
+    ),
+  ) -> Result<VersionedTransactionData> {
+    let withdraw_args = self
+      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
+        amount,
+        user,
+      })
+      .await?;
+    let withdraw_tx = self
+      .build_simulation_transaction(&user, &withdraw_args)
+      .await?;
+    let withdraw_event = self
+      .simulate_transaction_event::<UserWithdrawEventV1>(&withdraw_tx)
+      .await?;
+    let VersionedTransactionData {
+      mut instructions,
+      mut lookup_tables,
+    } = withdraw_args;
+    if withdraw_event.stablecoin_withdrawn.bits > 0 {
+      // Swap any hyUSD we withdrew into xSOL for the user.
+      let swap_args = exchange
+        .build_transaction_data::<HYUSD, XSOL>(SwapArgs {
+          amount: UFix64::new(withdraw_event.stablecoin_withdrawn.bits),
+          user,
+        })
+        .await?;
+      instructions.extend(swap_args.instructions);
+      lookup_tables.extend(swap_args.lookup_tables);
+    }
+    let lookup_tables = dedup_lookup_tables(lookup_tables);
+    Ok(VersionedTransactionData {
+      instructions,
+      lookup_tables,
+    })
+  }
+}
+
+#[async_trait::async_trait]
 impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
   type Inputs = (ExchangeClient, StabilityPoolArgs);
 
@@ -458,6 +583,61 @@ impl<OUT: LST> SimulatePriceWithEnv<SHYUSD, OUT> for StabilityPoolClient {
       .ok_or(anyhow!("total_out overflow"))?;
     Ok(total_out)
   }
+}
+
+#[async_trait::async_trait]
+impl SimulatePriceWithEnv<SHYUSD, XSOL> for StabilityPoolClient {
+  type OutExp = N6;
+  type Env = ExchangeClient;
+
+  /// Quotes the sHYUSD→xSOL flow (withdraw then swap) using the reference
+  /// wallet, capturing both direct xSOL withdrawals and xSOL minted via swapping
+  /// hyUSD.
+  async fn simulate_with_env(
+    &self,
+    exchange: ExchangeClient,
+  ) -> Result<UFix64<N6>> {
+    let args = self
+      .build_transaction_data::<SHYUSD, XSOL>((
+        exchange,
+        StabilityPoolArgs::quote_input(REFERENCE_WALLET),
+      ))
+      .await?;
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &args)
+      .await?;
+    let rpc = self.program().rpc();
+    let sim_result = rpc
+      .simulate_transaction_with_config(&tx, simulation_config())
+      .await?;
+    let withdraw = parse_event::<UserWithdrawEventV1>(&sim_result)?;
+    let swap = parse_event::<SwapStableToLeverEventV1>(&sim_result).ok();
+    let swap_minted = swap
+      .map(|event| UFix64::new(event.levercoin_minted.bits))
+      .unwrap_or_else(UFix64::zero);
+    let total_out = UFix64::new(withdraw.levercoin_withdrawn.bits)
+      .checked_add(&swap_minted)
+      .ok_or(anyhow!("total_out overflow"))?;
+    Ok(total_out)
+  }
+}
+
+/// Deduplicates lookup table accounts so the same table isn't included multiple
+/// times in a composed transaction.
+fn dedup_lookup_tables(
+  tables: Vec<AddressLookupTableAccount>,
+) -> Vec<AddressLookupTableAccount> {
+  let mut deduped: Vec<AddressLookupTableAccount> = Vec::new();
+  for table in tables {
+    if deduped
+      .iter()
+      .any(|existing: &AddressLookupTableAccount| existing.key == table.key)
+    {
+      continue;
+    }
+    deduped.push(table);
+  }
+  deduped
 }
 
 #[async_trait::async_trait]
