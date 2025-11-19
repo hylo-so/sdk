@@ -241,6 +241,14 @@ impl Amm for HyloJupiterClient {
         self.pool_config()?,
         UFix64::new(*amount),
       ),
+      (SHYUSD::MINT, XSOL::MINT) => quote::shyusd_xsol_swap(
+        &ctx,
+        self.shyusd_mint()?,
+        self.hyusd_pool()?,
+        self.xsol_pool()?,
+        self.pool_config()?,
+        UFix64::new(*amount),
+      ),
       (SHYUSD::MINT, JITOSOL::MINT) => quote::shyusd_redeem_lst(
         &ctx,
         self.shyusd_mint()?,
@@ -248,6 +256,13 @@ impl Amm for HyloJupiterClient {
         self.xsol_pool()?,
         self.pool_config()?,
         self.jitosol_header()?,
+        UFix64::new(*amount),
+      ),
+      (XSOL::MINT, SHYUSD::MINT) => quote::xsol_shyusd_swap(
+        &ctx,
+        self.shyusd_mint()?,
+        self.hyusd_pool()?,
+        self.xsol_pool()?,
         UFix64::new(*amount),
       ),
       _ => Err(anyhow!("Unsupported quote pair")),
@@ -270,7 +285,7 @@ impl Amm for HyloJupiterClient {
 mod tests {
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
   use anchor_lang::pubkey;
-  use fix::typenum::U9;
+  use fix::typenum::{U6, U9};
   use flaky_test::flaky_test;
   use hylo_clients::prelude::{
     MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs, TransactionSyntax,
@@ -696,6 +711,116 @@ mod tests {
 
     // Fee percentage
     let fee_pct = fee_pct_decimal(total_fees, total_out)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[flaky_test(tokio, times = 5)]
+  async fn shyusd_xsol_swap_check() -> Result<()> {
+    let amount_shyusd = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_shyusd.bits,
+      input_mint: SHYUSD::MINT,
+      output_mint: XSOL::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_client().await?;
+    let exchange = build_test_exchange_client()?;
+    let stability = build_test_stability_pool_client()?;
+    let args = stability
+      .build_transaction_data::<SHYUSD, XSOL>((
+        exchange,
+        StabilityPoolArgs {
+          amount: amount_shyusd,
+          user: TESTER,
+        },
+      ))
+      .await?;
+    let tx = stability
+      .build_simulation_transaction(&TESTER, &args)
+      .await?;
+    let rpc = stability.program().rpc();
+    let sim_result = rpc
+      .simulate_transaction_with_config(&tx, simulation_config())
+      .await?;
+    let withdraw = parse_event::<UserWithdrawEventV1>(&sim_result)?;
+    let swap = parse_event::<SwapStableToLeverEventV1>(&sim_result).ok();
+    let withdraw_xsol: UFix64<N6> =
+      UFix64::new(withdraw.levercoin_withdrawn.bits);
+    let swap_xsol: UFix64<N6> = swap
+      .as_ref()
+      .map(|e| UFix64::new(e.levercoin_minted.bits))
+      .unwrap_or_else(UFix64::<N6>::zero);
+    let total_out = withdraw_xsol
+      .checked_add(&swap_xsol)
+      .ok_or(anyhow!("total_out overflow"))?;
+    let withdraw_fee: UFix64<N6> = UFix64::new(withdraw.stablecoin_fees.bits);
+    let swap_fee: UFix64<N6> = swap
+      .as_ref()
+      .map(|e| UFix64::new(e.stablecoin_fees.bits))
+      .unwrap_or_else(UFix64::<N6>::zero);
+    let hyusd_before_fee: UFix64<N6> =
+      UFix64::new(withdraw.stablecoin_withdrawn.bits)
+        .checked_add(&withdraw_fee)
+        .ok_or(anyhow!("hyUSD base overflow"))?;
+    let total_fee = withdraw_fee
+      .checked_add(&swap_fee)
+      .ok_or(anyhow!("fee overflow"))?;
+    let quote = jup.quote(&quote_params)?;
+
+    assert_eq!(withdraw.lp_token_burned.bits, quote.in_amount);
+    assert_eq!(total_out.bits, quote.out_amount);
+    assert_eq!(total_fee.bits, quote.fee_amount);
+    let fee_pct = if hyusd_before_fee.bits == 0 {
+      Decimal::ZERO
+    } else {
+      fee_pct_decimal::<U6>(total_fee, hyusd_before_fee)?
+    };
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[flaky_test(tokio, times = 5)]
+  async fn xsol_shyusd_swap_check() -> Result<()> {
+    let amount_xsol = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_xsol.bits,
+      input_mint: XSOL::MINT,
+      output_mint: SHYUSD::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_client().await?;
+    let exchange = build_test_exchange_client()?;
+    let stability = build_test_stability_pool_client()?;
+    let args = stability
+      .build_transaction_data::<XSOL, SHYUSD>((
+        exchange,
+        SwapArgs {
+          amount: amount_xsol,
+          user: TESTER,
+        },
+      ))
+      .await?;
+    let tx = stability
+      .build_simulation_transaction(&TESTER, &args)
+      .await?;
+    let rpc = stability.program().rpc();
+    let sim_result = rpc
+      .simulate_transaction_with_config(&tx, simulation_config())
+      .await?;
+    let swap = parse_event::<SwapLeverToStableEventV1>(&sim_result)?;
+    let deposit = parse_event::<UserDepositEvent>(&sim_result)?;
+    let quote = jup.quote(&quote_params)?;
+    let hyusd_user: UFix64<N6> = UFix64::new(swap.stablecoin_minted_user.bits);
+    let hyusd_fee: UFix64<N6> = UFix64::new(swap.stablecoin_minted_fees.bits);
+    let hyusd_total: UFix64<N6> = hyusd_user
+      .checked_add(&hyusd_fee)
+      .ok_or(anyhow!("hyUSD total overflow"))?;
+
+    assert_eq!(swap.levercoin_burned.bits, quote.in_amount);
+    assert_eq!(deposit.lp_token_minted.bits, quote.out_amount);
+    assert_eq!(swap.stablecoin_minted_fees.bits, quote.fee_amount);
+    let fee_pct = fee_pct_decimal::<U6>(hyusd_fee, hyusd_total)?;
     assert_eq!(fee_pct, quote.fee_pct);
     Ok(())
   }
