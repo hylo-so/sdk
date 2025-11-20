@@ -204,14 +204,16 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction data
   pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
-    let instruction =
-      update_lst_prices(self.program().payer(), LST_REGISTRY_LOOKUP_TABLE);
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
+    let instruction = update_lst_prices(
+      self.program().payer(),
+      LST_REGISTRY_LOOKUP_TABLE,
+      remaining_accounts,
+    );
     let instructions = self
       .program
       .request()
       .instruction(instruction)
-      .accounts(remaining_accounts)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
@@ -224,14 +226,16 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction data
   pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
-    let instruction =
-      exchange::harvest_yield(self.program.payer(), LST_REGISTRY_LOOKUP_TABLE);
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
+    let instruction = exchange::harvest_yield(
+      self.program.payer(),
+      LST_REGISTRY_LOOKUP_TABLE,
+      remaining_accounts,
+    );
     let instructions = self
       .program()
       .request()
       .instruction(instruction)
-      .accounts(remaining_accounts)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];

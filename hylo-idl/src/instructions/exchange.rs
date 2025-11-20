@@ -1,7 +1,7 @@
 //! Instruction builders for Hylo Exchange.
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::instruction::Instruction;
+use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
@@ -385,7 +385,11 @@ pub fn update_stability_pool(
 }
 
 #[must_use]
-pub fn harvest_yield(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
+pub fn harvest_yield(
+  payer: Pubkey,
+  lst_registry: Pubkey,
+  remaining_accounts: Vec<AccountMeta>,
+) -> Instruction {
   let accounts = accounts::HarvestYield {
     payer,
     hylo: *pda::HYLO,
@@ -413,13 +417,17 @@ pub fn harvest_yield(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
   let args = args::HarvestYield {};
   Instruction {
     program_id: hylo_exchange::ID,
-    accounts: accounts.to_account_metas(None),
+    accounts: [accounts.to_account_metas(None), remaining_accounts].concat(),
     data: args.data(),
   }
 }
 
 #[must_use]
-pub fn update_lst_prices(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
+pub fn update_lst_prices(
+  payer: Pubkey,
+  lst_registry: Pubkey,
+  remaining_accounts: Vec<AccountMeta>,
+) -> Instruction {
   let accounts = accounts::UpdateLstPrices {
     payer,
     hylo: *pda::HYLO,
@@ -431,7 +439,7 @@ pub fn update_lst_prices(payer: Pubkey, lst_registry: Pubkey) -> Instruction {
   let args = args::UpdateLstPrices {};
   Instruction {
     program_id: hylo_exchange::ID,
-    accounts: accounts.to_account_metas(None),
+    accounts: [accounts.to_account_metas(None), remaining_accounts].concat(),
     data: args.data(),
   }
 }
