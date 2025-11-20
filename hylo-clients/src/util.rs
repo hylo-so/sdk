@@ -89,7 +89,7 @@ pub fn build_v0_transaction(
     lookup_tables,
   }: &VersionedTransactionData,
   payer: &Keypair,
-  additional_signers: &[Keypair],
+  additional_signers: &[&Keypair],
   recent_blockhash: Hash,
 ) -> Result<VersionedTransaction> {
   let message = v0::Message::try_compile(
@@ -99,7 +99,7 @@ pub fn build_v0_transaction(
     recent_blockhash,
   )?;
   let signatures = once(payer)
-    .chain(additional_signers.iter())
+    .chain(additional_signers.iter().copied())
     .map(|signer| signer.sign_message(&message.serialize()))
     .collect_vec();
   let tx = VersionedTransaction {
