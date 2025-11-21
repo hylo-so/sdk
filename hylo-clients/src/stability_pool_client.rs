@@ -166,7 +166,7 @@ impl StabilityPoolClient {
       self.program.payer(),
       upgrade_authority,
     );
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Initializes the LP token mint for the stability pool.
@@ -176,7 +176,7 @@ impl StabilityPoolClient {
   pub fn initialize_lp_token_mint(&self) -> Result<VersionedTransactionData> {
     let instruction =
       stability_pool::initialize_lp_token_mint(self.program.payer());
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Updates the withdrawal fee for the stability pool.
@@ -189,7 +189,7 @@ impl StabilityPoolClient {
   ) -> Result<VersionedTransactionData> {
     let instruction =
       stability_pool::update_withdrawal_fee(self.program.payer(), args);
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 }
 

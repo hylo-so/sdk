@@ -130,7 +130,7 @@ impl ExchangeClient {
       treasury,
       args,
     );
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Initializes hyUSD and xSOL token mints.
@@ -139,7 +139,7 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn initialize_mints(&self) -> Result<VersionedTransactionData> {
     let instruction = exchange::initialize_mints(self.program.payer());
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Initializes the LST registry lookup table.
@@ -153,7 +153,7 @@ impl ExchangeClient {
   ) -> Result<VersionedTransactionData> {
     let instruction =
       exchange::initialize_lst_registry(slot, self.program.payer());
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Initializes LST price calculators in registry.
@@ -168,7 +168,7 @@ impl ExchangeClient {
       lst_registry,
       self.program.payer(),
     );
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Registers a new LST for mint/redeem.
@@ -196,7 +196,7 @@ impl ExchangeClient {
       lst_registry,
       self.program.payer(),
     );
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Builds transaction data for LST price oracle crank.
@@ -276,7 +276,7 @@ impl ExchangeClient {
   ) -> Result<VersionedTransactionData> {
     let instruction =
       exchange::update_oracle_conf_tolerance(self.program.payer(), args);
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Updates the SOL/USD oracle address.
@@ -289,7 +289,7 @@ impl ExchangeClient {
   ) -> Result<VersionedTransactionData> {
     let instruction =
       exchange::update_sol_usd_oracle(self.program.payer(), args);
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Updates the stability pool address.
@@ -302,7 +302,7 @@ impl ExchangeClient {
   ) -> Result<VersionedTransactionData> {
     let instruction =
       exchange::update_stability_pool(self.program.payer(), args);
-    Ok(VersionedTransactionData::no_lookup(vec![instruction]))
+    Ok(VersionedTransactionData::one(instruction))
   }
 }
 
