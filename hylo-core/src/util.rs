@@ -1,3 +1,11 @@
+#[macro_export]
+macro_rules! eq_tolerance {
+  ($l:expr, $r:expr, $place:ty, $tol:expr) => {{
+    let diff = $l.convert::<$place>().abs_diff(&$r.convert::<$place>());
+    diff <= $tol
+  }};
+}
+
 #[cfg(test)]
 pub mod proptest {
   use fix::prelude::*;
@@ -5,14 +13,6 @@ pub mod proptest {
   use proptest::prelude::*;
 
   use crate::exchange_math::collateral_ratio;
-
-  #[macro_export]
-  macro_rules! eq_tolerance {
-    ($l:expr, $r:expr, $place:ty, $tol:expr) => {{
-      let diff = $l.convert::<$place>().abs_diff(&$r.convert::<$place>());
-      diff <= $tol
-    }};
-  }
 
   /// Represents a possible state of the protocol, collateral, and tokens.
   /// Always holds the Hylo invariant: `ns * ps = nx * px + nh * ph`.
