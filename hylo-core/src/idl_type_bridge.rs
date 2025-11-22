@@ -4,6 +4,7 @@ use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
 use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
+use crate::yields::{YieldHarvestCache, YieldHarvestConfig};
 
 #[must_use]
 pub fn convert_ufixvalue64(
@@ -57,6 +58,31 @@ impl From<hylo_idl::hylo_exchange::types::TotalSolCache> for TotalSolCache {
     TotalSolCache {
       current_update_epoch: idl.current_update_epoch,
       total_sol: convert_ufixvalue64(idl.total_sol),
+    }
+  }
+}
+
+impl From<hylo_idl::hylo_exchange::types::YieldHarvestConfig>
+  for YieldHarvestConfig
+{
+  fn from(idl: hylo_idl::hylo_exchange::types::YieldHarvestConfig) -> Self {
+    YieldHarvestConfig {
+      allocation: convert_ufixvalue64(idl.allocation),
+      fee: convert_ufixvalue64(idl.fee),
+    }
+  }
+}
+
+impl From<hylo_idl::hylo_exchange::types::YieldHarvestCache>
+  for YieldHarvestCache
+{
+  fn from(idl: hylo_idl::hylo_exchange::types::YieldHarvestCache) -> Self {
+    YieldHarvestCache {
+      epoch: idl.epoch,
+      stability_pool_cap: convert_ufixvalue64(idl.stability_pool_cap),
+      stablecoin_yield_to_pool: convert_ufixvalue64(
+        idl.stablecoin_yield_to_pool,
+      ),
     }
   }
 }

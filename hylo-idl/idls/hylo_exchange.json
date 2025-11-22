@@ -169,6 +169,7 @@
         },
         {
           "name": "levercoin_mint",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -212,7 +213,7 @@
           }
         },
         {
-          "name": "fee_auth",
+          "name": "stablecoin_fee_auth",
           "pda": {
             "seeds": [
               {
@@ -236,13 +237,13 @@
           }
         },
         {
-          "name": "fee_vault",
+          "name": "stablecoin_fee_vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "fee_auth"
+                "path": "stablecoin_fee_auth"
               },
               {
                 "kind": "const",
@@ -284,6 +285,120 @@
               {
                 "kind": "account",
                 "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "levercoin_fee_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "levercoin_fee_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "levercoin_fee_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
               }
             ],
             "program": {
@@ -1334,184 +1449,12 @@
           }
         },
         {
-          "name": "user_lst_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lst_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_lst_ta",
+          "writable": true
         },
         {
-          "name": "user_levercoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_levercoin_ta",
+          "writable": true
         },
         {
           "name": "lst_mint"
@@ -1935,184 +1878,12 @@
           }
         },
         {
-          "name": "user_lst_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lst_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_lst_ta",
+          "writable": true
         },
         {
-          "name": "user_stablecoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_stablecoin_ta",
+          "writable": true
         },
         {
           "name": "lst_mint"
@@ -2284,31 +2055,6 @@
               {
                 "kind": "account",
                 "path": "lst_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "levercoin_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
               }
             ]
           }
@@ -2520,184 +2266,12 @@
           }
         },
         {
-          "name": "user_levercoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_levercoin_ta",
+          "writable": true
         },
         {
-          "name": "user_lst_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lst_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_lst_ta",
+          "writable": true
         },
         {
           "name": "levercoin_mint",
@@ -2893,31 +2467,6 @@
           }
         },
         {
-          "name": "stablecoin_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ]
-          }
-        },
-        {
           "name": "fee_vault",
           "writable": true,
           "pda": {
@@ -3124,184 +2673,12 @@
           }
         },
         {
-          "name": "user_stablecoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_stablecoin_ta",
+          "writable": true
         },
         {
-          "name": "user_lst_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lst_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_lst_ta",
+          "writable": true
         },
         {
           "name": "stablecoin_mint",
@@ -3989,94 +3366,8 @@
           }
         },
         {
-          "name": "user_stablecoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_stablecoin_ta",
+          "writable": true
         },
         {
           "name": "levercoin_mint",
@@ -4124,94 +3415,8 @@
           }
         },
         {
-          "name": "user_levercoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_levercoin_ta",
+          "writable": true
         },
         {
           "name": "token_program",
@@ -4254,6 +3459,16 @@
         {
           "name": "amount_levercoin",
           "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
         }
       ],
       "returns": {
@@ -4460,94 +3675,8 @@
           }
         },
         {
-          "name": "user_stablecoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_stablecoin_ta",
+          "writable": true
         },
         {
           "name": "levercoin_mint",
@@ -4595,94 +3724,8 @@
           }
         },
         {
-          "name": "user_levercoin_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "user_levercoin_ta",
+          "writable": true
         },
         {
           "name": "token_program",
@@ -4725,6 +3768,16 @@
         {
           "name": "amount_stablecoin",
           "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
         }
       ],
       "returns": {
@@ -5139,6 +4192,84 @@
         {
           "name": "new_oracle_interval_secs",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_sol_usd_oracle",
+      "discriminator": [
+        95,
+        236,
+        18,
+        102,
+        201,
+        114,
+        89,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_oracle",
+          "type": "pubkey"
         }
       ]
     },
@@ -5907,16 +5038,29 @@
       ]
     },
     {
-      "name": "HarvestYieldEvent",
+      "name": "HarvestYieldEventV1",
       "discriminator": [
-        164,
-        43,
-        118,
-        208,
-        1,
-        71,
-        104,
-        111
+        236,
+        194,
+        171,
+        214,
+        66,
+        200,
+        158,
+        27
+      ]
+    },
+    {
+      "name": "HarvestYieldEventV2",
+      "discriminator": [
+        46,
+        204,
+        60,
+        91,
+        154,
+        15,
+        240,
+        7
       ]
     },
     {
@@ -6180,6 +5324,19 @@
       ]
     },
     {
+      "name": "UpdateOracleAddressEvent",
+      "discriminator": [
+        28,
+        247,
+        140,
+        128,
+        156,
+        178,
+        148,
+        53
+      ]
+    },
+    {
       "name": "UpdateOracleConfEvent",
       "discriminator": [
         190,
@@ -6287,313 +5444,143 @@
   "errors": [
     {
       "code": 6000,
-      "name": "OracleOutdated",
-      "msg": "Oracle did not yield a price within the configured age window."
-    },
-    {
-      "code": 6001,
-      "name": "OracleExponent",
-      "msg": "Failed to scale native oracle decimal type to expected exponent."
-    },
-    {
-      "code": 6002,
-      "name": "OracleNegativePrice",
-      "msg": "Oracle yielded a negative price which can't be unsigned."
-    },
-    {
-      "code": 6003,
-      "name": "OraclePriceRange",
-      "msg": "Calculation under/overflow while computing oracle price range."
-    },
-    {
-      "code": 6004,
-      "name": "OracleSlotInvalid",
-      "msg": "Oracle publish slot greater than current slot."
-    },
-    {
-      "code": 6005,
-      "name": "OracleNegativeTime",
-      "msg": "Encountered a negative clock or oracle publish time."
-    },
-    {
-      "code": 6006,
-      "name": "OracleVerificationLevel",
-      "msg": "Oracle price update is not fully verified."
-    },
-    {
-      "code": 6007,
-      "name": "OracleConfidence",
-      "msg": "Confidence interval on price update exceeded tolerance."
-    },
-    {
-      "code": 6008,
-      "name": "LevercoinNav",
-      "msg": "Arithmetic error while computing levercoin NAV."
-    },
-    {
-      "code": 6009,
       "name": "LevercoinRedeemDisabled",
       "msg": "Cannot redeem levercoin due to stability mode. NAV would be 0 or lower."
     },
     {
-      "code": 6010,
-      "name": "StablecoinNav",
-      "msg": "Arithmetic error while computing depegged stablecoin NAV."
-    },
-    {
-      "code": 6011,
-      "name": "LstToToken",
-      "msg": "Arithmetic error in conversion from LST to protocol token."
-    },
-    {
-      "code": 6012,
-      "name": "TokenToLst",
-      "msg": "Arithmetic error in conversion from protocol token to LST."
-    },
-    {
-      "code": 6013,
-      "name": "StableToLever",
-      "msg": "Arithmetic error in conversion from stablecoin to levercoin."
-    },
-    {
-      "code": 6014,
-      "name": "LeverToStable",
-      "msg": "Arithmetic error in conversion from levercoin to stablecoin."
-    },
-    {
-      "code": 6015,
+      "code": 6001,
       "name": "LeverToStableDisabled",
       "msg": "Levercoin to stablecoin swap disabled due to stability mode."
     },
     {
-      "code": 6016,
+      "code": 6002,
       "name": "StableToLeverDisabled",
       "msg": "Stablecoin to levercoin swap disabled due to stability mode."
     },
     {
-      "code": 6017,
+      "code": 6003,
       "name": "SanctumCpi",
       "msg": "Error during CPI to Sanctum LST/SOL calculator."
     },
     {
-      "code": 6018,
+      "code": 6004,
+      "name": "LstRegistryAlreadyInitialized",
+      "msg": "LST registry cannot be initialized twice."
+    },
+    {
+      "code": 6005,
       "name": "LstRegistryEmpty",
       "msg": "LST specific accounts found empty when attempting to load registry."
     },
     {
-      "code": 6019,
+      "code": 6006,
       "name": "LstRegistryPreamble",
       "msg": "Sanctum calculator contexts in LST registry preamble are malformed."
     },
     {
-      "code": 6020,
+      "code": 6007,
       "name": "LstRegistryLookupTableDeser",
       "msg": "Failed to deserialize registry lookup table."
     },
     {
-      "code": 6021,
+      "code": 6008,
       "name": "LstRegistryLookupTableInvalid",
       "msg": "Contents of LST registry did not match remaining_accounts."
     },
     {
-      "code": 6022,
+      "code": 6009,
       "name": "LstBlockInvalid",
       "msg": "Mint/vault/pool accounts in registry block do not match header."
     },
     {
-      "code": 6023,
+      "code": 6010,
       "name": "LstContextInvalid",
       "msg": "Attempted to register an LST with invalid Sanctum context accounts."
     },
     {
-      "code": 6024,
+      "code": 6011,
       "name": "LstAdditionOverflow",
       "msg": "Addition overflow while computing total SOL in LST registry."
     },
     {
-      "code": 6025,
+      "code": 6012,
       "name": "LstPriceOutdated",
       "msg": "Cached LST price not from current epoch. Run pricing crank to update."
     },
     {
-      "code": 6026,
+      "code": 6013,
       "name": "LstPriceDelta",
       "msg": "Failed to compute delta between current and previous LST prices."
     },
     {
-      "code": 6027,
+      "code": 6014,
       "name": "LstPriceEpochsInvalid",
       "msg": "Found current epoch less than previous in LST header."
     },
     {
-      "code": 6028,
+      "code": 6015,
       "name": "LstSolAppreciation",
       "msg": "Overflow while computing LST SOL appreciation."
     },
     {
-      "code": 6029,
+      "code": 6016,
       "name": "LstSolConversion",
       "msg": "Overflow while computing LST SOL price conversion."
     },
     {
-      "code": 6030,
-      "name": "FeeExtraction",
-      "msg": "Over/underflow while computing fee extraction for transaction."
-    },
-    {
-      "code": 6031,
-      "name": "CollateralRatio",
-      "msg": "Overflow while computing collateral ratio."
-    },
-    {
-      "code": 6032,
-      "name": "TotalValueLocked",
-      "msg": "Overflow while computing total value locked in USD."
-    },
-    {
-      "code": 6033,
+      "code": 6017,
       "name": "StablecoinMintDisabled",
-      "msg": "Stablecoin mint disabled. Protoocol is in Mode2 or Depeg."
+      "msg": "Stablecoin mint disabled. Protocol is in Mode2 or Depeg."
     },
     {
-      "code": 6034,
+      "code": 6018,
       "name": "LevercoinMintDisabled",
       "msg": "Levercoin mint disabled. Protocol is in Depeg."
     },
     {
-      "code": 6035,
-      "name": "RequestedStablecoinOverMaxMintable",
-      "msg": "Requested amount of stablecoin over max mintable limit."
-    },
-    {
-      "code": 6036,
-      "name": "StabilityValidation",
-      "msg": "Stability modes failed validation."
-    },
-    {
-      "code": 6037,
+      "code": 6019,
       "name": "YieldHarvestConfigValidation",
       "msg": "Yield harvest configuration percentages failed validation."
     },
     {
-      "code": 6038,
+      "code": 6020,
       "name": "YieldHarvestDisabled",
       "msg": "Yield harvest disabled due to protocol collateral ratio."
     },
     {
-      "code": 6039,
+      "code": 6021,
       "name": "YieldHarvestAllocation",
       "msg": "Arithmetic error while computing yield harvest allocation."
     },
     {
-      "code": 6040,
+      "code": 6022,
+      "name": "YieldHarvestTotal",
+      "msg": "Arithmetic error while checking yield harvest total."
+    },
+    {
+      "code": 6023,
       "name": "YieldHarvestEpoch",
       "msg": "Yield harvest already occurred during this epoch."
     },
     {
-      "code": 6041,
-      "name": "StabilityPoolCap",
-      "msg": "Arithmetic error while computing stablecoin + levercoin cap in stability \\\n     pool."
+      "code": 6024,
+      "name": "YieldHarvestHasNotRun",
+      "msg": "Yield harvest has not yet occurred during this epoch."
     },
     {
-      "code": 6042,
-      "name": "MaxMintable",
-      "msg": "Arithmetic error while computing max mintable stablecoin."
-    },
-    {
-      "code": 6043,
-      "name": "MaxSwappable",
-      "msg": "Arithmetic error while computing max swappable stablecoin."
-    },
-    {
-      "code": 6044,
-      "name": "TargetCollateralRatioTooLow",
-      "msg": "Unable to compute max mintable stablecoin with target CR < 1."
-    },
-    {
-      "code": 6045,
-      "name": "NoValidStablecoinMintFee",
-      "msg": "No valid mint fee for stablecoin. Projected stability mode is Mode2 or \\\n     Depeg."
-    },
-    {
-      "code": 6046,
-      "name": "NoValidLevercoinMintFee",
-      "msg": "No valid mint fee for levercoin. Projected stability mode is Depeg."
-    },
-    {
-      "code": 6047,
-      "name": "NoValidSwapFee",
-      "msg": "No valid fee for lever/stable or stable/lever swap. Projected stability \\\n     mode Mode2 or Depeg."
-    },
-    {
-      "code": 6048,
-      "name": "NoValidLevercoinRedeemFee",
-      "msg": "No valid redeem fee for levercoin due to Depeg."
-    },
-    {
-      "code": 6049,
-      "name": "NoNextStabilityThreshold",
-      "msg": "There is no next stability threshold; current mode is Depeg."
-    },
-    {
-      "code": 6050,
-      "name": "CannotIncrementTotalSolCache",
-      "msg": "Cannot increment TotalSolCache due to epoch difference. Run price update \\\n     crank to reset."
-    },
-    {
-      "code": 6051,
-      "name": "CannotDecrementTotalSolCache",
-      "msg": "Cannot decrement TotalSolCache due to epoch difference. Run price update \\\n     crank to reset."
-    },
-    {
-      "code": 6052,
-      "name": "IncrementOverflowTotalSolCache",
-      "msg": "Increment overflow in TotalSolCache."
-    },
-    {
-      "code": 6053,
-      "name": "DecrementUnderflowTotalSolCache",
-      "msg": "Decrement underflow in TotalSolCache."
-    },
-    {
-      "code": 6054,
-      "name": "OutdatedTotalSolCache",
-      "msg": "TotalSolCache is not valid for the current epoch. Run price update crank \\\n     to reset."
-    },
-    {
-      "code": 6055,
-      "name": "DestinationFeeSol",
-      "msg": "Over/underflow while computing total SOL for destination fee."
-    },
-    {
-      "code": 6056,
-      "name": "DestinationFeeStablecoin",
-      "msg": "Over/underflow while computing total stablecoin for destination fee."
-    },
-    {
-      "code": 6057,
+      "code": 6025,
       "name": "ZeroRedeem",
       "msg": "Cannot withdraw amount of 0 in a redemption action."
     },
     {
-      "code": 6058,
+      "code": 6026,
       "name": "ZeroMint",
       "msg": "Cannot deposit amount of 0 in a minting action."
     },
     {
-      "code": 6059,
+      "code": 6027,
       "name": "ZeroSwap",
       "msg": "Cannot swap amount of 0."
-    },
-    {
-      "code": 6060,
-      "name": "SlippageArithmetic",
-      "msg": "Over/underflow while computing acceptable token amount."
-    },
-    {
-      "code": 6061,
-      "name": "SlippageExceeded",
-      "msg": "Token output amount exceeds provided slippage configuration."
     }
   ],
   "types": [
@@ -6702,7 +5689,7 @@
       }
     },
     {
-      "name": "HarvestYieldEvent",
+      "name": "HarvestYieldEventV1",
       "docs": [
         "Cranks"
       ],
@@ -6735,6 +5722,42 @@
           },
           {
             "name": "sol_usd_price",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "HarvestYieldEventV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "harvest_token_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_sol_harvested",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fees_extracted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "token_to_pool",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -6866,11 +5889,15 @@
             }
           },
           {
+            "name": "sol_usd_oracle",
+            "type": "pubkey"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                119
+                87
               ]
             }
           }
@@ -8008,6 +7035,22 @@
                 "name": "UFixValue64"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateOracleAddressEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_oracle",
+            "type": "pubkey"
           }
         ]
       }

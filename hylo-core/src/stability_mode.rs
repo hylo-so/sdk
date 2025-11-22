@@ -9,7 +9,7 @@ use crate::stability_mode::StabilityMode::{Depeg, Mode1, Mode2, Normal};
 /// Mode of operation based on the protocol's current collateral ratio.
 /// See whitepaper for more.
 #[derive(
-  Copy, Clone, AnchorSerialize, AnchorDeserialize, PartialEq, PartialOrd,
+  Copy, Clone, Debug, AnchorSerialize, AnchorDeserialize, PartialEq, PartialOrd,
 )]
 pub enum StabilityMode {
   Normal,
