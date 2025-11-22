@@ -106,4 +106,9 @@ pub enum CoreError {
   StablecoinToSwap,
   #[msg("Arithmetic error while computing amount of token to withdraw.")]
   TokenWithdraw,
+  // `yields`
+  #[msg("Yield harvest configuration percentages failed validation.")]
+  YieldHarvestConfigValidation,
+  #[msg("Arithmetic error while computing yield harvest allocation.")]
+  YieldHarvestAllocation,
 }
