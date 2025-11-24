@@ -2390,6 +2390,7 @@ dependencies = [
 [[package]]
 name = "jupiter-amm-interface"
 version = "0.6.0"
+source = "git+https://github.com/hylo-so/jupiter-amm-interface?rev=cf6181f#cf6181f16fc775656a426ef4a823c91d686eded5"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
