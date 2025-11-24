@@ -14,11 +14,8 @@ use hylo_idl::hylo_exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
-use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
-use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
-use hylo_idl::instructions::{exchange, update_lst_prices};
+use hylo_idl::instructions::exchange;
 
-use crate::instruction_accounts;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
   BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
@@ -207,9 +204,8 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction data
   pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
->>>>>>> main
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
-    let instruction = update_lst_prices(
+    let instruction = exchange::update_lst_prices(
       self.program().payer(),
       LST_REGISTRY_LOOKUP_TABLE,
       remaining_accounts,

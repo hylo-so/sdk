@@ -28,7 +28,6 @@
 //!   operations for sHYUSD
 
 pub mod exchange_client;
-pub mod instruction_accounts;
 pub mod prelude;
 pub mod program_client;
 pub mod stability_pool_client;

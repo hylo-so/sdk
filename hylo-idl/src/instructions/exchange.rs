@@ -6,10 +6,11 @@ use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
+use crate::accounts::exchange;
 use crate::hylo_exchange::client::{accounts, args};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
-use crate::{ata, hylo_exchange, hylo_stability_pool};
+use crate::{hylo_exchange, hylo_stability_pool};
 
 #[must_use]
 pub fn mint_stablecoin(
@@ -17,26 +18,7 @@ pub fn mint_stablecoin(
   lst_mint: Pubkey,
   args: &args::MintStablecoin,
 ) -> Instruction {
-  let accounts = accounts::MintStablecoin {
-    user,
-    hylo: *pda::HYLO,
-    fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
-    stablecoin_auth: *pda::HYUSD_AUTH,
-    fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
-    lst_header: pda::lst_header(lst_mint),
-    user_lst_ta: ata!(user, lst_mint),
-    user_stablecoin_ta: pda::hyusd_ata(user),
-    lst_mint,
-    stablecoin_mint: HYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    system_program: system_program::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
-  };
+  let accounts = exchange::mint_stablecoin(user, lst_mint);
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -50,27 +32,7 @@ pub fn mint_levercoin(
   lst_mint: Pubkey,
   args: &args::MintLevercoin,
 ) -> Instruction {
-  let accounts = accounts::MintLevercoin {
-    user,
-    hylo: *pda::HYLO,
-    fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
-    levercoin_auth: *pda::XSOL_AUTH,
-    fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
-    lst_header: pda::lst_header(lst_mint),
-    user_lst_ta: ata!(user, lst_mint),
-    user_levercoin_ta: pda::xsol_ata(user),
-    lst_mint,
-    levercoin_mint: XSOL::MINT,
-    stablecoin_mint: HYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    system_program: system_program::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
-  };
+  let accounts = exchange::mint_levercoin(user, lst_mint);
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -84,25 +46,7 @@ pub fn redeem_stablecoin(
   lst_mint: Pubkey,
   args: &args::RedeemStablecoin,
 ) -> Instruction {
-  let accounts = accounts::RedeemStablecoin {
-    user,
-    hylo: *pda::HYLO,
-    fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
-    fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
-    lst_header: pda::lst_header(lst_mint),
-    user_stablecoin_ta: pda::hyusd_ata(user),
-    user_lst_ta: ata!(user, lst_mint),
-    stablecoin_mint: HYUSD::MINT,
-    lst_mint,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    system_program: system_program::ID,
-    token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
-  };
+  let accounts = exchange::redeem_stablecoin(user, lst_mint);
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -116,26 +60,7 @@ pub fn redeem_levercoin(
   lst_mint: Pubkey,
   args: &args::RedeemLevercoin,
 ) -> Instruction {
-  let accounts = accounts::RedeemLevercoin {
-    user,
-    hylo: *pda::HYLO,
-    fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
-    fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
-    lst_header: pda::lst_header(lst_mint),
-    user_levercoin_ta: pda::xsol_ata(user),
-    user_lst_ta: ata!(user, lst_mint),
-    levercoin_mint: XSOL::MINT,
-    stablecoin_mint: HYUSD::MINT,
-    lst_mint,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    system_program: system_program::ID,
-    token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
-  };
+  let accounts = exchange::redeem_levercoin(user, lst_mint);
 
   Instruction {
     program_id: hylo_exchange::ID,
@@ -149,22 +74,7 @@ pub fn swap_stable_to_lever(
   user: Pubkey,
   args: &args::SwapStableToLever,
 ) -> Instruction {
-  let accounts = accounts::SwapStableToLever {
-    user,
-    hylo: *pda::HYLO,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    stablecoin_mint: HYUSD::MINT,
-    stablecoin_auth: *pda::HYUSD_AUTH,
-    fee_auth: pda::fee_auth(HYUSD::MINT),
-    fee_vault: pda::fee_vault(HYUSD::MINT),
-    user_stablecoin_ta: pda::hyusd_ata(user),
-    levercoin_mint: XSOL::MINT,
-    levercoin_auth: *pda::XSOL_AUTH,
-    user_levercoin_ta: pda::xsol_ata(user),
-    token_program: token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
-  };
+  let accounts = exchange::swap_stable_to_lever(user);
 
   Instruction {
     program_id: hylo_exchange::ID,
@@ -178,22 +88,7 @@ pub fn swap_lever_to_stable(
   user: Pubkey,
   args: &args::SwapLeverToStable,
 ) -> Instruction {
-  let accounts = accounts::SwapLeverToStable {
-    user,
-    hylo: *pda::HYLO,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    stablecoin_mint: HYUSD::MINT,
-    stablecoin_auth: *pda::HYUSD_AUTH,
-    fee_auth: pda::fee_auth(HYUSD::MINT),
-    fee_vault: pda::fee_vault(HYUSD::MINT),
-    user_stablecoin_ta: pda::hyusd_ata(user),
-    levercoin_mint: XSOL::MINT,
-    levercoin_auth: *pda::XSOL_AUTH,
-    user_levercoin_ta: pda::xsol_ata(user),
-    token_program: token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
-  };
+  let accounts = exchange::swap_lever_to_stable(user);
   Instruction {
     program_id: hylo_exchange::ID,
     accounts: accounts.to_account_metas(None),

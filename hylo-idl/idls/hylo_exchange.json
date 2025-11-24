@@ -5763,6 +5763,14 @@
                 "name": "UFixValue64"
               }
             }
+          },
+          {
+            "name": "sol_usd_price",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           }
         ]
       }

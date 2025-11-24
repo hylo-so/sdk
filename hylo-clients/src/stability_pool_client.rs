@@ -17,7 +17,6 @@ use hylo_idl::instructions::stability_pool;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::exchange_client::ExchangeClient;
-use crate::instruction_accounts;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
