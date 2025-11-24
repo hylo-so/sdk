@@ -4,7 +4,7 @@ pub use anchor_client::Cluster;
 pub use anchor_lang::prelude::Pubkey;
 pub use anyhow::Result;
 pub use fix::prelude::*;
-pub use hylo_idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
+pub use hylo_core::idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 
 pub use crate::exchange_client::ExchangeClient;
 pub use crate::program_client::{ProgramClient, VersionedTransactionData};

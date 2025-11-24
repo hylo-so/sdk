@@ -12,3 +12,6 @@ anchor-lang.workspace = true
 anchor-spl.workspace = true
 paste.workspace = true
 anyhow.workspace = true
+mpl-token-metadata.workspace = true
+solana-address-lookup-table-interface.workspace = true
+solana-loader-v3-interface.workspace = true

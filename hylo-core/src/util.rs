@@ -1,3 +1,11 @@
+#[macro_export]
+macro_rules! eq_tolerance {
+  ($l:expr, $r:expr, $place:ty, $tol:expr) => {{
+    let diff = $l.convert::<$place>().abs_diff(&$r.convert::<$place>());
+    diff <= $tol
+  }};
+}
+
 #[cfg(test)]
 pub mod proptest {
   use fix::prelude::*;
@@ -6,23 +14,15 @@ pub mod proptest {
 
   use crate::exchange_math::collateral_ratio;
 
-  #[macro_export]
-  macro_rules! eq_tolerance {
-    ($l:expr, $r:expr, $place:ty, $tol:expr) => {{
-      let diff = $l.convert::<$place>().abs_diff(&$r.convert::<$place>());
-      diff <= $tol
-    }};
-  }
-
   /// Represents a possible state of the protocol, collateral, and tokens.
   /// Always holds the Hylo invariant: `ns * ps = nx * px + nh * ph`.
   #[derive(Debug)]
   pub struct ProtocolState {
     pub usd_sol_price: UFix64<N8>,
     pub stablecoin_amount: UFix64<N6>,
-    pub stablecoin_nav: UFix64<N6>,
+    pub stablecoin_nav: UFix64<N9>,
     pub levercoin_amount: UFix64<N6>,
-    pub levercoin_nav: UFix64<N6>,
+    pub levercoin_nav: UFix64<N9>,
   }
 
   impl ProtocolState {
@@ -122,12 +122,16 @@ pub mod proptest {
       .boxed()
   }
 
-  pub fn stablecoin_nav() -> BoxedStrategy<UFix64<N6>> {
-    (800_000u64..1_000_000u64).prop_map(UFix64::new).boxed()
+  pub fn stablecoin_nav() -> BoxedStrategy<UFix64<N9>> {
+    (800_000_000u64..1_000_000_000u64)
+      .prop_map(UFix64::new)
+      .boxed()
   }
 
-  pub fn levercoin_nav() -> BoxedStrategy<UFix64<N6>> {
-    (100u64..1_000_000_000u64).prop_map(UFix64::new).boxed()
+  pub fn levercoin_nav() -> BoxedStrategy<UFix64<N9>> {
+    (100_000u64..1_000_000_000_000u64)
+      .prop_map(UFix64::new)
+      .boxed()
   }
 }
 

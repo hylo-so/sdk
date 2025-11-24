@@ -1,14 +1,15 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 use fix::typenum::Integer;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
 
 /// Client specified slippage tolerance paired with expected token amount.
-#[derive(Debug, AnchorSerialize, AnchorDeserialize)]
+#[derive(Debug, AnchorSerialize, AnchorDeserialize, Serialize, Deserialize)]
 pub struct SlippageConfig {
-  expected_token_out: UFixValue64,
-  slippage_tolerance: UFixValue64,
+  pub expected_token_out: UFixValue64,
+  pub slippage_tolerance: UFixValue64,
 }
 
 impl SlippageConfig {

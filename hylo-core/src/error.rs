@@ -82,6 +82,8 @@ pub enum CoreError {
   NoValidStablecoinMintFee,
   #[msg("No valid fee for swap due to Mode2 or Depeg.")]
   NoValidSwapFee,
+  #[msg("Fees cannot exceed configured maximum.")]
+  InvalidFees,
   // `exchange_context`
   #[msg("Arithmetic error or missing data while computing levercoin NAV.")]
   LevercoinNav,
@@ -104,4 +106,9 @@ pub enum CoreError {
   StablecoinToSwap,
   #[msg("Arithmetic error while computing amount of token to withdraw.")]
   TokenWithdraw,
+  // `yields`
+  #[msg("Yield harvest configuration percentages failed validation.")]
+  YieldHarvestConfigValidation,
+  #[msg("Arithmetic error while computing yield harvest allocation.")]
+  YieldHarvestAllocation,
 }

@@ -5,8 +5,9 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
 use fix::prelude::*;
+use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::hylo_exchange::types::SlippageConfig;
-pub use hylo_idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::REFERENCE_WALLET;
@@ -118,6 +119,7 @@ impl QuoteInput for RedeemArgs {
 pub struct SwapArgs {
   pub amount: UFix64<N6>,
   pub user: Pubkey,
+  pub slippage_config: Option<SlippageConfig>,
 }
 
 impl QuoteInput for SwapArgs {
@@ -125,6 +127,7 @@ impl QuoteInput for SwapArgs {
     SwapArgs {
       amount: UFix64::one(),
       user,
+      slippage_config: None,
     }
   }
 }

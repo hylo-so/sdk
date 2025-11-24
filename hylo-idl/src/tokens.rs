@@ -39,6 +39,14 @@ impl TokenMint for SHYUSD {
 
 try_from_pubkey!(SHYUSD);
 
+pub struct XSOL;
+
+impl TokenMint for XSOL {
+  const MINT: Pubkey = pubkey!("4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs");
+}
+
+try_from_pubkey!(XSOL);
+
 pub struct JITOSOL;
 
 impl TokenMint for JITOSOL {
@@ -47,10 +55,10 @@ impl TokenMint for JITOSOL {
 
 try_from_pubkey!(JITOSOL);
 
-pub struct XSOL;
+pub struct HYLOSOL;
 
-impl TokenMint for XSOL {
-  const MINT: Pubkey = pubkey!("4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs");
+impl TokenMint for HYLOSOL {
+  const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
 }
 
-try_from_pubkey!(XSOL);
+try_from_pubkey!(HYLOSOL);

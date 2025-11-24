@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
-  FeeExtraction, NoValidLevercoinMintFee, NoValidLevercoinRedeemFee,
-  NoValidStablecoinMintFee, NoValidSwapFee,
+  FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
+  NoValidLevercoinRedeemFee, NoValidStablecoinMintFee, NoValidSwapFee,
 };
 use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 
@@ -29,12 +29,23 @@ impl FeePair {
   pub fn redeem(&self) -> Result<UFix64<N4>> {
     self.redeem.try_into()
   }
+
+  /// Fees must be less than 100%
+  pub fn validate(&self) -> Result<()> {
+    let one = UFix64::one();
+    if self.mint()? < one && self.redeem()? < one {
+      Ok(())
+    } else {
+      Err(InvalidFees.into())
+    }
+  }
 }
 
 /// Fee configuration table reacts to different stability modes.
 pub trait FeeController {
   fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
   fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
+  fn validate(&self) -> Result<()>;
 }
 
 /// Combines fee multiplication for a token amount with the remaining token
@@ -96,6 +107,12 @@ impl FeeController for StablecoinFees {
       Mode2 | Depeg => Ok(UFix64::zero()),
     }
   }
+
+  /// Run validations
+  fn validate(&self) -> Result<()> {
+    self.normal.validate()?;
+    self.mode_1.validate()
+  }
 }
 
 #[derive(Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize)]
@@ -126,6 +143,13 @@ impl FeeController for LevercoinFees {
       Mode2 => self.mode_2.redeem.try_into(),
       Depeg => Err(NoValidLevercoinRedeemFee.into()),
     }
+  }
+
+  /// Run validations
+  fn validate(&self) -> Result<()> {
+    self.normal.validate()?;
+    self.mode_1.validate()?;
+    self.mode_2.validate()
   }
 }
 

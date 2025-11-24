@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use anchor_client::solana_sdk::address_lookup_table::program::ID as LOOKUP_TABLE_PROGRAM;
 use anchor_client::solana_sdk::pubkey::Pubkey;
-use anchor_client::solana_sdk::signature::{Keypair, Signature};
+use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
-use anchor_lang::system_program;
-use anchor_spl::{associated_token, token};
 use anyhow::Result;
 use fix::prelude::*;
+use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_core::idl::{hylo_exchange, pda};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::hylo_exchange::client::{accounts, args};
 use hylo_idl::hylo_exchange::events::{
@@ -17,6 +16,7 @@ use hylo_idl::hylo_exchange::events::{
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL, XSOL};
 use hylo_idl::{hylo_exchange, hylo_stability_pool, pda};
+use hylo_idl::instructions::{exchange, update_lst_prices};
 
 use crate::instruction_accounts;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -24,7 +24,9 @@ use crate::transaction::{
   BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
   TransactionSyntax,
 };
-use crate::util::{EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
+};
 
 /// Client for interacting with the Hylo Exchange program.
 ///
@@ -115,82 +117,133 @@ impl ProgramClient for ExchangeClient {
 }
 
 impl ExchangeClient {
-  /// Runs exchange's LST price oracle crank.
+  /// Initializes the Hylo exchange protocol.
   ///
   /// # Errors
-  /// - Failed to send transaction
-  pub async fn update_lst_prices(&self) -> Result<Signature> {
-    let accounts = accounts::UpdateLstPrices {
-      payer: self.program.payer(),
-      hylo: *pda::HYLO,
-      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
-      lut_program: LOOKUP_TABLE_PROGRAM,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: hylo_exchange::ID,
-    };
-    let args = args::UpdateLstPrices {};
-    let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
-    let instructions = self
-      .program
-      .request()
-      .accounts(accounts)
-      .accounts(remaining_accounts)
-      .args(args)
-      .instructions()?;
-    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
-    let lookup_tables = vec![registry_lut, exchange_lut];
-    let args = VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    };
-    let sig = self.send_v0_transaction(&args).await?;
-    Ok(sig)
+  /// - Failed to build transaction instructions
+  pub fn initialize_protocol(
+    &self,
+    upgrade_authority: Pubkey,
+    treasury: Pubkey,
+    args: &args::InitializeProtocol,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = exchange::initialize_protocol(
+      self.program.payer(),
+      upgrade_authority,
+      treasury,
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Harvests yield from LST vaults to stability pool.
+  /// Initializes hyUSD and xSOL token mints.
   ///
   /// # Errors
-  /// - Failed to send transaction
-  pub async fn harvest_yield(&self) -> Result<Signature> {
-    let accounts = accounts::HarvestYield {
-      payer: self.program.payer(),
-      hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      levercoin_mint: XSOL::MINT,
-      levercoin_auth: *pda::XSOL_AUTH,
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
-      stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_pool: *pda::XSOL_POOL,
-      pool_auth: *pda::POOL_AUTH,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      hylo_stability_pool: hylo_stability_pool::ID,
-      lst_registry: LST_REGISTRY_LOOKUP_TABLE,
-      lut_program: LOOKUP_TABLE_PROGRAM,
-      associated_token_program: associated_token::ID,
-      token_program: token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: hylo_exchange::ID,
-    };
-    let args = args::HarvestYield {};
+  /// - Failed to build transaction instructions
+  pub fn initialize_mints(&self) -> Result<VersionedTransactionData> {
+    let instruction = exchange::initialize_mints(self.program.payer());
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Initializes the LST registry lookup table.
+  ///
+  /// # Errors
+  /// - Failed to get current slot
+  /// - Failed to build transaction instructions
+  pub fn initialize_lst_registry(
+    &self,
+    slot: u64,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      exchange::initialize_lst_registry(slot, self.program.payer());
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Initializes LST price calculators in registry.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn initialize_lst_registry_calculators(
+    &self,
+    lst_registry: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = exchange::initialize_lst_registry_calculators(
+      lst_registry,
+      self.program.payer(),
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Registers a new LST for mint/redeem.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  #[allow(clippy::too_many_arguments)]
+  pub fn register_lst(
+    &self,
+    lst_registry: Pubkey,
+    lst_mint: Pubkey,
+    lst_stake_pool_state: Pubkey,
+    sanctum_calculator_program: Pubkey,
+    sanctum_calculator_state: Pubkey,
+    stake_pool_program: Pubkey,
+    stake_pool_program_data: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = exchange::register_lst(
+      lst_mint,
+      lst_stake_pool_state,
+      sanctum_calculator_program,
+      sanctum_calculator_state,
+      stake_pool_program,
+      stake_pool_program_data,
+      lst_registry,
+      self.program.payer(),
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Builds transaction data for LST price oracle crank.
+  ///
+  /// # Errors
+  /// - Failed to build transaction data
+  pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
+>>>>>>> main
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
+    let instruction = update_lst_prices(
+      self.program().payer(),
+      LST_REGISTRY_LOOKUP_TABLE,
+      remaining_accounts,
+    );
     let instructions = self
       .program
       .request()
-      .accounts(accounts)
-      .accounts(remaining_accounts)
-      .args(args)
+      .instruction(instruction)
       .instructions()?;
     let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
-    let args = VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    };
-    let sig = self.send_v0_transaction(&args).await?;
-    Ok(sig)
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
+  }
+
+  /// Builds transaction data for harvesting yield from LST vaults to stability
+  /// pool.
+  ///
+  /// # Errors
+  /// - Failed to build transaction data
+  pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
+    let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
+    let instruction = exchange::harvest_yield(
+      self.program.payer(),
+      LST_REGISTRY_LOOKUP_TABLE,
+      remaining_accounts,
+    );
+    let instructions = self
+      .program()
+      .request()
+      .instruction(instruction)
+      .instructions()?;
+    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
+    let lookup_tables = vec![registry_lut, exchange_lut];
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 
   /// Gets exchange stats via RPC simulation.
@@ -216,10 +269,49 @@ impl ExchangeClient {
     let stats = self.simulate_transaction_return(tx.into()).await?;
     Ok(stats)
   }
+
+  /// Updates the oracle confidence tolerance.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_oracle_conf_tolerance(
+    &self,
+    args: &args::UpdateOracleConfTolerance,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      exchange::update_oracle_conf_tolerance(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the SOL/USD oracle address.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_sol_usd_oracle(
+    &self,
+    args: &args::UpdateSolUsdOracle,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      exchange::update_sol_usd_oracle(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the stability pool address.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_stability_pool(
+    &self,
+    args: &args::UpdateStabilityPool,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      exchange::update_stability_pool(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
+impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
   type Inputs = RedeemArgs;
 
   async fn build(
@@ -230,31 +322,24 @@ impl BuildTransactionData<HYUSD, JITOSOL> for ExchangeClient {
       slippage_config,
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = instruction_accounts::redeem_stablecoin(user, JITOSOL::MINT);
+    let ata = user_ata_instruction(&user, &OUT::MINT);
     let args = args::RedeemStablecoin {
       amount_to_redeem: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = self
-      .program
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
+    let instruction = exchange::redeem_stablecoin(user, OUT::MINT, &args);
+    let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
-impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
+impl<OUT: LST> SimulatePrice<HYUSD, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
@@ -263,7 +348,7 @@ impl SimulatePrice<HYUSD, JITOSOL> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
+impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
   type Inputs = RedeemArgs;
 
   async fn build(
@@ -274,31 +359,24 @@ impl BuildTransactionData<XSOL, JITOSOL> for ExchangeClient {
       slippage_config,
     }: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = instruction_accounts::redeem_levercoin(user, JITOSOL::MINT);
+    let ata = user_ata_instruction(&user, &OUT::MINT);
     let args = args::RedeemLevercoin {
       amount_to_redeem: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = self
-      .program
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
+    let instruction = exchange::redeem_levercoin(user, OUT::MINT, &args);
+    let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
-impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
+impl<OUT: LST> SimulatePrice<XSOL, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
@@ -307,7 +385,7 @@ impl SimulatePrice<XSOL, JITOSOL> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
+impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
   type Inputs = MintArgs;
 
   async fn build(
@@ -318,31 +396,24 @@ impl BuildTransactionData<JITOSOL, HYUSD> for ExchangeClient {
       slippage_config,
     }: MintArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = instruction_accounts::mint_stablecoin(user, JITOSOL::MINT);
+    let ata = user_ata_instruction(&user, &HYUSD::MINT);
     let args = args::MintStablecoin {
       amount_lst_to_deposit: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = self
-      .program
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
+    let instruction = exchange::mint_stablecoin(user, IN::MINT, &args);
+    let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
-impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
+impl<IN: LST> SimulatePrice<IN, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = MintStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
@@ -351,7 +422,7 @@ impl SimulatePrice<JITOSOL, HYUSD> for ExchangeClient {
 }
 
 #[async_trait::async_trait]
-impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
+impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
   type Inputs = MintArgs;
 
   async fn build(
@@ -362,31 +433,24 @@ impl BuildTransactionData<JITOSOL, XSOL> for ExchangeClient {
       slippage_config,
     }: MintArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = instruction_accounts::mint_levercoin(user, JITOSOL::MINT);
+    let ata = user_ata_instruction(&user, &XSOL::MINT);
     let args = args::MintLevercoin {
       amount_lst_to_deposit: amount.bits,
-      slippage_config,
+      slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = self
-      .program
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
+    let instruction = exchange::mint_levercoin(user, IN::MINT, &args);
+    let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
         LST_REGISTRY_LOOKUP_TABLE,
       ])
       .await?;
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
-impl SimulatePrice<JITOSOL, XSOL> for ExchangeClient {
+impl<IN: LST> SimulatePrice<IN, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = MintLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
@@ -400,24 +464,22 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
 
   async fn build(
     &self,
-    SwapArgs { amount, user }: SwapArgs,
+    SwapArgs {
+      amount,
+      user,
+      slippage_config,
+    }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = instruction_accounts::swap_stable_to_lever(user);
+    let ata = user_ata_instruction(&user, &XSOL::MINT);
     let args = args::SwapStableToLever {
       amount_stablecoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = self
-      .program()
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
+    let instruction = exchange::swap_stable_to_lever(user, &args);
+    let instructions = vec![ata, instruction];
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
@@ -435,24 +497,22 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
 
   async fn build(
     &self,
-    SwapArgs { amount, user }: SwapArgs,
+    SwapArgs {
+      amount,
+      user,
+      slippage_config,
+    }: SwapArgs,
   ) -> Result<VersionedTransactionData> {
-    let accounts = instruction_accounts::swap_lever_to_stable(user);
+    let ata = user_ata_instruction(&user, &HYUSD::MINT);
     let args = args::SwapLeverToStable {
       amount_levercoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
     };
-    let instructions = self
-      .program()
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
+    let instruction = exchange::swap_lever_to_stable(user, &args);
+    let instructions = vec![ata, instruction];
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
-    Ok(VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    })
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
 
