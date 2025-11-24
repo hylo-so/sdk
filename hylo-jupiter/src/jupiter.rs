@@ -490,6 +490,7 @@ mod tests {
       .build_transaction_data::<HYUSD, XSOL>(SwapArgs {
         amount: amount_hyusd,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
@@ -532,6 +533,7 @@ mod tests {
       .build_transaction_data::<XSOL, HYUSD>(SwapArgs {
         amount: amount_xsol,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;

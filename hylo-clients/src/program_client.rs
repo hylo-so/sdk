@@ -6,7 +6,6 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::message::{v0, VersionedMessage};
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
-use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
 use anchor_lang::prelude::AccountMeta;
@@ -16,14 +15,35 @@ use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
 
 use crate::util::{
-  deserialize_lookup_table, parse_event, simulation_config,
-  LST_REGISTRY_LOOKUP_TABLE,
+  build_lst_registry, build_v0_transaction, deserialize_lookup_table,
+  parse_event, simulation_config, LST_REGISTRY_LOOKUP_TABLE,
 };
 
 /// Components from which a [`VersionedTransaction`] can be built.
 pub struct VersionedTransactionData {
   pub instructions: Vec<Instruction>,
   pub lookup_tables: Vec<AddressLookupTableAccount>,
+}
+
+impl VersionedTransactionData {
+  #[must_use]
+  pub fn one(instruction: Instruction) -> VersionedTransactionData {
+    VersionedTransactionData {
+      instructions: vec![instruction],
+      lookup_tables: vec![],
+    }
+  }
+
+  #[must_use]
+  pub fn new(
+    instructions: Vec<Instruction>,
+    lookup_tables: Vec<AddressLookupTableAccount>,
+  ) -> VersionedTransactionData {
+    VersionedTransactionData {
+      instructions,
+      lookup_tables,
+    }
+  }
 }
 
 /// Abstracts the construction of client structs with `anchor_client::Program`.
@@ -76,24 +96,10 @@ pub trait ProgramClient: Sized {
   /// - Failed to create transaction
   async fn build_v0_transaction(
     &self,
-    VersionedTransactionData {
-      instructions,
-      lookup_tables,
-    }: &VersionedTransactionData,
+    vtd: &VersionedTransactionData,
   ) -> Result<VersionedTransaction> {
     let recent_blockhash = self.program().rpc().get_latest_blockhash().await?;
-    let message = v0::Message::try_compile(
-      &self.keypair().pubkey(),
-      instructions,
-      lookup_tables,
-      recent_blockhash,
-    )?;
-    let signatures = vec![self.keypair().sign_message(&message.serialize())];
-    let tx = VersionedTransaction {
-      message: VersionedMessage::V0(message),
-      signatures,
-    };
-    Ok(tx)
+    build_v0_transaction(vtd, &self.keypair(), &[], recent_blockhash)
   }
 
   /// Builds versioned transaction with dummy signatures for simulation.
@@ -144,37 +150,15 @@ pub trait ProgramClient: Sized {
     Ok(sig)
   }
 
-  /// Creates `remaining_accounts` array from LST registry table with all
-  /// headers writable.
+  /// Loads LST registry lookup table and parses it into `remaining_accounts`.
   ///
   /// # Errors
   /// - Lookup table account doesn't exist
-  /// - Malformed structure (preamble cannot be split at 16)
   async fn load_lst_registry(
     &self,
   ) -> Result<(Vec<AccountMeta>, AddressLookupTableAccount)> {
     let table = self.load_lookup_table(&LST_REGISTRY_LOOKUP_TABLE).await?;
-    if let Some((preamble, blocks)) = table.addresses.split_at_checked(16) {
-      let preamble = preamble
-        .iter()
-        .map(|key| AccountMeta::new_readonly(*key, false));
-      let blocks =
-        blocks
-          .iter()
-          .tuples()
-          .flat_map(|(header, mint, vault, pool_state)| {
-            [
-              AccountMeta::new(*header, false),
-              AccountMeta::new_readonly(*mint, false),
-              AccountMeta::new_readonly(*vault, false),
-              AccountMeta::new_readonly(*pool_state, false),
-            ]
-          });
-      let remaining_accounts = preamble.chain(blocks).collect_vec();
-      Ok((remaining_accounts, table))
-    } else {
-      Err(anyhow!("Malformed LST registry preamble."))
-    }
+    build_lst_registry(table)
   }
 
   /// Loads an address lookup table by public key.
