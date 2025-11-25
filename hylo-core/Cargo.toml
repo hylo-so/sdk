@@ -6,19 +6,19 @@ description = "Core protocol data types, math, and utilities."
 license.workspace = true
 homepage.workspace = true
 
-[dependencies]
-hylo-fix.workspace = true
-anchor-lang.workspace = true
-anchor-spl.workspace = true
-pyth-solana-receiver-sdk.workspace = true
-jupiter-amm-interface = { workspace = true, optional = true }
-hylo-idl = { workspace = true, optional = true }
-serde.workspace = true
-
 [features]
 default = []
 offchain = ["dep:hylo-idl", "dep:jupiter-amm-interface"]
 
+[dependencies]
+anchor-lang.workspace = true
+anchor-spl.workspace = true
+hylo-fix.workspace = true
+hylo-idl = { workspace = true, optional = true }
+jupiter-amm-interface = { workspace = true, optional = true }
+pyth-solana-receiver-sdk.workspace = true
+serde.workspace = true
+
 [dev-dependencies]
-proptest.workspace = true
 flaky_test.workspace = true
+proptest.workspace = true
