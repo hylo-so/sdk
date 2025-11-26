@@ -150,4 +150,3 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
     program: hylo_exchange::ID,
   }
 }
-
