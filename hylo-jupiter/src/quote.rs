@@ -6,7 +6,7 @@ use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::idl::hylo_exchange::accounts::LstHeader;
 use hylo_core::idl::hylo_stability_pool::accounts::PoolConfig;
-use hylo_core::idl::tokens::{TokenMint, HYUSD};
+use hylo_core::idl::tokens::HYUSD;
 use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::stability_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
@@ -160,7 +160,7 @@ pub fn hyusd_xsol_swap(
     in_amount: in_amount.bits,
     out_amount: xsol_out.bits,
     fee_amount: fees_extracted.bits,
-    fee_mint: HYUSD::MINT,
+    fee_mint: HYUSD,
     fee_pct: fee_pct_decimal(fees_extracted, in_amount)?,
   })
 }
@@ -188,7 +188,7 @@ pub fn xsol_hyusd_swap(
     in_amount: in_amount.bits,
     out_amount: amount_remaining.bits,
     fee_amount: fees_extracted.bits,
-    fee_mint: HYUSD::MINT,
+    fee_mint: HYUSD,
     fee_pct: fee_pct_decimal(fees_extracted, hyusd_total)?,
   })
 }
@@ -217,7 +217,7 @@ pub fn shyusd_mint(
     in_amount: hyusd_in.bits,
     out_amount: shyusd_out.bits,
     fee_amount: u64::MIN,
-    fee_mint: HYUSD::MINT,
+    fee_mint: HYUSD,
     fee_pct: Decimal::ZERO,
   })
 }
@@ -252,7 +252,7 @@ pub fn shyusd_redeem(
       in_amount: shyusd_in.bits,
       out_amount: amount_remaining.bits,
       fee_amount: fees_extracted.bits,
-      fee_mint: HYUSD::MINT,
+      fee_mint: HYUSD,
       fee_pct: fee_pct_decimal(fees_extracted, stablecoin_to_withdraw)?,
     })
   } else {

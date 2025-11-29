@@ -15,10 +15,5 @@ anchor-lang.workspace = true
 jupiter-amm-interface.workspace = true
 hylo-core = { workspace = true, features = ["offchain"] }
 pyth-solana-receiver-sdk.workspace = true
-tokio.workspace = true
 anchor-spl.workspace = true
 anchor-client.workspace = true
-
-[dev-dependencies]
-flaky_test.workspace = true
-hylo-clients.workspace = true

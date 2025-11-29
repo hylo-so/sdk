@@ -9,7 +9,9 @@ include = ["idls/", "src/"]
 
 [dependencies]
 anchor-lang.workspace = true
-anchor-spl.workspace = true
-mpl-token-metadata.workspace = true
-solana-address-lookup-table-interface.workspace = true
+solana-instruction.workspace = true
 solana-loader-v3-interface.workspace = true
+solana-pubkey.workspace = true
+solana-sdk-ids.workspace = true
+spl-associated-token-account-interface.workspace = true
+spl-token-interface.workspace = true

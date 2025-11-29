@@ -1,12 +1,11 @@
 use std::sync::LazyLock;
 
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
-use solana_address_lookup_table_interface::program as address_lookup_table;
 use solana_loader_v3_interface::get_program_data_address;
+use solana_pubkey::Pubkey;
+use solana_sdk_ids::address_lookup_table;
 
-use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
-use crate::{hylo_exchange, hylo_stability_pool};
+use crate::tokens::{HYUSD, SHYUSD, XSOL};
+use crate::{hylo_exchange, hylo_stability_pool, MPL_TOKEN_METADATA_ID};
 
 macro_rules! lazy {
   ($x:expr) => {
@@ -27,7 +26,7 @@ macro_rules! pda {
 #[macro_export]
 macro_rules! ata {
   ($auth:expr, $mint:expr) => {
-    anchor_spl::associated_token::get_associated_token_address(&$auth, &$mint)
+    spl_associated_token_account_interface::address::get_associated_token_address(&$auth, &$mint)
   };
 }
 
@@ -36,27 +35,27 @@ pub fn metadata(mint: Pubkey) -> Pubkey {
   Pubkey::find_program_address(
     &[
       "metadata".as_ref(),
-      mpl_token_metadata::ID.as_ref(),
+      MPL_TOKEN_METADATA_ID.as_ref(),
       mint.as_ref(),
     ],
-    &mpl_token_metadata::ID,
+    &MPL_TOKEN_METADATA_ID,
   )
   .0
 }
 
 #[must_use]
 pub fn hyusd_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &HYUSD::MINT)
+  ata!(&auth, &HYUSD)
 }
 
 #[must_use]
 pub fn xsol_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &XSOL::MINT)
+  ata!(&auth, &XSOL)
 }
 
 #[must_use]
 pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &SHYUSD::MINT)
+  ata!(&auth, &SHYUSD)
 }
 
 #[must_use]
@@ -107,13 +106,13 @@ pub static HYLO: LazyLock<Pubkey> =
 pub static HYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
   hylo_exchange::ID,
   hylo_exchange::constants::MINT_AUTH,
-  HYUSD::MINT
+  HYUSD
 ));
 
 pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
   hylo_exchange::ID,
   hylo_exchange::constants::MINT_AUTH,
-  XSOL::MINT
+  XSOL
 ));
 
 pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> = lazy!(pda!(
@@ -135,7 +134,7 @@ pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
 pub static SHYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
   hylo_stability_pool::ID,
   hylo_exchange::constants::MINT_AUTH,
-  SHYUSD::MINT
+  SHYUSD
 ));
 
 pub static POOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
@@ -143,9 +142,9 @@ pub static POOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
   hylo_stability_pool::constants::POOL_AUTH
 ));
 
-pub static HYUSD_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, HYUSD::MINT));
+pub static HYUSD_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, HYUSD));
 
-pub static XSOL_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, XSOL::MINT));
+pub static XSOL_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, XSOL));
 
 pub static STABILITY_POOL_PROGRAM_DATA: LazyLock<Pubkey> =
   lazy!(get_program_data_address(&hylo_stability_pool::ID));
@@ -154,4 +153,4 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
   lazy!(get_program_data_address(&hylo_exchange::ID));
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+  Pubkey::from_str_const("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
