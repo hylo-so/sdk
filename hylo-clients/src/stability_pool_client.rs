@@ -5,15 +5,14 @@ use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
-use hylo_idl::hylo_exchange::events::{
+use hylo_idl::exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2,
 };
-use hylo_idl::hylo_stability_pool;
-use hylo_idl::hylo_stability_pool::client::args;
-use hylo_idl::hylo_stability_pool::events::{
+use hylo_idl::stability_pool::client::args;
+use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
 };
-use hylo_idl::instructions::stability_pool;
+use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::exchange_client::ExchangeClient;
@@ -80,7 +79,7 @@ pub struct StabilityPoolClient {
 }
 
 impl ProgramClient for StabilityPoolClient {
-  const PROGRAM_ID: Pubkey = hylo_stability_pool::ID;
+  const PROGRAM_ID: Pubkey = hylo_idl::stability_pool::ID;
 
   fn build_client(
     program: Program<Arc<Keypair>>,
@@ -105,7 +104,7 @@ impl StabilityPoolClient {
   /// - Transaction failure
   pub async fn rebalance_stable_to_lever(&self) -> Result<Signature> {
     let instruction =
-      stability_pool::rebalance_stable_to_lever(self.program.payer());
+      instruction_builders::rebalance_stable_to_lever(self.program.payer());
     let instructions = vec![instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -124,7 +123,7 @@ impl StabilityPoolClient {
   /// - Transaction failure
   pub async fn rebalance_lever_to_stable(&self) -> Result<Signature> {
     let instruction =
-      stability_pool::rebalance_lever_to_stable(self.program.payer());
+      instruction_builders::rebalance_lever_to_stable(self.program.payer());
     let instructions = vec![instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -143,7 +142,7 @@ impl StabilityPoolClient {
   /// - Simulation failure
   /// - Return data access or deserialization
   pub async fn get_stats(&self) -> Result<StabilityPoolStats> {
-    let instruction = stability_pool::get_stats();
+    let instruction = instruction_builders::get_stats();
     let tx = self
       .program
       .request()
@@ -162,7 +161,7 @@ impl StabilityPoolClient {
     &self,
     upgrade_authority: Pubkey,
   ) -> Result<VersionedTransactionData> {
-    let instruction = stability_pool::initialize_stability_pool(
+    let instruction = instruction_builders::initialize_stability_pool(
       self.program.payer(),
       upgrade_authority,
     );
@@ -175,7 +174,7 @@ impl StabilityPoolClient {
   /// - Failed to build transaction instructions
   pub fn initialize_lp_token_mint(&self) -> Result<VersionedTransactionData> {
     let instruction =
-      stability_pool::initialize_lp_token_mint(self.program.payer());
+      instruction_builders::initialize_lp_token_mint(self.program.payer());
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -188,7 +187,7 @@ impl StabilityPoolClient {
     args: &args::UpdateWithdrawalFee,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      stability_pool::update_withdrawal_fee(self.program.payer(), args);
+      instruction_builders::update_withdrawal_fee(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 }
@@ -204,7 +203,7 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     let args = args::UserDeposit {
       amount_stablecoin: amount.bits,
     };
-    let instruction = stability_pool::user_deposit(user, &args);
+    let instruction = instruction_builders::user_deposit(user, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -236,7 +235,7 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     let args = args::UserWithdraw {
       amount_lp_token: amount.bits,
     };
-    let instruction = stability_pool::user_withdraw(user, &args);
+    let instruction = instruction_builders::user_withdraw(user, &args);
     let instructions = vec![hyusd_ata, xsol_ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[

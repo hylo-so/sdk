@@ -6,15 +6,15 @@ use anchor_client::Program;
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
-use hylo_core::idl::{hylo_exchange, pda};
+use hylo_core::idl::{exchange, pda};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
-use hylo_idl::hylo_exchange::client::{accounts, args};
-use hylo_idl::hylo_exchange::events::{
+use hylo_idl::exchange::client::{accounts, args};
+use hylo_idl::exchange::events::{
   ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
   SwapStableToLeverEventV1,
 };
-use hylo_idl::instructions::exchange;
+use hylo_idl::exchange::instruction_builders;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::transaction::{
@@ -95,7 +95,7 @@ pub struct ExchangeClient {
 }
 
 impl ProgramClient for ExchangeClient {
-  const PROGRAM_ID: Pubkey = hylo_exchange::ID;
+  const PROGRAM_ID: Pubkey = exchange::ID;
 
   fn build_client(
     program: Program<Arc<Keypair>>,
@@ -124,7 +124,7 @@ impl ExchangeClient {
     treasury: Pubkey,
     args: &args::InitializeProtocol,
   ) -> Result<VersionedTransactionData> {
-    let instruction = exchange::initialize_protocol(
+    let instruction = instruction_builders::initialize_protocol(
       self.program.payer(),
       upgrade_authority,
       treasury,
@@ -138,7 +138,8 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction instructions
   pub fn initialize_mints(&self) -> Result<VersionedTransactionData> {
-    let instruction = exchange::initialize_mints(self.program.payer());
+    let instruction =
+      instruction_builders::initialize_mints(self.program.payer());
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -152,7 +153,7 @@ impl ExchangeClient {
     slot: u64,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      exchange::initialize_lst_registry(slot, self.program.payer());
+      instruction_builders::initialize_lst_registry(slot, self.program.payer());
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -164,7 +165,7 @@ impl ExchangeClient {
     &self,
     lst_registry: Pubkey,
   ) -> Result<VersionedTransactionData> {
-    let instruction = exchange::initialize_lst_registry_calculators(
+    let instruction = instruction_builders::initialize_lst_registry_calculators(
       lst_registry,
       self.program.payer(),
     );
@@ -186,7 +187,7 @@ impl ExchangeClient {
     stake_pool_program: Pubkey,
     stake_pool_program_data: Pubkey,
   ) -> Result<VersionedTransactionData> {
-    let instruction = exchange::register_lst(
+    let instruction = instruction_builders::register_lst(
       lst_mint,
       lst_stake_pool_state,
       sanctum_calculator_program,
@@ -205,7 +206,7 @@ impl ExchangeClient {
   /// - Failed to build transaction data
   pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
-    let instruction = exchange::update_lst_prices(
+    let instruction = instruction_builders::update_lst_prices(
       self.program().payer(),
       LST_REGISTRY_LOOKUP_TABLE,
       remaining_accounts,
@@ -227,7 +228,7 @@ impl ExchangeClient {
   /// - Failed to build transaction data
   pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
-    let instruction = exchange::harvest_yield(
+    let instruction = instruction_builders::harvest_yield(
       self.program.payer(),
       LST_REGISTRY_LOOKUP_TABLE,
       remaining_accounts,
@@ -274,8 +275,10 @@ impl ExchangeClient {
     &self,
     args: &args::UpdateOracleConfTolerance,
   ) -> Result<VersionedTransactionData> {
-    let instruction =
-      exchange::update_oracle_conf_tolerance(self.program.payer(), args);
+    let instruction = instruction_builders::update_oracle_conf_tolerance(
+      self.program.payer(),
+      args,
+    );
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -288,7 +291,7 @@ impl ExchangeClient {
     args: &args::UpdateSolUsdOracle,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      exchange::update_sol_usd_oracle(self.program.payer(), args);
+      instruction_builders::update_sol_usd_oracle(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -301,7 +304,7 @@ impl ExchangeClient {
     args: &args::UpdateStabilityPool,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      exchange::update_stability_pool(self.program.payer(), args);
+      instruction_builders::update_stability_pool(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 }
@@ -323,7 +326,8 @@ impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = exchange::redeem_stablecoin(user, OUT::MINT, &args);
+    let instruction =
+      instruction_builders::redeem_stablecoin(user, OUT::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -360,7 +364,8 @@ impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = exchange::redeem_levercoin(user, OUT::MINT, &args);
+    let instruction =
+      instruction_builders::redeem_levercoin(user, OUT::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -397,7 +402,8 @@ impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
       amount_lst_to_deposit: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = exchange::mint_stablecoin(user, IN::MINT, &args);
+    let instruction =
+      instruction_builders::mint_stablecoin(user, IN::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -434,7 +440,8 @@ impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
       amount_lst_to_deposit: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = exchange::mint_levercoin(user, IN::MINT, &args);
+    let instruction =
+      instruction_builders::mint_levercoin(user, IN::MINT, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
@@ -471,7 +478,7 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
       amount_stablecoin: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = exchange::swap_stable_to_lever(user, &args);
+    let instruction = instruction_builders::swap_stable_to_lever(user, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
@@ -504,7 +511,7 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
       amount_levercoin: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = exchange::swap_lever_to_stable(user, &args);
+    let instruction = instruction_builders::swap_lever_to_stable(user, &args);
     let instructions = vec![ata, instruction];
     let lookup_tables =
       vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];

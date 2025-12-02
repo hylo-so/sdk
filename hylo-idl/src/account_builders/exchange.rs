@@ -2,12 +2,12 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
-use crate::hylo_exchange::client::accounts::{
+use crate::exchange::client::accounts::{
   MintLevercoin, MintStablecoin, RedeemLevercoin, RedeemStablecoin,
   SwapLeverToStable, SwapStableToLever,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
-use crate::{ata, hylo_exchange, pda};
+use crate::{ata, exchange, pda};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
 #[must_use]
@@ -30,7 +30,7 @@ pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> MintStablecoin {
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
+    program: exchange::ID,
   }
 }
 
@@ -56,7 +56,7 @@ pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> MintLevercoin {
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
+    program: exchange::ID,
   }
 }
 
@@ -80,7 +80,7 @@ pub fn redeem_stablecoin(user: Pubkey, lst_mint: Pubkey) -> RedeemStablecoin {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
+    program: exchange::ID,
   }
 }
 
@@ -105,7 +105,7 @@ pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> RedeemLevercoin {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
+    program: exchange::ID,
   }
 }
 
@@ -126,7 +126,7 @@ pub fn swap_stable_to_lever(user: Pubkey) -> SwapStableToLever {
     user_levercoin_ta: pda::xsol_ata(user),
     token_program: token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
+    program: exchange::ID,
   }
 }
 
@@ -147,6 +147,6 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
     user_levercoin_ta: pda::xsol_ata(user),
     token_program: token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: hylo_exchange::ID,
+    program: exchange::ID,
   }
 }

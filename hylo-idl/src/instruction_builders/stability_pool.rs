@@ -5,16 +5,16 @@ use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::{associated_token, token};
 
-use crate::accounts::stability_pool;
-use crate::hylo_stability_pool::client::{accounts, args};
+use crate::stability_pool::account_builders;
+use crate::stability_pool::client::{accounts, args};
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
-use crate::{hylo_exchange, hylo_stability_pool, pda};
+use crate::{exchange, pda, stability_pool};
 
 #[must_use]
 pub fn user_deposit(user: Pubkey, args: &args::UserDeposit) -> Instruction {
-  let accounts = stability_pool::deposit(user);
+  let accounts = account_builders::deposit(user);
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
@@ -22,9 +22,9 @@ pub fn user_deposit(user: Pubkey, args: &args::UserDeposit) -> Instruction {
 
 #[must_use]
 pub fn user_withdraw(user: Pubkey, args: &args::UserWithdraw) -> Instruction {
-  let accounts = stability_pool::withdraw(user);
+  let accounts = account_builders::withdraw(user);
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
@@ -47,14 +47,14 @@ pub fn rebalance_stable_to_lever(payer: Pubkey) -> Instruction {
     stablecoin_auth: *pda::HYUSD_AUTH,
     levercoin_auth: *pda::XSOL_AUTH,
     hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    hylo_exchange_program: hylo_exchange::ID,
+    hylo_exchange_program: exchange::ID,
     token_program: token::ID,
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: hylo_stability_pool::ID,
+    program: stability_pool::ID,
   };
   let instruction_args = args::RebalanceStableToLever {};
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: instruction_args.data(),
   }
@@ -77,14 +77,14 @@ pub fn rebalance_lever_to_stable(payer: Pubkey) -> Instruction {
     stablecoin_auth: *pda::HYUSD_AUTH,
     levercoin_auth: *pda::XSOL_AUTH,
     hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    hylo_exchange_program: hylo_exchange::ID,
+    hylo_exchange_program: exchange::ID,
     token_program: token::ID,
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: hylo_stability_pool::ID,
+    program: stability_pool::ID,
   };
   let instruction_args = args::RebalanceLeverToStable {};
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: instruction_args.data(),
   }
@@ -105,7 +105,7 @@ pub fn get_stats() -> Instruction {
   };
   let instruction_args = args::GetStats {};
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: instruction_args.data(),
   }
@@ -129,11 +129,11 @@ pub fn initialize_stability_pool(
     token_program: token::ID,
     system_program: system_program::ID,
     program_data: *pda::STABILITY_POOL_PROGRAM_DATA,
-    hylo_stability_pool: hylo_stability_pool::ID,
+    hylo_stability_pool: stability_pool::ID,
   };
   let args = args::InitializeStabilityPool {};
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
@@ -153,7 +153,7 @@ pub fn initialize_lp_token_mint(admin: Pubkey) -> Instruction {
   };
   let args = args::InitializeLpTokenMint {};
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
@@ -168,10 +168,10 @@ pub fn update_withdrawal_fee(
     admin,
     pool_config: *pda::POOL_CONFIG,
     event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: hylo_stability_pool::ID,
+    program: stability_pool::ID,
   };
   Instruction {
-    program_id: hylo_stability_pool::ID,
+    program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),
     data: args.data(),
   }

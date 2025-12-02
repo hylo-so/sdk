@@ -1,12 +1,12 @@
 use anchor_lang::prelude::{Pubkey, ToAccountMetas};
-use hylo_idl::accounts;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use hylo_idl::{exchange, stability_pool};
 use jupiter_amm_interface::{Swap, SwapAndAccountMetas};
 
 /// Creates account metas for minting stablecoin (LST -> hyUSD).
 #[must_use]
 pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::exchange::mint_stablecoin(user, lst_mint);
+  let accounts = exchange::account_builders::mint_stablecoin(user, lst_mint);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -20,7 +20,7 @@ pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> SwapAndAccountMetas {
 /// Creates account metas for minting levercoin (LST -> xSOL).
 #[must_use]
 pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::exchange::mint_levercoin(user, lst_mint);
+  let accounts = exchange::account_builders::mint_levercoin(user, lst_mint);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -37,7 +37,7 @@ pub fn redeem_stablecoin(
   user: Pubkey,
   lst_mint: Pubkey,
 ) -> SwapAndAccountMetas {
-  let accounts = accounts::exchange::redeem_stablecoin(user, lst_mint);
+  let accounts = exchange::account_builders::redeem_stablecoin(user, lst_mint);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -51,7 +51,7 @@ pub fn redeem_stablecoin(
 /// Creates account metas for redeeming levercoin (xSOL -> LST).
 #[must_use]
 pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::exchange::redeem_levercoin(user, lst_mint);
+  let accounts = exchange::account_builders::redeem_levercoin(user, lst_mint);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -65,7 +65,7 @@ pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> SwapAndAccountMetas {
 /// Creates account metas for swapping stablecoin to levercoin (hyUSD -> xSOL).
 #[must_use]
 pub fn swap_stable_to_lever(user: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::exchange::swap_stable_to_lever(user);
+  let accounts = exchange::account_builders::swap_stable_to_lever(user);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -79,7 +79,7 @@ pub fn swap_stable_to_lever(user: Pubkey) -> SwapAndAccountMetas {
 /// Creates account metas for swapping levercoin to stablecoin (xSOL -> hyUSD).
 #[must_use]
 pub fn swap_lever_to_stable(user: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::exchange::swap_lever_to_stable(user);
+  let accounts = exchange::account_builders::swap_lever_to_stable(user);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -93,7 +93,7 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapAndAccountMetas {
 /// Creates account metas for depositing into stability pool (hyUSD -> shyUSD).
 #[must_use]
 pub fn stability_pool_deposit(user: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::stability_pool::deposit(user);
+  let accounts = stability_pool::account_builders::deposit(user);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -107,7 +107,7 @@ pub fn stability_pool_deposit(user: Pubkey) -> SwapAndAccountMetas {
 /// Creates account metas for withdrawing from stability pool (shyUSD -> hyUSD).
 #[must_use]
 pub fn stability_pool_withdraw(user: Pubkey) -> SwapAndAccountMetas {
-  let accounts = accounts::stability_pool::withdraw(user);
+  let accounts = stability_pool::account_builders::withdraw(user);
   let account_metas = accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
@@ -126,9 +126,9 @@ pub fn stability_pool_liquidate(
   lst_mint: Pubkey,
 ) -> SwapAndAccountMetas {
   let withdraw_account_metas =
-    accounts::stability_pool::withdraw(user).to_account_metas(None);
+    stability_pool::account_builders::withdraw(user).to_account_metas(None);
   let redeem_stablecoin_account_metas =
-    accounts::exchange::redeem_stablecoin(user, lst_mint)
+    exchange::account_builders::redeem_stablecoin(user, lst_mint)
       .to_account_metas(None);
   let account_metas =
     [withdraw_account_metas, redeem_stablecoin_account_metas].concat();
@@ -150,7 +150,8 @@ pub fn stability_pool_liquidate_levercoin(
 ) -> SwapAndAccountMetas {
   let base_liquidation = stability_pool_liquidate(user, lst_mint);
   let redeem_levercoin_account_metas =
-    accounts::exchange::redeem_levercoin(user, lst_mint).to_account_metas(None);
+    exchange::account_builders::redeem_levercoin(user, lst_mint)
+      .to_account_metas(None);
   let account_metas = [
     base_liquidation.account_metas,
     redeem_levercoin_account_metas,

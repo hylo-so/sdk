@@ -8,7 +8,7 @@ use crate::yields::{YieldHarvestCache, YieldHarvestConfig};
 
 #[must_use]
 pub fn convert_ufixvalue64(
-  idl: hylo_idl::hylo_exchange::types::UFixValue64,
+  idl: hylo_idl::exchange::types::UFixValue64,
 ) -> UFixValue64 {
   UFixValue64 {
     bits: idl.bits,
@@ -19,33 +19,33 @@ pub fn convert_ufixvalue64(
 #[must_use]
 pub fn reconvert_ufixvalue64(
   val: UFixValue64,
-) -> hylo_idl::hylo_exchange::types::UFixValue64 {
-  hylo_idl::hylo_exchange::types::UFixValue64 {
+) -> hylo_idl::exchange::types::UFixValue64 {
+  hylo_idl::exchange::types::UFixValue64 {
     bits: val.bits,
     exp: val.exp,
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::LstSolPrice> for LstSolPrice {
-  fn from(idl: hylo_idl::hylo_exchange::types::LstSolPrice) -> Self {
+impl From<hylo_idl::exchange::types::LstSolPrice> for LstSolPrice {
+  fn from(idl: hylo_idl::exchange::types::LstSolPrice) -> Self {
     LstSolPrice::new(convert_ufixvalue64(idl.price), idl.epoch)
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::StablecoinFees> for StablecoinFees {
-  fn from(idl: hylo_idl::hylo_exchange::types::StablecoinFees) -> Self {
+impl From<hylo_idl::exchange::types::StablecoinFees> for StablecoinFees {
+  fn from(idl: hylo_idl::exchange::types::StablecoinFees) -> Self {
     StablecoinFees::new(idl.normal.into(), idl.mode_1.into())
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::LevercoinFees> for LevercoinFees {
-  fn from(idl: hylo_idl::hylo_exchange::types::LevercoinFees) -> Self {
+impl From<hylo_idl::exchange::types::LevercoinFees> for LevercoinFees {
+  fn from(idl: hylo_idl::exchange::types::LevercoinFees) -> Self {
     LevercoinFees::new(idl.normal.into(), idl.mode_1.into(), idl.mode_2.into())
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::FeePair> for FeePair {
-  fn from(idl: hylo_idl::hylo_exchange::types::FeePair) -> FeePair {
+impl From<hylo_idl::exchange::types::FeePair> for FeePair {
+  fn from(idl: hylo_idl::exchange::types::FeePair) -> FeePair {
     FeePair::new(
       convert_ufixvalue64(idl.mint),
       convert_ufixvalue64(idl.redeem),
@@ -53,8 +53,8 @@ impl From<hylo_idl::hylo_exchange::types::FeePair> for FeePair {
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::TotalSolCache> for TotalSolCache {
-  fn from(idl: hylo_idl::hylo_exchange::types::TotalSolCache) -> TotalSolCache {
+impl From<hylo_idl::exchange::types::TotalSolCache> for TotalSolCache {
+  fn from(idl: hylo_idl::exchange::types::TotalSolCache) -> TotalSolCache {
     TotalSolCache {
       current_update_epoch: idl.current_update_epoch,
       total_sol: convert_ufixvalue64(idl.total_sol),
@@ -62,10 +62,10 @@ impl From<hylo_idl::hylo_exchange::types::TotalSolCache> for TotalSolCache {
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::YieldHarvestConfig>
+impl From<hylo_idl::exchange::types::YieldHarvestConfig>
   for YieldHarvestConfig
 {
-  fn from(idl: hylo_idl::hylo_exchange::types::YieldHarvestConfig) -> Self {
+  fn from(idl: hylo_idl::exchange::types::YieldHarvestConfig) -> Self {
     YieldHarvestConfig {
       allocation: convert_ufixvalue64(idl.allocation),
       fee: convert_ufixvalue64(idl.fee),
@@ -73,10 +73,8 @@ impl From<hylo_idl::hylo_exchange::types::YieldHarvestConfig>
   }
 }
 
-impl From<hylo_idl::hylo_exchange::types::YieldHarvestCache>
-  for YieldHarvestCache
-{
-  fn from(idl: hylo_idl::hylo_exchange::types::YieldHarvestCache) -> Self {
+impl From<hylo_idl::exchange::types::YieldHarvestCache> for YieldHarvestCache {
+  fn from(idl: hylo_idl::exchange::types::YieldHarvestCache) -> Self {
     YieldHarvestCache {
       epoch: idl.epoch,
       stability_pool_cap: convert_ufixvalue64(idl.stability_pool_cap),
@@ -87,9 +85,9 @@ impl From<hylo_idl::hylo_exchange::types::YieldHarvestCache>
   }
 }
 
-impl From<SlippageConfig> for hylo_idl::hylo_exchange::types::SlippageConfig {
+impl From<SlippageConfig> for hylo_idl::exchange::types::SlippageConfig {
   fn from(val: SlippageConfig) -> Self {
-    hylo_idl::hylo_exchange::types::SlippageConfig {
+    hylo_idl::exchange::types::SlippageConfig {
       expected_token_out: reconvert_ufixvalue64(val.expected_token_out),
       slippage_tolerance: reconvert_ufixvalue64(val.slippage_tolerance),
     }
