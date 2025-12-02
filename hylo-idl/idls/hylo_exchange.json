@@ -5554,31 +5554,26 @@
     },
     {
       "code": 6022,
-      "name": "YieldHarvestTotal",
-      "msg": "Arithmetic error while checking yield harvest total."
-    },
-    {
-      "code": 6023,
       "name": "YieldHarvestEpoch",
       "msg": "Yield harvest already occurred during this epoch."
     },
     {
-      "code": 6024,
+      "code": 6023,
       "name": "YieldHarvestHasNotRun",
       "msg": "Yield harvest has not yet occurred during this epoch."
     },
     {
-      "code": 6025,
+      "code": 6024,
       "name": "ZeroRedeem",
       "msg": "Cannot withdraw amount of 0 in a redemption action."
     },
     {
-      "code": 6026,
+      "code": 6025,
       "name": "ZeroMint",
       "msg": "Cannot deposit amount of 0 in a minting action."
     },
     {
-      "code": 6027,
+      "code": 6026,
       "name": "ZeroSwap",
       "msg": "Cannot swap amount of 0."
     }
