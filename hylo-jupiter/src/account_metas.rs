@@ -1,7 +1,7 @@
 use anchor_lang::prelude::{Pubkey, ToAccountMetas};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use hylo_idl::{exchange, stability_pool};
-use jupiter_amm_interface::{Swap, SwapAndAccountMetas};
+use hylo_jupiter_amm_interface::{Swap, SwapAndAccountMetas};
 
 /// Creates account metas for minting stablecoin (LST -> hyUSD).
 #[must_use]

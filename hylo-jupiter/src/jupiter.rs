@@ -12,7 +12,7 @@ use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::pyth::{OracleConfig, SOL_USD_PYTH_FEED};
 use hylo_core::stability_mode::StabilityController;
 use hylo_core::total_sol_cache::TotalSolCache;
-use jupiter_amm_interface::{
+use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
@@ -333,7 +333,7 @@ mod tests {
   use hylo_core::idl::stability_pool::events::{
     UserDepositEvent, UserWithdrawEventV1,
   };
-  use jupiter_amm_interface::{KeyedAccount, SwapMode};
+  use hylo_jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
 
   use super::*;

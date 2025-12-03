@@ -2195,7 +2195,7 @@ dependencies = [
  "flaky_test",
  "hylo-fix",
  "hylo-idl",
- "jupiter-amm-interface",
+ "hylo-jupiter-amm-interface",
  "proptest",
  "pyth-solana-receiver-sdk",
  "serde",
@@ -2244,10 +2244,25 @@ dependencies = [
  "hylo-core",
  "hylo-fix",
  "hylo-idl",
- "jupiter-amm-interface",
+ "hylo-jupiter-amm-interface",
  "pyth-solana-receiver-sdk",
  "rust_decimal",
  "tokio",
+]
+
+[[package]]
+name = "hylo-jupiter-amm-interface"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92411e800f5e73313d27d1120eab327b7683ca1d7470ae49a3a4da5d3943591a"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "solana-account-decoder",
+ "solana-sdk",
 ]
 
 [[package]]
@@ -2562,20 +2577,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
-]
-
-[[package]]
-name = "jupiter-amm-interface"
-version = "0.6.0"
-source = "git+https://github.com/hylo-so/jupiter-amm-interface?rev=cf6181f#cf6181f16fc775656a426ef4a823c91d686eded5"
-dependencies = [
- "ahash 0.8.12",
- "anyhow",
- "rust_decimal",
- "serde",
- "serde_json",
- "solana-account-decoder",
- "solana-sdk",
 ]
 
 [[package]]
