@@ -2,5 +2,5 @@
 set -eu pipefail
 
 cargo build
-cargo test --workspace --exclude hylo-jupiter
+cargo test --workspace
 cargo test --doc
