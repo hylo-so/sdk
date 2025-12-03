@@ -4,7 +4,7 @@ use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use fix::typenum::{IsLess, NInt, NonZero, Unsigned, U20};
-use jupiter_amm_interface::{
+use hylo_jupiter_amm_interface::{
   AccountMap, AmmContext, ClockRef, SwapMode, SwapParams,
 };
 use rust_decimal::Decimal;

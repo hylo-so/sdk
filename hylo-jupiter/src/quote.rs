@@ -12,7 +12,7 @@ use hylo_core::stability_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
   stablecoin_withdrawal_fee,
 };
-use jupiter_amm_interface::{ClockRef, Quote};
+use hylo_jupiter_amm_interface::{ClockRef, Quote};
 use rust_decimal::Decimal;
 
 use crate::util::fee_pct_decimal;

@@ -8,14 +8,14 @@ homepage.workspace = true
 
 [features]
 default = []
-offchain = ["dep:hylo-idl", "dep:jupiter-amm-interface"]
+offchain = ["dep:hylo-idl", "dep:hylo-jupiter-amm-interface"]
 
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 hylo-fix.workspace = true
 hylo-idl = { workspace = true, optional = true }
-jupiter-amm-interface = { workspace = true, optional = true }
+hylo-jupiter-amm-interface = { workspace = true, optional = true }
 pyth-solana-receiver-sdk.workspace = true
 serde.workspace = true
 
