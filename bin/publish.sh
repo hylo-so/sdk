@@ -9,7 +9,7 @@ fi
 
 cargo build --release
 cargo doc --workspace --no-deps
-cargo publish --package hylo-idl || true
-cargo publish --package hylo-core || true
-cargo publish --package hylo-clients || true
-cargo publish --package hylo-jupiter || true
+cargo publish --package hylo-idl
+cargo publish --package hylo-core
+cargo publish --package hylo-clients
+cargo publish --package hylo-jupiter
