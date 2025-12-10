@@ -25,3 +25,6 @@ serde_json.workspace = true
 solana-address-lookup-table-interface.workspace = true
 solana-transaction-status-client-types.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+flaky_test.workspace = true

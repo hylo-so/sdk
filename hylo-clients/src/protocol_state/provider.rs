@@ -64,3 +64,57 @@ impl StateProvider for RpcStateProvider {
     ProtocolState::try_from(&accounts)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+  use fix::prelude::*;
+  use fix::typenum::{N8, N9};
+  use hylo_core::solana_clock::SolanaClock;
+  use std::sync::Arc;
+
+  fn build_test_rpc_client() -> Result<Arc<RpcClient>> {
+    // Use RPC_URL env var if set, otherwise default to mainnet
+    let rpc_url = std::env::var("RPC_URL")
+      .unwrap_or_else(|_| "https://api.mainnet-beta.solana.com".to_string());
+    Ok(Arc::new(RpcClient::new(rpc_url)))
+  }
+
+  #[tokio::test]
+  #[flaky_test::flaky_test]
+  #[allow(unnameable_test_items)]
+  async fn test_fetch_state() {
+    let rpc_client =
+      build_test_rpc_client().expect("Failed to build RPC client");
+    let provider = RpcStateProvider::new(rpc_client);
+    let state = provider
+      .fetch_state()
+      .await
+      .expect("Failed to fetch protocol state");
+
+    // Verify timestamp is set and matches clock
+    assert!(state.fetched_at > 0);
+    let clock_timestamp = state.exchange_context.clock.unix_timestamp();
+    assert_eq!(state.fetched_at, clock_timestamp);
+
+    // Verify exchange context has valid data
+    assert!(state.exchange_context.total_sol > UFix64::<N9>::zero());
+    assert!(state.exchange_context.collateral_ratio > UFix64::<N9>::zero());
+    assert!(state.exchange_context.sol_usd_price.lower > UFix64::<N8>::zero());
+    assert!(
+      state.exchange_context.sol_usd_price.upper
+        >= state.exchange_context.sol_usd_price.lower
+    );
+
+    // Verify mint accounts have valid data
+    assert!(state.hyusd_mint.decimals > 0);
+    assert!(state.xsol_mint.decimals > 0);
+    assert!(state.shyusd_mint.decimals > 0);
+
+    // Verify clock has reasonable values (slot and epoch are u64, so just check they're set)
+    assert!(state.exchange_context.clock.slot() > 0);
+    // epoch() is u64 so >= 0 is always true, but we can verify it's reasonable
+    let _epoch = state.exchange_context.clock.epoch();
+  }
+}
