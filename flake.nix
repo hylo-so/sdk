@@ -16,7 +16,7 @@
         with import nixpkgs {
           inherit system;
           overlays = [ rust-overlay.overlays.default ]; }; let
-          sharedBuildInputs = [ stdenv.cc libiconv pkg-config openssl ]
+          sharedBuildInputs = [ libiconv pkg-config gcc openssl ]
             ++ lib.optionals stdenv.isDarwin
             (with darwin.apple_sdk.frameworks; [
               System
@@ -31,25 +31,11 @@
             packages =
               [ rust-bin.nightly.latest.default cargo-udeps ];
             buildInputs = sharedBuildInputs;
-            shellHook = ''
-              export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig"
-              # Ensure we use Nix's toolchain, not system libraries
-              unset DYLD_LIBRARY_PATH 2>/dev/null || true
-              export CC="${stdenv.cc}/bin/clang"
-              export CXX="${stdenv.cc}/bin/clang++"
-            '';
           };
           devShells.default = mkShell {
             packages = [ rust-bin.stable."1.88.0".default cargo-workspaces ]
               ++ lib.optionals stdenv.isDarwin [ rust-analyzer ];
             buildInputs = sharedBuildInputs;
-            shellHook = ''
-              export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig"
-              # Ensure we use Nix's toolchain, not system libraries
-              unset DYLD_LIBRARY_PATH 2>/dev/null || true
-              export CC="${stdenv.cc}/bin/clang"
-              export CXX="${stdenv.cc}/bin/clang++"
-            '';
           };
         };
     };
