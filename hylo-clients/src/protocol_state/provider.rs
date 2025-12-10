@@ -2,11 +2,12 @@
 //!
 //! Provides abstractions for fetching Hylo protocol state from various sources.
 
+use std::sync::Arc;
+
 use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::prelude::Clock;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use std::sync::Arc;
 
 use crate::protocol_state::{ProtocolAccounts, ProtocolState};
 
@@ -67,12 +68,14 @@ impl StateProvider for RpcStateProvider {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use std::sync::Arc;
+
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
   use fix::prelude::*;
   use fix::typenum::{N8, N9};
   use hylo_core::solana_clock::SolanaClock;
-  use std::sync::Arc;
+
+  use super::*;
 
   fn build_test_rpc_client() -> Result<Arc<RpcClient>> {
     // Use RPC_URL env var if set, otherwise default to mainnet
@@ -112,7 +115,8 @@ mod tests {
     assert!(state.xsol_mint.decimals > 0);
     assert!(state.shyusd_mint.decimals > 0);
 
-    // Verify clock has reasonable values (slot and epoch are u64, so just check they're set)
+    // Verify clock has reasonable values (slot and epoch are u64, so just check
+    // they're set)
     assert!(state.exchange_context.clock.slot() > 0);
     // epoch() is u64 so >= 0 is always true, but we can verify it's reasonable
     let _epoch = state.exchange_context.clock.epoch();

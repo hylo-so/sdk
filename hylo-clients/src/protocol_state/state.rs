@@ -1,6 +1,7 @@
 //! Protocol state types and deserialization
 //!
-//! Contains the `ProtocolState` struct and its construction from protocol accounts.
+//! Contains the `ProtocolState` struct and its construction from protocol
+//! accounts.
 
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;

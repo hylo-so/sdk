@@ -1,13 +1,13 @@
 //! Type-safe collection of protocol state accounts
 
-use anchor_client::solana_sdk::account::Account;
-use anchor_lang::{prelude::Pubkey, solana_program::sysvar};
-use anyhow::{anyhow, Context, Result};
-use hylo_idl::{
-  pda,
-  tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL},
-};
 use std::convert::TryFrom;
+
+use anchor_client::solana_sdk::account::Account;
+use anchor_lang::prelude::Pubkey;
+use anchor_lang::solana_program::sysvar;
+use anyhow::{anyhow, Context, Result};
+use hylo_idl::pda;
+use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
 /// Type-safe collection of protocol state accounts
 #[derive(Debug, Clone)]
@@ -101,19 +101,19 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
 
     // Validate pubkeys match expected
     let expected = Self::pubkeys();
-    expected
-      .iter()
-      .zip(pubkeys.iter())
-      .enumerate()
-      .try_fold((), |(), (i, (expected_pubkey, actual_pubkey))| {
+    expected.iter().zip(pubkeys.iter()).enumerate().try_fold(
+      (),
+      |(), (i, (expected_pubkey, actual_pubkey))| {
         if expected_pubkey == actual_pubkey {
           Ok(())
         } else {
           Err(anyhow!(
-            "Account {i} mismatch: expected {expected_pubkey}, got {actual_pubkey}"
+            "Account {i} mismatch: expected {expected_pubkey}, got \
+             {actual_pubkey}"
           ))
         }
-      })?;
+      },
+    )?;
 
     // Extract accounts with proper error messages
     Ok(Self {
