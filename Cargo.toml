@@ -1,5 +1,11 @@
 [workspace]
-members = ["hylo-clients", "hylo-core", "hylo-idl", "hylo-jupiter"]
+members = [
+    "hylo-clients",
+    "hylo-core",
+    "hylo-idl",
+    "hylo-jupiter",
+    "hylo-quotes",
+]
 resolver = "2"
 
 [workspace.package]
@@ -23,6 +29,7 @@ hylo-core = { version = "0.2.3", path = "hylo-core" }
 hylo-fix = "0.4.2"
 hylo-idl = { version = "0.2.3", path = "hylo-idl" }
 hylo-jupiter = { version = "0.2.3", path = "hylo-jupiter" }
+hylo-quotes = { version = "0.2.3", path = "hylo-quotes" }
 itertools = "0.14.0"
 hylo-jupiter-amm-interface = "0.6.0"
 mpl-token-metadata = "5.1.1"
