@@ -66,23 +66,27 @@ impl ProtocolAccounts {
       sysvar::clock::ID,
     ]
   }
-}
 
-/// Convert from RPC response (pubkeys and accounts) to `ProtocolAccounts`
-///
-/// Validates that:
-/// - The number of pubkeys matches the number of accounts
-/// - The pubkeys match the expected protocol accounts in order
-/// - All accounts are present (not None)
-impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
-  type Error = anyhow::Error;
+  /// Expected number of protocol accounts
+  #[must_use]
+  pub const fn expected_count() -> usize {
+    11
+  }
 
-  fn try_from(
-    (pubkeys, accounts): (&[Pubkey], &[Option<Account>]),
-  ) -> Result<Self> {
-    const EXPECTED_COUNT: usize = 11;
-
-    // Validate length
+  /// Validate that pubkeys and accounts match expected protocol accounts
+  ///
+  /// Validates:
+  /// - Pubkeys and accounts have matching lengths
+  /// - We have the expected number of accounts (11)
+  /// - Each pubkey matches the expected protocol account in order
+  ///
+  /// # Errors
+  /// Returns error if any validation fails
+  pub fn validate(
+    pubkeys: &[Pubkey],
+    accounts: &[Option<Account>],
+  ) -> Result<()> {
+    // Validate lengths match
     if pubkeys.len() != accounts.len() {
       return Err(anyhow!(
         "Mismatch: {} pubkeys but {} accounts",
@@ -91,10 +95,12 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
       ));
     }
 
-    if pubkeys.len() != EXPECTED_COUNT {
+    // Validate expected count
+    let expected_count = Self::expected_count();
+    if pubkeys.len() != expected_count {
       return Err(anyhow!(
         "Expected {} accounts, got {}",
-        EXPECTED_COUNT,
+        expected_count,
         pubkeys.len()
       ));
     }
@@ -113,7 +119,24 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
           ))
         }
       },
-    )?;
+    )
+  }
+}
+
+/// Convert from RPC response (pubkeys and accounts) to `ProtocolAccounts`
+///
+/// Validates that:
+/// - The number of pubkeys matches the number of accounts
+/// - The pubkeys match the expected protocol accounts in order
+/// - All accounts are present (not None)
+impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
+  type Error = anyhow::Error;
+
+  fn try_from(
+    (pubkeys, accounts): (&[Pubkey], &[Option<Account>]),
+  ) -> Result<Self> {
+    // Validate inputs
+    Self::validate(pubkeys, accounts)?;
 
     // Extract accounts with proper error messages
     Ok(Self {
