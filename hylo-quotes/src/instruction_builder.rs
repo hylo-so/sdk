@@ -7,19 +7,16 @@
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use hylo_clients::prelude::{UFix64, N4, N6, N9};
-use hylo_core::idl::exchange::client::{
-  accounts as ex_accounts, args as ex_args,
-};
-use hylo_core::idl::stability_pool::client::{
-  accounts as sp_accounts, args as sp_args,
-};
-use hylo_core::idl::{ata, exchange, pda};
-use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use hylo_core::idl::exchange::client::args as ex_args;
+use hylo_core::idl::stability_pool::client::args as sp_args;
 use hylo_core::slippage_config::SlippageConfig;
-use hylo_idl::stability_pool;
+use hylo_idl::exchange::instruction_builders::{
+  mint_levercoin, mint_stablecoin, redeem_levercoin, redeem_stablecoin,
+  swap_lever_to_stable, swap_stable_to_lever,
+};
+use hylo_idl::stability_pool::instruction_builders::user_deposit;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
 use crate::QuoteAmounts;
@@ -56,37 +53,14 @@ impl InstructionBuilder<JITOSOL, HYUSD> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::MintStablecoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ta: ata!(user, JITOSOL::MINT),
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      lst_mint: JITOSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
+    // Build args from quote
     let args = ex_args::MintStablecoin {
       amount_lst_to_deposit: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let mint_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    // Use existing builder instead of duplicating account construction
+    let mint_ix = mint_stablecoin(user, JITOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, HYUSD::MINT);
 
@@ -110,36 +84,12 @@ impl InstructionBuilder<HYUSD, JITOSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::RedeemStablecoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ta: ata!(user, JITOSOL::MINT),
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      lst_mint: JITOSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::RedeemStablecoin {
       amount_to_redeem: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let redeem_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let redeem_ix = redeem_stablecoin(user, JITOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, JITOSOL::MINT);
 
@@ -163,37 +113,12 @@ impl InstructionBuilder<HYLOSOL, HYUSD> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::MintStablecoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(HYLOSOL::MINT),
-      vault_auth: pda::vault_auth(HYLOSOL::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      fee_vault: pda::fee_vault(HYLOSOL::MINT),
-      lst_vault: pda::vault(HYLOSOL::MINT),
-      lst_header: pda::lst_header(HYLOSOL::MINT),
-      user_lst_ta: ata!(user, HYLOSOL::MINT),
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      lst_mint: HYLOSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::MintStablecoin {
       amount_lst_to_deposit: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let mint_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let mint_ix = mint_stablecoin(user, HYLOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, HYUSD::MINT);
 
@@ -217,36 +142,12 @@ impl InstructionBuilder<HYUSD, HYLOSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::RedeemStablecoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(HYLOSOL::MINT),
-      fee_vault: pda::fee_vault(HYLOSOL::MINT),
-      vault_auth: pda::vault_auth(HYLOSOL::MINT),
-      lst_vault: pda::vault(HYLOSOL::MINT),
-      lst_header: pda::lst_header(HYLOSOL::MINT),
-      user_lst_ta: ata!(user, HYLOSOL::MINT),
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      lst_mint: HYLOSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::RedeemStablecoin {
       amount_to_redeem: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let redeem_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let redeem_ix = redeem_stablecoin(user, HYLOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, HYLOSOL::MINT);
 
@@ -266,38 +167,12 @@ impl InstructionBuilder<JITOSOL, XSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::MintLevercoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ta: ata!(user, JITOSOL::MINT),
-      user_levercoin_ta: ata!(user, XSOL::MINT),
-      lst_mint: JITOSOL::MINT,
-      levercoin_mint: XSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::MintLevercoin {
       amount_lst_to_deposit: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let mint_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let mint_ix = mint_levercoin(user, JITOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, XSOL::MINT);
 
@@ -317,37 +192,12 @@ impl InstructionBuilder<XSOL, JITOSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::RedeemLevercoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(JITOSOL::MINT),
-      fee_vault: pda::fee_vault(JITOSOL::MINT),
-      vault_auth: pda::vault_auth(JITOSOL::MINT),
-      lst_vault: pda::vault(JITOSOL::MINT),
-      lst_header: pda::lst_header(JITOSOL::MINT),
-      user_lst_ta: ata!(user, JITOSOL::MINT),
-      user_levercoin_ta: ata!(user, XSOL::MINT),
-      lst_mint: JITOSOL::MINT,
-      levercoin_mint: XSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::RedeemLevercoin {
       amount_to_redeem: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let redeem_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let redeem_ix = redeem_levercoin(user, JITOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, JITOSOL::MINT);
 
@@ -367,38 +217,12 @@ impl InstructionBuilder<HYLOSOL, XSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::MintLevercoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(HYLOSOL::MINT),
-      vault_auth: pda::vault_auth(HYLOSOL::MINT),
-      levercoin_auth: *pda::XSOL_AUTH,
-      fee_vault: pda::fee_vault(HYLOSOL::MINT),
-      lst_vault: pda::vault(HYLOSOL::MINT),
-      lst_header: pda::lst_header(HYLOSOL::MINT),
-      user_lst_ta: ata!(user, HYLOSOL::MINT),
-      user_levercoin_ta: ata!(user, XSOL::MINT),
-      lst_mint: HYLOSOL::MINT,
-      levercoin_mint: XSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::MintLevercoin {
       amount_lst_to_deposit: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let mint_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let mint_ix = mint_levercoin(user, HYLOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, XSOL::MINT);
 
@@ -418,37 +242,12 @@ impl InstructionBuilder<XSOL, HYLOSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::RedeemLevercoin {
-      user,
-      hylo: *pda::HYLO,
-      fee_auth: pda::fee_auth(HYLOSOL::MINT),
-      fee_vault: pda::fee_vault(HYLOSOL::MINT),
-      vault_auth: pda::vault_auth(HYLOSOL::MINT),
-      lst_vault: pda::vault(HYLOSOL::MINT),
-      lst_header: pda::lst_header(HYLOSOL::MINT),
-      user_lst_ta: ata!(user, HYLOSOL::MINT),
-      user_levercoin_ta: ata!(user, XSOL::MINT),
-      lst_mint: HYLOSOL::MINT,
-      levercoin_mint: XSOL::MINT,
-      stablecoin_mint: HYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      system_program: system_program::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::RedeemLevercoin {
       amount_to_redeem: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let redeem_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let redeem_ix = redeem_levercoin(user, HYLOSOL::MINT, &args);
 
     let create_ata_ix = create_ata_instruction(user, HYLOSOL::MINT);
 
@@ -468,33 +267,12 @@ impl InstructionBuilder<HYUSD, XSOL> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::SwapStableToLever {
-      user,
-      hylo: *pda::HYLO,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      levercoin_auth: *pda::XSOL_AUTH,
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      user_levercoin_ta: ata!(user, XSOL::MINT),
-      stablecoin_mint: HYUSD::MINT,
-      levercoin_mint: XSOL::MINT,
-      token_program: anchor_spl::token::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::SwapStableToLever {
       amount_stablecoin: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let swap_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let swap_ix = swap_stable_to_lever(user, &args);
 
     let create_ata_ix = create_ata_instruction(user, XSOL::MINT);
 
@@ -514,33 +292,12 @@ impl InstructionBuilder<XSOL, HYUSD> for () {
     let slippage_config =
       SlippageConfig::new(expected_token_out, slippage_tolerance);
 
-    let accounts = ex_accounts::SwapLeverToStable {
-      user,
-      hylo: *pda::HYLO,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      fee_auth: pda::fee_auth(HYUSD::MINT),
-      fee_vault: pda::fee_vault(HYUSD::MINT),
-      stablecoin_auth: *pda::HYUSD_AUTH,
-      levercoin_auth: *pda::XSOL_AUTH,
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      user_levercoin_ta: ata!(user, XSOL::MINT),
-      stablecoin_mint: HYUSD::MINT,
-      levercoin_mint: XSOL::MINT,
-      token_program: anchor_spl::token::ID,
-      event_authority: *pda::EXCHANGE_EVENT_AUTH,
-      program: exchange::ID,
-    };
-
     let args = ex_args::SwapLeverToStable {
       amount_levercoin: quote.amount_in,
       slippage_config: Some(slippage_config.into()),
     };
 
-    let swap_ix = Instruction {
-      program_id: exchange::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let swap_ix = swap_lever_to_stable(user, &args);
 
     let create_ata_ix = create_ata_instruction(user, HYUSD::MINT);
 
@@ -555,36 +312,11 @@ impl InstructionBuilder<HYUSD, SHYUSD> for () {
     user: Pubkey,
     _slippage_bps: u16,
   ) -> Vec<Instruction> {
-    let accounts = sp_accounts::UserDeposit {
-      user,
-      pool_config: *pda::POOL_CONFIG,
-      hylo: *pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      levercoin_mint: XSOL::MINT,
-      user_stablecoin_ta: pda::hyusd_ata(user),
-      user_lp_token_ta: pda::shyusd_ata(user),
-      pool_auth: *pda::POOL_AUTH,
-      stablecoin_pool: *pda::HYUSD_POOL,
-      levercoin_pool: *pda::XSOL_POOL,
-      lp_token_auth: *pda::SHYUSD_AUTH,
-      lp_token_mint: SHYUSD::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
-      system_program: system_program::ID,
-      token_program: anchor_spl::token::ID,
-      associated_token_program: anchor_spl::associated_token::ID,
-      event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-      program: stability_pool::ID,
-    };
-
     let args = sp_args::UserDeposit {
       amount_stablecoin: quote.amount_in,
     };
 
-    let deposit_ix = Instruction {
-      program_id: stability_pool::ID,
-      accounts: accounts.to_account_metas(None),
-      data: args.data(),
-    };
+    let deposit_ix = user_deposit(user, &args);
 
     let create_ata_ix = create_ata_instruction(user, SHYUSD::MINT);
 
