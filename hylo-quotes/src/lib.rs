@@ -1,4 +1,4 @@
-//! Hylo Quotes
+//! # Hylo Quotes
 //!
 //! Type-safe quote computation and transaction building for the Hylo protocol.
 //! Computes token exchange rates, builds Solana instructions, and estimates
@@ -15,14 +15,76 @@
 //! - `QuoteStrategy`: Trait for quote strategies (implemented by `QuoteBuilder`
 //!   and `QuoteSimulator`)
 //!
-//! ## Examples
+//! ## Quick Start
 //!
-//! See the `examples/` directory for executable examples:
-//! - `quote_provider_builder.rs` - Using `QuoteProvider` with `QuoteBuilder`
-//! - `quote_provider_simulator.rs` - Using `QuoteProvider` with
-//!   `QuoteSimulator` for accurate compute units
-//! - `quote_builder_direct.rs` - Direct usage of `QuoteBuilder` without mint
-//!   pair matching
+//! ### Using `QuoteProvider` with `QuoteBuilder`
+//!
+//! ```rust,no_run
+//! use std::sync::Arc;
+//! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+//! use anchor_lang::prelude::Pubkey;
+//! use hylo_clients::prelude::CommitmentConfig;
+//! use hylo_clients::protocol_state::RpcStateProvider;
+//! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
+//! use hylo_quotes::{QuoteBuilder, QuoteProvider};
+//!
+//! # async fn example() -> anyhow::Result<()> {
+//! # let rpc_client = Arc::new(RpcClient::new_with_commitment("".to_string(), CommitmentConfig::confirmed()));
+//! let state_provider = RpcStateProvider::new(rpc_client);
+//! let provider = QuoteProvider::new(QuoteBuilder::new(state_provider));
+//! # let user = Pubkey::default();
+//! let (quote, metadata) = provider
+//!     .fetch_quote(JITOSOL::MINT, HYUSD::MINT, 1_000_000_000, user, 50)
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Using `QuoteProvider` with `QuoteSimulator` (Production)
+//!
+//! ```rust,no_run
+//! use std::sync::Arc;
+//! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+//! use anchor_lang::prelude::Pubkey;
+//! use hylo_clients::prelude::CommitmentConfig;
+//! use hylo_clients::protocol_state::RpcStateProvider;
+//! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
+//! use hylo_quotes::{QuoteProvider, QuoteSimulator, SolanaRpcProvider};
+//!
+//! # async fn example() -> anyhow::Result<()> {
+//! # let rpc_client = Arc::new(RpcClient::new_with_commitment("".to_string(), CommitmentConfig::confirmed()));
+//! let state_provider = RpcStateProvider::new(rpc_client.clone());
+//! let rpc_provider = SolanaRpcProvider::new(rpc_client);
+//! let provider = QuoteProvider::new(QuoteSimulator::new(state_provider, rpc_provider));
+//! # let user = Pubkey::default();
+//! let (quote, metadata) = provider
+//!     .fetch_quote(JITOSOL::MINT, HYUSD::MINT, 1_000_000_000, user, 50)
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Direct `QuoteBuilder` Usage
+//!
+//! ```rust,no_run
+//! use std::sync::Arc;
+//! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+//! use anchor_lang::prelude::Pubkey;
+//! use hylo_clients::prelude::CommitmentConfig;
+//! use hylo_clients::protocol_state::RpcStateProvider;
+//! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
+//! use hylo_quotes::QuoteBuilder;
+//!
+//! # async fn example() -> anyhow::Result<()> {
+//! # let rpc_client = Arc::new(RpcClient::new_with_commitment("".to_string(), CommitmentConfig::confirmed()));
+//! let builder = QuoteBuilder::new(RpcStateProvider::new(rpc_client));
+//! # let user = Pubkey::default();
+//! let quote = builder
+//!     .build_quote::<JITOSOL, HYUSD>(1_000_000_000, user, 50)
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
 
 mod instruction_builder;
 mod quote_builder;
