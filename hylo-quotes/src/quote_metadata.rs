@@ -22,7 +22,7 @@ impl Operation {
       Operation::RedeemLevercoin => "redeem_levercoin",
       Operation::SwapStableToLever => "swap_stable_to_lever",
       Operation::SwapLeverToStable => "swap_lever_to_stable",
-      Operation::DepositToStabilityPool => "deposit_to_stability_pool",
+      Operation::DepositToStabilityPool => "user_deposit",
     }
   }
 }
