@@ -19,6 +19,9 @@ use crate::quote_strategy::QuoteStrategy;
 use crate::rpc::RpcProvider;
 use crate::{ComputeUnitMethod, ExecutableQuote};
 
+/// Solana's maximum compute units per transaction
+const MAX_COMPUTE_UNITS: u64 = 1_400_000;
+
 /// Simulates transactions to extract compute units
 ///
 /// ## Fallback Behavior
@@ -157,5 +160,5 @@ fn compute_units_with_safety_buffer(compute_units: u64) -> u64 {
   compute_units
     .checked_mul(3)
     .and_then(|x| x.checked_add(1)) // Add 1 before division to round up
-    .map_or(u64::MAX, |x| x / 2) // On overflow, use max value
+    .map_or(MAX_COMPUTE_UNITS, |x| x / 2) // On overflow, use Solana's max
 }
