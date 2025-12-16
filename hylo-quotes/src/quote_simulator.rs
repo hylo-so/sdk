@@ -1,13 +1,13 @@
 //! Quote simulator that uses transaction simulation for accurate compute units
 
-use anchor_client::solana_client::rpc_config::RpcSimulateTransactionConfig;
 use anchor_client::solana_sdk::message::v0::Message;
 use anchor_client::solana_sdk::message::VersionedMessage;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_lang::prelude::{Clock, Pubkey};
 use async_trait::async_trait;
-use hylo_clients::prelude::{CommitmentConfig, Signature};
+use hylo_clients::prelude::Signature;
 use hylo_clients::protocol_state::StateProvider;
+use hylo_clients::util::simulation_config;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instruction_builder::InstructionBuilder;
@@ -76,22 +76,15 @@ impl<S: StateProvider, R: RpcProvider> QuoteSimulator<S, R> {
       recent_blockhash,
     )?;
 
+    let num_sigs = message.header.num_required_signatures.into();
     let versioned_tx = VersionedTransaction {
-      signatures: vec![Signature::default()],
+      signatures: vec![Signature::default(); num_sigs],
       message: VersionedMessage::V0(message),
     };
 
     let (compute_units, compute_units_safe, compute_unit_method) = match self
       .rpc_provider
-      .simulate_transaction_with_config(
-        versioned_tx,
-        RpcSimulateTransactionConfig {
-          sig_verify: false,
-          replace_recent_blockhash: true,
-          commitment: Some(CommitmentConfig::confirmed()),
-          ..Default::default()
-        },
-      )
+      .simulate_transaction_with_config(versioned_tx, simulation_config())
       .await
     {
       Ok(response) => {
