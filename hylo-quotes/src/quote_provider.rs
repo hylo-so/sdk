@@ -20,11 +20,8 @@ impl<S: QuoteStrategy> QuoteProvider<S> {
 
   /// Fetch a quote for a mint pair
   ///
-  /// Returns `Some((ExecutableQuote, QuoteMetadata))` if the mint pair is
-  /// supported, or `None` if the pair is not supported.
-  ///
   /// # Errors
-  /// Returns error if quote fetching fails.
+  /// Returns error if the mint pair is unsupported or if quote fetching fails.
   #[allow(clippy::too_many_lines)]
   pub async fn fetch_quote(
     &self,
@@ -33,7 +30,7 @@ impl<S: QuoteStrategy> QuoteProvider<S> {
     amount: u64,
     user: Pubkey,
     slippage_bps: u16,
-  ) -> anyhow::Result<Option<(ExecutableQuote, QuoteMetadata)>> {
+  ) -> anyhow::Result<(ExecutableQuote, QuoteMetadata)> {
     let (operation, description, quote_result) = match (input_mint, output_mint)
     {
       (JITOSOL::MINT, HYUSD::MINT) => (
@@ -124,12 +121,12 @@ impl<S: QuoteStrategy> QuoteProvider<S> {
           .fetch_quote::<HYUSD, SHYUSD>(amount, user, slippage_bps)
           .await,
       ),
-      _ => return Ok(None),
+      _ => return Err(anyhow::anyhow!("Unsupported pair")),
     };
 
     let quote = quote_result?;
     let metadata = QuoteMetadata::new(operation, description);
 
-    Ok(Some((quote, metadata)))
+    Ok((quote, metadata))
   }
 }

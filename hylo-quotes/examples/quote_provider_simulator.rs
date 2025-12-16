@@ -56,56 +56,48 @@ async fn main() -> anyhow::Result<()> {
   println!("User: {user}");
   println!("Slippage: {slippage_bps} bps ({slippage_pct:.2}%)");
 
-  match provider
+  let (quote, metadata) = provider
     .fetch_quote(JITOSOL::MINT, HYUSD::MINT, amount, user, slippage_bps)
-    .await?
-  {
-    Some((quote, metadata)) => {
-      let ExecutableQuote {
-        amounts,
-        compute_units,
-        compute_units_safe,
-        compute_unit_method,
-        instructions,
-      } = quote;
+    .await?;
 
-      let QuoteAmounts {
-        amount_in,
-        amount_out,
-        fee_amount,
-        fee_mint,
-      } = amounts;
+  let ExecutableQuote {
+    amounts,
+    compute_units,
+    compute_units_safe,
+    compute_unit_method,
+    instructions,
+  } = quote;
 
-      let QuoteMetadata {
-        operation,
-        description,
-      } = metadata;
+  let QuoteAmounts {
+    amount_in,
+    amount_out,
+    fee_amount,
+    fee_mint,
+  } = amounts;
 
-      println!("✓ Quote fetched successfully!");
-      println!("\nQuote Details:");
-      println!("  Input:  {amount_in} JitoSOL");
-      println!("  Output: {amount_out} hyUSD");
-      println!("  Fee: {fee_amount} {fee_mint:?}");
-      println!("\nTransaction:");
-      println!("  Operation: {operation:?}");
-      println!("  Description: {description}");
-      println!("  Compute units: {compute_units} (safe: {compute_units_safe})",);
-      println!("  Method: {compute_unit_method:?}");
-      println!("  Instructions: {} instructions", instructions.len());
+  let QuoteMetadata {
+    operation,
+    description,
+  } = metadata;
 
-      match compute_unit_method {
-        ComputeUnitMethod::Simulated => {
-          println!("\n✓ Compute units were simulated on-chain (most accurate)");
-        }
-        ComputeUnitMethod::Estimated => {
-          println!(
-            "\n⚠ Compute units were estimated (simulation may have failed)"
-          );
-        }
-      }
+  println!("✓ Quote fetched successfully!");
+  println!("\nQuote Details:");
+  println!("  Input:  {amount_in} JitoSOL");
+  println!("  Output: {amount_out} hyUSD");
+  println!("  Fee: {fee_amount} {fee_mint:?}");
+  println!("\nTransaction:");
+  println!("  Operation: {operation:?}");
+  println!("  Description: {description}");
+  println!("  Compute units: {compute_units} (safe: {compute_units_safe})",);
+  println!("  Method: {compute_unit_method:?}");
+  println!("  Instructions: {} instructions", instructions.len());
+
+  match compute_unit_method {
+    ComputeUnitMethod::Simulated => {
+      println!("\n✓ Compute units were simulated on-chain (most accurate)");
     }
-    None => {
-      println!("✗ Quote not available for this mint pair");
+    ComputeUnitMethod::Estimated => {
+      println!("\n⚠ Compute units were estimated (simulation may have failed)");
     }
   }
 

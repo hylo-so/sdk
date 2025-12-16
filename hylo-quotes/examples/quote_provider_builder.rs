@@ -48,48 +48,42 @@ async fn main() -> anyhow::Result<()> {
   println!("User: {user}");
   println!("Slippage: {slippage_bps} bps ({slippage_pct:.2}%)");
 
-  match provider
+  let (quote, metadata) = provider
     .fetch_quote(JITOSOL::MINT, HYUSD::MINT, amount, user, slippage_bps)
-    .await?
-  {
-    Some((quote, metadata)) => {
-      let ExecutableQuote {
-        amounts,
-        compute_units,
-        compute_units_safe,
-        compute_unit_method,
-        instructions,
-      } = quote;
+    .await?;
 
-      let QuoteAmounts {
-        amount_in,
-        amount_out,
-        fee_amount,
-        fee_mint,
-      } = amounts;
+  let ExecutableQuote {
+    amounts,
+    compute_units,
+    compute_units_safe,
+    compute_unit_method,
+    instructions,
+  } = quote;
 
-      let QuoteMetadata {
-        operation,
-        description,
-      } = metadata;
+  let QuoteAmounts {
+    amount_in,
+    amount_out,
+    fee_amount,
+    fee_mint,
+  } = amounts;
 
-      println!("✓ Quote fetched successfully!");
-      println!("\nQuote Details:");
-      println!("  Input:  {amount_in} JitoSOL");
-      println!("  Output: {amount_out} hyUSD");
-      println!("  Fee: {fee_amount} {fee_mint:?}");
-      println!("\nTransaction:");
-      println!("  Operation: {operation:?}");
-      println!("  Description: {description}");
-      println!("  Compute units: {compute_units} (safe: {compute_units_safe})",);
-      println!("  Method: {compute_unit_method:?}");
-      println!("  Instructions: {} instructions", instructions.len());
-      println!("\n✓ Ready to sign and send transaction!");
-    }
-    None => {
-      println!("✗ Quote not available for this mint pair");
-    }
-  }
+  let QuoteMetadata {
+    operation,
+    description,
+  } = metadata;
+
+  println!("✓ Quote fetched successfully!");
+  println!("\nQuote Details:");
+  println!("  Input:  {amount_in} JitoSOL");
+  println!("  Output: {amount_out} hyUSD");
+  println!("  Fee: {fee_amount} {fee_mint:?}");
+  println!("\nTransaction:");
+  println!("  Operation: {operation:?}");
+  println!("  Description: {description}");
+  println!("  Compute units: {compute_units} (safe: {compute_units_safe})",);
+  println!("  Method: {compute_unit_method:?}");
+  println!("  Instructions: {} instructions", instructions.len());
+  println!("\n✓ Ready to sign and send transaction!");
 
   Ok(())
 }
