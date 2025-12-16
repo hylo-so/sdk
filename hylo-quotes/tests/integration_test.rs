@@ -13,209 +13,187 @@ use std::sync::Arc;
 
 use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::prelude::Pubkey;
+use anyhow::Result;
 use hylo_clients::prelude::CommitmentConfig;
 use hylo_clients::protocol_state::RpcStateProvider;
 use hylo_idl::tokens::{HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_quotes::{ExecutableQuote, QuoteSimulator, SolanaRpcProvider};
 
-fn prepare_simulator(
-) -> Option<QuoteSimulator<Arc<RpcStateProvider>, SolanaRpcProvider>> {
-  let rpc_url = std::env::var("RPC_URL").ok()?;
-
-  // Share RPC client to reuse connection pools
-  let shared_rpc_client = Arc::new(RpcClient::new_with_commitment(
-    rpc_url.clone(),
-    CommitmentConfig::confirmed(),
-  ));
-
-  let state_provider =
-    Arc::new(RpcStateProvider::new(shared_rpc_client.clone()));
-
-  let rpc_provider = SolanaRpcProvider::new(shared_rpc_client);
-
-  Some(QuoteSimulator::new(state_provider, rpc_provider))
+/// Test context with shared setup for integration tests
+struct TestContext {
+  simulator: QuoteSimulator<Arc<RpcStateProvider>, SolanaRpcProvider>,
+  wallet: Pubkey,
 }
 
-fn get_test_wallet() -> Pubkey {
-  /// Test wallet with real mainnet balances for accurate simulation
-  const TEST_WALLET: &str = "GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai";
-  TEST_WALLET.parse().expect("Invalid test wallet")
+impl TestContext {
+  /// Create test context from environment
+  ///
+  /// # Errors
+  /// Returns error if `RPC_URL` environment variable is not set
+  fn new() -> Result<Self> {
+    let rpc_url = std::env::var("RPC_URL")
+      .map_err(|_| anyhow::anyhow!("RPC_URL environment variable not set"))?;
+
+    // Share RPC client to reuse connection pools
+    let shared_rpc_client = Arc::new(RpcClient::new_with_commitment(
+      rpc_url,
+      CommitmentConfig::confirmed(),
+    ));
+
+    let state_provider =
+      Arc::new(RpcStateProvider::new(shared_rpc_client.clone()));
+    let rpc_provider = SolanaRpcProvider::new(shared_rpc_client);
+    let simulator = QuoteSimulator::new(state_provider, rpc_provider);
+
+    /// Test wallet with real mainnet balances for accurate simulation
+    const TEST_WALLET: &str = "GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai";
+    let wallet = TEST_WALLET.parse()?;
+
+    Ok(Self { simulator, wallet })
+  }
 }
 
 #[tokio::test]
-async fn test_mint_hyusd_from_jitosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_mint_hyusd_from_jitosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<JITOSOL, HYUSD>(1_000_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<JITOSOL, HYUSD>(1_000_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Mint hyUSD with JitoSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_redeem_hyusd_to_jitosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_redeem_hyusd_to_jitosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<HYUSD, JITOSOL>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<HYUSD, JITOSOL>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Redeem hyUSD for JitoSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_mint_hyusd_from_hylosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_mint_hyusd_from_hylosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<HYLOSOL, HYUSD>(1_000_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<HYLOSOL, HYUSD>(1_000_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Mint hyUSD with hyloSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_redeem_hyusd_to_hylosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_redeem_hyusd_to_hylosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<HYUSD, HYLOSOL>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<HYUSD, HYLOSOL>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Redeem hyUSD for hyloSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_mint_xsol_from_jitosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_mint_xsol_from_jitosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<JITOSOL, XSOL>(1_000_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<JITOSOL, XSOL>(1_000_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Mint xSOL with JitoSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_redeem_xsol_to_jitosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_redeem_xsol_to_jitosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<XSOL, JITOSOL>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<XSOL, JITOSOL>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Redeem xSOL for JitoSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_mint_xsol_from_hylosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_mint_xsol_from_hylosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<HYLOSOL, XSOL>(1_000_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<HYLOSOL, XSOL>(1_000_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Mint xSOL with hyloSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_redeem_xsol_to_hylosol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_redeem_xsol_to_hylosol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<XSOL, HYLOSOL>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<XSOL, HYLOSOL>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Redeem xSOL for hyloSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_swap_hyusd_to_xsol() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_swap_hyusd_to_xsol() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<HYUSD, XSOL>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<HYUSD, XSOL>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Swap hyUSD to xSOL");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_swap_xsol_to_hyusd() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_swap_xsol_to_hyusd() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<XSOL, HYUSD>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<XSOL, HYUSD>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Swap xSOL to hyUSD");
+  Ok(())
 }
 
 #[tokio::test]
-async fn test_deposit_hyusd_to_stability_pool() {
-  let Some(simulator) = prepare_simulator() else {
-    eprintln!("Skipping test: RPC_URL not set");
-    return;
-  };
-  let wallet = get_test_wallet();
+async fn test_deposit_hyusd_to_stability_pool() -> Result<()> {
+  let ctx = TestContext::new()?;
 
-  let quote = simulator
-    .simulate_quote::<HYUSD, SHYUSD>(1_000_000, wallet, 50)
-    .await
-    .expect("Quote simulation should succeed");
+  let quote = ctx
+    .simulator
+    .simulate_quote::<HYUSD, SHYUSD>(1_000_000, ctx.wallet, 50)
+    .await?;
 
   validate_executable_quote(&quote, "Deposit hyUSD to Stability Pool");
+  Ok(())
 }
 
 fn validate_executable_quote(quote: &ExecutableQuote, test_name: &str) {
