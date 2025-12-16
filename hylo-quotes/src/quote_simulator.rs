@@ -20,6 +20,15 @@ use crate::rpc::RpcProvider;
 use crate::{ComputeUnitMethod, ExecutableQuote};
 
 /// Simulates transactions to extract compute units
+///
+/// ## Fallback Behavior
+///
+/// If simulation fails (e.g., insufficient user balance, RPC errors),
+/// gracefully falls back to estimated compute units. This enables quotes
+/// for UI previews even when users lack the necessary balance.
+///
+/// The returned `ExecutableQuote.compute_unit_method` indicates whether
+/// values are `Simulated` (accurate via RPC) or `Estimated` (fallback).
 pub struct QuoteSimulator<S: StateProvider, R: RpcProvider> {
   builder: QuoteBuilder<S>,
   rpc_provider: R,
@@ -83,8 +92,7 @@ impl<S: StateProvider, R: RpcProvider> QuoteSimulator<S, R> {
       .await
     {
       Ok(response) => {
-        if let Some(err) = response.value.err {
-          eprintln!("Simulation error: {err:?}");
+        if response.value.err.is_some() {
           (
             built_quote.compute_units,
             built_quote.compute_units_safe,
@@ -95,7 +103,6 @@ impl<S: StateProvider, R: RpcProvider> QuoteSimulator<S, R> {
             let cu_safe = compute_units_with_safety_buffer(cu);
             (cu, cu_safe, ComputeUnitMethod::Simulated)
           } else {
-            eprintln!("Simulation returned zero compute units");
             (
               built_quote.compute_units,
               built_quote.compute_units_safe,
@@ -103,7 +110,6 @@ impl<S: StateProvider, R: RpcProvider> QuoteSimulator<S, R> {
             )
           }
         } else {
-          eprintln!("Simulation succeeded but no units_consumed returned");
           (
             built_quote.compute_units,
             built_quote.compute_units_safe,
@@ -111,14 +117,11 @@ impl<S: StateProvider, R: RpcProvider> QuoteSimulator<S, R> {
           )
         }
       }
-      Err(e) => {
-        eprintln!("RPC simulation error: {e:?}");
-        (
-          built_quote.compute_units,
-          built_quote.compute_units_safe,
-          ComputeUnitMethod::Estimated,
-        )
-      }
+      Err(_err) => (
+        built_quote.compute_units,
+        built_quote.compute_units_safe,
+        ComputeUnitMethod::Estimated,
+      ),
     };
 
     Ok(ExecutableQuote {
