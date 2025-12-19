@@ -19,31 +19,46 @@ use hylo_idl::exchange::instruction_builders::{
 use hylo_idl::stability_pool::instruction_builders::user_deposit;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
-use crate::QuoteAmounts;
+use crate::{QuoteAmounts, SupportedPair};
 
-/// Type-safe instruction builder trait (SDK pattern)
+/// Trait for building instructions for token pair operations.
 ///
-/// The trait is parameterized by token types - each `<IN, OUT>` combination
-/// is a separate trait, allowing multiple impl blocks.
-pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint>:
-  Send + Sync
+/// Each `<IN, OUT>` combination has a dedicated implementation, enabling
+/// type-safe dispatch at compile time.
+pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint>
+where
+  (IN, OUT): SupportedPair<IN, OUT>,
 {
-  /// Build instructions for token pair operation
+  /// Build instructions for the token pair operation.
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
   ) -> Vec<Instruction>;
 }
 
+/// Zero-sized type used for instruction builder implementations.
+pub struct HyloInstructionBuilder;
+
+/// Build instructions for a token pair operation.
+pub(crate) fn build_instructions<IN: TokenMint, OUT: TokenMint>(
+  quote: &QuoteAmounts,
+  user: Pubkey,
+  slippage_bps: u16,
+) -> Vec<Instruction>
+where
+  (IN, OUT): SupportedPair<IN, OUT>,
+  HyloInstructionBuilder: InstructionBuilder<IN, OUT>,
+{
+  HyloInstructionBuilder::build(quote, user, slippage_bps)
+}
+
 // ============================================================================
 // Implementations for JITOSOL → HYUSD (mint stablecoin)
 // ============================================================================
 
-impl InstructionBuilder<JITOSOL, HYUSD> for () {
+impl InstructionBuilder<JITOSOL, HYUSD> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -72,9 +87,8 @@ impl InstructionBuilder<JITOSOL, HYUSD> for () {
 // Implementations for HYUSD → JITOSOL (redeem stablecoin)
 // ============================================================================
 
-impl InstructionBuilder<HYUSD, JITOSOL> for () {
+impl InstructionBuilder<HYUSD, JITOSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -101,9 +115,8 @@ impl InstructionBuilder<HYUSD, JITOSOL> for () {
 // Implementations for HYLOSOL → HYUSD (mint stablecoin)
 // ============================================================================
 
-impl InstructionBuilder<HYLOSOL, HYUSD> for () {
+impl InstructionBuilder<HYLOSOL, HYUSD> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -130,9 +143,8 @@ impl InstructionBuilder<HYLOSOL, HYUSD> for () {
 // Implementations for HYUSD → HYLOSOL (redeem stablecoin)
 // ============================================================================
 
-impl InstructionBuilder<HYUSD, HYLOSOL> for () {
+impl InstructionBuilder<HYUSD, HYLOSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -155,9 +167,8 @@ impl InstructionBuilder<HYUSD, HYLOSOL> for () {
   }
 }
 
-impl InstructionBuilder<JITOSOL, XSOL> for () {
+impl InstructionBuilder<JITOSOL, XSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -180,9 +191,8 @@ impl InstructionBuilder<JITOSOL, XSOL> for () {
   }
 }
 
-impl InstructionBuilder<XSOL, JITOSOL> for () {
+impl InstructionBuilder<XSOL, JITOSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -205,9 +215,8 @@ impl InstructionBuilder<XSOL, JITOSOL> for () {
   }
 }
 
-impl InstructionBuilder<HYLOSOL, XSOL> for () {
+impl InstructionBuilder<HYLOSOL, XSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -230,9 +239,8 @@ impl InstructionBuilder<HYLOSOL, XSOL> for () {
   }
 }
 
-impl InstructionBuilder<XSOL, HYLOSOL> for () {
+impl InstructionBuilder<XSOL, HYLOSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -255,9 +263,8 @@ impl InstructionBuilder<XSOL, HYLOSOL> for () {
   }
 }
 
-impl InstructionBuilder<HYUSD, XSOL> for () {
+impl InstructionBuilder<HYUSD, XSOL> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -280,9 +287,8 @@ impl InstructionBuilder<HYUSD, XSOL> for () {
   }
 }
 
-impl InstructionBuilder<XSOL, HYUSD> for () {
+impl InstructionBuilder<XSOL, HYUSD> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     slippage_bps: u16,
@@ -305,9 +311,8 @@ impl InstructionBuilder<XSOL, HYUSD> for () {
   }
 }
 
-impl InstructionBuilder<HYUSD, SHYUSD> for () {
+impl InstructionBuilder<HYUSD, SHYUSD> for HyloInstructionBuilder {
   fn build(
-    &self,
     quote: &QuoteAmounts,
     user: Pubkey,
     _slippage_bps: u16,

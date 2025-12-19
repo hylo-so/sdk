@@ -4,11 +4,11 @@ use anchor_lang::prelude::{Clock, Pubkey};
 use async_trait::async_trait;
 use hylo_idl::tokens::TokenMint;
 
-use crate::instruction_builder::InstructionBuilder;
-use crate::quote_computer::{
-  ComputeUnitDefaults, HyloQuoteComputer, QuoteComputer,
+use crate::{
+  ComputeUnitProvider, ExecutableQuote, HyloComputeUnitProvider,
+  HyloInstructionBuilder, HyloQuoteComputer, InstructionBuilder, QuoteComputer,
+  SupportedPair,
 };
-use crate::ExecutableQuote;
 
 /// Trait for strategies that can fetch quotes
 #[async_trait]
@@ -24,7 +24,8 @@ pub trait QuoteStrategy: Send + Sync {
     slippage_bps: u16,
   ) -> anyhow::Result<ExecutableQuote>
   where
-    HyloQuoteComputer:
-      QuoteComputer<IN, OUT, Clock> + ComputeUnitDefaults<IN, OUT, Clock>,
-    (): InstructionBuilder<IN, OUT>;
+    (IN, OUT): SupportedPair<IN, OUT>,
+    HyloQuoteComputer: QuoteComputer<IN, OUT, Clock>,
+    HyloComputeUnitProvider: ComputeUnitProvider<IN, OUT>,
+    HyloInstructionBuilder: InstructionBuilder<IN, OUT>;
 }

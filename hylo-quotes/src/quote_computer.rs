@@ -9,13 +9,15 @@ use hylo_core::stability_mode::StabilityMode;
 use hylo_core::stability_pool_math::{lp_token_nav, lp_token_out};
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
-use crate::QuoteAmounts;
+use crate::{QuoteAmounts, SupportedPair};
 
-/// Trait for computing quotes for token pairs
+/// Trait for computing quotes for token pairs.
 pub trait QuoteComputer<IN: TokenMint, OUT: TokenMint, S: SolanaClock>:
   Send + Sync
+where
+  (IN, OUT): SupportedPair<IN, OUT>,
 {
-  /// Compute quote for token pair operation
+  /// Compute quote for a token pair operation.
   ///
   /// # Errors
   /// Returns error if quote computation fails or pair is unsupported.
@@ -26,15 +28,7 @@ pub trait QuoteComputer<IN: TokenMint, OUT: TokenMint, S: SolanaClock>:
   ) -> Result<QuoteAmounts>;
 }
 
-/// Trait for default compute unit values for token pairs
-pub trait ComputeUnitDefaults<IN: TokenMint, OUT: TokenMint, S: SolanaClock> {
-  /// Get default compute units (base, safe) for this token pair
-  fn default_compute_units() -> (u64, u64);
-}
-
-/// ATA creation compute units (measured via `calibrate_compute_units`)
-const ATA_CREATION_CU: u64 = 7_338;
-
+/// Quote computer for Hylo protocol token pairs.
 pub struct HyloQuoteComputer;
 
 impl HyloQuoteComputer {
@@ -93,20 +87,6 @@ impl<S: SolanaClock> QuoteComputer<JITOSOL, HYUSD, S> for HyloQuoteComputer {
   }
 }
 
-impl<S: SolanaClock> ComputeUnitDefaults<JITOSOL, HYUSD, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 92_931; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
-  }
-}
-
 // ============================================================================
 // Implementations for HYUSD → JITOSOL (redeem stablecoin)
 // ============================================================================
@@ -140,20 +120,6 @@ impl<S: SolanaClock> QuoteComputer<HYUSD, JITOSOL, S> for HyloQuoteComputer {
       fee_amount: fees_extracted.bits,
       fee_mint: state.jitosol_header.mint,
     })
-  }
-}
-
-impl<S: SolanaClock> ComputeUnitDefaults<HYUSD, JITOSOL, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 92_695; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
   }
 }
 
@@ -201,20 +167,6 @@ impl<S: SolanaClock> QuoteComputer<HYLOSOL, HYUSD, S> for HyloQuoteComputer {
   }
 }
 
-impl<S: SolanaClock> ComputeUnitDefaults<HYLOSOL, HYUSD, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 92_931; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
-  }
-}
-
 // ============================================================================
 // Implementations for HYUSD → HYLOSOL (redeem stablecoin)
 // ============================================================================
@@ -247,20 +199,6 @@ impl<S: SolanaClock> QuoteComputer<HYUSD, HYLOSOL, S> for HyloQuoteComputer {
       fee_amount: fees_extracted.bits,
       fee_mint: state.hylosol_header.mint,
     })
-  }
-}
-
-impl<S: SolanaClock> ComputeUnitDefaults<HYUSD, HYLOSOL, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 94_195; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
   }
 }
 
@@ -305,20 +243,6 @@ impl<S: SolanaClock> QuoteComputer<JITOSOL, XSOL, S> for HyloQuoteComputer {
   }
 }
 
-impl<S: SolanaClock> ComputeUnitDefaults<JITOSOL, XSOL, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 94_617; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
-  }
-}
-
 // ============================================================================
 // Implementations for XSOL → JITOSOL (redeem levercoin)
 // ============================================================================
@@ -357,20 +281,6 @@ impl<S: SolanaClock> QuoteComputer<XSOL, JITOSOL, S> for HyloQuoteComputer {
       fee_amount: fees_extracted.bits,
       fee_mint: state.jitosol_header.mint,
     })
-  }
-}
-
-impl<S: SolanaClock> ComputeUnitDefaults<XSOL, JITOSOL, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 95_448; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
   }
 }
 
@@ -415,20 +325,6 @@ impl<S: SolanaClock> QuoteComputer<HYLOSOL, XSOL, S> for HyloQuoteComputer {
   }
 }
 
-impl<S: SolanaClock> ComputeUnitDefaults<HYLOSOL, XSOL, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 95_448; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
-  }
-}
-
 // ============================================================================
 // Implementations for XSOL → HYLOSOL (redeem levercoin)
 // ============================================================================
@@ -470,20 +366,6 @@ impl<S: SolanaClock> QuoteComputer<XSOL, HYLOSOL, S> for HyloQuoteComputer {
   }
 }
 
-impl<S: SolanaClock> ComputeUnitDefaults<XSOL, HYLOSOL, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 96_948; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
-  }
-}
-
 // ============================================================================
 // Implementations for HYUSD → XSOL (swap)
 // ============================================================================
@@ -518,18 +400,6 @@ impl<S: SolanaClock> QuoteComputer<HYUSD, XSOL, S> for HyloQuoteComputer {
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
     })
-  }
-}
-
-impl<S: SolanaClock> ComputeUnitDefaults<HYUSD, XSOL, S> for HyloQuoteComputer {
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 83_411; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
   }
 }
 
@@ -578,18 +448,6 @@ impl<S: SolanaClock> QuoteComputer<XSOL, HYUSD, S> for HyloQuoteComputer {
   }
 }
 
-impl<S: SolanaClock> ComputeUnitDefaults<XSOL, HYUSD, S> for HyloQuoteComputer {
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 82_600; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
-  }
-}
-
 // ============================================================================
 // Implementations for HYUSD → SHYUSD (stability pool deposit)
 // ============================================================================
@@ -618,19 +476,5 @@ impl<S: SolanaClock> QuoteComputer<HYUSD, SHYUSD, S> for HyloQuoteComputer {
       fee_amount: 0,
       fee_mint: HYUSD::MINT,
     })
-  }
-}
-
-impl<S: SolanaClock> ComputeUnitDefaults<HYUSD, SHYUSD, S>
-  for HyloQuoteComputer
-{
-  fn default_compute_units() -> (u64, u64) {
-    const OPERATION_BASE_CU: u64 = 74_011; // measured via `calibrate_compute_units`
-
-    const BASE_TOTAL: u64 = ATA_CREATION_CU + OPERATION_BASE_CU;
-    const BASE_WITH_MARGIN: u64 = (BASE_TOTAL * 110) / 100;
-    const SAFE_WITH_MARGIN: u64 = (BASE_WITH_MARGIN * 150) / 100;
-
-    (BASE_WITH_MARGIN, SAFE_WITH_MARGIN)
   }
 }

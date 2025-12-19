@@ -86,6 +86,7 @@
 //! # }
 //! ```
 
+mod compute_unit_provider;
 mod instruction_builder;
 mod quote_builder;
 mod quote_computer;
@@ -94,15 +95,20 @@ mod quote_provider;
 mod quote_simulator;
 mod quote_strategy;
 mod rpc;
+mod supported_pair;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::Instruction;
+pub use compute_unit_provider::{ComputeUnitProvider, HyloComputeUnitProvider};
+pub use instruction_builder::{HyloInstructionBuilder, InstructionBuilder};
 pub use quote_builder::QuoteBuilder;
+pub use quote_computer::{HyloQuoteComputer, QuoteComputer};
 pub use quote_metadata::{Operation, QuoteMetadata};
 pub use quote_provider::QuoteProvider;
 pub use quote_simulator::QuoteSimulator;
 pub use quote_strategy::QuoteStrategy;
 pub use rpc::{RpcProvider, SolanaRpcProvider};
+pub use supported_pair::SupportedPair;
 
 /// Quote amounts computed from the protocol state
 #[derive(Clone, Debug)]

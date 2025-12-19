@@ -10,14 +10,12 @@ use hylo_clients::protocol_state::StateProvider;
 use hylo_clients::util::simulation_config;
 use hylo_idl::tokens::TokenMint;
 
-use crate::instruction_builder::InstructionBuilder;
-use crate::quote_builder::QuoteBuilder;
-use crate::quote_computer::{
-  ComputeUnitDefaults, HyloQuoteComputer, QuoteComputer,
+use crate::{
+  ComputeUnitMethod, ComputeUnitProvider, ExecutableQuote,
+  HyloComputeUnitProvider, HyloInstructionBuilder, HyloQuoteComputer,
+  InstructionBuilder, QuoteBuilder, QuoteComputer, QuoteStrategy, RpcProvider,
+  SupportedPair,
 };
-use crate::quote_strategy::QuoteStrategy;
-use crate::rpc::RpcProvider;
-use crate::{ComputeUnitMethod, ExecutableQuote};
 
 /// Solana's maximum compute units per transaction
 const MAX_COMPUTE_UNITS: u64 = 1_400_000;
@@ -58,9 +56,10 @@ impl<S: StateProvider, R: RpcProvider> QuoteSimulator<S, R> {
     slippage_bps: u16,
   ) -> anyhow::Result<ExecutableQuote>
   where
-    HyloQuoteComputer:
-      QuoteComputer<IN, OUT, Clock> + ComputeUnitDefaults<IN, OUT, Clock>,
-    (): InstructionBuilder<IN, OUT>,
+    (IN, OUT): SupportedPair<IN, OUT>,
+    HyloQuoteComputer: QuoteComputer<IN, OUT, Clock>,
+    HyloComputeUnitProvider: ComputeUnitProvider<IN, OUT>,
+    HyloInstructionBuilder: InstructionBuilder<IN, OUT>,
   {
     let built_quote = self
       .builder
@@ -139,9 +138,10 @@ impl<S: StateProvider, R: RpcProvider> QuoteStrategy for QuoteSimulator<S, R> {
     slippage_bps: u16,
   ) -> anyhow::Result<ExecutableQuote>
   where
-    HyloQuoteComputer:
-      QuoteComputer<IN, OUT, Clock> + ComputeUnitDefaults<IN, OUT, Clock>,
-    (): InstructionBuilder<IN, OUT>,
+    (IN, OUT): SupportedPair<IN, OUT>,
+    HyloQuoteComputer: QuoteComputer<IN, OUT, Clock>,
+    HyloComputeUnitProvider: ComputeUnitProvider<IN, OUT>,
+    HyloInstructionBuilder: InstructionBuilder<IN, OUT>,
   {
     self
       .simulate_quote::<IN, OUT>(amount, user_wallet, slippage_bps)

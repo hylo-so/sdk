@@ -5,12 +5,12 @@ use async_trait::async_trait;
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
 use hylo_idl::tokens::TokenMint;
 
-use crate::instruction_builder::InstructionBuilder;
-use crate::quote_computer::{
-  ComputeUnitDefaults, HyloQuoteComputer, QuoteComputer,
+use crate::instruction_builder::build_instructions;
+use crate::{
+  ComputeUnitMethod, ComputeUnitProvider, ExecutableQuote,
+  HyloComputeUnitProvider, HyloInstructionBuilder, HyloQuoteComputer,
+  InstructionBuilder, QuoteComputer, QuoteStrategy, SupportedPair,
 };
-use crate::quote_strategy::QuoteStrategy;
-use crate::{ComputeUnitMethod, ExecutableQuote};
 
 /// Builds quotes with transaction instructions
 pub struct QuoteBuilder<S: StateProvider> {
@@ -38,9 +38,10 @@ impl<S: StateProvider> QuoteBuilder<S> {
     slippage_bps: u16,
   ) -> anyhow::Result<ExecutableQuote>
   where
-    HyloQuoteComputer:
-      QuoteComputer<IN, OUT, Clock> + ComputeUnitDefaults<IN, OUT, Clock>,
-    (): InstructionBuilder<IN, OUT>,
+    (IN, OUT): SupportedPair<IN, OUT>,
+    HyloQuoteComputer: QuoteComputer<IN, OUT, Clock>,
+    HyloComputeUnitProvider: ComputeUnitProvider<IN, OUT>,
+    HyloInstructionBuilder: InstructionBuilder<IN, OUT>,
   {
     let state: ProtocolState<Clock> = self.state_provider.fetch_state().await?;
     let quote_amounts = QuoteComputer::<IN, OUT, Clock>::compute_quote(
@@ -49,15 +50,11 @@ impl<S: StateProvider> QuoteBuilder<S> {
       amount,
     )?;
 
-    let instructions = InstructionBuilder::<IN, OUT>::build(
-      &(),
-      &quote_amounts,
-      user_wallet,
-      slippage_bps,
-    );
+    let instructions =
+      build_instructions::<IN, OUT>(&quote_amounts, user_wallet, slippage_bps);
 
     let (compute_units, compute_units_safe) =
-      <HyloQuoteComputer as ComputeUnitDefaults<IN, OUT, Clock>>::default_compute_units();
+      <HyloComputeUnitProvider as ComputeUnitProvider<IN, OUT>>::default_compute_units();
 
     Ok(ExecutableQuote {
       amounts: quote_amounts,
@@ -78,9 +75,10 @@ impl<S: StateProvider> QuoteStrategy for QuoteBuilder<S> {
     slippage_bps: u16,
   ) -> anyhow::Result<ExecutableQuote>
   where
-    HyloQuoteComputer:
-      QuoteComputer<IN, OUT, Clock> + ComputeUnitDefaults<IN, OUT, Clock>,
-    (): InstructionBuilder<IN, OUT>,
+    (IN, OUT): SupportedPair<IN, OUT>,
+    HyloQuoteComputer: QuoteComputer<IN, OUT, Clock>,
+    HyloComputeUnitProvider: ComputeUnitProvider<IN, OUT>,
+    HyloInstructionBuilder: InstructionBuilder<IN, OUT>,
   {
     self
       .build_quote::<IN, OUT>(amount, user_wallet, slippage_bps)
