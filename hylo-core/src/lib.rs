@@ -16,6 +16,7 @@ pub mod stability_mode;
 pub mod stability_pool_math;
 pub mod total_sol_cache;
 pub mod util;
+pub mod virtual_stablecoin;
 pub mod yields;
 
 #[cfg(feature = "offchain")]

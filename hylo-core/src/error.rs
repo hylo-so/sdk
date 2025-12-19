@@ -113,4 +113,13 @@ pub enum CoreError {
   YieldHarvestConfigValidation,
   #[msg("Arithmetic error while computing yield harvest allocation.")]
   YieldHarvestAllocation,
+  // `virtual_stablecoin`
+  #[msg("Overflow while minting virtual stablecoin.")]
+  MintOverflow,
+  #[msg("Overflow while burning virtual stablecoin.")]
+  BurnUnderflow,
+  #[msg("Cannot mint an amount of 0.")]
+  MintZero,
+  #[msg("Cannot burn an amount of 0.")]
+  BurnZero,
 }
