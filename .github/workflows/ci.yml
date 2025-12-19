@@ -49,7 +49,7 @@ jobs:
       always() &&
       github.event_name == 'push' &&
       needs.build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-large
     timeout-minutes: 15
     steps:
     - uses: actions/checkout@v4
