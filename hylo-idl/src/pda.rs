@@ -145,3 +145,8 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+
+// TODO: Replace seed when new protocol IDL is published
+pub fn virtual_stablecoin(collateral_mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, "virtual_stablecoin", collateral_mint)
+}
