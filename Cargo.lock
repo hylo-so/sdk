@@ -2165,7 +2165,7 @@ checksum = "135b12329e5e3ce057a9f972339ea52bc954fe1e9358ef27f95e89716fbc5424"
 
 [[package]]
 name = "hylo-clients"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "anchor-client",
  "anchor-lang 0.31.1",
@@ -2173,6 +2173,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "base64 0.22.1",
+ "bincode",
+ "flaky_test",
  "futures",
  "hylo-core",
  "hylo-fix",
@@ -2188,7 +2190,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
@@ -2219,7 +2221,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-idl"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
@@ -2232,7 +2234,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "anchor-client",
  "anchor-lang 0.31.1",
