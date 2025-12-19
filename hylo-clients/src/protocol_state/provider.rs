@@ -115,10 +115,7 @@ mod tests {
     assert!(state.xsol_mint.decimals > 0);
     assert!(state.shyusd_mint.decimals > 0);
 
-    // Verify clock has reasonable values (slot and epoch are u64, so just check
-    // they're set)
+    // Verify clock has reasonable values (slot is u64, so just check it's set)
     assert!(state.exchange_context.clock.slot() > 0);
-    // epoch() is u64 so >= 0 is always true, but we can verify it's reasonable
-    let _epoch = state.exchange_context.clock.epoch();
   }
 }
