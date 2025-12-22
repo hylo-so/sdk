@@ -212,9 +212,9 @@ impl<S: SolanaClock> QuoteComputer<JITOSOL, XSOL, S> for HyloQuoteComputer {
     state: &ProtocolState<S>,
     amount_in: u64,
   ) -> Result<QuoteAmounts> {
-    if state.exchange_context.stability_mode > StabilityMode::Mode1 {
+    if state.exchange_context.stability_mode == StabilityMode::Depeg {
       return Err(anyhow!(
-        "Mint operations disabled in current stability mode"
+        "Levercoin mint disabled in current stability mode"
       ));
     }
 
@@ -294,9 +294,9 @@ impl<S: SolanaClock> QuoteComputer<HYLOSOL, XSOL, S> for HyloQuoteComputer {
     state: &ProtocolState<S>,
     amount_in: u64,
   ) -> Result<QuoteAmounts> {
-    if state.exchange_context.stability_mode > StabilityMode::Mode1 {
+    if state.exchange_context.stability_mode == StabilityMode::Depeg {
       return Err(anyhow!(
-        "Mint operations disabled in current stability mode"
+        "Levercoin mint disabled in current stability mode"
       ));
     }
 
