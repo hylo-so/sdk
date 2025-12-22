@@ -149,6 +149,13 @@ impl<S: StateProvider, R: RpcProvider> QuoteStrategy for QuoteSimulator<S, R> {
   }
 }
 
+/// Applies 1.5x safety buffer to compute units, with overflow protection.
+///
+/// Formula: `(cu * 3 + 1) / 2` (adding 1 before division rounds up)
+///
+/// On overflow (e.g., if CU > u64::MAX/3), falls back to Solana's maximum
+/// instead of wrapping. This is safe because Solana's max (1.4M) is much
+/// smaller than u64::MAX (18.4 quintillion).
 fn compute_units_with_safety_buffer(compute_units: u64) -> u64 {
   compute_units
     .checked_mul(3)

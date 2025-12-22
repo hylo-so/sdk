@@ -121,7 +121,7 @@ impl<S: QuoteStrategy> QuoteProvider<S> {
           .fetch_quote::<HYUSD, SHYUSD>(amount, user, slippage_bps)
           .await,
       ),
-      _ => Err(anyhow::anyhow!("Unsupported pair")),
+      _ => return Err(anyhow::anyhow!("Unsupported pair")),
     };
 
     let quote = quote_result?;
