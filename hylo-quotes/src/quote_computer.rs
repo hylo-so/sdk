@@ -213,9 +213,7 @@ impl<S: SolanaClock> QuoteComputer<JITOSOL, XSOL, S> for HyloQuoteComputer {
     amount_in: u64,
   ) -> Result<QuoteAmounts> {
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
-      return Err(anyhow!(
-        "Levercoin mint disabled in current stability mode"
-      ));
+      return Err(anyhow!("Levercoin mint disabled in current stability mode"));
     }
 
     let amount_in = UFix64::<N9>::new(amount_in);
@@ -295,9 +293,7 @@ impl<S: SolanaClock> QuoteComputer<HYLOSOL, XSOL, S> for HyloQuoteComputer {
     amount_in: u64,
   ) -> Result<QuoteAmounts> {
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
-      return Err(anyhow!(
-        "Levercoin mint disabled in current stability mode"
-      ));
+      return Err(anyhow!("Levercoin mint disabled in current stability mode"));
     }
 
     let amount_in = UFix64::<N9>::new(amount_in);
