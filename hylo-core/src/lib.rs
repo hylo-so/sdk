@@ -4,6 +4,7 @@ pub mod conversion;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;
+pub mod exo_pair;
 pub mod fee_controller;
 #[cfg(feature = "offchain")]
 pub mod idl_type_bridge;

@@ -5,15 +5,14 @@ use crate::error::CoreError::{
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 
+#[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
 pub struct VirtualStablecoin {
-  pub collateral_mint: Pubkey,
   supply: UFixValue64,
 }
 
 impl VirtualStablecoin {
-  pub fn new(collateral_mint: Pubkey) -> VirtualStablecoin {
+  pub fn new() -> VirtualStablecoin {
     VirtualStablecoin {
-      collateral_mint,
       supply: UFix64::<N6>::zero().into(),
     }
   }
@@ -52,7 +51,7 @@ mod tests {
   use super::*;
 
   fn setup_virtual_stablecoin() -> VirtualStablecoin {
-    VirtualStablecoin::new(Pubkey::new_unique())
+    VirtualStablecoin::new()
   }
 
   #[test]
