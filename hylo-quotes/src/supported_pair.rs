@@ -16,6 +16,7 @@ mod private {
   impl<IN: super::TokenMint, OUT: super::TokenMint> Sealed for (IN, OUT) {}
 }
 
+// LST pairs (using explicit implementations due to Rust coherence rules)
 impl SupportedPair<JITOSOL, HYUSD> for (JITOSOL, HYUSD) {}
 impl SupportedPair<HYUSD, JITOSOL> for (HYUSD, JITOSOL) {}
 impl SupportedPair<HYLOSOL, HYUSD> for (HYLOSOL, HYUSD) {}
@@ -24,6 +25,8 @@ impl SupportedPair<JITOSOL, XSOL> for (JITOSOL, XSOL) {}
 impl SupportedPair<XSOL, JITOSOL> for (XSOL, JITOSOL) {}
 impl SupportedPair<HYLOSOL, XSOL> for (HYLOSOL, XSOL) {}
 impl SupportedPair<XSOL, HYLOSOL> for (XSOL, HYLOSOL) {}
+
+// Non-LST specific pairs
 impl SupportedPair<HYUSD, XSOL> for (HYUSD, XSOL) {}
 impl SupportedPair<XSOL, HYUSD> for (XSOL, HYUSD) {}
 impl SupportedPair<HYUSD, SHYUSD> for (HYUSD, SHYUSD) {}

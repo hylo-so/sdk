@@ -88,6 +88,7 @@
 
 mod compute_unit_provider;
 mod instruction_builder;
+mod lst_provider;
 mod quote_builder;
 mod quote_computer;
 mod quote_metadata;
@@ -101,6 +102,7 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::Instruction;
 pub use compute_unit_provider::{ComputeUnitProvider, HyloComputeUnitProvider};
 pub use instruction_builder::{HyloInstructionBuilder, InstructionBuilder};
+pub use lst_provider::LstProvider;
 pub use quote_builder::QuoteBuilder;
 pub use quote_computer::{HyloQuoteComputer, QuoteComputer};
 pub use quote_metadata::{Operation, QuoteMetadata};
