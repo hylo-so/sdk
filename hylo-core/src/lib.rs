@@ -8,6 +8,7 @@ pub mod fee_controller;
 #[cfg(feature = "offchain")]
 pub mod idl_type_bridge;
 pub mod lst_sol_price;
+pub mod lst_swap_config;
 pub mod pyth;
 pub mod slippage_config;
 pub mod solana_clock;
