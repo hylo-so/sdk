@@ -2,14 +2,14 @@ use anchor_lang::prelude::Pubkey;
 
 mod lst_provider;
 mod protocol_state_quote_strategy;
-mod quotable_pair;
 mod quote_strategy;
 mod simulation_quote_strategy;
 
 pub use hylo_clients::util::LST;
 pub(crate) use lst_provider::LstProvider;
-pub(crate) use quotable_pair::QuotablePair;
+pub use protocol_state_quote_strategy::ProtocolStateQuoteStrategy;
 pub use quote_strategy::QuoteStrategy;
+pub use simulation_quote_strategy::SimulationQuoteStrategy;
 
 /// Quote amounts computed from the protocol state
 #[derive(Clone, Debug)]
