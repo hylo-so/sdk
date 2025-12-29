@@ -1,5 +1,11 @@
 [workspace]
-members = ["hylo-clients", "hylo-core", "hylo-idl", "hylo-jupiter"]
+members = [
+    "hylo-clients",
+    "hylo-core",
+    "hylo-idl",
+    "hylo-jupiter",
+    "hylo-quotes",
+]
 resolver = "2"
 
 [workspace.package]
@@ -36,3 +42,4 @@ solana-address-lookup-table-interface = "=2.2.2"
 solana-loader-v3-interface = "5.0.0"
 solana-transaction-status-client-types = "=2.3.13"
 tokio = "1.36.0"
+tokio-test = "0.4"

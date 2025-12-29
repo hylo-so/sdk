@@ -36,18 +36,39 @@ where
   /// Event parsing or conversion errors
   fn from_event(e: &Self::Event) -> Result<UFix64<Self::OutExp>>;
 
-  /// Gets price quote for 1 unit of input token to output token.
+  /// Gets price quote for 1 unit of input token to output token using the
+  /// reference wallet.
   async fn simulate(&self) -> Result<UFix64<Self::OutExp>> {
-    let args = self
-      .build(<Self as BuildTransactionData<I, O>>::Inputs::quote_input(
-        REFERENCE_WALLET,
-      ))
+    self.simulate_with_user(REFERENCE_WALLET).await
+  }
+
+  /// Gets price quote for 1 unit of input token to output token using a custom
+  /// user wallet.
+  async fn simulate_with_user(
+    &self,
+    user: Pubkey,
+  ) -> Result<UFix64<Self::OutExp>> {
+    let event = self
+      .simulate_event(
+        user,
+        <Self as BuildTransactionData<I, O>>::Inputs::quote_input(user),
+      )
       .await?;
-    let tx = self
-      .build_simulation_transaction(&REFERENCE_WALLET, &args)
-      .await?;
-    let event = self.simulate_transaction_event::<Self::Event>(&tx).await?;
     Self::from_event(&event)
+  }
+
+  /// Simulates transaction with actual inputs and returns the full event.
+  ///
+  /// This allows callers to extract both output amounts and fees from the
+  /// event, rather than just the output amount via `from_event`.
+  async fn simulate_event(
+    &self,
+    user: Pubkey,
+    inputs: Self::Inputs,
+  ) -> Result<Self::Event> {
+    let args = self.build(inputs).await?;
+    let tx = self.build_simulation_transaction(&user, &args).await?;
+    self.simulate_transaction_event::<Self::Event>(&tx).await
   }
 }
 
