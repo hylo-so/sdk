@@ -11,7 +11,7 @@ use hylo_core::stability_mode::StabilityMode;
 use hylo_core::stability_pool_math::{lp_token_nav, lp_token_out};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
-use crate::{LstProvider, QuoteAmounts, QuoteStrategy};
+use crate::{ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy};
 
 pub struct ProtocolStateQuoteStrategy<S: StateProvider> {
   state_provider: S,
@@ -34,11 +34,7 @@ impl<L: LST, S: StateProvider> QuoteStrategy<L, HYUSD, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode > StabilityMode::Mode1 {
@@ -70,11 +66,15 @@ where
         .validate_stablecoin_amount(converted)?
     };
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_out.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
@@ -89,11 +89,7 @@ impl<L: LST, S: StateProvider> QuoteStrategy<HYUSD, L, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     let amount_in = UFix64::<N6>::new(amount_in);
@@ -114,11 +110,15 @@ where
       .exchange_context
       .stablecoin_redeem_fee(&lst_price, lst_out)?;
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_remaining.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
@@ -133,11 +133,7 @@ impl<L: LST, S: StateProvider> QuoteStrategy<L, XSOL, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
@@ -161,11 +157,15 @@ where
       .token_conversion(&lst_price)?
       .lst_to_token(amount_remaining, levercoin_mint_nav)?;
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: xsol_out.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
@@ -180,11 +180,7 @@ impl<L: LST, S: StateProvider> QuoteStrategy<XSOL, L, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
@@ -210,11 +206,15 @@ where
       .exchange_context
       .levercoin_redeem_fee(&lst_price, lst_out)?;
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_remaining.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
@@ -227,11 +227,7 @@ where
 impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
   for ProtocolStateQuoteStrategy<S>
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
@@ -252,11 +248,15 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
       .swap_conversion()?
       .stable_to_lever(amount_remaining)?;
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: xsol_out.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
@@ -269,11 +269,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
 impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
   for ProtocolStateQuoteStrategy<S>
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if matches!(
@@ -302,11 +298,15 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
       .exchange_context
       .levercoin_to_stablecoin_fee(hyusd_total)?;
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_remaining.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
@@ -319,11 +319,7 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
 impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
   for ProtocolStateQuoteStrategy<S>
 {
-  async fn fetch_quote_amounts(
-    &self,
-    amount_in: u64,
-    _user: Pubkey,
-  ) -> Result<QuoteAmounts> {
+  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     let amount_in = UFix64::<N6>::new(amount_in);
@@ -338,11 +334,15 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
 
     let shyusd_out = lp_token_out(amount_in, shyusd_nav)?;
 
-    Ok(QuoteAmounts {
+    Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: shyusd_out.bits,
+      compute_units: todo!("populate compute units"),
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: 0,
       fee_mint: HYUSD::MINT,
+      instructions: todo!("populate instructions"),
+      lookup_tables: todo!("populate lookup tables"),
     })
   }
 }
