@@ -319,7 +319,7 @@ impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       HYUSD,
       OUT,
-    >>::build_instructions(inputs.user, inputs)?;
+    >>::build_instructions(inputs)?;
     let lookup_tables = self
       .load_multiple_lookup_tables(<ExchangeInstructionBuilder as InstructionBuilder<HYUSD, OUT>>::REQUIRED_LOOKUP_TABLES)
       .await?;
@@ -346,7 +346,7 @@ impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       XSOL,
       OUT,
-    >>::build_instructions(inputs.user, inputs)?;
+    >>::build_instructions(inputs)?;
     let lookup_tables = self
       .load_multiple_lookup_tables(<ExchangeInstructionBuilder as InstructionBuilder<XSOL, OUT>>::REQUIRED_LOOKUP_TABLES)
       .await?;
@@ -370,7 +370,7 @@ impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       IN,
       HYUSD,
-    >>::build_instructions(inputs.user, inputs)?;
+    >>::build_instructions(inputs)?;
     let lookup_tables = self
       .load_multiple_lookup_tables(<ExchangeInstructionBuilder as InstructionBuilder<IN, HYUSD>>::REQUIRED_LOOKUP_TABLES)
       .await?;
@@ -394,7 +394,7 @@ impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       IN,
       XSOL,
-    >>::build_instructions(inputs.user, inputs)?;
+    >>::build_instructions(inputs)?;
     let lookup_tables = self
       .load_multiple_lookup_tables(<ExchangeInstructionBuilder as InstructionBuilder<IN, XSOL>>::REQUIRED_LOOKUP_TABLES)
       .await?;
@@ -418,7 +418,7 @@ impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       HYUSD,
       XSOL,
-    >>::build_instructions(inputs.user, inputs)?;
+    >>::build_instructions(inputs)?;
     let lookup_tables = self
       .load_multiple_lookup_tables(<ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES)
       .await?;
@@ -442,7 +442,7 @@ impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       XSOL,
       HYUSD,
-    >>::build_instructions(inputs.user, inputs)?;
+    >>::build_instructions(inputs)?;
     let lookup_tables = self
       .load_multiple_lookup_tables(<ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES)
       .await?;

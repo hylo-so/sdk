@@ -11,10 +11,10 @@ use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::stability_pool_math::{lp_token_nav, lp_token_out};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
-use crate::protocol_state_strategy::{
-  ProtocolStateStrategy, ESTIMATED_COMPUTE_UNITS,
+use crate::protocol_state_strategy::ProtocolStateStrategy;
+use crate::{
+  ComputeUnitStrategy, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
-use crate::{ComputeUnitStrategy, Quote, QuoteStrategy};
 
 // ============================================================================
 // Implementation for HYUSD → SHYUSD (stability pool deposit)
@@ -45,7 +45,6 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
     let shyusd_out = lp_token_out(amount_in, shyusd_nav)?;
 
     let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      user,
       StabilityPoolArgs {
         amount: amount_in,
         user,
@@ -58,7 +57,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: shyusd_out.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: 0,
       fee_mint: HYUSD::MINT,

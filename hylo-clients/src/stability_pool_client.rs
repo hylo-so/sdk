@@ -204,7 +204,6 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
     let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      inputs.user,
       inputs,
     )?;
     let lookup_tables = self
@@ -236,7 +235,6 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
     let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<SHYUSD, HYUSD>>::build_instructions(
-      inputs.user,
       inputs,
     )?;
     let lookup_tables = self

@@ -14,10 +14,11 @@ use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
-use crate::protocol_state_strategy::{
-  ProtocolStateStrategy, ESTIMATED_COMPUTE_UNITS,
+use crate::protocol_state_strategy::ProtocolStateStrategy;
+use crate::{
+  ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy,
+  DEFAULT_CUS_WITH_BUFFER,
 };
-use crate::{ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy};
 
 // ============================================================================
 // Implementation for LST → HYUSD (mint stablecoin)
@@ -69,17 +70,14 @@ where
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       L,
       HYUSD,
-    >>::build_instructions(
+    >>::build_instructions(MintArgs {
+      amount: amount_in,
       user,
-      MintArgs {
-        amount: amount_in,
-        user,
-        slippage_config: Some(SlippageConfig::new(
-          amount_out,
-          UFix64::<N4>::new(slippage_tolerance),
-        )),
-      },
-    )?;
+      slippage_config: Some(SlippageConfig::new(
+        amount_out,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    })?;
 
     let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::REQUIRED_LOOKUP_TABLES
       .to_vec();
@@ -87,7 +85,7 @@ where
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_out.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
@@ -136,17 +134,14 @@ where
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       HYUSD,
       L,
-    >>::build_instructions(
+    >>::build_instructions(RedeemArgs {
+      amount: amount_in,
       user,
-      RedeemArgs {
-        amount: amount_in,
-        user,
-        slippage_config: Some(SlippageConfig::new(
-          UFix64::<N9>::new(amount_remaining.bits),
-          UFix64::<N4>::new(slippage_tolerance),
-        )),
-      },
-    )?;
+      slippage_config: Some(SlippageConfig::new(
+        UFix64::<N9>::new(amount_remaining.bits),
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    })?;
 
     let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::REQUIRED_LOOKUP_TABLES
       .to_vec();
@@ -154,7 +149,7 @@ where
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_remaining.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
@@ -206,17 +201,14 @@ where
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       L,
       XSOL,
-    >>::build_instructions(
+    >>::build_instructions(MintArgs {
+      amount: amount_in,
       user,
-      MintArgs {
-        amount: amount_in,
-        user,
-        slippage_config: Some(SlippageConfig::new(
-          xsol_out,
-          UFix64::<N4>::new(slippage_tolerance),
-        )),
-      },
-    )?;
+      slippage_config: Some(SlippageConfig::new(
+        xsol_out,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    })?;
 
     let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::REQUIRED_LOOKUP_TABLES
       .to_vec();
@@ -224,7 +216,7 @@ where
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: xsol_out.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
@@ -278,17 +270,14 @@ where
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       XSOL,
       L,
-    >>::build_instructions(
+    >>::build_instructions(RedeemArgs {
+      amount: amount_in,
       user,
-      RedeemArgs {
-        amount: amount_in,
-        user,
-        slippage_config: Some(SlippageConfig::new(
-          UFix64::<N9>::new(amount_remaining.bits),
-          UFix64::<N4>::new(slippage_tolerance),
-        )),
-      },
-    )?;
+      slippage_config: Some(SlippageConfig::new(
+        UFix64::<N9>::new(amount_remaining.bits),
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    })?;
 
     let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::REQUIRED_LOOKUP_TABLES
       .to_vec();
@@ -296,7 +285,7 @@ where
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_remaining.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
@@ -343,17 +332,14 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       HYUSD,
       XSOL,
-    >>::build_instructions(
+    >>::build_instructions(SwapArgs {
+      amount: amount_in,
       user,
-      SwapArgs {
-        amount: amount_in,
-        user,
-        slippage_config: Some(SlippageConfig::new(
-          xsol_out,
-          UFix64::<N4>::new(slippage_tolerance),
-        )),
-      },
-    )?;
+      slippage_config: Some(SlippageConfig::new(
+        xsol_out,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    })?;
 
     let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES
       .to_vec();
@@ -361,7 +347,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: xsol_out.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
@@ -416,17 +402,14 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
     let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
       XSOL,
       HYUSD,
-    >>::build_instructions(
+    >>::build_instructions(SwapArgs {
+      amount: amount_in,
       user,
-      SwapArgs {
-        amount: amount_in,
-        user,
-        slippage_config: Some(SlippageConfig::new(
-          amount_remaining,
-          UFix64::<N4>::new(slippage_tolerance),
-        )),
-      },
-    )?;
+      slippage_config: Some(SlippageConfig::new(
+        amount_remaining,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    })?;
 
     let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES
       .to_vec();
@@ -434,7 +417,7 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
     Ok(Quote {
       amount_in: amount_in.bits,
       amount_out: amount_remaining.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,

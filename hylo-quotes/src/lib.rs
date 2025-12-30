@@ -16,7 +16,16 @@ pub use quote_provider::QuoteProvider;
 pub use quote_strategy::QuoteStrategy;
 pub use simulation_strategy::SimulationStrategy;
 
-const MAX_COMPUTE_UNITS: u64 = 1_400_000;
+/// Default buffered compute units for all exchange operations.
+///
+/// This is a buffered estimate (higher than measured values ~74k-97k CU) that
+/// provides a safe default for all current quote operations. Measured values
+/// came from calibration tool, but this value includes additional buffer for
+/// safety across all operation types.
+///
+/// In the future, this could be replaced with per-instruction defaults based
+/// on more comprehensive statistical analysis.
+pub const DEFAULT_CUS_WITH_BUFFER: u64 = 100_000;
 
 /// Quote amounts computed from the protocol state
 #[derive(Clone, Debug)]
@@ -48,7 +57,7 @@ pub struct Quote {
 
 #[derive(Clone, Debug)]
 pub enum ComputeUnitStrategy {
-  /// Esimated compute units based on historical data
+  /// Estimated compute units based on historical data
   Estimated,
 
   /// Compute units returned from simulation results

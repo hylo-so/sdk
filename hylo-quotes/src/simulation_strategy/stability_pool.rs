@@ -10,8 +10,8 @@ use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
-use crate::simulation_strategy::SimulationStrategy;
-use crate::{ComputeUnitStrategy, Quote, QuoteStrategy, MAX_COMPUTE_UNITS};
+use crate::simulation_strategy::{extract_compute_units, SimulationStrategy};
+use crate::{Quote, QuoteStrategy};
 
 // ============================================================================
 // Implementation for HYUSD → SHYUSD (stability pool deposit)
@@ -38,7 +38,6 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     .await?;
 
     let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      user,
       StabilityPoolArgs { amount, user },
     )?;
 
@@ -48,11 +47,14 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
           >>::REQUIRED_LOOKUP_TABLES
             .to_vec();
 
+    let (compute_units, compute_unit_strategy) =
+      extract_compute_units(compute_units);
+
     Ok(Quote {
       amount_in,
       amount_out: event.lp_token_minted.bits,
-      compute_units: compute_units.unwrap_or(MAX_COMPUTE_UNITS),
-      compute_unit_strategy: ComputeUnitStrategy::Simulated,
+      compute_units,
+      compute_unit_strategy,
       fee_amount: 0, // UserDepositEvent has no fees
       fee_mint: HYUSD::MINT,
       instructions,
