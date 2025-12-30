@@ -5,8 +5,13 @@ use hylo_idl::tokens::TokenMint;
 
 use crate::Quote;
 
+/// Trait for strategies that compute quotes for token pair operations.
 #[async_trait]
 pub trait QuoteStrategy<IN: TokenMint, OUT: TokenMint, C: SolanaClock> {
+  /// Compute a quote for the token pair operation.
+  ///
+  /// # Errors
+  /// Returns error if quote computation fails.
   async fn get_quote(
     &self,
     amount_in: u64,

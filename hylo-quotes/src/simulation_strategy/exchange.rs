@@ -14,7 +14,12 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::simulation_strategy::{extract_compute_units, SimulationStrategy};
+use crate::syntax_helpers::{
+  build_instructions, lookup_tables, simulate_event_with_cus,
+};
 use crate::{LstProvider, Quote, QuoteStrategy};
+
+type IB = ExchangeInstructionBuilder;
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
@@ -33,8 +38,8 @@ where
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
 
-    let (event, compute_units) =
-      <ExchangeClient as SimulatePrice<L, HYUSD>>::simulate_event_with_cus(
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let (event, cus) = simulate_event_with_cus::<ExchangeClient, L, HYUSD>(
         &self.exchange_client,
         user,
         MintArgs {
@@ -45,33 +50,34 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
-      L,
-      HYUSD,
-    >>::build_instructions(MintArgs {
+      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
+
+      (
+        event.minted.bits,
+        event.fees_deposited.bits,
+        compute_units,
+        compute_unit_strategy,
+      )
+    };
+
+    let args = MintArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(event.minted.bits),
+        UFix64::<N6>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
-    })?;
-
-    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::REQUIRED_LOOKUP_TABLES
-        .to_vec();
-
-    let (compute_units, compute_unit_strategy) =
-      extract_compute_units(compute_units);
+    };
 
     Ok(Quote {
       amount_in,
-      amount_out: event.minted.bits,
+      amount_out,
       compute_units,
       compute_unit_strategy,
-      fee_amount: event.fees_deposited.bits,
-      fee_mint: event.lst_mint,
-      instructions,
-      address_lookup_tables,
+      fee_amount,
+      fee_mint: L::MINT,
+      instructions: build_instructions::<IB, L, HYUSD>(args)?,
+      address_lookup_tables: lookup_tables::<IB, L, HYUSD>().into(),
     })
   }
 }
@@ -94,7 +100,7 @@ where
     let amount = UFix64::<N6>::new(amount_in);
 
     let (event, compute_units) =
-      <ExchangeClient as SimulatePrice<HYUSD, L>>::simulate_event_with_cus(
+      simulate_event_with_cus::<ExchangeClient, HYUSD, L>(
         &self.exchange_client,
         user,
         RedeemArgs {
@@ -105,10 +111,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
-      HYUSD,
-      L,
-    >>::build_instructions(RedeemArgs {
+    let (compute_units, compute_unit_strategy) =
+      extract_compute_units(compute_units);
+
+    let instructions = build_instructions::<IB, HYUSD, L>(RedeemArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
@@ -116,12 +122,6 @@ where
         UFix64::<N4>::new(slippage_tolerance),
       )),
     })?;
-
-    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::REQUIRED_LOOKUP_TABLES
-        .to_vec();
-
-    let (compute_units, compute_unit_strategy) =
-      extract_compute_units(compute_units);
 
     Ok(Quote {
       amount_in,
@@ -131,7 +131,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables,
+      address_lookup_tables: lookup_tables::<IB, HYUSD, L>().into(),
     })
   }
 }
@@ -154,7 +154,7 @@ where
     let amount = UFix64::<N9>::new(amount_in);
 
     let (event, compute_units) =
-      <ExchangeClient as SimulatePrice<L, XSOL>>::simulate_event_with_cus(
+      simulate_event_with_cus::<ExchangeClient, L, XSOL>(
         &self.exchange_client,
         user,
         MintArgs {
@@ -165,10 +165,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
-      L,
-      XSOL,
-    >>::build_instructions(MintArgs {
+    let (compute_units, compute_unit_strategy) =
+      extract_compute_units(compute_units);
+
+    let instructions = build_instructions::<IB, L, XSOL>(MintArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
@@ -176,12 +176,6 @@ where
         UFix64::<N4>::new(slippage_tolerance),
       )),
     })?;
-
-    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::REQUIRED_LOOKUP_TABLES
-        .to_vec();
-
-    let (compute_units, compute_unit_strategy) =
-      extract_compute_units(compute_units);
 
     Ok(Quote {
       amount_in,
@@ -191,7 +185,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables,
+      address_lookup_tables: lookup_tables::<IB, L, XSOL>().into(),
     })
   }
 }
@@ -214,7 +208,7 @@ where
     let amount = UFix64::<N6>::new(amount_in);
 
     let (event, compute_units) =
-      <ExchangeClient as SimulatePrice<XSOL, L>>::simulate_event_with_cus(
+      simulate_event_with_cus::<ExchangeClient, XSOL, L>(
         &self.exchange_client,
         user,
         RedeemArgs {
@@ -225,10 +219,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
-      XSOL,
-      L,
-    >>::build_instructions(RedeemArgs {
+    let (compute_units, compute_unit_strategy) =
+      extract_compute_units(compute_units);
+
+    let instructions = build_instructions::<IB, XSOL, L>(RedeemArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
@@ -236,12 +230,6 @@ where
         UFix64::<N4>::new(slippage_tolerance),
       )),
     })?;
-
-    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::REQUIRED_LOOKUP_TABLES
-        .to_vec();
-
-    let (compute_units, compute_unit_strategy) =
-      extract_compute_units(compute_units);
 
     Ok(Quote {
       amount_in,
@@ -251,7 +239,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables,
+      address_lookup_tables: lookup_tables::<IB, XSOL, L>().into(),
     })
   }
 }
@@ -270,45 +258,48 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units) =
-      <ExchangeClient as SimulatePrice<HYUSD, XSOL>>::simulate_event_with_cus(
-        &self.exchange_client,
-        user,
-        SwapArgs {
-          amount,
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let (event, compute_units) =
+        simulate_event_with_cus::<ExchangeClient, HYUSD, XSOL>(
+          &self.exchange_client,
           user,
-          slippage_config: None,
-        },
-      )
-      .await?;
+          SwapArgs {
+            amount,
+            user,
+            slippage_config: None,
+          },
+        )
+        .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
-      HYUSD,
-      XSOL,
-    >>::build_instructions(SwapArgs {
+      let (compute_units, compute_unit_strategy) =
+        extract_compute_units(compute_units);
+
+      (
+        event.levercoin_minted.bits,
+        event.stablecoin_fees.bits,
+        compute_units,
+        compute_unit_strategy,
+      )
+    };
+
+    let args = SwapArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(event.levercoin_minted.bits),
+        UFix64::<N6>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
-    })?;
-
-    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES
-        .to_vec();
-
-    let (compute_units, compute_unit_strategy) =
-      extract_compute_units(compute_units);
+    };
 
     Ok(Quote {
       amount_in,
-      amount_out: event.levercoin_minted.bits,
+      amount_out,
       compute_units,
       compute_unit_strategy,
-      fee_amount: event.stablecoin_fees.bits,
+      fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions,
-      address_lookup_tables,
+      instructions: build_instructions::<IB, HYUSD, XSOL>(args)?,
+      address_lookup_tables: lookup_tables::<IB, HYUSD, XSOL>().into(),
     })
   }
 }

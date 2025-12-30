@@ -1,3 +1,8 @@
+//! Type-safe quote computation and transaction building for the Hylo protocol.
+//!
+//! Provides strategies for computing exchange rates, building Solana instructions,
+//! and estimating compute units using either protocol state or transaction simulation.
+
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 
@@ -7,6 +12,7 @@ mod quote_metadata;
 mod quote_provider;
 mod quote_strategy;
 mod simulation_strategy;
+mod syntax_helpers;
 
 pub use hylo_clients::util::LST;
 pub(crate) use lst_provider::LstProvider;
@@ -27,31 +33,16 @@ pub use simulation_strategy::SimulationStrategy;
 /// on more comprehensive statistical analysis.
 pub const DEFAULT_CUS_WITH_BUFFER: u64 = 100_000;
 
-/// Quote amounts computed from the protocol state
+/// Quote with computed amounts, instructions, and compute units.
 #[derive(Clone, Debug)]
 pub struct Quote {
-  /// Amount of input tokens (in base units)
   pub amount_in: u64,
-
-  /// Amount of output tokens (in base units)
   pub amount_out: u64,
-
-  /// Compute units required
   pub compute_units: u64,
-
-  /// Compute unit strategy
   pub compute_unit_strategy: ComputeUnitStrategy,
-
-  /// Fee amount (in input token base units)
   pub fee_amount: u64,
-
-  /// Fee mint (which token the fee is denominated in)
   pub fee_mint: Pubkey,
-
-  /// Transaction instructions ready for signing
   pub instructions: Vec<Instruction>,
-
-  /// Address lookup table pubkeys required for this transaction
   pub address_lookup_tables: Vec<Pubkey>,
 }
 

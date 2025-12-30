@@ -39,10 +39,10 @@ impl std::fmt::Display for Operation {
   }
 }
 
-/// Metadata for a quote route
+/// Metadata for a quote route.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuoteMetadata {
-  /// The operation this quote represents
+  /// The operation this quote represents (useful for metrics)
   pub operation: Operation,
 
   /// Human-readable route description with operation details (eg, which LST)
@@ -50,7 +50,6 @@ pub struct QuoteMetadata {
 }
 
 impl QuoteMetadata {
-  /// Create new metadata
   #[must_use]
   pub fn new(operation: Operation, description: impl Into<String>) -> Self {
     Self {

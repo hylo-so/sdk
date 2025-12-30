@@ -1,3 +1,8 @@
+//! Quote strategy using transaction simulation.
+//!
+//! Builds instructions and simulates transactions to extract output amounts
+//! and compute units from emitted events.
+
 mod exchange;
 mod stability_pool;
 
@@ -25,14 +30,9 @@ impl SimulationStrategy {
 
 /// Extract compute units and strategy from simulation result.
 ///
-/// Returns `(compute_units, strategy)` where:
-/// - If simulation returned `Some(cu)` with `cu > 0`: uses simulated value with
-///   `Simulated` strategy
-/// - If simulation returned `None` or `Some(0)`: falls back to estimated value
-///   with `Estimated` strategy
-///
-/// This handles the case where simulation succeeds but doesn't provide compute
-/// unit information.
+/// Returns `(compute_units, strategy)`. If simulation provides compute units,
+/// uses `Simulated` strategy; otherwise falls back to `Estimated` with default
+/// buffered value.
 pub(crate) fn extract_compute_units(
   compute_units: Option<u64>,
 ) -> (u64, ComputeUnitStrategy) {

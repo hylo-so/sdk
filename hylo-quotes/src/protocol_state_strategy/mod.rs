@@ -1,3 +1,8 @@
+//! Quote strategy using protocol state.
+//!
+//! Computes quotes using protocol state and SDK machinery like `ExchangeContext`,
+//! without requiring transaction simulation.
+
 mod exchange;
 mod stability_pool;
 

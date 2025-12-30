@@ -39,26 +39,18 @@ use crate::util::{
 
 /// Statically type-safe instruction builder for token pair operations.
 ///
-/// This trait provides compile-time type safety for building instructions
-/// without requiring client instances or RPC calls.
-///
 /// # Type Parameters
 /// - `IN`: Input token type
 /// - `OUT`: Output token type
 pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
-  /// Input type for building instructions (e.g., `MintArgs`, `RedeemArgs`).
   type Inputs;
 
-  /// Lookup table pubkeys required for this operation.
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey];
 
   /// Builds instructions for the token pair operation.
   ///
-  /// This method is statically type-safe and does not require RPC calls.
-  ///
   /// # Errors
-  ///
-  /// Returns an error if instruction building fails (e.g., invalid arguments).
+  /// Returns error if instruction building fails.
   fn build_instructions(inputs: Self::Inputs) -> Result<Vec<Instruction>>;
 }
 

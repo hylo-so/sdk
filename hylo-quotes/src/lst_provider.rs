@@ -4,7 +4,7 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::exchange::accounts::LstHeader;
 use hylo_idl::tokens::{HYLOSOL, JITOSOL};
 
-/// Helper trait to get LST header from `ProtocolState` based on LST type
+/// Trait for getting LST header from protocol state.
 pub(crate) trait LstProvider<L: LST> {
   fn lst_header(&self) -> &LstHeader;
 }

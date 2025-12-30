@@ -1,4 +1,4 @@
-//! Quote provider with mint matching logic
+//! Quote provider with mint pair matching.
 
 use anchor_client::solana_sdk::clock::Clock;
 use anchor_lang::prelude::Pubkey;
@@ -6,9 +6,10 @@ use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
 use crate::quote_metadata::{Operation, QuoteMetadata};
 use crate::quote_strategy::QuoteStrategy;
+use crate::syntax_helpers::get_quote;
 use crate::Quote;
 
-/// Provider that matches mint pairs and fetches quotes
+/// Provider that matches mint pairs and fetches quotes via a strategy.
 pub struct QuoteProvider<S> {
   strategy: S,
 }
@@ -43,7 +44,7 @@ where
     &self,
     input_mint: Pubkey,
     output_mint: Pubkey,
-    amount: u64,
+    amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
   ) -> anyhow::Result<(Quote, QuoteMetadata)> {
@@ -52,9 +53,9 @@ where
       (JITOSOL::MINT, HYUSD::MINT) => (
         Operation::MintStablecoin,
         "Mint hyUSD with JitoSOL",
-        <S as QuoteStrategy<JITOSOL, HYUSD, Clock>>::get_quote(
+        get_quote::<S, JITOSOL, HYUSD, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -63,9 +64,9 @@ where
       (HYUSD::MINT, JITOSOL::MINT) => (
         Operation::RedeemStablecoin,
         "Redeem hyUSD for JitoSOL",
-        <S as QuoteStrategy<HYUSD, JITOSOL, Clock>>::get_quote(
+        get_quote::<S, HYUSD, JITOSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -74,9 +75,9 @@ where
       (HYLOSOL::MINT, HYUSD::MINT) => (
         Operation::MintStablecoin,
         "Mint hyUSD with hyloSOL",
-        <S as QuoteStrategy<HYLOSOL, HYUSD, Clock>>::get_quote(
+        get_quote::<S, HYLOSOL, HYUSD, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -85,9 +86,9 @@ where
       (HYUSD::MINT, HYLOSOL::MINT) => (
         Operation::RedeemStablecoin,
         "Redeem hyUSD for hyloSOL",
-        <S as QuoteStrategy<HYUSD, HYLOSOL, Clock>>::get_quote(
+        get_quote::<S, HYUSD, HYLOSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -96,9 +97,9 @@ where
       (JITOSOL::MINT, XSOL::MINT) => (
         Operation::MintLevercoin,
         "Mint xSOL with JitoSOL",
-        <S as QuoteStrategy<JITOSOL, XSOL, Clock>>::get_quote(
+        get_quote::<S, JITOSOL, XSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -107,9 +108,9 @@ where
       (XSOL::MINT, JITOSOL::MINT) => (
         Operation::RedeemLevercoin,
         "Redeem xSOL for JitoSOL",
-        <S as QuoteStrategy<XSOL, JITOSOL, Clock>>::get_quote(
+        get_quote::<S, XSOL, JITOSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -118,9 +119,9 @@ where
       (HYLOSOL::MINT, XSOL::MINT) => (
         Operation::MintLevercoin,
         "Mint xSOL with hyloSOL",
-        <S as QuoteStrategy<HYLOSOL, XSOL, Clock>>::get_quote(
+        get_quote::<S, HYLOSOL, XSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -129,9 +130,9 @@ where
       (XSOL::MINT, HYLOSOL::MINT) => (
         Operation::RedeemLevercoin,
         "Redeem xSOL for hyloSOL",
-        <S as QuoteStrategy<XSOL, HYLOSOL, Clock>>::get_quote(
+        get_quote::<S, XSOL, HYLOSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -140,9 +141,9 @@ where
       (HYUSD::MINT, XSOL::MINT) => (
         Operation::SwapStableToLever,
         "Swap hyUSD to xSOL",
-        <S as QuoteStrategy<HYUSD, XSOL, Clock>>::get_quote(
+        get_quote::<S, HYUSD, XSOL, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -151,9 +152,9 @@ where
       (XSOL::MINT, HYUSD::MINT) => (
         Operation::SwapLeverToStable,
         "Swap xSOL to hyUSD",
-        <S as QuoteStrategy<XSOL, HYUSD, Clock>>::get_quote(
+        get_quote::<S, XSOL, HYUSD, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
@@ -162,9 +163,9 @@ where
       (HYUSD::MINT, SHYUSD::MINT) => (
         Operation::DepositToStabilityPool,
         "Deposit hyUSD to Stability Pool",
-        <S as QuoteStrategy<HYUSD, SHYUSD, Clock>>::get_quote(
+        get_quote::<S, HYUSD, SHYUSD, Clock>(
           &self.strategy,
-          amount,
+          amount_in,
           user,
           slippage_tolerance,
         )
