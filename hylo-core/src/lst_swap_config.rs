@@ -10,9 +10,9 @@ pub struct LstSwapConfig {
 }
 
 impl LstSwapConfig {
-  #[must_use]
-  pub fn new(fee: UFixValue64) -> LstSwapConfig {
-    LstSwapConfig { fee }
+  pub fn new(fee: UFixValue64) -> Result<LstSwapConfig> {
+    Self::validate_fee(fee)?;
+    Ok(LstSwapConfig { fee })
   }
 
   /// Gets the configured fee rate in basis points.
@@ -28,10 +28,7 @@ impl LstSwapConfig {
   }
 
   /// Applies swap fee to a token amount.
-  pub fn apply_swap_fee<Exp>(
-    &self,
-    amount: UFix64<Exp>,
-  ) -> Result<FeeExtract<Exp>> {
+  pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>> {
     FeeExtract::new(self.fee()?, amount)
   }
 
@@ -44,11 +41,6 @@ impl LstSwapConfig {
       Err(InvalidFees.into())
     }
   }
-
-  /// Validate the current fee configuration.
-  pub fn validate(&self) -> Result<()> {
-    Self::validate_fee(self.fee)
-  }
 }
 
 #[cfg(test)]
@@ -58,33 +50,35 @@ mod tests {
   #[test]
   fn apply_fee() -> Result<()> {
     let fee = UFixValue64::new(50, -4);
-    let config = LstSwapConfig::new(fee);
+    let config = LstSwapConfig::new(fee)?;
     let amount = UFix64::<N9>::new(1_000_000_000);
 
-    let result = config.apply_swap_fee(amount)?;
+    let result = config.apply_fee(amount)?;
 
-    assert_eq!(result.fees_extracted, UFix64::new(5_000_000)); // 0.005 tokens
-    assert_eq!(result.amount_remaining, UFix64::new(995_000_000)); // 0.995 tokens
+    assert_eq!(result.fees_extracted, UFix64::new(5_000_000));
+    assert_eq!(result.amount_remaining, UFix64::new(995_000_000));
     Ok(())
   }
 
   #[test]
   fn update_fee() -> Result<()> {
-    let mut config = LstSwapConfig::new(UFixValue64::new(50));
-    config.update(UFixValue64::new(100))?; // 1%
+    let mut config = LstSwapConfig::new(UFixValue64::new(50, -4))?;
+    config.update(UFixValue64::new(100, -4))?;
     assert_eq!(config.fee()?, UFix64::new(100));
     Ok(())
   }
 
   #[test]
-  fn reject_zero_fee() {
-    let result = LstSwapConfig::new(UFixValue64::new(0)).validate();
-    assert!(result.is_err());
+  fn reject_out_of_range_fee() {
+    let zero = LstSwapConfig::new(UFixValue64::new(0, -4));
+    let one = LstSwapConfig::new(UFixValue64::new(10000, -4));
+    assert!(zero.is_err());
+    assert!(one.is_err());
   }
 
   #[test]
-  fn reject_100_percent_fee() {
-    let result = LstSwapConfig::new(UFixValue64::new(10000)).validate();
+  fn reject_wrong_exp() {
+    let result = LstSwapConfig::new(UFixValue64::new(200, -2));
     assert!(result.is_err());
   }
 }
