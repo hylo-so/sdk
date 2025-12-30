@@ -4,36 +4,26 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::{
   ExchangeInstructionBuilder, InstructionBuilder,
-  StabilityPoolInstructionBuilder,
 };
-use hylo_clients::prelude::{
-  ExchangeClient, SimulatePrice, StabilityPoolClient,
-};
+use hylo_clients::prelude::{ExchangeClient, SimulatePrice};
 use hylo_clients::protocol_state::ProtocolState;
-use hylo_clients::transaction::{
-  MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs,
-};
+use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
+use crate::simulation_strategy::SimulationStrategy;
 use crate::{
   ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy, MAX_COMPUTE_UNITS,
 };
-
-pub struct SimulationQuoteStrategy {
-  exchange_client: ExchangeClient,
-  stability_pool_client: StabilityPoolClient,
-}
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
-  for SimulationQuoteStrategy
+impl<L: LST, C: SolanaClock> QuoteStrategy<L, HYUSD, C> for SimulationStrategy
 where
   ProtocolState<C>: LstProvider<L>,
 {
@@ -57,7 +47,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::build_instructions(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      L,
+      HYUSD,
+    >>::build_instructions(
       user,
       MintArgs {
         amount,
@@ -69,6 +62,9 @@ where
       },
     )?;
 
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::REQUIRED_LOOKUP_TABLES
+        .to_vec();
+
     Ok(Quote {
       amount_in,
       amount_out: event.minted.bits,
@@ -77,8 +73,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::REQUIRED_LOOKUP_TABLES
-        .to_vec(),
+      address_lookup_tables,
     })
   }
 }
@@ -88,8 +83,7 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
-  for SimulationQuoteStrategy
+impl<L: LST, C: SolanaClock> QuoteStrategy<HYUSD, L, C> for SimulationStrategy
 where
   ProtocolState<C>: LstProvider<L>,
 {
@@ -113,7 +107,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::build_instructions(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      HYUSD,
+      L,
+    >>::build_instructions(
       user,
       RedeemArgs {
         amount,
@@ -125,6 +122,9 @@ where
       },
     )?;
 
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::REQUIRED_LOOKUP_TABLES
+        .to_vec();
+
     Ok(Quote {
       amount_in,
       amount_out: event.collateral_withdrawn.bits,
@@ -133,8 +133,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::REQUIRED_LOOKUP_TABLES
-        .to_vec(),
+      address_lookup_tables,
     })
   }
 }
@@ -144,8 +143,7 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<L, XSOL, C>
-  for SimulationQuoteStrategy
+impl<L: LST, C: SolanaClock> QuoteStrategy<L, XSOL, C> for SimulationStrategy
 where
   ProtocolState<C>: LstProvider<L>,
 {
@@ -169,7 +167,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::build_instructions(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      L,
+      XSOL,
+    >>::build_instructions(
       user,
       MintArgs {
         amount,
@@ -181,6 +182,9 @@ where
       },
     )?;
 
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::REQUIRED_LOOKUP_TABLES
+        .to_vec();
+
     Ok(Quote {
       amount_in,
       amount_out: event.minted.bits,
@@ -189,8 +193,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::REQUIRED_LOOKUP_TABLES
-        .to_vec(),
+      address_lookup_tables,
     })
   }
 }
@@ -200,8 +203,7 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<XSOL, L, C>
-  for SimulationQuoteStrategy
+impl<L: LST, C: SolanaClock> QuoteStrategy<XSOL, L, C> for SimulationStrategy
 where
   ProtocolState<C>: LstProvider<L>,
 {
@@ -225,7 +227,10 @@ where
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::build_instructions(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      XSOL,
+      L,
+    >>::build_instructions(
       user,
       RedeemArgs {
         amount,
@@ -237,6 +242,9 @@ where
       },
     )?;
 
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::REQUIRED_LOOKUP_TABLES
+        .to_vec();
+
     Ok(Quote {
       amount_in,
       amount_out: event.collateral_withdrawn.bits,
@@ -245,8 +253,7 @@ where
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
       instructions,
-      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::REQUIRED_LOOKUP_TABLES
-        .to_vec(),
+      address_lookup_tables,
     })
   }
 }
@@ -256,7 +263,7 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
+impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
   async fn get_quote(
     &self,
     amount_in: u64,
@@ -277,7 +284,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::build_instructions(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      HYUSD,
+      XSOL,
+    >>::build_instructions(
       user,
       SwapArgs {
         amount,
@@ -289,6 +299,9 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
       },
     )?;
 
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES
+        .to_vec();
+
     Ok(Quote {
       amount_in,
       amount_out: event.levercoin_minted.bits,
@@ -297,8 +310,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
       fee_amount: event.stablecoin_fees.bits,
       fee_mint: HYUSD::MINT,
       instructions,
-      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES
-        .to_vec(),
+      address_lookup_tables,
     })
   }
 }
@@ -308,7 +320,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
 // ============================================================================
 
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
+impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
   async fn get_quote(
     &self,
     amount_in: u64,
@@ -329,7 +341,10 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
       )
       .await?;
 
-    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::build_instructions(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      XSOL,
+      HYUSD,
+    >>::build_instructions(
       user,
       SwapArgs {
         amount,
@@ -341,6 +356,9 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
       },
     )?;
 
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES
+        .to_vec();
+
     Ok(Quote {
       amount_in,
       amount_out: event.stablecoin_minted_user.bits,
@@ -349,59 +367,7 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
       fee_amount: event.stablecoin_minted_fees.bits,
       fee_mint: HYUSD::MINT,
       instructions,
-      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES
-        .to_vec(),
+      address_lookup_tables,
     })
-  }
-}
-
-// ============================================================================
-// Implementation for HYUSD → SHYUSD (stability pool deposit)
-// ============================================================================
-
-#[async_trait]
-impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
-  for SimulationQuoteStrategy
-{
-  async fn get_quote(
-    &self,
-    amount_in: u64,
-    user: Pubkey,
-    _slippage_tolerance: u64,
-  ) -> Result<Quote> {
-    let amount = UFix64::<N6>::new(amount_in);
-
-    let (event, compute_units) = <StabilityPoolClient as SimulatePrice<
-      HYUSD,
-      SHYUSD,
-    >>::simulate_event_with_cus(
-      &self.stability_pool_client,
-      user,
-      StabilityPoolArgs { amount, user },
-    )
-    .await?;
-
-    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      user,
-      StabilityPoolArgs { amount, user },
-    )?;
-
-    Ok(
-      Quote {
-        amount_in,
-        amount_out: event.lp_token_minted.bits,
-        compute_units: compute_units.unwrap_or(MAX_COMPUTE_UNITS),
-        compute_unit_strategy: ComputeUnitStrategy::Simulated,
-        fee_amount: 0, // UserDepositEvent has no fees
-        fee_mint: HYUSD::MINT,
-        instructions,
-        address_lookup_tables:
-          <StabilityPoolInstructionBuilder as InstructionBuilder<
-            HYUSD,
-            SHYUSD,
-          >>::REQUIRED_LOOKUP_TABLES
-            .to_vec(),
-      },
-    )
   }
 }

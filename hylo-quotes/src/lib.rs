@@ -2,15 +2,19 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 
 mod lst_provider;
-mod protocol_state_quote_strategy;
+mod protocol_state_strategy;
+mod quote_metadata;
+mod quote_provider;
 mod quote_strategy;
-mod simulation_quote_strategy;
+mod simulation_strategy;
 
 pub use hylo_clients::util::LST;
 pub(crate) use lst_provider::LstProvider;
-pub use protocol_state_quote_strategy::ProtocolStateQuoteStrategy;
+pub use protocol_state_strategy::ProtocolStateStrategy;
+pub use quote_metadata::{Operation, QuoteMetadata};
+pub use quote_provider::QuoteProvider;
 pub use quote_strategy::QuoteStrategy;
-pub use simulation_quote_strategy::SimulationQuoteStrategy;
+pub use simulation_strategy::SimulationStrategy;
 
 const MAX_COMPUTE_UNITS: u64 = 1_400_000;
 

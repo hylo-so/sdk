@@ -5,34 +5,19 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::{
   ExchangeInstructionBuilder, InstructionBuilder,
-  StabilityPoolInstructionBuilder,
 };
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
-use hylo_clients::transaction::{
-  MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs,
-};
+use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::stability_mode::StabilityMode;
-use hylo_core::stability_pool_math::{lp_token_nav, lp_token_out};
-use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
+use crate::protocol_state_strategy::{
+  ProtocolStateStrategy, ESTIMATED_COMPUTE_UNITS,
+};
 use crate::{ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy};
-
-// TODO(Levi): Get estimated compute units from simulation for each operation (see other quotes branch)
-const ESTIMATED_COMPUTE_UNITS: u64 = 100_000;
-
-pub struct ProtocolStateQuoteStrategy<S: StateProvider> {
-  state_provider: S,
-}
-
-impl<S: StateProvider> ProtocolStateQuoteStrategy<S> {
-  #[must_use]
-  pub fn new(state_provider: S) -> Self {
-    Self { state_provider }
-  }
-}
 
 // ============================================================================
 // Implementation for LST → HYUSD (mint stablecoin)
@@ -40,7 +25,7 @@ impl<S: StateProvider> ProtocolStateQuoteStrategy<S> {
 
 #[async_trait]
 impl<L: LST, S: StateProvider> QuoteStrategy<L, HYUSD, Clock>
-  for ProtocolStateQuoteStrategy<S>
+  for ProtocolStateStrategy<S>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
@@ -118,7 +103,7 @@ where
 
 #[async_trait]
 impl<L: LST, S: StateProvider> QuoteStrategy<HYUSD, L, Clock>
-  for ProtocolStateQuoteStrategy<S>
+  for ProtocolStateStrategy<S>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
@@ -185,7 +170,7 @@ where
 
 #[async_trait]
 impl<L: LST, S: StateProvider> QuoteStrategy<L, XSOL, Clock>
-  for ProtocolStateQuoteStrategy<S>
+  for ProtocolStateStrategy<S>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
@@ -255,7 +240,7 @@ where
 
 #[async_trait]
 impl<L: LST, S: StateProvider> QuoteStrategy<XSOL, L, Clock>
-  for ProtocolStateQuoteStrategy<S>
+  for ProtocolStateStrategy<S>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
@@ -327,7 +312,7 @@ where
 
 #[async_trait]
 impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
-  for ProtocolStateQuoteStrategy<S>
+  for ProtocolStateStrategy<S>
 {
   async fn get_quote(
     &self,
@@ -392,7 +377,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
 
 #[async_trait]
 impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
-  for ProtocolStateQuoteStrategy<S>
+  for ProtocolStateStrategy<S>
 {
   async fn get_quote(
     &self,
@@ -452,58 +437,6 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
       compute_units: ESTIMATED_COMPUTE_UNITS,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: fees_extracted.bits,
-      fee_mint: HYUSD::MINT,
-      instructions,
-      address_lookup_tables,
-    })
-  }
-}
-
-// ============================================================================
-// Implementation for HYUSD → SHYUSD (stability pool deposit)
-// ============================================================================
-
-#[async_trait]
-impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
-  for ProtocolStateQuoteStrategy<S>
-{
-  async fn get_quote(
-    &self,
-    amount_in: u64,
-    user: Pubkey,
-    _slippage_tolerance: u64,
-  ) -> Result<Quote> {
-    let state = self.state_provider.fetch_state().await?;
-
-    let amount_in = UFix64::<N6>::new(amount_in);
-
-    let shyusd_nav = lp_token_nav(
-      state.exchange_context.stablecoin_nav()?,
-      UFix64::new(state.hyusd_pool.amount),
-      state.exchange_context.levercoin_mint_nav()?,
-      UFix64::new(state.xsol_pool.amount),
-      UFix64::new(state.shyusd_mint.supply),
-    )?;
-
-    let shyusd_out = lp_token_out(amount_in, shyusd_nav)?;
-
-    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      user,
-      StabilityPoolArgs {
-        amount: amount_in,
-        user,
-      },
-    )?;
-
-    let address_lookup_tables = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::REQUIRED_LOOKUP_TABLES
-      .to_vec();
-
-    Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: shyusd_out.bits,
-      compute_units: ESTIMATED_COMPUTE_UNITS,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: 0,
       fee_mint: HYUSD::MINT,
       instructions,
       address_lookup_tables,
