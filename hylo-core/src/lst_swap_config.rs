@@ -6,7 +6,7 @@ use crate::fee_controller::FeeExtract;
 
 #[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
 pub struct LstSwapConfig {
-  fee: UFixValue64,
+  pub fee: UFixValue64,
 }
 
 impl LstSwapConfig {
