@@ -2,16 +2,19 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
-use hylo_clients::instructions::{
-  InstructionBuilder, StabilityPoolInstructionBuilder,
-};
-use hylo_clients::prelude::{SimulatePrice, StabilityPoolClient};
+use hylo_clients::instructions::StabilityPoolInstructionBuilder;
+use hylo_clients::prelude::StabilityPoolClient;
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulation_strategy::{extract_compute_units, SimulationStrategy};
+use crate::syntax_helpers::{
+  build_instructions, lookup_tables, simulate_event_with_cus,
+};
 use crate::{Quote, QuoteStrategy};
+
+type IB = StabilityPoolInstructionBuilder;
 
 // ============================================================================
 // Implementation for HYUSD → SHYUSD (stability pool deposit)
@@ -27,38 +30,38 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units) = <StabilityPoolClient as SimulatePrice<
-      HYUSD,
-      SHYUSD,
-    >>::simulate_event_with_cus(
-      &self.stability_pool_client,
-      user,
-      StabilityPoolArgs { amount, user },
-    )
-    .await?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
 
-    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      StabilityPoolArgs { amount, user },
-    )?;
+      let (event, cus) =
+        simulate_event_with_cus::<StabilityPoolClient, HYUSD, SHYUSD>(
+          &self.stability_pool_client,
+          user,
+          StabilityPoolArgs { amount, user },
+        )
+        .await?;
 
-    let address_lookup_tables = <StabilityPoolInstructionBuilder as InstructionBuilder<
-            HYUSD,
-            SHYUSD,
-          >>::REQUIRED_LOOKUP_TABLES
-            .to_vec();
+      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
 
-    let (compute_units, compute_unit_strategy) =
-      extract_compute_units(compute_units);
+      (
+        event.lp_token_minted.bits,
+        FEE_AMOUNT,
+        compute_units,
+        compute_unit_strategy,
+      )
+    };
+
+    let args = StabilityPoolArgs { amount, user };
 
     Ok(Quote {
       amount_in,
-      amount_out: event.lp_token_minted.bits,
+      amount_out,
       compute_units,
       compute_unit_strategy,
-      fee_amount: 0, // UserDepositEvent has no fees
+      fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions,
-      address_lookup_tables,
+      instructions: build_instructions::<IB, HYUSD, SHYUSD>(args)?,
+      address_lookup_tables: lookup_tables::<IB, HYUSD, SHYUSD>().into(),
     })
   }
 }

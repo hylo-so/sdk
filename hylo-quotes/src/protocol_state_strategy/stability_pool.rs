@@ -33,29 +33,37 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    let amount_in = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let shyusd_nav = lp_token_nav(
-      state.exchange_context.stablecoin_nav()?,
-      UFix64::new(state.hyusd_pool.amount),
-      state.exchange_context.levercoin_mint_nav()?,
-      UFix64::new(state.xsol_pool.amount),
-      UFix64::new(state.shyusd_mint.supply),
-    )?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
 
-    let shyusd_out = lp_token_out(amount_in, shyusd_nav)?;
+      let shyusd_nav = lp_token_nav(
+        state.exchange_context.stablecoin_nav()?,
+        UFix64::new(state.hyusd_pool.amount),
+        state.exchange_context.levercoin_mint_nav()?,
+        UFix64::new(state.xsol_pool.amount),
+        UFix64::new(state.shyusd_mint.supply),
+      )?;
 
-    let args = StabilityPoolArgs {
-      amount: amount_in,
-      user,
+      let shyusd_out = lp_token_out(amount, shyusd_nav)?;
+
+      (
+        shyusd_out.bits,
+        FEE_AMOUNT,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
     };
 
+    let args = StabilityPoolArgs { amount, user };
+
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: shyusd_out.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: 0,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: HYUSD::MINT,
       instructions: build_instructions::<IB, HYUSD, SHYUSD>(args)?,
       address_lookup_tables: lookup_tables::<IB, HYUSD, SHYUSD>().into(),

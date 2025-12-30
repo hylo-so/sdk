@@ -1,7 +1,8 @@
 //! Type-safe quote computation and transaction building for the Hylo protocol.
 //!
-//! Provides strategies for computing exchange rates, building Solana instructions,
-//! and estimating compute units using either protocol state or transaction simulation.
+//! Provides strategies for computing exchange rates, building Solana
+//! instructions, and estimating compute units using either protocol state or
+//! transaction simulation.
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;

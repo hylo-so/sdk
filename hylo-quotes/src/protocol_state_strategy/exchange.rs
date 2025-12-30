@@ -45,44 +45,53 @@ where
       ));
     }
 
-    let amount_in = UFix64::<N9>::new(amount_in);
+    let amount = UFix64::<N9>::new(amount_in);
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .stablecoin_mint_fee(&lst_price, amount_in)?;
-
-    let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
-
-    let amount_out = {
-      let converted = state
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = state
         .exchange_context
-        .token_conversion(&lst_price)?
-        .lst_to_token(amount_remaining, stablecoin_nav)?;
-      state
-        .exchange_context
-        .validate_stablecoin_amount(converted)?
+        .stablecoin_mint_fee(&lst_price, amount)?;
+
+      let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
+
+      let amount_out = {
+        let converted = state
+          .exchange_context
+          .token_conversion(&lst_price)?
+          .lst_to_token(amount_remaining, stablecoin_nav)?;
+        state
+          .exchange_context
+          .validate_stablecoin_amount(converted)?
+      };
+
+      (
+        amount_out.bits,
+        fees_extracted.bits,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
     };
 
     let args = MintArgs {
-      amount: amount_in,
+      amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        amount_out,
+        UFix64::<N6>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
 
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: amount_out.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: fees_extracted.bits,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: L::MINT,
       instructions: build_instructions::<IB, L, HYUSD>(args)?,
       address_lookup_tables: lookup_tables::<IB, L, HYUSD>().into(),
@@ -108,39 +117,48 @@ where
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    let amount_in = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(amount_in);
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
 
-    let lst_out = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .token_to_lst(amount_in, stablecoin_nav)?;
+      let lst_out = state
+        .exchange_context
+        .token_conversion(&lst_price)?
+        .token_to_lst(amount, stablecoin_nav)?;
 
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .stablecoin_redeem_fee(&lst_price, lst_out)?;
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = state
+        .exchange_context
+        .stablecoin_redeem_fee(&lst_price, lst_out)?;
+
+      (
+        amount_remaining.bits,
+        fees_extracted.bits,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
+    };
 
     let args = RedeemArgs {
-      amount: amount_in,
+      amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(amount_remaining.bits),
+        UFix64::<N9>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
 
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: amount_remaining.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: fees_extracted.bits,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: L::MINT,
       instructions: build_instructions::<IB, HYUSD, L>(args)?,
       address_lookup_tables: lookup_tables::<IB, HYUSD, L>().into(),
@@ -170,39 +188,48 @@ where
       return Err(anyhow!("Levercoin mint disabled in current stability mode"));
     }
 
-    let amount_in = UFix64::<N9>::new(amount_in);
+    let amount = UFix64::<N9>::new(amount_in);
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .levercoin_mint_fee(&lst_price, amount_in)?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = state
+        .exchange_context
+        .levercoin_mint_fee(&lst_price, amount)?;
 
-    let levercoin_mint_nav = state.exchange_context.levercoin_mint_nav()?;
+      let levercoin_mint_nav = state.exchange_context.levercoin_mint_nav()?;
 
-    let xsol_out = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .lst_to_token(amount_remaining, levercoin_mint_nav)?;
+      let xsol_out = state
+        .exchange_context
+        .token_conversion(&lst_price)?
+        .lst_to_token(amount_remaining, levercoin_mint_nav)?;
+
+      (
+        xsol_out.bits,
+        fees_extracted.bits,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
+    };
 
     let args = MintArgs {
-      amount: amount_in,
+      amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        xsol_out,
+        UFix64::<N6>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
 
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: xsol_out.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: fees_extracted.bits,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: L::MINT,
       instructions: build_instructions::<IB, L, XSOL>(args)?,
       address_lookup_tables: lookup_tables::<IB, L, XSOL>().into(),
@@ -234,38 +261,47 @@ where
       ));
     }
 
-    let amount_in = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(amount_in);
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let xsol_nav = state.exchange_context.levercoin_redeem_nav()?;
-    let lst_out = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .token_to_lst(amount_in, xsol_nav)?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let xsol_nav = state.exchange_context.levercoin_redeem_nav()?;
+      let lst_out = state
+        .exchange_context
+        .token_conversion(&lst_price)?
+        .token_to_lst(amount, xsol_nav)?;
 
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .levercoin_redeem_fee(&lst_price, lst_out)?;
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = state
+        .exchange_context
+        .levercoin_redeem_fee(&lst_price, lst_out)?;
+
+      (
+        amount_remaining.bits,
+        fees_extracted.bits,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
+    };
 
     let args = RedeemArgs {
-      amount: amount_in,
+      amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(amount_remaining.bits),
+        UFix64::<N9>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
 
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: amount_remaining.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: fees_extracted.bits,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: L::MINT,
       instructions: build_instructions::<IB, XSOL, L>(args)?,
       address_lookup_tables: lookup_tables::<IB, XSOL, L>().into(),
@@ -293,35 +329,42 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
       return Err(anyhow!("Swaps are disabled in current stability mode"));
     }
 
-    let amount_in = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .stablecoin_to_levercoin_fee(amount_in)?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = state.exchange_context.stablecoin_to_levercoin_fee(amount)?;
 
-    let xsol_out = state
-      .exchange_context
-      .swap_conversion()?
-      .stable_to_lever(amount_remaining)?;
+      let xsol_out = state
+        .exchange_context
+        .swap_conversion()?
+        .stable_to_lever(amount_remaining)?;
+
+      (
+        xsol_out.bits,
+        fees_extracted.bits,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
+    };
 
     let args = SwapArgs {
-      amount: amount_in,
+      amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        xsol_out,
+        UFix64::<N6>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
 
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: xsol_out.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: fees_extracted.bits,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: HYUSD::MINT,
       instructions: build_instructions::<IB, HYUSD, XSOL>(args)?,
       address_lookup_tables: lookup_tables::<IB, HYUSD, XSOL>().into(),
@@ -352,40 +395,49 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
       return Err(anyhow!("Swaps are disabled in current stability mode"));
     }
 
-    let amount_in = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let hyusd_total = {
-      let converted = state
-        .exchange_context
-        .swap_conversion()?
-        .lever_to_stable(amount_in)?;
-      state
-        .exchange_context
-        .validate_stablecoin_swap_amount(converted)
-    }?;
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let hyusd_total = {
+        let converted = state
+          .exchange_context
+          .swap_conversion()?
+          .lever_to_stable(amount)?;
+        state
+          .exchange_context
+          .validate_stablecoin_swap_amount(converted)
+      }?;
 
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .levercoin_to_stablecoin_fee(hyusd_total)?;
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = state
+        .exchange_context
+        .levercoin_to_stablecoin_fee(hyusd_total)?;
+
+      (
+        amount_remaining.bits,
+        fees_extracted.bits,
+        DEFAULT_CUS_WITH_BUFFER,
+        ComputeUnitStrategy::Estimated,
+      )
+    };
 
     let args = SwapArgs {
-      amount: amount_in,
+      amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        amount_remaining,
+        UFix64::<N6>::new(amount_out),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
 
     Ok(Quote {
-      amount_in: amount_in.bits,
-      amount_out: amount_remaining.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER,
-      compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: fees_extracted.bits,
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
       fee_mint: HYUSD::MINT,
       instructions: build_instructions::<IB, XSOL, HYUSD>(args)?,
       address_lookup_tables: lookup_tables::<IB, XSOL, HYUSD>().into(),
