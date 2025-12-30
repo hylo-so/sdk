@@ -7,6 +7,10 @@ pub use fix::prelude::*;
 pub use hylo_core::idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 
 pub use crate::exchange_client::ExchangeClient;
+pub use crate::instructions::{
+  ExchangeInstructionBuilder, InstructionBuilder,
+  StabilityPoolInstructionBuilder,
+};
 pub use crate::program_client::{ProgramClient, VersionedTransactionData};
 pub use crate::stability_pool_client::StabilityPoolClient;
 pub use crate::transaction::{

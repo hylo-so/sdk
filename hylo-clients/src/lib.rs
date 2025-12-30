@@ -28,6 +28,7 @@
 //!   operations for sHYUSD
 
 pub mod exchange_client;
+pub mod instructions;
 pub mod prelude;
 pub mod program_client;
 pub mod protocol_state;

@@ -1,0 +1,287 @@
+//! Statically type-safe instruction building without requiring client
+//! instances.
+//!
+//! This module provides compile-time type safety for building transaction
+//! instructions and determining required lookup tables, without needing RPC
+//! calls or client instances.
+//!
+//! # Example
+//!
+//! ```rust,no_run
+//! use hylo_clients::instructions::InstructionBuilder;
+//! use hylo_idl::tokens::{HYUSD, JITOSOL};
+//!
+//! let instructions = <ExchangeInstructionBuilder as InstructionBuilder<JITOSOL, HYUSD>>::build_instructions(
+//!   user,
+//!   MintArgs { amount, user, slippage_config },
+//! )?;
+//! let lookup_tables = ExchangeInstructionBuilder::<JITOSOL, HYUSD>::REQUIRED_LOOKUP_TABLES;
+//! ```
+
+use anchor_client::solana_sdk::instruction::Instruction;
+use anchor_client::solana_sdk::pubkey::Pubkey;
+use anyhow::Result;
+use hylo_idl::exchange::client::args;
+use hylo_idl::exchange::instruction_builders;
+use hylo_idl::stability_pool::client::args as stability_pool_args;
+use hylo_idl::stability_pool::instruction_builders as stability_pool_instruction_builders;
+use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+
+use crate::transaction::{MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs};
+use crate::util::{
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
+  STABILITY_POOL_LOOKUP_TABLE,
+};
+
+/// Statically type-safe instruction builder for token pair operations.
+///
+/// This trait provides compile-time type safety for building instructions
+/// without requiring client instances or RPC calls.
+///
+/// # Type Parameters
+/// - `IN`: Input token type
+/// - `OUT`: Output token type
+pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
+  /// Input type for building instructions (e.g., `MintArgs`, `RedeemArgs`).
+  type Inputs;
+
+  /// Lookup table pubkeys required for this operation.
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey];
+
+  /// Builds instructions for the token pair operation.
+  ///
+  /// This method is statically type-safe and does not require RPC calls.
+  ///
+  /// # Errors
+  ///
+  /// Returns an error if instruction building fails (e.g., invalid arguments).
+  fn build_instructions(
+    user: Pubkey,
+    inputs: Self::Inputs,
+  ) -> Result<Vec<Instruction>>;
+}
+
+/// Instruction builder implementation for exchange operations.
+pub struct ExchangeInstructionBuilder;
+
+// ============================================================================
+// LST → HYUSD (mint stablecoin)
+// ============================================================================
+
+impl<L: LST> InstructionBuilder<L, HYUSD> for ExchangeInstructionBuilder {
+  type Inputs = MintArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
+    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    MintArgs {
+      amount,
+      user: _,
+      slippage_config,
+    }: MintArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &HYUSD::MINT);
+    let args = args::MintStablecoin {
+      amount_lst_to_deposit: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction =
+      instruction_builders::mint_stablecoin(user, L::MINT, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+// ============================================================================
+// HYUSD → LST (redeem stablecoin)
+// ============================================================================
+
+impl<L: LST> InstructionBuilder<HYUSD, L> for ExchangeInstructionBuilder {
+  type Inputs = RedeemArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
+    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    RedeemArgs {
+      amount,
+      user: _,
+      slippage_config,
+    }: RedeemArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &L::MINT);
+    let args = args::RedeemStablecoin {
+      amount_to_redeem: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction =
+      instruction_builders::redeem_stablecoin(user, L::MINT, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+// ============================================================================
+// LST → XSOL (mint levercoin)
+// ============================================================================
+
+impl<L: LST> InstructionBuilder<L, XSOL> for ExchangeInstructionBuilder {
+  type Inputs = MintArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
+    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    MintArgs {
+      amount,
+      user: _,
+      slippage_config,
+    }: MintArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &XSOL::MINT);
+    let args = args::MintLevercoin {
+      amount_lst_to_deposit: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction =
+      instruction_builders::mint_levercoin(user, L::MINT, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+// ============================================================================
+// XSOL → LST (redeem levercoin)
+// ============================================================================
+
+impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
+  type Inputs = RedeemArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
+    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    RedeemArgs {
+      amount,
+      user: _,
+      slippage_config,
+    }: RedeemArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &L::MINT);
+    let args = args::RedeemLevercoin {
+      amount_to_redeem: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction =
+      instruction_builders::redeem_levercoin(user, L::MINT, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+// ============================================================================
+// HYUSD → XSOL (swap stable to lever)
+// ============================================================================
+
+impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
+  type Inputs = SwapArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    SwapArgs {
+      amount,
+      user: _,
+      slippage_config,
+    }: SwapArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &XSOL::MINT);
+    let args = args::SwapStableToLever {
+      amount_stablecoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = instruction_builders::swap_stable_to_lever(user, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+// ============================================================================
+// XSOL → HYUSD (swap lever to stable)
+// ============================================================================
+
+impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
+  type Inputs = SwapArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    SwapArgs {
+      amount,
+      user: _,
+      slippage_config,
+    }: SwapArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &HYUSD::MINT);
+    let args = args::SwapLeverToStable {
+      amount_levercoin: amount.bits,
+      slippage_config: slippage_config.map(Into::into),
+    };
+    let instruction = instruction_builders::swap_lever_to_stable(user, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+/// Instruction builder implementation for stability pool operations.
+pub struct StabilityPoolInstructionBuilder;
+
+// ============================================================================
+// HYUSD → SHYUSD (stability pool deposit)
+// ============================================================================
+
+impl InstructionBuilder<HYUSD, SHYUSD> for StabilityPoolInstructionBuilder {
+  type Inputs = StabilityPoolArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
+    &[EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    StabilityPoolArgs { amount, user: _ }: StabilityPoolArgs,
+  ) -> Result<Vec<Instruction>> {
+    let ata = user_ata_instruction(&user, &SHYUSD::MINT);
+    let args = stability_pool_args::UserDeposit {
+      amount_stablecoin: amount.bits,
+    };
+    let instruction =
+      stability_pool_instruction_builders::user_deposit(user, &args);
+    Ok(vec![ata, instruction])
+  }
+}
+
+// ============================================================================
+// SHYUSD → HYUSD (stability pool withdrawal)
+// ============================================================================
+
+impl InstructionBuilder<SHYUSD, HYUSD> for StabilityPoolInstructionBuilder {
+  type Inputs = StabilityPoolArgs;
+
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
+    &[EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE];
+
+  fn build_instructions(
+    user: Pubkey,
+    StabilityPoolArgs { amount, user: _ }: StabilityPoolArgs,
+  ) -> Result<Vec<Instruction>> {
+    let hyusd_ata = user_ata_instruction(&user, &HYUSD::MINT);
+    let xsol_ata = user_ata_instruction(&user, &XSOL::MINT);
+    let args = stability_pool_args::UserWithdraw {
+      amount_lp_token: amount.bits,
+    };
+    let instruction =
+      stability_pool_instruction_builders::user_withdraw(user, &args);
+    Ok(vec![hyusd_ata, xsol_ata, instruction])
+  }
+}

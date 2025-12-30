@@ -3,20 +3,24 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
+use hylo_clients::instructions::{
+  ExchangeInstructionBuilder, InstructionBuilder,
+  StabilityPoolInstructionBuilder,
+};
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
-use hylo_clients::util::{user_ata_instruction, LST};
+use hylo_clients::transaction::{
+  MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs,
+};
+use hylo_clients::util::LST;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_core::stability_pool_math::{lp_token_nav, lp_token_out};
-use hylo_idl::exchange::client::args;
-use hylo_idl::exchange::instruction_builders;
-use hylo_idl::stability_pool::client::args as stability_pool_args;
-use hylo_idl::stability_pool::instruction_builders as stability_pool_instruction_builders;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::{ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy};
 
+// TODO(Levi): Get estimated compute units from simulation for each operation (see other quotes branch)
 const ESTIMATED_COMPUTE_UNITS: u64 = 100_000;
 
 pub struct ProtocolStateQuoteStrategy<S: StateProvider> {
@@ -77,17 +81,23 @@ where
         .validate_stablecoin_amount(converted)?
     };
 
-    let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let instruction_args = args::MintStablecoin {
-      amount_lst_to_deposit: amount_in.bits,
-      slippage_config: Some(
-        SlippageConfig::new(amount_out, UFix64::<N4>::new(slippage_tolerance))
-          .into(),
-      ),
-    };
-    let instruction =
-      instruction_builders::mint_stablecoin(user, L::MINT, &instruction_args);
-    let instructions = vec![ata, instruction];
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      L,
+      HYUSD,
+    >>::build_instructions(
+      user,
+      MintArgs {
+        amount: amount_in,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          amount_out,
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
+    )?;
+
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -97,8 +107,7 @@ where
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
       instructions,
-      // Lookup tables must be loaded when executing the transaction
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }
@@ -139,20 +148,23 @@ where
       .exchange_context
       .stablecoin_redeem_fee(&lst_price, lst_out)?;
 
-    let ata = user_ata_instruction(&user, &L::MINT);
-    let instruction_args = args::RedeemStablecoin {
-      amount_to_redeem: amount_in.bits,
-      slippage_config: Some(
-        SlippageConfig::new(
-          amount_remaining,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      HYUSD,
+      L,
+    >>::build_instructions(
+      user,
+      RedeemArgs {
+        amount: amount_in,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N9>::new(amount_remaining.bits),
           UFix64::<N4>::new(slippage_tolerance),
-        )
-        .into(),
-      ),
-    };
-    let instruction =
-      instruction_builders::redeem_stablecoin(user, L::MINT, &instruction_args);
-    let instructions = vec![ata, instruction];
+        )),
+      },
+    )?;
+
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -162,7 +174,7 @@ where
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
       instructions,
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }
@@ -206,17 +218,23 @@ where
       .token_conversion(&lst_price)?
       .lst_to_token(amount_remaining, levercoin_mint_nav)?;
 
-    let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let instruction_args = args::MintLevercoin {
-      amount_lst_to_deposit: amount_in.bits,
-      slippage_config: Some(
-        SlippageConfig::new(xsol_out, UFix64::<N4>::new(slippage_tolerance))
-          .into(),
-      ),
-    };
-    let instruction =
-      instruction_builders::mint_levercoin(user, L::MINT, &instruction_args);
-    let instructions = vec![ata, instruction];
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      L,
+      XSOL,
+    >>::build_instructions(
+      user,
+      MintArgs {
+        amount: amount_in,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          xsol_out,
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
+    )?;
+
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -226,7 +244,7 @@ where
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
       instructions,
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }
@@ -272,20 +290,23 @@ where
       .exchange_context
       .levercoin_redeem_fee(&lst_price, lst_out)?;
 
-    let ata = user_ata_instruction(&user, &L::MINT);
-    let instruction_args = args::RedeemLevercoin {
-      amount_to_redeem: amount_in.bits,
-      slippage_config: Some(
-        SlippageConfig::new(
-          amount_remaining,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      XSOL,
+      L,
+    >>::build_instructions(
+      user,
+      RedeemArgs {
+        amount: amount_in,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N9>::new(amount_remaining.bits),
           UFix64::<N4>::new(slippage_tolerance),
-        )
-        .into(),
-      ),
-    };
-    let instruction =
-      instruction_builders::redeem_levercoin(user, L::MINT, &instruction_args);
-    let instructions = vec![ata, instruction];
+        )),
+      },
+    )?;
+
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -295,7 +316,7 @@ where
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
       instructions,
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }
@@ -334,17 +355,23 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
       .swap_conversion()?
       .stable_to_lever(amount_remaining)?;
 
-    let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let instruction_args = args::SwapStableToLever {
-      amount_stablecoin: amount_in.bits,
-      slippage_config: Some(
-        SlippageConfig::new(xsol_out, UFix64::<N4>::new(slippage_tolerance))
-          .into(),
-      ),
-    };
-    let instruction =
-      instruction_builders::swap_stable_to_lever(user, &instruction_args);
-    let instructions = vec![ata, instruction];
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      HYUSD,
+      XSOL,
+    >>::build_instructions(
+      user,
+      SwapArgs {
+        amount: amount_in,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          xsol_out,
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
+    )?;
+
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -354,7 +381,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
       instructions,
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }
@@ -401,20 +428,23 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
       .exchange_context
       .levercoin_to_stablecoin_fee(hyusd_total)?;
 
-    let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let instruction_args = args::SwapLeverToStable {
-      amount_levercoin: amount_in.bits,
-      slippage_config: Some(
-        SlippageConfig::new(
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<
+      XSOL,
+      HYUSD,
+    >>::build_instructions(
+      user,
+      SwapArgs {
+        amount: amount_in,
+        user,
+        slippage_config: Some(SlippageConfig::new(
           amount_remaining,
           UFix64::<N4>::new(slippage_tolerance),
-        )
-        .into(),
-      ),
-    };
-    let instruction =
-      instruction_builders::swap_lever_to_stable(user, &instruction_args);
-    let instructions = vec![ata, instruction];
+        )),
+      },
+    )?;
+
+    let address_lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -424,7 +454,7 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
       instructions,
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }
@@ -457,15 +487,16 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
 
     let shyusd_out = lp_token_out(amount_in, shyusd_nav)?;
 
-    let ata = user_ata_instruction(&user, &SHYUSD::MINT);
-    let instruction_args = stability_pool_args::UserDeposit {
-      amount_stablecoin: amount_in.bits,
-    };
-    let instruction = stability_pool_instruction_builders::user_deposit(
+    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
       user,
-      &instruction_args,
-    );
-    let instructions = vec![ata, instruction];
+      StabilityPoolArgs {
+        amount: amount_in,
+        user,
+      },
+    )?;
+
+    let address_lookup_tables = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::REQUIRED_LOOKUP_TABLES
+      .to_vec();
 
     Ok(Quote {
       amount_in: amount_in.bits,
@@ -475,7 +506,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
       fee_amount: 0,
       fee_mint: HYUSD::MINT,
       instructions,
-      lookup_tables: vec![],
+      address_lookup_tables,
     })
   }
 }

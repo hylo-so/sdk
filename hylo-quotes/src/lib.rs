@@ -1,5 +1,4 @@
 use anchor_client::solana_sdk::instruction::Instruction;
-use anchor_client::solana_sdk::message::AddressLookupTableAccount;
 use anchor_lang::prelude::Pubkey;
 
 mod lst_provider;
@@ -39,8 +38,8 @@ pub struct Quote {
   /// Transaction instructions ready for signing
   pub instructions: Vec<Instruction>,
 
-  /// Transaction lookup tables
-  pub lookup_tables: Vec<AddressLookupTableAccount>,
+  /// Address lookup table pubkeys required for this transaction
+  pub address_lookup_tables: Vec<Pubkey>,
 }
 
 #[derive(Clone, Debug)]

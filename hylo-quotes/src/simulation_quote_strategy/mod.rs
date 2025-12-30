@@ -2,8 +2,12 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
+use hylo_clients::instructions::{
+  ExchangeInstructionBuilder, InstructionBuilder,
+  StabilityPoolInstructionBuilder,
+};
 use hylo_clients::prelude::{
-  BuildTransactionData, ExchangeClient, SimulatePrice, StabilityPoolClient,
+  ExchangeClient, SimulatePrice, StabilityPoolClient,
 };
 use hylo_clients::protocol_state::ProtocolState;
 use hylo_clients::transaction::{
@@ -53,8 +57,8 @@ where
       )
       .await?;
 
-    let tx_data = <ExchangeClient as BuildTransactionData<L, HYUSD>>::build(
-      &self.exchange_client,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::build_instructions(
+      user,
       MintArgs {
         amount,
         user,
@@ -63,8 +67,7 @@ where
           UFix64::<N4>::new(slippage_tolerance),
         )),
       },
-    )
-    .await?;
+    )?;
 
     Ok(Quote {
       amount_in,
@@ -73,8 +76,9 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
+      instructions,
+      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<L, HYUSD>>::REQUIRED_LOOKUP_TABLES
+        .to_vec(),
     })
   }
 }
@@ -109,8 +113,8 @@ where
       )
       .await?;
 
-    let tx_data = <ExchangeClient as BuildTransactionData<HYUSD, L>>::build(
-      &self.exchange_client,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::build_instructions(
+      user,
       RedeemArgs {
         amount,
         user,
@@ -119,8 +123,7 @@ where
           UFix64::<N4>::new(slippage_tolerance),
         )),
       },
-    )
-    .await?;
+    )?;
 
     Ok(Quote {
       amount_in,
@@ -129,8 +132,9 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
+      instructions,
+      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, L>>::REQUIRED_LOOKUP_TABLES
+        .to_vec(),
     })
   }
 }
@@ -165,8 +169,8 @@ where
       )
       .await?;
 
-    let tx_data = <ExchangeClient as BuildTransactionData<L, XSOL>>::build(
-      &self.exchange_client,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::build_instructions(
+      user,
       MintArgs {
         amount,
         user,
@@ -175,8 +179,7 @@ where
           UFix64::<N4>::new(slippage_tolerance),
         )),
       },
-    )
-    .await?;
+    )?;
 
     Ok(Quote {
       amount_in,
@@ -185,8 +188,9 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
+      instructions,
+      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<L, XSOL>>::REQUIRED_LOOKUP_TABLES
+        .to_vec(),
     })
   }
 }
@@ -221,8 +225,8 @@ where
       )
       .await?;
 
-    let tx_data = <ExchangeClient as BuildTransactionData<XSOL, L>>::build(
-      &self.exchange_client,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::build_instructions(
+      user,
       RedeemArgs {
         amount,
         user,
@@ -231,8 +235,7 @@ where
           UFix64::<N4>::new(slippage_tolerance),
         )),
       },
-    )
-    .await?;
+    )?;
 
     Ok(Quote {
       amount_in,
@@ -241,8 +244,9 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
+      instructions,
+      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<XSOL, L>>::REQUIRED_LOOKUP_TABLES
+        .to_vec(),
     })
   }
 }
@@ -273,8 +277,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
       )
       .await?;
 
-    let tx_data = <ExchangeClient as BuildTransactionData<HYUSD, XSOL>>::build(
-      &self.exchange_client,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::build_instructions(
+      user,
       SwapArgs {
         amount,
         user,
@@ -283,8 +287,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
           UFix64::<N4>::new(slippage_tolerance),
         )),
       },
-    )
-    .await?;
+    )?;
 
     Ok(Quote {
       amount_in,
@@ -293,8 +296,9 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.stablecoin_fees.bits,
       fee_mint: HYUSD::MINT,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
+      instructions,
+      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<HYUSD, XSOL>>::REQUIRED_LOOKUP_TABLES
+        .to_vec(),
     })
   }
 }
@@ -325,8 +329,8 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
       )
       .await?;
 
-    let tx_data = <ExchangeClient as BuildTransactionData<XSOL, HYUSD>>::build(
-      &self.exchange_client,
+    let instructions = <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::build_instructions(
+      user,
       SwapArgs {
         amount,
         user,
@@ -335,8 +339,7 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
           UFix64::<N4>::new(slippage_tolerance),
         )),
       },
-    )
-    .await?;
+    )?;
 
     Ok(Quote {
       amount_in,
@@ -345,8 +348,9 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.stablecoin_minted_fees.bits,
       fee_mint: HYUSD::MINT,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
+      instructions,
+      address_lookup_tables: <ExchangeInstructionBuilder as InstructionBuilder<XSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES
+        .to_vec(),
     })
   }
 }
@@ -377,22 +381,27 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
     )
     .await?;
 
-    let tx_data =
-      <StabilityPoolClient as BuildTransactionData<HYUSD, SHYUSD>>::build(
-        &self.stability_pool_client,
-        StabilityPoolArgs { amount, user },
-      )
-      .await?;
+    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
+      user,
+      StabilityPoolArgs { amount, user },
+    )?;
 
-    Ok(Quote {
-      amount_in,
-      amount_out: event.lp_token_minted.bits,
-      compute_units: compute_units.unwrap_or(MAX_COMPUTE_UNITS),
-      compute_unit_strategy: ComputeUnitStrategy::Simulated,
-      fee_amount: 0, // UserDepositEvent has no fees
-      fee_mint: HYUSD::MINT,
-      instructions: tx_data.instructions,
-      lookup_tables: tx_data.lookup_tables,
-    })
+    Ok(
+      Quote {
+        amount_in,
+        amount_out: event.lp_token_minted.bits,
+        compute_units: compute_units.unwrap_or(MAX_COMPUTE_UNITS),
+        compute_unit_strategy: ComputeUnitStrategy::Simulated,
+        fee_amount: 0, // UserDepositEvent has no fees
+        fee_mint: HYUSD::MINT,
+        instructions,
+        address_lookup_tables:
+          <StabilityPoolInstructionBuilder as InstructionBuilder<
+            HYUSD,
+            SHYUSD,
+          >>::REQUIRED_LOOKUP_TABLES
+            .to_vec(),
+      },
+    )
   }
 }
