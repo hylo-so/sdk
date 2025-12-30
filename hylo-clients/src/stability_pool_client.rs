@@ -16,10 +16,9 @@ use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::exchange_client::ExchangeClient;
-use crate::instructions::{
-  InstructionBuilder, StabilityPoolInstructionBuilder,
-};
+use crate::instructions::StabilityPoolInstructionBuilder;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::syntax_helpers::{build_instructions, lookup_tables};
 use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
   SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
@@ -203,16 +202,16 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     &self,
     inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<HYUSD, SHYUSD>>::build_instructions(
-      inputs,
-    )?;
+    let instructions =
+      build_instructions::<StabilityPoolInstructionBuilder, HYUSD, SHYUSD>(
+        inputs,
+      )?;
     let lookup_tables = self
-      .load_multiple_lookup_tables(
-        <StabilityPoolInstructionBuilder as InstructionBuilder<
-          HYUSD,
-          SHYUSD,
-        >>::REQUIRED_LOOKUP_TABLES,
-      )
+      .load_multiple_lookup_tables(lookup_tables::<
+        StabilityPoolInstructionBuilder,
+        HYUSD,
+        SHYUSD,
+      >())
       .await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
@@ -234,16 +233,16 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     &self,
     inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let instructions = <StabilityPoolInstructionBuilder as InstructionBuilder<SHYUSD, HYUSD>>::build_instructions(
-      inputs,
-    )?;
+    let instructions =
+      build_instructions::<StabilityPoolInstructionBuilder, SHYUSD, HYUSD>(
+        inputs,
+      )?;
     let lookup_tables = self
-      .load_multiple_lookup_tables(
-        <StabilityPoolInstructionBuilder as InstructionBuilder<
-          SHYUSD,
-          HYUSD,
-        >>::REQUIRED_LOOKUP_TABLES,
-      )
+      .load_multiple_lookup_tables(lookup_tables::<
+        StabilityPoolInstructionBuilder,
+        SHYUSD,
+        HYUSD,
+      >())
       .await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
