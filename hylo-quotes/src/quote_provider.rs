@@ -45,9 +45,8 @@ where
     output_mint: Pubkey,
     amount: u64,
     user: Pubkey,
-    slippage_bps: u16,
+    slippage_tolerance: u64,
   ) -> anyhow::Result<(Quote, QuoteMetadata)> {
-    let slippage_tolerance = u64::from(slippage_bps);
     let (operation, description, quote_result) = match (input_mint, output_mint)
     {
       (JITOSOL::MINT, HYUSD::MINT) => (
