@@ -234,19 +234,26 @@ pub trait ProgramClient: Sized {
     &self,
     tx: &VersionedTransaction,
   ) -> Result<E> {
-    self.simulate_transaction_event_with_cus(tx).await.map(|(event, _)| event)
+    self
+      .simulate_transaction_event_with_cus(tx)
+      .await
+      .map(|(event, _)| event)
   }
 
-  /// Simulates transaction and extracts event and compute units from CPI instructions.
+  /// Simulates transaction and extracts event and compute units from CPI
+  /// instructions.
   ///
-  /// Returns a tuple of `(event, compute_units)` where `compute_units` is `Some(u64)` if
-  /// available from the simulation result, or `None` otherwise.
+  /// Returns a tuple of `(event, compute_units)` where `compute_units` is
+  /// `Some(u64)` if available from the simulation result, or `None`
+  /// otherwise.
   ///
   /// # Errors
   /// * Transaction simulation fails
   /// * Event parsing from CPI instructions fails
   /// * Event deserialization fails
-  async fn simulate_transaction_event_with_cus<E: AnchorDeserialize + Discriminator>(
+  async fn simulate_transaction_event_with_cus<
+    E: AnchorDeserialize + Discriminator,
+  >(
     &self,
     tx: &VersionedTransaction,
   ) -> Result<(E, Option<u64>)> {

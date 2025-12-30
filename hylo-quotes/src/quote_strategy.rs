@@ -11,5 +11,6 @@ pub trait QuoteStrategy<IN: TokenMint, OUT: TokenMint, C: SolanaClock> {
     &self,
     amount_in: u64,
     user: Pubkey,
+    slippage_tolerance: u64,
   ) -> anyhow::Result<Quote>;
 }

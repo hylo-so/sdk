@@ -1,15 +1,16 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use async_trait::async_trait;
-use fix::prelude::{UFix64, N6, N9};
+use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::prelude::{
-  ExchangeClient, SimulatePrice, StabilityPoolClient,
+  BuildTransactionData, ExchangeClient, SimulatePrice, StabilityPoolClient,
 };
 use hylo_clients::protocol_state::ProtocolState;
 use hylo_clients::transaction::{
   MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs,
 };
 use hylo_clients::util::LST;
+use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
@@ -32,18 +33,36 @@ impl<L: LST, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = MintArgs {
-      amount: UFix64::<N9>::new(amount_in),
-      user,
-      slippage_config: None,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N9>::new(amount_in);
 
-    let (event, compute_units, vtd) = <ExchangeClient as SimulatePrice<
-      L,
-      HYUSD,
-    >>::simulate_transaction(
-      &self.exchange_client, user, inputs
+    let (event, compute_units) =
+      <ExchangeClient as SimulatePrice<L, HYUSD>>::simulate_event_with_cus(
+        &self.exchange_client,
+        user,
+        MintArgs {
+          amount,
+          user,
+          slippage_config: None,
+        },
+      )
+      .await?;
+
+    let tx_data = <ExchangeClient as BuildTransactionData<L, HYUSD>>::build(
+      &self.exchange_client,
+      MintArgs {
+        amount,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N6>::new(event.minted.bits),
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
     )
     .await?;
 
@@ -54,8 +73,8 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }
@@ -70,18 +89,36 @@ impl<L: LST, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = RedeemArgs {
-      amount: UFix64::<N6>::new(amount_in),
-      user,
-      slippage_config: None,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units, vtd) = <ExchangeClient as SimulatePrice<
-      HYUSD,
-      L,
-    >>::simulate_transaction(
-      &self.exchange_client, user, inputs
+    let (event, compute_units) =
+      <ExchangeClient as SimulatePrice<HYUSD, L>>::simulate_event_with_cus(
+        &self.exchange_client,
+        user,
+        RedeemArgs {
+          amount,
+          user,
+          slippage_config: None,
+        },
+      )
+      .await?;
+
+    let tx_data = <ExchangeClient as BuildTransactionData<HYUSD, L>>::build(
+      &self.exchange_client,
+      RedeemArgs {
+        amount,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N9>::new(event.collateral_withdrawn.bits),
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
     )
     .await?;
 
@@ -92,8 +129,8 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }
@@ -108,18 +145,36 @@ impl<L: LST, C: SolanaClock> QuoteStrategy<L, XSOL, C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = MintArgs {
-      amount: UFix64::<N9>::new(amount_in),
-      user,
-      slippage_config: None,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N9>::new(amount_in);
 
-    let (event, compute_units, vtd) = <ExchangeClient as SimulatePrice<
-      L,
-      XSOL,
-    >>::simulate_transaction(
-      &self.exchange_client, user, inputs
+    let (event, compute_units) =
+      <ExchangeClient as SimulatePrice<L, XSOL>>::simulate_event_with_cus(
+        &self.exchange_client,
+        user,
+        MintArgs {
+          amount,
+          user,
+          slippage_config: None,
+        },
+      )
+      .await?;
+
+    let tx_data = <ExchangeClient as BuildTransactionData<L, XSOL>>::build(
+      &self.exchange_client,
+      MintArgs {
+        amount,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N6>::new(event.minted.bits),
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
     )
     .await?;
 
@@ -130,8 +185,8 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }
@@ -146,18 +201,36 @@ impl<L: LST, C: SolanaClock> QuoteStrategy<XSOL, L, C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = RedeemArgs {
-      amount: UFix64::<N6>::new(amount_in),
-      user,
-      slippage_config: None,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units, vtd) = <ExchangeClient as SimulatePrice<
-      XSOL,
-      L,
-    >>::simulate_transaction(
-      &self.exchange_client, user, inputs
+    let (event, compute_units) =
+      <ExchangeClient as SimulatePrice<XSOL, L>>::simulate_event_with_cus(
+        &self.exchange_client,
+        user,
+        RedeemArgs {
+          amount,
+          user,
+          slippage_config: None,
+        },
+      )
+      .await?;
+
+    let tx_data = <ExchangeClient as BuildTransactionData<XSOL, L>>::build(
+      &self.exchange_client,
+      RedeemArgs {
+        amount,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N9>::new(event.collateral_withdrawn.bits),
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
     )
     .await?;
 
@@ -168,8 +241,8 @@ where
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.fees_deposited.bits,
       fee_mint: event.lst_mint,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }
@@ -180,18 +253,36 @@ where
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = SwapArgs {
-      amount: UFix64::<N6>::new(amount_in),
-      user,
-      slippage_config: None,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units, vtd) = <ExchangeClient as SimulatePrice<
-      HYUSD,
-      XSOL,
-    >>::simulate_transaction(
-      &self.exchange_client, user, inputs
+    let (event, compute_units) =
+      <ExchangeClient as SimulatePrice<HYUSD, XSOL>>::simulate_event_with_cus(
+        &self.exchange_client,
+        user,
+        SwapArgs {
+          amount,
+          user,
+          slippage_config: None,
+        },
+      )
+      .await?;
+
+    let tx_data = <ExchangeClient as BuildTransactionData<HYUSD, XSOL>>::build(
+      &self.exchange_client,
+      SwapArgs {
+        amount,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N6>::new(event.levercoin_minted.bits),
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
     )
     .await?;
 
@@ -202,8 +293,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.stablecoin_fees.bits,
       fee_mint: HYUSD::MINT,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }
@@ -214,18 +305,36 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationQuoteStrategy {
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = SwapArgs {
-      amount: UFix64::<N6>::new(amount_in),
-      user,
-      slippage_config: None,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units, vtd) = <ExchangeClient as SimulatePrice<
-      XSOL,
-      HYUSD,
-    >>::simulate_transaction(
-      &self.exchange_client, user, inputs
+    let (event, compute_units) =
+      <ExchangeClient as SimulatePrice<XSOL, HYUSD>>::simulate_event_with_cus(
+        &self.exchange_client,
+        user,
+        SwapArgs {
+          amount,
+          user,
+          slippage_config: None,
+        },
+      )
+      .await?;
+
+    let tx_data = <ExchangeClient as BuildTransactionData<XSOL, HYUSD>>::build(
+      &self.exchange_client,
+      SwapArgs {
+        amount,
+        user,
+        slippage_config: Some(SlippageConfig::new(
+          UFix64::<N6>::new(event.stablecoin_minted_user.bits),
+          UFix64::<N4>::new(slippage_tolerance),
+        )),
+      },
     )
     .await?;
 
@@ -236,8 +345,8 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: event.stablecoin_minted_fees.bits,
       fee_mint: HYUSD::MINT,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }
@@ -250,21 +359,30 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationQuoteStrategy {
 impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
   for SimulationQuoteStrategy
 {
-  async fn get_quote(&self, amount_in: u64, user: Pubkey) -> Result<Quote> {
-    let inputs = StabilityPoolArgs {
-      amount: UFix64::<N6>::new(amount_in),
-      user,
-    };
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N6>::new(amount_in);
 
-    let (event, compute_units, vtd) = <StabilityPoolClient as SimulatePrice<
+    let (event, compute_units) = <StabilityPoolClient as SimulatePrice<
       HYUSD,
       SHYUSD,
-    >>::simulate_transaction(
+    >>::simulate_event_with_cus(
       &self.stability_pool_client,
       user,
-      inputs,
+      StabilityPoolArgs { amount, user },
     )
     .await?;
+
+    let tx_data =
+      <StabilityPoolClient as BuildTransactionData<HYUSD, SHYUSD>>::build(
+        &self.stability_pool_client,
+        StabilityPoolArgs { amount, user },
+      )
+      .await?;
 
     Ok(Quote {
       amount_in,
@@ -273,8 +391,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
       compute_unit_strategy: ComputeUnitStrategy::Simulated,
       fee_amount: 0, // UserDepositEvent has no fees
       fee_mint: HYUSD::MINT,
-      instructions: vtd.instructions,
-      lookup_tables: vtd.lookup_tables,
+      instructions: tx_data.instructions,
+      lookup_tables: tx_data.lookup_tables,
     })
   }
 }

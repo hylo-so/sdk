@@ -34,7 +34,12 @@ impl<L: LST, S: StateProvider> QuoteStrategy<L, HYUSD, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode > StabilityMode::Mode1 {
@@ -89,7 +94,12 @@ impl<L: LST, S: StateProvider> QuoteStrategy<HYUSD, L, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     let amount_in = UFix64::<N6>::new(amount_in);
@@ -133,7 +143,12 @@ impl<L: LST, S: StateProvider> QuoteStrategy<L, XSOL, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
@@ -180,7 +195,12 @@ impl<L: LST, S: StateProvider> QuoteStrategy<XSOL, L, Clock>
 where
   ProtocolState<Clock>: crate::LstProvider<L>,
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
@@ -227,7 +247,12 @@ where
 impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
   for ProtocolStateQuoteStrategy<S>
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if state.exchange_context.stability_mode == StabilityMode::Depeg {
@@ -269,7 +294,12 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
 impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
   for ProtocolStateQuoteStrategy<S>
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     if matches!(
@@ -319,7 +349,12 @@ impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
 impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
   for ProtocolStateQuoteStrategy<S>
 {
-  async fn get_quote(&self, amount_in: u64, _user: Pubkey) -> Result<Quote> {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    _user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
     let amount_in = UFix64::<N6>::new(amount_in);

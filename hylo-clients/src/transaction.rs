@@ -71,23 +71,22 @@ where
     self.simulate_transaction_event::<Self::Event>(&tx).await
   }
 
-  /// Simulates transaction and returns the event, compute units consumed, and transaction data.
+  /// Simulates transaction and returns the event and compute units consumed.
   ///
-  /// Returns `(event, compute_units, transaction_data)` where:
+  /// Returns `(event, compute_units)` where:
   /// - `event`: The transaction event containing amounts and fees
-  /// - `compute_units`: `Some(u64)` if available from simulation, `None` otherwise
-  /// - `transaction_data`: Instructions and lookup tables for the transaction
-  async fn simulate_transaction(
+  /// - `compute_units`: `Some(u64)` if available from simulation, `None`
+  ///   otherwise
+  async fn simulate_event_with_cus(
     &self,
     user: Pubkey,
     inputs: Self::Inputs,
-  ) -> Result<(Self::Event, Option<u64>, VersionedTransactionData)> {
+  ) -> Result<(Self::Event, Option<u64>)> {
     let args = self.build(inputs).await?;
     let tx = self.build_simulation_transaction(&user, &args).await?;
-    let (event, compute_units) = self
+    self
       .simulate_transaction_event_with_cus::<Self::Event>(&tx)
-      .await?;
-    Ok((event, compute_units, args))
+      .await
   }
 }
 
