@@ -33,7 +33,7 @@ impl SimulationStrategy {
 /// Returns `(compute_units, strategy)`. If simulation provides compute units,
 /// uses `Simulated` strategy; otherwise falls back to `Estimated` with default
 /// buffered value.
-pub(crate) fn extract_compute_units(
+pub(crate) fn resolve_compute_units(
   compute_units: Option<u64>,
 ) -> (u64, ComputeUnitStrategy) {
   match compute_units {

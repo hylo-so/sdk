@@ -11,7 +11,7 @@ use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
-use crate::simulation_strategy::{extract_compute_units, SimulationStrategy};
+use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
 use crate::syntax_helpers::{
   build_instructions, lookup_tables, simulate_event_with_cus,
 };
@@ -36,7 +36,7 @@ where
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) = simulate_event_with_cus::<ExchangeClient, L, HYUSD>(
         &self.exchange_client,
         user,
@@ -48,13 +48,10 @@ where
       )
       .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.minted.bits,
         event.fees_deposited.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
@@ -97,7 +94,7 @@ where
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) = simulate_event_with_cus::<ExchangeClient, HYUSD, L>(
         &self.exchange_client,
         user,
@@ -109,13 +106,10 @@ where
       )
       .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.collateral_withdrawn.bits,
         event.fees_deposited.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
@@ -158,7 +152,7 @@ where
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) = simulate_event_with_cus::<ExchangeClient, L, XSOL>(
         &self.exchange_client,
         user,
@@ -170,13 +164,10 @@ where
       )
       .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.minted.bits,
         event.fees_deposited.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
@@ -219,7 +210,7 @@ where
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) = simulate_event_with_cus::<ExchangeClient, XSOL, L>(
         &self.exchange_client,
         user,
@@ -231,13 +222,10 @@ where
       )
       .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.collateral_withdrawn.bits,
         event.fees_deposited.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
@@ -277,7 +265,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) =
         simulate_event_with_cus::<ExchangeClient, HYUSD, XSOL>(
           &self.exchange_client,
@@ -290,13 +278,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
         )
         .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.levercoin_minted.bits,
         event.stablecoin_fees.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
@@ -336,7 +321,7 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) =
         simulate_event_with_cus::<ExchangeClient, XSOL, HYUSD>(
           &self.exchange_client,
@@ -349,13 +334,10 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
         )
         .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.stablecoin_minted_user.bits,
         event.stablecoin_minted_fees.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 

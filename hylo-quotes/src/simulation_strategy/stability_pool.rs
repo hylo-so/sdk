@@ -8,7 +8,7 @@ use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
-use crate::simulation_strategy::{extract_compute_units, SimulationStrategy};
+use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
 use crate::syntax_helpers::{
   build_instructions, lookup_tables, simulate_event_with_cus,
 };
@@ -30,7 +30,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
 
       let (event, cus) =
@@ -41,13 +41,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
         )
         .await?;
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.lp_token_minted.bits,
         FEE_AMOUNT,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
@@ -80,7 +77,7 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       let (event, cus) =
         simulate_event_with_cus::<StabilityPoolClient, SHYUSD, HYUSD>(
           &self.stability_pool_client,
@@ -95,13 +92,10 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
         ));
       }
 
-      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
-
       (
         event.stablecoin_withdrawn.bits,
         event.stablecoin_fees.bits,
-        compute_units,
-        compute_unit_strategy,
+        resolve_compute_units(cus),
       )
     };
 
