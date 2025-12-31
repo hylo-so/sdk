@@ -28,7 +28,8 @@ where
     + QuoteStrategy<HYUSD, XSOL, Clock>
     + QuoteStrategy<XSOL, HYUSD, Clock>
     // Stability pool operations
-    + QuoteStrategy<HYUSD, SHYUSD, Clock>,
+    + QuoteStrategy<HYUSD, SHYUSD, Clock>
+    + QuoteStrategy<SHYUSD, HYUSD, Clock>,
 {
   #[must_use]
   pub fn new(strategy: S) -> Self {
@@ -164,6 +165,17 @@ where
         Operation::DepositToStabilityPool,
         "Deposit hyUSD to Stability Pool",
         get_quote::<S, HYUSD, SHYUSD, Clock>(
+          &self.strategy,
+          amount_in,
+          user,
+          slippage_tolerance,
+        )
+        .await,
+      ),
+      (SHYUSD::MINT, HYUSD::MINT) => (
+        Operation::WithdrawFromStabilityPool,
+        "Withdraw hyUSD from Stability Pool",
+        get_quote::<S, SHYUSD, HYUSD, Clock>(
           &self.strategy,
           amount_in,
           user,

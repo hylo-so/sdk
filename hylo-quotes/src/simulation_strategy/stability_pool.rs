@@ -1,5 +1,5 @@
 use anchor_lang::prelude::Pubkey;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder;
@@ -62,6 +62,60 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
       fee_mint: HYUSD::MINT,
       instructions: build_instructions::<IB, HYUSD, SHYUSD>(args)?,
       address_lookup_tables: lookup_tables::<IB, HYUSD, SHYUSD>().into(),
+    })
+  }
+}
+
+// ============================================================================
+// Implementation for SHYUSD → HYUSD (stability pool withdrawal)
+// ============================================================================
+
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    _slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let amount = UFix64::<N6>::new(amount_in);
+
+    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
+      let (event, cus) =
+        simulate_event_with_cus::<StabilityPoolClient, SHYUSD, HYUSD>(
+          &self.stability_pool_client,
+          user,
+          StabilityPoolArgs { amount, user },
+        )
+        .await?;
+
+      if event.levercoin_withdrawn.bits > 0 {
+        return Err(anyhow!(
+          "SHYUSD → HYUSD not possible: levercoin present in pool"
+        ));
+      }
+
+      let (compute_units, compute_unit_strategy) = extract_compute_units(cus);
+
+      (
+        event.stablecoin_withdrawn.bits,
+        event.stablecoin_fees.bits,
+        compute_units,
+        compute_unit_strategy,
+      )
+    };
+
+    let args = StabilityPoolArgs { amount, user };
+
+    Ok(Quote {
+      amount_in,
+      amount_out,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount,
+      fee_mint: HYUSD::MINT,
+      instructions: build_instructions::<IB, SHYUSD, HYUSD>(args)?,
+      address_lookup_tables: lookup_tables::<IB, SHYUSD, HYUSD>().into(),
     })
   }
 }
