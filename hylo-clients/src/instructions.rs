@@ -8,13 +8,22 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use hylo_clients::instructions::InstructionBuilder;
+//! use hylo_clients::instructions::{ExchangeInstructionBuilder, InstructionBuilder};
+//! use hylo_clients::transaction::MintArgs;
+//! use hylo_clients::prelude::*;
 //! use hylo_idl::tokens::{HYUSD, JITOSOL};
+//!
+//! # fn main() -> anyhow::Result<()> {
+//! let amount = UFix64::<N9>::one();
+//! let user = Pubkey::new_unique();
+//! let slippage_config = None;
 //!
 //! let instructions = <ExchangeInstructionBuilder as InstructionBuilder<JITOSOL, HYUSD>>::build_instructions(
 //!   MintArgs { amount, user, slippage_config },
 //! )?;
-//! let lookup_tables = ExchangeInstructionBuilder::<JITOSOL, HYUSD>::REQUIRED_LOOKUP_TABLES;
+//! let lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<JITOSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES;
+//! # Ok(())
+//! # }
 //! ```
 
 use anchor_client::solana_sdk::instruction::Instruction;

@@ -2300,6 +2300,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "bincode",
+ "flaky_test",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
