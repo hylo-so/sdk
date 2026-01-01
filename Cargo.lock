@@ -2216,6 +2216,7 @@ version = "0.3.0"
 dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
+ "anyhow",
  "flaky_test",
  "hylo-fix",
  "hylo-idl",
