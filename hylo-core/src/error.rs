@@ -22,6 +22,8 @@ pub enum CoreError {
   LstSolPriceOutdated,
   #[msg("Overflow while computing LstSolPrice conversion.")]
   LstSolPriceConversion,
+  #[msg("Arithmetic error during LST to LST conversion.")]
+  LstLstPriceConversion,
   // `pyth`
   #[msg("Oracle confidence interval is too wide.")]
   PythOracleConfidence,
