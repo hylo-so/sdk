@@ -3535,7 +3535,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "user"
+                "path": "lst_a_vault_auth"
               },
               {
                 "kind": "const",
