@@ -78,7 +78,6 @@ impl LstSolPrice {
 
 #[cfg(test)]
 mod test {
-  use anyhow::{anyhow, Context};
   use fix::prelude::*;
   use proptest::prelude::*;
 
