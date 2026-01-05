@@ -307,6 +307,19 @@ impl ExchangeClient {
       instruction_builders::update_stability_pool(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
+
+  /// Updates the LST swap fee.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_lst_swap_fee(
+    &self,
+    args: &args::UpdateLstSwapFee,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_lst_swap_fee(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
 }
 
 #[async_trait::async_trait]
