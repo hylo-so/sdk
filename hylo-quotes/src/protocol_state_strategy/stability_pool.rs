@@ -1,4 +1,3 @@
-use anchor_client::solana_sdk::clock::Clock;
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -7,6 +6,7 @@ use hylo_clients::instructions::StabilityPoolInstructionBuilder;
 use hylo_clients::protocol_state::StateProvider;
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::fee_controller::FeeExtract;
+use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
 };
@@ -25,7 +25,7 @@ type IB = StabilityPoolInstructionBuilder;
 // ============================================================================
 
 #[async_trait]
-impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
+impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
   for ProtocolStateStrategy<S>
 {
   async fn get_quote(
@@ -79,7 +79,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, SHYUSD, Clock>
 // ============================================================================
 
 #[async_trait]
-impl<S: StateProvider> QuoteStrategy<SHYUSD, HYUSD, Clock>
+impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
   for ProtocolStateStrategy<S>
 {
   async fn get_quote(

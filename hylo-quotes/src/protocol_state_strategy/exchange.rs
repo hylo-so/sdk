@@ -1,4 +1,3 @@
-use anchor_client::solana_sdk::clock::Clock;
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -9,6 +8,7 @@ use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::slippage_config::SlippageConfig;
+use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
@@ -26,10 +26,10 @@ type IB = ExchangeInstructionBuilder;
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, S: StateProvider> QuoteStrategy<L, HYUSD, Clock>
+impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
   for ProtocolStateStrategy<S>
 where
-  ProtocolState<Clock>: crate::LstProvider<L>,
+  ProtocolState<C>: LstProvider<L>,
 {
   async fn get_quote(
     &self,
@@ -46,7 +46,7 @@ where
     }
 
     let amount = UFix64::<N9>::new(amount_in);
-    let lst_header = state.lst_header();
+    let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(&state);
     let lst_price = lst_header.price_sol.into();
 
     let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
@@ -104,10 +104,10 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, S: StateProvider> QuoteStrategy<HYUSD, L, Clock>
+impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
   for ProtocolStateStrategy<S>
 where
-  ProtocolState<Clock>: crate::LstProvider<L>,
+  ProtocolState<C>: LstProvider<L>,
 {
   async fn get_quote(
     &self,
@@ -171,10 +171,10 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, S: StateProvider> QuoteStrategy<L, XSOL, Clock>
+impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<L, XSOL, C>
   for ProtocolStateStrategy<S>
 where
-  ProtocolState<Clock>: crate::LstProvider<L>,
+  ProtocolState<C>: LstProvider<L>,
 {
   async fn get_quote(
     &self,
@@ -242,10 +242,10 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, S: StateProvider> QuoteStrategy<XSOL, L, Clock>
+impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, L, C>
   for ProtocolStateStrategy<S>
 where
-  ProtocolState<Clock>: crate::LstProvider<L>,
+  ProtocolState<C>: LstProvider<L>,
 {
   async fn get_quote(
     &self,
@@ -314,7 +314,7 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
+impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
   for ProtocolStateStrategy<S>
 {
   async fn get_quote(
@@ -377,7 +377,7 @@ impl<S: StateProvider> QuoteStrategy<HYUSD, XSOL, Clock>
 // ============================================================================
 
 #[async_trait]
-impl<S: StateProvider> QuoteStrategy<XSOL, HYUSD, Clock>
+impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
   for ProtocolStateStrategy<S>
 {
   async fn get_quote(
