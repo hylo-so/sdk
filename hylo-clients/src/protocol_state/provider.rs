@@ -8,23 +8,26 @@ use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::prelude::Clock;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use hylo_core::solana_clock::SolanaClock;
 
 use crate::protocol_state::{ProtocolAccounts, ProtocolState};
 
 /// Trait for fetching protocol state from a data source
 #[async_trait]
-pub trait StateProvider: Send + Sync {
+pub trait StateProvider<C: SolanaClock>: Send + Sync {
   /// Fetch the current protocol state
   ///
   /// # Errors
   /// Returns error if state fetching fails.
-  async fn fetch_state(&self) -> Result<ProtocolState<Clock>>;
+  async fn fetch_state(&self) -> Result<ProtocolState<C>>;
 }
 
 // Implement StateProvider for Arc<T> where T: StateProvider
 #[async_trait]
-impl<T: StateProvider> StateProvider for std::sync::Arc<T> {
-  async fn fetch_state(&self) -> Result<ProtocolState<Clock>> {
+impl<T: StateProvider<C>, C: SolanaClock> StateProvider<C>
+  for std::sync::Arc<T>
+{
+  async fn fetch_state(&self) -> Result<ProtocolState<C>> {
     (**self).fetch_state().await
   }
 }
@@ -50,7 +53,7 @@ impl RpcStateProvider {
 }
 
 #[async_trait]
-impl StateProvider for RpcStateProvider {
+impl StateProvider<Clock> for RpcStateProvider {
   async fn fetch_state(&self) -> Result<ProtocolState<Clock>> {
     let pubkeys = ProtocolAccounts::pubkeys();
     let account_data = self

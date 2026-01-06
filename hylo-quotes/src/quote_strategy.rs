@@ -1,4 +1,5 @@
 use anchor_lang::prelude::Pubkey;
+use anyhow::Result;
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::TokenMint;
@@ -17,5 +18,5 @@ pub trait QuoteStrategy<IN: TokenMint, OUT: TokenMint, C: SolanaClock> {
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> anyhow::Result<Quote>;
+  ) -> Result<Quote>;
 }

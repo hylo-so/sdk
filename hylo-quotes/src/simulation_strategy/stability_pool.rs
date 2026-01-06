@@ -1,5 +1,5 @@
 use anchor_lang::prelude::Pubkey;
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder;
@@ -87,9 +87,7 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
         .await?;
 
       if event.levercoin_withdrawn.bits > 0 {
-        return Err(anyhow!(
-          "SHYUSD → HYUSD not possible: levercoin present in pool"
-        ));
+        bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
       }
 
       (

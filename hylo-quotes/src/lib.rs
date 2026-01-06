@@ -21,7 +21,7 @@
 //!
 //! ```rust,no_run
 //! use hylo_clients::protocol_state::RpcStateProvider;
-//! use hylo_quotes::{ProtocolStateStrategy, QuoteProvider};
+//! use hylo_quotes::{ProtocolStateStrategy, RuntimeQuoteStrategy};
 //! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
 //! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 //! use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
@@ -36,22 +36,15 @@
 //! let state_provider = Arc::new(RpcStateProvider::new(rpc_client));
 //!
 //! let strategy = ProtocolStateStrategy::new(state_provider);
-//! let provider = QuoteProvider::new(strategy);
 //!
 //! let user = Pubkey::new_unique();
 //! let amount_in = 1_000_000_000; // 1 JitoSOL (9 decimals)
 //! let slippage_tolerance = 50; // 0.5%
 //!
-//! let (quote, metadata) = provider
-//!   .fetch_quote(JITOSOL::MINT, HYUSD::MINT, amount_in, user, slippage_tolerance)
+//! // Generates a tagged quote from runtime `Pubkeys`
+//! let (quote, metadata) = strategy
+//!   .runtime_quote_with_metadata(JITOSOL::MINT, HYUSD::MINT, amount_in, user, slippage_tolerance)
 //!   .await?;
-//!
-//! println!("Operation: {:?}", metadata.operation);
-//! println!("Description: {}", metadata.description);
-//! println!("Amount in: {}", quote.amount_in);
-//! println!("Amount out: {}", quote.amount_out);
-//! println!("Fee: {} (mint: {})", quote.fee_amount, quote.fee_mint);
-//! println!("Compute units: {} ({:?})", quote.compute_units, quote.compute_unit_strategy);
 //! # Ok(())
 //! # }
 //! ```
@@ -60,7 +53,7 @@
 //!
 //! ```rust,no_run
 //! use hylo_clients::prelude::*;
-//! use hylo_quotes::{QuoteProvider, SimulationStrategy};
+//! use hylo_quotes::{RuntimeQuoteStrategy, SimulationStrategy};
 //! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
 //! use anchor_lang::prelude::Pubkey;
 //!
@@ -75,18 +68,16 @@
 //! )?;
 //!
 //! let strategy = SimulationStrategy::new(exchange_client, stability_pool_client);
-//! let provider = QuoteProvider::new(strategy);
 //!
 //! let user = Pubkey::new_unique();
 //! let amount_in = 1_000_000_000; // 1 JitoSOL (9 decimals)
 //! let slippage_tolerance = 50; // 0.5%
 //!
-//! let (quote, metadata) = provider
-//!   .fetch_quote(JITOSOL::MINT, HYUSD::MINT, amount_in, user, slippage_tolerance)
+//! // SimulationStrategy validates balances, so if we get a quote, the transaction would succeed
+//! let (quote, metadata) = strategy
+//!   .runtime_quote_with_metadata(JITOSOL::MINT, HYUSD::MINT, amount_in, user, slippage_tolerance)
 //!   .await?;
 //!
-//! // SimulationStrategy validates balances, so if we get a quote, the transaction would succeed
-//! println!("Quote successful: {} hyUSD for {} JitoSOL", quote.amount_out, quote.amount_in);
 //! # Ok(())
 //! # }
 //! ```
@@ -97,8 +88,8 @@ use anchor_lang::prelude::Pubkey;
 mod lst_provider;
 mod protocol_state_strategy;
 mod quote_metadata;
-mod quote_provider;
 mod quote_strategy;
+mod runtime_quote_strategy;
 mod simulation_strategy;
 mod syntax_helpers;
 
@@ -106,8 +97,8 @@ pub use hylo_clients::util::LST;
 pub(crate) use lst_provider::LstProvider;
 pub use protocol_state_strategy::ProtocolStateStrategy;
 pub use quote_metadata::{Operation, QuoteMetadata};
-pub use quote_provider::QuoteProvider;
 pub use quote_strategy::QuoteStrategy;
+pub use runtime_quote_strategy::RuntimeQuoteStrategy;
 pub use simulation_strategy::SimulationStrategy;
 
 /// Default buffered compute units for all exchange operations.
@@ -138,7 +129,6 @@ pub struct Quote {
 pub enum ComputeUnitStrategy {
   /// Estimated compute units based on historical data
   Estimated,
-
   /// Compute units returned from simulation results
   Simulated,
 }

@@ -31,7 +31,7 @@ use hylo_clients::util::REFERENCE_WALLET;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_quotes::{
-  ProtocolStateStrategy, Quote, QuoteMetadata, QuoteProvider,
+  ProtocolStateStrategy, Quote, QuoteMetadata, RuntimeQuoteStrategy,
   SimulationStrategy,
 };
 
@@ -42,10 +42,9 @@ struct TestContext {
   /// Token balances for reference wallet, keyed by mint pubkey
   balances: HashMap<Pubkey, u64>,
   /// Protocol state strategy provider
-  protocol_state_provider:
-    QuoteProvider<ProtocolStateStrategy<Arc<RpcStateProvider>>>,
+  protocol_state_strategy: ProtocolStateStrategy<Arc<RpcStateProvider>>,
   /// Simulation strategy provider
-  simulation_provider: QuoteProvider<SimulationStrategy>,
+  simulation_strategy: SimulationStrategy,
   /// Reference wallet pubkey
   reference_wallet: Pubkey,
 }
@@ -82,7 +81,6 @@ impl TestContext {
     // Create protocol state strategy
     let protocol_state_strategy =
       ProtocolStateStrategy::new(state_provider.clone());
-    let protocol_state_provider = QuoteProvider::new(protocol_state_strategy);
 
     // Create simulation strategy
     let cluster = Cluster::from_str(&rpc_url)
@@ -101,13 +99,11 @@ impl TestContext {
     let simulation_strategy =
       SimulationStrategy::new(exchange_client, stability_pool_client);
 
-    let simulation_provider = QuoteProvider::new(simulation_strategy);
-
     Ok(Self {
       protocol_state,
       balances,
-      protocol_state_provider,
-      simulation_provider,
+      protocol_state_strategy,
+      simulation_strategy,
       reference_wallet: REFERENCE_WALLET,
     })
   }
@@ -515,8 +511,8 @@ async fn test_quote_provider_protocol_state() -> Result<()> {
     }
 
     let result = ctx
-      .protocol_state_provider
-      .fetch_quote(
+      .protocol_state_strategy
+      .runtime_quote_with_metadata(
         test_case.input_mint,
         test_case.output_mint,
         test_case.amount,
@@ -658,8 +654,8 @@ async fn test_quote_provider_simulation() -> Result<()> {
     }
 
     let result = ctx
-      .simulation_provider
-      .fetch_quote(
+      .simulation_strategy
+      .runtime_quote_with_metadata(
         test_case.input_mint,
         test_case.output_mint,
         test_case.amount,
@@ -839,8 +835,8 @@ async fn test_reference_wallet_state() -> Result<()> {
     let actual_balance = ctx.get_balance(mint);
     if actual_balance != *expected_balance {
       mismatches.push(format!(
-        "  {} ({}): expected {}, got {}",
-        token_name, mint, expected_balance, actual_balance
+        "  {token_name} ({mint}): expected {expected_balance}, got \
+         {actual_balance}"
       ));
     }
   }

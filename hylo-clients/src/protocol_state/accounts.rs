@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use hylo_idl::pda;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
@@ -86,24 +86,20 @@ impl ProtocolAccounts {
     pubkeys: &[Pubkey],
     accounts: &[Option<Account>],
   ) -> Result<()> {
-    // Validate lengths match
-    if pubkeys.len() != accounts.len() {
-      return Err(anyhow!(
-        "Mismatch: {} pubkeys but {} accounts",
-        pubkeys.len(),
-        accounts.len()
-      ));
-    }
+    ensure!(
+      pubkeys.len() == accounts.len(),
+      "Mismatch: {} pubkeys but {} accounts",
+      pubkeys.len(),
+      accounts.len()
+    );
 
-    // Validate expected count
     let expected_count = Self::expected_count();
-    if pubkeys.len() != expected_count {
-      return Err(anyhow!(
-        "Expected {} accounts, got {}",
-        expected_count,
-        pubkeys.len()
-      ));
-    }
+    ensure!(
+      pubkeys.len() == expected_count,
+      "Expected {} accounts, got {}",
+      expected_count,
+      pubkeys.len()
+    );
 
     // Validate pubkeys match expected
     let expected = Self::pubkeys();
