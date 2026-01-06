@@ -6,8 +6,11 @@
 mod exchange;
 mod stability_pool;
 
+use anchor_lang::prelude::Clock;
+use async_trait::async_trait;
 use hylo_clients::prelude::{ExchangeClient, StabilityPoolClient};
 
+use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
 use crate::{ComputeUnitStrategy, DEFAULT_CUS_WITH_BUFFER};
 
 pub struct SimulationStrategy {
@@ -38,6 +41,9 @@ pub(crate) fn resolve_compute_units(
 ) -> (u64, ComputeUnitStrategy) {
   match compute_units {
     Some(cu) if cu > 0 => (cu, ComputeUnitStrategy::Simulated),
-    Some(_) | None => (DEFAULT_CUS_WITH_BUFFER, ComputeUnitStrategy::Estimated),
+    _ => (DEFAULT_CUS_WITH_BUFFER, ComputeUnitStrategy::Estimated),
   }
 }
+
+#[async_trait]
+impl RuntimeQuoteStrategy<Clock> for SimulationStrategy {}

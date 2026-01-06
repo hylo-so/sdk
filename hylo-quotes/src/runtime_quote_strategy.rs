@@ -1,0 +1,71 @@
+use anchor_lang::prelude::Pubkey;
+use anyhow::{anyhow, Result};
+use async_trait::async_trait;
+use hylo_core::solana_clock::SolanaClock;
+use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+
+use crate::quote_metadata::{Operation, QuoteMetadata};
+use crate::quote_strategy::QuoteStrategy;
+use crate::Quote;
+
+macro_rules! runtime_quote_strategies {
+    ($(($in:ty, $out:ty, $op:expr, $desc:expr)),* $(,)?) => {
+      /// Runtime dispatch trait bridging untyped `Pubkey` pair to typed `QuoteStrategy`.
+      #[async_trait]
+      pub trait RuntimeQuoteStrategy<C: SolanaClock>: $( QuoteStrategy<$in, $out, C> + )* {
+        /// Fetches quote based on input and output mints.
+        async fn runtime_quote(
+          &self,
+          input_mint: Pubkey,
+          output_mint: Pubkey,
+          amount_in: u64,
+          user: Pubkey,
+          slippage_tolerance: u64,
+        ) -> Result<Quote> {
+          match (input_mint, output_mint) {
+            $(
+              (<$in>::MINT, <$out>::MINT) => {
+                QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await
+              },
+            )*
+            _ => Err(anyhow!("Unsupported pair")),
+          }
+        }
+
+        /// Fetches quote based on input and output mints with relevant metadata.
+        async fn runtime_quote_with_metadata(
+          &self,
+          input_mint: Pubkey,
+          output_mint: Pubkey,
+          amount_in: u64,
+          user: Pubkey,
+          slippage_tolerance: u64,
+        ) -> Result<(Quote, QuoteMetadata)> {
+          match (input_mint, output_mint) {
+            $(
+              (<$in>::MINT, <$out>::MINT) => Ok((
+                  QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await?,
+                  QuoteMetadata::new($op, $desc),
+              )),
+            )*
+            _ => Err(anyhow!("Unsupported pair")),
+          }
+        }
+      }
+    };
+}
+
+runtime_quote_strategies! {
+  (JITOSOL, HYUSD, Operation::MintStablecoin, "Mint hyUSD with JitoSOL"),
+  (HYUSD, JITOSOL, Operation::RedeemStablecoin, "Redeem hyUSD for JitoSOL"),
+  (HYLOSOL, HYUSD, Operation::MintStablecoin, "Mint hyUSD with hyloSOL"),
+  (HYUSD, HYLOSOL, Operation::RedeemStablecoin, "Redeem hyUSD for hyloSOL"),
+  (JITOSOL, XSOL, Operation::MintLevercoin, "Mint xSOL with JitoSOL"),
+  (XSOL, JITOSOL, Operation::RedeemLevercoin, "Redeem xSOL for JitoSOL"),
+  (HYLOSOL, XSOL, Operation::MintLevercoin, "Mint xSOL with hyloSOL"),
+  (XSOL, HYLOSOL, Operation::RedeemLevercoin, "Redeem xSOL for hyloSOL"),
+  (HYUSD, XSOL, Operation::SwapStableToLever, "Swap hyUSD to xSOL"),
+  (XSOL, HYUSD, Operation::SwapLeverToStable, "Swap xSOL to hyUSD"),
+  (HYUSD, SHYUSD, Operation::DepositToStabilityPool, "Deposit hyUSD to Stability Pool"),
+  (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
+}
