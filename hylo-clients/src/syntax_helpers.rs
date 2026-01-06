@@ -19,7 +19,7 @@ where
   IN: TokenMint,
   OUT: TokenMint,
 {
-  <Builder as InstructionBuilder<IN, OUT>>::build_instructions(inputs)
+  Builder::build_instructions(inputs)
 }
 
 /// Helper for getting lookup tables with cleaner syntax.
@@ -30,7 +30,7 @@ where
   IN: TokenMint,
   OUT: TokenMint,
 {
-  <Builder as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
+  Builder::REQUIRED_LOOKUP_TABLES
 }
 
 /// Helper for simulating events with compute units using cleaner syntax.
@@ -48,6 +48,5 @@ where
   I: TokenMint,
   O: TokenMint,
 {
-  <Client as SimulatePrice<I, O>>::simulate_event_with_cus(client, user, inputs)
-    .await
+  Client::simulate_event_with_cus(client, user, inputs).await
 }
