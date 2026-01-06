@@ -1,5 +1,5 @@
 use anchor_lang::prelude::Pubkey;
-use anyhow::{anyhow, Result};
+use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder;
@@ -39,11 +39,10 @@ where
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    if state.exchange_context.stability_mode > StabilityMode::Mode1 {
-      return Err(anyhow!(
-        "Mint operations disabled in current stability mode"
-      ));
-    }
+    ensure!(
+      state.exchange_context.stability_mode <= StabilityMode::Mode1,
+      "Mint operations disabled in current stability mode"
+    );
 
     let amount = UFix64::<N9>::new(amount_in);
     let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(&state);
@@ -184,9 +183,10 @@ where
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    if state.exchange_context.stability_mode == StabilityMode::Depeg {
-      return Err(anyhow!("Levercoin mint disabled in current stability mode"));
-    }
+    ensure!(
+      state.exchange_context.stability_mode != StabilityMode::Depeg,
+      "Levercoin mint disabled in current stability mode"
+    );
 
     let amount = UFix64::<N9>::new(amount_in);
     let lst_header = state.lst_header();
@@ -255,11 +255,10 @@ where
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    if state.exchange_context.stability_mode == StabilityMode::Depeg {
-      return Err(anyhow!(
-        "Levercoin redemption disabled in current stability mode"
-      ));
-    }
+    ensure!(
+      state.exchange_context.stability_mode != StabilityMode::Depeg,
+      "Levercoin redemption disabled in current stability mode"
+    );
 
     let amount = UFix64::<N6>::new(amount_in);
     let lst_header = state.lst_header();
@@ -325,9 +324,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    if state.exchange_context.stability_mode == StabilityMode::Depeg {
-      return Err(anyhow!("Swaps are disabled in current stability mode"));
-    }
+    ensure!(
+      state.exchange_context.stability_mode != StabilityMode::Depeg,
+      "Swaps are disabled in current stability mode"
+    );
 
     let amount = UFix64::<N6>::new(amount_in);
 
@@ -388,12 +388,13 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    if matches!(
-      state.exchange_context.stability_mode,
-      StabilityMode::Mode2 | StabilityMode::Depeg
-    ) {
-      return Err(anyhow!("Swaps are disabled in current stability mode"));
-    }
+    ensure!(
+      matches!(
+        state.exchange_context.stability_mode,
+        StabilityMode::Normal | StabilityMode::Mode1
+      ),
+      "Swaps are disabled in current stability mode"
+    );
 
     let amount = UFix64::<N6>::new(amount_in);
 

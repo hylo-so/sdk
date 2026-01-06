@@ -1,5 +1,5 @@
 use anchor_lang::prelude::Pubkey;
-use anyhow::{anyhow, Result};
+use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder;
@@ -90,11 +90,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
 
-    if state.xsol_pool.amount > 0 {
-      return Err(anyhow!(
-        "SHYUSD → HYUSD not possible: levercoin present in pool"
-      ));
-    }
+    ensure!(
+      state.xsol_pool.amount == 0,
+      "SHYUSD → HYUSD not possible: levercoin present in pool"
+    );
 
     let amount = UFix64::<N6>::new(amount_in);
 
