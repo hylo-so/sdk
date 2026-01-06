@@ -30,9 +30,9 @@ use hylo_clients::protocol_state::{
 use hylo_clients::util::REFERENCE_WALLET;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_quotes::RuntimeQuoteStrategy;
 use hylo_quotes::{
-  ProtocolStateStrategy, Quote, QuoteMetadata, SimulationStrategy,
+  ProtocolStateStrategy, Quote, QuoteMetadata, RuntimeQuoteStrategy,
+  SimulationStrategy,
 };
 
 /// Test context with shared setup for integration tests
@@ -835,7 +835,8 @@ async fn test_reference_wallet_state() -> Result<()> {
     let actual_balance = ctx.get_balance(mint);
     if actual_balance != *expected_balance {
       mismatches.push(format!(
-        "  {token_name} ({mint}): expected {expected_balance}, got {actual_balance}"
+        "  {token_name} ({mint}): expected {expected_balance}, got \
+         {actual_balance}"
       ));
     }
   }

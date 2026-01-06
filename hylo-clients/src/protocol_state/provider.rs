@@ -24,7 +24,9 @@ pub trait StateProvider<C: SolanaClock>: Send + Sync {
 
 // Implement StateProvider for Arc<T> where T: StateProvider
 #[async_trait]
-impl<T: StateProvider<C>, C: SolanaClock> StateProvider<C> for std::sync::Arc<T> {
+impl<T: StateProvider<C>, C: SolanaClock> StateProvider<C>
+  for std::sync::Arc<T>
+{
   async fn fetch_state(&self) -> Result<ProtocolState<C>> {
     (**self).fetch_state().await
   }
