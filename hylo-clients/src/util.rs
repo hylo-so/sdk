@@ -21,7 +21,7 @@ use anchor_lang::prelude::AccountMeta;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_transaction_status_client_types::{
@@ -154,26 +154,50 @@ where
   E: AnchorDeserialize + Discriminator,
 {
   if let Some(err) = &result.value.err {
-    Err(anyhow!("Simulation failed: {err:?}"))
-  } else {
-    result
-      .value
-      .inner_instructions
-      .as_ref()
-      .into_iter()
-      .flat_map(|ixs| ixs.iter())
-      .flat_map(|ix| ix.instructions.iter())
+    bail!("Simulation failed: {err:?}")
+  } else if let Some(ixs) = &result.value.inner_instructions {
+    ixs
+      .iter()
+      .flat_map(|ix| &ix.instructions)
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
           UiPartiallyDecodedInstruction { data, .. },
         )) => bs58::decode(data)
           .into_vec()
           .ok()
-          .filter(|d| d.len() >= 16 && &d[8..16] == E::DISCRIMINATOR)
-          .and_then(|d| E::try_from_slice(&d[16..]).ok()),
+          .filter(|dec| dec.len() >= 16 && &dec[8..16] == E::DISCRIMINATOR)
+          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
         _ => None,
       })
-      .ok_or_else(|| anyhow!("Event {:?} not found", E::DISCRIMINATOR))
+      .ok_or_else(|| anyhow!("Could not find event: {:?}", E::DISCRIMINATOR))
+  } else {
+    bail!("Simulation succeeded but no inner instructions returned")
+  }
+}
+
+pub fn parse_event2<E>(
+  result: &Response<RpcSimulateTransactionResult>,
+) -> Result<E>
+where
+  E: AnchorDeserialize + Discriminator,
+{
+  if let Some(err) = &result.value.err {
+    bail!("Simulation failed: {err:?}")
+  } else if let Some(ixs) = &result.value.inner_instructions {
+    ixs
+      .iter()
+      .flat_map(|ix| &ix.instructions)
+      .find_map(|ix| match ix {
+        UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
+          UiPartiallyDecodedInstruction { data, .. },
+        )) => bs58::decode(data).into_vec().ok(),
+        _ => None,
+      })
+      .filter(|bytes| bytes.len() >= 16 && &bytes[8..16] == E::DISCRIMINATOR)
+      .context("Could not parse event from result")
+      .and_then(|bytes| Ok(E::try_from_slice(&bytes[16..])?))
+  } else {
+    bail!("Simulation succeeded but no inner instructions returned")
   }
 }
 
