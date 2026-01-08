@@ -162,34 +162,6 @@ where
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
           UiPartiallyDecodedInstruction { data, .. },
-        )) => bs58::decode(data)
-          .into_vec()
-          .ok()
-          .filter(|dec| dec.len() >= 16 && &dec[8..16] == E::DISCRIMINATOR)
-          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
-        _ => None,
-      })
-      .ok_or_else(|| anyhow!("Could not find event: {:?}", E::DISCRIMINATOR))
-  } else {
-    bail!("Simulation succeeded but no inner instructions returned")
-  }
-}
-
-pub fn parse_event2<E>(
-  result: &Response<RpcSimulateTransactionResult>,
-) -> Result<E>
-where
-  E: AnchorDeserialize + Discriminator,
-{
-  if let Some(err) = &result.value.err {
-    bail!("Simulation failed: {err:?}")
-  } else if let Some(ixs) = &result.value.inner_instructions {
-    ixs
-      .iter()
-      .flat_map(|ix| &ix.instructions)
-      .find_map(|ix| match ix {
-        UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
-          UiPartiallyDecodedInstruction { data, .. },
         )) => bs58::decode(data).into_vec().ok(),
         _ => None,
       })
