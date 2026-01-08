@@ -24,6 +24,10 @@ use crate::transaction::{BuildTransactionData, QuoteInput, SimulatePrice};
 /// # }
 /// ```
 pub trait InstructionBuilderExt {
+  /// Builds instructions for a token pair operation.
+  ///
+  /// # Errors
+  /// * Underlying builder errors.
   fn build_instructions<IN, OUT>(
     inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
   ) -> Result<Vec<Instruction>>
@@ -102,6 +106,7 @@ impl<X> SimulatePriceExt for X {
     I: TokenMint,
     O: TokenMint,
   {
-    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs).await
+    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs)
+      .await
   }
 }

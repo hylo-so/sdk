@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
-use hylo_clients::instructions::StabilityPoolInstructionBuilder;
+use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
@@ -45,12 +45,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
 
     let args = StabilityPoolArgs { amount, user };
 
-    let instructions = StabilityPoolInstructionBuilder::build_instructions::<
-      HYUSD,
-      SHYUSD,
-    >(args)?;
+    let instructions =
+      StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(args)?;
     let address_lookup_tables =
-      StabilityPoolInstructionBuilder::lookup_tables::<HYUSD, SHYUSD>().into();
+      StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>().into();
 
     Ok(Quote {
       amount_in,
@@ -101,12 +99,10 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
 
     let args = StabilityPoolArgs { amount, user };
 
-    let instructions = StabilityPoolInstructionBuilder::build_instructions::<
-      SHYUSD,
-      HYUSD,
-    >(args)?;
+    let instructions =
+      StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(args)?;
     let address_lookup_tables =
-      StabilityPoolInstructionBuilder::lookup_tables::<SHYUSD, HYUSD>().into();
+      StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>().into();
 
     Ok(Quote {
       amount_in,

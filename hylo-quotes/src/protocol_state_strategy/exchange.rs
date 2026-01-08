@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
-use hylo_clients::instructions::ExchangeInstructionBuilder;
+use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
@@ -83,10 +83,8 @@ where
       )),
     };
 
-    let instructions =
-      ExchangeInstructionBuilder::build_instructions::<L, HYUSD>(args)?;
-    let address_lookup_tables =
-      ExchangeInstructionBuilder::lookup_tables::<L, HYUSD>().into();
+    let instructions = ExchangeIB::build_instructions::<L, HYUSD>(args)?;
+    let address_lookup_tables = ExchangeIB::lookup_tables::<L, HYUSD>().into();
 
     Ok(Quote {
       amount_in,
@@ -155,10 +153,8 @@ where
       )),
     };
 
-    let instructions =
-      ExchangeInstructionBuilder::build_instructions::<HYUSD, L>(args)?;
-    let address_lookup_tables =
-      ExchangeInstructionBuilder::lookup_tables::<HYUSD, L>().into();
+    let instructions = ExchangeIB::build_instructions::<HYUSD, L>(args)?;
+    let address_lookup_tables = ExchangeIB::lookup_tables::<HYUSD, L>().into();
 
     Ok(Quote {
       amount_in,
@@ -232,10 +228,8 @@ where
       )),
     };
 
-    let instructions =
-      ExchangeInstructionBuilder::build_instructions::<L, XSOL>(args)?;
-    let address_lookup_tables =
-      ExchangeInstructionBuilder::lookup_tables::<L, XSOL>().into();
+    let instructions = ExchangeIB::build_instructions::<L, XSOL>(args)?;
+    let address_lookup_tables = ExchangeIB::lookup_tables::<L, XSOL>().into();
 
     Ok(Quote {
       amount_in,
@@ -308,10 +302,8 @@ where
       )),
     };
 
-    let instructions =
-      ExchangeInstructionBuilder::build_instructions::<XSOL, L>(args)?;
-    let address_lookup_tables =
-      ExchangeInstructionBuilder::lookup_tables::<XSOL, L>().into();
+    let instructions = ExchangeIB::build_instructions::<XSOL, L>(args)?;
+    let address_lookup_tables = ExchangeIB::lookup_tables::<XSOL, L>().into();
 
     Ok(Quote {
       amount_in,
@@ -377,10 +369,9 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
       )),
     };
 
-    let instructions =
-      ExchangeInstructionBuilder::build_instructions::<HYUSD, XSOL>(args)?;
+    let instructions = ExchangeIB::build_instructions::<HYUSD, XSOL>(args)?;
     let address_lookup_tables =
-      ExchangeInstructionBuilder::lookup_tables::<HYUSD, XSOL>().into();
+      ExchangeIB::lookup_tables::<HYUSD, XSOL>().into();
 
     Ok(Quote {
       amount_in,
@@ -456,10 +447,9 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
       )),
     };
 
-    let instructions =
-      ExchangeInstructionBuilder::build_instructions::<XSOL, HYUSD>(args)?;
+    let instructions = ExchangeIB::build_instructions::<XSOL, HYUSD>(args)?;
     let address_lookup_tables =
-      ExchangeInstructionBuilder::lookup_tables::<XSOL, HYUSD>().into();
+      ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
 
     Ok(Quote {
       amount_in,
