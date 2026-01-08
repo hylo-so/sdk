@@ -3,12 +3,12 @@ use anyhow::{bail, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder;
+use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use crate::{Quote, QuoteStrategy};
 
 // ============================================================================

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder;
 use hylo_clients::protocol_state::ProtocolState;
+use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
@@ -11,7 +12,6 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use crate::{LstProvider, Quote, QuoteStrategy};
 
 // ============================================================================

@@ -145,17 +145,23 @@ pub fn build_lst_registry(
 /// NB: Drops 16 bytes for header and discriminator.
 ///
 /// # Errors
-/// * No inner instructions found
-/// * No parseable event found from target program
+/// * Simulation failed
+/// * Event not found in simulation result
 pub fn parse_event<E>(
   result: &Response<RpcSimulateTransactionResult>,
 ) -> Result<E>
 where
   E: AnchorDeserialize + Discriminator,
 {
-  if let Some(ixs) = &result.value.inner_instructions {
-    ixs
-      .iter()
+  if let Some(err) = &result.value.err {
+    Err(anyhow!("Simulation failed: {err:?}"))
+  } else {
+    result
+      .value
+      .inner_instructions
+      .as_ref()
+      .into_iter()
+      .flat_map(|ixs| ixs.iter())
       .flat_map(|ix| ix.instructions.iter())
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
@@ -163,13 +169,11 @@ where
         )) => bs58::decode(data)
           .into_vec()
           .ok()
-          .filter(|decoded| &decoded[8..16] == E::DISCRIMINATOR)
-          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
+          .filter(|d| d.len() >= 16 && &d[8..16] == E::DISCRIMINATOR)
+          .and_then(|d| E::try_from_slice(&d[16..]).ok()),
         _ => None,
       })
-      .ok_or(anyhow!("Parseable event not found"))
-  } else {
-    Err(anyhow!("Inner instructions not found"))
+      .ok_or_else(|| anyhow!("Event {:?} not found", E::DISCRIMINATOR))
   }
 }
 

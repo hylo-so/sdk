@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder;
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
+use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::fee_controller::FeeExtract;
@@ -13,7 +14,6 @@ use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use crate::{
   ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy,
   DEFAULT_CUS_WITH_BUFFER,

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder;
 use hylo_clients::protocol_state::StateProvider;
+use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::solana_clock::SolanaClock;
@@ -13,7 +14,6 @@ use hylo_core::stability_pool_math::{
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use crate::{
   ComputeUnitStrategy, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };

@@ -90,7 +90,9 @@ pub trait SimulatePriceExt {
     &self,
     user: Pubkey,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> impl std::future::Future<Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>> + Send
+  ) -> impl std::future::Future<
+    Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>,
+  > + Send
   where
     Self: SimulatePrice<I, O> + Send + Sync,
     <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
@@ -104,7 +106,9 @@ impl<X> SimulatePriceExt for X {
     &self,
     user: Pubkey,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> impl std::future::Future<Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>> + Send
+  ) -> impl std::future::Future<
+    Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>,
+  > + Send
   where
     Self: SimulatePrice<I, O> + Send + Sync,
     <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
