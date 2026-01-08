@@ -13,7 +13,7 @@ use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use crate::syntax_helpers::InstructionBuilderExt;
+use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use crate::{
   ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy,
   DEFAULT_CUS_WITH_BUFFER,

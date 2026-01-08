@@ -91,7 +91,6 @@ mod quote_metadata;
 mod quote_strategy;
 mod runtime_quote_strategy;
 mod simulation_strategy;
-mod syntax_helpers;
 
 pub use hylo_clients::util::LST;
 pub(crate) use lst_provider::LstProvider;

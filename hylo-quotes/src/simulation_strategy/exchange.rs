@@ -11,7 +11,7 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use crate::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
+use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use crate::{LstProvider, Quote, QuoteStrategy};
 
 // ============================================================================
