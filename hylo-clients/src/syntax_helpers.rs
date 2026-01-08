@@ -4,6 +4,7 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
+use async_trait::async_trait;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instructions::InstructionBuilder;
@@ -72,14 +73,13 @@ impl<X> InstructionBuilderExt for X {
 /// # Ok(())
 /// # }
 /// ```
+#[async_trait]
 pub trait SimulatePriceExt {
-  fn simulate_event_with_cus<I, O>(
+  async fn simulate_event_with_cus<I, O>(
     &self,
     user: Pubkey,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> impl std::future::Future<
-    Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>,
-  > + Send
+  ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
   where
     Self: SimulatePrice<I, O> + Send + Sync,
     <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
@@ -88,14 +88,13 @@ pub trait SimulatePriceExt {
     O: TokenMint;
 }
 
+#[async_trait]
 impl<X> SimulatePriceExt for X {
-  fn simulate_event_with_cus<I, O>(
+  async fn simulate_event_with_cus<I, O>(
     &self,
     user: Pubkey,
     inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> impl std::future::Future<
-    Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>,
-  > + Send
+  ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
   where
     Self: SimulatePrice<I, O> + Send + Sync,
     <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
@@ -103,6 +102,6 @@ impl<X> SimulatePriceExt for X {
     I: TokenMint,
     O: TokenMint,
   {
-    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs)
+    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs).await
   }
 }
