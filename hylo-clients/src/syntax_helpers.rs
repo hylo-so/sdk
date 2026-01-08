@@ -9,24 +9,20 @@ use hylo_idl::tokens::TokenMint;
 use crate::instructions::InstructionBuilder;
 use crate::transaction::{BuildTransactionData, QuoteInput, SimulatePrice};
 
-/// Extension trait for ergonomic instruction builder method calls.
+/// Turbofish syntax for [`InstructionBuilder`].
 ///
-/// Provides `build_instructions` and `lookup_tables` methods that can be called
-/// with turbofish syntax on any type implementing [`InstructionBuilder`].
-///
-/// # Example
-///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use hylo_clients::prelude::*;
 ///
+/// # fn example() -> Result<()> {
+/// let user = Pubkey::new_unique();
+/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
 /// let instructions = ExchangeInstructionBuilder::build_instructions::<JITOSOL, HYUSD>(args)?;
 /// let luts = ExchangeInstructionBuilder::lookup_tables::<JITOSOL, HYUSD>();
+/// # Ok(())
+/// # }
 /// ```
 pub trait InstructionBuilderExt {
-  /// Builds instructions for the token pair operation.
-  ///
-  /// # Errors
-  /// Returns error if instruction building fails.
   fn build_instructions<IN, OUT>(
     inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
   ) -> Result<Vec<Instruction>>
@@ -35,7 +31,6 @@ pub trait InstructionBuilderExt {
     IN: TokenMint,
     OUT: TokenMint;
 
-  /// Returns the required address lookup tables for the token pair operation.
   fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
   where
     Self: InstructionBuilder<IN, OUT>,
@@ -65,27 +60,19 @@ impl<X> InstructionBuilderExt for X {
   }
 }
 
-/// Extension trait for ergonomic simulate price method calls.
+/// Turbofish syntax for [`SimulatePrice`](crate::transaction::SimulatePrice).
 ///
-/// Provides `simulate_event_with_cus` method that can be called with turbofish
-/// syntax on any type implementing [`SimulatePrice`].
-///
-/// # Example
-///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use hylo_clients::prelude::*;
 ///
-/// let (event, cus) = ExchangeClient::simulate_event_with_cus::<JITOSOL, HYUSD>(
-///   &client,
-///   user,
-///   args,
-/// ).await?;
+/// # async fn example(client: ExchangeClient) -> Result<()> {
+/// let user = Pubkey::new_unique();
+/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
+/// let (event, cus) = client.simulate_event_with_cus::<JITOSOL, HYUSD>(user, args).await?;
+/// # Ok(())
+/// # }
 /// ```
 pub trait SimulatePriceExt {
-  /// Simulates transaction and returns the event and compute units consumed.
-  ///
-  /// # Errors
-  /// Returns error if simulation fails.
   fn simulate_event_with_cus<I, O>(
     &self,
     user: Pubkey,
