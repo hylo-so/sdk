@@ -18,10 +18,10 @@
 //! let user = Pubkey::new_unique();
 //! let slippage_config = None;
 //!
-//! let instructions = <ExchangeInstructionBuilder as InstructionBuilder<JITOSOL, HYUSD>>::build_instructions(
+//! let instructions = ExchangeInstructionBuilder::build_instructions::<JITOSOL, HYUSD>(
 //!   MintArgs { amount, user, slippage_config },
 //! )?;
-//! let lookup_tables = <ExchangeInstructionBuilder as InstructionBuilder<JITOSOL, HYUSD>>::REQUIRED_LOOKUP_TABLES;
+//! let lookup_tables = ExchangeInstructionBuilder::lookup_tables::<JITOSOL, HYUSD>();
 //! # Ok(())
 //! # }
 //! ```
@@ -60,7 +60,7 @@ pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
   ///
   /// # Errors
   /// Returns error if instruction building fails.
-  fn build_instructions(inputs: Self::Inputs) -> Result<Vec<Instruction>>;
+  fn build(inputs: Self::Inputs) -> Result<Vec<Instruction>>;
 }
 
 /// Instruction builder implementation for exchange operations.
@@ -76,7 +76,7 @@ impl<L: LST> InstructionBuilder<L, HYUSD> for ExchangeInstructionBuilder {
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
     &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     MintArgs {
       amount,
       user,
@@ -103,7 +103,7 @@ impl<L: LST> InstructionBuilder<HYUSD, L> for ExchangeInstructionBuilder {
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
     &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     RedeemArgs {
       amount,
       user,
@@ -130,7 +130,7 @@ impl<L: LST> InstructionBuilder<L, XSOL> for ExchangeInstructionBuilder {
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
     &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     MintArgs {
       amount,
       user,
@@ -157,7 +157,7 @@ impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
     &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     RedeemArgs {
       amount,
       user,
@@ -183,7 +183,7 @@ impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     SwapArgs {
       amount,
       user,
@@ -209,7 +209,7 @@ impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     SwapArgs {
       amount,
       user,
@@ -239,7 +239,7 @@ impl InstructionBuilder<HYUSD, SHYUSD> for StabilityPoolInstructionBuilder {
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
     &[EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &SHYUSD::MINT);
@@ -263,7 +263,7 @@ impl InstructionBuilder<SHYUSD, HYUSD> for StabilityPoolInstructionBuilder {
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
     &[EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE];
 
-  fn build_instructions(
+  fn build(
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
   ) -> Result<Vec<Instruction>> {
     let hyusd_ata = user_ata_instruction(&user, &HYUSD::MINT);

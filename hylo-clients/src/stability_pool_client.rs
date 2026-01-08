@@ -18,7 +18,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use crate::exchange_client::ExchangeClient;
 use crate::instructions::StabilityPoolInstructionBuilder;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::syntax_helpers::{build_instructions, lookup_tables};
+use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
   SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
@@ -202,16 +202,14 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
     &self,
     inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let instructions =
-      build_instructions::<StabilityPoolInstructionBuilder, HYUSD, SHYUSD>(
-        inputs,
-      )?;
+    let instructions = StabilityPoolInstructionBuilder::build_instructions::<
+      HYUSD,
+      SHYUSD,
+    >(inputs)?;
     let lookup_tables = self
-      .load_multiple_lookup_tables(lookup_tables::<
-        StabilityPoolInstructionBuilder,
-        HYUSD,
-        SHYUSD,
-      >())
+      .load_multiple_lookup_tables(
+        StabilityPoolInstructionBuilder::lookup_tables::<HYUSD, SHYUSD>(),
+      )
       .await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
@@ -233,16 +231,14 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     &self,
     inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let instructions =
-      build_instructions::<StabilityPoolInstructionBuilder, SHYUSD, HYUSD>(
-        inputs,
-      )?;
+    let instructions = StabilityPoolInstructionBuilder::build_instructions::<
+      SHYUSD,
+      HYUSD,
+    >(inputs)?;
     let lookup_tables = self
-      .load_multiple_lookup_tables(lookup_tables::<
-        StabilityPoolInstructionBuilder,
-        SHYUSD,
-        HYUSD,
-      >())
+      .load_multiple_lookup_tables(
+        StabilityPoolInstructionBuilder::lookup_tables::<SHYUSD, HYUSD>(),
+      )
       .await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }

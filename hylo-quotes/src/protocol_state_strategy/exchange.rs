@@ -13,13 +13,11 @@ use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use crate::syntax_helpers::{build_instructions, lookup_tables};
+use crate::syntax_helpers::InstructionBuilderExt;
 use crate::{
   ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy,
   DEFAULT_CUS_WITH_BUFFER,
 };
-
-type IB = ExchangeInstructionBuilder;
 
 // ============================================================================
 // Implementation for LST → HYUSD (mint stablecoin)
@@ -85,6 +83,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<L, HYUSD>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<L, HYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -92,8 +95,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, L, HYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, L, HYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -152,6 +155,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<HYUSD, L>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<HYUSD, L>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -159,8 +167,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, HYUSD, L>(args)?,
-      address_lookup_tables: lookup_tables::<IB, HYUSD, L>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -224,6 +232,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<L, XSOL>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<L, XSOL>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -231,8 +244,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, L, XSOL>(args)?,
-      address_lookup_tables: lookup_tables::<IB, L, XSOL>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -295,6 +308,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<XSOL, L>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<XSOL, L>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -302,8 +320,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, XSOL, L>(args)?,
-      address_lookup_tables: lookup_tables::<IB, XSOL, L>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -359,6 +377,11 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<HYUSD, XSOL>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<HYUSD, XSOL>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -366,8 +389,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, HYUSD, XSOL>(args)?,
-      address_lookup_tables: lookup_tables::<IB, HYUSD, XSOL>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -433,6 +456,11 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<XSOL, HYUSD>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<XSOL, HYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -440,8 +468,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, XSOL, HYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, XSOL, HYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }

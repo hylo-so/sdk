@@ -13,12 +13,10 @@ use hylo_core::stability_pool_math::{
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use crate::syntax_helpers::{build_instructions, lookup_tables};
+use crate::syntax_helpers::InstructionBuilderExt;
 use crate::{
   ComputeUnitStrategy, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
-
-type IB = StabilityPoolInstructionBuilder;
 
 // ============================================================================
 // Implementation for HYUSD → SHYUSD (stability pool deposit)
@@ -61,6 +59,13 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
 
     let args = StabilityPoolArgs { amount, user };
 
+    let instructions = StabilityPoolInstructionBuilder::build_instructions::<
+      HYUSD,
+      SHYUSD,
+    >(args)?;
+    let address_lookup_tables =
+      StabilityPoolInstructionBuilder::lookup_tables::<HYUSD, SHYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -68,8 +73,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, HYUSD, SHYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, HYUSD, SHYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -120,6 +125,13 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
 
     let args = StabilityPoolArgs { amount, user };
 
+    let instructions = StabilityPoolInstructionBuilder::build_instructions::<
+      SHYUSD,
+      HYUSD,
+    >(args)?;
+    let address_lookup_tables =
+      StabilityPoolInstructionBuilder::lookup_tables::<SHYUSD, HYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -127,8 +139,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, SHYUSD, HYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, SHYUSD, HYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }

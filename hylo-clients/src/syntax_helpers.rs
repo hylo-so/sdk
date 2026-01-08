@@ -8,30 +8,60 @@ use hylo_idl::tokens::TokenMint;
 use crate::instructions::InstructionBuilder;
 use crate::transaction::{BuildTransactionData, QuoteInput, SimulatePrice};
 
-/// Helper for building instructions with cleaner syntax.
+/// Extension trait for ergonomic instruction builder method calls.
 ///
-/// # Errors
-/// Returns error if instruction building fails.
-pub fn build_instructions<Builder, IN, OUT>(
-  inputs: <Builder as InstructionBuilder<IN, OUT>>::Inputs,
-) -> Result<Vec<Instruction>>
-where
-  Builder: InstructionBuilder<IN, OUT>,
-  IN: TokenMint,
-  OUT: TokenMint,
-{
-  Builder::build_instructions(inputs)
+/// Provides `build_instructions` and `lookup_tables` methods that can be called
+/// with turbofish syntax on any type implementing [`InstructionBuilder`].
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use hylo_clients::prelude::*;
+///
+/// let instructions = ExchangeInstructionBuilder::build_instructions::<JITOSOL, HYUSD>(args)?;
+/// let luts = ExchangeInstructionBuilder::lookup_tables::<JITOSOL, HYUSD>();
+/// ```
+pub trait InstructionBuilderExt {
+  /// Builds instructions for the token pair operation.
+  ///
+  /// # Errors
+  /// Returns error if instruction building fails.
+  fn build_instructions<IN, OUT>(
+    inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
+  ) -> Result<Vec<Instruction>>
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
+
+  /// Returns the required address lookup tables for the token pair operation.
+  fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
 }
 
-/// Helper for getting lookup tables with cleaner syntax.
-#[must_use]
-pub fn lookup_tables<Builder, IN, OUT>() -> &'static [Pubkey]
-where
-  Builder: InstructionBuilder<IN, OUT>,
-  IN: TokenMint,
-  OUT: TokenMint,
-{
-  Builder::REQUIRED_LOOKUP_TABLES
+impl<X> InstructionBuilderExt for X {
+  fn build_instructions<IN, OUT>(
+    inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
+  ) -> Result<Vec<Instruction>>
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as InstructionBuilder<IN, OUT>>::build(inputs)
+  }
+
+  fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
+  }
 }
 
 /// Helper for simulating events with compute units using cleaner syntax.

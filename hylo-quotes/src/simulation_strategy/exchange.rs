@@ -12,12 +12,8 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use crate::syntax_helpers::{
-  build_instructions, lookup_tables, simulate_event_with_cus,
-};
+use crate::syntax_helpers::{simulate_event_with_cus, InstructionBuilderExt};
 use crate::{LstProvider, Quote, QuoteStrategy};
-
-type IB = ExchangeInstructionBuilder;
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
@@ -64,6 +60,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<L, HYUSD>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<L, HYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -71,8 +72,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, L, HYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, L, HYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -122,6 +123,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<HYUSD, L>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<HYUSD, L>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -129,8 +135,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, HYUSD, L>(args)?,
-      address_lookup_tables: lookup_tables::<IB, HYUSD, L>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -180,6 +186,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<L, XSOL>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<L, XSOL>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -187,8 +198,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, L, XSOL>(args)?,
-      address_lookup_tables: lookup_tables::<IB, L, XSOL>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -238,6 +249,11 @@ where
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<XSOL, L>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<XSOL, L>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -245,8 +261,8 @@ where
       compute_unit_strategy,
       fee_amount,
       fee_mint: L::MINT,
-      instructions: build_instructions::<IB, XSOL, L>(args)?,
-      address_lookup_tables: lookup_tables::<IB, XSOL, L>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -294,6 +310,11 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<HYUSD, XSOL>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<HYUSD, XSOL>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -301,8 +322,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, HYUSD, XSOL>(args)?,
-      address_lookup_tables: lookup_tables::<IB, HYUSD, XSOL>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -350,6 +371,11 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
       )),
     };
 
+    let instructions =
+      ExchangeInstructionBuilder::build_instructions::<XSOL, HYUSD>(args)?;
+    let address_lookup_tables =
+      ExchangeInstructionBuilder::lookup_tables::<XSOL, HYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -357,8 +383,8 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, XSOL, HYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, XSOL, HYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
