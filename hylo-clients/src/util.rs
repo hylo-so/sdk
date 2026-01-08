@@ -21,7 +21,7 @@ use anchor_lang::prelude::AccountMeta;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_transaction_status_client_types::{
@@ -145,31 +145,31 @@ pub fn build_lst_registry(
 /// NB: Drops 16 bytes for header and discriminator.
 ///
 /// # Errors
-/// * No inner instructions found
-/// * No parseable event found from target program
+/// * Simulation failed
+/// * Event not found in simulation result
 pub fn parse_event<E>(
   result: &Response<RpcSimulateTransactionResult>,
 ) -> Result<E>
 where
   E: AnchorDeserialize + Discriminator,
 {
-  if let Some(ixs) = &result.value.inner_instructions {
+  if let Some(err) = &result.value.err {
+    bail!("Simulation failed: {err:?}")
+  } else if let Some(ixs) = &result.value.inner_instructions {
     ixs
       .iter()
-      .flat_map(|ix| ix.instructions.iter())
+      .flat_map(|ix| &ix.instructions)
       .find_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
           UiPartiallyDecodedInstruction { data, .. },
-        )) => bs58::decode(data)
-          .into_vec()
-          .ok()
-          .filter(|decoded| &decoded[8..16] == E::DISCRIMINATOR)
-          .and_then(|decoded| E::try_from_slice(&decoded[16..]).ok()),
+        )) => bs58::decode(data).into_vec().ok(),
         _ => None,
       })
-      .ok_or(anyhow!("Parseable event not found"))
+      .filter(|bytes| bytes.len() >= 16 && &bytes[8..16] == E::DISCRIMINATOR)
+      .context("Could not parse event from result")
+      .and_then(|bytes| Ok(E::try_from_slice(&bytes[16..])?))
   } else {
-    Err(anyhow!("Inner instructions not found"))
+    bail!("Simulation succeeded but no inner instructions returned")
   }
 }
 

@@ -2,19 +2,14 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
-use hylo_clients::instructions::StabilityPoolInstructionBuilder;
-use hylo_clients::prelude::StabilityPoolClient;
+use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
+use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use crate::syntax_helpers::{
-  build_instructions, lookup_tables, simulate_event_with_cus,
-};
 use crate::{Quote, QuoteStrategy};
-
-type IB = StabilityPoolInstructionBuilder;
 
 // ============================================================================
 // Implementation for HYUSD → SHYUSD (stability pool deposit)
@@ -33,9 +28,9 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
 
-      let (event, cus) =
-        simulate_event_with_cus::<StabilityPoolClient, HYUSD, SHYUSD>(
-          &self.stability_pool_client,
+      let (event, cus) = self
+        .stability_pool_client
+        .simulate_event_with_cus::<HYUSD, SHYUSD>(
           user,
           StabilityPoolArgs { amount, user },
         )
@@ -50,6 +45,11 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
 
     let args = StabilityPoolArgs { amount, user };
 
+    let instructions =
+      StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(args)?;
+    let address_lookup_tables =
+      StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -57,8 +57,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, HYUSD, SHYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, HYUSD, SHYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }
@@ -78,9 +78,9 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
     let amount = UFix64::<N6>::new(amount_in);
 
     let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) =
-        simulate_event_with_cus::<StabilityPoolClient, SHYUSD, HYUSD>(
-          &self.stability_pool_client,
+      let (event, cus) = self
+        .stability_pool_client
+        .simulate_event_with_cus::<SHYUSD, HYUSD>(
           user,
           StabilityPoolArgs { amount, user },
         )
@@ -99,6 +99,11 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
 
     let args = StabilityPoolArgs { amount, user };
 
+    let instructions =
+      StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(args)?;
+    let address_lookup_tables =
+      StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>().into();
+
     Ok(Quote {
       amount_in,
       amount_out,
@@ -106,8 +111,8 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
-      instructions: build_instructions::<IB, SHYUSD, HYUSD>(args)?,
-      address_lookup_tables: lookup_tables::<IB, SHYUSD, HYUSD>().into(),
+      instructions,
+      address_lookup_tables,
     })
   }
 }

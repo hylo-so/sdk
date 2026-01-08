@@ -1,53 +1,112 @@
-//! Helper functions for cleaner static dispatch syntax.
+//! Extension traits for cleaner static dispatch syntax.
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
+use async_trait::async_trait;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instructions::InstructionBuilder;
 use crate::transaction::{BuildTransactionData, QuoteInput, SimulatePrice};
 
-/// Helper for building instructions with cleaner syntax.
+/// Turbofish syntax for [`InstructionBuilder`].
 ///
-/// # Errors
-/// Returns error if instruction building fails.
-pub fn build_instructions<Builder, IN, OUT>(
-  inputs: <Builder as InstructionBuilder<IN, OUT>>::Inputs,
-) -> Result<Vec<Instruction>>
-where
-  Builder: InstructionBuilder<IN, OUT>,
-  IN: TokenMint,
-  OUT: TokenMint,
-{
-  Builder::build_instructions(inputs)
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+///
+/// # fn example() -> Result<()> {
+/// let user = Pubkey::new_unique();
+/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
+/// let instructions = ExchangeInstructionBuilder::build_instructions::<JITOSOL, HYUSD>(args)?;
+/// let luts = ExchangeInstructionBuilder::lookup_tables::<JITOSOL, HYUSD>();
+/// # Ok(())
+/// # }
+/// ```
+pub trait InstructionBuilderExt {
+  /// Builds instructions for a token pair operation.
+  ///
+  /// # Errors
+  /// * Underlying builder errors.
+  fn build_instructions<IN, OUT>(
+    inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
+  ) -> Result<Vec<Instruction>>
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
+
+  fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
 }
 
-/// Helper for getting lookup tables with cleaner syntax.
-#[must_use]
-pub fn lookup_tables<Builder, IN, OUT>() -> &'static [Pubkey]
-where
-  Builder: InstructionBuilder<IN, OUT>,
-  IN: TokenMint,
-  OUT: TokenMint,
-{
-  Builder::REQUIRED_LOOKUP_TABLES
+impl<X> InstructionBuilderExt for X {
+  fn build_instructions<IN, OUT>(
+    inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
+  ) -> Result<Vec<Instruction>>
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as InstructionBuilder<IN, OUT>>::build(inputs)
+  }
+
+  fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
+  }
 }
 
-/// Helper for simulating events with compute units using cleaner syntax.
+/// Turbofish syntax for [`SimulatePrice`](crate::transaction::SimulatePrice).
 ///
-/// # Errors
-/// Returns error if simulation fails.
-pub async fn simulate_event_with_cus<Client, I, O>(
-  client: &Client,
-  user: Pubkey,
-  inputs: <Client as BuildTransactionData<I, O>>::Inputs,
-) -> Result<(<Client as SimulatePrice<I, O>>::Event, Option<u64>)>
-where
-  Client: SimulatePrice<I, O> + Send + Sync,
-  <Client as BuildTransactionData<I, O>>::Inputs: QuoteInput,
-  I: TokenMint,
-  O: TokenMint,
-{
-  Client::simulate_event_with_cus(client, user, inputs).await
+/// ```rust,no_run
+/// use hylo_clients::prelude::*;
+///
+/// # async fn example(client: ExchangeClient) -> Result<()> {
+/// let user = Pubkey::new_unique();
+/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
+/// let (event, cus) = client.simulate_event_with_cus::<JITOSOL, HYUSD>(user, args).await?;
+/// # Ok(())
+/// # }
+/// ```
+#[async_trait]
+pub trait SimulatePriceExt {
+  async fn simulate_event_with_cus<I, O>(
+    &self,
+    user: Pubkey,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
+  where
+    Self: SimulatePrice<I, O> + Send + Sync,
+    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
+    <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
+    I: TokenMint,
+    O: TokenMint;
+}
+
+#[async_trait]
+impl<X> SimulatePriceExt for X {
+  async fn simulate_event_with_cus<I, O>(
+    &self,
+    user: Pubkey,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
+  where
+    Self: SimulatePrice<I, O> + Send + Sync,
+    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
+    <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
+    I: TokenMint,
+    O: TokenMint,
+  {
+    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs)
+      .await
+  }
 }
