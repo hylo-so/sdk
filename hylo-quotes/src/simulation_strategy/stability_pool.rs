@@ -3,13 +3,12 @@ use anyhow::{bail, Result};
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N6};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder;
-use hylo_clients::prelude::StabilityPoolClient;
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use crate::syntax_helpers::{simulate_event_with_cus, InstructionBuilderExt};
+use crate::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use crate::{Quote, QuoteStrategy};
 
 // ============================================================================
@@ -29,9 +28,9 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
       const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
 
-      let (event, cus) =
-        simulate_event_with_cus::<StabilityPoolClient, HYUSD, SHYUSD>(
-          &self.stability_pool_client,
+      let (event, cus) = self
+        .stability_pool_client
+        .simulate_event_with_cus::<HYUSD, SHYUSD>(
           user,
           StabilityPoolArgs { amount, user },
         )
@@ -81,9 +80,9 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
     let amount = UFix64::<N6>::new(amount_in);
 
     let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) =
-        simulate_event_with_cus::<StabilityPoolClient, SHYUSD, HYUSD>(
-          &self.stability_pool_client,
+      let (event, cus) = self
+        .stability_pool_client
+        .simulate_event_with_cus::<SHYUSD, HYUSD>(
           user,
           StabilityPoolArgs { amount, user },
         )

@@ -1,7 +1,8 @@
-//! Helper functions for cleaner static dispatch syntax.
+//! Extension traits for cleaner static dispatch syntax.
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
 use hylo_idl::tokens::TokenMint;
 
@@ -64,20 +65,53 @@ impl<X> InstructionBuilderExt for X {
   }
 }
 
-/// Helper for simulating events with compute units using cleaner syntax.
+/// Extension trait for ergonomic simulate price method calls.
 ///
-/// # Errors
-/// Returns error if simulation fails.
-pub async fn simulate_event_with_cus<Client, I, O>(
-  client: &Client,
-  user: Pubkey,
-  inputs: <Client as BuildTransactionData<I, O>>::Inputs,
-) -> Result<(<Client as SimulatePrice<I, O>>::Event, Option<u64>)>
-where
-  Client: SimulatePrice<I, O> + Send + Sync,
-  <Client as BuildTransactionData<I, O>>::Inputs: QuoteInput,
-  I: TokenMint,
-  O: TokenMint,
-{
-  Client::simulate_event_with_cus(client, user, inputs).await
+/// Provides `simulate_event_with_cus` method that can be called with turbofish
+/// syntax on any type implementing [`SimulatePrice`].
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use hylo_clients::prelude::*;
+///
+/// let (event, cus) = ExchangeClient::simulate_event_with_cus::<JITOSOL, HYUSD>(
+///   &client,
+///   user,
+///   args,
+/// ).await?;
+/// ```
+pub trait SimulatePriceExt {
+  /// Simulates transaction and returns the event and compute units consumed.
+  ///
+  /// # Errors
+  /// Returns error if simulation fails.
+  fn simulate_event_with_cus<I, O>(
+    &self,
+    user: Pubkey,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> impl std::future::Future<Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>> + Send
+  where
+    Self: SimulatePrice<I, O> + Send + Sync,
+    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
+    <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
+    I: TokenMint,
+    O: TokenMint;
+}
+
+impl<X> SimulatePriceExt for X {
+  fn simulate_event_with_cus<I, O>(
+    &self,
+    user: Pubkey,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> impl std::future::Future<Output = Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>> + Send
+  where
+    Self: SimulatePrice<I, O> + Send + Sync,
+    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
+    <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
+    I: TokenMint,
+    O: TokenMint,
+  {
+    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs)
+  }
 }

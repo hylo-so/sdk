@@ -1,6 +1,6 @@
-//! Helper functions for cleaner static dispatch syntax.
+//! Extension traits for cleaner static dispatch syntax.
 
-// Re-export helpers from hylo-clients for convenience
+// Re-export extension traits from hylo-clients for convenience
 pub(crate) use hylo_clients::syntax_helpers::{
-  simulate_event_with_cus, InstructionBuilderExt,
+  InstructionBuilderExt, SimulatePriceExt,
 };
