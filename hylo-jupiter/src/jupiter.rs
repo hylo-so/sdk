@@ -6,7 +6,9 @@ use hylo_clients::protocol_state::ProtocolState;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
-use hylo_core::idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_core::idl::tokens::{
+  TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+};
 use hylo_core::idl::{exchange, pda};
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_jupiter_amm_interface::{
@@ -107,7 +109,8 @@ impl Amm for HyloJupiterClient {
       account_map_get(account_map, &pda::lst_header(JITOSOL::MINT))?;
     let hylosol_header: LstHeader =
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
-    let sol_usd: PriceUpdateV2 = account_map_get(account_map, &SOL_USD_PYTH_FEED)?;
+    let sol_usd: PriceUpdateV2 =
+      account_map_get(account_map, &SOL_USD_PYTH_FEED)?;
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -155,8 +158,12 @@ impl Amm for HyloJupiterClient {
       (XSOL::MINT, JITOSOL::MINT) => {
         quote::xsol_redeem(ctx, self.jitosol_header()?, UFix64::new(*amount))
       }
-      (HYUSD::MINT, XSOL::MINT) => quote::hyusd_xsol_swap(ctx, UFix64::new(*amount)),
-      (XSOL::MINT, HYUSD::MINT) => quote::xsol_hyusd_swap(ctx, UFix64::new(*amount)),
+      (HYUSD::MINT, XSOL::MINT) => {
+        quote::hyusd_xsol_swap(ctx, UFix64::new(*amount))
+      }
+      (XSOL::MINT, HYUSD::MINT) => {
+        quote::xsol_hyusd_swap(ctx, UFix64::new(*amount))
+      }
       (HYUSD::MINT, SHYUSD::MINT) => quote::shyusd_mint(
         ctx,
         self.shyusd_mint()?,
@@ -260,10 +267,10 @@ mod tests {
     RedeemStablecoinEventV2, SwapLeverToStableEventV1,
     SwapStableToLeverEventV1,
   };
-  use hylo_core::idl_type_bridge::convert_ufixvalue64;
   use hylo_core::idl::stability_pool::events::{
     UserDepositEvent, UserWithdrawEventV1,
   };
+  use hylo_core::idl_type_bridge::convert_ufixvalue64;
   use hylo_jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
 

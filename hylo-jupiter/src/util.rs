@@ -80,7 +80,8 @@ pub async fn load_amm_context(client: &RpcClient) -> Result<AmmContext> {
 /// Validates Jupiter swap parameters for Hylo compatibility.
 ///
 /// # Errors
-/// * `ExactOut` mode or dynamic accounts used
+/// * `ExactOut` mode
+/// * Dynamic accounts
 pub fn validate_swap_params<'a>(
   params: &'a SwapParams<'a, 'a>,
 ) -> Result<&'a SwapParams<'a, 'a>> {

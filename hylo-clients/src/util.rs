@@ -33,7 +33,17 @@ use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
-pub trait LST: TokenMint {}
+mod private {
+  pub trait Sealed {}
+}
+
+/// Liquid staking token marker trait.
+///
+/// Sealed to prevent downstream implementations.
+pub trait LST: TokenMint + private::Sealed {}
+
+impl private::Sealed for JITOSOL {}
+impl private::Sealed for HYLOSOL {}
 impl LST for JITOSOL {}
 impl LST for HYLOSOL {}
 
