@@ -36,29 +36,21 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
 
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
+    let shyusd_nav = lp_token_nav(
+      state.exchange_context.stablecoin_nav()?,
+      UFix64::new(state.hyusd_pool.amount),
+      state.exchange_context.levercoin_mint_nav()?,
+      UFix64::new(state.xsol_pool.amount),
+      UFix64::new(state.shyusd_mint.supply),
+    )?;
+    let shyusd_out = lp_token_out(amount, shyusd_nav)?;
 
-      let shyusd_nav = lp_token_nav(
-        state.exchange_context.stablecoin_nav()?,
-        UFix64::new(state.hyusd_pool.amount),
-        state.exchange_context.levercoin_mint_nav()?,
-        UFix64::new(state.xsol_pool.amount),
-        UFix64::new(state.shyusd_mint.supply),
-      )?;
-
-      let shyusd_out = lp_token_out(amount, shyusd_nav)?;
-
-      (
-        shyusd_out.bits,
-        FEE_AMOUNT,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = shyusd_out.bits;
+    let fee_amount = 0; // UserDepositEvent has no fees
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = StabilityPoolArgs { amount, user };
-
     let instructions =
       StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(args)?;
     let address_lookup_tables =
@@ -100,29 +92,23 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
 
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let shyusd_supply = UFix64::new(state.shyusd_mint.supply);
-      let hyusd_in_pool = UFix64::new(state.hyusd_pool.amount);
+    let shyusd_supply = UFix64::new(state.shyusd_mint.supply);
+    let hyusd_in_pool = UFix64::new(state.hyusd_pool.amount);
+    let hyusd_to_withdraw =
+      amount_token_to_withdraw(amount, shyusd_supply, hyusd_in_pool)?;
 
-      let hyusd_to_withdraw =
-        amount_token_to_withdraw(amount, shyusd_supply, hyusd_in_pool)?;
+    let withdrawal_fee = UFix64::new(state.pool_config.withdrawal_fee.bits);
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
 
-      let withdrawal_fee = UFix64::new(state.pool_config.withdrawal_fee.bits);
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
-
-      (
-        amount_remaining.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = amount_remaining.bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = StabilityPoolArgs { amount, user };
-
     let instructions =
       StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(args)?;
     let address_lookup_tables =

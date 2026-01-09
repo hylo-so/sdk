@@ -46,33 +46,26 @@ where
     let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(&state);
     let lst_price = lst_header.price_sol.into();
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = state
-        .exchange_context
-        .stablecoin_mint_fee(&lst_price, amount)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = state
+      .exchange_context
+      .stablecoin_mint_fee(&lst_price, amount)?;
 
-      let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
+    let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
+    let converted = state
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .lst_to_token(amount_remaining, stablecoin_nav)?;
 
-      let amount_out = {
-        let converted = state
-          .exchange_context
-          .token_conversion(&lst_price)?
-          .lst_to_token(amount_remaining, stablecoin_nav)?;
-        state
-          .exchange_context
-          .validate_stablecoin_amount(converted)?
-      };
-
-      (
-        amount_out.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = state
+      .exchange_context
+      .validate_stablecoin_amount(converted)?
+      .bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = MintArgs {
       amount,
@@ -121,28 +114,23 @@ where
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
+    let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
+    let lst_out = state
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .token_to_lst(amount, stablecoin_nav)?;
 
-      let lst_out = state
-        .exchange_context
-        .token_conversion(&lst_price)?
-        .token_to_lst(amount, stablecoin_nav)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = state
+      .exchange_context
+      .stablecoin_redeem_fee(&lst_price, lst_out)?;
 
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = state
-        .exchange_context
-        .stablecoin_redeem_fee(&lst_price, lst_out)?;
-
-      (
-        amount_remaining.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = amount_remaining.bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = RedeemArgs {
       amount,
@@ -196,28 +184,23 @@ where
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = state
-        .exchange_context
-        .levercoin_mint_fee(&lst_price, amount)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = state
+      .exchange_context
+      .levercoin_mint_fee(&lst_price, amount)?;
 
-      let levercoin_mint_nav = state.exchange_context.levercoin_mint_nav()?;
+    let levercoin_mint_nav = state.exchange_context.levercoin_mint_nav()?;
+    let xsol_out = state
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .lst_to_token(amount_remaining, levercoin_mint_nav)?;
 
-      let xsol_out = state
-        .exchange_context
-        .token_conversion(&lst_price)?
-        .lst_to_token(amount_remaining, levercoin_mint_nav)?;
-
-      (
-        xsol_out.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = xsol_out.bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = MintArgs {
       amount,
@@ -271,27 +254,23 @@ where
     let lst_header = state.lst_header();
     let lst_price = lst_header.price_sol.into();
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let xsol_nav = state.exchange_context.levercoin_redeem_nav()?;
-      let lst_out = state
-        .exchange_context
-        .token_conversion(&lst_price)?
-        .token_to_lst(amount, xsol_nav)?;
+    let xsol_nav = state.exchange_context.levercoin_redeem_nav()?;
+    let lst_out = state
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .token_to_lst(amount, xsol_nav)?;
 
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = state
-        .exchange_context
-        .levercoin_redeem_fee(&lst_price, lst_out)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = state
+      .exchange_context
+      .levercoin_redeem_fee(&lst_price, lst_out)?;
 
-      (
-        amount_remaining.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = amount_remaining.bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = RedeemArgs {
       amount,
@@ -341,24 +320,20 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
 
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = state.exchange_context.stablecoin_to_levercoin_fee(amount)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = state.exchange_context.stablecoin_to_levercoin_fee(amount)?;
 
-      let xsol_out = state
-        .exchange_context
-        .swap_conversion()?
-        .stable_to_lever(amount_remaining)?;
+    let xsol_out = state
+      .exchange_context
+      .swap_conversion()?
+      .stable_to_lever(amount_remaining)?;
 
-      (
-        xsol_out.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = xsol_out.bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = SwapArgs {
       amount,
@@ -412,31 +387,25 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
 
     let amount = UFix64::<N6>::new(amount_in);
 
-    let (amount_out, fee_amount, compute_units, compute_unit_strategy) = {
-      let hyusd_total = {
-        let converted = state
-          .exchange_context
-          .swap_conversion()?
-          .lever_to_stable(amount)?;
-        state
-          .exchange_context
-          .validate_stablecoin_swap_amount(converted)
-      }?;
+    let converted = state
+      .exchange_context
+      .swap_conversion()?
+      .lever_to_stable(amount)?;
+    let hyusd_total = state
+      .exchange_context
+      .validate_stablecoin_swap_amount(converted)?;
 
-      let FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      } = state
-        .exchange_context
-        .levercoin_to_stablecoin_fee(hyusd_total)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = state
+      .exchange_context
+      .levercoin_to_stablecoin_fee(hyusd_total)?;
 
-      (
-        amount_remaining.bits,
-        fees_extracted.bits,
-        DEFAULT_CUS_WITH_BUFFER,
-        ComputeUnitStrategy::Estimated,
-      )
-    };
+    let amount_out = amount_remaining.bits;
+    let fee_amount = fees_extracted.bits;
+    let compute_units = DEFAULT_CUS_WITH_BUFFER;
+    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
 
     let args = SwapArgs {
       amount,
