@@ -1,6 +1,5 @@
 [package]
 name = "hylo-quotes"
-version = "0.1.0"
 edition = "2021"
 description = "Quote computation and execution layer for Hylo protocol"
 
