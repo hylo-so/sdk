@@ -19,5 +19,5 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   /// # Errors
   /// * Stability mode restrictions
   /// * Math overflow
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput>;
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput>;
 }

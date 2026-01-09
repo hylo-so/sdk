@@ -14,7 +14,7 @@ use crate::token_operation::{OperationOutput, TokenOperation};
 
 /// Deposit stablecoin (HYUSD) into stability pool for LP token (SHYUSD).
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     let amount = UFix64::<N6>::new(amount_in);
     let shyusd_nav = lp_token_nav(
       self.exchange_context.stablecoin_nav()?,
@@ -34,7 +34,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
 
 /// Withdraw LP token (SHYUSD) from stability pool for stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     ensure!(
       self.xsol_pool.amount == 0,
       "SHYUSD -> HYUSD not possible: levercoin present in pool"

@@ -33,7 +33,7 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode <= StabilityMode::Mode1,
       "Mint operations disabled in current stability mode"
@@ -69,7 +69,7 @@ impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     let amount = UFix64::<N6>::new(amount_in);
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
@@ -97,7 +97,7 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin mint disabled in current stability mode"
@@ -129,7 +129,7 @@ impl<L: LST, C: SolanaClock> TokenOperation<XSOL, L> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin redemption disabled in current stability mode"
@@ -158,7 +158,7 @@ where
 
 /// Swap stablecoin (HYUSD) to levercoin (XSOL).
 impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Swaps are disabled in current stability mode"
@@ -182,7 +182,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
 
 /// Swap levercoin (XSOL) to stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
-  fn compute(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
     ensure!(
       matches!(
         self.exchange_context.stability_mode,

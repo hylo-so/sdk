@@ -30,7 +30,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<HYUSD, SHYUSD>::compute(&state, amount_in)?;
+    let op = TokenOperation::<HYUSD, SHYUSD>::compute_quote(&state, amount_in)?;
     let args = StabilityPoolArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -64,7 +64,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<SHYUSD, HYUSD>::compute(&state, amount_in)?;
+    let op = TokenOperation::<SHYUSD, HYUSD>::compute_quote(&state, amount_in)?;
     let args = StabilityPoolArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,

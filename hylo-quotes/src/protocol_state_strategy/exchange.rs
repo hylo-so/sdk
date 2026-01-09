@@ -34,7 +34,7 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute(amount_in)?;
+    let op = state.compute_quote(amount_in)?;
     let args = MintArgs {
       amount: UFix64::<N9>::new(amount_in),
       user,
@@ -72,7 +72,7 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute(amount_in)?;
+    let op = state.compute_quote(amount_in)?;
     let args = RedeemArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -110,7 +110,7 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute(amount_in)?;
+    let op = state.compute_quote(amount_in)?;
     let args = MintArgs {
       amount: UFix64::<N9>::new(amount_in),
       user,
@@ -148,7 +148,7 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute(amount_in)?;
+    let op = state.compute_quote(amount_in)?;
     let args = RedeemArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -184,7 +184,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<HYUSD, XSOL>::compute(&state, amount_in)?;
+    let op = TokenOperation::<HYUSD, XSOL>::compute_quote(&state, amount_in)?;
     let args = SwapArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -221,7 +221,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<XSOL, HYUSD>::compute(&state, amount_in)?;
+    let op = TokenOperation::<XSOL, HYUSD>::compute_quote(&state, amount_in)?;
     let args = SwapArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
