@@ -258,7 +258,7 @@ impl QuoteTestCase {
     match self.expected {
       ExpectedResult::InsufficientBalance => {
         if self.has_insufficient_balance(ctx) {
-          Some("Parseable event not found")
+          Some("Simulation failed: InstructionError(1, Custom(3012)")
         } else {
           None
         }
