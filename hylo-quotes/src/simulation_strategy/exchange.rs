@@ -30,26 +30,20 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .exchange_client
-        .simulate_event_with_cus::<L, HYUSD>(
-          user,
-          MintArgs {
-            amount,
-            user,
-            slippage_config: None,
-          },
-        )
-        .await?;
-
-      (
-        event.minted.bits,
-        event.fees_deposited.bits,
-        resolve_compute_units(cus),
-      )
+    let args = MintArgs {
+      amount,
+      user,
+      slippage_config: None,
     };
+
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<L, HYUSD>(user, args)
+      .await?;
+
+    let amount_out = event.minted.bits;
+    let fee_amount = event.fees_deposited.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = MintArgs {
       amount,
@@ -92,26 +86,20 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .exchange_client
-        .simulate_event_with_cus::<HYUSD, L>(
-          user,
-          RedeemArgs {
-            amount,
-            user,
-            slippage_config: None,
-          },
-        )
-        .await?;
-
-      (
-        event.collateral_withdrawn.bits,
-        event.fees_deposited.bits,
-        resolve_compute_units(cus),
-      )
+    let args = RedeemArgs {
+      amount,
+      user,
+      slippage_config: None,
     };
+
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<HYUSD, L>(user, args)
+      .await?;
+
+    let amount_out = event.collateral_withdrawn.bits;
+    let fee_amount = event.fees_deposited.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = RedeemArgs {
       amount,
@@ -154,26 +142,20 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .exchange_client
-        .simulate_event_with_cus::<L, XSOL>(
-          user,
-          MintArgs {
-            amount,
-            user,
-            slippage_config: None,
-          },
-        )
-        .await?;
-
-      (
-        event.minted.bits,
-        event.fees_deposited.bits,
-        resolve_compute_units(cus),
-      )
+    let args = MintArgs {
+      amount,
+      user,
+      slippage_config: None,
     };
+
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<L, XSOL>(user, args)
+      .await?;
+
+    let amount_out = event.minted.bits;
+    let fee_amount = event.fees_deposited.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = MintArgs {
       amount,
@@ -216,26 +198,20 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .exchange_client
-        .simulate_event_with_cus::<XSOL, L>(
-          user,
-          RedeemArgs {
-            amount,
-            user,
-            slippage_config: None,
-          },
-        )
-        .await?;
-
-      (
-        event.collateral_withdrawn.bits,
-        event.fees_deposited.bits,
-        resolve_compute_units(cus),
-      )
+    let args = RedeemArgs {
+      amount,
+      user,
+      slippage_config: None,
     };
+
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<XSOL, L>(user, args)
+      .await?;
+
+    let amount_out = event.collateral_withdrawn.bits;
+    let fee_amount = event.fees_deposited.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = RedeemArgs {
       amount,
@@ -275,26 +251,20 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .exchange_client
-        .simulate_event_with_cus::<HYUSD, XSOL>(
-          user,
-          SwapArgs {
-            amount,
-            user,
-            slippage_config: None,
-          },
-        )
-        .await?;
-
-      (
-        event.levercoin_minted.bits,
-        event.stablecoin_fees.bits,
-        resolve_compute_units(cus),
-      )
+    let args = SwapArgs {
+      amount,
+      user,
+      slippage_config: None,
     };
+
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<HYUSD, XSOL>(user, args)
+      .await?;
+
+    let amount_out = event.levercoin_minted.bits;
+    let fee_amount = event.stablecoin_fees.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = SwapArgs {
       amount,
@@ -335,26 +305,20 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .exchange_client
-        .simulate_event_with_cus::<XSOL, HYUSD>(
-          user,
-          SwapArgs {
-            amount,
-            user,
-            slippage_config: None,
-          },
-        )
-        .await?;
-
-      (
-        event.stablecoin_minted_user.bits,
-        event.stablecoin_minted_fees.bits,
-        resolve_compute_units(cus),
-      )
+    let args = SwapArgs {
+      amount,
+      user,
+      slippage_config: None,
     };
+
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<XSOL, HYUSD>(user, args)
+      .await?;
+
+    let amount_out = event.stablecoin_minted_user.bits;
+    let fee_amount = event.stablecoin_minted_fees.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = SwapArgs {
       amount,

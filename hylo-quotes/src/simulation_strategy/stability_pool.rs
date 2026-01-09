@@ -24,27 +24,18 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      const FEE_AMOUNT: u64 = 0; // UserDepositEvent has no fees
-
-      let (event, cus) = self
-        .stability_pool_client
-        .simulate_event_with_cus::<HYUSD, SHYUSD>(
-          user,
-          StabilityPoolArgs { amount, user },
-        )
-        .await?;
-
-      (
-        event.lp_token_minted.bits,
-        FEE_AMOUNT,
-        resolve_compute_units(cus),
-      )
-    };
-
     let args = StabilityPoolArgs { amount, user };
 
+    let (event, cus) = self
+      .stability_pool_client
+      .simulate_event_with_cus::<HYUSD, SHYUSD>(user, args)
+      .await?;
+
+    let amount_out = event.lp_token_minted.bits;
+    let fee_amount = 0; // UserDepositEvent has no fees
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
+
+    let args = StabilityPoolArgs { amount, user };
     let instructions =
       StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(args)?;
     let address_lookup_tables =
@@ -76,29 +67,22 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-
-    let (amount_out, fee_amount, (compute_units, compute_unit_strategy)) = {
-      let (event, cus) = self
-        .stability_pool_client
-        .simulate_event_with_cus::<SHYUSD, HYUSD>(
-          user,
-          StabilityPoolArgs { amount, user },
-        )
-        .await?;
-
-      if event.levercoin_withdrawn.bits > 0 {
-        bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
-      }
-
-      (
-        event.stablecoin_withdrawn.bits,
-        event.stablecoin_fees.bits,
-        resolve_compute_units(cus),
-      )
-    };
-
     let args = StabilityPoolArgs { amount, user };
 
+    let (event, cus) = self
+      .stability_pool_client
+      .simulate_event_with_cus::<SHYUSD, HYUSD>(user, args)
+      .await?;
+
+    if event.levercoin_withdrawn.bits > 0 {
+      bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
+    }
+
+    let amount_out = event.stablecoin_withdrawn.bits;
+    let fee_amount = event.stablecoin_fees.bits;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
+
+    let args = StabilityPoolArgs { amount, user };
     let instructions =
       StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(args)?;
     let address_lookup_tables =
