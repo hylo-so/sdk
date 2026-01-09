@@ -21,6 +21,7 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use crate::protocol_state::ProtocolAccounts;
 
 /// Complete snapshot of Hylo protocol state
+#[derive(Clone)]
 pub struct ProtocolState<C: SolanaClock> {
   /// Exchange context with all protocol parameters
   pub exchange_context: ExchangeContext<C>,
@@ -51,6 +52,63 @@ pub struct ProtocolState<C: SolanaClock> {
 
   /// Timestamp of when this state was fetched
   pub fetched_at: UnixTimestamp,
+}
+
+impl<C: SolanaClock> ProtocolState<C> {
+  /// Build `ProtocolState` from deserialized accounts and a clock.
+  ///
+  /// # Errors
+  /// * Propagates errors from `ExchangeContext::load`.
+  #[allow(clippy::too_many_arguments)]
+  pub fn build(
+    clock: C,
+    hylo: &Hylo,
+    jitosol_header: LstHeader,
+    hylosol_header: LstHeader,
+    hyusd_mint: Mint,
+    xsol_mint: Mint,
+    shyusd_mint: Mint,
+    pool_config: PoolConfig,
+    hyusd_pool: TokenAccount,
+    xsol_pool: TokenAccount,
+    sol_usd: &PriceUpdateV2,
+  ) -> Result<Self> {
+    let fetched_at = clock.unix_timestamp();
+    let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
+    let oracle_config = OracleConfig::new(
+      hylo.oracle_interval_secs,
+      convert_ufixvalue64(hylo.oracle_conf_tolerance).try_into()?,
+    );
+    let stability_controller = StabilityController::new(
+      convert_ufixvalue64(hylo.stability_threshold_1).try_into()?,
+      convert_ufixvalue64(hylo.stability_threshold_2).try_into()?,
+    )?;
+    let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
+    let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
+    let exchange_context = ExchangeContext::load(
+      clock,
+      &total_sol_cache,
+      stability_controller,
+      oracle_config,
+      hyusd_fees,
+      xsol_fees,
+      sol_usd,
+      &hyusd_mint,
+      Some(&xsol_mint),
+    )?;
+    Ok(Self {
+      exchange_context,
+      jitosol_header,
+      hylosol_header,
+      hyusd_mint,
+      xsol_mint,
+      shyusd_mint,
+      pool_config,
+      hyusd_pool,
+      xsol_pool,
+      fetched_at,
+    })
+  }
 }
 
 impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
@@ -95,46 +153,9 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let fetched_at = clock.unix_timestamp;
-
-    let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
-
-    let oracle_config = OracleConfig::new(
-      hylo.oracle_interval_secs,
-      convert_ufixvalue64(hylo.oracle_conf_tolerance)
-        .try_into()
-        .map_err(|e: anchor_lang::error::Error| anyhow!(e))?,
-    );
-
-    let stability_controller = StabilityController::new(
-      convert_ufixvalue64(hylo.stability_threshold_1)
-        .try_into()
-        .map_err(|e: anchor_lang::error::Error| anyhow!(e))?,
-      convert_ufixvalue64(hylo.stability_threshold_2)
-        .try_into()
-        .map_err(|e: anchor_lang::error::Error| anyhow!(e))?,
-    )
-    .map_err(|e: anchor_lang::error::Error| anyhow!(e))?;
-
-    let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
-
-    let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
-
-    let exchange_context = ExchangeContext::load(
+    Self::build(
       clock,
-      &total_sol_cache,
-      stability_controller,
-      oracle_config,
-      hyusd_fees,
-      xsol_fees,
-      &sol_usd,
-      &hyusd_mint,
-      Some(&xsol_mint),
-    )
-    .map_err(|e: anchor_lang::error::Error| anyhow!(e))?;
-
-    Ok(Self {
-      exchange_context,
+      &hylo,
       jitosol_header,
       hylosol_header,
       hyusd_mint,
@@ -143,7 +164,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       pool_config,
       hyusd_pool,
       xsol_pool,
-      fetched_at,
-    })
+      &sol_usd,
+    )
   }
 }
