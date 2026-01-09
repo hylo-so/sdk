@@ -16,14 +16,14 @@ use hylo_idl::exchange::events::{
 };
 use hylo_idl::exchange::instruction_builders;
 
+use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
   BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
   TransactionSyntax,
 };
-use crate::util::{
-  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
-};
+use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 
 /// Client for interacting with the Hylo Exchange program.
 ///
@@ -315,26 +315,11 @@ impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
 
   async fn build(
     &self,
-    RedeemArgs {
-      amount,
-      user,
-      slippage_config,
-    }: RedeemArgs,
+    inputs: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &OUT::MINT);
-    let args = args::RedeemStablecoin {
-      amount_to_redeem: amount.bits,
-      slippage_config: slippage_config.map(Into::into),
-    };
-    let instruction =
-      instruction_builders::redeem_stablecoin(user, OUT::MINT, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
-      ])
-      .await?;
+    let instructions = ExchangeIB::build_instructions::<HYUSD, OUT>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, OUT>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -353,26 +338,11 @@ impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
 
   async fn build(
     &self,
-    RedeemArgs {
-      amount,
-      user,
-      slippage_config,
-    }: RedeemArgs,
+    inputs: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &OUT::MINT);
-    let args = args::RedeemLevercoin {
-      amount_to_redeem: amount.bits,
-      slippage_config: slippage_config.map(Into::into),
-    };
-    let instruction =
-      instruction_builders::redeem_levercoin(user, OUT::MINT, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
-      ])
-      .await?;
+    let instructions = ExchangeIB::build_instructions::<XSOL, OUT>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, OUT>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -389,28 +359,10 @@ impl<OUT: LST> SimulatePrice<XSOL, OUT> for ExchangeClient {
 impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
   type Inputs = MintArgs;
 
-  async fn build(
-    &self,
-    MintArgs {
-      amount,
-      user,
-      slippage_config,
-    }: MintArgs,
-  ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let args = args::MintStablecoin {
-      amount_lst_to_deposit: amount.bits,
-      slippage_config: slippage_config.map(Into::into),
-    };
-    let instruction =
-      instruction_builders::mint_stablecoin(user, IN::MINT, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
-      ])
-      .await?;
+  async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
+    let instructions = ExchangeIB::build_instructions::<IN, HYUSD>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<IN, HYUSD>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -427,28 +379,10 @@ impl<IN: LST> SimulatePrice<IN, HYUSD> for ExchangeClient {
 impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
   type Inputs = MintArgs;
 
-  async fn build(
-    &self,
-    MintArgs {
-      amount,
-      user,
-      slippage_config,
-    }: MintArgs,
-  ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let args = args::MintLevercoin {
-      amount_lst_to_deposit: amount.bits,
-      slippage_config: slippage_config.map(Into::into),
-    };
-    let instruction =
-      instruction_builders::mint_levercoin(user, IN::MINT, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
-      ])
-      .await?;
+  async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
+    let instructions = ExchangeIB::build_instructions::<IN, XSOL>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<IN, XSOL>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -465,23 +399,10 @@ impl<IN: LST> SimulatePrice<IN, XSOL> for ExchangeClient {
 impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
   type Inputs = SwapArgs;
 
-  async fn build(
-    &self,
-    SwapArgs {
-      amount,
-      user,
-      slippage_config,
-    }: SwapArgs,
-  ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let args = args::SwapStableToLever {
-      amount_stablecoin: amount.bits,
-      slippage_config: slippage_config.map(Into::into),
-    };
-    let instruction = instruction_builders::swap_stable_to_lever(user, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables =
-      vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
+  async fn build(&self, inputs: SwapArgs) -> Result<VersionedTransactionData> {
+    let instructions = ExchangeIB::build_instructions::<HYUSD, XSOL>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, XSOL>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -498,23 +419,10 @@ impl SimulatePrice<HYUSD, XSOL> for ExchangeClient {
 impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
   type Inputs = SwapArgs;
 
-  async fn build(
-    &self,
-    SwapArgs {
-      amount,
-      user,
-      slippage_config,
-    }: SwapArgs,
-  ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let args = args::SwapLeverToStable {
-      amount_levercoin: amount.bits,
-      slippage_config: slippage_config.map(Into::into),
-    };
-    let instruction = instruction_builders::swap_lever_to_stable(user, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables =
-      vec![self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?];
+  async fn build(&self, inputs: SwapArgs) -> Result<VersionedTransactionData> {
+    let instructions = ExchangeIB::build_instructions::<XSOL, HYUSD>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, HYUSD>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }

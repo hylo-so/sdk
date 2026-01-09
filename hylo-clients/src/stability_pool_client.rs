@@ -16,7 +16,9 @@ use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::exchange_client::ExchangeClient;
+use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
   BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
   SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
@@ -195,22 +197,15 @@ impl StabilityPoolClient {
 #[async_trait::async_trait]
 impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
   type Inputs = StabilityPoolArgs;
+
   async fn build(
     &self,
-    StabilityPoolArgs { amount, user }: StabilityPoolArgs,
+    inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let ata = user_ata_instruction(&user, &SHYUSD::MINT);
-    let args = args::UserDeposit {
-      amount_stablecoin: amount.bits,
-    };
-    let instruction = instruction_builders::user_deposit(user, &args);
-    let instructions = vec![ata, instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        STABILITY_POOL_LOOKUP_TABLE,
-      ])
-      .await?;
+    let instructions =
+      StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(inputs)?;
+    let lut_addresses = StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -226,23 +221,15 @@ impl SimulatePrice<HYUSD, SHYUSD> for StabilityPoolClient {
 #[async_trait::async_trait]
 impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
   type Inputs = StabilityPoolArgs;
+
   async fn build(
     &self,
-    StabilityPoolArgs { amount, user }: StabilityPoolArgs,
+    inputs: StabilityPoolArgs,
   ) -> Result<VersionedTransactionData> {
-    let hyusd_ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let xsol_ata = user_ata_instruction(&user, &XSOL::MINT);
-    let args = args::UserWithdraw {
-      amount_lp_token: amount.bits,
-    };
-    let instruction = instruction_builders::user_withdraw(user, &args);
-    let instructions = vec![hyusd_ata, xsol_ata, instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        STABILITY_POOL_LOOKUP_TABLE,
-      ])
-      .await?;
+    let instructions =
+      StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(inputs)?;
+    let lut_addresses = StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
