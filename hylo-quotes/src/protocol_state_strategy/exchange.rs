@@ -34,12 +34,12 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute_quote(amount_in)?;
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = MintArgs {
       amount: UFix64::<N9>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.out_amount),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -47,10 +47,10 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, HYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
@@ -72,12 +72,12 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute_quote(amount_in)?;
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = RedeemArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(op.out_amount),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -85,10 +85,10 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<HYUSD, L>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
@@ -110,12 +110,12 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute_quote(amount_in)?;
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = MintArgs {
       amount: UFix64::<N9>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.out_amount),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -123,10 +123,10 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, XSOL>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
@@ -148,12 +148,12 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = state.compute_quote(amount_in)?;
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = RedeemArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(op.out_amount),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -161,10 +161,10 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<XSOL, L>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
@@ -184,12 +184,15 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<HYUSD, XSOL>::compute_quote(&state, amount_in)?;
+    let op = TokenOperation::<HYUSD, XSOL>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
     let args = SwapArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.out_amount),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -198,10 +201,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
       ExchangeIB::lookup_tables::<HYUSD, XSOL>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
@@ -221,12 +224,15 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<XSOL, HYUSD>::compute_quote(&state, amount_in)?;
+    let op = TokenOperation::<XSOL, HYUSD>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
     let args = SwapArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.out_amount),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -235,10 +241,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
       ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,

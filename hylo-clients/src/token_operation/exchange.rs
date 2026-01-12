@@ -9,7 +9,10 @@ use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, XSOL};
 
 use crate::protocol_state::ProtocolState;
-use crate::token_operation::{OperationOutput, TokenOperation};
+use crate::token_operation::{
+  MintOperationOutput, OperationOutput, RedeemOperationOutput,
+  SwapOperationOutput, TokenOperation,
+};
 use crate::util::LST;
 
 pub(crate) trait LstProvider<L: LST> {
@@ -33,12 +36,16 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
+  type FeeExp = L::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<L::Exp>,
+  ) -> Result<MintOperationOutput> {
     ensure!(
       self.exchange_context.stability_mode <= StabilityMode::Mode1,
       "Mint operations disabled in current stability mode"
     );
-    let amount = UFix64::<N9>::new(in_amount);
     let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(self);
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
@@ -46,7 +53,7 @@ where
       amount_remaining,
     } = self
       .exchange_context
-      .stablecoin_mint_fee(&lst_price, amount)?;
+      .stablecoin_mint_fee(&lst_price, in_amount)?;
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let converted = self
       .exchange_context
@@ -54,12 +61,11 @@ where
       .lst_to_token(amount_remaining, stablecoin_nav)?;
     let out_amount = self
       .exchange_context
-      .validate_stablecoin_amount(converted)?
-      .bits;
+      .validate_stablecoin_amount(converted)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
-      fee_amount: fees_extracted.bits,
+      fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: in_amount,
     })
@@ -71,15 +77,19 @@ impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
-    let amount = UFix64::<N6>::new(in_amount);
+  type FeeExp = L::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
+  ) -> Result<RedeemOperationOutput> {
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let lst_out = self
       .exchange_context
       .token_conversion(&lst_price)?
-      .token_to_lst(amount, stablecoin_nav)?;
+      .token_to_lst(in_amount, stablecoin_nav)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -88,10 +98,10 @@ where
       .stablecoin_redeem_fee(&lst_price, lst_out)?;
     Ok(OperationOutput {
       in_amount,
-      out_amount: amount_remaining.bits,
-      fee_amount: fees_extracted.bits,
+      out_amount: amount_remaining,
+      fee_amount: fees_extracted,
       fee_mint: L::MINT,
-      fee_base: lst_out.bits,
+      fee_base: lst_out,
     })
   }
 }
@@ -101,12 +111,16 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
+  type FeeExp = L::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<L::Exp>,
+  ) -> Result<MintOperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin mint disabled in current stability mode"
     );
-    let amount = UFix64::<N9>::new(in_amount);
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
@@ -114,16 +128,16 @@ where
       amount_remaining,
     } = self
       .exchange_context
-      .levercoin_mint_fee(&lst_price, amount)?;
+      .levercoin_mint_fee(&lst_price, in_amount)?;
     let levercoin_mint_nav = self.exchange_context.levercoin_mint_nav()?;
-    let xsol_out = self
+    let out_amount = self
       .exchange_context
       .token_conversion(&lst_price)?
       .lst_to_token(amount_remaining, levercoin_mint_nav)?;
     Ok(OperationOutput {
       in_amount,
-      out_amount: xsol_out.bits,
-      fee_amount: fees_extracted.bits,
+      out_amount,
+      fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: in_amount,
     })
@@ -135,19 +149,23 @@ impl<L: LST, C: SolanaClock> TokenOperation<XSOL, L> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
+  type FeeExp = L::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<<XSOL as TokenMint>::Exp>,
+  ) -> Result<RedeemOperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin redemption disabled in current stability mode"
     );
-    let amount = UFix64::<N6>::new(in_amount);
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
     let xsol_nav = self.exchange_context.levercoin_redeem_nav()?;
     let lst_out = self
       .exchange_context
       .token_conversion(&lst_price)?
-      .token_to_lst(amount, xsol_nav)?;
+      .token_to_lst(in_amount, xsol_nav)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -156,34 +174,40 @@ where
       .levercoin_redeem_fee(&lst_price, lst_out)?;
     Ok(OperationOutput {
       in_amount,
-      out_amount: amount_remaining.bits,
-      fee_amount: fees_extracted.bits,
+      out_amount: amount_remaining,
+      fee_amount: fees_extracted,
       fee_mint: L::MINT,
-      fee_base: lst_out.bits,
+      fee_base: lst_out,
     })
   }
 }
 
 /// Swap stablecoin (HYUSD) to levercoin (XSOL).
 impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
-  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
+  type FeeExp = <HYUSD as TokenMint>::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
+  ) -> Result<SwapOperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Swaps are disabled in current stability mode"
     );
-    let amount = UFix64::<N6>::new(in_amount);
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = self.exchange_context.stablecoin_to_levercoin_fee(amount)?;
-    let xsol_out = self
+    } = self
+      .exchange_context
+      .stablecoin_to_levercoin_fee(in_amount)?;
+    let out_amount = self
       .exchange_context
       .swap_conversion()?
       .stable_to_lever(amount_remaining)?;
     Ok(OperationOutput {
       in_amount,
-      out_amount: xsol_out.bits,
-      fee_amount: fees_extracted.bits,
+      out_amount,
+      fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
     })
@@ -192,7 +216,12 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
 
 /// Swap levercoin (XSOL) to stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
-  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
+  type FeeExp = <HYUSD as TokenMint>::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<<XSOL as TokenMint>::Exp>,
+  ) -> Result<SwapOperationOutput> {
     ensure!(
       matches!(
         self.exchange_context.stability_mode,
@@ -200,11 +229,10 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       ),
       "Swaps are disabled in current stability mode"
     );
-    let amount = UFix64::<N6>::new(in_amount);
     let converted = self
       .exchange_context
       .swap_conversion()?
-      .lever_to_stable(amount)?;
+      .lever_to_stable(in_amount)?;
     let hyusd_total = self
       .exchange_context
       .validate_stablecoin_swap_amount(converted)?;
@@ -216,10 +244,10 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       .levercoin_to_stablecoin_fee(hyusd_total)?;
     Ok(OperationOutput {
       in_amount,
-      out_amount: amount_remaining.bits,
-      fee_amount: fees_extracted.bits,
+      out_amount: amount_remaining,
+      fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
-      fee_base: hyusd_total.bits,
+      fee_base: hyusd_total,
     })
   }
 }

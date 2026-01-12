@@ -30,7 +30,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<HYUSD, SHYUSD>::compute_quote(&state, amount_in)?;
+    let op = TokenOperation::<HYUSD, SHYUSD>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
     let args = StabilityPoolArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -41,10 +44,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
       StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
@@ -64,7 +67,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<SHYUSD, HYUSD>::compute_quote(&state, amount_in)?;
+    let op = TokenOperation::<SHYUSD, HYUSD>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
     let args = StabilityPoolArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -75,10 +81,10 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
       StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.out_amount,
+      amount_out: op.out_amount.bits,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
-      fee_amount: op.fee_amount,
+      fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,

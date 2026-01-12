@@ -514,7 +514,7 @@ mod tests {
       convert_ufixvalue64(sim.stablecoin_minted_fees).try_into()?;
     let out = convert_ufixvalue64(sim.stablecoin_minted_user).try_into()?;
     let total_in = fees.checked_add(&out).ok_or(anyhow!("total_in"))?;
-    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    let fee_pct = fee_pct_decimal(fees.bits, total_in.bits)?;
     assert_eq!(fee_pct, quote.fee_pct);
     Ok(())
   }

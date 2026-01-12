@@ -10,12 +10,18 @@ use hylo_core::stability_pool_math::{
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
-use crate::token_operation::{OperationOutput, TokenOperation};
+use crate::token_operation::{
+  OperationOutput, SwapOperationOutput, TokenOperation,
+};
 
 /// Deposit stablecoin (HYUSD) into stability pool for LP token (SHYUSD).
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
-    let amount = UFix64::<N6>::new(amount_in);
+  type FeeExp = N6;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<SwapOperationOutput> {
     let shyusd_nav = lp_token_nav(
       self.exchange_context.stablecoin_nav()?,
       UFix64::new(self.hyusd_pool.amount),
@@ -23,40 +29,44 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
       UFix64::new(self.xsol_pool.amount),
       UFix64::new(self.shyusd_mint.supply),
     )?;
-    let shyusd_out = lp_token_out(amount, shyusd_nav)?;
+    let shyusd_out = lp_token_out(in_amount, shyusd_nav)?;
     Ok(OperationOutput {
-      in_amount: amount_in,
-      out_amount: shyusd_out.bits,
-      fee_amount: 0,
+      in_amount,
+      out_amount: shyusd_out,
+      fee_amount: UFix64::<N6>::zero(),
       fee_mint: HYUSD::MINT,
-      fee_base: 0,
+      fee_base: in_amount,
     })
   }
 }
 
 /// Withdraw LP token (SHYUSD) from stability pool for stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
+  type FeeExp = N6;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<SwapOperationOutput> {
     ensure!(
       self.xsol_pool.amount == 0,
       "SHYUSD -> HYUSD not possible: levercoin present in pool"
     );
-    let amount = UFix64::<N6>::new(amount_in);
     let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     let hyusd_to_withdraw =
-      amount_token_to_withdraw(amount, shyusd_supply, hyusd_in_pool)?;
+      amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
     let withdrawal_fee = UFix64::new(self.pool_config.withdrawal_fee.bits);
     let FeeExtract {
       fees_extracted,
       amount_remaining,
     } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
     Ok(OperationOutput {
-      in_amount: amount_in,
-      out_amount: amount_remaining.bits,
-      fee_amount: fees_extracted.bits,
+      in_amount,
+      out_amount: amount_remaining,
+      fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
-      fee_base: hyusd_to_withdraw.bits,
+      fee_base: hyusd_to_withdraw,
     })
   }
 }

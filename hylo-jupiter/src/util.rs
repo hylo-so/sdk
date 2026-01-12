@@ -1,9 +1,9 @@
 use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::sysvar::clock::{self, Clock};
-use anyhow::{anyhow, Result};
-use fix::prelude::*;
-use fix::typenum::{IsLess, NInt, NonZero, Unsigned, U20};
+use anyhow::{anyhow, Context, Result};
+use fix::num_traits::FromPrimitive;
+use fix::typenum::Integer;
 use hylo_clients::token_operation::OperationOutput;
 use hylo_jupiter_amm_interface::{
   AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
@@ -13,44 +13,44 @@ use rust_decimal::Decimal;
 /// Computes fee percentage as `Decimal`.
 ///
 /// # Errors
-/// * Arithmetic overflow
-/// * u64 to i64 conversion
-pub fn fee_pct_decimal<Exp>(
-  fees_extracted: UFix64<NInt<Exp>>,
-  total_in: UFix64<NInt<Exp>>,
-) -> Result<Decimal>
-where
-  Exp: Unsigned + NonZero + IsLess<U20>,
-{
-  let pct_fix = fees_extracted
-    .mul_div_floor(UFix64::one(), total_in)
-    .ok_or(anyhow!("Arithmetic error in fee_pct calculation"))?;
-  Ok(Decimal::new(pct_fix.bits.try_into()?, Exp::to_u32()))
+/// * TODO
+pub fn fee_pct_decimal(fees_extracted: u64, fee_base: u64) -> Result<Decimal> {
+  if fee_base == u64::MIN {
+    Ok(Decimal::ZERO)
+  } else {
+    Decimal::from_u64(fees_extracted)
+      .zip(Decimal::from_u64(fee_base))
+      .and_then(|(num, denom)| num.checked_div(denom))
+      .context("Arithmetic error in `fee_pct_decimal`")
+  }
 }
 
 /// Converts [`OperationOutput`] to Jupiter [`Quote`].
-#[must_use]
-pub fn operation_to_quote(
+///
+/// # Errors
+/// * Underlying arithmetic
+pub fn operation_to_quote<InExp, OutExp, FeeExp>(
   OperationOutput {
     in_amount,
     out_amount,
     fee_amount,
     fee_mint,
     fee_base,
-  }: OperationOutput,
-) -> Quote {
-  let fee_pct = if fee_base == 0 {
-    Decimal::ZERO
-  } else {
-    Decimal::from(fee_amount) / Decimal::from(fee_base)
-  };
-  Quote {
-    in_amount,
-    out_amount,
-    fee_amount,
+  }: OperationOutput<InExp, OutExp, FeeExp>,
+) -> Result<Quote>
+where
+  InExp: Integer,
+  OutExp: Integer,
+  FeeExp: Integer,
+{
+  let fee_pct = fee_pct_decimal(fee_amount.bits, fee_base.bits)?;
+  Ok(Quote {
+    in_amount: in_amount.bits,
+    out_amount: out_amount.bits,
+    fee_amount: fee_amount.bits,
     fee_mint,
     fee_pct,
-  }
+  })
 }
 
 /// Finds and deserializes an account in Jupiter's `AccountMap`.

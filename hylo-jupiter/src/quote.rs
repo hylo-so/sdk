@@ -26,8 +26,8 @@ pub fn hyusd_mint(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<JITOSOL, HYUSD>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<JITOSOL, HYUSD>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates redeem quote for HYUSD to `JitoSOL`.
@@ -38,8 +38,8 @@ pub fn hyusd_redeem(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<HYUSD, JITOSOL>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<HYUSD, JITOSOL>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates mint quote for XSOL from `JitoSOL`.
@@ -50,8 +50,8 @@ pub fn xsol_mint(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<JITOSOL, XSOL>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<JITOSOL, XSOL>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates redeem quote for XSOL to `JitoSOL`.
@@ -62,8 +62,8 @@ pub fn xsol_redeem(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<XSOL, JITOSOL>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<XSOL, JITOSOL>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates swap quote for HYUSD to XSOL.
@@ -74,8 +74,8 @@ pub fn hyusd_xsol_swap(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<HYUSD, XSOL>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<HYUSD, XSOL>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates swap quote for XSOL to HYUSD.
@@ -86,8 +86,8 @@ pub fn xsol_hyusd_swap(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<XSOL, HYUSD>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<XSOL, HYUSD>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates deposit quote for HYUSD to SHYUSD.
@@ -98,8 +98,8 @@ pub fn shyusd_mint(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<HYUSD, SHYUSD>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<HYUSD, SHYUSD>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Generates withdrawal quote for SHYUSD to HYUSD.
@@ -110,8 +110,8 @@ pub fn shyusd_redeem(
   state: &ProtocolState<ClockRef>,
   in_amount: u64,
 ) -> Result<Quote> {
-  let op = state.compute_quote::<SHYUSD, HYUSD>(in_amount)?;
-  Ok(operation_to_quote(op))
+  let op = state.compute_quote::<SHYUSD, HYUSD>(UFix64::new(in_amount))?;
+  operation_to_quote(op)
 }
 
 /// Liquidation redeem quote for sHYUSD to an LST via hyUSD and xSOL.
@@ -189,6 +189,6 @@ pub fn shyusd_redeem_lst(
     out_amount: total_out_lst.bits,
     fee_amount: total_fees_lst.bits,
     fee_mint: lst_header.mint,
-    fee_pct: fee_pct_decimal(total_fees_lst, total_out_lst)?,
+    fee_pct: fee_pct_decimal(total_fees_lst.bits, total_out_lst.bits)?,
   })
 }

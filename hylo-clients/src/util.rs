@@ -22,6 +22,7 @@ use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
 use anyhow::{anyhow, bail, Context, Result};
+use fix::typenum::N9;
 use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_transaction_status_client_types::{
@@ -40,7 +41,7 @@ mod private {
 /// Liquid staking token marker trait.
 ///
 /// Sealed to prevent downstream implementations.
-pub trait LST: TokenMint + private::Sealed {}
+pub trait LST: TokenMint<Exp = N9> + private::Sealed {}
 
 impl private::Sealed for JITOSOL {}
 impl private::Sealed for HYLOSOL {}
