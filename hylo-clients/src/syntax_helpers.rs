@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instructions::InstructionBuilder;
+use crate::token_operation::{OperationOutput, TokenOperation};
 use crate::transaction::{BuildTransactionData, QuoteInput, SimulatePrice};
 
 /// Turbofish syntax for [`InstructionBuilder`].
@@ -62,6 +63,31 @@ impl<X> InstructionBuilderExt for X {
     OUT: TokenMint,
   {
     <Self as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
+  }
+}
+
+/// Turbofish syntax for [`TokenOperation`].
+pub trait TokenOperationExt {
+  /// Computes quote for a token pair operation.
+  ///
+  /// # Errors
+  /// * Stability mode restrictions
+  /// * Math overflow
+  fn compute_quote<IN, OUT>(&self, amount_in: u64) -> Result<OperationOutput>
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
+}
+
+impl<X> TokenOperationExt for X {
+  fn compute_quote<IN, OUT>(&self, amount_in: u64) -> Result<OperationOutput>
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as TokenOperation<IN, OUT>>::compute_quote(self, amount_in)
   }
 }
 

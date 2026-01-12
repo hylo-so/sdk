@@ -25,9 +25,11 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
     )?;
     let shyusd_out = lp_token_out(amount, shyusd_nav)?;
     Ok(OperationOutput {
-      amount_out: shyusd_out.bits,
+      in_amount: amount_in,
+      out_amount: shyusd_out.bits,
       fee_amount: 0,
       fee_mint: HYUSD::MINT,
+      fee_base: 0,
     })
   }
 }
@@ -50,9 +52,11 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
       amount_remaining,
     } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
     Ok(OperationOutput {
-      amount_out: amount_remaining.bits,
+      in_amount: amount_in,
+      out_amount: amount_remaining.bits,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
+      fee_base: hyusd_to_withdraw.bits,
     })
   }
 }

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
-use fix::prelude::*;
+use fix::prelude::UFix64;
 use hylo_clients::protocol_state::ProtocolState;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
@@ -144,42 +144,18 @@ impl Amm for HyloJupiterClient {
       swap_mode: _,
     }: &QuoteParams,
   ) -> Result<Quote> {
-    let ctx = self.exchange_context()?;
+    let state = self.state()?;
     match (*input_mint, *output_mint) {
-      (JITOSOL::MINT, HYUSD::MINT) => {
-        quote::hyusd_mint(ctx, self.jitosol_header()?, UFix64::new(*amount))
-      }
-      (HYUSD::MINT, JITOSOL::MINT) => {
-        quote::hyusd_redeem(ctx, self.jitosol_header()?, UFix64::new(*amount))
-      }
-      (JITOSOL::MINT, XSOL::MINT) => {
-        quote::xsol_mint(ctx, self.jitosol_header()?, UFix64::new(*amount))
-      }
-      (XSOL::MINT, JITOSOL::MINT) => {
-        quote::xsol_redeem(ctx, self.jitosol_header()?, UFix64::new(*amount))
-      }
-      (HYUSD::MINT, XSOL::MINT) => {
-        quote::hyusd_xsol_swap(ctx, UFix64::new(*amount))
-      }
-      (XSOL::MINT, HYUSD::MINT) => {
-        quote::xsol_hyusd_swap(ctx, UFix64::new(*amount))
-      }
-      (HYUSD::MINT, SHYUSD::MINT) => quote::shyusd_mint(
-        ctx,
-        self.shyusd_mint()?,
-        self.hyusd_pool()?,
-        self.xsol_pool()?,
-        UFix64::new(*amount),
-      ),
-      (SHYUSD::MINT, HYUSD::MINT) => quote::shyusd_redeem(
-        self.shyusd_mint()?,
-        self.hyusd_pool()?,
-        self.xsol_pool()?,
-        self.pool_config()?,
-        UFix64::new(*amount),
-      ),
+      (JITOSOL::MINT, HYUSD::MINT) => quote::hyusd_mint(state, *amount),
+      (HYUSD::MINT, JITOSOL::MINT) => quote::hyusd_redeem(state, *amount),
+      (JITOSOL::MINT, XSOL::MINT) => quote::xsol_mint(state, *amount),
+      (XSOL::MINT, JITOSOL::MINT) => quote::xsol_redeem(state, *amount),
+      (HYUSD::MINT, XSOL::MINT) => quote::hyusd_xsol_swap(state, *amount),
+      (XSOL::MINT, HYUSD::MINT) => quote::xsol_hyusd_swap(state, *amount),
+      (HYUSD::MINT, SHYUSD::MINT) => quote::shyusd_mint(state, *amount),
+      (SHYUSD::MINT, HYUSD::MINT) => quote::shyusd_redeem(state, *amount),
       (SHYUSD::MINT, JITOSOL::MINT) => quote::shyusd_redeem_lst(
-        ctx,
+        self.exchange_context()?,
         self.shyusd_mint()?,
         self.hyusd_pool()?,
         self.xsol_pool()?,

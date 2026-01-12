@@ -33,12 +33,12 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode <= StabilityMode::Mode1,
       "Mint operations disabled in current stability mode"
     );
-    let amount = UFix64::<N9>::new(amount_in);
+    let amount = UFix64::<N9>::new(in_amount);
     let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(self);
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
@@ -52,14 +52,16 @@ where
       .exchange_context
       .token_conversion(&lst_price)?
       .lst_to_token(amount_remaining, stablecoin_nav)?;
-    let amount_out = self
+    let out_amount = self
       .exchange_context
       .validate_stablecoin_amount(converted)?
       .bits;
     Ok(OperationOutput {
-      amount_out,
+      in_amount,
+      out_amount,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      fee_base: in_amount,
     })
   }
 }
@@ -69,8 +71,8 @@ impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
-    let amount = UFix64::<N6>::new(amount_in);
+  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
+    let amount = UFix64::<N6>::new(in_amount);
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
@@ -85,9 +87,11 @@ where
       .exchange_context
       .stablecoin_redeem_fee(&lst_price, lst_out)?;
     Ok(OperationOutput {
-      amount_out: amount_remaining.bits,
+      in_amount,
+      out_amount: amount_remaining.bits,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      fee_base: lst_out.bits,
     })
   }
 }
@@ -97,12 +101,12 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin mint disabled in current stability mode"
     );
-    let amount = UFix64::<N9>::new(amount_in);
+    let amount = UFix64::<N9>::new(in_amount);
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
@@ -117,9 +121,11 @@ where
       .token_conversion(&lst_price)?
       .lst_to_token(amount_remaining, levercoin_mint_nav)?;
     Ok(OperationOutput {
-      amount_out: xsol_out.bits,
+      in_amount,
+      out_amount: xsol_out.bits,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      fee_base: in_amount,
     })
   }
 }
@@ -129,12 +135,12 @@ impl<L: LST, C: SolanaClock> TokenOperation<XSOL, L> for ProtocolState<C>
 where
   ProtocolState<C>: LstProvider<L>,
 {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin redemption disabled in current stability mode"
     );
-    let amount = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(in_amount);
     let lst_header = self.lst_header();
     let lst_price = lst_header.price_sol.into();
     let xsol_nav = self.exchange_context.levercoin_redeem_nav()?;
@@ -149,21 +155,23 @@ where
       .exchange_context
       .levercoin_redeem_fee(&lst_price, lst_out)?;
     Ok(OperationOutput {
-      amount_out: amount_remaining.bits,
+      in_amount,
+      out_amount: amount_remaining.bits,
       fee_amount: fees_extracted.bits,
       fee_mint: L::MINT,
+      fee_base: lst_out.bits,
     })
   }
 }
 
 /// Swap stablecoin (HYUSD) to levercoin (XSOL).
 impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Swaps are disabled in current stability mode"
     );
-    let amount = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(in_amount);
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -173,16 +181,18 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
       .swap_conversion()?
       .stable_to_lever(amount_remaining)?;
     Ok(OperationOutput {
-      amount_out: xsol_out.bits,
+      in_amount,
+      out_amount: xsol_out.bits,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
+      fee_base: in_amount,
     })
   }
 }
 
 /// Swap levercoin (XSOL) to stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
-  fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput> {
+  fn compute_quote(&self, in_amount: u64) -> Result<OperationOutput> {
     ensure!(
       matches!(
         self.exchange_context.stability_mode,
@@ -190,7 +200,7 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       ),
       "Swaps are disabled in current stability mode"
     );
-    let amount = UFix64::<N6>::new(amount_in);
+    let amount = UFix64::<N6>::new(in_amount);
     let converted = self
       .exchange_context
       .swap_conversion()?
@@ -205,9 +215,11 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       .exchange_context
       .levercoin_to_stablecoin_fee(hyusd_total)?;
     Ok(OperationOutput {
-      amount_out: amount_remaining.bits,
+      in_amount,
+      out_amount: amount_remaining.bits,
       fee_amount: fees_extracted.bits,
       fee_mint: HYUSD::MINT,
+      fee_base: hyusd_total.bits,
     })
   }
 }

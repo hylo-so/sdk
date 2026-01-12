@@ -4,15 +4,16 @@ use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use fix::typenum::{IsLess, NInt, NonZero, Unsigned, U20};
+use hylo_clients::token_operation::OperationOutput;
 use hylo_jupiter_amm_interface::{
-  AccountMap, AmmContext, ClockRef, SwapMode, SwapParams,
+  AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
 };
 use rust_decimal::Decimal;
 
-/// Computes fee percentage in Jupiter's favored `Decimal` type.
+/// Computes fee percentage as `Decimal`.
 ///
 /// # Errors
-/// * Arithmetic error for percentage
+/// * Arithmetic overflow
 /// * u64 to i64 conversion
 pub fn fee_pct_decimal<Exp>(
   fees_extracted: UFix64<NInt<Exp>>,
@@ -25,6 +26,31 @@ where
     .mul_div_floor(UFix64::one(), total_in)
     .ok_or(anyhow!("Arithmetic error in fee_pct calculation"))?;
   Ok(Decimal::new(pct_fix.bits.try_into()?, Exp::to_u32()))
+}
+
+/// Converts [`OperationOutput`] to Jupiter [`Quote`].
+#[must_use]
+pub fn operation_to_quote(
+  OperationOutput {
+    in_amount,
+    out_amount,
+    fee_amount,
+    fee_mint,
+    fee_base,
+  }: OperationOutput,
+) -> Quote {
+  let fee_pct = if fee_base == 0 {
+    Decimal::ZERO
+  } else {
+    Decimal::from(fee_amount) / Decimal::from(fee_base)
+  };
+  Quote {
+    in_amount,
+    out_amount,
+    fee_amount,
+    fee_mint,
+    fee_pct,
+  }
 }
 
 /// Finds and deserializes an account in Jupiter's `AccountMap`.

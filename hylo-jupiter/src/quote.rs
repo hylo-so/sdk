@@ -1,274 +1,126 @@
+//! Quote generation for Jupiter AMM interface.
+
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
-use fix::num_traits::Zero;
 use fix::prelude::*;
+use hylo_clients::protocol_state::ProtocolState;
+use hylo_clients::syntax_helpers::TokenOperationExt;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::idl::exchange::accounts::LstHeader;
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
-use hylo_core::idl::tokens::{TokenMint, HYUSD};
+use hylo_core::idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::stability_pool_math::{
-  amount_token_to_withdraw, lp_token_nav, lp_token_out,
-  stablecoin_withdrawal_fee,
+  amount_token_to_withdraw, stablecoin_withdrawal_fee,
 };
 use hylo_jupiter_amm_interface::{ClockRef, Quote};
-use rust_decimal::Decimal;
 
-use crate::util::fee_pct_decimal;
+use crate::util::{fee_pct_decimal, operation_to_quote};
 
-/// Generates mint quote for HYUSD from LST.
+/// Generates mint quote for HYUSD from `JitoSOL`.
 ///
 /// # Errors
-/// - Fee extraction
-/// - Stablecoin NAV calculation
-/// - Token conversion
-/// - Stablecoin amount validation
-/// - Fee percentage calculation
+/// `TokenOperation` errors.
 pub fn hyusd_mint(
-  ctx: &ExchangeContext<ClockRef>,
-  lst_header: &LstHeader,
-  in_amount: UFix64<N9>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let lst_price = lst_header.price_sol.into();
-  let FeeExtract {
-    fees_extracted,
-    amount_remaining,
-  } = ctx.stablecoin_mint_fee(&lst_price, in_amount)?;
-  let stablecoin_nav = ctx.stablecoin_nav()?;
-  let hyusd_out = {
-    let converted = ctx
-      .token_conversion(&lst_price)?
-      .lst_to_token(amount_remaining, stablecoin_nav)?;
-    ctx.validate_stablecoin_amount(converted)
-  }?;
-  Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: hyusd_out.bits,
-    fee_amount: fees_extracted.bits,
-    fee_mint: lst_header.mint,
-    fee_pct: fee_pct_decimal(fees_extracted, in_amount)?,
-  })
+  let op = state.compute_quote::<JITOSOL, HYUSD>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates redeem quote for HYUSD to LST.
+/// Generates redeem quote for HYUSD to `JitoSOL`.
 ///
 /// # Errors
-/// - Stablecoin NAV calculation
-/// - Token conversion
-/// - Fee extraction
-/// - Fee percentage calculation
+/// `TokenOperation` errors.
 pub fn hyusd_redeem(
-  ctx: &ExchangeContext<ClockRef>,
-  lst_header: &LstHeader,
-  in_amount: UFix64<N6>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let lst_price = lst_header.price_sol.into();
-  let stablecoin_nav = ctx.stablecoin_nav()?;
-  let lst_out = ctx
-    .token_conversion(&lst_price)?
-    .token_to_lst(in_amount, stablecoin_nav)?;
-  let FeeExtract {
-    fees_extracted,
-    amount_remaining,
-  } = ctx.stablecoin_redeem_fee(&lst_price, lst_out)?;
-  Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: amount_remaining.bits,
-    fee_amount: fees_extracted.bits,
-    fee_mint: lst_header.mint,
-    fee_pct: fee_pct_decimal(fees_extracted, lst_out)?,
-  })
+  let op = state.compute_quote::<HYUSD, JITOSOL>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates mint quote for XSOL from LST.
+/// Generates mint quote for XSOL from `JitoSOL`.
 ///
 /// # Errors
-/// - Fee extraction
-/// - Levercoin mint NAV calculation
-/// - Token conversion
-/// - Fee percentage calculation
+/// `TokenOperation` errors.
 pub fn xsol_mint(
-  ctx: &ExchangeContext<ClockRef>,
-  lst_header: &LstHeader,
-  in_amount: UFix64<N9>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let lst_price = lst_header.price_sol.into();
-  let FeeExtract {
-    fees_extracted,
-    amount_remaining,
-  } = ctx.levercoin_mint_fee(&lst_price, in_amount)?;
-  let levercoin_mint_nav = ctx.levercoin_mint_nav()?;
-  let xsol_out = ctx
-    .token_conversion(&lst_price)?
-    .lst_to_token(amount_remaining, levercoin_mint_nav)?;
-  Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: xsol_out.bits,
-    fee_amount: fees_extracted.bits,
-    fee_mint: lst_header.mint,
-    fee_pct: fee_pct_decimal(fees_extracted, in_amount)?,
-  })
+  let op = state.compute_quote::<JITOSOL, XSOL>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates redeem quote for XSOL to LST.
+/// Generates redeem quote for XSOL to `JitoSOL`.
 ///
 /// # Errors
-/// - Levercoin redeem NAV calculation
-/// - Token conversion
-/// - Fee extraction
-/// - Fee percentage calculation
+/// `TokenOperation` errors.
 pub fn xsol_redeem(
-  ctx: &ExchangeContext<ClockRef>,
-  lst_header: &LstHeader,
-  in_amount: UFix64<N6>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let lst_price = lst_header.price_sol.into();
-  let xsol_nav = ctx.levercoin_redeem_nav()?;
-  let lst_out = ctx
-    .token_conversion(&lst_price)?
-    .token_to_lst(in_amount, xsol_nav)?;
-  let FeeExtract {
-    fees_extracted,
-    amount_remaining,
-  } = ctx.levercoin_redeem_fee(&lst_price, lst_out)?;
-  Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: amount_remaining.bits,
-    fee_amount: fees_extracted.bits,
-    fee_mint: lst_header.mint,
-    fee_pct: fee_pct_decimal(fees_extracted, lst_out)?,
-  })
+  let op = state.compute_quote::<XSOL, JITOSOL>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates swap quote for HYUSD/XSOL.
+/// Generates swap quote for HYUSD to XSOL.
 ///
 /// # Errors
-/// - Fee extraction
-/// - Swap conversion
-/// - Fee percentage calculation
+/// `TokenOperation` errors.
 pub fn hyusd_xsol_swap(
-  ctx: &ExchangeContext<ClockRef>,
-  in_amount: UFix64<N6>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let FeeExtract {
-    fees_extracted,
-    amount_remaining,
-  } = ctx.stablecoin_to_levercoin_fee(in_amount)?;
-  let xsol_out = ctx.swap_conversion()?.stable_to_lever(amount_remaining)?;
-  Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: xsol_out.bits,
-    fee_amount: fees_extracted.bits,
-    fee_mint: HYUSD::MINT,
-    fee_pct: fee_pct_decimal(fees_extracted, in_amount)?,
-  })
+  let op = state.compute_quote::<HYUSD, XSOL>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates swap quote for XSOL/HYUSD.
+/// Generates swap quote for XSOL to HYUSD.
 ///
 /// # Errors
-/// - Swap conversion
-/// - Stablecoin swap amount validation
-/// - Fee extraction
-/// - Fee percentage calculation
+/// `TokenOperation` errors.
 pub fn xsol_hyusd_swap(
-  ctx: &ExchangeContext<ClockRef>,
-  in_amount: UFix64<N6>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let hyusd_total = {
-    let converted = ctx.swap_conversion()?.lever_to_stable(in_amount)?;
-    ctx.validate_stablecoin_swap_amount(converted)
-  }?;
-  let FeeExtract {
-    fees_extracted,
-    amount_remaining,
-  } = ctx.levercoin_to_stablecoin_fee(hyusd_total)?;
-  Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: amount_remaining.bits,
-    fee_amount: fees_extracted.bits,
-    fee_mint: HYUSD::MINT,
-    fee_pct: fee_pct_decimal(fees_extracted, hyusd_total)?,
-  })
+  let op = state.compute_quote::<XSOL, HYUSD>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates mint quote from hyUSD for sHYUSD.
+/// Generates deposit quote for HYUSD to SHYUSD.
 ///
 /// # Errors
-/// - LP token calculations
-/// - Stability pool NAV calculation
+/// * `TokenOperation` errors
 pub fn shyusd_mint(
-  ctx: &ExchangeContext<ClockRef>,
-  shyusd_mint: &Mint,
-  hyusd_pool: &TokenAccount,
-  xsol_pool: &TokenAccount,
-  hyusd_in: UFix64<N6>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  let shyusd_nav = lp_token_nav(
-    ctx.stablecoin_nav()?,
-    UFix64::new(hyusd_pool.amount),
-    ctx.levercoin_mint_nav()?,
-    UFix64::new(xsol_pool.amount),
-    UFix64::new(shyusd_mint.supply),
-  )?;
-  let shyusd_out = lp_token_out(hyusd_in, shyusd_nav)?;
-  Ok(Quote {
-    in_amount: hyusd_in.bits,
-    out_amount: shyusd_out.bits,
-    fee_amount: u64::MIN,
-    fee_mint: HYUSD::MINT,
-    fee_pct: Decimal::ZERO,
-  })
+  let op = state.compute_quote::<HYUSD, SHYUSD>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates redeem quote for sHYUSD to hyUSD.
+/// Generates withdrawal quote for SHYUSD to HYUSD.
 ///
 /// # Errors
-/// - Blocked if xSOL present in pool
-/// - Pro-rata withdrawal calculation
-/// - Fee extraction
-/// - Fee percentage calculation
+/// * `TokenOperation` errors
 pub fn shyusd_redeem(
-  shyusd_mint: &Mint,
-  hyusd_pool: &TokenAccount,
-  xsol_pool: &TokenAccount,
-  pool_config: &PoolConfig,
-  shyusd_in: UFix64<N6>,
+  state: &ProtocolState<ClockRef>,
+  in_amount: u64,
 ) -> Result<Quote> {
-  if xsol_pool.amount.is_zero() {
-    let stablecoin_in_pool = UFix64::new(hyusd_pool.amount);
-    let stablecoin_to_withdraw = amount_token_to_withdraw(
-      shyusd_in,
-      UFix64::new(shyusd_mint.supply),
-      stablecoin_in_pool,
-    )?;
-    let withdrawal_fee = UFix64::new(pool_config.withdrawal_fee.bits);
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = FeeExtract::new(withdrawal_fee, stablecoin_to_withdraw)?;
-    Ok(Quote {
-      in_amount: shyusd_in.bits,
-      out_amount: amount_remaining.bits,
-      fee_amount: fees_extracted.bits,
-      fee_mint: HYUSD::MINT,
-      fee_pct: fee_pct_decimal(fees_extracted, stablecoin_to_withdraw)?,
-    })
-  } else {
-    Err(anyhow!(
-      "sHYUSD/hyUSD not possible due to xSOL in stability pool."
-    ))
-  }
+  let op = state.compute_quote::<SHYUSD, HYUSD>(in_amount)?;
+  Ok(operation_to_quote(op))
 }
 
-/// Generates liquidation redeem quote for sHYUSD to an LST via hyUSD and xSOL.
+/// Liquidation redeem quote for sHYUSD to an LST via hyUSD and xSOL.
 ///
 /// # Errors
-/// - Pro-rata withdrawal calculation
-/// - Fee extraction across multiple tokens
-/// - Token conversions
-/// - Arithmetic overflow
+/// * Pro-rata withdrawal calculation
+/// * Fee extraction across multiple tokens
+/// * Token conversions
+/// * Arithmetic overflow
 pub fn shyusd_redeem_lst(
   ctx: &ExchangeContext<ClockRef>,
   shyusd_mint: &Mint,

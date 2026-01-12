@@ -39,7 +39,7 @@ where
       amount: UFix64::<N9>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.amount_out),
+        UFix64::<N6>::new(op.out_amount),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -47,7 +47,7 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, HYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
@@ -77,7 +77,7 @@ where
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(op.amount_out),
+        UFix64::<N9>::new(op.out_amount),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -85,7 +85,7 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<HYUSD, L>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
@@ -115,7 +115,7 @@ where
       amount: UFix64::<N9>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.amount_out),
+        UFix64::<N6>::new(op.out_amount),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -123,7 +123,7 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, XSOL>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
@@ -153,7 +153,7 @@ where
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(op.amount_out),
+        UFix64::<N9>::new(op.out_amount),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -161,7 +161,7 @@ where
     let address_lookup_tables = ExchangeIB::lookup_tables::<XSOL, L>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
@@ -189,7 +189,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.amount_out),
+        UFix64::<N6>::new(op.out_amount),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -198,7 +198,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
       ExchangeIB::lookup_tables::<HYUSD, XSOL>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
@@ -226,7 +226,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
       amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(op.amount_out),
+        UFix64::<N6>::new(op.out_amount),
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -235,7 +235,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
       ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,

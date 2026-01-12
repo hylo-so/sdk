@@ -9,15 +9,14 @@ use hylo_idl::tokens::TokenMint;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OperationOutput {
-  pub amount_out: u64,
+  pub in_amount: u64,
+  pub out_amount: u64,
   pub fee_amount: u64,
   pub fee_mint: Pubkey,
+  pub fee_base: u64,
 }
 
 /// Pure math for token pair operations (mint/redeem/swap).
 pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
-  /// # Errors
-  /// * Stability mode restrictions
-  /// * Math overflow
   fn compute_quote(&self, amount_in: u64) -> Result<OperationOutput>;
 }

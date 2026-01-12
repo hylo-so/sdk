@@ -41,7 +41,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
       StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
@@ -75,7 +75,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
       StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>().into();
     Ok(Quote {
       amount_in,
-      amount_out: op.amount_out,
+      amount_out: op.out_amount,
       compute_units: DEFAULT_CUS_WITH_BUFFER,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount,
