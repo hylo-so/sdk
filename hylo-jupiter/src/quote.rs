@@ -189,6 +189,6 @@ pub fn shyusd_redeem_lst(
     out_amount: total_out_lst.bits,
     fee_amount: total_fees_lst.bits,
     fee_mint: lst_header.mint,
-    fee_pct: fee_pct_decimal(total_fees_lst.bits, total_out_lst.bits)?,
+    fee_pct: fee_pct_decimal(total_fees_lst, total_out_lst)?,
   })
 }

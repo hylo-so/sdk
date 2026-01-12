@@ -227,8 +227,7 @@ impl Amm for HyloJupiterClient {
 mod tests {
   use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
   use anchor_lang::pubkey;
-  use fix::typenum::U9;
-  use flaky_test::flaky_test;
+  use fix::prelude::*;
   use hylo_clients::prelude::{
     MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs, TransactionSyntax,
     HYUSD, JITOSOL, SHYUSD, XSOL,
@@ -271,9 +270,9 @@ mod tests {
       assert_eq!($sim.fees_deposited.bits, $quote.fee_amount);
 
       // Fee percentage
-      let fee_pct = fee_pct_decimal::<U9>(
+      let fee_pct = fee_pct_decimal(
         convert_ufixvalue64($sim.fees_deposited).try_into()?,
-        UFix64::new($quote.in_amount),
+        UFix64::<N9>::new($quote.in_amount),
       )?;
       assert_eq!(fee_pct, $quote.fee_pct);
     };
@@ -296,9 +295,10 @@ mod tests {
         .bits
         .checked_add($sim.fees_deposited.bits)
         .ok_or(anyhow!("assert_redeem fee percentage"))?;
-      let fee_pct = fee_pct_decimal::<U9>(
+      println!("{:?}", $sim.fees_deposited);
+      let fee_pct = fee_pct_decimal(
         convert_ufixvalue64($sim.fees_deposited).try_into()?,
-        UFix64::new(total_out),
+        UFix64::<N9>::new(total_out),
       )?;
       assert_eq!(fee_pct, $quote.fee_pct);
     };
@@ -325,7 +325,7 @@ mod tests {
     Ok(hylo)
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn mint_hyusd_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -352,7 +352,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn redeem_hyusd_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -379,7 +379,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn mint_xsol_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -406,7 +406,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn redeem_xsol_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -433,7 +433,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn hyusd_xsol_swap_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -476,7 +476,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn xsol_hyusd_swap_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -514,12 +514,12 @@ mod tests {
       convert_ufixvalue64(sim.stablecoin_minted_fees).try_into()?;
     let out = convert_ufixvalue64(sim.stablecoin_minted_user).try_into()?;
     let total_in = fees.checked_add(&out).ok_or(anyhow!("total_in"))?;
-    let fee_pct = fee_pct_decimal(fees.bits, total_in.bits)?;
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
     assert_eq!(fee_pct, quote.fee_pct);
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn shyusd_mint_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -556,7 +556,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn shyusd_redeem_check() -> Result<()> {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -597,7 +597,7 @@ mod tests {
     Ok(())
   }
 
-  #[flaky_test(tokio, times = 5)]
+  #[tokio::test]
   async fn shyusd_redeem_lst_check() -> Result<()> {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
