@@ -17,8 +17,8 @@ use hylo_jupiter_amm_interface::{
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use crate::util::{account_map_get, validate_swap_params};
-use crate::{account_metas, quote};
+use crate::account_metas;
+use crate::util::{account_map_get, quote, validate_swap_params};
 
 /// Bidirectional single-pair Jupiter AMM client.
 pub struct HyloJupiterPair<IN, OUT>
@@ -88,8 +88,8 @@ impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
     output_mint: Pubkey,
   ) -> Result<Quote> {
     match (input_mint, output_mint) {
-      (JITOSOL::MINT, HYUSD::MINT) => quote::hyusd_mint(state, amount),
-      (HYUSD::MINT, JITOSOL::MINT) => quote::hyusd_redeem(state, amount),
+      (JITOSOL::MINT, HYUSD::MINT) => quote::<JITOSOL, HYUSD>(state, amount),
+      (HYUSD::MINT, JITOSOL::MINT) => quote::<HYUSD, JITOSOL>(state, amount),
       _ => Err(anyhow!("Invalid mint pair")),
     }
   }
@@ -105,6 +105,47 @@ impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
       }
       (HYUSD::MINT, JITOSOL::MINT) => {
         Ok(account_metas::redeem_stablecoin(user, JITOSOL::MINT))
+      }
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<HYLOSOL, HYUSD> for HyloJupiterPair<HYLOSOL, HYUSD> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo HYLOSOL<->HYUSD"
+  }
+  fn key() -> Pubkey {
+    *pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (HYLOSOL::MINT, HYUSD::MINT) => quote::<HYLOSOL, HYUSD>(state, amount),
+      (HYUSD::MINT, HYLOSOL::MINT) => quote::<HYUSD, HYLOSOL>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (HYLOSOL::MINT, HYUSD::MINT) => {
+        Ok(account_metas::mint_stablecoin(user, HYLOSOL::MINT))
+      }
+      (HYUSD::MINT, HYLOSOL::MINT) => {
+        Ok(account_metas::redeem_stablecoin(user, HYLOSOL::MINT))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -129,8 +170,8 @@ impl PairConfig<JITOSOL, XSOL> for HyloJupiterPair<JITOSOL, XSOL> {
     output_mint: Pubkey,
   ) -> Result<Quote> {
     match (input_mint, output_mint) {
-      (JITOSOL::MINT, XSOL::MINT) => quote::xsol_mint(state, amount),
-      (XSOL::MINT, JITOSOL::MINT) => quote::xsol_redeem(state, amount),
+      (JITOSOL::MINT, XSOL::MINT) => quote::<JITOSOL, XSOL>(state, amount),
+      (XSOL::MINT, JITOSOL::MINT) => quote::<XSOL, JITOSOL>(state, amount),
       _ => Err(anyhow!("Invalid mint pair")),
     }
   }
@@ -146,6 +187,47 @@ impl PairConfig<JITOSOL, XSOL> for HyloJupiterPair<JITOSOL, XSOL> {
       }
       (XSOL::MINT, JITOSOL::MINT) => {
         Ok(account_metas::redeem_levercoin(user, JITOSOL::MINT))
+      }
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<HYLOSOL, XSOL> for HyloJupiterPair<HYLOSOL, XSOL> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo HYLOSOL<->XSOL"
+  }
+  fn key() -> Pubkey {
+    *pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (HYLOSOL::MINT, XSOL::MINT) => quote::<HYLOSOL, XSOL>(state, amount),
+      (XSOL::MINT, HYLOSOL::MINT) => quote::<XSOL, HYLOSOL>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (HYLOSOL::MINT, XSOL::MINT) => {
+        Ok(account_metas::mint_levercoin(user, HYLOSOL::MINT))
+      }
+      (XSOL::MINT, HYLOSOL::MINT) => {
+        Ok(account_metas::redeem_levercoin(user, HYLOSOL::MINT))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -170,8 +252,8 @@ impl PairConfig<HYUSD, XSOL> for HyloJupiterPair<HYUSD, XSOL> {
     output_mint: Pubkey,
   ) -> Result<Quote> {
     match (input_mint, output_mint) {
-      (HYUSD::MINT, XSOL::MINT) => quote::hyusd_xsol_swap(state, amount),
-      (XSOL::MINT, HYUSD::MINT) => quote::xsol_hyusd_swap(state, amount),
+      (HYUSD::MINT, XSOL::MINT) => quote::<HYUSD, XSOL>(state, amount),
+      (XSOL::MINT, HYUSD::MINT) => quote::<XSOL, HYUSD>(state, amount),
       _ => Err(anyhow!("Invalid mint pair")),
     }
   }
@@ -211,8 +293,8 @@ impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
     output_mint: Pubkey,
   ) -> Result<Quote> {
     match (input_mint, output_mint) {
-      (HYUSD::MINT, SHYUSD::MINT) => quote::shyusd_mint(state, amount),
-      (SHYUSD::MINT, HYUSD::MINT) => quote::shyusd_redeem(state, amount),
+      (HYUSD::MINT, SHYUSD::MINT) => quote::<HYUSD, SHYUSD>(state, amount),
+      (SHYUSD::MINT, HYUSD::MINT) => quote::<SHYUSD, HYUSD>(state, amount),
       _ => Err(anyhow!("Invalid mint pair")),
     }
   }

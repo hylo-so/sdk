@@ -5,7 +5,9 @@ use anyhow::{anyhow, Context, Result};
 use fix::num_traits::FromPrimitive;
 use fix::prelude::UFix64;
 use fix::typenum::Integer;
-use hylo_clients::token_operation::OperationOutput;
+use hylo_clients::protocol_state::ProtocolState;
+use hylo_clients::token_operation::{OperationOutput, TokenOperation};
+use hylo_core::idl::tokens::TokenMint;
 use hylo_jupiter_amm_interface::{
   AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
 };
@@ -33,29 +35,45 @@ pub fn fee_pct_decimal<Exp>(
 /// Converts [`OperationOutput`] to Jupiter [`Quote`].
 ///
 /// # Errors
-/// * Underlying arithmetic
+/// * Fee decimal conversion
 pub fn operation_to_quote<InExp, OutExp, FeeExp>(
-  OperationOutput {
-    in_amount,
-    out_amount,
-    fee_amount,
-    fee_mint,
-    fee_base,
-  }: OperationOutput<InExp, OutExp, FeeExp>,
+  op: OperationOutput<InExp, OutExp, FeeExp>,
 ) -> Result<Quote>
 where
   InExp: Integer,
   OutExp: Integer,
   FeeExp: Integer,
 {
-  let fee_pct = fee_pct_decimal(fee_amount, fee_base)?;
+  let fee_pct = fee_pct_decimal(op.fee_amount, op.fee_base)?;
   Ok(Quote {
-    in_amount: in_amount.bits,
-    out_amount: out_amount.bits,
-    fee_amount: fee_amount.bits,
-    fee_mint,
+    in_amount: op.in_amount.bits,
+    out_amount: op.out_amount.bits,
+    fee_amount: op.fee_amount.bits,
+    fee_mint: op.fee_mint,
     fee_pct,
   })
+}
+
+/// Generic Jupiter quote for any `IN -> OUT` pair.
+///
+/// # Errors
+/// * Quote math
+/// * Fee decimal conversion
+pub fn quote<IN, OUT>(
+  state: &ProtocolState<ClockRef>,
+  amount: u64,
+) -> Result<Quote>
+where
+  IN: TokenMint,
+  OUT: TokenMint,
+  ProtocolState<ClockRef>: TokenOperation<IN, OUT>,
+  <ProtocolState<ClockRef> as TokenOperation<IN, OUT>>::FeeExp: Integer,
+{
+  let op = <ProtocolState<_> as TokenOperation<IN, OUT>>::compute_quote(
+    state,
+    UFix64::new(amount),
+  )?;
+  operation_to_quote(op)
 }
 
 /// Finds and deserializes an account in Jupiter's `AccountMap`.
