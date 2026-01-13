@@ -3,4 +3,4 @@ pub mod jupiter;
 pub mod quote;
 pub mod util;
 
-pub use jupiter::{HyloJupiterClient, HyloJupiterPair, PairConfig};
+pub use jupiter::{HyloJupiterPair, PairConfig};
