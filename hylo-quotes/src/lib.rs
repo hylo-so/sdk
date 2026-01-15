@@ -131,11 +131,12 @@ pub enum ComputeUnitStrategy {
   Simulated,
 }
 
-/// We abstract over the `LST` traits from `hylo-quotes` in core traits
-/// `QuoteStrategy<L, OUT>`.
+/// This crate builds on [`hylo_clients::util::LST`] in core traits like
+/// [`QuoteStrategy<L, OUT>`].
 ///
-/// This trait allows us to use `LST` as a bound while ensuring to the compiler
-/// that changes in `hylo-clients` won't affect the local impls.
+/// The [`Local`] marker allows us to use [`LST`] in trait bound position while
+/// telling the compiler that changes in `hylo-clients` won't affect local
+/// impls.
 pub(crate) trait Local {}
 impl Local for JITOSOL {}
 impl Local for HYLOSOL {}
