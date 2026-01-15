@@ -16,9 +16,11 @@ use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityController;
 use hylo_core::total_sol_cache::TotalSolCache;
+use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::ProtocolAccounts;
+use crate::util::LST;
 
 /// Complete snapshot of Hylo protocol state
 #[derive(Clone)]
@@ -108,6 +110,18 @@ impl<C: SolanaClock> ProtocolState<C> {
       xsol_pool,
       fetched_at,
     })
+  }
+
+  /// Selects an [`LstHeader`] field given a token implementing [`LST`].
+  ///
+  /// # Errors
+  /// * LST does not have a corresponding header field in this struct
+  pub fn lst_header<L: LST>(&self) -> Result<&LstHeader> {
+    match L::MINT {
+      JITOSOL::MINT => Ok(&self.jitosol_header),
+      HYLOSOL::MINT => Ok(&self.hylosol_header),
+      _ => Err(anyhow!("LstHeader not found for {}", L::MINT)),
+    }
   }
 }
 

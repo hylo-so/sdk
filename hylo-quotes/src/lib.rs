@@ -84,8 +84,8 @@
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
+use hylo_idl::tokens::{HYLOSOL, JITOSOL};
 
-mod lst_provider;
 mod protocol_state_strategy;
 mod quote_metadata;
 mod quote_strategy;
@@ -93,7 +93,6 @@ mod runtime_quote_strategy;
 mod simulation_strategy;
 
 pub use hylo_clients::util::LST;
-pub(crate) use lst_provider::LstProvider;
 pub use protocol_state_strategy::ProtocolStateStrategy;
 pub use quote_metadata::{Operation, QuoteMetadata};
 pub use quote_strategy::QuoteStrategy;
@@ -131,3 +130,12 @@ pub enum ComputeUnitStrategy {
   /// Compute units returned from simulation results
   Simulated,
 }
+
+/// We abstract over the `LST` traits from `hylo-quotes` in core traits
+/// `QuoteStrategy<L, OUT>`.
+///
+/// This trait allows us to use `LST` as a bound while ensuring to the compiler
+/// that changes in `hylo-clients` won't affect the local impls.
+pub(crate) trait Local {}
+impl Local for JITOSOL {}
+impl Local for HYLOSOL {}

@@ -3,10 +3,9 @@
 use anyhow::{ensure, Result};
 use fix::prelude::*;
 use hylo_core::fee_controller::FeeExtract;
-use hylo_core::idl::exchange::accounts::LstHeader;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityMode;
-use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, XSOL};
+use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
@@ -15,27 +14,8 @@ use crate::token_operation::{
 };
 use crate::util::LST;
 
-pub(crate) trait LstProvider<L: LST> {
-  fn lst_header(&self) -> &LstHeader;
-}
-
-impl<C: SolanaClock> LstProvider<JITOSOL> for ProtocolState<C> {
-  fn lst_header(&self) -> &LstHeader {
-    &self.jitosol_header
-  }
-}
-
-impl<C: SolanaClock> LstProvider<HYLOSOL> for ProtocolState<C> {
-  fn lst_header(&self) -> &LstHeader {
-    &self.hylosol_header
-  }
-}
-
 /// Mint stablecoin (HYUSD) from LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C>
-where
-  ProtocolState<C>: LstProvider<L>,
-{
+impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C> {
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -46,7 +26,7 @@ where
       self.exchange_context.stability_mode <= StabilityMode::Mode1,
       "Mint operations disabled in current stability mode"
     );
-    let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(self);
+    let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
       fees_extracted,
@@ -73,17 +53,14 @@ where
 }
 
 /// Redeem stablecoin (HYUSD) for LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C>
-where
-  ProtocolState<C>: LstProvider<L>,
-{
+impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C> {
   type FeeExp = L::Exp;
 
   fn compute_quote(
     &self,
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
   ) -> Result<RedeemOperationOutput> {
-    let lst_header = self.lst_header();
+    let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let lst_out = self
@@ -107,10 +84,7 @@ where
 }
 
 /// Mint levercoin (XSOL) from LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C>
-where
-  ProtocolState<C>: LstProvider<L>,
-{
+impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C> {
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -121,7 +95,7 @@ where
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin mint disabled in current stability mode"
     );
-    let lst_header = self.lst_header();
+    let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
       fees_extracted,
@@ -145,10 +119,7 @@ where
 }
 
 /// Redeem levercoin (XSOL) for LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<XSOL, L> for ProtocolState<C>
-where
-  ProtocolState<C>: LstProvider<L>,
-{
+impl<L: LST, C: SolanaClock> TokenOperation<XSOL, L> for ProtocolState<C> {
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -159,7 +130,7 @@ where
       self.exchange_context.stability_mode != StabilityMode::Depeg,
       "Levercoin redemption disabled in current stability mode"
     );
-    let lst_header = self.lst_header();
+    let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let xsol_nav = self.exchange_context.levercoin_redeem_nav()?;
     let lst_out = self

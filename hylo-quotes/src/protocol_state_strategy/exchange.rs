@@ -16,16 +16,15 @@ use hylo_idl::tokens::{HYUSD, XSOL};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
 use crate::{
-  ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy,
-  DEFAULT_CUS_WITH_BUFFER,
+  ComputeUnitStrategy, Local, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
 
 // LST -> HYUSD (mint stablecoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<L, HYUSD, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L> + TokenOperation<L, HYUSD>,
+  ProtocolState<C>: TokenOperation<L, HYUSD>,
 {
   async fn get_quote(
     &self,
@@ -60,10 +59,10 @@ where
 
 // HYUSD -> LST (redeem stablecoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<HYUSD, L, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L> + TokenOperation<HYUSD, L>,
+  ProtocolState<C>: TokenOperation<HYUSD, L>,
 {
   async fn get_quote(
     &self,
@@ -98,10 +97,10 @@ where
 
 // LST -> XSOL (mint levercoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<L, XSOL, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<L, XSOL, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L> + TokenOperation<L, XSOL>,
+  ProtocolState<C>: TokenOperation<L, XSOL>,
 {
   async fn get_quote(
     &self,
@@ -136,10 +135,10 @@ where
 
 // XSOL -> LST (redeem levercoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, L, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<XSOL, L, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L> + TokenOperation<XSOL, L>,
+  ProtocolState<C>: TokenOperation<XSOL, L>,
 {
   async fn get_quote(
     &self,

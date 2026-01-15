@@ -3,7 +3,6 @@ use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
-use hylo_clients::protocol_state::ProtocolState;
 use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
@@ -12,16 +11,15 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use crate::{LstProvider, Quote, QuoteStrategy};
+use crate::{Local, Quote, QuoteStrategy};
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<L, HYUSD, C> for SimulationStrategy
-where
-  ProtocolState<C>: LstProvider<L>,
+impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
+  for SimulationStrategy
 {
   async fn get_quote(
     &self,
@@ -75,9 +73,8 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<HYUSD, L, C> for SimulationStrategy
-where
-  ProtocolState<C>: LstProvider<L>,
+impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
+  for SimulationStrategy
 {
   async fn get_quote(
     &self,
@@ -131,9 +128,8 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<L, XSOL, C> for SimulationStrategy
-where
-  ProtocolState<C>: LstProvider<L>,
+impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
+  for SimulationStrategy
 {
   async fn get_quote(
     &self,
@@ -187,9 +183,8 @@ where
 // ============================================================================
 
 #[async_trait]
-impl<L: LST, C: SolanaClock> QuoteStrategy<XSOL, L, C> for SimulationStrategy
-where
-  ProtocolState<C>: LstProvider<L>,
+impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
+  for SimulationStrategy
 {
   async fn get_quote(
     &self,
