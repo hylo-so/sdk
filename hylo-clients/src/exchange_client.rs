@@ -79,17 +79,6 @@ use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 /// # Ok(())
 /// # }
 /// ```
-///
-/// ## Price Quote
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn simulate_price(client: ExchangeClient) -> Result<()> {
-/// // Get price quote for 1 JITOSOL → hyUSD
-/// let price = client.quote::<JITOSOL, HYUSD>().await?;
-/// # Ok(())
-/// # }
-/// ```
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

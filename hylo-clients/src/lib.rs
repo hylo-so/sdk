@@ -14,8 +14,13 @@
 //!     CommitmentConfig::confirmed(),
 //! )?;
 //!
-//! // Get a price quote for JITOSOL → hyUSD
-//! let price = client.quote::<JITOSOL, HYUSD>().await?;
+//! // Mint JITOSOL → hyUSD
+//! let user = Pubkey::new_unique();
+//! let signature = client.run_transaction::<JITOSOL, HYUSD>(MintArgs {
+//!     amount: UFix64::one(),
+//!     user,
+//!     slippage_config: None,
+//! }).await?;
 //! # Ok(())
 //! # }
 //! ```

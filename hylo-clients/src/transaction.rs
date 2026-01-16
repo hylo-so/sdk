@@ -21,7 +21,9 @@ use crate::program_client::{ProgramClient, VersionedTransactionData};
 ///   for `UFix64<N6>`)
 /// - `Event`: IDL event type emitted by the simulated transaction
 #[async_trait::async_trait]
-pub trait SimulatePrice<I, O>: BuildTransactionData<I, O> + ProgramClient {
+pub trait SimulatePrice<I, O>:
+  BuildTransactionData<I, O> + ProgramClient
+{
   type OutExp;
   type Event: AnchorDeserialize + Discriminator;
 

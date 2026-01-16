@@ -340,11 +340,11 @@ pub fn update_lst_prices(
 #[must_use]
 pub fn swap_lst(
   user: Pubkey,
-  lst_a_mint: Pubkey,
-  lst_b_mint: Pubkey,
+  lst_a: Pubkey,
+  lst_b: Pubkey,
   args: &args::SwapLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_lst(user, lst_a_mint, lst_b_mint);
+  let accounts = account_builders::swap_lst(user, lst_a, lst_b);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

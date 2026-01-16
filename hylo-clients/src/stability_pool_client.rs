@@ -60,17 +60,6 @@ use crate::util::{
 /// # Ok(signature)
 /// # }
 /// ```
-///
-/// ## Price Quote
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn simulate_price(client: StabilityPoolClient) -> Result<()> {
-/// // Get price quote for 1 HYUSD → sHYUSD
-/// let price = client.quote::<HYUSD, SHYUSD>().await?;
-/// # Ok(())
-/// # }
-/// ```
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
