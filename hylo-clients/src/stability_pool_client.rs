@@ -5,9 +5,6 @@ use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use fix::prelude::{UFix64, N6, *};
-use hylo_idl::exchange::events::{
-  RedeemLevercoinEventV2, RedeemStablecoinEventV2,
-};
 use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
@@ -20,12 +17,11 @@ use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, QuoteInput, RedeemArgs, SimulatePrice,
-  SimulatePriceWithEnv, StabilityPoolArgs, TransactionSyntax,
+  BuildTransactionData, RedeemArgs, SimulatePrice, StabilityPoolArgs,
+  TransactionSyntax,
 };
 use crate::util::{
-  parse_event, simulation_config, user_ata_instruction, EXCHANGE_LOOKUP_TABLE,
-  LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
   STABILITY_POOL_LOOKUP_TABLE,
 };
 
@@ -307,42 +303,6 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
       ])
       .await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<OUT: LST> SimulatePriceWithEnv<SHYUSD, OUT> for StabilityPoolClient {
-  type OutExp = N9;
-  type Env = ExchangeClient;
-  async fn simulate_with_env(
-    &self,
-    exchange: ExchangeClient,
-  ) -> Result<UFix64<N9>> {
-    let args = self
-      .build_transaction_data::<SHYUSD, OUT>((
-        exchange,
-        StabilityPoolArgs::quote_input(REFERENCE_WALLET),
-      ))
-      .await?;
-    let tx = self
-      .build_simulation_transaction(&REFERENCE_WALLET, &args)
-      .await?;
-    let rpc = self.program().rpc();
-    let sim_result = rpc
-      .simulate_transaction_with_config(&tx, simulation_config())
-      .await?;
-    let from_xsol = parse_event::<RedeemLevercoinEventV2>(&sim_result)
-      .map_or(UFix64::zero(), |e| {
-        UFix64::<N9>::new(e.collateral_withdrawn.bits)
-      });
-    let from_hyusd = parse_event::<RedeemStablecoinEventV2>(&sim_result)
-      .map_or(UFix64::zero(), |e| {
-        UFix64::<N9>::new(e.collateral_withdrawn.bits)
-      });
-    let total_out = from_hyusd
-      .checked_add(&from_xsol)
-      .ok_or(anyhow!("total_out overflow"))?;
-    Ok(total_out)
   }
 }
 

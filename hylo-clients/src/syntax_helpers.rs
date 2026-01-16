@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instructions::InstructionBuilder;
-use crate::transaction::{BuildTransactionData, QuoteInput, SimulatePrice};
+use crate::transaction::{BuildTransactionData, SimulatePrice};
 
 /// Turbofish syntax for [`InstructionBuilder`].
 ///
@@ -86,7 +86,6 @@ pub trait SimulatePriceExt {
   ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
   where
     Self: SimulatePrice<I, O> + Send + Sync,
-    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
     <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
     I: TokenMint,
     O: TokenMint;
@@ -101,7 +100,6 @@ impl<X> SimulatePriceExt for X {
   ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
   where
     Self: SimulatePrice<I, O> + Send + Sync,
-    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
     <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
     I: TokenMint,
     O: TokenMint,

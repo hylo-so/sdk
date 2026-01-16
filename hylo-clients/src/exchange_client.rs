@@ -4,6 +4,7 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
 use anyhow::Result;
+use fix::aliases::binary::UFix64;
 use fix::prelude::*;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
 use hylo_core::idl::{exchange, pda};
@@ -12,7 +13,7 @@ use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::{
   ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
-  SwapStableToLeverEventV1,
+  SwapLstEventV0, SwapStableToLeverEventV1,
 };
 use hylo_idl::exchange::instruction_builders;
 
@@ -20,8 +21,8 @@ use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
-  TransactionSyntax,
+  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SimulatePrice,
+  SwapArgs, TransactionSyntax,
 };
 use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 
@@ -445,6 +446,30 @@ impl SimulatePrice<XSOL, HYUSD> for ExchangeClient {
   type Event = SwapLeverToStableEventV1;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
     Ok(UFix64::new(e.stablecoin_minted_user.bits))
+  }
+}
+
+#[async_trait::async_trait]
+impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
+  type Inputs = LstSwapArgs;
+
+  async fn build(
+    &self,
+    inputs: LstSwapArgs,
+  ) -> Result<VersionedTransactionData> {
+    let instructions = ExchangeIB::build_instructions::<L1, L2>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<L1, L2>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
+  }
+}
+
+#[async_trait::async_trait]
+impl<L1: LST, L2: LST> SimulatePrice<L1, L2> for ExchangeClient {
+  type OutExp = N9;
+  type Event = SwapLstEventV0;
+  fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
+    e.lst_b_out.try_into()
   }
 }
 
