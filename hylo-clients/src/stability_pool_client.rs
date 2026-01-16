@@ -4,7 +4,7 @@ use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
-use fix::prelude::{UFix64, N6, *};
+use fix::prelude::{UFix64, N6};
 use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,

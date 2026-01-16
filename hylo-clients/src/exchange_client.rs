@@ -4,10 +4,10 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
 use anyhow::Result;
-use fix::aliases::binary::UFix64;
 use fix::prelude::*;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
 use hylo_core::idl::{exchange, pda};
+use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::pyth::SOL_USD_PYTH_FEED;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::{
@@ -342,7 +342,8 @@ impl<OUT: LST> SimulatePrice<HYUSD, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
-    Ok(UFix64::new(e.collateral_withdrawn.bits))
+    let out = convert_ufixvalue64(e.collateral_withdrawn).try_into()?;
+    Ok(out)
   }
 }
 
@@ -365,7 +366,8 @@ impl<OUT: LST> SimulatePrice<XSOL, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
-    Ok(UFix64::new(e.collateral_withdrawn.bits))
+    let out = convert_ufixvalue64(e.collateral_withdrawn).try_into()?;
+    Ok(out)
   }
 }
 
@@ -385,7 +387,8 @@ impl<IN: LST> SimulatePrice<IN, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = MintStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.minted.bits))
+    let out = convert_ufixvalue64(e.minted).try_into()?;
+    Ok(out)
   }
 }
 
@@ -405,7 +408,8 @@ impl<IN: LST> SimulatePrice<IN, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = MintLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.minted.bits))
+    let out = convert_ufixvalue64(e.minted).try_into()?;
+    Ok(out)
   }
 }
 
@@ -425,7 +429,8 @@ impl SimulatePrice<HYUSD, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = SwapStableToLeverEventV1;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.levercoin_minted.bits))
+    let out = convert_ufixvalue64(e.levercoin_minted).try_into()?;
+    Ok(out)
   }
 }
 
@@ -445,7 +450,8 @@ impl SimulatePrice<XSOL, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = SwapLeverToStableEventV1;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.stablecoin_minted_user.bits))
+    let out = convert_ufixvalue64(e.stablecoin_minted_user).try_into()?;
+    Ok(out)
   }
 }
 
@@ -469,7 +475,8 @@ impl<L1: LST, L2: LST> SimulatePrice<L1, L2> for ExchangeClient {
   type OutExp = N9;
   type Event = SwapLstEventV0;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
-    e.lst_b_out.try_into()
+    let out = convert_ufixvalue64(e.lst_b_out).try_into()?;
+    Ok(out)
   }
 }
 
