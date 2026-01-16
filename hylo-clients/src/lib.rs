@@ -39,5 +39,6 @@ pub mod program_client;
 pub mod protocol_state;
 pub mod stability_pool_client;
 pub mod syntax_helpers;
+pub mod token_operation;
 pub mod transaction;
 pub mod util;

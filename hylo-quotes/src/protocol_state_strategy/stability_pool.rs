@@ -1,27 +1,24 @@
+//! `QuoteStrategy` implementations for stability pool pairs using
+//! `TokenOperation`.
+
 use anchor_lang::prelude::Pubkey;
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use fix::prelude::{UFix64, N6};
+use fix::prelude::*;
 use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use hylo_clients::protocol_state::StateProvider;
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
+use hylo_clients::token_operation::TokenOperation;
 use hylo_clients::transaction::StabilityPoolArgs;
-use hylo_core::fee_controller::FeeExtract;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::stability_pool_math::{
-  amount_token_to_withdraw, lp_token_nav, lp_token_out,
-};
-use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
+use hylo_idl::tokens::{HYUSD, SHYUSD};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
 use crate::{
   ComputeUnitStrategy, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
 
-// ============================================================================
-// Implementation for HYUSD → SHYUSD (stability pool deposit)
-// ============================================================================
-
+// HYUSD -> SHYUSD (stability pool deposit)
 #[async_trait]
 impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
   for ProtocolStateStrategy<S>
@@ -33,46 +30,32 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    let amount = UFix64::<N6>::new(amount_in);
-
-    let shyusd_nav = lp_token_nav(
-      state.exchange_context.stablecoin_nav()?,
-      UFix64::new(state.hyusd_pool.amount),
-      state.exchange_context.levercoin_mint_nav()?,
-      UFix64::new(state.xsol_pool.amount),
-      UFix64::new(state.shyusd_mint.supply),
+    let op = TokenOperation::<HYUSD, SHYUSD>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
     )?;
-    let shyusd_out = lp_token_out(amount, shyusd_nav)?;
-
-    let amount_out = shyusd_out.bits;
-    let fee_amount = 0; // UserDepositEvent has no fees
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
-    let args = StabilityPoolArgs { amount, user };
+    let args = StabilityPoolArgs {
+      amount: UFix64::<N6>::new(amount_in),
+      user,
+    };
     let instructions =
       StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(args)?;
     let address_lookup_tables =
       StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: HYUSD::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
   }
 }
 
-// ============================================================================
-// Implementation for SHYUSD → HYUSD (stability pool withdrawal)
-// ============================================================================
-
+// SHYUSD -> HYUSD (stability pool withdrawal)
 #[async_trait]
 impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
   for ProtocolStateStrategy<S>
@@ -84,43 +67,25 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    ensure!(
-      state.xsol_pool.amount == 0,
-      "SHYUSD → HYUSD not possible: levercoin present in pool"
-    );
-
-    let amount = UFix64::<N6>::new(amount_in);
-
-    let shyusd_supply = UFix64::new(state.shyusd_mint.supply);
-    let hyusd_in_pool = UFix64::new(state.hyusd_pool.amount);
-    let hyusd_to_withdraw =
-      amount_token_to_withdraw(amount, shyusd_supply, hyusd_in_pool)?;
-
-    let withdrawal_fee = UFix64::new(state.pool_config.withdrawal_fee.bits);
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
-
-    let amount_out = amount_remaining.bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
-    let args = StabilityPoolArgs { amount, user };
+    let op = TokenOperation::<SHYUSD, HYUSD>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
+    let args = StabilityPoolArgs {
+      amount: UFix64::<N6>::new(amount_in),
+      user,
+    };
     let instructions =
       StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(args)?;
     let address_lookup_tables =
       StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: HYUSD::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })

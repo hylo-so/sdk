@@ -2249,6 +2249,7 @@ dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
  "anyhow",
+ "hylo-fix",
  "mpl-token-metadata",
  "paste",
  "solana-address-lookup-table-interface 2.2.2",

@@ -24,6 +24,7 @@ use crate::stability_pool_math::stability_pool_cap;
 use crate::total_sol_cache::TotalSolCache;
 
 /// Container for common values needed in an exchange transaction.
+#[derive(Clone)]
 pub struct ExchangeContext<C> {
   pub clock: C,
   pub total_sol: UFix64<N9>,
