@@ -4074,10 +4074,10 @@
             "type": "pubkey"
           },
           {
-            "name": "lst_swap_config",
+            "name": "lst_swap_fee",
             "type": {
               "defined": {
-                "name": "LstSwapConfig"
+                "name": "UFixValue64"
               }
             }
           },
@@ -4119,22 +4119,6 @@
             "type": {
               "defined": {
                 "name": "FeePair"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "LstSwapConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "fee",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
               }
             }
           }

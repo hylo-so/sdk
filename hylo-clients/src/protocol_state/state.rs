@@ -91,7 +91,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     )?;
     let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
-    let lst_swap_config: LstSwapConfig = hylo.lst_swap_config.into();
+    let lst_swap_config =
+      LstSwapConfig::new(convert_ufixvalue64(hylo.lst_swap_fee))?;
     let exchange_context = ExchangeContext::load(
       clock,
       &total_sol_cache,

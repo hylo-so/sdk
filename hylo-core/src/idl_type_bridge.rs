@@ -2,7 +2,6 @@ use fix::prelude::UFixValue64;
 
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
-use crate::lst_swap_config::LstSwapConfig;
 use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
 use crate::yields::{YieldHarvestCache, YieldHarvestConfig};
@@ -91,14 +90,6 @@ impl From<SlippageConfig> for hylo_idl::exchange::types::SlippageConfig {
     hylo_idl::exchange::types::SlippageConfig {
       expected_token_out: reconvert_ufixvalue64(val.expected_token_out),
       slippage_tolerance: reconvert_ufixvalue64(val.slippage_tolerance),
-    }
-  }
-}
-
-impl From<hylo_idl::exchange::types::LstSwapConfig> for LstSwapConfig {
-  fn from(idl: hylo_idl::exchange::types::LstSwapConfig) -> Self {
-    LstSwapConfig {
-      fee: convert_ufixvalue64(idl.fee),
     }
   }
 }

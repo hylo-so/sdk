@@ -6117,56 +6117,51 @@
     },
     {
       "code": 6016,
-      "name": "LstConversion",
-      "msg": "Arithmetic error while computing LST conversion."
-    },
-    {
-      "code": 6017,
       "name": "StablecoinMintDisabled",
       "msg": "Stablecoin mint disabled. Protocol is in Mode2 or Depeg."
     },
     {
-      "code": 6018,
+      "code": 6017,
       "name": "LevercoinMintDisabled",
       "msg": "Levercoin mint disabled. Protocol is in Depeg."
     },
     {
-      "code": 6019,
+      "code": 6018,
       "name": "YieldHarvestConfigValidation",
       "msg": "Yield harvest configuration percentages failed validation."
     },
     {
-      "code": 6020,
+      "code": 6019,
       "name": "YieldHarvestDisabled",
       "msg": "Yield harvest disabled due to protocol collateral ratio."
     },
     {
-      "code": 6021,
+      "code": 6020,
       "name": "YieldHarvestAllocation",
       "msg": "Arithmetic error while computing yield harvest allocation."
     },
     {
-      "code": 6022,
+      "code": 6021,
       "name": "YieldHarvestEpoch",
       "msg": "Yield harvest already occurred during this epoch."
     },
     {
-      "code": 6023,
+      "code": 6022,
       "name": "YieldHarvestHasNotRun",
       "msg": "Yield harvest has not yet occurred during this epoch."
     },
     {
-      "code": 6024,
+      "code": 6023,
       "name": "ZeroRedeem",
       "msg": "Cannot withdraw amount of 0 in a redemption action."
     },
     {
-      "code": 6025,
+      "code": 6024,
       "name": "ZeroMint",
       "msg": "Cannot deposit amount of 0 in a minting action."
     },
     {
-      "code": 6026,
+      "code": 6025,
       "name": "ZeroSwap",
       "msg": "Cannot swap amount of 0."
     }
@@ -6489,10 +6484,10 @@
             "type": "pubkey"
           },
           {
-            "name": "lst_swap_config",
+            "name": "lst_swap_fee",
             "type": {
               "defined": {
-                "name": "LstSwapConfig"
+                "name": "UFixValue64"
               }
             }
           },
@@ -6640,22 +6635,6 @@
           },
           {
             "name": "Marinade"
-          }
-        ]
-      }
-    },
-    {
-      "name": "LstSwapConfig",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "fee",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
           }
         ]
       }
