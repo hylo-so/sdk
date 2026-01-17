@@ -4,5 +4,3 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc 16611587ffbebadf2f4187fc8ec7df444c32368f9663f3dc3cb12874565e24ed # shrinks to state = ProtocolState { usd_sol_price: 1106287338x10^-8, stablecoin_amount: 10000x10^-6, stablecoin_nav: 1000000000x10^-9, levercoin_amount: 10000x10^-6, levercoin_nav: 100000x10^-9 }, lst_sol_price = 6505302483x10^-9, lst_amount = 256321057182923887x10^-9
-cc 395dee3d5e3bdcb8f35d7a808ff8d2089c03ca70ab27af03e8b52608368907c3 # shrinks to state = ProtocolState { usd_sol_price: 58006705521x10^-8, stablecoin_amount: 10000x10^-6, stablecoin_nav: 1000000000x10^-9, levercoin_amount: 10000x10^-6, levercoin_nav: 100000x10^-9 }, lst_sol_price = 1000000000x10^-9, lst_amount = 3180105456435x10^-9

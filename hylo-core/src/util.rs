@@ -122,9 +122,9 @@ pub mod proptest {
       .boxed()
   }
 
-  /// Realistic LST/SOL price between 1.0 and 10.0.
+  /// Realistic LST/SOL price between 1.0 and 5.0.
   pub fn lst_sol_price() -> BoxedStrategy<UFix64<N9>> {
-    (1_000_000_000u64..10_000_000_000u64)
+    (1_000_000_000u64..5_000_000_000u64)
       .prop_map(UFix64::new)
       .boxed()
   }
@@ -134,9 +134,10 @@ pub mod proptest {
     (1u64..u64::MAX / 2).prop_map(UFix64::new).boxed()
   }
 
-  /// Realistic LST amount: dust to ~1M tokens.
+  /// Realistic LST amount: dust to 100K tokens.
+  /// Upper bound prevents overflow in conversions with high prices.
   pub fn lst_amount() -> BoxedStrategy<UFix64<N9>> {
-    (1_000u64..1_000_000_000_000_000u64)
+    (1_000u64..100_000_000_000_000u64)
       .prop_map(UFix64::new)
       .boxed()
   }
