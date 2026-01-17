@@ -21,6 +21,7 @@ pub struct OperationOutput<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
 pub type MintOperationOutput = OperationOutput<N9, N6, N9>;
 pub type RedeemOperationOutput = OperationOutput<N6, N9, N9>;
 pub type SwapOperationOutput = OperationOutput<N6, N6, N6>;
+pub type LstSwapOperationOutput = OperationOutput<N9, N9, N9>;
 
 pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   type FeeExp: Integer;

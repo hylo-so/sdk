@@ -12,6 +12,7 @@ use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl_type_bridge::convert_ufixvalue64;
+use hylo_core::lst_swap_config::LstSwapConfig;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityController;
@@ -54,6 +55,9 @@ pub struct ProtocolState<C: SolanaClock> {
 
   /// Timestamp of when this state was fetched
   pub fetched_at: UnixTimestamp,
+
+  /// LST swap configuration
+  pub lst_swap_config: LstSwapConfig,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -87,6 +91,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )?;
     let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
+    let lst_swap_config: LstSwapConfig = hylo.lst_swap_config.into();
     let exchange_context = ExchangeContext::load(
       clock,
       &total_sol_cache,
@@ -109,6 +114,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       hyusd_pool,
       xsol_pool,
       fetched_at,
+      lst_swap_config,
     })
   }
 
