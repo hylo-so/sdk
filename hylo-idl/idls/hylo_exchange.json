@@ -3531,6 +3531,7 @@
         },
         {
           "name": "lst_a_vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3678,6 +3679,7 @@
         },
         {
           "name": "lst_b_vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
