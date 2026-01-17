@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__http-server__Ask_Solana_Anchor_Framework_Expert",
+      "mcp__http-server__Solana_Expert__Ask_For_Help",
+      "Bash(nix develop .#nightly --command ./bin/polish.sh)",
+      "Bash(nix develop .#nightly --command ./bin/lint.sh)",
+      "Bash(nix develop .#nightly --command cargo-udeps udeps)",
+      "Bash(nix develop --command ./bin/build.sh)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "Bash(tree:*)"
+    ],
+    "deny": []
+  }
+}
