@@ -13,5 +13,8 @@
       "Bash(tree:*)"
     ],
     "deny": []
+  },
+  "enabledPlugins": {
+    "rust-analyzer@anthropic-official": true
   }
 }
