@@ -166,8 +166,3 @@ use hylo_core::prelude::*;     // Math types
 - Slippage is in basis points (50 = 0.5%)
 - Default compute units: 100k with buffer
 - Jupiter integration uses `HyloJupiterPair<IN, OUT>` generic
-
-## Related Repositories
-
-- `~/Github/fix` - The `hylo-fix` crate for fixed-point math
-- `~/Github/protocol` - The Hylo Protocol Anchor programs
