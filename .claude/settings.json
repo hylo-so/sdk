@@ -12,7 +12,6 @@
       "WebSearch",
       "Bash(tree:*)"
     ],
-    "deny": [],
-    "additionalDirectories": ["~/Github/fix", "~/Github/protocol"]
+    "deny": []
   }
 }
