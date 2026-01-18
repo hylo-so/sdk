@@ -5269,12 +5269,9 @@
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "payer",
           "writable": true,
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
+          "signer": true
         },
         {
           "name": "treasury",
@@ -6169,6 +6166,11 @@
       "code": 6025,
       "name": "ZeroSwap",
       "msg": "Cannot swap amount of 0."
+    },
+    {
+      "code": 6026,
+      "name": "IdentitySwap",
+      "msg": "Cannot swap from an asset to itself."
     }
   ],
   "types": [
