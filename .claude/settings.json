@@ -6,12 +6,13 @@
       "Bash(nix develop .#nightly --command ./bin/polish.sh)",
       "Bash(nix develop .#nightly --command ./bin/lint.sh)",
       "Bash(nix develop .#nightly --command cargo-udeps udeps)",
-      "Bash(./bin/build.sh)",
+      "Bash(nix develop --command ./bin/build.sh)",
       "Bash(cat:*)",
       "Bash(find:*)",
       "WebSearch",
       "Bash(tree:*)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": ["~/Github/fix", "~/Github/protocol"]
   }
 }
