@@ -3501,7 +3501,8 @@
           "name": "lst_a_mint"
         },
         {
-          "name": "lst_a_user_ta"
+          "name": "lst_a_user_ta",
+          "writable": true
         },
         {
           "name": "lst_a_vault_auth",
@@ -3649,7 +3650,8 @@
           "name": "lst_b_mint"
         },
         {
-          "name": "lst_b_user_ta"
+          "name": "lst_b_user_ta",
+          "writable": true
         },
         {
           "name": "lst_b_vault_auth",
@@ -3819,6 +3821,7 @@
         },
         {
           "name": "fee_vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
