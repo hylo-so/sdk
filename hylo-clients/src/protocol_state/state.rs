@@ -11,7 +11,6 @@ use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
-use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::lst_swap_config::LstSwapConfig;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
@@ -83,16 +82,15 @@ impl<C: SolanaClock> ProtocolState<C> {
     let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
     let oracle_config = OracleConfig::new(
       hylo.oracle_interval_secs,
-      convert_ufixvalue64(hylo.oracle_conf_tolerance).try_into()?,
+      hylo.oracle_conf_tolerance.try_into()?,
     );
     let stability_controller = StabilityController::new(
-      convert_ufixvalue64(hylo.stability_threshold_1).try_into()?,
-      convert_ufixvalue64(hylo.stability_threshold_2).try_into()?,
+      hylo.stability_threshold_1.try_into()?,
+      hylo.stability_threshold_2.try_into()?,
     )?;
     let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
-    let lst_swap_config =
-      LstSwapConfig::new(convert_ufixvalue64(hylo.lst_swap_fee))?;
+    let lst_swap_config = LstSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context = ExchangeContext::load(
       clock,
       &total_sol_cache,

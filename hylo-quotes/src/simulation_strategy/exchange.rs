@@ -6,7 +6,6 @@ use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
 use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
-use hylo_core::idl_type_bridge::convert_ufixvalue64;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
@@ -371,7 +370,7 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
       .await?;
 
     // Extract results
-    let amount_out = convert_ufixvalue64(event.lst_b_out).try_into()?;
+    let amount_out = event.lst_b_out.try_into()?;
     let fee_amount = event.lst_a_fees_extracted;
     let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 

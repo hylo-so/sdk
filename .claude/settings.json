@@ -6,7 +6,7 @@
       "Bash(nix develop .#nightly --command ./bin/polish.sh)",
       "Bash(nix develop .#nightly --command ./bin/lint.sh)",
       "Bash(nix develop .#nightly --command cargo-udeps udeps)",
-      "Bash(nix develop --command ./bin/build.sh)",
+      "Bash(./bin/build.sh)",
       "Bash(cat:*)",
       "Bash(find:*)",
       "WebSearch",
