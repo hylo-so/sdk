@@ -454,7 +454,6 @@ mod tests {
   use hylo_core::idl::stability_pool::events::{
     UserDepositEvent, UserWithdrawEventV1,
   };
-  use hylo_core::idl_type_bridge::convert_ufixvalue64;
   use hylo_jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
 
@@ -480,7 +479,7 @@ mod tests {
 
       // Fee percentage
       let fee_pct = fee_pct_decimal(
-        convert_ufixvalue64($sim.fees_deposited).try_into()?,
+        $sim.fees_deposited.try_into()?,
         UFix64::<N9>::new($quote.in_amount),
       )?;
       assert_eq!(fee_pct, $quote.fee_pct);
@@ -505,7 +504,7 @@ mod tests {
         .checked_add($sim.fees_deposited.bits)
         .ok_or(anyhow!("assert_redeem fee percentage"))?;
       let fee_pct = fee_pct_decimal(
-        convert_ufixvalue64($sim.fees_deposited).try_into()?,
+        $sim.fees_deposited.try_into()?,
         UFix64::<N9>::new(total_out),
       )?;
       assert_eq!(fee_pct, $quote.fee_pct);
@@ -674,9 +673,8 @@ mod tests {
     let quote = jup.quote(&quote_params)?;
 
     // Input
-    let fees: UFix64<N6> =
-      convert_ufixvalue64(sim.stablecoin_fees).try_into()?;
-    let burned = convert_ufixvalue64(sim.stablecoin_burned).try_into()?;
+    let fees: UFix64<N6> = sim.stablecoin_fees.try_into()?;
+    let burned = sim.stablecoin_burned.try_into()?;
     let total_in = fees.checked_add(&burned).ok_or(anyhow!("total_in"))?;
     assert_eq!(total_in.bits, quote.in_amount);
 
@@ -726,9 +724,8 @@ mod tests {
     assert_eq!(sim.stablecoin_minted_fees.bits, quote.fee_amount);
 
     // Fee percentage
-    let fees: UFix64<N6> =
-      convert_ufixvalue64(sim.stablecoin_minted_fees).try_into()?;
-    let out = convert_ufixvalue64(sim.stablecoin_minted_user).try_into()?;
+    let fees: UFix64<N6> = sim.stablecoin_minted_fees.try_into()?;
+    let out = sim.stablecoin_minted_user.try_into()?;
     let total_in = fees.checked_add(&out).ok_or(anyhow!("total_in"))?;
     let fee_pct = fee_pct_decimal(fees, total_in)?;
     assert_eq!(fee_pct, quote.fee_pct);

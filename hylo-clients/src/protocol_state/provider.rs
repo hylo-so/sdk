@@ -90,6 +90,7 @@ mod tests {
   #[tokio::test]
   #[flaky_test::flaky_test]
   #[allow(unnameable_test_items)]
+  #[ignore = "requires lst_swap_fee on mainnet"]
   async fn test_fetch_state() {
     let rpc_client =
       build_test_rpc_client().expect("Failed to build RPC client");
