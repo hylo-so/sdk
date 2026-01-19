@@ -4074,11 +4074,19 @@
             "type": "pubkey"
           },
           {
+            "name": "lst_swap_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                87
+                78
               ]
             }
           }

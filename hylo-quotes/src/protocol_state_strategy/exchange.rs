@@ -8,7 +8,7 @@ use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::token_operation::TokenOperation;
-use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
+use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
@@ -238,6 +238,47 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
     let instructions = ExchangeIB::build_instructions::<XSOL, HYUSD>(args)?;
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
+    Ok(Quote {
+      amount_in,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// LST -> LST swap
+#[async_trait]
+impl<L1: LST + Local, L2: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<L1, L2, C> for ProtocolStateStrategy<S>
+where
+  ProtocolState<C>: TokenOperation<L1, L2>,
+{
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    let state = self.state_provider.fetch_state().await?;
+    let amount = UFix64::<N9>::new(amount_in);
+    let op = state.compute_quote(amount)?;
+    let args = LstSwapArgs {
+      amount_lst_a: amount,
+      lst_a_mint: L1::MINT,
+      lst_b_mint: L2::MINT,
+      user,
+      slippage_config: Some(SlippageConfig::new(
+        op.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    };
+    let instructions = ExchangeIB::build_instructions::<L1, L2>(args)?;
+    let address_lookup_tables = ExchangeIB::lookup_tables::<L1, L2>().into();
     Ok(Quote {
       amount_in,
       amount_out: op.out_amount.bits,

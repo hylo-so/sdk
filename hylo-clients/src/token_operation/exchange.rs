@@ -3,14 +3,15 @@
 use anyhow::{ensure, Result};
 use fix::prelude::*;
 use hylo_core::fee_controller::FeeExtract;
+use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  MintOperationOutput, OperationOutput, RedeemOperationOutput,
-  SwapOperationOutput, TokenOperation,
+  LstSwapOperationOutput, MintOperationOutput, OperationOutput,
+  RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
 use crate::util::LST;
 
@@ -219,6 +220,40 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_total,
+    })
+  }
+}
+
+/// Swap LST -> LST.
+impl<L1: LST, L2: LST, C: SolanaClock> TokenOperation<L1, L2>
+  for ProtocolState<C>
+{
+  type FeeExp = L1::Exp;
+
+  fn compute_quote(
+    &self,
+    in_amount: UFix64<L1::Exp>,
+  ) -> Result<LstSwapOperationOutput> {
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = self.lst_swap_config.apply_fee(in_amount)?;
+
+    let epoch = self.exchange_context.clock.epoch();
+    let lst_in_header = self.lst_header::<L1>()?;
+    let lst_out_header = self.lst_header::<L2>()?;
+
+    let in_price: LstSolPrice = lst_in_header.price_sol.into();
+    let out_price: LstSolPrice = lst_out_header.price_sol.into();
+    let out_amount =
+      in_price.convert_lst_amount(epoch, amount_remaining, &out_price)?;
+
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: L1::MINT,
+      fee_base: in_amount,
     })
   }
 }

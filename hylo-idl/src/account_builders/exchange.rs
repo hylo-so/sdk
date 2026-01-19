@@ -4,7 +4,7 @@ use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
   MintLevercoin, MintStablecoin, RedeemLevercoin, RedeemStablecoin,
-  SwapLeverToStable, SwapStableToLever,
+  SwapLeverToStable, SwapLst, SwapStableToLever,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, exchange, pda};
@@ -146,6 +146,31 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
     levercoin_auth: *pda::XSOL_AUTH,
     user_levercoin_ta: pda::xsol_ata(user),
     token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  }
+}
+
+/// Builds account context for LST swap feature
+#[must_use]
+pub fn swap_lst(user: Pubkey, lst_a: Pubkey, lst_b: Pubkey) -> SwapLst {
+  SwapLst {
+    user,
+    hylo: *pda::HYLO,
+    lst_a_mint: lst_a,
+    lst_a_user_ta: ata!(user, lst_a),
+    lst_a_vault_auth: pda::vault_auth(lst_a),
+    lst_a_vault: pda::vault(lst_a),
+    lst_a_header: pda::lst_header(lst_a),
+    lst_b_mint: lst_b,
+    lst_b_user_ta: ata!(user, lst_b),
+    lst_b_vault_auth: pda::vault_auth(lst_b),
+    lst_b_vault: pda::vault(lst_b),
+    lst_b_header: pda::lst_header(lst_b),
+    fee_auth: pda::fee_auth(lst_a),
+    fee_vault: pda::fee_vault(lst_a),
+    token_program: token::ID,
+    associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: exchange::ID,
   }

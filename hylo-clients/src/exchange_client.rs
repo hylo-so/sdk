@@ -12,7 +12,7 @@ use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::{
   ExchangeStats, MintLevercoinEventV2, MintStablecoinEventV2,
   RedeemLevercoinEventV2, RedeemStablecoinEventV2, SwapLeverToStableEventV1,
-  SwapStableToLeverEventV1,
+  SwapLstEventV0, SwapStableToLeverEventV1,
 };
 use hylo_idl::exchange::instruction_builders;
 
@@ -20,8 +20,8 @@ use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, MintArgs, RedeemArgs, SimulatePrice, SwapArgs,
-  TransactionSyntax,
+  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SimulatePrice,
+  SwapArgs, TransactionSyntax,
 };
 use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 
@@ -75,17 +75,6 @@ use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 ///   user,
 ///   slippage_config: None,
 /// }).await?;
-/// # Ok(())
-/// # }
-/// ```
-///
-/// ## Price Quote
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn simulate_price(client: ExchangeClient) -> Result<()> {
-/// // Get price quote for 1 JITOSOL → hyUSD
-/// let price = client.quote::<JITOSOL, HYUSD>().await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -307,6 +296,19 @@ impl ExchangeClient {
       instruction_builders::update_stability_pool(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
+
+  /// Updates the LST swap fee.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_lst_swap_fee(
+    &self,
+    args: &args::UpdateLstSwapFee,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_lst_swap_fee(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
 }
 
 #[async_trait::async_trait]
@@ -328,7 +330,8 @@ impl<OUT: LST> SimulatePrice<HYUSD, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
-    Ok(UFix64::new(e.collateral_withdrawn.bits))
+    let out = e.collateral_withdrawn.try_into()?;
+    Ok(out)
   }
 }
 
@@ -351,7 +354,8 @@ impl<OUT: LST> SimulatePrice<XSOL, OUT> for ExchangeClient {
   type OutExp = N9;
   type Event = RedeemLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
-    Ok(UFix64::new(e.collateral_withdrawn.bits))
+    let out = e.collateral_withdrawn.try_into()?;
+    Ok(out)
   }
 }
 
@@ -371,7 +375,8 @@ impl<IN: LST> SimulatePrice<IN, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = MintStablecoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.minted.bits))
+    let out = e.minted.try_into()?;
+    Ok(out)
   }
 }
 
@@ -391,7 +396,8 @@ impl<IN: LST> SimulatePrice<IN, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = MintLevercoinEventV2;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.minted.bits))
+    let out = e.minted.try_into()?;
+    Ok(out)
   }
 }
 
@@ -411,7 +417,8 @@ impl SimulatePrice<HYUSD, XSOL> for ExchangeClient {
   type OutExp = N6;
   type Event = SwapStableToLeverEventV1;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.levercoin_minted.bits))
+    let out = e.levercoin_minted.try_into()?;
+    Ok(out)
   }
 }
 
@@ -431,7 +438,33 @@ impl SimulatePrice<XSOL, HYUSD> for ExchangeClient {
   type OutExp = N6;
   type Event = SwapLeverToStableEventV1;
   fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.stablecoin_minted_user.bits))
+    let out = e.stablecoin_minted_user.try_into()?;
+    Ok(out)
+  }
+}
+
+#[async_trait::async_trait]
+impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
+  type Inputs = LstSwapArgs;
+
+  async fn build(
+    &self,
+    inputs: LstSwapArgs,
+  ) -> Result<VersionedTransactionData> {
+    let instructions = ExchangeIB::build_instructions::<L1, L2>(inputs)?;
+    let lut_addresses = ExchangeIB::lookup_tables::<L1, L2>();
+    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
+  }
+}
+
+#[async_trait::async_trait]
+impl<L1: LST, L2: LST> SimulatePrice<L1, L2> for ExchangeClient {
+  type OutExp = N9;
+  type Event = SwapLstEventV0;
+  fn from_event(e: &Self::Event) -> Result<UFix64<N9>> {
+    let out = e.lst_b_out.try_into()?;
+    Ok(out)
   }
 }
 

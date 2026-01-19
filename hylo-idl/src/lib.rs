@@ -24,3 +24,4 @@ pub mod stability_pool {
 
 pub mod pda;
 pub mod tokens;
+pub mod type_bridge;

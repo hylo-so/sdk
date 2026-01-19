@@ -8,7 +8,6 @@ use fix::prelude::*;
 use hylo_core::slippage_config::SlippageConfig;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::util::REFERENCE_WALLET;
 
 /// Simulates one unit of token pair exchange via RPC simulation against
 /// protocol.
@@ -24,8 +23,6 @@ use crate::util::REFERENCE_WALLET;
 #[async_trait::async_trait]
 pub trait SimulatePrice<I, O>:
   BuildTransactionData<I, O> + ProgramClient
-where
-  <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
 {
   type OutExp;
   type Event: AnchorDeserialize + Discriminator;
@@ -35,27 +32,6 @@ where
   /// # Errors
   /// Event parsing or conversion errors
   fn from_event(e: &Self::Event) -> Result<UFix64<Self::OutExp>>;
-
-  /// Gets price quote for 1 unit of input token to output token using the
-  /// reference wallet.
-  async fn simulate(&self) -> Result<UFix64<Self::OutExp>> {
-    self.simulate_with_user(REFERENCE_WALLET).await
-  }
-
-  /// Gets price quote for 1 unit of input token to output token using a custom
-  /// user wallet.
-  async fn simulate_with_user(
-    &self,
-    user: Pubkey,
-  ) -> Result<UFix64<Self::OutExp>> {
-    let event = self
-      .simulate_event(
-        user,
-        <Self as BuildTransactionData<I, O>>::Inputs::quote_input(user),
-      )
-      .await?;
-    Self::from_event(&event)
-  }
 
   /// Simulates transaction with actual inputs and returns the full event.
   ///
@@ -90,49 +66,11 @@ where
   }
 }
 
-/// Price simulation requiring external environment context.
-///
-/// # Type Parameters
-/// - `I`: Input token
-/// - `O`: Output token
-///
-/// # Associated Types
-/// - `OutExp`: Fixed point precision exponent for the output amount
-/// - `Env`: Environment type required for simulation (e.g., `ExchangeClient`)
-#[async_trait::async_trait]
-pub trait SimulatePriceWithEnv<I, O>
-where
-  Self: BuildTransactionData<I, O>,
-{
-  type OutExp;
-  type Env: Send;
-  async fn simulate_with_env(
-    &self,
-    env: Self::Env,
-  ) -> Result<UFix64<Self::OutExp>>;
-}
-
-/// Creates quote inputs with unit amounts for price simulation.
-pub trait QuoteInput {
-  /// Creates quote input with unit amount.
-  fn quote_input(user: Pubkey) -> Self;
-}
-
 /// Arguments for minting operations that deposit LST to mint hyUSD or xSOL.
 pub struct MintArgs {
   pub amount: UFix64<N9>,
   pub user: Pubkey,
   pub slippage_config: Option<SlippageConfig>,
-}
-
-impl QuoteInput for MintArgs {
-  fn quote_input(user: Pubkey) -> Self {
-    MintArgs {
-      amount: UFix64::one(),
-      user,
-      slippage_config: None,
-    }
-  }
 }
 
 /// Arguments for redemption operations that burn hyUSD or xSOL to withdraw LST.
@@ -142,16 +80,6 @@ pub struct RedeemArgs {
   pub slippage_config: Option<SlippageConfig>,
 }
 
-impl QuoteInput for RedeemArgs {
-  fn quote_input(user: Pubkey) -> Self {
-    RedeemArgs {
-      amount: UFix64::one(),
-      user,
-      slippage_config: None,
-    }
-  }
-}
-
 /// Arguments for swap operations between hyUSD and xSOL.
 pub struct SwapArgs {
   pub amount: UFix64<N6>,
@@ -159,29 +87,19 @@ pub struct SwapArgs {
   pub slippage_config: Option<SlippageConfig>,
 }
 
-impl QuoteInput for SwapArgs {
-  fn quote_input(user: Pubkey) -> Self {
-    SwapArgs {
-      amount: UFix64::one(),
-      user,
-      slippage_config: None,
-    }
-  }
+/// Arguments for swap operations between LSTs held in exchange.
+pub struct LstSwapArgs {
+  pub amount_lst_a: UFix64<N9>,
+  pub lst_a_mint: Pubkey,
+  pub lst_b_mint: Pubkey,
+  pub user: Pubkey,
+  pub slippage_config: Option<SlippageConfig>,
 }
 
 /// Arguments for stability pool operations (deposit/withdraw sHYUSD).
 pub struct StabilityPoolArgs {
   pub amount: UFix64<N6>,
   pub user: Pubkey,
-}
-
-impl QuoteInput for StabilityPoolArgs {
-  fn quote_input(user: Pubkey) -> Self {
-    StabilityPoolArgs {
-      amount: UFix64::one(),
-      user,
-    }
-  }
 }
 
 /// Builds transaction data (instructions and lookup tables) for operations.
@@ -229,27 +147,5 @@ pub trait TransactionSyntax {
     Self: BuildTransactionData<I, O>,
   {
     self.build(inputs).await
-  }
-
-  /// Gets price quote using unit input simulation.
-  async fn quote<I, O>(
-    &self,
-  ) -> Result<UFix64<<Self as SimulatePrice<I, O>>::OutExp>>
-  where
-    Self: SimulatePrice<I, O>,
-    <Self as BuildTransactionData<I, O>>::Inputs: QuoteInput,
-  {
-    self.simulate().await
-  }
-
-  /// Gets price quote with external environment context.
-  async fn quote_with_env<I, O>(
-    &self,
-    env: <Self as SimulatePriceWithEnv<I, O>>::Env,
-  ) -> Result<UFix64<<Self as SimulatePriceWithEnv<I, O>>::OutExp>>
-  where
-    Self: SimulatePriceWithEnv<I, O>,
-  {
-    self.simulate_with_env(env).await
   }
 }

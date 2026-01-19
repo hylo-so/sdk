@@ -3,4 +3,4 @@
 target/
 .git/
 .direnv/
-.claude/
+.claude/settings.local.json

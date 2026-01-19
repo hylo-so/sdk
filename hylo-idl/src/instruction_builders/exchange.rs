@@ -336,3 +336,36 @@ pub fn update_lst_prices(
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn swap_lst(
+  user: Pubkey,
+  lst_a: Pubkey,
+  lst_b: Pubkey,
+  args: &args::SwapLst,
+) -> Instruction {
+  let accounts = account_builders::swap_lst(user, lst_a, lst_b);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_lst_swap_fee(
+  admin: Pubkey,
+  args: &args::UpdateLstSwapFee,
+) -> Instruction {
+  let accounts = accounts::UpdateLstSwapFee {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}

@@ -104,20 +104,8 @@ pub mod proptest {
       .boxed()
   }
 
-  pub fn lst_sol_price() -> BoxedStrategy<UFix64<N9>> {
-    (1_000_000_000u64..2_000_000_000u64)
-      .prop_map(UFix64::new)
-      .boxed()
-  }
-
   pub fn token_amount() -> BoxedStrategy<UFix64<N6>> {
     (1_0000u64..5_000_000_000_000u64)
-      .prop_map(UFix64::new)
-      .boxed()
-  }
-
-  pub fn lst_amount() -> BoxedStrategy<UFix64<N9>> {
-    (1_000u64..1_000_000_000_000_000u64)
       .prop_map(UFix64::new)
       .boxed()
   }
@@ -132,6 +120,31 @@ pub mod proptest {
     (100_000u64..1_000_000_000_000u64)
       .prop_map(UFix64::new)
       .boxed()
+  }
+
+  /// Realistic LST/SOL price between 1.0 and 5.0.
+  pub fn lst_sol_price() -> BoxedStrategy<UFix64<N9>> {
+    (1_000_000_000u64..5_000_000_000u64)
+      .prop_map(UFix64::new)
+      .boxed()
+  }
+
+  /// Extreme LST/SOL price including depeg.
+  pub fn lst_sol_price_extreme() -> BoxedStrategy<UFix64<N9>> {
+    (1u64..u64::MAX / 2).prop_map(UFix64::new).boxed()
+  }
+
+  /// Realistic LST amount: dust to 100K tokens.
+  /// Upper bound prevents overflow in conversions with high prices.
+  pub fn lst_amount() -> BoxedStrategy<UFix64<N9>> {
+    (1_000u64..100_000_000_000_000u64)
+      .prop_map(UFix64::new)
+      .boxed()
+  }
+
+  /// Extreme LST amount from 1 unit to half of max.
+  pub fn lst_amount_extreme() -> BoxedStrategy<UFix64<N9>> {
+    (1u64..u64::MAX / 2).prop_map(UFix64::new).boxed()
   }
 }
 

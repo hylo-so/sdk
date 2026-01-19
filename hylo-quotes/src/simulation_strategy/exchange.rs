@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
-use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
+use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
@@ -335,6 +335,66 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
       compute_unit_strategy,
       fee_amount,
       fee_mint: HYUSD::MINT,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// ============================================================================
+// Implementation for LST → LST swap
+// ============================================================================
+
+#[async_trait]
+impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
+  for SimulationStrategy
+{
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<Quote> {
+    // Simulate
+    let amount = UFix64::<L1::Exp>::new(amount_in);
+    let sim_args = LstSwapArgs {
+      amount_lst_a: amount,
+      lst_a_mint: L1::MINT,
+      lst_b_mint: L2::MINT,
+      user,
+      slippage_config: None,
+    };
+    let (event, cus) = self
+      .exchange_client
+      .simulate_event_with_cus::<L1, L2>(user, sim_args)
+      .await?;
+
+    // Extract results
+    let amount_out = event.lst_b_out.try_into()?;
+    let fee_amount = event.lst_a_fees_extracted;
+    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
+
+    // Build instructions
+    let args = LstSwapArgs {
+      amount_lst_a: amount,
+      lst_a_mint: L1::MINT,
+      lst_b_mint: L2::MINT,
+      user,
+      slippage_config: Some(SlippageConfig::new::<L2::Exp>(
+        amount_out,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    };
+    let instructions = ExchangeIB::build_instructions::<L1, L2>(args)?;
+    let address_lookup_tables = ExchangeIB::lookup_tables::<L1, L2>().into();
+
+    Ok(Quote {
+      amount_in,
+      amount_out: amount_out.bits,
+      compute_units,
+      compute_unit_strategy,
+      fee_amount: fee_amount.bits,
+      fee_mint: L1::MINT,
       instructions,
       address_lookup_tables,
     })

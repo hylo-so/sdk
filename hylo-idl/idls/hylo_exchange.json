@@ -3478,6 +3478,496 @@
       }
     },
     {
+      "name": "swap_lst",
+      "discriminator": [
+        37,
+        144,
+        201,
+        101,
+        137,
+        182,
+        241,
+        42
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "hylo"
+        },
+        {
+          "name": "lst_a_mint"
+        },
+        {
+          "name": "lst_a_user_ta",
+          "writable": true
+        },
+        {
+          "name": "lst_a_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_a_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_a_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lst_a_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_a_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "lst_a_header",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  115,
+                  116,
+                  95,
+                  104,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_a_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_b_mint"
+        },
+        {
+          "name": "lst_b_user_ta",
+          "writable": true
+        },
+        {
+          "name": "lst_b_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_b_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_b_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lst_b_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_b_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "lst_b_header",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  115,
+                  116,
+                  95,
+                  104,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_b_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_a_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "fee_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_a_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_lst_a",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "swap_stable_to_lever",
       "discriminator": [
         123,
@@ -4034,6 +4524,88 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_lst_swap_fee",
+      "discriminator": [
+        129,
+        125,
+        10,
+        188,
+        94,
+        219,
+        63,
+        217
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_lst_swap_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "update_oracle_conf_tolerance",
@@ -4697,12 +5269,9 @@
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "payer",
           "writable": true,
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
+          "signer": true
         },
         {
           "name": "treasury",
@@ -5259,6 +5828,19 @@
       ]
     },
     {
+      "name": "SwapLstEventV0",
+      "discriminator": [
+        246,
+        70,
+        176,
+        207,
+        42,
+        167,
+        214,
+        67
+      ]
+    },
+    {
       "name": "SwapStableToLeverEventV0",
       "discriminator": [
         134,
@@ -5321,6 +5903,19 @@
         155,
         77,
         151
+      ]
+    },
+    {
+      "name": "UpdateLstSwapFeeEvent",
+      "discriminator": [
+        139,
+        68,
+        196,
+        130,
+        145,
+        148,
+        173,
+        212
       ]
     },
     {
@@ -5524,58 +6119,58 @@
     },
     {
       "code": 6016,
-      "name": "LstSolConversion",
-      "msg": "Overflow while computing LST SOL price conversion."
-    },
-    {
-      "code": 6017,
       "name": "StablecoinMintDisabled",
       "msg": "Stablecoin mint disabled. Protocol is in Mode2 or Depeg."
     },
     {
-      "code": 6018,
+      "code": 6017,
       "name": "LevercoinMintDisabled",
       "msg": "Levercoin mint disabled. Protocol is in Depeg."
     },
     {
-      "code": 6019,
+      "code": 6018,
       "name": "YieldHarvestConfigValidation",
       "msg": "Yield harvest configuration percentages failed validation."
     },
     {
-      "code": 6020,
+      "code": 6019,
       "name": "YieldHarvestDisabled",
       "msg": "Yield harvest disabled due to protocol collateral ratio."
     },
     {
-      "code": 6021,
+      "code": 6020,
       "name": "YieldHarvestAllocation",
       "msg": "Arithmetic error while computing yield harvest allocation."
     },
     {
-      "code": 6022,
+      "code": 6021,
       "name": "YieldHarvestEpoch",
       "msg": "Yield harvest already occurred during this epoch."
     },
     {
-      "code": 6023,
+      "code": 6022,
       "name": "YieldHarvestHasNotRun",
       "msg": "Yield harvest has not yet occurred during this epoch."
     },
     {
-      "code": 6024,
+      "code": 6023,
       "name": "ZeroRedeem",
       "msg": "Cannot withdraw amount of 0 in a redemption action."
     },
     {
-      "code": 6025,
+      "code": 6024,
       "name": "ZeroMint",
       "msg": "Cannot deposit amount of 0 in a minting action."
     },
     {
-      "code": 6026,
+      "code": 6025,
       "name": "ZeroSwap",
       "msg": "Cannot swap amount of 0."
+    },
+    {
+      "code": 6026,
+      "name": "IdentitySwap",
+      "msg": "Cannot swap from an asset to itself."
     }
   ],
   "types": [
@@ -5896,11 +6491,19 @@
             "type": "pubkey"
           },
           {
+            "name": "lst_swap_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                87
+                78
               ]
             }
           }
@@ -6866,6 +7469,46 @@
       }
     },
     {
+      "name": "SwapLstEventV0",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_a_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_a_in",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "lst_a_fees_extracted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "lst_b_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_b_out",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "SwapStableToLeverEventV0",
       "docs": [
         "Swaps"
@@ -7033,6 +7676,30 @@
           },
           {
             "name": "new_total_sol",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateLstSwapFeeEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_lst_swap_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_lst_swap_fee",
             "type": {
               "defined": {
                 "name": "UFixValue64"
