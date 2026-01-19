@@ -22,6 +22,7 @@ use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
 use anyhow::{anyhow, bail, Context, Result};
+use fix::typenum::N9;
 use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_transaction_status_client_types::{
@@ -33,7 +34,7 @@ use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
-pub trait LST: TokenMint {}
+pub trait LST: TokenMint<Exp = N9> {}
 impl LST for JITOSOL {}
 impl LST for HYLOSOL {}
 

@@ -11,6 +11,7 @@ include = ["idls/", "src/"]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 anyhow.workspace = true
+hylo-fix.workspace = true
 mpl-token-metadata.workspace = true
 paste.workspace = true
 solana-address-lookup-table-interface.workspace = true

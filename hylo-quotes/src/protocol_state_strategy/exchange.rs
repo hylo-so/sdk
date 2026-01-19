@@ -1,33 +1,30 @@
+//! `QuoteStrategy` implementations for exchange pairs using `TokenOperation`.
+
 use anchor_lang::prelude::Pubkey;
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use fix::prelude::{UFix64, N4, N6, N9};
+use fix::prelude::*;
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use hylo_clients::protocol_state::{ProtocolState, StateProvider};
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
+use hylo_clients::token_operation::TokenOperation;
 use hylo_clients::transaction::{MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
-use hylo_core::fee_controller::FeeExtract;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::stability_mode::StabilityMode;
-use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_idl::tokens::{HYUSD, XSOL};
 
 use crate::protocol_state_strategy::ProtocolStateStrategy;
 use crate::{
-  ComputeUnitStrategy, LstProvider, Quote, QuoteStrategy,
-  DEFAULT_CUS_WITH_BUFFER,
+  ComputeUnitStrategy, Local, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
 
-// ============================================================================
-// Implementation for LST → HYUSD (mint stablecoin)
-// ============================================================================
-
+// LST -> HYUSD (mint stablecoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<L, HYUSD, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L>,
+  ProtocolState<C>: TokenOperation<L, HYUSD>,
 {
   async fn get_quote(
     &self,
@@ -36,71 +33,36 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    ensure!(
-      state.exchange_context.stability_mode <= StabilityMode::Mode1,
-      "Mint operations disabled in current stability mode"
-    );
-
-    let amount = UFix64::<N9>::new(amount_in);
-    let lst_header = <ProtocolState<C> as LstProvider<L>>::lst_header(&state);
-    let lst_price = lst_header.price_sol.into();
-
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .stablecoin_mint_fee(&lst_price, amount)?;
-
-    let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
-    let converted = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .lst_to_token(amount_remaining, stablecoin_nav)?;
-
-    let amount_out = state
-      .exchange_context
-      .validate_stablecoin_amount(converted)?
-      .bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = MintArgs {
-      amount,
+      amount: UFix64::<N9>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
-
     let instructions = ExchangeIB::build_instructions::<L, HYUSD>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, HYUSD>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
   }
 }
 
-// ============================================================================
-// Implementation for HYUSD → LST (redeem stablecoin)
-// ============================================================================
-
+// HYUSD -> LST (redeem stablecoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<HYUSD, L, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L>,
+  ProtocolState<C>: TokenOperation<HYUSD, L>,
 {
   async fn get_quote(
     &self,
@@ -109,63 +71,36 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    let amount = UFix64::<N6>::new(amount_in);
-    let lst_header = state.lst_header();
-    let lst_price = lst_header.price_sol.into();
-
-    let stablecoin_nav = state.exchange_context.stablecoin_nav()?;
-    let lst_out = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .token_to_lst(amount, stablecoin_nav)?;
-
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .stablecoin_redeem_fee(&lst_price, lst_out)?;
-
-    let amount_out = amount_remaining.bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = RedeemArgs {
-      amount,
+      amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(amount_out),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
-
     let instructions = ExchangeIB::build_instructions::<HYUSD, L>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<HYUSD, L>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
   }
 }
 
-// ============================================================================
-// Implementation for LST → XSOL (mint levercoin)
-// ============================================================================
-
+// LST -> XSOL (mint levercoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<L, XSOL, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<L, XSOL, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L>,
+  ProtocolState<C>: TokenOperation<L, XSOL>,
 {
   async fn get_quote(
     &self,
@@ -174,68 +109,36 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    ensure!(
-      state.exchange_context.stability_mode != StabilityMode::Depeg,
-      "Levercoin mint disabled in current stability mode"
-    );
-
-    let amount = UFix64::<N9>::new(amount_in);
-    let lst_header = state.lst_header();
-    let lst_price = lst_header.price_sol.into();
-
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .levercoin_mint_fee(&lst_price, amount)?;
-
-    let levercoin_mint_nav = state.exchange_context.levercoin_mint_nav()?;
-    let xsol_out = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .lst_to_token(amount_remaining, levercoin_mint_nav)?;
-
-    let amount_out = xsol_out.bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = MintArgs {
-      amount,
+      amount: UFix64::<N9>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
-
     let instructions = ExchangeIB::build_instructions::<L, XSOL>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, XSOL>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
   }
 }
 
-// ============================================================================
-// Implementation for XSOL → LST (redeem levercoin)
-// ============================================================================
-
+// XSOL -> LST (redeem levercoin)
 #[async_trait]
-impl<L: LST, S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, L, C>
-  for ProtocolStateStrategy<S>
+impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
+  QuoteStrategy<XSOL, L, C> for ProtocolStateStrategy<S>
 where
-  ProtocolState<C>: LstProvider<L>,
+  ProtocolState<C>: TokenOperation<XSOL, L>,
 {
   async fn get_quote(
     &self,
@@ -244,63 +147,31 @@ where
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    ensure!(
-      state.exchange_context.stability_mode != StabilityMode::Depeg,
-      "Levercoin redemption disabled in current stability mode"
-    );
-
-    let amount = UFix64::<N6>::new(amount_in);
-    let lst_header = state.lst_header();
-    let lst_price = lst_header.price_sol.into();
-
-    let xsol_nav = state.exchange_context.levercoin_redeem_nav()?;
-    let lst_out = state
-      .exchange_context
-      .token_conversion(&lst_price)?
-      .token_to_lst(amount, xsol_nav)?;
-
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .levercoin_redeem_fee(&lst_price, lst_out)?;
-
-    let amount_out = amount_remaining.bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
+    let op = state.compute_quote(UFix64::new(amount_in))?;
     let args = RedeemArgs {
-      amount,
+      amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(amount_out),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
-
     let instructions = ExchangeIB::build_instructions::<XSOL, L>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<XSOL, L>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
   }
 }
 
-// ============================================================================
-// Implementation for HYUSD → XSOL (swap stable to lever)
-// ============================================================================
-
+// HYUSD -> XSOL (swap stable to lever)
 #[async_trait]
 impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
   for ProtocolStateStrategy<S>
@@ -312,59 +183,35 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    ensure!(
-      state.exchange_context.stability_mode != StabilityMode::Depeg,
-      "Swaps are disabled in current stability mode"
-    );
-
-    let amount = UFix64::<N6>::new(amount_in);
-
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state.exchange_context.stablecoin_to_levercoin_fee(amount)?;
-
-    let xsol_out = state
-      .exchange_context
-      .swap_conversion()?
-      .stable_to_lever(amount_remaining)?;
-
-    let amount_out = xsol_out.bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
+    let op = TokenOperation::<HYUSD, XSOL>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
     let args = SwapArgs {
-      amount,
+      amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
-
     let instructions = ExchangeIB::build_instructions::<HYUSD, XSOL>(args)?;
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<HYUSD, XSOL>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: HYUSD::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
   }
 }
 
-// ============================================================================
-// Implementation for XSOL → HYUSD (swap lever to stable)
-// ============================================================================
-
+// XSOL -> HYUSD (swap lever to stable)
 #[async_trait]
 impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
   for ProtocolStateStrategy<S>
@@ -376,57 +223,28 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let state = self.state_provider.fetch_state().await?;
-
-    ensure!(
-      matches!(
-        state.exchange_context.stability_mode,
-        StabilityMode::Normal | StabilityMode::Mode1
-      ),
-      "Swaps are disabled in current stability mode"
-    );
-
-    let amount = UFix64::<N6>::new(amount_in);
-
-    let converted = state
-      .exchange_context
-      .swap_conversion()?
-      .lever_to_stable(amount)?;
-    let hyusd_total = state
-      .exchange_context
-      .validate_stablecoin_swap_amount(converted)?;
-
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = state
-      .exchange_context
-      .levercoin_to_stablecoin_fee(hyusd_total)?;
-
-    let amount_out = amount_remaining.bits;
-    let fee_amount = fees_extracted.bits;
-    let compute_units = DEFAULT_CUS_WITH_BUFFER;
-    let compute_unit_strategy = ComputeUnitStrategy::Estimated;
-
+    let op = TokenOperation::<XSOL, HYUSD>::compute_quote(
+      &state,
+      UFix64::new(amount_in),
+    )?;
     let args = SwapArgs {
-      amount,
+      amount: UFix64::<N6>::new(amount_in),
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        op.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
-
     let instructions = ExchangeIB::build_instructions::<XSOL, HYUSD>(args)?;
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
-
     Ok(Quote {
       amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: HYUSD::MINT,
+      amount_out: op.out_amount.bits,
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      compute_unit_strategy: ComputeUnitStrategy::Estimated,
+      fee_amount: op.fee_amount.bits,
+      fee_mint: op.fee_mint,
       instructions,
       address_lookup_tables,
     })
