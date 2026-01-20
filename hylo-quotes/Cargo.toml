@@ -1,7 +1,10 @@
 [package]
 name = "hylo-quotes"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 description = "Quote computation and execution layer for Hylo protocol"
+license.workspace = true
+homepage.workspace = true
 
 [dependencies]
 anchor-client.workspace = true

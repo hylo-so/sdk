@@ -13,3 +13,4 @@ cargo publish --package hylo-idl
 cargo publish --package hylo-core
 cargo publish --package hylo-clients
 cargo publish --package hylo-jupiter
+cargo publish --package hylo-quotes
