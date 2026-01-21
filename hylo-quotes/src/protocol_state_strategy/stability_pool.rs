@@ -6,14 +6,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::*;
 use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
-use hylo_clients::protocol_state::StateProvider;
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
-use hylo_clients::token_operation::TokenOperation;
 use hylo_clients::transaction::StabilityPoolArgs;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{HYUSD, SHYUSD};
 
+use crate::protocol_state::StateProvider;
 use crate::protocol_state_strategy::ProtocolStateStrategy;
+use crate::token_operation::TokenOperation;
 use crate::{
   ComputeUnitStrategy, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };

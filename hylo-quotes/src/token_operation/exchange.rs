@@ -13,10 +13,12 @@ use crate::token_operation::{
   LstSwapOperationOutput, MintOperationOutput, OperationOutput,
   RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
-use crate::util::LST;
+use crate::{Local, LST};
 
 /// Mint stablecoin (HYUSD) from LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C> {
+impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
+  for ProtocolState<C>
+{
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -54,7 +56,9 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, HYUSD> for ProtocolState<C> {
 }
 
 /// Redeem stablecoin (HYUSD) for LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C> {
+impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
+  for ProtocolState<C>
+{
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -85,7 +89,9 @@ impl<L: LST, C: SolanaClock> TokenOperation<HYUSD, L> for ProtocolState<C> {
 }
 
 /// Mint levercoin (XSOL) from LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C> {
+impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
+  for ProtocolState<C>
+{
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -120,7 +126,9 @@ impl<L: LST, C: SolanaClock> TokenOperation<L, XSOL> for ProtocolState<C> {
 }
 
 /// Redeem levercoin (XSOL) for LST collateral.
-impl<L: LST, C: SolanaClock> TokenOperation<XSOL, L> for ProtocolState<C> {
+impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
+  for ProtocolState<C>
+{
   type FeeExp = L::Exp;
 
   fn compute_quote(
@@ -225,7 +233,7 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
 }
 
 /// Swap LST -> LST.
-impl<L1: LST, L2: LST, C: SolanaClock> TokenOperation<L1, L2>
+impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
   for ProtocolState<C>
 {
   type FeeExp = L1::Exp;

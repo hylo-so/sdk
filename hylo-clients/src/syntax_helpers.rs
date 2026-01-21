@@ -5,12 +5,9 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
 use async_trait::async_trait;
-use fix::prelude::UFix64;
-use fix::typenum::Integer;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instructions::InstructionBuilder;
-use crate::token_operation::{OperationOutput, TokenOperation};
 use crate::transaction::{BuildTransactionData, SimulatePrice};
 
 /// Turbofish syntax for [`InstructionBuilder`].
@@ -65,52 +62,6 @@ impl<X> InstructionBuilderExt for X {
     OUT: TokenMint,
   {
     <Self as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
-  }
-}
-
-/// Turbofish syntax for [`TokenOperation`].
-#[allow(clippy::type_complexity)]
-pub trait TokenOperationExt {
-  /// Computes quote for a token pair operation.
-  ///
-  /// # Errors
-  /// * Stability mode restrictions
-  /// * Math overflow
-  fn compute_quote<IN, OUT>(
-    &self,
-    amount_in: UFix64<IN::Exp>,
-  ) -> Result<
-    OperationOutput<
-      IN::Exp,
-      OUT::Exp,
-      <Self as TokenOperation<IN, OUT>>::FeeExp,
-    >,
-  >
-  where
-    Self: TokenOperation<IN, OUT>,
-    IN: TokenMint,
-    OUT: TokenMint,
-    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer;
-}
-
-impl<X> TokenOperationExt for X {
-  fn compute_quote<IN, OUT>(
-    &self,
-    amount_in: UFix64<IN::Exp>,
-  ) -> Result<
-    OperationOutput<
-      IN::Exp,
-      OUT::Exp,
-      <Self as TokenOperation<IN, OUT>>::FeeExp,
-    >,
-  >
-  where
-    Self: TokenOperation<IN, OUT>,
-    IN: TokenMint,
-    OUT: TokenMint,
-    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
-  {
-    TokenOperation::<IN, OUT>::compute_quote(self, amount_in)
   }
 }
 

@@ -24,12 +24,12 @@ use flaky_test::flaky_test;
 use hylo_clients::prelude::{
   ExchangeClient, ProgramClient, StabilityPoolClient,
 };
-use hylo_clients::protocol_state::{
-  ProtocolState, RpcStateProvider, StateProvider,
-};
 use hylo_clients::util::REFERENCE_WALLET;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_quotes::protocol_state::{
+  ProtocolState, RpcStateProvider, StateProvider,
+};
 use hylo_quotes::{
   ProtocolStateStrategy, Quote, QuoteMetadata, RuntimeQuoteStrategy,
   SimulationStrategy,

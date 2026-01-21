@@ -35,3 +35,49 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     amount_in: UFix64<IN::Exp>,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>>;
 }
+
+/// Turbofish syntax for [`TokenOperation`].
+#[allow(clippy::type_complexity)]
+pub trait TokenOperationExt {
+  /// Computes quote for a token pair operation.
+  ///
+  /// # Errors
+  /// * Stability mode restrictions
+  /// * Math overflow
+  fn compute_quote<IN, OUT>(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<
+    OperationOutput<
+      IN::Exp,
+      OUT::Exp,
+      <Self as TokenOperation<IN, OUT>>::FeeExp,
+    >,
+  >
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer;
+}
+
+impl<X> TokenOperationExt for X {
+  fn compute_quote<IN, OUT>(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<
+    OperationOutput<
+      IN::Exp,
+      OUT::Exp,
+      <Self as TokenOperation<IN, OUT>>::FeeExp,
+    >,
+  >
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
+  {
+    TokenOperation::<IN, OUT>::compute_quote(self, amount_in)
+  }
+}

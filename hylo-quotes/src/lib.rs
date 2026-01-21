@@ -20,7 +20,7 @@
 //! ## Using `ProtocolStateStrategy`
 //!
 //! ```rust,no_run
-//! use hylo_clients::protocol_state::RpcStateProvider;
+//! use hylo_quotes::protocol_state::RpcStateProvider;
 //! use hylo_quotes::{ProtocolStateStrategy, RuntimeQuoteStrategy};
 //! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
 //! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
@@ -86,11 +86,14 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 use hylo_idl::tokens::{HYLOSOL, JITOSOL};
 
+pub mod protocol_state;
 mod protocol_state_strategy;
 mod quote_metadata;
 mod quote_strategy;
 mod runtime_quote_strategy;
+pub mod simulated_operation;
 mod simulation_strategy;
+pub mod token_operation;
 
 pub use hylo_clients::util::LST;
 pub use protocol_state_strategy::ProtocolStateStrategy;

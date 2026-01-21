@@ -2271,6 +2271,7 @@ dependencies = [
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
+ "hylo-quotes",
  "pyth-solana-receiver-sdk",
  "rust_decimal",
  "tokio",

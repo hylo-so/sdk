@@ -7,9 +7,9 @@ mod exchange;
 mod stability_pool;
 
 use async_trait::async_trait;
-use hylo_clients::protocol_state::StateProvider;
 use hylo_core::solana_clock::SolanaClock;
 
+use crate::protocol_state::StateProvider;
 use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
 
 pub struct ProtocolStateStrategy<S> {

@@ -5,12 +5,12 @@ use anyhow::{anyhow, Context, Result};
 use fix::num_traits::FromPrimitive;
 use fix::prelude::UFix64;
 use fix::typenum::Integer;
-use hylo_clients::protocol_state::ProtocolState;
-use hylo_clients::token_operation::{OperationOutput, TokenOperation};
 use hylo_core::idl::tokens::TokenMint;
 use hylo_jupiter_amm_interface::{
   AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
 };
+use hylo_quotes::protocol_state::ProtocolState;
+use hylo_quotes::token_operation::{OperationOutput, TokenOperation};
 use rust_decimal::Decimal;
 
 /// Computes fee percentage as `Decimal`.
