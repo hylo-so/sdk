@@ -42,6 +42,7 @@ pub trait SimulatedOperationExt {
   /// # Errors
   /// * Event field conversion
   /// * Operation-specific validation
+  #[allow(clippy::type_complexity)]
   fn from_event<IN, OUT>(
     event: &<Self as SimulatedOperation<IN, OUT>>::Event,
   ) -> Result<
