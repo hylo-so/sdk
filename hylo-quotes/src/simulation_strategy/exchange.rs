@@ -4,11 +4,18 @@ use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use hylo_clients::prelude::ExchangeClient;
-use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
-use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
+use hylo_clients::syntax_helpers::InstructionBuilderExt;
+use hylo_clients::transaction::{
+  LstSwapArgs, MintArgs, RedeemArgs, SwapArgs, TransactionSyntax,
+};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_idl::exchange::events::{
+  MintLevercoinEventV2, MintStablecoinEventV2, RedeemLevercoinEventV2,
+  RedeemStablecoinEventV2, SwapLeverToStableEventV1, SwapLstEventV0,
+  SwapStableToLeverEventV1,
+};
 use hylo_idl::tokens::{HYUSD, XSOL};
 
 use crate::simulated_operation::SimulatedOperationExt;
@@ -38,7 +45,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
 
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<L, HYUSD>(user, args)
+      .simulate_event_with_cus::<L, HYUSD, MintStablecoinEventV2>(user, args)
       .await?;
 
     let output = ExchangeClient::from_event::<L, HYUSD>(&event)?;
@@ -92,7 +99,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
 
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<HYUSD, L>(user, args)
+      .simulate_event_with_cus::<HYUSD, L, RedeemStablecoinEventV2>(user, args)
       .await?;
 
     let output = ExchangeClient::from_event::<HYUSD, L>(&event)?;
@@ -146,7 +153,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
 
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<L, XSOL>(user, args)
+      .simulate_event_with_cus::<L, XSOL, MintLevercoinEventV2>(user, args)
       .await?;
 
     let output = ExchangeClient::from_event::<L, XSOL>(&event)?;
@@ -200,7 +207,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
 
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<XSOL, L>(user, args)
+      .simulate_event_with_cus::<XSOL, L, RedeemLevercoinEventV2>(user, args)
       .await?;
 
     let output = ExchangeClient::from_event::<XSOL, L>(&event)?;
@@ -252,7 +259,9 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
 
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<HYUSD, XSOL>(user, args)
+      .simulate_event_with_cus::<HYUSD, XSOL, SwapStableToLeverEventV1>(
+        user, args,
+      )
       .await?;
 
     let output = ExchangeClient::from_event::<HYUSD, XSOL>(&event)?;
@@ -305,7 +314,9 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
 
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<XSOL, HYUSD>(user, args)
+      .simulate_event_with_cus::<XSOL, HYUSD, SwapLeverToStableEventV1>(
+        user, args,
+      )
       .await?;
 
     let output = ExchangeClient::from_event::<XSOL, HYUSD>(&event)?;
@@ -362,7 +373,7 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
     };
     let (event, cus) = self
       .exchange_client
-      .simulate_event_with_cus::<L1, L2>(user, sim_args)
+      .simulate_event_with_cus::<L1, L2, SwapLstEventV0>(user, sim_args)
       .await?;
 
     let output = ExchangeClient::from_event::<L1, L2>(&event)?;

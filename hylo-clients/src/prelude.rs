@@ -13,7 +13,7 @@ pub use crate::instructions::{
 };
 pub use crate::program_client::{ProgramClient, VersionedTransactionData};
 pub use crate::stability_pool_client::StabilityPoolClient;
-pub use crate::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
+pub use crate::syntax_helpers::InstructionBuilderExt;
 pub use crate::transaction::{
   BuildTransactionData, MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs,
   TransactionSyntax,
