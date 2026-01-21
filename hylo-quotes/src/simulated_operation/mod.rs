@@ -30,7 +30,7 @@ pub trait SimulatedOperationExt {
   /// # Errors
   /// * Event parsing or validation.
   #[allow(clippy::type_complexity)]
-  fn from_event<IN, OUT>(
+  fn from_event<IN: TokenMint, OUT: TokenMint>(
     event: &<Self as SimulatedOperation<IN, OUT>>::Event,
   ) -> Result<
     OperationOutput<
@@ -40,14 +40,11 @@ pub trait SimulatedOperationExt {
     >,
   >
   where
-    Self: SimulatedOperation<IN, OUT>,
-    IN: TokenMint,
-    OUT: TokenMint,
-    <Self as SimulatedOperation<IN, OUT>>::FeeExp: Integer;
+    Self: SimulatedOperation<IN, OUT>;
 }
 
 impl<X> SimulatedOperationExt for X {
-  fn from_event<IN, OUT>(
+  fn from_event<IN: TokenMint, OUT: TokenMint>(
     event: &<Self as SimulatedOperation<IN, OUT>>::Event,
   ) -> Result<
     OperationOutput<
@@ -58,9 +55,6 @@ impl<X> SimulatedOperationExt for X {
   >
   where
     Self: SimulatedOperation<IN, OUT>,
-    IN: TokenMint,
-    OUT: TokenMint,
-    <Self as SimulatedOperation<IN, OUT>>::FeeExp: Integer,
   {
     <Self as SimulatedOperation<IN, OUT>>::from_event(event)
   }

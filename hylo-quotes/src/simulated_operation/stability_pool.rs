@@ -7,17 +7,17 @@ use hylo_idl::stability_pool::events::{UserDepositEvent, UserWithdrawEventV1};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulated_operation::SimulatedOperation;
-use crate::token_operation::OperationOutput;
+use crate::token_operation::SwapOperationOutput;
 
 /// Deposit stablecoin.
 impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
   type FeeExp = N6;
   type Event = UserDepositEvent;
 
-  fn from_event(event: &Self::Event) -> Result<OperationOutput<N6, N6, N6>> {
-    let in_amount = UFix64::new(event.stablecoin_deposited.bits);
-    let out_amount = UFix64::new(event.lp_token_minted.bits);
-    Ok(OperationOutput {
+  fn from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
+    let in_amount: UFix64<N6> = UFix64::new(event.stablecoin_deposited.bits);
+    let out_amount: UFix64<N6> = UFix64::new(event.lp_token_minted.bits);
+    Ok(SwapOperationOutput {
       in_amount,
       out_amount,
       fee_amount: UFix64::zero(),
@@ -32,17 +32,17 @@ impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
   type FeeExp = N6;
   type Event = UserWithdrawEventV1;
 
-  fn from_event(event: &Self::Event) -> Result<OperationOutput<N6, N6, N6>> {
+  fn from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
     if event.levercoin_withdrawn.bits > 0 {
       bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
     }
-    let in_amount = UFix64::new(event.lp_token_burned.bits);
-    let out_amount = UFix64::new(event.stablecoin_withdrawn.bits);
-    let fee_amount = UFix64::new(event.stablecoin_fees.bits);
-    let fee_base = out_amount
+    let in_amount: UFix64<N6> = UFix64::new(event.lp_token_burned.bits);
+    let out_amount: UFix64<N6> = UFix64::new(event.stablecoin_withdrawn.bits);
+    let fee_amount: UFix64<N6> = UFix64::new(event.stablecoin_fees.bits);
+    let fee_base: UFix64<N6> = out_amount
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
-    Ok(OperationOutput {
+    Ok(SwapOperationOutput {
       in_amount,
       out_amount,
       fee_amount,
