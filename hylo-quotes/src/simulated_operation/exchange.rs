@@ -14,7 +14,7 @@ use crate::simulated_operation::SimulatedOperation;
 use crate::token_operation::OperationOutput;
 use crate::{Local, LST};
 
-/// Mint stablecoin (HYUSD) from LST collateral.
+/// Mint stablecoin from LST.
 impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
   type FeeExp = L::Exp;
   type Event = MintStablecoinEventV2;
@@ -39,7 +39,7 @@ impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
   }
 }
 
-/// Redeem stablecoin (HYUSD) for LST collateral.
+/// Redeem stablecoin for LST.
 impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
   type FeeExp = L::Exp;
   type Event = RedeemStablecoinEventV2;
@@ -64,7 +64,7 @@ impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
   }
 }
 
-/// Mint levercoin (XSOL) from LST collateral.
+/// Mint levercoin from LST.
 impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
   type FeeExp = L::Exp;
   type Event = MintLevercoinEventV2;
@@ -89,7 +89,7 @@ impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
   }
 }
 
-/// Redeem levercoin (XSOL) for LST collateral.
+/// Redeem levercoin for LST.
 impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
   type FeeExp = L::Exp;
   type Event = RedeemLevercoinEventV2;
@@ -114,7 +114,7 @@ impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
   }
 }
 
-/// Swap stablecoin (HYUSD) to levercoin (XSOL).
+/// Swap stablecoin to levercoin.
 impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
   type FeeExp = N6;
   type Event = SwapStableToLeverEventV1;
@@ -137,7 +137,7 @@ impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
   }
 }
 
-/// Swap levercoin (XSOL) to stablecoin (HYUSD).
+/// Swap levercoin to stablecoin.
 impl SimulatedOperation<XSOL, HYUSD> for ExchangeClient {
   type FeeExp = N6;
   type Event = SwapLeverToStableEventV1;
@@ -160,7 +160,7 @@ impl SimulatedOperation<XSOL, HYUSD> for ExchangeClient {
   }
 }
 
-/// Swap LST -> LST.
+/// Swap between LSTs.
 impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
   for ExchangeClient
 {

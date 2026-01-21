@@ -9,7 +9,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 use crate::simulated_operation::SimulatedOperation;
 use crate::token_operation::OperationOutput;
 
-/// Deposit HYUSD to mint sHYUSD.
+/// Deposit stablecoin.
 impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
   type FeeExp = N6;
   type Event = UserDepositEvent;
@@ -28,7 +28,7 @@ impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
   }
 }
 
-/// Withdraw sHYUSD to receive HYUSD.
+/// Withdraw stablecoin.
 impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
   type FeeExp = N6;
   type Event = UserWithdrawEventV1;
