@@ -3,23 +3,15 @@ use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
-use hylo_clients::prelude::ExchangeClient;
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
-use hylo_clients::transaction::{
-  LstSwapArgs, MintArgs, RedeemArgs, SwapArgs, TransactionSyntax,
-};
+use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::exchange::events::{
-  MintLevercoinEventV2, MintStablecoinEventV2, RedeemLevercoinEventV2,
-  RedeemStablecoinEventV2, SwapLeverToStableEventV1, SwapLstEventV0,
-  SwapStableToLeverEventV1,
-};
 use hylo_idl::tokens::{HYUSD, XSOL};
 
 use crate::simulated_operation::SimulatedOperationExt;
-use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
+use crate::simulation_strategy::SimulationStrategy;
 use crate::{Local, Quote, QuoteStrategy};
 
 // ============================================================================
@@ -37,19 +29,16 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
-    let args = MintArgs {
+    let sim_args = MintArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<L, HYUSD, MintStablecoinEventV2>(user, args)
+      .simulate_quote::<L, HYUSD>(user, sim_args)
       .await?;
-
-    let output = ExchangeClient::from_event::<L, HYUSD>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = MintArgs {
       amount,
@@ -66,8 +55,8 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -91,19 +80,16 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = RedeemArgs {
+    let sim_args = RedeemArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<HYUSD, L, RedeemStablecoinEventV2>(user, args)
+      .simulate_quote::<HYUSD, L>(user, sim_args)
       .await?;
-
-    let output = ExchangeClient::from_event::<HYUSD, L>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = RedeemArgs {
       amount,
@@ -120,8 +106,8 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -145,19 +131,16 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N9>::new(amount_in);
-    let args = MintArgs {
+    let sim_args = MintArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<L, XSOL, MintLevercoinEventV2>(user, args)
+      .simulate_quote::<L, XSOL>(user, sim_args)
       .await?;
-
-    let output = ExchangeClient::from_event::<L, XSOL>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = MintArgs {
       amount,
@@ -174,8 +157,8 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -199,19 +182,16 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = RedeemArgs {
+    let sim_args = RedeemArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<XSOL, L, RedeemLevercoinEventV2>(user, args)
+      .simulate_quote::<XSOL, L>(user, sim_args)
       .await?;
-
-    let output = ExchangeClient::from_event::<XSOL, L>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = RedeemArgs {
       amount,
@@ -228,8 +208,8 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -251,21 +231,16 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = SwapArgs {
+    let sim_args = SwapArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<HYUSD, XSOL, SwapStableToLeverEventV1>(
-        user, args,
-      )
+      .simulate_quote::<HYUSD, XSOL>(user, sim_args)
       .await?;
-
-    let output = ExchangeClient::from_event::<HYUSD, XSOL>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = SwapArgs {
       amount,
@@ -283,8 +258,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -306,21 +281,16 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = SwapArgs {
+    let sim_args = SwapArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<XSOL, HYUSD, SwapLeverToStableEventV1>(
-        user, args,
-      )
+      .simulate_quote::<XSOL, HYUSD>(user, sim_args)
       .await?;
-
-    let output = ExchangeClient::from_event::<XSOL, HYUSD>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = SwapArgs {
       amount,
@@ -338,8 +308,8 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -362,7 +332,6 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
     user: Pubkey,
     slippage_tolerance: u64,
   ) -> Result<Quote> {
-    // Simulate
     let amount = UFix64::<N9>::new(amount_in);
     let sim_args = LstSwapArgs {
       amount_lst_a: amount,
@@ -371,13 +340,11 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
       user,
       slippage_config: None,
     };
-    let (event, cus) = self
-      .exchange_client
-      .simulate_event_with_cus::<L1, L2, SwapLstEventV0>(user, sim_args)
-      .await?;
 
-    let output = ExchangeClient::from_event::<L1, L2>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_quote::<L1, L2>(user, sim_args)
+      .await?;
 
     let args = LstSwapArgs {
       amount_lst_a: amount,
@@ -389,14 +356,15 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
+
     let instructions = ExchangeIB::build_instructions::<L1, L2>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L1, L2>().into();
 
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,

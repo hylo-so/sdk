@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use fix::prelude::{CheckedAdd, FixExt, UFix64, N6, N9};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
-use hylo_clients::prelude::{ProgramClient, StabilityPoolClient};
+use hylo_clients::prelude::ProgramClient;
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{StabilityPoolArgs, TransactionSyntax};
 use hylo_clients::util::{parse_event, simulation_config, LST};
@@ -11,7 +11,6 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2,
 };
-use hylo_idl::stability_pool::events::{UserDepositEvent, UserWithdrawEventV1};
 use hylo_idl::tokens::{HYUSD, SHYUSD};
 
 use crate::simulated_operation::SimulatedOperationExt;
@@ -33,13 +32,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     let amount = UFix64::<N6>::new(amount_in);
     let args = StabilityPoolArgs { amount, user };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .stability_pool_client
-      .simulate_event_with_cus::<HYUSD, SHYUSD, UserDepositEvent>(user, args)
+      .simulate_quote::<HYUSD, SHYUSD>(user, args)
       .await?;
-
-    let output = StabilityPoolClient::from_event::<HYUSD, SHYUSD>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = StabilityPoolArgs { amount, user };
     let instructions =
@@ -50,8 +46,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,
@@ -75,13 +71,10 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
     let amount = UFix64::<N6>::new(amount_in);
     let args = StabilityPoolArgs { amount, user };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .stability_pool_client
-      .simulate_event_with_cus::<SHYUSD, HYUSD, UserWithdrawEventV1>(user, args)
+      .simulate_quote::<SHYUSD, HYUSD>(user, args)
       .await?;
-
-    let output = StabilityPoolClient::from_event::<SHYUSD, HYUSD>(&event)?;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = StabilityPoolArgs { amount, user };
     let instructions =
@@ -92,8 +85,8 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
     Ok(Quote {
       amount_in,
       amount_out: output.out_amount.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: output.fee_amount.bits,
       fee_mint: output.fee_mint,
       instructions,

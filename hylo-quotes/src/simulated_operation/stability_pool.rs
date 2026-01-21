@@ -14,7 +14,7 @@ impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
   type FeeExp = N6;
   type Event = UserDepositEvent;
 
-  fn from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
+  fn quote_from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
     let in_amount: UFix64<N6> = UFix64::new(event.stablecoin_deposited.bits);
     let out_amount: UFix64<N6> = UFix64::new(event.lp_token_minted.bits);
     Ok(SwapOperationOutput {
@@ -32,7 +32,7 @@ impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
   type FeeExp = N6;
   type Event = UserWithdrawEventV1;
 
-  fn from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
+  fn quote_from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
     if event.levercoin_withdrawn.bits > 0 {
       bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
     }

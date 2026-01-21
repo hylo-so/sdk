@@ -100,6 +100,7 @@ pub use protocol_state_strategy::ProtocolStateStrategy;
 pub use quote_metadata::{Operation, QuoteMetadata};
 pub use quote_strategy::QuoteStrategy;
 pub use runtime_quote_strategy::RuntimeQuoteStrategy;
+pub use simulated_operation::ComputeUnitInfo;
 pub use simulation_strategy::SimulationStrategy;
 
 /// Default buffered compute units for all exchange operations.
