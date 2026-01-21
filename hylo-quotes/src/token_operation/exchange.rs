@@ -19,11 +19,11 @@ use crate::{Local, LST};
 impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
   for ProtocolState<C>
 {
-  type FeeExp = L::Exp;
+  type FeeExp = N9;
 
   fn compute_quote(
     &self,
-    in_amount: UFix64<L::Exp>,
+    in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
       self.exchange_context.stability_mode <= StabilityMode::Mode1,
@@ -59,7 +59,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
 impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
   for ProtocolState<C>
 {
-  type FeeExp = L::Exp;
+  type FeeExp = N9;
 
   fn compute_quote(
     &self,
@@ -92,11 +92,11 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
 impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
   for ProtocolState<C>
 {
-  type FeeExp = L::Exp;
+  type FeeExp = N9;
 
   fn compute_quote(
     &self,
-    in_amount: UFix64<L::Exp>,
+    in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
       self.exchange_context.stability_mode != StabilityMode::Depeg,
@@ -129,7 +129,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
 impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
   for ProtocolState<C>
 {
-  type FeeExp = L::Exp;
+  type FeeExp = N9;
 
   fn compute_quote(
     &self,
@@ -236,11 +236,11 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
 impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
   for ProtocolState<C>
 {
-  type FeeExp = L1::Exp;
+  type FeeExp = N9;
 
   fn compute_quote(
     &self,
-    in_amount: UFix64<L1::Exp>,
+    in_amount: UFix64<N9>,
   ) -> Result<LstSwapOperationOutput> {
     let FeeExtract {
       fees_extracted,

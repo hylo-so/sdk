@@ -17,7 +17,6 @@ impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
   fn from_event(event: &Self::Event) -> Result<OperationOutput<N6, N6, N6>> {
     let in_amount = UFix64::new(event.stablecoin_deposited.bits);
     let out_amount = UFix64::new(event.lp_token_minted.bits);
-    // No fees on deposit, fee_base = in_amount
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -40,7 +39,6 @@ impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
     let in_amount = UFix64::new(event.lp_token_burned.bits);
     let out_amount = UFix64::new(event.stablecoin_withdrawn.bits);
     let fee_amount = UFix64::new(event.stablecoin_fees.bits);
-    // fee_base = pre-fee withdrawal = stablecoin_withdrawn + stablecoin_fees
     let fee_base = out_amount
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;

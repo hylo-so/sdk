@@ -356,7 +356,7 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
     slippage_tolerance: u64,
   ) -> Result<Quote> {
     // Simulate
-    let amount = UFix64::<L1::Exp>::new(amount_in);
+    let amount = UFix64::<N9>::new(amount_in);
     let sim_args = LstSwapArgs {
       amount_lst_a: amount,
       lst_a_mint: L1::MINT,
@@ -380,7 +380,7 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
       lst_a_mint: L1::MINT,
       lst_b_mint: L2::MINT,
       user,
-      slippage_config: Some(SlippageConfig::new::<L2::Exp>(
+      slippage_config: Some(SlippageConfig::new::<N9>(
         amount_out,
         UFix64::<N4>::new(slippage_tolerance),
       )),
