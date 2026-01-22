@@ -14,8 +14,8 @@ use hylo_clients::transaction::TransactionSyntax;
 use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
 
 pub struct SimulationStrategy {
-  pub(crate) exchange_client: ExchangeClient,
-  pub(crate) stability_pool_client: StabilityPoolClient,
+  pub exchange_client: ExchangeClient,
+  pub stability_pool_client: StabilityPoolClient,
 }
 
 impl SimulationStrategy {
