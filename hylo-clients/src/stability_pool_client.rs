@@ -4,7 +4,6 @@ use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
-use fix::prelude::UFix64;
 use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserWithdrawEventV1,
@@ -240,7 +239,7 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
     if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
       let redeem_hyusd_args = exchange
         .build_transaction_data::<HYUSD, OUT>(RedeemArgs {
-          amount: UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
+          amount: redeem_shyusd_sim.stablecoin_withdrawn.try_into()?,
           user,
           slippage_config: None,
         })
@@ -253,7 +252,7 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
     if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
       let redeem_xsol_args = exchange
         .build_transaction_data::<XSOL, OUT>(RedeemArgs {
-          amount: UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
+          amount: redeem_shyusd_sim.levercoin_withdrawn.try_into()?,
           user,
           slippage_config: None,
         })

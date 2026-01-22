@@ -9,7 +9,6 @@ mod stability_pool;
 use anchor_lang::prelude::Clock;
 use anyhow::Result;
 use async_trait::async_trait;
-use fix::prelude::UFix64;
 use hylo_clients::prelude::{
   ExchangeClient, ProgramClient, StabilityPoolClient, VersionedTransactionData,
 };
@@ -78,7 +77,7 @@ impl<L: LST + Local> BuildTransactionData<SHYUSD, L> for SimulationStrategy {
       let redeem_hyusd = self
         .exchange_client
         .build_transaction_data::<HYUSD, L>(RedeemArgs {
-          amount: UFix64::new(withdraw_sim.stablecoin_withdrawn.bits),
+          amount: withdraw_sim.stablecoin_withdrawn.try_into()?,
           user,
           slippage_config: None,
         })
@@ -91,7 +90,7 @@ impl<L: LST + Local> BuildTransactionData<SHYUSD, L> for SimulationStrategy {
       let redeem_xsol = self
         .exchange_client
         .build_transaction_data::<XSOL, L>(RedeemArgs {
-          amount: UFix64::new(withdraw_sim.levercoin_withdrawn.bits),
+          amount: withdraw_sim.levercoin_withdrawn.try_into()?,
           user,
           slippage_config: None,
         })

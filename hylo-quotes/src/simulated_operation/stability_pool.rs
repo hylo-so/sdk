@@ -15,8 +15,8 @@ impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
   type Event = UserDepositEvent;
 
   fn quote_from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let in_amount: UFix64<N6> = UFix64::new(event.stablecoin_deposited.bits);
-    let out_amount: UFix64<N6> = UFix64::new(event.lp_token_minted.bits);
+    let in_amount: UFix64<N6> = event.stablecoin_deposited.try_into()?;
+    let out_amount: UFix64<N6> = event.lp_token_minted.try_into()?;
     Ok(SwapOperationOutput {
       in_amount,
       out_amount,
@@ -36,10 +36,10 @@ impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
     if event.levercoin_withdrawn.bits > 0 {
       bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
     }
-    let in_amount: UFix64<N6> = UFix64::new(event.lp_token_burned.bits);
-    let out_amount: UFix64<N6> = UFix64::new(event.stablecoin_withdrawn.bits);
-    let fee_amount: UFix64<N6> = UFix64::new(event.stablecoin_fees.bits);
-    let fee_base: UFix64<N6> = out_amount
+    let in_amount: UFix64<N6> = event.lp_token_burned.try_into()?;
+    let out_amount: UFix64<N6> = event.stablecoin_withdrawn.try_into()?;
+    let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;
+    let fee_base = out_amount
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
     Ok(SwapOperationOutput {

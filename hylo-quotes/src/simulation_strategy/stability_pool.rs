@@ -1,7 +1,7 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use fix::prelude::{CheckedAdd, FixExt, UFix64, N6, N9};
+use fix::prelude::{CheckedAdd, UFix64, N6, N9};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use hylo_clients::prelude::ProgramClient;
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
@@ -127,20 +127,24 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<SHYUSD, L, C>
     // Either redemption event may be absent depending on pool state
     let from_hyusd: UFix64<N9> =
       parse_event::<RedeemStablecoinEventV2>(&sim_result)
-        .map_or(UFix64::zero(), |e| UFix64::new(e.collateral_withdrawn.bits));
+        .and_then(|e| e.collateral_withdrawn.try_into().map_err(Into::into))
+        .unwrap_or_default();
     let from_xsol: UFix64<N9> =
       parse_event::<RedeemLevercoinEventV2>(&sim_result)
-        .map_or(UFix64::zero(), |e| UFix64::new(e.collateral_withdrawn.bits));
+        .and_then(|e| e.collateral_withdrawn.try_into().map_err(Into::into))
+        .unwrap_or_default();
     let amount_out = from_hyusd
       .checked_add(&from_xsol)
       .context("amount_out overflow")?;
 
     let fee_from_hyusd: UFix64<N9> =
       parse_event::<RedeemStablecoinEventV2>(&sim_result)
-        .map_or(UFix64::zero(), |e| UFix64::new(e.fees_deposited.bits));
+        .and_then(|e| e.fees_deposited.try_into().map_err(Into::into))
+        .unwrap_or_default();
     let fee_from_xsol: UFix64<N9> =
       parse_event::<RedeemLevercoinEventV2>(&sim_result)
-        .map_or(UFix64::zero(), |e| UFix64::new(e.fees_deposited.bits));
+        .and_then(|e| e.fees_deposited.try_into().map_err(Into::into))
+        .unwrap_or_default();
     let fee_amount = fee_from_hyusd
       .checked_add(&fee_from_xsol)
       .context("fee_amount overflow")?;

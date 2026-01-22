@@ -56,7 +56,7 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     let hyusd_to_withdraw =
       amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
-    let withdrawal_fee = UFix64::new(self.pool_config.withdrawal_fee.bits);
+    let withdrawal_fee = self.pool_config.withdrawal_fee.try_into()?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,

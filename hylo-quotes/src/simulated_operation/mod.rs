@@ -22,6 +22,15 @@ pub struct ComputeUnitInfo {
   pub strategy: ComputeUnitStrategy,
 }
 
+impl Default for ComputeUnitInfo {
+  fn default() -> Self {
+    Self {
+      compute_units: DEFAULT_CUS_WITH_BUFFER,
+      strategy: ComputeUnitStrategy::Estimated,
+    }
+  }
+}
+
 impl ComputeUnitInfo {
   /// Creates from simulation result.
   ///
@@ -29,16 +38,13 @@ impl ComputeUnitInfo {
   /// `Estimated` with default buffered value.
   #[must_use]
   pub fn from_simulation(cus: Option<u64>) -> Self {
-    match cus {
-      Some(cu) if cu > 0 => Self {
+    cus
+      .filter(|cu| *cu > 0)
+      .map(|cu| ComputeUnitInfo {
         compute_units: cu,
         strategy: ComputeUnitStrategy::Simulated,
-      },
-      _ => Self {
-        compute_units: DEFAULT_CUS_WITH_BUFFER,
-        strategy: ComputeUnitStrategy::Estimated,
-      },
-    }
+      })
+      .unwrap_or_default()
   }
 }
 
