@@ -13,8 +13,8 @@ use hylo_idl::exchange::events::{
 };
 use hylo_idl::tokens::{HYUSD, SHYUSD};
 
-use crate::simulated_operation::SimulatedOperationExt;
-use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
+use crate::simulated_operation::{ComputeUnitInfo, SimulatedOperationExt};
+use crate::simulation_strategy::SimulationStrategy;
 use crate::{Local, Quote, QuoteStrategy};
 
 // ============================================================================
@@ -145,14 +145,14 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<SHYUSD, L, C>
       .checked_add(&fee_from_xsol)
       .context("fee_amount overflow")?;
 
-    let cus = sim_result.value.units_consumed;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
+    let cu_info =
+      ComputeUnitInfo::from_simulation(sim_result.value.units_consumed);
 
     Ok(Quote {
       amount_in,
       amount_out: amount_out.bits,
-      compute_units,
-      compute_unit_strategy,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
       fee_amount: fee_amount.bits,
       fee_mint: L::MINT,
       instructions: tx_data.instructions,

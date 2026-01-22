@@ -24,7 +24,7 @@ use hylo_idl::stability_pool::events::UserWithdrawEventV1;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
-use crate::{ComputeUnitStrategy, Local, DEFAULT_CUS_WITH_BUFFER};
+use crate::Local;
 
 pub struct SimulationStrategy {
   pub(crate) exchange_client: ExchangeClient,
@@ -41,20 +41,6 @@ impl SimulationStrategy {
       exchange_client,
       stability_pool_client,
     }
-  }
-}
-
-/// Extract compute units and strategy from simulation result.
-///
-/// Returns `(compute_units, strategy)`. If simulation provides compute units,
-/// uses `Simulated` strategy; otherwise falls back to `Estimated` with default
-/// buffered value.
-pub(crate) fn resolve_compute_units(
-  compute_units: Option<u64>,
-) -> (u64, ComputeUnitStrategy) {
-  match compute_units {
-    Some(cu) if cu > 0 => (cu, ComputeUnitStrategy::Simulated),
-    _ => (DEFAULT_CUS_WITH_BUFFER, ComputeUnitStrategy::Estimated),
   }
 }
 

@@ -22,6 +22,26 @@ pub struct ComputeUnitInfo {
   pub strategy: ComputeUnitStrategy,
 }
 
+impl ComputeUnitInfo {
+  /// Creates from simulation result.
+  ///
+  /// Uses `Simulated` strategy if CUs provided, otherwise falls back to
+  /// `Estimated` with default buffered value.
+  #[must_use]
+  pub fn from_simulation(cus: Option<u64>) -> Self {
+    match cus {
+      Some(cu) if cu > 0 => Self {
+        compute_units: cu,
+        strategy: ComputeUnitStrategy::Simulated,
+      },
+      _ => Self {
+        compute_units: DEFAULT_CUS_WITH_BUFFER,
+        strategy: ComputeUnitStrategy::Estimated,
+      },
+    }
+  }
+}
+
 /// Simulation counterpart to [`TokenOperation`]—extracts output from events
 /// rather than computing from state.
 ///
@@ -126,16 +146,6 @@ impl<X> SimulatedOperationExt for X {
       .await?;
     let output =
       <Self as SimulatedOperation<IN, OUT>>::quote_from_event(&event)?;
-    let cu_info = match cus {
-      Some(cu) if cu > 0 => ComputeUnitInfo {
-        compute_units: cu,
-        strategy: ComputeUnitStrategy::Simulated,
-      },
-      _ => ComputeUnitInfo {
-        compute_units: DEFAULT_CUS_WITH_BUFFER,
-        strategy: ComputeUnitStrategy::Estimated,
-      },
-    };
-    Ok((output, cu_info))
+    Ok((output, ComputeUnitInfo::from_simulation(cus)))
   }
 }
