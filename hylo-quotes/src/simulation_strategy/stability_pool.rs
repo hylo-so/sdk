@@ -1,17 +1,26 @@
+use std::iter::once;
+
+use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use fix::prelude::{CheckedAdd, UFix64, N6, N9};
 use hylo_clients::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
-use hylo_clients::prelude::ProgramClient;
+use hylo_clients::prelude::{ProgramClient, VersionedTransactionData};
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
-use hylo_clients::transaction::{StabilityPoolArgs, TransactionSyntax};
-use hylo_clients::util::{parse_event, simulation_config, LST};
+use hylo_clients::transaction::{
+  BuildTransactionData, RedeemArgs, StabilityPoolArgs, TransactionSyntax,
+};
+use hylo_clients::util::{
+  parse_event, simulation_config, user_ata_instruction, EXCHANGE_LOOKUP_TABLE,
+  LST, LST_REGISTRY_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE,
+};
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::exchange::events::{
   RedeemLevercoinEventV2, RedeemStablecoinEventV2,
 };
-use hylo_idl::tokens::{HYUSD, SHYUSD};
+use hylo_idl::stability_pool::events::UserWithdrawEventV1;
+use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::simulated_operation::{ComputeUnitInfo, SimulatedOperationExt};
 use crate::simulation_strategy::SimulationStrategy;
@@ -98,6 +107,74 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
 // ============================================================================
 // Implementation for SHYUSD → LST (liquidation redemption)
 // ============================================================================
+
+#[async_trait]
+impl<L: LST + Local> BuildTransactionData<SHYUSD, L> for SimulationStrategy {
+  type Inputs = StabilityPoolArgs;
+
+  async fn build(
+    &self,
+    StabilityPoolArgs { amount, user }: StabilityPoolArgs,
+  ) -> Result<VersionedTransactionData> {
+    let withdraw_data = self
+      .stability_pool_client
+      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
+        amount,
+        user,
+      })
+      .await?;
+    let withdraw_tx = self
+      .stability_pool_client
+      .build_simulation_transaction(&user, &withdraw_data)
+      .await?;
+    let withdraw_sim = self
+      .stability_pool_client
+      .simulate_transaction_event::<UserWithdrawEventV1>(&withdraw_tx)
+      .await?;
+
+    let mut instructions: Vec<Instruction> =
+      once(user_ata_instruction(&user, &L::MINT))
+        .chain(withdraw_data.instructions)
+        .collect();
+
+    if withdraw_sim.stablecoin_withdrawn.bits > 0 {
+      let redeem_hyusd = self
+        .exchange_client
+        .build_transaction_data::<HYUSD, L>(RedeemArgs {
+          amount: withdraw_sim.stablecoin_withdrawn.try_into()?,
+          user,
+          slippage_config: None,
+        })
+        .await?;
+      instructions.push(user_ata_instruction(&user, &HYUSD::MINT));
+      instructions.extend(redeem_hyusd.instructions);
+    }
+
+    if withdraw_sim.levercoin_withdrawn.bits > 0 {
+      let redeem_xsol = self
+        .exchange_client
+        .build_transaction_data::<XSOL, L>(RedeemArgs {
+          amount: withdraw_sim.levercoin_withdrawn.try_into()?,
+          user,
+          slippage_config: None,
+        })
+        .await?;
+      instructions.push(user_ata_instruction(&user, &XSOL::MINT));
+      instructions.extend(redeem_xsol.instructions);
+    }
+
+    let lookup_tables = self
+      .stability_pool_client
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
+
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
+  }
+}
 
 #[async_trait]
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<SHYUSD, L, C>
