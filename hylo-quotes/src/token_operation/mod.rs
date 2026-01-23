@@ -41,7 +41,7 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
 pub trait TokenOperationExt {
   /// # Errors
   /// * Arithmetic or mode restrictions.
-  fn compute_quote<IN, OUT>(
+  fn quote<IN, OUT>(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<
@@ -59,7 +59,7 @@ pub trait TokenOperationExt {
 }
 
 impl<X> TokenOperationExt for X {
-  fn compute_quote<IN, OUT>(
+  fn quote<IN, OUT>(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<

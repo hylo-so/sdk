@@ -81,11 +81,37 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Low-level quotes with `TokenOperationExt`
+//!
+//! For direct access to protocol math without transaction building, use
+//! [`token_operation::TokenOperationExt`]. The `quote` method provides
+//! turbofish syntax for specifying token pairs:
+//!
+//! ```rust,ignore
+//! use hylo_quotes::protocol_state::{RpcStateProvider, StateProvider};
+//! use hylo_quotes::token_operation::TokenOperationExt;
+//! use hylo_idl::tokens::{HYUSD, JITOSOL};
+//! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+//! use fix::prelude::UFix64;
+//! use std::sync::Arc;
+//!
+//! # async fn example() -> anyhow::Result<()> {
+//! let rpc_client = Arc::new(RpcClient::new("https://api.mainnet-beta.solana.com".into()));
+//! let provider = RpcStateProvider::new(rpc_client);
+//! let state = provider.fetch_state().await?;
+//!
+//! let amount_in = UFix64::new(1_000_000_000); // 1 JITOSOL
+//! let output = state.quote::<JITOSOL, HYUSD>(amount_in)?;
+//! # Ok(())
+//! # }
+//! ```
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 use hylo_idl::tokens::{HYLOSOL, JITOSOL};
 
+pub mod prelude;
 pub mod protocol_state;
 mod protocol_state_strategy;
 mod quote_metadata;
