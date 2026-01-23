@@ -20,12 +20,8 @@
 //! ## Using `ProtocolStateStrategy`
 //!
 //! ```rust,no_run
-//! use hylo_quotes::protocol_state::RpcStateProvider;
-//! use hylo_quotes::{ProtocolStateStrategy, RuntimeQuoteStrategy};
-//! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
+//! use hylo_quotes::prelude::*;
 //! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
-//! use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
-//! use anchor_lang::prelude::Pubkey;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> anyhow::Result<()> {
@@ -53,9 +49,7 @@
 //!
 //! ```rust,no_run
 //! use hylo_clients::prelude::*;
-//! use hylo_quotes::{RuntimeQuoteStrategy, SimulationStrategy};
-//! use hylo_idl::tokens::{TokenMint, HYUSD, JITOSOL};
-//! use anchor_lang::prelude::Pubkey;
+//! use hylo_quotes::prelude::*;
 //!
 //! # async fn example() -> anyhow::Result<()> {
 //! let exchange_client = ExchangeClient::new_random_keypair(
@@ -89,11 +83,8 @@
 //! turbofish syntax for specifying token pairs:
 //!
 //! ```rust,ignore
-//! use hylo_quotes::protocol_state::{RpcStateProvider, StateProvider};
-//! use hylo_quotes::token_operation::TokenOperationExt;
-//! use hylo_idl::tokens::{HYUSD, JITOSOL};
+//! use hylo_quotes::prelude::*;
 //! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
-//! use fix::prelude::UFix64;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> anyhow::Result<()> {
