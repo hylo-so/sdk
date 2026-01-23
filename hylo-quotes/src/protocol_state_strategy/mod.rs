@@ -13,7 +13,7 @@ use crate::protocol_state::StateProvider;
 use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
 
 pub struct ProtocolStateStrategy<S> {
-  pub(crate) state_provider: S,
+  pub state_provider: S,
 }
 
 impl<S> ProtocolStateStrategy<S> {
