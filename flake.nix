@@ -15,7 +15,9 @@
       perSystem = { config, self', inputs', pkgs, system, ... }:
         with import nixpkgs {
           inherit system;
-          overlays = [ rust-overlay.overlays.default ]; }; let
+          overlays = [ rust-overlay.overlays.default ];
+        };
+        let
           sharedBuildInputs = [ libiconv pkg-config gcc openssl ]
             ++ lib.optionals stdenv.isDarwin
             (with darwin.apple_sdk.frameworks; [
@@ -26,15 +28,16 @@
               CoreServices
               Foundation
             ]);
+            rustStable = rust-bin.stable."1.88.0".default.override {
+              extensions = ["rust-analyzer" "rust-src"];
+            };
         in {
           devShells.nightly = mkShell {
-            packages =
-              [ rust-bin.nightly.latest.default cargo-udeps ];
+            packages = [ rust-bin.nightly.latest.default cargo-udeps ];
             buildInputs = sharedBuildInputs;
           };
           devShells.default = mkShell {
-            packages = [ rust-bin.stable."1.88.0".default cargo-workspaces ]
-              ++ lib.optionals stdenv.isDarwin [ rust-analyzer ];
+            packages = [ rustStable cargo-workspaces ];
             buildInputs = sharedBuildInputs;
           };
         };
