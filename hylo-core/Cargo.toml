@@ -16,6 +16,7 @@ anchor-spl.workspace = true
 hylo-fix.workspace = true
 hylo-idl = { workspace = true, optional = true }
 hylo-jupiter-amm-interface = { workspace = true, optional = true }
+itertools.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 serde.workspace = true
 

@@ -2176,6 +2176,7 @@ dependencies = [
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
+ "itertools 0.14.0",
  "proptest",
  "pyth-solana-receiver-sdk",
  "serde",

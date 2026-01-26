@@ -1,9 +1,9 @@
+use anchor_lang::prelude::*;
+use fix::prelude::*;
+
 use crate::error::CoreError::{
   BurnUnderflow, BurnZero, MintOverflow, MintZero,
 };
-
-use anchor_lang::prelude::*;
-use fix::prelude::*;
 
 #[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
 pub struct VirtualStablecoin {
