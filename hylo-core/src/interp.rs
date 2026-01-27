@@ -1,10 +1,29 @@
-use anchor_lang::Result;
+//! Piecewise linear interpolation for onchain fee curves.
+
+use anchor_lang::prelude::*;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use itertools::Itertools;
 
 use crate::error::CoreError;
 
+/// Serializable version of [`Point`] for account storage.
+#[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
+pub struct PointValue {
+  pub x: i64,
+  pub y: i64,
+}
+
+impl<Exp: Integer> From<PointValue> for Point<Exp> {
+  fn from(PointValue { x, y }: PointValue) -> Self {
+    Point {
+      x: IFix64::new(x),
+      y: IFix64::new(y),
+    }
+  }
+}
+
+/// Fixed-point Cartesian coordinate.
 #[derive(Debug, Clone, Copy)]
 pub struct Point<Exp: Integer> {
   pub x: IFix64<Exp>,
@@ -21,6 +40,7 @@ impl<Exp: Integer> Point<Exp> {
   }
 }
 
+/// Line segment between two points for linear interpolation.
 pub struct LineSegment<'a, Exp: Integer>(&'a Point<Exp>, &'a Point<Exp>);
 
 impl<Exp: Integer> LineSegment<'_, Exp> {
@@ -63,6 +83,14 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .all(|(p0, p1)| p0.x < p1.x)
       .then_some(FixInterp { points })
       .ok_or(CoreError::InterpPointsNotMonotonic.into())
+  }
+
+  /// Loads an interpolator from serialized point values.
+  ///
+  /// # Errors
+  /// * See [`FixInterp::from_points`].
+  pub fn from_values(values: [PointValue; RES]) -> Result<Self> {
+    FixInterp::from_points(values.map(Point::from))
   }
 
   /// Returns the minimum x value in the domain.
