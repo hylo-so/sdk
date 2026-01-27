@@ -1,8 +1,8 @@
 //! Integration tests for quote provider against mainnet
 //!
 //! These tests validate quote computation across different strategies:
-//! - ProtocolStateStrategy: Uses protocol state and SDK math
-//! - SimulationStrategy: Uses transaction simulation
+//! - `ProtocolStateStrategy`: Uses protocol state and SDK math
+//! - `SimulationStrategy`: Uses transaction simulation
 //!
 //! Set `RPC_URL` environment variable to run against mainnet.
 //! Tests fail if `RPC_URL` is not set.
@@ -197,7 +197,6 @@ impl QuoteTestCase {
   #[must_use]
   fn should_skip(&self, ctx: &TestContext) -> bool {
     match self.expected {
-      ExpectedResult::ModeRestricted => false,
       ExpectedResult::PoolStateRestricted => {
         if self.input_mint == SHYUSD::MINT && self.output_mint == HYUSD::MINT {
           !ctx.has_xsol_in_pool()
@@ -498,6 +497,7 @@ const TEST_CASES: &[QuoteTestCase] = &[
 // ============================================================================
 
 #[flaky_test(tokio, times = 3)]
+#[allow(clippy::too_many_lines)]
 async fn test_quote_provider_protocol_state() -> Result<()> {
   let ctx = TestContext::new().await?;
 
@@ -641,6 +641,7 @@ async fn test_quote_provider_protocol_state() -> Result<()> {
 }
 
 #[flaky_test(tokio, times = 3)]
+#[allow(clippy::too_many_lines)]
 async fn test_quote_provider_simulation() -> Result<()> {
   let ctx = TestContext::new().await?;
 
@@ -841,12 +842,11 @@ async fn test_reference_wallet_state() -> Result<()> {
     }
   }
 
-  if !mismatches.is_empty() {
-    panic!(
-      "Reference wallet balance mismatches:\n{}",
-      mismatches.join("\n")
-    );
-  }
+  assert!(
+    !mismatches.is_empty(),
+    "Reference wallet balance mismatches:\n{}",
+    mismatches.join("\n")
+  );
 
   Ok(())
 }

@@ -19,12 +19,12 @@ use hylo_core::stability_pool_math::{
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
-use crate::protocol_state::{ProtocolState, StateProvider};
+use crate::protocol_state::StateProvider;
 use crate::protocol_state_strategy::ProtocolStateStrategy;
 use crate::token_operation::{TokenOperation, TokenOperationExt};
 use crate::{
   ComputeUnitStrategy, Local, Quote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
-  LST,
+  DEFAULT_CUS_WITH_BUFFER_X3, LST,
 };
 
 // HYUSD -> SHYUSD (stability pool deposit)
@@ -189,7 +189,7 @@ impl<L: LST + Local, S: StateProvider<C>, C: SolanaClock>
     Ok(Quote {
       amount_in,
       amount_out: op.out_amount.bits,
-      compute_units: DEFAULT_CUS_WITH_BUFFER * 3,
+      compute_units: DEFAULT_CUS_WITH_BUFFER_X3,
       compute_unit_strategy: ComputeUnitStrategy::Estimated,
       fee_amount: op.fee_amount.bits,
       fee_mint: op.fee_mint,
