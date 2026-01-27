@@ -1,14 +1,31 @@
+use anchor_lang::Result;
 use fix::prelude::*;
+use fix::typenum::Integer;
 use itertools::Itertools;
 
-pub struct Point<Exp> {
+use crate::error::CoreError;
+
+#[derive(Debug, Clone, Copy)]
+pub struct Point<Exp: Integer> {
   pub x: IFix64<Exp>,
   pub y: IFix64<Exp>,
 }
 
-pub struct LineSegment<'a, Exp>(&'a Point<Exp>, &'a Point<Exp>);
+impl<Exp: Integer> Point<Exp> {
+  #[must_use]
+  pub const fn from_ints(x: i64, y: i64) -> Point<Exp> {
+    Point {
+      x: IFix64::constant(x),
+      y: IFix64::constant(y),
+    }
+  }
+}
 
-impl<Exp> LineSegment<'_, Exp> {
+pub struct LineSegment<'a, Exp: Integer>(&'a Point<Exp>, &'a Point<Exp>);
+
+impl<Exp: Integer> LineSegment<'_, Exp> {
+  /// Linear interpolation to find an approximate `y` to the given `x`.
+  ///
   /// ```txt
   /// y = y_0 + (y_1 - y_0) * (x - x_0) / (x_1 - x_0)
   /// ```
@@ -16,33 +33,36 @@ impl<Exp> LineSegment<'_, Exp> {
   pub fn lerp(&self, x: IFix64<Exp>) -> Option<IFix64<Exp>> {
     let Point { x: x0, y: y0 } = self.0;
     let Point { x: x1, y: y1 } = self.1;
-    let denom = x1.saturating_add(x0);
+    let denom = x1.checked_sub(x0)?;
     let div = y1
-      .saturating_sub(y0)
-      .mul_div_ceil(x.saturating_sub(x0), denom)?;
-    Some(y0.saturating_add(&div))
+      .checked_sub(y0)?
+      .mul_div_ceil(x.checked_sub(x0)?, denom)?;
+    y0.checked_add(&div)
   }
 }
 
 /// Piecewise linear interpolation over a fixed-size point array.
-pub struct FixInterp<const RES: usize, Exp> {
+#[derive(Debug)]
+pub struct FixInterp<const RES: usize, Exp: Integer> {
   points: [Point<Exp>; RES],
 }
 
-impl<const RES: usize, Exp> FixInterp<RES, Exp> {
+impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   /// Creates a new interpolator from a point array.
-  /// Returns `None` if x-coordinates are not strictly increasing.
-  #[must_use]
-  pub fn from_points(points: [Point<Exp>; RES]) -> Option<Self> {
-    let monotonic = points
+  ///
+  /// # Errors
+  /// * Minimum of 2 points resolution
+  /// * Monotonically increasing x values
+  pub fn from_points(points: [Point<Exp>; RES]) -> Result<Self> {
+    (RES >= 2)
+      .then_some(())
+      .ok_or(CoreError::InterpInsufficientPoints)?;
+    points
       .iter()
       .tuple_windows::<(_, _)>()
-      .all(|(Point { x: x0, .. }, Point { x: x1, .. })| x0 < x1);
-    if monotonic {
-      Some(FixInterp { points })
-    } else {
-      None
-    }
+      .all(|(p0, p1)| p0.x < p1.x)
+      .then_some(FixInterp { points })
+      .ok_or(CoreError::InterpPointsNotMonotonic.into())
   }
 
   /// Returns the minimum x value in the domain.
@@ -58,15 +78,142 @@ impl<const RES: usize, Exp> FixInterp<RES, Exp> {
   }
 
   /// Interpolates to find y for a given x.
-  /// Returns `None` if x is outside domain.
-  #[must_use]
-  pub fn interpolate(&self, x: IFix64<Exp>) -> Option<IFix64<Exp>> {
-    let part = self.points.partition_point(|p| x >= p.x);
-    let segment: LineSegment<Exp> = self
+  ///
+  /// # Errors
+  ///
+  /// * Input x is outside the valid domain.
+  /// * Arithmetic overflow during calculation.
+  pub fn interpolate(&self, x: IFix64<Exp>) -> Result<IFix64<Exp>> {
+    (x >= self.x_min() && x <= self.x_max())
+      .then_some(())
+      .ok_or(CoreError::InterpOutOfDomain)?;
+    let part = self.points.partition_point(|p| p.x < x).max(1);
+    self
       .points
-      .get(part)
-      .zip(self.points.get(part + 1))
-      .map(|(p0, p1)| LineSegment(p0, p1))?;
-    segment.lerp(x)
+      .get(part - 1)
+      .zip(self.points.get(part))
+      .map(|(p0, p1)| LineSegment(p0, p1))
+      .and_then(|seg| seg.lerp(x))
+      .ok_or(CoreError::InterpArithmetic.into())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::error::CoreError;
+  use crate::fee_curves::{MINT_FEE_EXP_DECAY, REDEEM_FEE_LN};
+
+  #[test]
+  fn from_points_insufficient_points() {
+    let result = FixInterp::from_points([Point::<N4>::from_ints(0, 0)]);
+    assert_eq!(
+      result.err(),
+      Some(CoreError::InterpInsufficientPoints.into())
+    );
+  }
+
+  #[test]
+  fn from_points_non_monotonic() {
+    let points = [Point::<N4>::from_ints(100, 10), Point::from_ints(50, 20)];
+    let result = FixInterp::from_points(points);
+    assert_eq!(
+      result.err(),
+      Some(CoreError::InterpPointsNotMonotonic.into())
+    );
+  }
+
+  #[test]
+  fn from_points_valid_curves() -> anyhow::Result<()> {
+    FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    FixInterp::from_points(*REDEEM_FEE_LN)?;
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_below_domain() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let x = IFix64::<N4>::constant(12999);
+    assert_eq!(
+      interp.interpolate(x).err(),
+      Some(CoreError::InterpOutOfDomain.into())
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_above_domain() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let x = IFix64::<N4>::constant(30001);
+    assert_eq!(
+      interp.interpolate(x).err(),
+      Some(CoreError::InterpOutOfDomain.into())
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_exact_first_point() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let x = IFix64::<N4>::constant(13000);
+    let y = interp.interpolate(x)?;
+    assert_eq!(y, IFix64::constant(500));
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_exact_last_point() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let x = IFix64::<N4>::constant(30000);
+    let y = interp.interpolate(x)?;
+    assert_eq!(y, IFix64::constant(11));
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_exact_interior_point() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
+    let x = IFix64::<N4>::constant(15100);
+    let y = interp.interpolate(x)?;
+    assert_eq!(y, IFix64::constant(20));
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_midpoint() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
+    let x = IFix64::<N4>::constant(13100);
+    let y = interp.interpolate(x)?;
+    assert_eq!(y, IFix64::constant(3));
+    Ok(())
+  }
+
+  #[test]
+  fn interpolate_two_point_curve() -> anyhow::Result<()> {
+    let points = [Point::<N4>::from_ints(0, 100), Point::from_ints(100, 200)];
+    let interp = FixInterp::from_points(points)?;
+
+    assert_eq!(
+      interp.interpolate(IFix64::constant(0))?,
+      IFix64::constant(100)
+    );
+    assert_eq!(
+      interp.interpolate(IFix64::constant(100))?,
+      IFix64::constant(200)
+    );
+    assert_eq!(
+      interp.interpolate(IFix64::constant(50))?,
+      IFix64::constant(150)
+    );
+
+    assert_eq!(
+      interp.interpolate(IFix64::constant(-1)).err(),
+      Some(CoreError::InterpOutOfDomain.into())
+    );
+    assert_eq!(
+      interp.interpolate(IFix64::constant(101)).err(),
+      Some(CoreError::InterpOutOfDomain.into())
+    );
+    Ok(())
   }
 }
