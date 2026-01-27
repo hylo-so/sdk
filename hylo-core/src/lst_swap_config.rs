@@ -49,8 +49,8 @@ mod tests {
   fn reject_out_of_range_fee() {
     let zero = LstSwapConfig::new(UFixValue64::new(0, -4));
     let one = LstSwapConfig::new(UFixValue64::new(10000, -4));
-    assert!(zero.is_err());
-    assert!(one.is_err());
+    assert_eq!(zero.err(), Some(InvalidFees.into()));
+    assert_eq!(one.err(), Some(InvalidFees.into()));
   }
 
   #[test]
