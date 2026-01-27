@@ -122,4 +122,13 @@ pub enum CoreError {
   MintZero,
   #[msg("Cannot burn zero amount of virtual stablecoin.")]
   BurnZero,
+  // `interp`
+  #[msg("Interpolation requires at least two points.")]
+  InterpInsufficientPoints,
+  #[msg("Interpolation points must have strictly increasing x-coordinates.")]
+  InterpPointsNotMonotonic,
+  #[msg("Interpolation input is outside the valid domain.")]
+  InterpOutOfDomain,
+  #[msg("Arithmetic overflow during interpolation calculation.")]
+  InterpArithmetic,
 }

@@ -11,6 +11,7 @@ pub struct VirtualStablecoin {
 }
 
 impl VirtualStablecoin {
+  #[must_use]
   pub fn new() -> VirtualStablecoin {
     VirtualStablecoin {
       supply: UFix64::<N6>::zero().into(),
@@ -43,6 +44,12 @@ impl VirtualStablecoin {
     } else {
       Err(BurnZero.into())
     }
+  }
+}
+
+impl Default for VirtualStablecoin {
+  fn default() -> Self {
+    Self::new()
   }
 }
 
@@ -111,11 +118,10 @@ mod tests {
   }
 
   #[test]
-  fn mint_zero_error() -> Result<()> {
+  fn mint_zero_error() {
     let mut stablecoin = setup_virtual_stablecoin();
     let result = stablecoin.mint(UFix64::zero());
     assert!(result.is_err_and(|e| e == MintZero.into()));
-    Ok(())
   }
 
   #[test]

@@ -1,3 +1,4 @@
+#[cfg(feature = "offchain")]
 use std::sync::atomic::Ordering;
 
 use anchor_lang::prelude::Clock;
