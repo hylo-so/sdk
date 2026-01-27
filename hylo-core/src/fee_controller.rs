@@ -212,6 +212,6 @@ mod tests {
     let fee = UFix64::new(10001);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
-    assert!(out.is_err());
+    assert_eq!(out.err(), Some(FeeExtraction.into()));
   }
 }

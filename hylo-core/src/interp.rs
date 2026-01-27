@@ -216,4 +216,30 @@ mod tests {
     );
     Ok(())
   }
+
+  #[test]
+  #[ignore = "offline use not for CI"]
+  fn dump_mint_fee_curve() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    println!("cr,fee");
+    (13000..=30000).try_for_each(|ix| -> anyhow::Result<()> {
+      let x = IFix64::<N4>::constant(ix);
+      let y = interp.interpolate(x)?;
+      println!("{}e-4,{}e-4", x.bits, y.bits);
+      Ok(())
+    })
+  }
+
+  #[test]
+  #[ignore = "offline use not for CI"]
+  fn dump_redeem_fee_curve() -> anyhow::Result<()> {
+    let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
+    println!("cr,fee");
+    (13000..=30000).try_for_each(|ix| -> anyhow::Result<()> {
+      let x = IFix64::<N4>::constant(ix);
+      let y = interp.interpolate(x)?;
+      println!("{}e-4,{}e-4", x.bits, y.bits);
+      Ok(())
+    })
+  }
 }
