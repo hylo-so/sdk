@@ -553,7 +553,7 @@ async fn test_quote_provider_protocol_state() -> Result<()> {
           Ok((quote, _)) => {
             eprintln!(
               "{}: {} - ProtocolStateStrategy does not check balances, got \
-               quote: amount_in={}, amount_out={}",
+               quote: amount_in={:?}, amount_out={:?}",
               test_case.name,
               test_case.description,
               quote.amount_in,

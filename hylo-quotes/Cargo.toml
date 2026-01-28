@@ -18,6 +18,7 @@ hylo-core = { workspace = true, features = ["offchain"] }
 hylo-fix.workspace = true
 hylo-idl.workspace = true
 pyth-solana-receiver-sdk.workspace = true
+serde.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
