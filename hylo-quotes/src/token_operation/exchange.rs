@@ -1,6 +1,6 @@
 //! `TokenOperation` implementations for exchange pairs.
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, ensure, Result};
 use fix::prelude::*;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::lst_sol_price::LstSolPrice;
@@ -242,10 +242,14 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
     &self,
     in_amount: UFix64<N9>,
   ) -> Result<LstSwapOperationOutput> {
+    let lst_swap_config = self
+      .lst_swap_config
+      .as_ref()
+      .ok_or_else(|| anyhow!("LST swap not available"))?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = self.lst_swap_config.apply_fee(in_amount)?;
+    } = lst_swap_config.apply_fee(in_amount)?;
 
     let epoch = self.exchange_context.clock.epoch();
     let lst_in_header = self.lst_header::<L1>()?;

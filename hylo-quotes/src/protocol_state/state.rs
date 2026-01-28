@@ -55,8 +55,8 @@ pub struct ProtocolState<C: SolanaClock> {
   /// Timestamp of when this state was fetched
   pub fetched_at: UnixTimestamp,
 
-  /// LST swap configuration
-  pub lst_swap_config: LstSwapConfig,
+  /// LST swap configuration (None until program is upgraded on mainnet)
+  pub lst_swap_config: Option<LstSwapConfig>,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -90,7 +90,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )?;
     let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
-    let lst_swap_config = LstSwapConfig::new(hylo.lst_swap_fee.into())?;
+    let lst_swap_config = LstSwapConfig::new(hylo.lst_swap_fee.into()).ok();
     let exchange_context = ExchangeContext::load(
       clock,
       &total_sol_cache,
