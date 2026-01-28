@@ -13,7 +13,7 @@ use hylo_idl::tokens::{HYUSD, XSOL};
 
 use crate::protocol_state::{ProtocolState, StateProvider};
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use crate::token_operation::TokenOperation;
+use crate::token_operation::{TokenOperation, TokenOperationExt};
 use crate::{
   ComputeUnitStrategy, ExecutableQuote, Local, QuoteStrategy,
   DEFAULT_CUS_WITH_BUFFER, LST,
@@ -198,10 +198,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C>
     slippage_tolerance: u64,
   ) -> Result<SwapQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<HYUSD, XSOL>::compute_output(
-      &state,
-      UFix64::new(amount_in),
-    )?;
+    let op = state.output::<HYUSD, XSOL>(UFix64::new(amount_in))?;
     let args = SwapArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
@@ -240,10 +237,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C>
     slippage_tolerance: u64,
   ) -> Result<SwapQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<XSOL, HYUSD>::compute_output(
-      &state,
-      UFix64::new(amount_in),
-    )?;
+    let op = state.output::<XSOL, HYUSD>(UFix64::new(amount_in))?;
     let args = SwapArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,

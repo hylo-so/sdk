@@ -10,7 +10,9 @@ use hylo_jupiter_amm_interface::{
   AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
 };
 use hylo_quotes::protocol_state::ProtocolState;
-use hylo_quotes::token_operation::{OperationOutput, TokenOperation};
+use hylo_quotes::token_operation::{
+  OperationOutput, TokenOperation, TokenOperationExt,
+};
 use rust_decimal::Decimal;
 
 /// Computes fee percentage as `Decimal`.
@@ -69,10 +71,7 @@ where
   ProtocolState<ClockRef>: TokenOperation<IN, OUT>,
   <ProtocolState<ClockRef> as TokenOperation<IN, OUT>>::FeeExp: Integer,
 {
-  let op = <ProtocolState<_> as TokenOperation<IN, OUT>>::compute_output(
-    state,
-    UFix64::new(amount),
-  )?;
+  let op = state.output::<IN, OUT>(UFix64::new(amount))?;
   operation_to_quote(op)
 }
 

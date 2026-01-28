@@ -21,7 +21,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::protocol_state::StateProvider;
 use crate::protocol_state_strategy::ProtocolStateStrategy;
-use crate::token_operation::{TokenOperation, TokenOperationExt};
+use crate::token_operation::TokenOperationExt;
 use crate::{
   ComputeUnitStrategy, ExecutableQuote, Local, QuoteStrategy,
   DEFAULT_CUS_WITH_BUFFER, DEFAULT_CUS_WITH_BUFFER_X3, LST,
@@ -45,10 +45,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C>
     _slippage_tolerance: u64,
   ) -> Result<DepositQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op = TokenOperation::<HYUSD, SHYUSD>::compute_output(
-      &state,
-      UFix64::new(amount_in),
-    )?;
+    let op = state.output::<HYUSD, SHYUSD>(UFix64::new(amount_in))?;
     let args = StabilityPoolArgs {
       amount: UFix64::<N6>::new(amount_in),
       user,
