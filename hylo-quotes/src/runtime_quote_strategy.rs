@@ -67,6 +67,8 @@ runtime_quote_strategies! {
   (XSOL, HYLOSOL, Operation::RedeemLevercoin, "Redeem xSOL for hyloSOL"),
   (HYUSD, XSOL, Operation::SwapStableToLever, "Swap hyUSD to xSOL"),
   (XSOL, HYUSD, Operation::SwapLeverToStable, "Swap xSOL to hyUSD"),
+  (JITOSOL, HYLOSOL, Operation::LstSwap, "Swap JitoSOL to hyloSOL"),
+  (HYLOSOL, JITOSOL, Operation::LstSwap, "Swap hyloSOL to JitoSOL"),
   (HYUSD, SHYUSD, Operation::DepositToStabilityPool, "Deposit hyUSD to Stability Pool"),
   (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
   (SHYUSD, JITOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for JitoSOL"),
