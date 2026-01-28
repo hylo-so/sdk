@@ -69,7 +69,7 @@ where
   ProtocolState<ClockRef>: TokenOperation<IN, OUT>,
   <ProtocolState<ClockRef> as TokenOperation<IN, OUT>>::FeeExp: Integer,
 {
-  let op = <ProtocolState<_> as TokenOperation<IN, OUT>>::compute_quote(
+  let op = <ProtocolState<_> as TokenOperation<IN, OUT>>::compute_output(
     state,
     UFix64::new(amount),
   )?;

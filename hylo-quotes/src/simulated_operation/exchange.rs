@@ -22,7 +22,7 @@ impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
   type FeeExp = N9;
   type Event = MintStablecoinEventV2;
 
-  fn quote_from_event(event: &Self::Event) -> Result<MintOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<MintOperationOutput> {
     let out_amount: UFix64<N6> = event.minted.try_into()?;
     let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
     let collateral_deposited: UFix64<N9> =
@@ -45,7 +45,7 @@ impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
   type FeeExp = N9;
   type Event = RedeemStablecoinEventV2;
 
-  fn quote_from_event(event: &Self::Event) -> Result<RedeemOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<RedeemOperationOutput> {
     let in_amount: UFix64<N6> = event.redeemed.try_into()?;
     let out_amount: UFix64<N9> = event.collateral_withdrawn.try_into()?;
     let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
@@ -67,7 +67,7 @@ impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
   type FeeExp = N9;
   type Event = MintLevercoinEventV2;
 
-  fn quote_from_event(event: &Self::Event) -> Result<MintOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<MintOperationOutput> {
     let out_amount: UFix64<N6> = event.minted.try_into()?;
     let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
     let collateral_deposited: UFix64<N9> =
@@ -90,7 +90,7 @@ impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
   type FeeExp = N9;
   type Event = RedeemLevercoinEventV2;
 
-  fn quote_from_event(event: &Self::Event) -> Result<RedeemOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<RedeemOperationOutput> {
     let in_amount: UFix64<N6> = event.redeemed.try_into()?;
     let out_amount: UFix64<N9> = event.collateral_withdrawn.try_into()?;
     let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
@@ -112,7 +112,7 @@ impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
   type FeeExp = N6;
   type Event = SwapStableToLeverEventV1;
 
-  fn quote_from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
     let stablecoin_burned: UFix64<N6> = event.stablecoin_burned.try_into()?;
     let out_amount: UFix64<N6> = event.levercoin_minted.try_into()?;
     let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;
@@ -134,7 +134,7 @@ impl SimulatedOperation<XSOL, HYUSD> for ExchangeClient {
   type FeeExp = N6;
   type Event = SwapLeverToStableEventV1;
 
-  fn quote_from_event(event: &Self::Event) -> Result<SwapOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
     let in_amount: UFix64<N6> = event.levercoin_burned.try_into()?;
     let out_amount: UFix64<N6> = event.stablecoin_minted_user.try_into()?;
     let fee_amount: UFix64<N6> = event.stablecoin_minted_fees.try_into()?;
@@ -158,7 +158,7 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
   type FeeExp = N9;
   type Event = SwapLstEventV0;
 
-  fn quote_from_event(event: &Self::Event) -> Result<LstSwapOperationOutput> {
+  fn extract_output(event: &Self::Event) -> Result<LstSwapOperationOutput> {
     let in_amount: UFix64<N9> = event.lst_a_in.try_into()?;
     let out_amount: UFix64<N9> = event.lst_b_out.try_into()?;
     let fee_amount: UFix64<N9> = event.lst_a_fees_extracted.try_into()?;

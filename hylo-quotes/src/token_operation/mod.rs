@@ -30,7 +30,7 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   ///
   /// # Errors
   /// * Underlying arithmetic
-  fn compute_quote(
+  fn compute_output(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>>;
@@ -41,7 +41,7 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
 pub trait TokenOperationExt {
   /// # Errors
   /// * Arithmetic or mode restrictions.
-  fn quote<IN, OUT>(
+  fn output<IN, OUT>(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<
@@ -59,7 +59,7 @@ pub trait TokenOperationExt {
 }
 
 impl<X> TokenOperationExt for X {
-  fn quote<IN, OUT>(
+  fn output<IN, OUT>(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<
@@ -75,6 +75,6 @@ impl<X> TokenOperationExt for X {
     OUT: TokenMint,
     <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
   {
-    TokenOperation::<IN, OUT>::compute_quote(self, amount_in)
+    TokenOperation::<IN, OUT>::compute_output(self, amount_in)
   }
 }

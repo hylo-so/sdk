@@ -31,8 +31,8 @@ use hylo_quotes::protocol_state::{
   ProtocolState, RpcStateProvider, StateProvider,
 };
 use hylo_quotes::{
-  ProtocolStateStrategy, Quote, QuoteMetadata, RuntimeQuoteStrategy,
-  SimulationStrategy,
+  ExecutableQuoteValue, ProtocolStateStrategy, QuoteMetadata,
+  RuntimeQuoteStrategy, SimulationStrategy,
 };
 
 /// Test context with shared setup for integration tests
@@ -786,16 +786,20 @@ async fn test_quote_provider_simulation() -> Result<()> {
 }
 
 /// Validate that a quote has reasonable values
-fn validate_quote(quote: &Quote, metadata: &QuoteMetadata, test_name: &str) {
+fn validate_quote(
+  quote: &ExecutableQuoteValue,
+  metadata: &QuoteMetadata,
+  test_name: &str,
+) {
   assert!(
-    quote.amount_in > 0,
+    quote.amount_in.bits > 0,
     "{test_name}: amount_in should be > 0, got {}",
-    quote.amount_in
+    quote.amount_in.bits
   );
   assert!(
-    quote.amount_out > 0,
+    quote.amount_out.bits > 0,
     "{test_name}: amount_out should be > 0, got {}",
-    quote.amount_out
+    quote.amount_out.bits
   );
   assert!(
     quote.compute_units > 0,

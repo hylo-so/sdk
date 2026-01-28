@@ -6,7 +6,7 @@ use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
 use crate::quote_metadata::{Operation, QuoteMetadata};
 use crate::quote_strategy::QuoteStrategy;
-use crate::Quote;
+use crate::ExecutableQuoteValue;
 
 macro_rules! runtime_quote_strategies {
     ($(($in:ty, $out:ty, $op:expr, $desc:expr)),* $(,)?) => {
@@ -21,11 +21,12 @@ macro_rules! runtime_quote_strategies {
           amount_in: u64,
           user: Pubkey,
           slippage_tolerance: u64,
-        ) -> Result<Quote> {
+        ) -> Result<ExecutableQuoteValue> {
           match (input_mint, output_mint) {
             $(
               (<$in>::MINT, <$out>::MINT) => {
-                QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await
+                let quote = QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await?;
+                Ok(quote.into())
               },
             )*
             _ => Err(anyhow!("Unsupported pair")),
@@ -40,13 +41,13 @@ macro_rules! runtime_quote_strategies {
           amount_in: u64,
           user: Pubkey,
           slippage_tolerance: u64,
-        ) -> Result<(Quote, QuoteMetadata)> {
+        ) -> Result<(ExecutableQuoteValue, QuoteMetadata)> {
           match (input_mint, output_mint) {
             $(
-              (<$in>::MINT, <$out>::MINT) => Ok((
-                  QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await?,
-                  QuoteMetadata::new($op, $desc),
-              )),
+              (<$in>::MINT, <$out>::MINT) => {
+                let quote = QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await?;
+                Ok((quote.into(), QuoteMetadata::new($op, $desc)))
+              },
             )*
             _ => Err(anyhow!("Unsupported pair")),
           }

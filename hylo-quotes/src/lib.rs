@@ -76,10 +76,10 @@
 //! # }
 //! ```
 //!
-//! ## Low-level quotes with `TokenOperationExt`
+//! ## Low-level output with `TokenOperationExt`
 //!
 //! For direct access to protocol math without transaction building, use
-//! [`token_operation::TokenOperationExt`]. The `quote` method provides
+//! [`token_operation::TokenOperationExt`]. The `output` method provides
 //! turbofish syntax for specifying token pairs:
 //!
 //! ```rust,ignore
@@ -93,13 +93,15 @@
 //! let state = provider.fetch_state().await?;
 //!
 //! let amount_in = UFix64::new(1_000_000_000); // 1 JITOSOL
-//! let output = state.quote::<JITOSOL, HYUSD>(amount_in)?;
+//! let output = state.output::<JITOSOL, HYUSD>(amount_in)?;
 //! # Ok(())
 //! # }
 //! ```
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
+use fix::prelude::{UFix64, UFixValue64};
+use fix::typenum::Integer;
 use hylo_idl::tokens::{HYLOSOL, JITOSOL};
 
 pub mod prelude;
@@ -132,17 +134,49 @@ pub use simulation_strategy::SimulationStrategy;
 pub const DEFAULT_CUS_WITH_BUFFER: u64 = 100_000;
 pub const DEFAULT_CUS_WITH_BUFFER_X3: u64 = 300_000;
 
-/// Quote with computed amounts, instructions, and compute units.
+/// Typed executable quote with amounts, instructions, and compute units.
 #[derive(Clone, Debug)]
-pub struct Quote {
-  pub amount_in: u64,
-  pub amount_out: u64,
+pub struct ExecutableQuote<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
+  pub amount_in: UFix64<InExp>,
+  pub amount_out: UFix64<OutExp>,
   pub compute_units: u64,
   pub compute_unit_strategy: ComputeUnitStrategy,
-  pub fee_amount: u64,
+  pub fee_amount: UFix64<FeeExp>,
   pub fee_mint: Pubkey,
   pub instructions: Vec<Instruction>,
   pub address_lookup_tables: Vec<Pubkey>,
+}
+
+/// Executable quote with runtime exponent information.
+#[derive(Clone, Debug)]
+pub struct ExecutableQuoteValue {
+  pub amount_in: UFixValue64,
+  pub amount_out: UFixValue64,
+  pub compute_units: u64,
+  pub compute_unit_strategy: ComputeUnitStrategy,
+  pub fee_amount: UFixValue64,
+  pub fee_mint: Pubkey,
+  pub instructions: Vec<Instruction>,
+  pub address_lookup_tables: Vec<Pubkey>,
+}
+
+impl<InExp: Integer, OutExp: Integer, FeeExp: Integer>
+  From<ExecutableQuote<InExp, OutExp, FeeExp>> for ExecutableQuoteValue
+{
+  fn from(
+    quote: ExecutableQuote<InExp, OutExp, FeeExp>,
+  ) -> ExecutableQuoteValue {
+    ExecutableQuoteValue {
+      amount_in: quote.amount_in.into(),
+      amount_out: quote.amount_out.into(),
+      compute_units: quote.compute_units,
+      compute_unit_strategy: quote.compute_unit_strategy,
+      fee_amount: quote.fee_amount.into(),
+      fee_mint: quote.fee_mint,
+      instructions: quote.instructions,
+      address_lookup_tables: quote.address_lookup_tables,
+    }
+  }
 }
 
 #[derive(Clone, Debug)]

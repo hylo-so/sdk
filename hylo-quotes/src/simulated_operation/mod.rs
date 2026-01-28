@@ -58,7 +58,7 @@ pub trait SimulatedOperation<IN: TokenMint, OUT: TokenMint> {
 
   /// # Errors
   /// * Event parsing or validation.
-  fn quote_from_event(
+  fn extract_output(
     event: &Self::Event,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>>;
 }
@@ -69,7 +69,7 @@ pub trait SimulatedOperationExt {
   /// # Errors
   /// * Event parsing or validation.
   #[allow(clippy::type_complexity)]
-  fn quote_from_event<IN: TokenMint, OUT: TokenMint>(
+  fn extract_output<IN: TokenMint, OUT: TokenMint>(
     event: &<Self as SimulatedOperation<IN, OUT>>::Event,
   ) -> Result<
     OperationOutput<
@@ -87,7 +87,7 @@ pub trait SimulatedOperationExt {
   /// * RPC simulation failure.
   /// * Event parsing or validation.
   #[allow(clippy::type_complexity)]
-  async fn simulate_quote<IN: TokenMint, OUT: TokenMint>(
+  async fn simulate_output<IN: TokenMint, OUT: TokenMint>(
     &self,
     user: Pubkey,
     inputs: <Self as BuildTransactionData<IN, OUT>>::Inputs,
@@ -110,7 +110,7 @@ pub trait SimulatedOperationExt {
 
 #[async_trait]
 impl<X> SimulatedOperationExt for X {
-  fn quote_from_event<IN: TokenMint, OUT: TokenMint>(
+  fn extract_output<IN: TokenMint, OUT: TokenMint>(
     event: &<Self as SimulatedOperation<IN, OUT>>::Event,
   ) -> Result<
     OperationOutput<
@@ -122,10 +122,10 @@ impl<X> SimulatedOperationExt for X {
   where
     Self: SimulatedOperation<IN, OUT>,
   {
-    <Self as SimulatedOperation<IN, OUT>>::quote_from_event(event)
+    <Self as SimulatedOperation<IN, OUT>>::extract_output(event)
   }
 
-  async fn simulate_quote<IN: TokenMint, OUT: TokenMint>(
+  async fn simulate_output<IN: TokenMint, OUT: TokenMint>(
     &self,
     user: Pubkey,
     inputs: <Self as BuildTransactionData<IN, OUT>>::Inputs,
@@ -150,8 +150,7 @@ impl<X> SimulatedOperationExt for X {
         user, inputs,
       )
       .await?;
-    let output =
-      <Self as SimulatedOperation<IN, OUT>>::quote_from_event(&event)?;
+    let output = <Self as SimulatedOperation<IN, OUT>>::extract_output(&event)?;
     Ok((output, ComputeUnitInfo::from_simulation(cus)))
   }
 }

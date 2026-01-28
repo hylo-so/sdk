@@ -12,7 +12,12 @@ use hylo_idl::tokens::{HYUSD, XSOL};
 
 use crate::simulated_operation::SimulatedOperationExt;
 use crate::simulation_strategy::SimulationStrategy;
-use crate::{Local, Quote, QuoteStrategy};
+use crate::{ExecutableQuote, Local, QuoteStrategy};
+
+type MintQuote = ExecutableQuote<N9, N6, N9>;
+type RedeemQuote = ExecutableQuote<N6, N9, N9>;
+type SwapQuote = ExecutableQuote<N6, N6, N6>;
+type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
@@ -22,12 +27,14 @@ use crate::{Local, Quote, QuoteStrategy};
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<MintQuote> {
     let amount = UFix64::<N9>::new(amount_in);
     let sim_args = MintArgs {
       amount,
@@ -37,7 +44,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<L, HYUSD>(user, sim_args)
+      .simulate_output::<L, HYUSD>(user, sim_args)
       .await?;
 
     let args = MintArgs {
@@ -52,12 +59,12 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
     let instructions = ExchangeIB::build_instructions::<L, HYUSD>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, HYUSD>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -73,12 +80,14 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<RedeemQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let sim_args = RedeemArgs {
       amount,
@@ -88,7 +97,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<HYUSD, L>(user, sim_args)
+      .simulate_output::<HYUSD, L>(user, sim_args)
       .await?;
 
     let args = RedeemArgs {
@@ -103,12 +112,12 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
     let instructions = ExchangeIB::build_instructions::<HYUSD, L>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<HYUSD, L>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -124,12 +133,14 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<MintQuote> {
     let amount = UFix64::<N9>::new(amount_in);
     let sim_args = MintArgs {
       amount,
@@ -139,7 +150,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<L, XSOL>(user, sim_args)
+      .simulate_output::<L, XSOL>(user, sim_args)
       .await?;
 
     let args = MintArgs {
@@ -154,12 +165,12 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
     let instructions = ExchangeIB::build_instructions::<L, XSOL>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, XSOL>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -175,12 +186,14 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<RedeemQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let sim_args = RedeemArgs {
       amount,
@@ -190,7 +203,7 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<XSOL, L>(user, sim_args)
+      .simulate_output::<XSOL, L>(user, sim_args)
       .await?;
 
     let args = RedeemArgs {
@@ -205,12 +218,12 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
     let instructions = ExchangeIB::build_instructions::<XSOL, L>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<XSOL, L>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -224,12 +237,14 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
+  type FeeExp = N6;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<SwapQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let sim_args = SwapArgs {
       amount,
@@ -239,7 +254,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<HYUSD, XSOL>(user, sim_args)
+      .simulate_output::<HYUSD, XSOL>(user, sim_args)
       .await?;
 
     let args = SwapArgs {
@@ -255,12 +270,12 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<HYUSD, XSOL>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -274,12 +289,14 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
+  type FeeExp = N6;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<SwapQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let sim_args = SwapArgs {
       amount,
@@ -289,7 +306,7 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<XSOL, HYUSD>(user, sim_args)
+      .simulate_output::<XSOL, HYUSD>(user, sim_args)
       .await?;
 
     let args = SwapArgs {
@@ -305,12 +322,12 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -326,12 +343,14 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
 impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<LstSwapQuote> {
     let amount = UFix64::<N9>::new(amount_in);
     let sim_args = LstSwapArgs {
       amount_lst_a: amount,
@@ -343,7 +362,7 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
 
     let (output, cu_info) = self
       .exchange_client
-      .simulate_quote::<L1, L2>(user, sim_args)
+      .simulate_output::<L1, L2>(user, sim_args)
       .await?;
 
     let args = LstSwapArgs {
@@ -360,12 +379,12 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
     let instructions = ExchangeIB::build_instructions::<L1, L2>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L1, L2>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,

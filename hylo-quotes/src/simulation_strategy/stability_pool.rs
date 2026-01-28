@@ -24,7 +24,11 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::simulated_operation::{ComputeUnitInfo, SimulatedOperationExt};
 use crate::simulation_strategy::SimulationStrategy;
-use crate::{Local, Quote, QuoteStrategy};
+use crate::{ExecutableQuote, Local, QuoteStrategy};
+
+type DepositQuote = ExecutableQuote<N6, N6, N6>;
+type WithdrawQuote = ExecutableQuote<N6, N6, N6>;
+type WithdrawRedeemQuote = ExecutableQuote<N6, N9, N9>;
 
 // ============================================================================
 // Implementation for HYUSD → SHYUSD (stability pool deposit)
@@ -32,18 +36,20 @@ use crate::{Local, Quote, QuoteStrategy};
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
+  type FeeExp = N6;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     _slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<DepositQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let args = StabilityPoolArgs { amount, user };
 
     let (output, cu_info) = self
       .stability_pool_client
-      .simulate_quote::<HYUSD, SHYUSD>(user, args)
+      .simulate_output::<HYUSD, SHYUSD>(user, args)
       .await?;
 
     let args = StabilityPoolArgs { amount, user };
@@ -52,12 +58,12 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
     let address_lookup_tables =
       StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -71,18 +77,20 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, SHYUSD, C> for SimulationStrategy {
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
+  type FeeExp = N6;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     _slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<WithdrawQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let args = StabilityPoolArgs { amount, user };
 
     let (output, cu_info) = self
       .stability_pool_client
-      .simulate_quote::<SHYUSD, HYUSD>(user, args)
+      .simulate_output::<SHYUSD, HYUSD>(user, args)
       .await?;
 
     let args = StabilityPoolArgs { amount, user };
@@ -91,12 +99,12 @@ impl<C: SolanaClock> QuoteStrategy<SHYUSD, HYUSD, C> for SimulationStrategy {
     let address_lookup_tables =
       StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: output.out_amount.bits,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: output.fee_amount.bits,
+      fee_amount: output.fee_amount,
       fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
@@ -180,12 +188,14 @@ impl<L: LST + Local> BuildTransactionData<SHYUSD, L> for SimulationStrategy {
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<SHYUSD, L, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     _slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<WithdrawRedeemQuote> {
     let amount = UFix64::<N6>::new(amount_in);
     let args = StabilityPoolArgs { amount, user };
 
@@ -229,12 +239,12 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<SHYUSD, L, C>
     let cu_info =
       ComputeUnitInfo::from_simulation(sim_result.value.units_consumed);
 
-    Ok(Quote {
-      amount_in,
-      amount_out: amount_out.bits,
+    Ok(ExecutableQuote {
+      amount_in: amount,
+      amount_out,
       compute_units: cu_info.compute_units,
       compute_unit_strategy: cu_info.strategy,
-      fee_amount: fee_amount.bits,
+      fee_amount,
       fee_mint: L::MINT,
       instructions: tx_data.instructions,
       address_lookup_tables: tx_data

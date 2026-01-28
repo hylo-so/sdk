@@ -31,7 +31,7 @@ pub use crate::QuoteStrategy;
 pub use crate::LST;
 // Core quote types
 pub use crate::{
-  ComputeUnitInfo, ComputeUnitStrategy, Operation, Quote, QuoteMetadata,
-  DEFAULT_CUS_WITH_BUFFER,
+  ComputeUnitInfo, ComputeUnitStrategy, ExecutableQuote, ExecutableQuoteValue,
+  Operation, QuoteMetadata, DEFAULT_CUS_WITH_BUFFER,
 };
 pub use crate::{RuntimeQuoteStrategy, SimulationStrategy};

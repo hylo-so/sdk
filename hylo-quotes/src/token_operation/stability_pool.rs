@@ -21,7 +21,7 @@ use crate::{Local, LST};
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
-  fn compute_quote(
+  fn compute_output(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<SwapOperationOutput> {
@@ -47,7 +47,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
-  fn compute_quote(
+  fn compute_output(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<SwapOperationOutput> {
@@ -80,7 +80,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<SHYUSD, L>
 {
   type FeeExp = N9;
 
-  fn compute_quote(
+  fn compute_output(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput> {
@@ -115,7 +115,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<SHYUSD, L>
     // Redeem stablecoin for LST
     let (lst_from_stablecoin, fee_from_stablecoin) =
       if stablecoin_amount_remaining > UFix64::zero() {
-        let op = self.quote::<HYUSD, L>(stablecoin_amount_remaining)?;
+        let op = self.output::<HYUSD, L>(stablecoin_amount_remaining)?;
         (op.out_amount, op.fee_amount)
       } else {
         (UFix64::zero(), UFix64::zero())
@@ -124,7 +124,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<SHYUSD, L>
     // Redeem levercoin for LST
     let (lst_from_levercoin, fee_from_levercoin) =
       if levercoin_to_withdraw > UFix64::zero() {
-        let op = self.quote::<XSOL, L>(levercoin_to_withdraw)?;
+        let op = self.output::<XSOL, L>(levercoin_to_withdraw)?;
         (op.out_amount, op.fee_amount)
       } else {
         (UFix64::zero(), UFix64::zero())
