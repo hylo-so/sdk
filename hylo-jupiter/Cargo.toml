@@ -17,9 +17,9 @@ hylo-core = { workspace = true, features = ["offchain"] }
 hylo-fix.workspace = true
 hylo-idl.workspace = true
 hylo-jupiter-amm-interface.workspace = true
+hylo-quotes.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 rust_decimal.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
-flaky_test.workspace = true

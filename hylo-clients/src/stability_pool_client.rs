@@ -3,11 +3,10 @@ use std::sync::Arc;
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
-use anyhow::{anyhow, Result};
-use fix::prelude::{UFix64, N6};
+use anyhow::Result;
 use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::events::{
-  StabilityPoolStats, UserDepositEvent, UserWithdrawEventV1,
+  StabilityPoolStats, UserWithdrawEventV1,
 };
 use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
@@ -17,8 +16,7 @@ use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, RedeemArgs, SimulatePrice, StabilityPoolArgs,
-  TransactionSyntax,
+  BuildTransactionData, RedeemArgs, StabilityPoolArgs, TransactionSyntax,
 };
 use crate::util::{
   user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
@@ -195,14 +193,6 @@ impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
   }
 }
 
-impl SimulatePrice<HYUSD, SHYUSD> for StabilityPoolClient {
-  type OutExp = N6;
-  type Event = UserDepositEvent;
-  fn from_event(e: &Self::Event) -> Result<UFix64<N6>> {
-    Ok(UFix64::new(e.lp_token_minted.bits))
-  }
-}
-
 #[async_trait::async_trait]
 impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
   type Inputs = StabilityPoolArgs;
@@ -216,20 +206,6 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
     let lut_addresses = StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>();
     let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-impl SimulatePrice<SHYUSD, HYUSD> for StabilityPoolClient {
-  type OutExp = N6;
-  type Event = UserWithdrawEventV1;
-  fn from_event(event: &Self::Event) -> Result<UFix64<N6>> {
-    if event.levercoin_withdrawn.bits > 0 {
-      Err(anyhow!(
-        "Cannot quote sHYUSD/hyUSD: levercoin present in pool"
-      ))
-    } else {
-      Ok(UFix64::new(event.stablecoin_withdrawn.bits))
-    }
   }
 }
 
@@ -263,7 +239,7 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
     if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
       let redeem_hyusd_args = exchange
         .build_transaction_data::<HYUSD, OUT>(RedeemArgs {
-          amount: UFix64::new(redeem_shyusd_sim.stablecoin_withdrawn.bits),
+          amount: redeem_shyusd_sim.stablecoin_withdrawn.try_into()?,
           user,
           slippage_config: None,
         })
@@ -276,7 +252,7 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
     if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
       let redeem_xsol_args = exchange
         .build_transaction_data::<XSOL, OUT>(RedeemArgs {
-          amount: UFix64::new(redeem_shyusd_sim.levercoin_withdrawn.bits),
+          amount: redeem_shyusd_sim.levercoin_withdrawn.try_into()?,
           user,
           slippage_config: None,
         })

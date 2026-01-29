@@ -9,63 +9,6 @@ use hylo_core::slippage_config::SlippageConfig;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 
-/// Simulates one unit of token pair exchange via RPC simulation against
-/// protocol.
-///
-/// # Type Parameters
-/// - `I`: Input token (e.g., `JITOSOL`, `HYUSD`, `XSOL`, `SHYUSD`)
-/// - `O`: Output token
-///
-/// # Associated Types
-/// - `OutExp`: Fixed point precision exponent for the output amount (e.g. `N6`
-///   for `UFix64<N6>`)
-/// - `Event`: IDL event type emitted by the simulated transaction
-#[async_trait::async_trait]
-pub trait SimulatePrice<I, O>:
-  BuildTransactionData<I, O> + ProgramClient
-{
-  type OutExp;
-  type Event: AnchorDeserialize + Discriminator;
-
-  /// Extracts the output amount from a simulation event.
-  ///
-  /// # Errors
-  /// Event parsing or conversion errors
-  fn from_event(e: &Self::Event) -> Result<UFix64<Self::OutExp>>;
-
-  /// Simulates transaction with actual inputs and returns the full event.
-  ///
-  /// This allows callers to extract both output amounts and fees from the
-  /// event, rather than just the output amount via `from_event`.
-  async fn simulate_event(
-    &self,
-    user: Pubkey,
-    inputs: Self::Inputs,
-  ) -> Result<Self::Event> {
-    let args = self.build(inputs).await?;
-    let tx = self.build_simulation_transaction(&user, &args).await?;
-    self.simulate_transaction_event::<Self::Event>(&tx).await
-  }
-
-  /// Simulates transaction and returns the event and compute units consumed.
-  ///
-  /// Returns `(event, compute_units)` where:
-  /// - `event`: The transaction event containing amounts and fees
-  /// - `compute_units`: `Some(u64)` if available from simulation, `None`
-  ///   otherwise
-  async fn simulate_event_with_cus(
-    &self,
-    user: Pubkey,
-    inputs: Self::Inputs,
-  ) -> Result<(Self::Event, Option<u64>)> {
-    let args = self.build(inputs).await?;
-    let tx = self.build_simulation_transaction(&user, &args).await?;
-    self
-      .simulate_transaction_event_with_cus::<Self::Event>(&tx)
-      .await
-  }
-}
-
 /// Arguments for minting operations that deposit LST to mint hyUSD or xSOL.
 pub struct MintArgs {
   pub amount: UFix64<N9>,
@@ -147,5 +90,35 @@ pub trait TransactionSyntax {
     Self: BuildTransactionData<I, O>,
   {
     self.build(inputs).await
+  }
+
+  /// Simulates transaction and returns parsed event.
+  async fn simulate_event<I, O, E>(
+    &self,
+    user: Pubkey,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> Result<E>
+  where
+    Self: BuildTransactionData<I, O> + ProgramClient,
+    E: AnchorDeserialize + Discriminator,
+  {
+    let args = self.build(inputs).await?;
+    let tx = self.build_simulation_transaction(&user, &args).await?;
+    self.simulate_transaction_event::<E>(&tx).await
+  }
+
+  /// Simulates transaction and returns parsed event with compute units.
+  async fn simulate_event_with_cus<I, O, E>(
+    &self,
+    user: Pubkey,
+    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
+  ) -> Result<(E, Option<u64>)>
+  where
+    Self: BuildTransactionData<I, O> + ProgramClient,
+    E: AnchorDeserialize + Discriminator,
+  {
+    let args = self.build(inputs).await?;
+    let tx = self.build_simulation_transaction(&user, &args).await?;
+    self.simulate_transaction_event_with_cus::<E>(&tx).await
   }
 }

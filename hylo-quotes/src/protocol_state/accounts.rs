@@ -8,9 +8,10 @@ use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_idl::pda;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+use serde::{Deserialize, Serialize};
 
 /// Type-safe collection of protocol state accounts
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProtocolAccounts {
   /// Hylo protocol account
   pub hylo: Account,

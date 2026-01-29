@@ -1,4 +1,8 @@
-# Hylo SDK
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Overview
 
 Rust SDK for the Hylo Protocol - a collateralized stablecoin and leverage token DEX on Solana.
 
@@ -7,11 +11,8 @@ Rust SDK for the Hylo Protocol - a collateralized stablecoin and leverage token 
 This project uses Nix for reproducible development environments.
 
 ```bash
-# Enter dev shell (stable Rust 1.88.0)
-nix develop
-
-# Enter nightly shell (for polish/lint scripts)
-nix develop .#nightly
+nix develop            # Stable Rust 1.88.0
+nix develop .#nightly  # Nightly (for polish/lint scripts)
 ```
 
 ### Commands
@@ -29,7 +30,7 @@ cargo test -p hylo-quotes     # Run tests for specific crate
 cargo +nightly udeps          # Check unused dependencies (nightly shell)
 ```
 
-Integration tests require both env vars (`RPC_WS_URL` can be fake):
+Integration tests require env vars (`RPC_WS_URL` can be fake):
 ```bash
 RPC_URL=https://mainnet.helius-rpc.com/?api-key=<key>
 RPC_WS_URL=wss://mainnet.helius-rpc.com/?api-key=<key>
@@ -92,7 +93,7 @@ The `TokenMint` trait defines tokens with an associated `Exp` type for decimal p
 | `BuildTransactionData<IN, OUT>` | Full transaction construction |
 | `SimulatePrice<IN, OUT>` | Quote via transaction simulation |
 | `ProgramClient` | Base trait for exchange/stability pool clients |
-| `RuntimeQuoteStrategy` | Unified quoting interface |
+| `RuntimeQuoteStrategy` | Unified quoting interface (runtime dispatch via Pubkeys) |
 
 ### Quoting Strategies
 
@@ -104,33 +105,6 @@ The `TokenMint` trait defines tokens with an associated `Exp` type for decimal p
 Uses `hylo-fix` crate with `UFix64<Exp>` type:
 - Compile-time decimal precision via type parameter (`N6`, `N9`)
 - Import via `fix::prelude::*`
-
-## Project Structure
-
-```
-sdk/
-├── hylo-core/           # Pure protocol math (no RPC)
-│   └── src/
-│       ├── exchange_math.rs
-│       ├── exchange_context.rs
-│       ├── fee_controller.rs
-│       └── pyth.rs
-├── hylo-idl/            # Anchor IDL + type-safe tokens
-│   └── src/
-│       ├── tokens.rs    # TokenMint trait + HYUSD, XSOL, etc.
-│       └── pda.rs       # Program-derived addresses
-├── hylo-clients/        # Transaction builders
-│   └── src/
-│       ├── exchange_client.rs
-│       ├── instructions.rs
-│       ├── token_operation/
-│       └── protocol_state/
-├── hylo-quotes/         # High-level quoting
-│   └── src/
-│       ├── protocol_state_strategy.rs
-│       └── simulation_strategy.rs
-└── hylo-jupiter/        # Jupiter AMM integration
-```
 
 ## Common Patterns
 
@@ -144,7 +118,7 @@ let luts = ExchangeIB::lookup_tables::<JITOSOL, HYUSD>();
 
 Computing quotes from protocol state:
 ```rust
-let output = state.compute_quote::<JITOSOL, HYUSD>(amount_in)?;
+let op = state.output::<JITOSOL, HYUSD>(amount_in)?;
 ```
 
 Using the prelude:
@@ -155,9 +129,10 @@ use hylo_core::prelude::*;     // Math types
 
 ## Testing
 
-- Integration tests in `tests/integration_tests.rs`
-- Test context pattern: `TestContext::new().await?`
-- Do NOT use `flaky_test` macro (deprecated)
+- State-based tests in `hylo-quotes/tests/state_based_tests.rs` verify pricing against mainnet snapshots
+- Integration tests in `hylo-quotes/tests/integration_tests.rs` compare `ProtocolStateStrategy` vs `SimulationStrategy`
+- Uses `#[test_context(QuoteStrategyTestContext)]` macro for test setup
+- Do NOT use `flaky_test` macro (removed from codebase)
 
 ## Notes
 
