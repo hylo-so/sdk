@@ -23,4 +23,3 @@ rust_decimal.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
-flaky_test.workspace = true

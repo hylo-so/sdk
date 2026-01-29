@@ -1760,27 +1760,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "059c31d7d36c43fe39d89e55711858b4da8be7eb6dabac23c7289b1a19489406"
 
 [[package]]
-name = "flaky_test"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046caa1f23d7f751fc4ead3d6669a77fa5fc6cf6074960ddeb6a0b0a5b83c8da"
-dependencies = [
- "flaky_test_impl",
- "futures-util",
-]
-
-[[package]]
-name = "flaky_test_impl"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85e35909c2f0552fdae5b40f1e95a7da12afb58c1f2f455a12c216c58d869abe"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "flate2"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2196,7 +2175,6 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "bincode",
- "flaky_test",
  "futures",
  "hylo-core",
  "hylo-fix",
@@ -2217,7 +2195,6 @@ dependencies = [
  "anchor-lang 0.31.1",
  "anchor-spl",
  "anyhow",
- "flaky_test",
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
@@ -2265,7 +2242,6 @@ dependencies = [
  "anchor-spl",
  "anyhow",
  "bincode",
- "flaky_test",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
@@ -2303,7 +2279,6 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "bincode",
- "flaky_test",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
@@ -2311,6 +2286,7 @@ dependencies = [
  "pyth-solana-receiver-sdk",
  "serde",
  "serde_json",
+ "test-context",
  "tokio",
  "tokio-test",
 ]
@@ -7722,6 +7698,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-context"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6676ab8513edfd2601a108621103fdb45cac9098305ca25ec93f7023b06b05d9"
+dependencies = [
+ "futures",
+ "test-context-macros",
+]
+
+[[package]]
+name = "test-context-macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78ea17a2dc368aeca6f554343ced1b1e31f76d63683fa8016e5844bd7a5144a1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
 ]
 
 [[package]]

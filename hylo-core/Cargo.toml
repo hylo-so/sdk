@@ -21,5 +21,4 @@ serde.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-flaky_test.workspace = true
 proptest.workspace = true
