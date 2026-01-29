@@ -72,7 +72,7 @@ impl QuoteStrategyTestContext {
   }
 }
 
-fn assert_amounts_match(
+fn assert_quotes_match(
   state_result: Result<ExecutableQuoteValue>,
   sim_result: Result<ExecutableQuoteValue>,
 ) {
@@ -80,10 +80,10 @@ fn assert_amounts_match(
     (Ok(state), Ok(sim)) => assert_eq!(state.amount_out, sim.amount_out),
     (Err(_), Err(_)) => (),
     (Ok(_), Err(e)) => {
-      assert!(false, "simulation failed but state succeeded: {e}")
+      panic!("simulation failed but state succeeded: {e}");
     }
     (Err(e), Ok(_)) => {
-      assert!(false, "state failed but simulation succeeded: {e}")
+      panic!("state failed but simulation succeeded: {e}");
     }
   }
 }
@@ -107,7 +107,7 @@ async fn jitosol_to_hyusd(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -129,7 +129,7 @@ async fn hyusd_to_jitosol(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -151,7 +151,7 @@ async fn jitosol_to_xsol(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -173,7 +173,7 @@ async fn xsol_to_jitosol(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -195,7 +195,7 @@ async fn hyusd_to_xsol(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -217,7 +217,7 @@ async fn xsol_to_hyusd(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -239,7 +239,7 @@ async fn jitosol_to_hylosol(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
 
 #[test_context(QuoteStrategyTestContext)]
@@ -261,5 +261,5 @@ async fn hyusd_to_shyusd(ctx: &QuoteStrategyTestContext) {
       SLIPPAGE_BPS
     ),
   );
-  assert_amounts_match(state, sim);
+  assert_quotes_match(state, sim);
 }
