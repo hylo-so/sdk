@@ -9,13 +9,13 @@ mod stability_pool;
 use anchor_lang::prelude::Clock;
 use async_trait::async_trait;
 use hylo_clients::prelude::{ExchangeClient, StabilityPoolClient};
+use hylo_clients::transaction::TransactionSyntax;
 
 use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
-use crate::{ComputeUnitStrategy, DEFAULT_CUS_WITH_BUFFER};
 
 pub struct SimulationStrategy {
-  pub(crate) exchange_client: ExchangeClient,
-  pub(crate) stability_pool_client: StabilityPoolClient,
+  pub exchange_client: ExchangeClient,
+  pub stability_pool_client: StabilityPoolClient,
 }
 
 impl SimulationStrategy {
@@ -31,19 +31,8 @@ impl SimulationStrategy {
   }
 }
 
-/// Extract compute units and strategy from simulation result.
-///
-/// Returns `(compute_units, strategy)`. If simulation provides compute units,
-/// uses `Simulated` strategy; otherwise falls back to `Estimated` with default
-/// buffered value.
-pub(crate) fn resolve_compute_units(
-  compute_units: Option<u64>,
-) -> (u64, ComputeUnitStrategy) {
-  match compute_units {
-    Some(cu) if cu > 0 => (cu, ComputeUnitStrategy::Simulated),
-    _ => (DEFAULT_CUS_WITH_BUFFER, ComputeUnitStrategy::Estimated),
-  }
-}
-
 #[async_trait]
 impl RuntimeQuoteStrategy<Clock> for SimulationStrategy {}
+
+#[async_trait]
+impl TransactionSyntax for SimulationStrategy {}

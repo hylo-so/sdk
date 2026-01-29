@@ -30,8 +30,51 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   ///
   /// # Errors
   /// * Underlying arithmetic
-  fn compute_quote(
+  fn compute_output(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>>;
+}
+
+/// Turbofish helper for [`TokenOperation`].
+#[allow(clippy::type_complexity)]
+pub trait TokenOperationExt {
+  /// # Errors
+  /// * Arithmetic or mode restrictions.
+  fn output<IN, OUT>(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<
+    OperationOutput<
+      IN::Exp,
+      OUT::Exp,
+      <Self as TokenOperation<IN, OUT>>::FeeExp,
+    >,
+  >
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer;
+}
+
+impl<X> TokenOperationExt for X {
+  fn output<IN, OUT>(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<
+    OperationOutput<
+      IN::Exp,
+      OUT::Exp,
+      <Self as TokenOperation<IN, OUT>>::FeeExp,
+    >,
+  >
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
+  {
+    TokenOperation::<IN, OUT>::compute_output(self, amount_in)
+  }
 }

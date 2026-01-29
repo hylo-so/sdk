@@ -2,16 +2,10 @@
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
-use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::Result;
-use async_trait::async_trait;
-use fix::prelude::UFix64;
-use fix::typenum::Integer;
 use hylo_idl::tokens::TokenMint;
 
 use crate::instructions::InstructionBuilder;
-use crate::token_operation::{OperationOutput, TokenOperation};
-use crate::transaction::{BuildTransactionData, SimulatePrice};
 
 /// Turbofish syntax for [`InstructionBuilder`].
 ///
@@ -65,95 +59,5 @@ impl<X> InstructionBuilderExt for X {
     OUT: TokenMint,
   {
     <Self as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
-  }
-}
-
-/// Turbofish syntax for [`TokenOperation`].
-#[allow(clippy::type_complexity)]
-pub trait TokenOperationExt {
-  /// Computes quote for a token pair operation.
-  ///
-  /// # Errors
-  /// * Stability mode restrictions
-  /// * Math overflow
-  fn compute_quote<IN, OUT>(
-    &self,
-    amount_in: UFix64<IN::Exp>,
-  ) -> Result<
-    OperationOutput<
-      IN::Exp,
-      OUT::Exp,
-      <Self as TokenOperation<IN, OUT>>::FeeExp,
-    >,
-  >
-  where
-    Self: TokenOperation<IN, OUT>,
-    IN: TokenMint,
-    OUT: TokenMint,
-    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer;
-}
-
-impl<X> TokenOperationExt for X {
-  fn compute_quote<IN, OUT>(
-    &self,
-    amount_in: UFix64<IN::Exp>,
-  ) -> Result<
-    OperationOutput<
-      IN::Exp,
-      OUT::Exp,
-      <Self as TokenOperation<IN, OUT>>::FeeExp,
-    >,
-  >
-  where
-    Self: TokenOperation<IN, OUT>,
-    IN: TokenMint,
-    OUT: TokenMint,
-    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
-  {
-    TokenOperation::<IN, OUT>::compute_quote(self, amount_in)
-  }
-}
-
-/// Turbofish syntax for [`SimulatePrice`](crate::transaction::SimulatePrice).
-///
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn example(client: ExchangeClient) -> Result<()> {
-/// let user = Pubkey::new_unique();
-/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
-/// let (event, cus) = client.simulate_event_with_cus::<JITOSOL, HYUSD>(user, args).await?;
-/// # Ok(())
-/// # }
-/// ```
-#[async_trait]
-pub trait SimulatePriceExt {
-  async fn simulate_event_with_cus<I, O>(
-    &self,
-    user: Pubkey,
-    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
-  where
-    Self: SimulatePrice<I, O> + Send + Sync,
-    <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
-    I: TokenMint,
-    O: TokenMint;
-}
-
-#[async_trait]
-impl<X> SimulatePriceExt for X {
-  async fn simulate_event_with_cus<I, O>(
-    &self,
-    user: Pubkey,
-    inputs: <Self as BuildTransactionData<I, O>>::Inputs,
-  ) -> Result<(<Self as SimulatePrice<I, O>>::Event, Option<u64>)>
-  where
-    Self: SimulatePrice<I, O> + Send + Sync,
-    <Self as SimulatePrice<I, O>>::Event: AnchorDeserialize + Discriminator,
-    I: TokenMint,
-    O: TokenMint,
-  {
-    <Self as SimulatePrice<I, O>>::simulate_event_with_cus(self, user, inputs)
-      .await
   }
 }

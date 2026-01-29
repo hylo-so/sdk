@@ -20,7 +20,7 @@ use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::ProtocolAccounts;
-use crate::util::LST;
+use crate::LST;
 
 /// Complete snapshot of Hylo protocol state
 #[derive(Clone)]

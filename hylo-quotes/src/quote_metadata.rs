@@ -9,8 +9,10 @@ pub enum Operation {
   RedeemLevercoin,
   SwapStableToLever,
   SwapLeverToStable,
+  LstSwap,
   DepositToStabilityPool,
   WithdrawFromStabilityPool,
+  WithdrawAndRedeemFromStabilityPool,
 }
 
 impl Operation {
@@ -23,8 +25,12 @@ impl Operation {
       Operation::RedeemLevercoin => "redeem_levercoin",
       Operation::SwapStableToLever => "swap_stable_to_lever",
       Operation::SwapLeverToStable => "swap_lever_to_stable",
+      Operation::LstSwap => "swap_lst",
       Operation::DepositToStabilityPool => "user_deposit",
       Operation::WithdrawFromStabilityPool => "user_withdraw",
+      Operation::WithdrawAndRedeemFromStabilityPool => {
+        "user_withdraw_and_redeem"
+      }
     }
   }
 }

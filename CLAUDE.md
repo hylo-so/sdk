@@ -123,12 +123,15 @@ sdk/
 │   └── src/
 │       ├── exchange_client.rs
 │       ├── instructions.rs
-│       ├── token_operation/
-│       └── protocol_state/
+│       ├── syntax_helpers.rs
+│       └── util.rs
 ├── hylo-quotes/         # High-level quoting
 │   └── src/
-│       ├── protocol_state_strategy.rs
-│       └── simulation_strategy.rs
+│       ├── protocol_state/
+│       ├── protocol_state_strategy/
+│       ├── simulated_operation/
+│       ├── simulation_strategy/
+│       └── token_operation/
 └── hylo-jupiter/        # Jupiter AMM integration
 ```
 

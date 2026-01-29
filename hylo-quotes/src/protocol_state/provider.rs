@@ -80,20 +80,17 @@ mod tests {
 
   use super::*;
 
-  fn build_test_rpc_client() -> Result<Arc<RpcClient>> {
+  fn build_test_rpc_client() -> Arc<RpcClient> {
     // Use RPC_URL env var if set, otherwise default to mainnet
     let rpc_url = std::env::var("RPC_URL")
       .unwrap_or_else(|_| "https://api.mainnet-beta.solana.com".to_string());
-    Ok(Arc::new(RpcClient::new(rpc_url)))
+    Arc::new(RpcClient::new(rpc_url))
   }
 
   #[tokio::test]
-  #[flaky_test::flaky_test]
-  #[allow(unnameable_test_items)]
   #[ignore = "requires lst_swap_fee on mainnet"]
   async fn test_fetch_state() {
-    let rpc_client =
-      build_test_rpc_client().expect("Failed to build RPC client");
+    let rpc_client = build_test_rpc_client();
     let provider = RpcStateProvider::new(rpc_client);
     let state = provider
       .fetch_state()

@@ -5,11 +5,13 @@ use anyhow::{anyhow, Context, Result};
 use fix::num_traits::FromPrimitive;
 use fix::prelude::UFix64;
 use fix::typenum::Integer;
-use hylo_clients::protocol_state::ProtocolState;
-use hylo_clients::token_operation::{OperationOutput, TokenOperation};
 use hylo_core::idl::tokens::TokenMint;
 use hylo_jupiter_amm_interface::{
   AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
+};
+use hylo_quotes::protocol_state::ProtocolState;
+use hylo_quotes::token_operation::{
+  OperationOutput, TokenOperation, TokenOperationExt,
 };
 use rust_decimal::Decimal;
 
@@ -69,10 +71,7 @@ where
   ProtocolState<ClockRef>: TokenOperation<IN, OUT>,
   <ProtocolState<ClockRef> as TokenOperation<IN, OUT>>::FeeExp: Integer,
 {
-  let op = <ProtocolState<_> as TokenOperation<IN, OUT>>::compute_quote(
-    state,
-    UFix64::new(amount),
-  )?;
+  let op = state.output::<IN, OUT>(UFix64::new(amount))?;
   operation_to_quote(op)
 }
 

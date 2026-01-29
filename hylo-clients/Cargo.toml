@@ -27,4 +27,3 @@ solana-transaction-status-client-types.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
-flaky_test.workspace = true

@@ -3,15 +3,21 @@ use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
-use hylo_clients::syntax_helpers::{InstructionBuilderExt, SimulatePriceExt};
+use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_idl::tokens::{HYUSD, XSOL};
 
-use crate::simulation_strategy::{resolve_compute_units, SimulationStrategy};
-use crate::{Local, Quote, QuoteStrategy};
+use crate::simulated_operation::SimulatedOperationExt;
+use crate::simulation_strategy::SimulationStrategy;
+use crate::{ExecutableQuote, Local, QuoteStrategy};
+
+type MintQuote = ExecutableQuote<N9, N6, N9>;
+type RedeemQuote = ExecutableQuote<N6, N9, N9>;
+type SwapQuote = ExecutableQuote<N6, N6, N6>;
+type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
@@ -21,33 +27,31 @@ use crate::{Local, Quote, QuoteStrategy};
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<MintQuote> {
     let amount = UFix64::<N9>::new(amount_in);
-    let args = MintArgs {
+    let sim_args = MintArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<L, HYUSD>(user, args)
+      .simulate_output::<L, HYUSD>(user, sim_args)
       .await?;
-
-    let amount_out = event.minted.bits;
-    let fee_amount = event.fees_deposited.bits;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = MintArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -55,13 +59,13 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
     let instructions = ExchangeIB::build_instructions::<L, HYUSD>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, HYUSD>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })
@@ -76,33 +80,31 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<RedeemQuote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = RedeemArgs {
+    let sim_args = RedeemArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<HYUSD, L>(user, args)
+      .simulate_output::<HYUSD, L>(user, sim_args)
       .await?;
-
-    let amount_out = event.collateral_withdrawn.bits;
-    let fee_amount = event.fees_deposited.bits;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = RedeemArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(amount_out),
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -110,13 +112,13 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
     let instructions = ExchangeIB::build_instructions::<HYUSD, L>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<HYUSD, L>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })
@@ -131,33 +133,31 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<MintQuote> {
     let amount = UFix64::<N9>::new(amount_in);
-    let args = MintArgs {
+    let sim_args = MintArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<L, XSOL>(user, args)
+      .simulate_output::<L, XSOL>(user, sim_args)
       .await?;
-
-    let amount_out = event.minted.bits;
-    let fee_amount = event.fees_deposited.bits;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = MintArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -165,13 +165,13 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
     let instructions = ExchangeIB::build_instructions::<L, XSOL>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L, XSOL>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })
@@ -186,33 +186,31 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<RedeemQuote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = RedeemArgs {
+    let sim_args = RedeemArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<XSOL, L>(user, args)
+      .simulate_output::<XSOL, L>(user, sim_args)
       .await?;
-
-    let amount_out = event.collateral_withdrawn.bits;
-    let fee_amount = event.fees_deposited.bits;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = RedeemArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N9>::new(amount_out),
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -220,13 +218,13 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
     let instructions = ExchangeIB::build_instructions::<XSOL, L>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<XSOL, L>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: L::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })
@@ -239,33 +237,31 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
+  type FeeExp = N6;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<SwapQuote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = SwapArgs {
+    let sim_args = SwapArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<HYUSD, XSOL>(user, args)
+      .simulate_output::<HYUSD, XSOL>(user, sim_args)
       .await?;
-
-    let amount_out = event.levercoin_minted.bits;
-    let fee_amount = event.stablecoin_fees.bits;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = SwapArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -274,13 +270,13 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<HYUSD, XSOL>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: HYUSD::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })
@@ -293,33 +289,31 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
 
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
+  type FeeExp = N6;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
+  ) -> Result<SwapQuote> {
     let amount = UFix64::<N6>::new(amount_in);
-    let args = SwapArgs {
+    let sim_args = SwapArgs {
       amount,
       user,
       slippage_config: None,
     };
 
-    let (event, cus) = self
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<XSOL, HYUSD>(user, args)
+      .simulate_output::<XSOL, HYUSD>(user, sim_args)
       .await?;
-
-    let amount_out = event.stablecoin_minted_user.bits;
-    let fee_amount = event.stablecoin_minted_fees.bits;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
 
     let args = SwapArgs {
       amount,
       user,
       slippage_config: Some(SlippageConfig::new(
-        UFix64::<N6>::new(amount_out),
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
@@ -328,13 +322,13 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
     let address_lookup_tables =
       ExchangeIB::lookup_tables::<XSOL, HYUSD>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount,
-      fee_mint: HYUSD::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })
@@ -349,14 +343,15 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
 impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
   for SimulationStrategy
 {
+  type FeeExp = N9;
+
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<Quote> {
-    // Simulate
-    let amount = UFix64::<L1::Exp>::new(amount_in);
+  ) -> Result<LstSwapQuote> {
+    let amount = UFix64::<N9>::new(amount_in);
     let sim_args = LstSwapArgs {
       amount_lst_a: amount,
       lst_a_mint: L1::MINT,
@@ -364,37 +359,33 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
       user,
       slippage_config: None,
     };
-    let (event, cus) = self
+
+    let (output, cu_info) = self
       .exchange_client
-      .simulate_event_with_cus::<L1, L2>(user, sim_args)
+      .simulate_output::<L1, L2>(user, sim_args)
       .await?;
 
-    // Extract results
-    let amount_out = event.lst_b_out.try_into()?;
-    let fee_amount = event.lst_a_fees_extracted;
-    let (compute_units, compute_unit_strategy) = resolve_compute_units(cus);
-
-    // Build instructions
     let args = LstSwapArgs {
       amount_lst_a: amount,
       lst_a_mint: L1::MINT,
       lst_b_mint: L2::MINT,
       user,
-      slippage_config: Some(SlippageConfig::new::<L2::Exp>(
-        amount_out,
+      slippage_config: Some(SlippageConfig::new::<N9>(
+        output.out_amount,
         UFix64::<N4>::new(slippage_tolerance),
       )),
     };
+
     let instructions = ExchangeIB::build_instructions::<L1, L2>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L1, L2>().into();
 
-    Ok(Quote {
-      amount_in,
-      amount_out: amount_out.bits,
-      compute_units,
-      compute_unit_strategy,
-      fee_amount: fee_amount.bits,
-      fee_mint: L1::MINT,
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
       instructions,
       address_lookup_tables,
     })

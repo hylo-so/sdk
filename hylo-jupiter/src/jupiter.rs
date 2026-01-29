@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
-use hylo_clients::protocol_state::ProtocolState;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{
@@ -15,6 +14,7 @@ use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
+use hylo_quotes::protocol_state::ProtocolState;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
