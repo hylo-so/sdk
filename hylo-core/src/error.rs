@@ -131,4 +131,9 @@ pub enum CoreError {
   InterpOutOfDomain,
   #[msg("Arithmetic overflow during interpolation calculation.")]
   InterpArithmetic,
+  // `interpolated_fees`
+  #[msg("Failed to convert collateral ratio from u64 to i64.")]
+  CollateralRatioConversion,
+  #[msg("Failed to convert interpolated fee from i64 to u64.")]
+  InterpFeeConversion,
 }

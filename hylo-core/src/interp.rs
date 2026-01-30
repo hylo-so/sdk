@@ -105,6 +105,18 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
     self.points[RES - 1].x
   }
 
+  /// Returns the minimum y value in the range.
+  #[must_use]
+  pub fn y_min(&self) -> IFix64<Exp> {
+    self.points[0].y
+  }
+
+  /// Returns the maximum y value in the range.
+  #[must_use]
+  pub fn y_max(&self) -> IFix64<Exp> {
+    self.points[RES - 1].y
+  }
+
   /// Interpolates to find y for a given x.
   ///
   /// # Errors
@@ -128,13 +140,16 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
 
 #[cfg(test)]
 mod tests {
+  use std::fs::File;
+  use std::io::Write;
+
   use super::*;
   use crate::error::CoreError;
   use crate::fee_curves::{MINT_FEE_EXP_DECAY, REDEEM_FEE_LN};
 
   #[test]
   fn from_points_insufficient_points() {
-    let result = FixInterp::from_points([Point::<N4>::from_ints(0, 0)]);
+    let result = FixInterp::from_points([Point::<N5>::from_ints(0, 0)]);
     assert_eq!(
       result.err(),
       Some(CoreError::InterpInsufficientPoints.into())
@@ -143,7 +158,7 @@ mod tests {
 
   #[test]
   fn from_points_non_monotonic() {
-    let points = [Point::<N4>::from_ints(100, 10), Point::from_ints(50, 20)];
+    let points = [Point::<N5>::from_ints(100, 10), Point::from_ints(50, 20)];
     let result = FixInterp::from_points(points);
     assert_eq!(
       result.err(),
@@ -161,7 +176,7 @@ mod tests {
   #[test]
   fn interpolate_below_domain() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
-    let x = IFix64::<N4>::constant(12999);
+    let x = IFix64::<N5>::constant(129_999);
     assert_eq!(
       interp.interpolate(x).err(),
       Some(CoreError::InterpOutOfDomain.into())
@@ -172,7 +187,7 @@ mod tests {
   #[test]
   fn interpolate_above_domain() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
-    let x = IFix64::<N4>::constant(30001);
+    let x = IFix64::<N5>::constant(300_001);
     assert_eq!(
       interp.interpolate(x).err(),
       Some(CoreError::InterpOutOfDomain.into())
@@ -183,42 +198,42 @@ mod tests {
   #[test]
   fn interpolate_exact_first_point() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
-    let x = IFix64::<N4>::constant(13000);
+    let x = IFix64::<N5>::constant(130_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(500));
+    assert_eq!(y, IFix64::constant(5000));
     Ok(())
   }
 
   #[test]
   fn interpolate_exact_last_point() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
-    let x = IFix64::<N4>::constant(30000);
+    let x = IFix64::<N5>::constant(300_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(11));
+    assert_eq!(y, IFix64::constant(108));
     Ok(())
   }
 
   #[test]
   fn interpolate_exact_interior_point() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
-    let x = IFix64::<N4>::constant(15100);
+    let x = IFix64::<N5>::constant(151_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(20));
+    assert_eq!(y, IFix64::constant(203));
     Ok(())
   }
 
   #[test]
   fn interpolate_midpoint() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
-    let x = IFix64::<N4>::constant(13100);
+    let x = IFix64::<N5>::constant(131_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(3));
+    assert_eq!(y, IFix64::constant(23));
     Ok(())
   }
 
   #[test]
   fn interpolate_two_point_curve() -> anyhow::Result<()> {
-    let points = [Point::<N4>::from_ints(0, 100), Point::from_ints(100, 200)];
+    let points = [Point::<N5>::from_ints(0, 100), Point::from_ints(100, 200)];
     let interp = FixInterp::from_points(points)?;
 
     assert_eq!(
@@ -246,27 +261,29 @@ mod tests {
   }
 
   #[test]
-  #[ignore = "offline use not for CI"]
+  //#[ignore = "offline use not for CI"]
   fn dump_mint_fee_curve() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
-    println!("cr,fee");
-    (13000..=30000).try_for_each(|ix| -> anyhow::Result<()> {
-      let x = IFix64::<N4>::constant(ix);
+    let mut f = File::create("mint_fee_curve.csv")?;
+    writeln!(f, "cr,fee")?;
+    (130_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
+      let x = IFix64::<N5>::constant(ix);
       let y = interp.interpolate(x)?;
-      println!("{}e-4,{}e-4", x.bits, y.bits);
+      writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
       Ok(())
     })
   }
 
   #[test]
-  #[ignore = "offline use not for CI"]
+  //#[ignore = "offline use not for CI"]
   fn dump_redeem_fee_curve() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
-    println!("cr,fee");
-    (13000..=30000).try_for_each(|ix| -> anyhow::Result<()> {
-      let x = IFix64::<N4>::constant(ix);
+    let mut f = File::create("redeem_fee_curve.csv")?;
+    writeln!(f, "cr,fee")?;
+    (130_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
+      let x = IFix64::<N5>::constant(ix);
       let y = interp.interpolate(x)?;
-      println!("{}e-4,{}e-4", x.bits, y.bits);
+      writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
       Ok(())
     })
   }

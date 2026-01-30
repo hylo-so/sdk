@@ -5,9 +5,16 @@ use crate::error::CoreError::{
   BurnUnderflow, BurnZero, MintOverflow, MintZero,
 };
 
+/// Simple counter representing the supply of a "virtual" stablecoin.
 #[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
 pub struct VirtualStablecoin {
   supply: UFixValue64,
+}
+
+impl Default for VirtualStablecoin {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 impl VirtualStablecoin {
@@ -18,10 +25,19 @@ impl VirtualStablecoin {
     }
   }
 
+  /// Lifts serialized supply to typed Fix.
+  ///
+  /// # Errors
+  /// * Invalid supply data cannot convert to typed
   pub fn supply(&self) -> Result<UFix64<N6>> {
     self.supply.try_into()
   }
 
+  /// Increases the supply of the virtual stablecoin.
+  ///
+  /// # Errors
+  /// * State validation
+  /// * Overflow
   pub fn mint(&mut self, amount: UFix64<N6>) -> Result<()> {
     if amount > UFix64::zero() {
       let current_supply = self.supply()?;
@@ -34,6 +50,11 @@ impl VirtualStablecoin {
     }
   }
 
+  /// Decreases the supply of the virtual stablecoin.
+  ///
+  /// # Errors
+  /// * State validation
+  /// * Underflow
   pub fn burn(&mut self, amount: UFix64<N6>) -> Result<()> {
     if amount > UFix64::zero() {
       let current_supply = self.supply()?;
@@ -44,12 +65,6 @@ impl VirtualStablecoin {
     } else {
       Err(BurnZero.into())
     }
-  }
-}
-
-impl Default for VirtualStablecoin {
-  fn default() -> Self {
-    Self::new()
   }
 }
 

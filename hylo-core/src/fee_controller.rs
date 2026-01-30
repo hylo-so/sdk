@@ -73,6 +73,25 @@ impl<Exp> FeeExtract<Exp> {
       amount_remaining,
     })
   }
+
+  // TODO: Resolve this to either be generic or always use N5
+  pub fn new_n5(
+    fee: UFix64<N5>,
+    amount_in: UFix64<Exp>,
+  ) -> Result<FeeExtract<Exp>> {
+    let fees_extracted = amount_in
+      .mul_div_ceil(fee, UFix64::<N5>::one())
+      .ok_or(FeeExtraction)?;
+
+    let amount_remaining = amount_in
+      .checked_sub(&fees_extracted)
+      .ok_or(FeeExtraction)?;
+
+    Ok(FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    })
+  }
 }
 
 #[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]

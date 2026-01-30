@@ -1,15 +1,16 @@
 #![allow(clippy::missing_errors_doc)]
+#![allow(clippy::wildcard_imports)]
 
 pub mod conversion;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;
-pub mod exo_pair;
 pub mod fee_controller;
 pub mod fee_curves;
 #[cfg(feature = "offchain")]
 pub mod idl_type_bridge;
 pub mod interp;
+pub mod interpolated_fees;
 pub mod lst_sol_price;
 pub mod lst_swap_config;
 pub mod pyth;
