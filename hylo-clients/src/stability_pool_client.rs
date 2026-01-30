@@ -20,7 +20,7 @@ use crate::transaction::{
 };
 use crate::util::{
   user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
-  STABILITY_POOL_LOOKUP_TABLE,
+  REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
 };
 
 /// Client for interacting with the Hylo Stability Pool program.
@@ -123,19 +123,19 @@ impl StabilityPoolClient {
 
   /// Simulates the `get_stats` instruction on the stability pool.
   ///
+  /// Uses `REFERENCE_WALLET` as the fee payer to allow simulation without
+  /// requiring the client keypair to exist on-chain.
+  ///
   /// # Errors
   /// - Simulation failure
   /// - Return data access or deserialization
   pub async fn get_stats(&self) -> Result<StabilityPoolStats> {
     let instruction = instruction_builders::get_stats();
+    let vtd = VersionedTransactionData::one(instruction);
     let tx = self
-      .program
-      .request()
-      .instruction(instruction)
-      .signed_transaction()
+      .build_simulation_transaction(&REFERENCE_WALLET, &vtd)
       .await?;
-    let stats = self.simulate_transaction_return(tx.into()).await?;
-    Ok(stats)
+    self.simulate_transaction_return(tx).await
   }
 
   /// Initializes the stability pool.
