@@ -270,7 +270,7 @@ mod tests {
   }
 
   #[test]
-  //#[ignore = "offline use not for CI"]
+  #[ignore = "offline use not for CI"]
   fn dump_mint_fee_curve() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
     let mut f = File::create("mint_fee_curve.csv")?;
@@ -284,7 +284,7 @@ mod tests {
   }
 
   #[test]
-  //#[ignore = "offline use not for CI"]
+  #[ignore = "offline use not for CI"]
   fn dump_redeem_fee_curve() -> anyhow::Result<()> {
     let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
     let mut f = File::create("redeem_fee_curve.csv")?;
