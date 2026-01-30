@@ -23,6 +23,15 @@ impl<Exp: Integer> From<PointValue> for Point<Exp> {
   }
 }
 
+impl<Exp: Integer> From<Point<Exp>> for PointValue {
+  fn from(Point { x, y }: Point<Exp>) -> Self {
+    PointValue {
+      x: x.bits,
+      y: y.bits,
+    }
+  }
+}
+
 /// Fixed-point Cartesian coordinate.
 #[derive(Debug, Clone, Copy)]
 pub struct Point<Exp: Integer> {
@@ -44,7 +53,7 @@ impl<Exp: Integer> Point<Exp> {
 pub struct LineSegment<'a, Exp: Integer>(&'a Point<Exp>, &'a Point<Exp>);
 
 impl<Exp: Integer> LineSegment<'_, Exp> {
-  /// Linear interpolation to find an approximate `y` to the given `x`.
+  /// Linear interpolation to find an approximate `y` for the given `x`.
   ///
   /// ```txt
   /// y = y_0 + (y_1 - y_0) * (x - x_0) / (x_1 - x_0)
