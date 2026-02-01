@@ -202,7 +202,7 @@ mod tests {
 
   #[test]
   fn fee_extraction() -> Result<()> {
-    let fee = UFix64::new(50);
+    let fee = UFix64::<N4>::new(50);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount)?;
     assert_eq!(out.fees_extracted, UFix64::new(348_094_081));
@@ -212,7 +212,7 @@ mod tests {
 
   #[test]
   fn fee_extraction_underflow() {
-    let fee = UFix64::new(10001);
+    let fee = UFix64::<N4>::new(10001);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
     assert_eq!(out.err(), Some(FeeExtraction.into()));
