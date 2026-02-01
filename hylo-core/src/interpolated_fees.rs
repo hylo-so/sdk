@@ -48,7 +48,7 @@ pub trait InterpolatedFeeController {
       .fee_inner(cr)?
       .narrow()
       .ok_or(CoreError::InterpFeeConversion)?;
-    FeeExtract::new_n5(fee, amount_in)
+    FeeExtract::new(fee, amount_in)
   }
 }
 
