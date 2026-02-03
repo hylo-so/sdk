@@ -1,5 +1,4 @@
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use anyhow::{anyhow, Result};
 use fix::prelude::{N6, N9};
 use fix::typenum::Integer;

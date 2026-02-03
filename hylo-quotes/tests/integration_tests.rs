@@ -5,7 +5,6 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::Cluster;
 use anyhow::{Context, Result};
@@ -19,6 +18,7 @@ use hylo_quotes::prelude::{
   SimulationStrategy,
 };
 use hylo_quotes::ExecutableQuoteValue;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use test_context::{test_context, AsyncTestContext};
 use tokio::join;
 

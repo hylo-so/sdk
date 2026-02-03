@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
 
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 use solana_loader_v3_interface::get_program_data_address;
 
