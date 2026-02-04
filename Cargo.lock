@@ -637,7 +637,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.12.3",
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -1583,7 +1583,7 @@ checksum = "135b12329e5e3ce057a9f972339ea52bc954fe1e9358ef27f95e89716fbc5424"
 
 [[package]]
 name = "hylo-clients"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1608,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1624,9 +1624,9 @@ dependencies = [
 
 [[package]]
 name = "hylo-fix"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7e84cbb12e2af81e882d407192d3f9177a6e09198366e52d970d863336d6af3"
+checksum = "f1763b3eefea2289d7692a678c5526de4bf3572d1e4453c600cf4b5a144543ca"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-idl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1654,7 +1654,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1690,7 +1690,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-quotes"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",

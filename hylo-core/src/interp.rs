@@ -1,36 +1,11 @@
-//! Piecewise linear interpolation for onchain fee curves.
+//! Piecewise linear interpolation for fee curves.
 
-use anchor_lang::prelude::*;
+use anchor_lang::Result;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use itertools::Itertools;
 
 use crate::error::CoreError;
-
-/// Serializable version of [`Point`] for account storage.
-#[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
-pub struct PointValue {
-  pub x: i64,
-  pub y: i64,
-}
-
-impl<Exp: Integer> From<PointValue> for Point<Exp> {
-  fn from(PointValue { x, y }: PointValue) -> Self {
-    Point {
-      x: IFix64::new(x),
-      y: IFix64::new(y),
-    }
-  }
-}
-
-impl<Exp: Integer> From<Point<Exp>> for PointValue {
-  fn from(Point { x, y }: Point<Exp>) -> Self {
-    PointValue {
-      x: x.bits,
-      y: y.bits,
-    }
-  }
-}
 
 /// Fixed-point Cartesian coordinate.
 #[derive(Debug, Clone, Copy)]
@@ -94,14 +69,6 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .ok_or(CoreError::InterpPointsNotMonotonic.into())
   }
 
-  /// Loads an interpolator from serialized point values.
-  ///
-  /// # Errors
-  /// * See [`FixInterp::from_points`].
-  pub fn from_values(values: [PointValue; RES]) -> Result<Self> {
-    FixInterp::from_points(values.map(Point::from))
-  }
-
   /// Returns the minimum x value in the domain.
   #[must_use]
   pub fn x_min(&self) -> IFix64<Exp> {
@@ -154,7 +121,7 @@ mod tests {
 
   use super::*;
   use crate::error::CoreError;
-  use crate::fee_curves::{MINT_FEE_EXP_DECAY, REDEEM_FEE_LN};
+  use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
 
   #[test]
   fn from_points_insufficient_points() {
@@ -177,14 +144,14 @@ mod tests {
 
   #[test]
   fn from_points_valid_curves() -> anyhow::Result<()> {
-    FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
-    FixInterp::from_points(*REDEEM_FEE_LN)?;
+    mint_fee_curve()?;
+    redeem_fee_curve()?;
     Ok(())
   }
 
   #[test]
   fn interpolate_below_domain() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let interp = mint_fee_curve()?;
     let x = IFix64::<N5>::constant(129_999);
     assert_eq!(
       interp.interpolate(x).err(),
@@ -195,7 +162,7 @@ mod tests {
 
   #[test]
   fn interpolate_above_domain() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let interp = mint_fee_curve()?;
     let x = IFix64::<N5>::constant(300_001);
     assert_eq!(
       interp.interpolate(x).err(),
@@ -206,7 +173,7 @@ mod tests {
 
   #[test]
   fn interpolate_exact_first_point() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let interp = mint_fee_curve()?;
     let x = IFix64::<N5>::constant(130_000);
     let y = interp.interpolate(x)?;
     assert_eq!(y, IFix64::constant(5000));
@@ -215,7 +182,7 @@ mod tests {
 
   #[test]
   fn interpolate_exact_last_point() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let interp = mint_fee_curve()?;
     let x = IFix64::<N5>::constant(300_000);
     let y = interp.interpolate(x)?;
     assert_eq!(y, IFix64::constant(108));
@@ -224,7 +191,7 @@ mod tests {
 
   #[test]
   fn interpolate_exact_interior_point() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
+    let interp = redeem_fee_curve()?;
     let x = IFix64::<N5>::constant(151_000);
     let y = interp.interpolate(x)?;
     assert_eq!(y, IFix64::constant(203));
@@ -233,7 +200,7 @@ mod tests {
 
   #[test]
   fn interpolate_midpoint() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
+    let interp = redeem_fee_curve()?;
     let x = IFix64::<N5>::constant(131_000);
     let y = interp.interpolate(x)?;
     assert_eq!(y, IFix64::constant(23));
@@ -272,7 +239,7 @@ mod tests {
   #[test]
   #[ignore = "offline use not for CI"]
   fn dump_mint_fee_curve() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*MINT_FEE_EXP_DECAY)?;
+    let interp = mint_fee_curve()?;
     let mut f = File::create("mint_fee_curve.csv")?;
     writeln!(f, "cr,fee")?;
     (130_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
@@ -286,7 +253,7 @@ mod tests {
   #[test]
   #[ignore = "offline use not for CI"]
   fn dump_redeem_fee_curve() -> anyhow::Result<()> {
-    let interp = FixInterp::from_points(*REDEEM_FEE_LN)?;
+    let interp = redeem_fee_curve()?;
     let mut f = File::create("redeem_fee_curve.csv")?;
     writeln!(f, "cr,fee")?;
     (130_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {

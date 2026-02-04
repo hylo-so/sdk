@@ -3,7 +3,7 @@ use fix::prelude::*;
 
 use crate::error::CoreError;
 use crate::fee_controller::FeeExtract;
-use crate::interp::{FixInterp, PointValue};
+use crate::interp::FixInterp;
 
 /// Downconvert CR from `N9` unsigned to `N5` signed for curve lookup.
 ///
@@ -16,28 +16,21 @@ pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>> {
 }
 
 /// Interpolated fee curve controller.
-/// Implementors define boundary behavior via [`fee_inner`].
+/// Implementors define boundary behavior via `fee_inner`.
 pub trait InterpolatedFeeController {
-  /// Builds the interpolator from the underlying curve.
-  ///
-  /// # Errors
-  /// * Curve validation (insufficient points, non-monotonic)
-  fn curve(&self) -> Result<FixInterp<20, N5>>;
+  /// Returns a reference to the underlying interpolator.
+  fn curve(&self) -> &FixInterp<20, N5>;
 
   /// Compute fee for collateral ratio from underlying curve.
   ///
   /// # Errors
-  /// * Domain or arithmetic errors specific to the fee type
+  /// * Domain or arithmetic errors
   fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>>;
 
   /// Applies the interpolated fee to an input amount.
-  /// Downconverts CR to 5 decimal places to guard against narrowing
-  /// errors.
   ///
   /// # Errors
-  /// * CR conversion
-  /// * Domain error
-  /// * Fee extraction arithmetic
+  /// * CR conversion, domain, or fee extraction arithmetic
   fn apply_fee<InExp>(
     &self,
     ucr: UFix64<N9>,
@@ -53,23 +46,23 @@ pub trait InterpolatedFeeController {
 }
 
 pub struct InterpolatedMintFees {
-  curve: [PointValue; 20],
+  curve: FixInterp<20, N5>,
 }
 
 impl InterpolatedMintFees {
   #[must_use]
-  pub fn new(curve: [PointValue; 20]) -> InterpolatedMintFees {
+  pub fn new(curve: FixInterp<20, N5>) -> InterpolatedMintFees {
     InterpolatedMintFees { curve }
   }
 }
 
 impl InterpolatedFeeController for InterpolatedMintFees {
-  fn curve(&self) -> Result<FixInterp<20, N5>> {
-    FixInterp::from_values(self.curve)
+  fn curve(&self) -> &FixInterp<20, N5> {
+    &self.curve
   }
 
   fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>> {
-    let interp = self.curve()?;
+    let interp = self.curve();
     if cr < interp.x_min() {
       Err(CoreError::NoValidStablecoinMintFee.into())
     } else if cr > interp.x_max() {
@@ -81,23 +74,23 @@ impl InterpolatedFeeController for InterpolatedMintFees {
 }
 
 pub struct InterpolatedRedeemFees {
-  curve: [PointValue; 20],
+  curve: FixInterp<20, N5>,
 }
 
 impl InterpolatedRedeemFees {
   #[must_use]
-  pub fn new(curve: [PointValue; 20]) -> InterpolatedRedeemFees {
+  pub fn new(curve: FixInterp<20, N5>) -> InterpolatedRedeemFees {
     InterpolatedRedeemFees { curve }
   }
 }
 
 impl InterpolatedFeeController for InterpolatedRedeemFees {
-  fn curve(&self) -> Result<FixInterp<20, N5>> {
-    FixInterp::from_values(self.curve)
+  fn curve(&self) -> &FixInterp<20, N5> {
+    &self.curve
   }
 
   fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>> {
-    let interp = self.curve()?;
+    let interp = self.curve();
     if cr < interp.x_min() {
       Ok(interp.y_min())
     } else if cr > interp.x_max() {
@@ -116,7 +109,7 @@ mod tests {
 
   use super::*;
   use crate::error::CoreError;
-  use crate::fee_curves::{MINT_FEE_EXP_DECAY, REDEEM_FEE_LN};
+  use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
   use crate::util::proptest::*;
 
   fn collateral_ratio() -> BoxedStrategy<UFix64<N9>> {
@@ -124,11 +117,11 @@ mod tests {
   }
 
   fn mint_fees() -> InterpolatedMintFees {
-    InterpolatedMintFees::new(MINT_FEE_EXP_DECAY.map(Into::into))
+    InterpolatedMintFees::new(mint_fee_curve().unwrap())
   }
 
   fn redeem_fees() -> InterpolatedRedeemFees {
-    InterpolatedRedeemFees::new(REDEEM_FEE_LN.map(Into::into))
+    InterpolatedRedeemFees::new(redeem_fee_curve().unwrap())
   }
 
   fn assert_conservation<Exp: Integer>(
@@ -166,9 +159,7 @@ mod tests {
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = mint_fees();
-    let interp = fees.curve().map_err(|e| {
-      TestCaseError::fail(format!("Curve construction failed: {e}"))
-    })?;
+    let interp = fees.curve();
     let cr_n5 = narrow_cr(cr)
       .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
     match fees.apply_fee(cr, amount) {
@@ -192,9 +183,7 @@ mod tests {
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = redeem_fees();
-    let interp = fees.curve().map_err(|e| {
-      TestCaseError::fail(format!("Curve construction failed: {e}"))
-    })?;
+    let interp = fees.curve();
     let cr_n5 = narrow_cr(cr)
       .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
     let extract = fees.apply_fee(cr, amount).map_err(|e| {

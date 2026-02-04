@@ -1,6 +1,7 @@
+use anchor_lang::Result;
 use fix::prelude::*;
 
-use crate::interp::Point;
+use crate::interp::{FixInterp, Point};
 
 macro_rules! generate_curve {
     ($name:ident, $res:expr, $prec:ty, $(($x:expr, $y:expr)),* $(,)?) => {
@@ -37,6 +38,22 @@ generate_curve!(
   (263_000, 115),
   (300_000, 108),
 );
+
+/// Loads the mint fee curve into an interpolator.
+///
+/// # Errors
+/// * Curve validation
+pub fn mint_fee_curve() -> Result<FixInterp<20, N5>> {
+  FixInterp::from_points(*MINT_FEE_EXP_DECAY)
+}
+
+/// Loads the redeem fee curve into an interpolator.
+///
+/// # Errors
+/// * Curve validation
+pub fn redeem_fee_curve() -> Result<FixInterp<20, N5>> {
+  FixInterp::from_points(*REDEEM_FEE_LN)
+}
 
 generate_curve!(
   REDEEM_FEE_LN,
