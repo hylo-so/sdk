@@ -1647,7 +1647,6 @@ dependencies = [
  "anyhow",
  "hylo-fix",
  "mpl-token-metadata",
- "paste",
  "solana-address-lookup-table-interface",
  "solana-loader-v3-interface 5.0.0",
 ]
