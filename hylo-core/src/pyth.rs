@@ -20,7 +20,7 @@ pub const SOL_USD: FeedId = [
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
-#[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize)]
+#[derive(Copy, Clone)]
 pub struct OracleConfig<Exp> {
   pub interval_secs: u64,
   pub conf_tolerance: UFix64<Exp>,
