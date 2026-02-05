@@ -7,6 +7,7 @@ pub mod exchange_context;
 pub mod exchange_math;
 pub mod fee_controller;
 pub mod fee_curves;
+pub mod funding_rate;
 #[cfg(feature = "offchain")]
 pub mod idl_type_bridge;
 pub mod interp;

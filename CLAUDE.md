@@ -67,6 +67,7 @@ Naming:
 - NEVER use explicit `return` statements - use Rust's expression-oriented style
 - NEVER use `for`/`while` loops - always prefer iterator API (`.map()`, `.filter()`, `.fold()`, etc.)
 - NEVER use `.unwrap()` or `.expect()` - always use `?` error propagation
+- NEVER use `Self` - always use the explicit struct/type name
 - Favor functional style over imperative control flow
 
 ### Documentation

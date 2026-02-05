@@ -136,4 +136,9 @@ pub enum CoreError {
   CollateralRatioConversion,
   #[msg("Failed to convert interpolated fee from i64 to u64.")]
   InterpFeeConversion,
+  // `funding_rate`
+  #[msg("Funding rate configuration failed validation.")]
+  FundingRateValidation,
+  #[msg("Arithmetic error while applying funding rate.")]
+  FundingRateApply,
 }

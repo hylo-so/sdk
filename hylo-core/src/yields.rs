@@ -64,31 +64,37 @@ impl YieldHarvestConfig {
   }
 }
 
-/// Records epoch yield harvest information for off-chain consumers.
+/// Records epoch harvest information for off-chain consumers.
 #[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
-pub struct YieldHarvestCache {
+pub struct HarvestCache {
   pub epoch: u64,
   pub stability_pool_cap: UFixValue64,
-  pub stablecoin_yield_to_pool: UFixValue64,
+  pub stablecoin_to_pool: UFixValue64,
 }
 
-impl YieldHarvestCache {
+impl HarvestCache {
   pub fn init(&mut self, epoch: u64) -> Result<()> {
     self.epoch = epoch;
     self.stability_pool_cap = UFix64::<N6>::zero().into();
-    self.stablecoin_yield_to_pool = UFix64::<N6>::zero().into();
+    self.stablecoin_to_pool = UFix64::<N6>::zero().into();
     Ok(())
   }
 
   pub fn update(
     &mut self,
     stability_pool_cap: UFix64<N6>,
-    stablecoin_yield_to_pool: UFix64<N6>,
+    stablecoin_to_pool: UFix64<N6>,
     epoch: u64,
   ) -> Result<()> {
     self.epoch = epoch;
     self.stability_pool_cap = stability_pool_cap.into();
-    self.stablecoin_yield_to_pool = stablecoin_yield_to_pool.into();
+    self.stablecoin_to_pool = stablecoin_to_pool.into();
     Ok(())
+  }
+
+  /// Returns true if the cache is stale (harvest needed for current epoch).
+  #[must_use]
+  pub fn is_stale(&self, current_epoch: u64) -> bool {
+    self.epoch < current_epoch
   }
 }
