@@ -59,7 +59,8 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     let hyusd_to_withdraw =
       amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
-    let withdrawal_fee = self.pool_config.withdrawal_fee.try_into()?;
+    let withdrawal_fee: UFix64<N4> =
+      self.pool_config.withdrawal_fee.try_into()?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -97,7 +98,8 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<SHYUSD, L>
     )?;
 
     // Compute withdrawal fee from total allocation cap
-    let withdrawal_fee = self.pool_config.withdrawal_fee.try_into()?;
+    let withdrawal_fee: UFix64<N4> =
+      self.pool_config.withdrawal_fee.try_into()?;
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let levercoin_nav = self.exchange_context.levercoin_mint_nav()?;
     let FeeExtract {

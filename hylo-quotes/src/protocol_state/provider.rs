@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 
-use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::prelude::Clock;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{ProtocolAccounts, ProtocolState};
 
@@ -73,10 +73,10 @@ impl StateProvider<Clock> for RpcStateProvider {
 mod tests {
   use std::sync::Arc;
 
-  use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
   use fix::prelude::*;
   use fix::typenum::{N8, N9};
   use hylo_core::solana_clock::SolanaClock;
+  use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
   use super::*;
 

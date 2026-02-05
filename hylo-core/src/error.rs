@@ -113,4 +113,32 @@ pub enum CoreError {
   YieldHarvestConfigValidation,
   #[msg("Arithmetic error while computing yield harvest allocation.")]
   YieldHarvestAllocation,
+  // `virtual_stablecoin`
+  #[msg("Overflow while minting virtual stablecoin.")]
+  MintOverflow,
+  #[msg("Overflow while burning virtual stablecoin.")]
+  BurnUnderflow,
+  #[msg("Cannot mint zero amount of virtual stablecoin.")]
+  MintZero,
+  #[msg("Cannot burn zero amount of virtual stablecoin.")]
+  BurnZero,
+  // `interp`
+  #[msg("Interpolation requires at least two points.")]
+  InterpInsufficientPoints,
+  #[msg("Interpolation points must have strictly increasing x-coordinates.")]
+  InterpPointsNotMonotonic,
+  #[msg("Interpolation input is outside the valid domain.")]
+  InterpOutOfDomain,
+  #[msg("Arithmetic overflow during interpolation calculation.")]
+  InterpArithmetic,
+  // `interpolated_fees`
+  #[msg("Failed to convert collateral ratio from u64 to i64.")]
+  CollateralRatioConversion,
+  #[msg("Failed to convert interpolated fee from i64 to u64.")]
+  InterpFeeConversion,
+  // `funding_rate`
+  #[msg("Funding rate configuration failed validation.")]
+  FundingRateValidation,
+  #[msg("Arithmetic error while applying funding rate.")]
+  FundingRateApply,
 }

@@ -56,12 +56,15 @@ pub struct FeeExtract<Exp> {
 }
 
 impl<Exp> FeeExtract<Exp> {
-  pub fn new(
-    fee: UFix64<N4>,
+  pub fn new<FeeExp>(
+    fee: UFix64<FeeExp>,
     amount_in: UFix64<Exp>,
-  ) -> Result<FeeExtract<Exp>> {
+  ) -> Result<FeeExtract<Exp>>
+  where
+    UFix64<FeeExp>: FixExt,
+  {
     let fees_extracted = amount_in
-      .mul_div_ceil(fee, UFix64::<N4>::one())
+      .mul_div_ceil(fee, UFix64::<FeeExp>::one())
       .ok_or(FeeExtraction)?;
 
     let amount_remaining = amount_in
@@ -199,7 +202,7 @@ mod tests {
 
   #[test]
   fn fee_extraction() -> Result<()> {
-    let fee = UFix64::new(50);
+    let fee = UFix64::<N4>::new(50);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount)?;
     assert_eq!(out.fees_extracted, UFix64::new(348_094_081));
@@ -209,9 +212,9 @@ mod tests {
 
   #[test]
   fn fee_extraction_underflow() {
-    let fee = UFix64::new(10001);
+    let fee = UFix64::<N4>::new(10001);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
-    assert!(out.is_err());
+    assert_eq!(out.err(), Some(FeeExtraction.into()));
   }
 }

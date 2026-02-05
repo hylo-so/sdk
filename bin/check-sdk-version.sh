@@ -15,7 +15,7 @@ function check-sdk-version() {
   EXPECTED_VERSION_MINOR="${MAIN[0]}.$((MAIN[1] + 1)).0"
 
   # Check if versions have the same major and minor, and patch is exactly one higher
-  if [ "$CURRENT_VERSION" = "$EXPECTED_VERSION_PATCHED" ] || [ "$CURRENT_VERSION" = "$EXPECTED_VERSION_MINOR" ]; 
+  if [ "$CURRENT_VERSION" = "$EXPECTED_VERSION_PATCHED" ] || [ "$CURRENT_VERSION" = "$EXPECTED_VERSION_MINOR" ];
   then
       echo "$3 SDK version check passed"
   else

@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
 
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 use solana_loader_v3_interface::get_program_data_address;
 
@@ -110,12 +109,6 @@ pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
 
 pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
-
-pub static EXCHANGE_EVENT_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, "__event_authority"));
-
-pub static STABILITY_POOL_EVENT_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(stability_pool::ID, "__event_authority"));
 
 pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::ID,

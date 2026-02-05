@@ -7,7 +7,7 @@ use crate::exchange::client::accounts::{
   SwapLeverToStable, SwapLst, SwapStableToLever,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
-use crate::{ata, exchange, pda};
+use crate::{ata, pda};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
 #[must_use]
@@ -29,8 +29,6 @@ pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> MintStablecoin {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
 
@@ -55,8 +53,6 @@ pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> MintLevercoin {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
 
@@ -79,8 +75,6 @@ pub fn redeem_stablecoin(user: Pubkey, lst_mint: Pubkey) -> RedeemStablecoin {
     system_program: system_program::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
 
@@ -104,8 +98,6 @@ pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> RedeemLevercoin {
     system_program: system_program::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
 
@@ -125,8 +117,6 @@ pub fn swap_stable_to_lever(user: Pubkey) -> SwapStableToLever {
     levercoin_auth: *pda::XSOL_AUTH,
     user_levercoin_ta: pda::xsol_ata(user),
     token_program: token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
 
@@ -146,8 +136,6 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
     levercoin_auth: *pda::XSOL_AUTH,
     user_levercoin_ta: pda::xsol_ata(user),
     token_program: token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
 
@@ -171,7 +159,5 @@ pub fn swap_lst(user: Pubkey, lst_a: Pubkey, lst_b: Pubkey) -> SwapLst {
     fee_vault: pda::fee_vault(lst_a),
     token_program: token::ID,
     associated_token_program: associated_token::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   }
 }
