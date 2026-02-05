@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
+use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
@@ -134,7 +135,8 @@ impl StabilityPoolClient {
       .instruction(instruction)
       .signed_transaction()
       .await?;
-    let stats = self.simulate_transaction_return(tx.into()).await?;
+    let tx: VersionedTransaction = tx.into();
+    let stats = self.simulate_transaction_return(&tx).await?;
     Ok(stats)
   }
 
@@ -230,7 +232,7 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
       .build_simulation_transaction(&user, &redeem_shyusd_args)
       .await?;
     let redeem_shyusd_sim = self
-      .simulate_transaction_event::<UserWithdrawEventV1>(&redeem_shyusd_tx)
+      .simulate_transaction_return::<UserWithdrawEventV1>(&redeem_shyusd_tx)
       .await?;
     let mut instructions = vec![user_ata_instruction(&user, &OUT::MINT)];
     instructions.extend(redeem_shyusd_args.instructions);

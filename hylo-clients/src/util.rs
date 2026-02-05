@@ -7,25 +7,20 @@ use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::hash::Hash;
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::message::{v0, VersionedMessage};
+use anchor_client::solana_sdk::pubkey;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
-use anchor_client::solana_sdk::{bs58, pubkey};
 use anchor_client::Cluster;
 use anchor_lang::prelude::AccountMeta;
-use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Result};
 use fix::typenum::N9;
 use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_rpc_client_api::config::RpcSimulateTransactionConfig;
-use solana_rpc_client_api::response::{Response, RpcSimulateTransactionResult};
-use solana_transaction_status_client_types::{
-  UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
-};
 
 use crate::exchange_client::ExchangeClient;
 use crate::prelude::VersionedTransactionData;
@@ -57,7 +52,6 @@ pub fn simulation_config() -> RpcSimulateTransactionConfig {
     sig_verify: false,
     replace_recent_blockhash: true,
     commitment: Some(CommitmentConfig::confirmed()),
-    inner_instructions: true,
     ..Default::default()
   }
 }
@@ -137,38 +131,6 @@ pub fn build_lst_registry(
     Ok((remaining_accounts, table))
   } else {
     Err(anyhow!("Malformed LST registry preamble."))
-  }
-}
-
-/// Parses event type `E` from a simulated RPC call.
-/// NB: Drops 16 bytes for header and discriminator.
-///
-/// # Errors
-/// * Simulation failed
-/// * Event not found in simulation result
-pub fn parse_event<E>(
-  result: &Response<RpcSimulateTransactionResult>,
-) -> Result<E>
-where
-  E: AnchorDeserialize + Discriminator,
-{
-  if let Some(err) = &result.value.err {
-    bail!("Simulation failed: {err:?}")
-  } else if let Some(ixs) = &result.value.inner_instructions {
-    ixs
-      .iter()
-      .flat_map(|ix| &ix.instructions)
-      .find_map(|ix| match ix {
-        UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
-          UiPartiallyDecodedInstruction { data, .. },
-        )) => bs58::decode(data).into_vec().ok(),
-        _ => None,
-      })
-      .filter(|bytes| bytes.len() >= 16 && &bytes[8..16] == E::DISCRIMINATOR)
-      .context("Could not parse event from result")
-      .and_then(|bytes| Ok(E::try_from_slice(&bytes[16..])?))
-  } else {
-    bail!("Simulation succeeded but no inner instructions returned")
   }
 }
 

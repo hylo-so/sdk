@@ -110,12 +110,6 @@ pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
 pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
 
-pub static EXCHANGE_EVENT_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, "__event_authority"));
-
-pub static STABILITY_POOL_EVENT_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(stability_pool::ID, "__event_authority"));
-
 pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::ID,
   stability_pool::constants::POOL_CONFIG

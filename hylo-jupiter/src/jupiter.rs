@@ -560,7 +560,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<MintStablecoinEventV2>(&tx)
+      .simulate_transaction_return::<MintStablecoinEventV2>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
     assert_mint!(sim, quote);
@@ -587,7 +587,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<RedeemStablecoinEventV2>(&tx)
+      .simulate_transaction_return::<RedeemStablecoinEventV2>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
     assert_redeem!(sim, quote);
@@ -614,7 +614,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<MintLevercoinEventV2>(&tx)
+      .simulate_transaction_return::<MintLevercoinEventV2>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
     assert_mint!(sim, quote);
@@ -641,7 +641,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<RedeemLevercoinEventV2>(&tx)
+      .simulate_transaction_return::<RedeemLevercoinEventV2>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
     assert_redeem!(sim, quote);
@@ -668,7 +668,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<SwapStableToLeverEventV1>(&tx)
+      .simulate_transaction_return::<SwapStableToLeverEventV1>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
 
@@ -710,7 +710,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<SwapLeverToStableEventV1>(&tx)
+      .simulate_transaction_return::<SwapLeverToStableEventV1>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
 
@@ -751,7 +751,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<UserDepositEvent>(&tx)
+      .simulate_transaction_return::<UserDepositEvent>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
 
@@ -788,7 +788,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_event::<UserWithdrawEventV1>(&tx)
+      .simulate_transaction_return::<UserWithdrawEventV1>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
 

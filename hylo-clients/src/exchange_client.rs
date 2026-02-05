@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
+use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
 use anyhow::Result;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
@@ -247,7 +248,8 @@ impl ExchangeClient {
       .args(args)
       .signed_transaction()
       .await?;
-    let stats = self.simulate_transaction_return(tx.into()).await?;
+    let tx: VersionedTransaction = tx.into();
+    let stats = self.simulate_transaction_return(&tx).await?;
     Ok(stats)
   }
 

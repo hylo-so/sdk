@@ -1602,7 +1602,6 @@ dependencies = [
  "serde_json",
  "solana-address-lookup-table-interface",
  "solana-rpc-client-api",
- "solana-transaction-status-client-types",
  "tokio",
 ]
 

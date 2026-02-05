@@ -212,8 +212,6 @@ pub fn register_lst(
     associated_token_program: associated_token::ID,
     token_program: token::ID,
     system_program: system_program::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   let args = args::RegisterLst {};
   Instruction {
@@ -231,8 +229,6 @@ pub fn update_oracle_conf_tolerance(
   let accounts = accounts::UpdateOracleConfTolerance {
     admin,
     hylo: *pda::HYLO,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -249,8 +245,6 @@ pub fn update_sol_usd_oracle(
   let accounts = accounts::UpdateSolUsdOracle {
     admin,
     hylo: *pda::HYLO,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -267,8 +261,6 @@ pub fn update_stability_pool(
   let accounts = accounts::UpdateStabilityPool {
     admin,
     hylo: *pda::HYLO,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -301,11 +293,8 @@ pub fn harvest_yield(
     hylo_stability_pool: stability_pool::ID,
     lst_registry,
     lut_program: address_lookup_table::ID,
-    associated_token_program: associated_token::ID,
     token_program: token::ID,
     system_program: system_program::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   let args = args::HarvestYield {};
   Instruction {
@@ -326,8 +315,6 @@ pub fn update_lst_prices(
     hylo: *pda::HYLO,
     lst_registry,
     lut_program: address_lookup_table::ID,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   let args = args::UpdateLstPrices {};
   Instruction {
@@ -360,8 +347,6 @@ pub fn update_lst_swap_fee(
   let accounts = accounts::UpdateLstSwapFee {
     admin,
     hylo: *pda::HYLO,
-    event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
