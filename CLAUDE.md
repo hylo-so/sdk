@@ -12,26 +12,26 @@ This project uses Nix for reproducible development environments.
 
 ```bash
 nix develop            # Stable Rust 1.88.0
-nix develop .#nightly  # Nightly (for polish/lint scripts)
+nix develop .#nightly  # Nightly (for cargo-udeps)
 ```
 
 ### Commands
 
 After completing ANY coding task, ALWAYS run:
 ```bash
-nix develop .#nightly --command ./bin/polish.sh  # Format + auto-fix clippy
-nix develop .#nightly --command ./bin/lint.sh    # Verify (CI check mode)
+polish   # Format + auto-fix clippy (or: nix run .#polish)
+lint     # Verify (CI check mode) (or: nix run .#lint)
 ```
 
 Other commands:
 ```bash
-cargo test                    # Run all tests
+build                         # Cargo build (or: nix run .#build)
+test                          # Workspace tests + doctests (or: nix run .#test)
 cargo test -p hylo-quotes     # Run tests for specific crate
 cargo +nightly udeps          # Check unused dependencies (nightly shell)
-./bin/build.sh                # Full build + tests (excludes hylo-jupiter)
 ```
 
-Note: `polish.sh` and `lint.sh` enforce `clippy::pedantic` — all pedantic lints must pass.
+Note: `polish` and `lint` enforce `clippy::pedantic` — all pedantic lints must pass.
 
 Integration tests require env vars (`RPC_WS_URL` can be fake):
 ```bash
@@ -156,5 +156,5 @@ use hylo_core::prelude::*;     // Math types
 - Slippage is in basis points (50 = 0.5%)
 - Default compute units: 100k with buffer
 - Jupiter integration uses `HyloJupiterPair<IN, OUT>` generic
-- `hylo-jupiter` is excluded from workspace tests (`build.sh` uses `--exclude hylo-jupiter`)
+- `hylo-jupiter` is excluded from workspace tests (`test` uses `--exclude hylo-jupiter`)
 - CI runs lint (nightly shell) then build/test (stable shell), plus version check on PRs
