@@ -72,6 +72,17 @@ pub struct HarvestCache {
   pub stablecoin_to_pool: UFixValue64,
 }
 
+impl Default for HarvestCache {
+  fn default() -> Self {
+    let zero = UFix64::<N6>::zero().into();
+    HarvestCache {
+      epoch: 0,
+      stability_pool_cap: zero,
+      stablecoin_to_pool: zero,
+    }
+  }
+}
+
 impl HarvestCache {
   pub fn init(&mut self, epoch: u64) -> Result<()> {
     self.epoch = epoch;
