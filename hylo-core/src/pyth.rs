@@ -1,4 +1,4 @@
-use anchor_lang::prelude::{pubkey, Pubkey, Result};
+use anchor_lang::prelude::*;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
@@ -20,7 +20,7 @@ pub const SOL_USD: FeedId = [
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct OracleConfig<Exp> {
   pub interval_secs: u64,
   pub conf_tolerance: UFix64<Exp>,
