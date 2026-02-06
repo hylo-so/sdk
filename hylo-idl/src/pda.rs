@@ -95,17 +95,14 @@ pub fn fee_auth(mint: Pubkey) -> Pubkey {
 pub static HYLO: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::HYLO));
 
-pub static HYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
-  exchange::ID,
-  exchange::constants::MINT_AUTH,
-  HYUSD::MINT
-));
+#[must_use]
+pub fn mint_auth(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::MINT_AUTH, mint)
+}
 
-pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
-  exchange::ID,
-  exchange::constants::MINT_AUTH,
-  XSOL::MINT
-));
+pub static HYUSD_AUTH: LazyLock<Pubkey> = lazy!(mint_auth(HYUSD::MINT));
+
+pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(mint_auth(XSOL::MINT));
 
 pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
@@ -138,3 +135,19 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+
+// EXO-specific PDAs
+
+#[must_use]
+pub fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
+}
+
+#[must_use]
+pub fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
+  pda!(
+    exchange::ID,
+    exchange::constants::EXO_LEVERCOIN,
+    collateral_mint
+  )
+}

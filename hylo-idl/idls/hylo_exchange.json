@@ -2631,6 +2631,401 @@
       }
     },
     {
+      "name": "register_exo",
+      "discriminator": [
+        255,
+        198,
+        39,
+        217,
+        189,
+        131,
+        248,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "levercoin_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "levercoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "fee_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_vault"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "fee_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "oracle",
+          "type": "pubkey"
+        },
+        {
+          "name": "oracle_interval_secs",
+          "type": "u64"
+        },
+        {
+          "name": "oracle_conf_tolerance",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "funding_rate",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "RegisterExoEvent"
+        }
+      }
+    },
+    {
       "name": "register_lst",
       "discriminator": [
         167,
@@ -4945,6 +5340,19 @@
   ],
   "accounts": [
     {
+      "name": "ExoPair",
+      "discriminator": [
+        251,
+        244,
+        72,
+        181,
+        40,
+        119,
+        232,
+        48
+      ]
+    },
+    {
       "name": "Hylo",
       "discriminator": [
         114,
@@ -5634,8 +6042,85 @@
             "name": "yield_harvest_cache",
             "type": {
               "defined": {
-                "name": "YieldHarvestCache"
+                "name": "HarvestCache"
               }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExoPair",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "fee_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "funding_rate_config",
+            "type": {
+              "defined": {
+                "name": "FundingRateConfig"
+              }
+            }
+          },
+          {
+            "name": "funding_rate_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
             }
           }
         ]
@@ -5661,6 +6146,56 @@
           },
           {
             "name": "redeem",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FundingRateConfig",
+      "docs": [
+        "Per-epoch funding rate for exogenous collateral without native yield."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "HarvestCache",
+      "docs": [
+        "Records epoch harvest information for off-chain consumers."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "stability_pool_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_to_pool",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -5842,7 +6377,7 @@
             "name": "yield_harvest_cache",
             "type": {
               "defined": {
-                "name": "YieldHarvestCache"
+                "name": "HarvestCache"
               }
             }
           },
@@ -6687,6 +7222,16 @@
       }
     },
     {
+      "name": "RegisterExoEvent",
+      "docs": [
+        "V2"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
       "name": "RegisterLstEvent",
       "docs": [
         "Admin"
@@ -7311,6 +7856,25 @@
       }
     },
     {
+      "name": "VirtualStablecoin",
+      "docs": [
+        "Simple counter representing the supply of a \"virtual\" stablecoin."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "supply",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "WithdrawFeesEvent",
       "type": {
         "kind": "struct",
@@ -7330,37 +7894,6 @@
           {
             "name": "amount",
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "YieldHarvestCache",
-      "docs": [
-        "Records epoch yield harvest information for off-chain consumers."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "epoch",
-            "type": "u64"
-          },
-          {
-            "name": "stability_pool_cap",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "stablecoin_yield_to_pool",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
           }
         ]
       }
@@ -7394,6 +7927,26 @@
     }
   ],
   "constants": [
+    {
+      "name": "EXO_LEVERCOIN",
+      "type": {
+        "array": [
+          "u8",
+          13
+        ]
+      },
+      "value": "[101, 120, 111, 95, 108, 101, 118, 101, 114, 99, 111, 105, 110]"
+    },
+    {
+      "name": "EXO_PAIR",
+      "type": {
+        "array": [
+          "u8",
+          8
+        ]
+      },
+      "value": "[101, 120, 111, 95, 112, 97, 105, 114]"
+    },
     {
       "name": "FEE_AUTH",
       "type": {

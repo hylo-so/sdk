@@ -48,12 +48,12 @@ impl From<hylo_idl::exchange::types::YieldHarvestConfig>
   }
 }
 
-impl From<hylo_idl::exchange::types::YieldHarvestCache> for HarvestCache {
-  fn from(idl: hylo_idl::exchange::types::YieldHarvestCache) -> Self {
+impl From<hylo_idl::exchange::types::HarvestCache> for HarvestCache {
+  fn from(idl: hylo_idl::exchange::types::HarvestCache) -> Self {
     HarvestCache {
       epoch: idl.epoch,
       stability_pool_cap: idl.stability_pool_cap.into(),
-      stablecoin_to_pool: idl.stablecoin_yield_to_pool.into(),
+      stablecoin_to_pool: idl.stablecoin_to_pool.into(),
     }
   }
 }

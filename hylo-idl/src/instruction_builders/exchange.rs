@@ -340,6 +340,20 @@ pub fn swap_lst(
 }
 
 #[must_use]
+pub fn register_exo(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::RegisterExo,
+) -> Instruction {
+  let accounts = account_builders::register_exo(admin, collateral_mint);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_lst_swap_fee(
   admin: Pubkey,
   args: &args::UpdateLstSwapFee,

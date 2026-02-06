@@ -4,7 +4,7 @@ use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
   MintLevercoin, MintStablecoin, RedeemLevercoin, RedeemStablecoin,
-  SwapLeverToStable, SwapLst, SwapStableToLever,
+  RegisterExo, SwapLeverToStable, SwapLst, SwapStableToLever,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, pda};
@@ -136,6 +136,33 @@ pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
     levercoin_auth: *pda::XSOL_AUTH,
     user_levercoin_ta: pda::xsol_ata(user),
     token_program: token::ID,
+  }
+}
+
+/// Builds account context for registering an EXO pair.
+#[must_use]
+pub fn register_exo(admin: Pubkey, collateral_mint: Pubkey) -> RegisterExo {
+  let exo_pair = pda::exo_pair(collateral_mint);
+  let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+  let levercoin_auth = pda::mint_auth(levercoin_mint);
+  let vault_auth = pda::vault_auth(collateral_mint);
+  let collateral_vault = ata!(vault_auth, collateral_mint);
+  let fee_auth = pda::fee_auth(collateral_vault);
+  let fee_vault = ata!(fee_auth, collateral_mint);
+  RegisterExo {
+    admin,
+    hylo: *pda::HYLO,
+    collateral_mint,
+    exo_pair,
+    levercoin_auth,
+    levercoin_mint,
+    vault_auth,
+    collateral_vault,
+    fee_auth,
+    fee_vault,
+    token_program: token::ID,
+    associated_token_program: associated_token::ID,
+    system_program: system_program::ID,
   }
 }
 
