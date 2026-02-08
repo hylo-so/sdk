@@ -86,15 +86,11 @@ pub(crate) const fn operation_allowed_in_mode(
   op: Operation,
   mode: StabilityMode,
 ) -> bool {
-  let not_depegged = !matches!(mode, StabilityMode::Depeg);
+  use StabilityMode::{Depeg, Mode1, Mode2, Normal};
 
-  let normal_or_mode1 =
-    matches!(mode, StabilityMode::Normal | StabilityMode::Mode1);
-
-  let deposit_allowed = matches!(
-    mode,
-    StabilityMode::Normal | StabilityMode::Mode1 | StabilityMode::Mode2
-  );
+  let not_depegged = !matches!(mode, Depeg);
+  let normal_or_mode1 = matches!(mode, Normal | Mode1);
+  let deposit_allowed = matches!(mode, Normal | Mode1 | Mode2);
 
   match op {
     Operation::MintStablecoin | Operation::SwapLeverToStable => normal_or_mode1,
