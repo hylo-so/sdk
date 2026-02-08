@@ -81,33 +81,6 @@ runtime_quote_strategies! {
   (SHYUSD, HYLOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for hyloSOL"),
 }
 
-#[must_use]
-pub(crate) const fn operation_allowed_in_mode(
-  op: Operation,
-  mode: StabilityMode,
-) -> bool {
-  use StabilityMode::{Depeg, Mode1, Mode2, Normal};
-
-  let not_depegged = !matches!(mode, Depeg);
-  let normal_or_mode1 = matches!(mode, Normal | Mode1);
-  let deposit_allowed = matches!(mode, Normal | Mode1 | Mode2);
-
-  match op {
-    Operation::MintStablecoin | Operation::SwapLeverToStable => normal_or_mode1,
-
-    Operation::RedeemStablecoin
-    | Operation::LstSwap
-    | Operation::WithdrawFromStabilityPool => true,
-
-    Operation::DepositToStabilityPool => deposit_allowed,
-
-    Operation::MintLevercoin
-    | Operation::RedeemLevercoin
-    | Operation::SwapStableToLever
-    | Operation::WithdrawAndRedeemFromStabilityPool => not_depegged,
-  }
-}
-
 /// Returns an iterator over supported quote pairs that are quotable in the
 /// given stability mode.
 ///
@@ -119,5 +92,5 @@ pub fn quotable_pairs_for_mode(
 ) -> impl Iterator<Item = &'static (Pubkey, Pubkey, Operation, &'static str)> {
   ALL_QUOTABLE_PAIRS
     .iter()
-    .filter(move |(_, _, op, _)| operation_allowed_in_mode(*op, mode))
+    .filter(move |(_, _, op, _)| op.allowed_in(mode))
 }
