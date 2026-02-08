@@ -115,10 +115,13 @@ mod simulation_strategy;
 pub mod token_operation;
 
 pub use hylo_clients::util::LST;
+pub use hylo_core::stability_mode::StabilityMode;
 pub use protocol_state_strategy::ProtocolStateStrategy;
 pub use quote_metadata::{Operation, QuoteMetadata};
 pub use quote_strategy::QuoteStrategy;
-pub use runtime_quote_strategy::RuntimeQuoteStrategy;
+pub use runtime_quote_strategy::{
+  quotable_pairs_for_mode, RuntimeQuoteStrategy,
+};
 pub use simulated_operation::ComputeUnitInfo;
 pub use simulation_strategy::SimulationStrategy;
 

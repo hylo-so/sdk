@@ -29,9 +29,12 @@ pub use crate::ProtocolStateStrategy;
 pub use crate::QuoteStrategy;
 // LST marker trait
 pub use crate::LST;
+pub use crate::{
+  quotable_pairs_for_mode, RuntimeQuoteStrategy, SimulationStrategy,
+  StabilityMode,
+};
 // Core quote types
 pub use crate::{
   ComputeUnitInfo, ComputeUnitStrategy, ExecutableQuote, ExecutableQuoteValue,
   Operation, QuoteMetadata, DEFAULT_CUS_WITH_BUFFER,
 };
-pub use crate::{RuntimeQuoteStrategy, SimulationStrategy};

@@ -2,6 +2,7 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
 use crate::quote_metadata::{Operation, QuoteMetadata};
@@ -53,6 +54,11 @@ macro_rules! runtime_quote_strategies {
           }
         }
       }
+
+      /// All quotable pairs; used by [`quotable_pairs_for_mode`].
+      pub(crate) const ALL_QUOTABLE_PAIRS: &[(Pubkey, Pubkey, Operation, &'static str)] = &[
+        $( (<$in>::MINT, <$out>::MINT, $op, $desc), )*
+      ];
     };
 }
 
@@ -73,4 +79,44 @@ runtime_quote_strategies! {
   (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
   (SHYUSD, JITOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for JitoSOL"),
   (SHYUSD, HYLOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for hyloSOL"),
+}
+
+#[must_use]
+pub(crate) fn operation_allowed_in_mode(
+  op: Operation,
+  mode: StabilityMode,
+) -> bool {
+  let not_depegged = mode != StabilityMode::Depeg;
+  let normal_or_mode1 =
+    matches!(mode, StabilityMode::Normal | StabilityMode::Mode1);
+  let deposit_allowed = mode <= StabilityMode::Mode2;
+
+  match op {
+    Operation::MintStablecoin | Operation::SwapLeverToStable => normal_or_mode1,
+
+    Operation::RedeemStablecoin
+    | Operation::LstSwap
+    | Operation::WithdrawFromStabilityPool => true,
+
+    Operation::DepositToStabilityPool => deposit_allowed,
+
+    Operation::MintLevercoin
+    | Operation::RedeemLevercoin
+    | Operation::SwapStableToLever
+    | Operation::WithdrawAndRedeemFromStabilityPool => not_depegged,
+  }
+}
+
+/// Returns an iterator over supported quote pairs that are quotable in the
+/// given stability mode.
+///
+/// Use this for mode-aware endpoints (e.g. public-api quotable-pairs filtered
+/// by current protocol mode).
+#[must_use = "iterator is lazy and does nothing unless consumed"]
+pub fn quotable_pairs_for_mode(
+  mode: StabilityMode,
+) -> impl Iterator<Item = &'static (Pubkey, Pubkey, Operation, &'static str)> {
+  ALL_QUOTABLE_PAIRS
+    .iter()
+    .filter(move |(_, _, op, _)| operation_allowed_in_mode(*op, mode))
 }
