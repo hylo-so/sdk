@@ -36,9 +36,13 @@ impl Operation {
     }
   }
 
-  /// Whether this operation is allowed in the given stability mode.
+  /// Whether this operation is quotable given stability mode and pool state.
   #[must_use]
-  pub(crate) const fn allowed_in(self, mode: StabilityMode) -> bool {
+  pub(crate) const fn quotable(
+    self,
+    mode: StabilityMode,
+    pool_has_levercoin: bool,
+  ) -> bool {
     use StabilityMode::{Depeg, Mode1, Mode2, Normal};
 
     let not_depegged = !matches!(mode, Depeg);
@@ -48,16 +52,18 @@ impl Operation {
     match self {
       Self::MintStablecoin | Self::SwapLeverToStable => normal_or_mode1,
 
-      Self::RedeemStablecoin
-      | Self::LstSwap
-      | Self::WithdrawFromStabilityPool => true,
+      Self::RedeemStablecoin | Self::LstSwap => true,
 
       Self::DepositToStabilityPool => deposit_allowed,
 
-      Self::MintLevercoin
-      | Self::RedeemLevercoin
-      | Self::SwapStableToLever
-      | Self::WithdrawAndRedeemFromStabilityPool => not_depegged,
+      Self::MintLevercoin | Self::RedeemLevercoin | Self::SwapStableToLever => {
+        not_depegged
+      }
+
+      Self::WithdrawFromStabilityPool => !pool_has_levercoin,
+      Self::WithdrawAndRedeemFromStabilityPool => {
+        pool_has_levercoin && not_depegged
+      }
     }
   }
 }

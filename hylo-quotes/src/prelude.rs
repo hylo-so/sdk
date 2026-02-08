@@ -30,8 +30,7 @@ pub use crate::QuoteStrategy;
 // LST marker trait
 pub use crate::LST;
 pub use crate::{
-  quotable_pairs_for_mode, RuntimeQuoteStrategy, SimulationStrategy,
-  StabilityMode,
+  quotable_pairs, RuntimeQuoteStrategy, SimulationStrategy, StabilityMode,
 };
 // Core quote types
 pub use crate::{

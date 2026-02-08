@@ -55,7 +55,7 @@ macro_rules! runtime_quote_strategies {
         }
       }
 
-      /// All quotable pairs; used by [`quotable_pairs_for_mode`].
+      /// All quotable pairs; used by [`quotable_pairs`].
       pub(crate) const ALL_QUOTABLE_PAIRS: &[(Pubkey, Pubkey, Operation, &'static str)] = &[
         $( (<$in>::MINT, <$out>::MINT, $op, $desc), )*
       ];
@@ -81,16 +81,14 @@ runtime_quote_strategies! {
   (SHYUSD, HYLOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for hyloSOL"),
 }
 
-/// Returns an iterator over supported quote pairs that are quotable in the
-/// given stability mode.
-///
-/// Use this for mode-aware endpoints (e.g. public-api quotable-pairs filtered
-/// by current protocol mode).
+/// Returns an iterator over quote pairs that are quotable given the current
+/// stability mode and pool state.
 #[must_use = "iterator is lazy and does nothing unless consumed"]
-pub fn quotable_pairs_for_mode(
+pub fn quotable_pairs(
   mode: StabilityMode,
+  pool_has_levercoin: bool,
 ) -> impl Iterator<Item = &'static (Pubkey, Pubkey, Operation, &'static str)> {
   ALL_QUOTABLE_PAIRS
     .iter()
-    .filter(move |(_, _, op, _)| op.allowed_in(mode))
+    .filter(move |(_, _, op, _)| op.quotable(mode, pool_has_levercoin))
 }
