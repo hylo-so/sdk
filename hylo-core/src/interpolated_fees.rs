@@ -43,6 +43,16 @@ pub trait InterpolatedFeeController {
       .ok_or(CoreError::InterpFeeConversion)?;
     FeeExtract::new(fee, amount_in)
   }
+
+  /// Minimum X on the underlying curve corresponds to Stability Threshold 2.
+  fn stability_threshold_2(&self) -> Result<UFix64<N2>> {
+    self
+      .curve()
+      .x_min()
+      .narrow()
+      .and_then(UFix64::checked_convert::<N2>)
+      .ok_or(CoreError::InterpFeeConversion.into())
+  }
 }
 
 pub struct InterpolatedMintFees {

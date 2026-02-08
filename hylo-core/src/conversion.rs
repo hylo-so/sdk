@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
-  LeverToStable, LstToToken, StableToLever, TokenToLst,
+  ExoFromToken, ExoPriceConversion, ExoToToken, LeverToStable, LstToToken,
+  StableToLever, TokenToLst,
 };
 use crate::pyth::PriceRange;
 
@@ -90,6 +91,62 @@ impl SwapConversion {
       .mul_div_floor(self.levercoin_nav.lower, UFix64::one())
       .and_then(|usd| usd.mul_div_floor(UFix64::one(), self.stablecoin_nav))
       .ok_or(LeverToStable.into())
+  }
+}
+
+/// Conversions between an exogenous collateral and protocol tokens.
+pub struct ExoConversion {
+  pub collateral_usd_price: PriceRange<N8>,
+}
+
+impl ExoConversion {
+  /// Converts collateral amount to a protocol token amount.
+  ///
+  /// # Errors
+  /// * Checked conversion or arithmetic failure
+  #[allow(clippy::redundant_closure_for_method_calls)]
+  pub fn exo_to_token<Exp>(
+    &self,
+    amount: UFix64<Exp>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N6>>
+  where
+    UFix64<Exp>: FixExt,
+  {
+    let price = self
+      .collateral_usd_price
+      .lower
+      .checked_convert::<N9>()
+      .ok_or(ExoPriceConversion)?;
+    amount
+      .checked_convert::<N9>()
+      .and_then(|a| a.mul_div_floor(price, token_nav))
+      .and_then(|v| v.checked_convert::<N6>())
+      .ok_or(ExoToToken.into())
+  }
+
+  /// Converts a protocol token amount to exogenous collateral.
+  ///
+  /// # Errors
+  /// * Checked conversion or arithmetic failure
+  pub fn token_to_exo<Exp>(
+    &self,
+    amount: UFix64<N6>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<Exp>>
+  where
+    UFix64<Exp>: FixExt,
+  {
+    let price = self
+      .collateral_usd_price
+      .upper
+      .checked_convert::<N9>()
+      .ok_or(ExoPriceConversion)?;
+    amount
+      .checked_convert::<N9>()
+      .and_then(|a| a.mul_div_floor(token_nav, price))
+      .and_then(|v: UFix64<N9>| v.checked_convert())
+      .ok_or(ExoFromToken.into())
   }
 }
 

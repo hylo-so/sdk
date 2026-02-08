@@ -141,4 +141,17 @@ pub enum CoreError {
   FundingRateValidation,
   #[msg("Arithmetic error while applying funding rate.")]
   FundingRateApply,
+  // `exo_exchange_context`
+  #[msg("Arithmetic error converting exo collateral to protocol token.")]
+  ExoToToken,
+  #[msg("Arithmetic error converting protocol token to exo collateral.")]
+  ExoFromToken,
+  #[msg("Precision conversion failed for exo collateral price.")]
+  ExoPriceConversion,
+  #[msg("Over/underflow projecting exo collateral total for fee.")]
+  ExoDestinationCollateral,
+  #[msg("Over/underflow projecting stablecoin total for exo fee.")]
+  ExoDestinationStablecoin,
+  #[msg("Checked conversion to N9 precision failed for exo collateral.")]
+  ExoUpconvert,
 }
