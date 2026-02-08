@@ -82,14 +82,19 @@ runtime_quote_strategies! {
 }
 
 #[must_use]
-pub(crate) fn operation_allowed_in_mode(
+pub(crate) const fn operation_allowed_in_mode(
   op: Operation,
   mode: StabilityMode,
 ) -> bool {
-  let not_depegged = mode != StabilityMode::Depeg;
+  let not_depegged = !matches!(mode, StabilityMode::Depeg);
+
   let normal_or_mode1 =
     matches!(mode, StabilityMode::Normal | StabilityMode::Mode1);
-  let deposit_allowed = mode <= StabilityMode::Mode2;
+
+  let deposit_allowed = matches!(
+    mode,
+    StabilityMode::Normal | StabilityMode::Mode1 | StabilityMode::Mode2
+  );
 
   match op {
     Operation::MintStablecoin | Operation::SwapLeverToStable => normal_or_mode1,
