@@ -74,7 +74,7 @@ mod tests {
   use std::sync::Arc;
 
   use fix::prelude::*;
-  use fix::typenum::{N8, N9};
+  use hylo_core::exchange_context::ExchangeContext;
   use hylo_core::solana_clock::SolanaClock;
   use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
@@ -103,12 +103,14 @@ mod tests {
     assert_eq!(state.fetched_at, clock_timestamp);
 
     // Verify exchange context has valid data
-    assert!(state.exchange_context.total_sol > UFix64::<N9>::zero());
-    assert!(state.exchange_context.collateral_ratio > UFix64::<N9>::zero());
-    assert!(state.exchange_context.sol_usd_price.lower > UFix64::<N8>::zero());
+    assert!(state.exchange_context.total_collateral() > UFix64::zero());
+    assert!(state.exchange_context.collateral_ratio() > UFix64::zero());
     assert!(
-      state.exchange_context.sol_usd_price.upper
-        >= state.exchange_context.sol_usd_price.lower
+      state.exchange_context.collateral_usd_price().lower > UFix64::zero()
+    );
+    assert!(
+      state.exchange_context.collateral_usd_price().upper
+        >= state.exchange_context.collateral_usd_price().lower
     );
 
     // Verify mint accounts have valid data

@@ -12,6 +12,7 @@ use hylo_clients::instructions::{
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{RedeemArgs, StabilityPoolArgs};
 use hylo_clients::util::user_ata_instruction;
+use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_pool_math::{

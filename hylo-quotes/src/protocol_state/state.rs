@@ -7,7 +7,7 @@ use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
-use hylo_core::exchange_context::ExchangeContext;
+use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::fee_controller::{LevercoinFees, StablecoinFees};
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
@@ -26,7 +26,7 @@ use crate::LST;
 #[derive(Clone)]
 pub struct ProtocolState<C: SolanaClock> {
   /// Exchange context with all protocol parameters
-  pub exchange_context: ExchangeContext<C>,
+  pub exchange_context: LstExchangeContext<C>,
 
   /// `JitoSOL` LST header
   pub jitosol_header: LstHeader,
@@ -91,7 +91,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let hyusd_fees: StablecoinFees = hylo.stablecoin_fees.into();
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
     let lst_swap_config = LstSwapConfig::new(hylo.lst_swap_fee.into())?;
-    let exchange_context = ExchangeContext::load(
+    let exchange_context = LstExchangeContext::load(
       clock,
       &total_sol_cache,
       stability_controller,

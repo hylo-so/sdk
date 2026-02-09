@@ -152,6 +152,4 @@ pub enum CoreError {
   ExoDestinationCollateral,
   #[msg("Over/underflow projecting stablecoin total for exo fee.")]
   ExoDestinationStablecoin,
-  #[msg("Checked conversion to N9 precision failed for exo collateral.")]
-  ExoUpconvert,
 }

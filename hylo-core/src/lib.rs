@@ -5,7 +5,6 @@ pub mod conversion;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;
-pub mod exo_exchange_context;
 pub mod fee_controller;
 pub mod fee_curves;
 pub mod funding_rate;
