@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{FundingRateApply, FundingRateValidation};
+use crate::fee_controller::FeeExtract;
 
 /// Per-epoch funding rate for exogenous collateral without native yield.
 #[derive(
@@ -9,15 +10,19 @@ use crate::error::CoreError::{FundingRateApply, FundingRateValidation};
 )]
 pub struct FundingRateConfig {
   rate: UFixValue64,
+  fee: UFixValue64,
 }
 
 /// Maximum per-epoch rate (~10% annualized at 182 epochs/year)
 const MAX_RATE: UFix64<N8> = UFix64::constant(60_000);
 
+/// Maximum fee exacted against funding rate
+const MAX_FEE: UFix64<N4> = UFix64::constant(10_000);
+
 impl FundingRateConfig {
   #[must_use]
-  pub fn new(rate: UFixValue64) -> FundingRateConfig {
-    FundingRateConfig { rate }
+  pub fn new(rate: UFixValue64, fee: UFixValue64) -> FundingRateConfig {
+    FundingRateConfig { rate, fee }
   }
 
   /// Per-epoch funding rate.
@@ -28,11 +33,19 @@ impl FundingRateConfig {
     self.rate.try_into()
   }
 
+  /// Percentage of funding rate harvest to divert to treasury.
+  ///
+  /// # Errors
+  /// * Invalid fee data
+  pub fn fee(&self) -> Result<UFix64<N4>> {
+    self.fee.try_into()
+  }
+
   /// Applies the funding rate to collateral value in USD.
   ///
   /// # Errors
   /// * Arithmetic overflow
-  pub fn apply<Exp>(
+  pub fn apply_funding_rate<Exp>(
     &self,
     collateral_value_usd: UFix64<Exp>,
   ) -> Result<UFix64<Exp>>
@@ -45,13 +58,26 @@ impl FundingRateConfig {
       .ok_or(FundingRateApply.into())
   }
 
-  /// Validates rate is positive and at most ~10% annualized.
+  /// Extracts treasury fee from the harvested funding amount.
   ///
   /// # Errors
+  /// * Fee extraction arithmetic
+  pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>> {
+    let fee = self.fee()?;
+    FeeExtract::new(fee, amount)
+  }
+
+  /// # Errors
   /// * Rate is zero or exceeds maximum
+  /// * Fee is zero or exceeds 100%
   pub fn validate(&self) -> Result<FundingRateConfig> {
     let rate = self.rate()?;
-    if rate > UFix64::zero() && rate <= MAX_RATE {
+    let fee = self.fee()?;
+    if rate > UFix64::zero()
+      && rate <= MAX_RATE
+      && fee > UFix64::zero()
+      && fee <= MAX_FEE
+    {
       Ok(*self)
     } else {
       Err(FundingRateValidation.into())
@@ -63,33 +89,70 @@ impl FundingRateConfig {
 mod tests {
   use super::*;
 
-  #[test]
-  fn apply_7_percent_annual() -> Result<()> {
+  fn test_config() -> FundingRateConfig {
     let rate = UFix64::<N8>::new(38462);
-    let config = FundingRateConfig::new(rate.into());
+    let fee = UFix64::<N4>::new(500);
+    FundingRateConfig::new(rate.into(), fee.into())
+  }
+
+  #[test]
+  fn apply_funding_rate_7_percent_annual() -> Result<()> {
+    let config = test_config();
     let collateral = UFix64::<N6>::new(1_000_000_000_000);
-    let funding = config.apply(collateral)?;
+    let funding = config.apply_funding_rate(collateral)?;
     assert_eq!(funding, UFix64::new(384_620_000));
     Ok(())
   }
 
   #[test]
-  fn validate_rate_pos() -> Result<()> {
-    let rate = UFix64::<N8>::new(38462);
-    let config = FundingRateConfig::new(rate.into());
-    config.validate()?;
+  fn apply_fee_5_percent() -> Result<()> {
+    let config = test_config();
+    let amount = UFix64::<N6>::new(384_620_000);
+    let extract = config.apply_fee(amount)?;
+    assert_eq!(extract.fees_extracted, UFix64::new(19_231_000));
+    assert_eq!(extract.amount_remaining, UFix64::new(365_389_000));
     Ok(())
   }
 
   #[test]
-  fn validate_neg_zero() {
-    let config = FundingRateConfig::new(UFix64::<N8>::zero().into());
+  fn validate_pos() -> Result<()> {
+    test_config().validate()?;
+    Ok(())
+  }
+
+  #[test]
+  fn validate_neg_zero_rate() {
+    let config = FundingRateConfig::new(
+      UFix64::<N8>::zero().into(),
+      UFix64::<N4>::new(500).into(),
+    );
     assert_eq!(config.validate(), Err(FundingRateValidation.into()));
   }
 
   #[test]
-  fn validate_neg_high() {
-    let config = FundingRateConfig::new((MAX_RATE + UFix64::new(1)).into());
+  fn validate_neg_high_rate() {
+    let config = FundingRateConfig::new(
+      UFix64::<N8>::new(60_001).into(),
+      UFix64::<N4>::new(500).into(),
+    );
+    assert_eq!(config.validate(), Err(FundingRateValidation.into()));
+  }
+
+  #[test]
+  fn validate_neg_zero_fee() {
+    let config = FundingRateConfig::new(
+      UFix64::<N8>::new(38462).into(),
+      UFix64::<N4>::zero().into(),
+    );
+    assert_eq!(config.validate(), Err(FundingRateValidation.into()));
+  }
+
+  #[test]
+  fn validate_neg_high_fee() {
+    let config = FundingRateConfig::new(
+      UFix64::<N8>::new(38462).into(),
+      UFix64::<N4>::new(10_001).into(),
+    );
     assert_eq!(config.validate(), Err(FundingRateValidation.into()));
   }
 }

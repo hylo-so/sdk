@@ -7,8 +7,9 @@
       "github:hercules-ci/flake-parts/9126214d0a59633752a136528f5f3b9aa8565b7d";
     rust-overlay.url =
       "github:oxalica/rust-overlay/42ec85352e419e601775c57256a52f6d48a39906";
+    rsmap.url = "github:0xPlish/rsmap/1bf12f511714e84a49c226b5b68191586f24ed01";
   };
-  outputs = inputs@{ self, nixpkgs, flake-parts, rust-overlay }:
+  outputs = inputs@{ self, nixpkgs, flake-parts, rust-overlay, rsmap }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
@@ -32,7 +33,8 @@
           };
 
           devShells.default = mkShell {
-            packages = [ rustStable cargo-workspaces ]
+            packages =
+              [ rustStable cargo-workspaces rsmap.packages.${system}.rsmap ]
               ++ builtins.attrValues shellTools;
             buildInputs = sharedBuildInputs;
           };
