@@ -17,7 +17,6 @@ use crate::lst_sol_price::LstSolPrice;
 use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
-use crate::stability_pool_math::stability_pool_cap;
 use crate::total_sol_cache::TotalSolCache;
 
 /// Exchange context for SOL/LST collateral pairs.
@@ -267,26 +266,6 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let nav = self.levercoin_mint_nav()?;
     let conversion = Conversion::new(self.sol_usd_price, UFix64::one());
     conversion.lst_to_token(amount_sol, nav)
-  }
-
-  /// Total capitalization of stablecoin and levercoin in stability
-  /// pool.
-  ///
-  /// # Errors
-  /// * NAV or arithmetic failure
-  pub fn stability_pool_cap(
-    &self,
-    stablecoin_in_pool: UFix64<N6>,
-    levercoin_in_pool: UFix64<N6>,
-  ) -> Result<UFix64<N6>> {
-    let stablecoin_nav = self.stablecoin_nav()?;
-    let levercoin_nav = self.levercoin_mint_nav()?;
-    stability_pool_cap(
-      stablecoin_nav,
-      stablecoin_in_pool,
-      levercoin_nav,
-      levercoin_in_pool,
-    )
   }
 
   /// Maximum stablecoin swappable from levercoin using the next

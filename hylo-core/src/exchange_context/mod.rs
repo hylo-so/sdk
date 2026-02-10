@@ -24,6 +24,7 @@ use crate::exchange_math::{
 use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::PriceRange;
 use crate::stability_mode::{StabilityController, StabilityMode};
+use crate::stability_pool_math::stability_pool_cap;
 
 /// Shared interface for exchange context implementations.
 pub trait ExchangeContext {
@@ -147,6 +148,24 @@ pub trait ExchangeContext {
     let levercoin_nav =
       PriceRange::new(self.levercoin_redeem_nav()?, self.levercoin_mint_nav()?);
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
+  }
+
+  /// Total capitalization of stablecoin and levercoin in stability
+  /// pool.
+  ///
+  /// # Errors
+  /// * NAV or arithmetic failure
+  fn stability_pool_cap(
+    &self,
+    stablecoin_in_pool: UFix64<N6>,
+    levercoin_in_pool: UFix64<N6>,
+  ) -> Result<UFix64<N6>> {
+    stability_pool_cap(
+      self.stablecoin_nav()?,
+      stablecoin_in_pool,
+      self.levercoin_mint_nav()?,
+      levercoin_in_pool,
+    )
   }
 
   /// Maximum mintable stablecoin before hitting the lowest CR
