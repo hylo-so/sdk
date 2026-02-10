@@ -3,7 +3,8 @@ use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
-  MintLevercoin, MintStablecoin, RedeemLevercoin, RedeemStablecoin,
+  MintLevercoin, MintLevercoinExo, MintStablecoin, MintStablecoinExo,
+  RedeemLevercoin, RedeemLevercoinExo, RedeemStablecoin, RedeemStablecoinExo,
   RegisterExo, SwapLeverToStable, SwapLst, SwapStableToLever,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
@@ -147,7 +148,7 @@ pub fn register_exo(admin: Pubkey, collateral_mint: Pubkey) -> RegisterExo {
   let levercoin_auth = pda::mint_auth(levercoin_mint);
   let vault_auth = pda::vault_auth(collateral_mint);
   let collateral_vault = ata!(vault_auth, collateral_mint);
-  let fee_auth = pda::fee_auth(collateral_vault);
+  let fee_auth = pda::fee_auth(collateral_mint);
   let fee_vault = ata!(fee_auth, collateral_mint);
   RegisterExo {
     admin,
@@ -163,6 +164,114 @@ pub fn register_exo(admin: Pubkey, collateral_mint: Pubkey) -> RegisterExo {
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
+  }
+}
+
+/// Exo levercoin mint (collateral -> exo levercoin).
+#[must_use]
+pub fn mint_levercoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> MintLevercoinExo {
+  let vault_auth = pda::vault_auth(collateral_mint);
+  let fee_auth = pda::fee_auth(collateral_mint);
+  let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+  MintLevercoinExo {
+    user,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    levercoin_auth: pda::mint_auth(levercoin_mint),
+    vault_auth,
+    fee_auth,
+    collateral_vault: ata!(vault_auth, collateral_mint),
+    fee_vault: ata!(fee_auth, collateral_mint),
+    user_collateral_ta: ata!(user, collateral_mint),
+    user_levercoin_ta: ata!(user, levercoin_mint),
+    collateral_mint,
+    levercoin_mint,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+  }
+}
+
+/// Exo stablecoin mint (collateral -> hyUSD).
+#[must_use]
+pub fn mint_stablecoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> MintStablecoinExo {
+  let vault_auth = pda::vault_auth(collateral_mint);
+  let fee_auth = pda::fee_auth(collateral_mint);
+  MintStablecoinExo {
+    user,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    stablecoin_auth: *pda::HYUSD_AUTH,
+    vault_auth,
+    fee_auth,
+    collateral_vault: ata!(vault_auth, collateral_mint),
+    fee_vault: ata!(fee_auth, collateral_mint),
+    user_collateral_ta: ata!(user, collateral_mint),
+    user_stablecoin_ta: pda::hyusd_ata(user),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+  }
+}
+
+/// Exo levercoin redemption (exo levercoin -> collateral).
+#[must_use]
+pub fn redeem_levercoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> RedeemLevercoinExo {
+  let vault_auth = pda::vault_auth(collateral_mint);
+  let fee_auth = pda::fee_auth(collateral_mint);
+  let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+  RedeemLevercoinExo {
+    user,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    vault_auth,
+    fee_auth,
+    collateral_vault: ata!(vault_auth, collateral_mint),
+    fee_vault: ata!(fee_auth, collateral_mint),
+    user_levercoin_ta: ata!(user, levercoin_mint),
+    user_collateral_ta: ata!(user, collateral_mint),
+    collateral_mint,
+    levercoin_mint,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+  }
+}
+
+/// Exo stablecoin redemption (hyUSD -> collateral).
+#[must_use]
+pub fn redeem_stablecoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> RedeemStablecoinExo {
+  let vault_auth = pda::vault_auth(collateral_mint);
+  let fee_auth = pda::fee_auth(collateral_mint);
+  RedeemStablecoinExo {
+    user,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    vault_auth,
+    fee_auth,
+    collateral_vault: ata!(vault_auth, collateral_mint),
+    fee_vault: ata!(fee_auth, collateral_mint),
+    user_stablecoin_ta: pda::hyusd_ata(user),
+    user_collateral_ta: ata!(user, collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
   }
 }
 

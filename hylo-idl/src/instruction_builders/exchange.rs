@@ -354,6 +354,82 @@ pub fn register_exo(
 }
 
 #[must_use]
+pub fn mint_levercoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::MintLevercoinExo,
+) -> Instruction {
+  let accounts = account_builders::mint_levercoin_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn mint_stablecoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::MintStablecoinExo,
+) -> Instruction {
+  let accounts = account_builders::mint_stablecoin_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn redeem_levercoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::RedeemLevercoinExo,
+) -> Instruction {
+  let accounts = account_builders::redeem_levercoin_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn redeem_stablecoin_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::RedeemStablecoinExo,
+) -> Instruction {
+  let accounts = account_builders::redeem_stablecoin_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_lst_swap_fee(
   admin: Pubkey,
   args: &args::UpdateLstSwapFee,
