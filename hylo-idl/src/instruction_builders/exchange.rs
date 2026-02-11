@@ -430,6 +430,63 @@ pub fn redeem_stablecoin_exo(
 }
 
 #[must_use]
+pub fn harvest_funding_rate(
+  payer: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> Instruction {
+  let accounts = account_builders::harvest_funding_rate(
+    payer,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  let args = args::HarvestFundingRate {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_lever_to_stable_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::SwapLeverToStableExo,
+) -> Instruction {
+  let accounts = account_builders::swap_lever_to_stable_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_stable_to_lever_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::SwapStableToLeverExo,
+) -> Instruction {
+  let accounts = account_builders::swap_stable_to_lever_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_lst_swap_fee(
   admin: Pubkey,
   args: &args::UpdateLstSwapFee,
