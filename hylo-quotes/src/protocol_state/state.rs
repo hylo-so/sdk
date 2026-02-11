@@ -99,7 +99,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       hyusd_fees,
       xsol_fees,
       sol_usd,
-      &hyusd_mint,
+      hylo.virtual_stablecoin.into(),
       Some(&xsol_mint),
     )?;
     Ok(Self {

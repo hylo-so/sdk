@@ -8,7 +8,7 @@ use crate::error::CoreError::{
 /// Simple counter representing the supply of a "virtual" stablecoin.
 #[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
 pub struct VirtualStablecoin {
-  supply: UFixValue64,
+  pub(crate) supply: UFixValue64,
 }
 
 impl Default for VirtualStablecoin {

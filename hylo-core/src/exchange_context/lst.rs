@@ -18,6 +18,7 @@ use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::total_sol_cache::TotalSolCache;
+use crate::virtual_stablecoin::VirtualStablecoin;
 
 /// Exchange context for SOL/LST collateral pairs.
 #[derive(Clone)]
@@ -25,7 +26,7 @@ pub struct LstExchangeContext<C> {
   pub clock: C,
   pub total_sol: UFix64<N9>,
   pub sol_usd_price: PriceRange<N8>,
-  stablecoin_supply: UFix64<N6>,
+  virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
   pub stability_controller: StabilityController,
@@ -44,7 +45,7 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
   }
 
   fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
-    Ok(self.stablecoin_supply)
+    self.virtual_stablecoin.supply()
   }
 
   fn levercoin_supply(&self) -> Result<UFix64<N6>> {
@@ -82,13 +83,13 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     stablecoin_fees: StablecoinFees,
     levercoin_fees: LevercoinFees,
     sol_usd_pyth_feed: &PriceUpdateV2,
-    stablecoin_mint: &Mint,
+    virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
   ) -> Result<LstExchangeContext<C>> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
     let sol_usd_price =
       query_pyth_price(&clock, sol_usd_pyth_feed, oracle_config)?;
-    let stablecoin_supply = UFix64::new(stablecoin_mint.supply);
+    let stablecoin_supply = virtual_stablecoin.supply()?;
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
       collateral_ratio(total_sol, sol_usd_price.lower, stablecoin_supply)?;
@@ -98,7 +99,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       clock,
       total_sol,
       sol_usd_price,
-      stablecoin_supply,
+      virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
       stability_controller,
@@ -127,7 +128,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let new_total_stablecoin = self
       .token_conversion(lst_sol_price)?
       .lst_to_token(amount_lst, self.stablecoin_nav()?)?
-      .checked_add(&self.stablecoin_supply)
+      .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationFeeStablecoin)?;
 
     let stability_mode_for_fees = {
@@ -162,7 +163,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .token_conversion(lst_sol_price)?
       .lst_to_token(amount_lst, self.stablecoin_nav()?)?;
     let new_total_stablecoin = self
-      .stablecoin_supply
+      .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationFeeStablecoin)?;
 
@@ -194,8 +195,10 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .ok_or(DestinationFeeSol)?;
 
     let stability_mode_for_fees = {
-      let projected =
-        self.projected_stability_mode(new_total_sol, self.stablecoin_supply)?;
+      let projected = self.projected_stability_mode(
+        new_total_sol,
+        self.virtual_stablecoin_supply()?,
+      )?;
       self.select_stability_mode_for_fees(projected)
     };
 
@@ -221,8 +224,10 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .ok_or(DestinationFeeSol)?;
 
     let stability_mode_for_fees = {
-      let projected =
-        self.projected_stability_mode(new_total_sol, self.stablecoin_supply)?;
+      let projected = self.projected_stability_mode(
+        new_total_sol,
+        self.virtual_stablecoin_supply()?,
+      )?;
       self.select_stability_mode_for_fees(projected)
     };
 
@@ -284,7 +289,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     max_swappable_stablecoin(
       next_stability_threshold,
       total_value_locked,
-      self.stablecoin_supply,
+      self.virtual_stablecoin_supply()?,
     )
   }
 }
