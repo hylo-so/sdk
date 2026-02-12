@@ -4236,6 +4236,9 @@
     },
     {
       "name": "StablecoinFees",
+      "docs": [
+        "**Deprecated** — retained only for `Hylo` account deserialization."
+      ],
       "type": {
         "kind": "struct",
         "fields": [

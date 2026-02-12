@@ -8220,60 +8220,6 @@
       }
     },
     {
-      "name": "update_stablecoin_fees",
-      "discriminator": [
-        49,
-        74,
-        146,
-        60,
-        3,
-        38,
-        96,
-        4
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "new_stablecoin_fees",
-          "type": {
-            "defined": {
-              "name": "StablecoinFees"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateStablecoinFeesEvent"
-        }
-      }
-    },
-    {
       "name": "update_treasury",
       "discriminator": [
         60,
@@ -9089,19 +9035,6 @@
         39,
         46,
         189
-      ]
-    },
-    {
-      "name": "UpdateStablecoinFeesEvent",
-      "discriminator": [
-        38,
-        140,
-        45,
-        231,
-        238,
-        94,
-        115,
-        249
       ]
     },
     {
@@ -11007,6 +10940,9 @@
     },
     {
       "name": "StablecoinFees",
+      "docs": [
+        "**Deprecated** — retained only for `Hylo` account deserialization."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -11688,30 +11624,6 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "UpdateStablecoinFeesEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_stablecoin_fees",
-            "type": {
-              "defined": {
-                "name": "StablecoinFees"
-              }
-            }
-          },
-          {
-            "name": "new_stablecoin_fees",
-            "type": {
-              "defined": {
-                "name": "StablecoinFees"
               }
             }
           }
