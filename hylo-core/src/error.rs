@@ -118,10 +118,6 @@ pub enum CoreError {
   MintOverflow,
   #[msg("Overflow while burning virtual stablecoin.")]
   BurnUnderflow,
-  #[msg("Cannot mint zero amount of virtual stablecoin.")]
-  MintZero,
-  #[msg("Cannot burn zero amount of virtual stablecoin.")]
-  BurnZero,
   // `interp`
   #[msg("Interpolation requires at least two points.")]
   InterpInsufficientPoints,

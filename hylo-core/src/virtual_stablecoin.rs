@@ -1,9 +1,7 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 
-use crate::error::CoreError::{
-  BurnUnderflow, BurnZero, MintOverflow, MintZero,
-};
+use crate::error::CoreError::{BurnUnderflow, MintOverflow};
 
 /// Simple counter representing the supply of a "virtual" stablecoin.
 #[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
@@ -39,15 +37,10 @@ impl VirtualStablecoin {
   /// * State validation
   /// * Overflow
   pub fn mint(&mut self, amount: UFix64<N6>) -> Result<()> {
-    if amount > UFix64::zero() {
-      let current_supply = self.supply()?;
-      let new_supply =
-        current_supply.checked_add(&amount).ok_or(MintOverflow)?;
-      self.supply = new_supply.into();
-      Ok(())
-    } else {
-      Err(MintZero.into())
-    }
+    let current_supply = self.supply()?;
+    let new_supply = current_supply.checked_add(&amount).ok_or(MintOverflow)?;
+    self.supply = new_supply.into();
+    Ok(())
   }
 
   /// Decreases the supply of the virtual stablecoin.
@@ -56,15 +49,11 @@ impl VirtualStablecoin {
   /// * State validation
   /// * Underflow
   pub fn burn(&mut self, amount: UFix64<N6>) -> Result<()> {
-    if amount > UFix64::zero() {
-      let current_supply = self.supply()?;
-      let new_supply =
-        current_supply.checked_sub(&amount).ok_or(BurnUnderflow)?;
-      self.supply = new_supply.into();
-      Ok(())
-    } else {
-      Err(BurnZero.into())
-    }
+    let current_supply = self.supply()?;
+    let new_supply =
+      current_supply.checked_sub(&amount).ok_or(BurnUnderflow)?;
+    self.supply = new_supply.into();
+    Ok(())
   }
 }
 
@@ -129,22 +118,6 @@ mod tests {
     stablecoin.mint(UFix64::one())?;
     let result = stablecoin.burn(UFix64::new(2_000_000));
     assert!(result.is_err_and(|e| e == BurnUnderflow.into()));
-    Ok(())
-  }
-
-  #[test]
-  fn mint_zero_error() {
-    let mut stablecoin = setup_virtual_stablecoin();
-    let result = stablecoin.mint(UFix64::zero());
-    assert!(result.is_err_and(|e| e == MintZero.into()));
-  }
-
-  #[test]
-  fn burn_zero_error() -> Result<()> {
-    let mut stablecoin = setup_virtual_stablecoin();
-    stablecoin.mint(UFix64::one())?;
-    let result = stablecoin.burn(UFix64::zero());
-    assert!(result.is_err_and(|e| e == BurnZero.into()));
     Ok(())
   }
 }
