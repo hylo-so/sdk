@@ -519,22 +519,6 @@ pub fn update_levercoin_fees(
 }
 
 #[must_use]
-pub fn update_stablecoin_fees(
-  admin: Pubkey,
-  args: &args::UpdateStablecoinFees,
-) -> Instruction {
-  let accounts = accounts::UpdateStablecoinFees {
-    admin,
-    hylo: *pda::HYLO,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
 pub fn update_oracle_interval(
   admin: Pubkey,
   args: &args::UpdateOracleInterval,
