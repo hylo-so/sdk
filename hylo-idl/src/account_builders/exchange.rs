@@ -6,7 +6,7 @@ use crate::exchange::client::accounts::{
   HarvestFundingRate, MintLevercoin, MintLevercoinExo, MintStablecoin,
   MintStablecoinExo, RedeemLevercoin, RedeemLevercoinExo, RedeemStablecoin,
   RedeemStablecoinExo, RegisterExo, SwapLeverToStable, SwapLeverToStableExo,
-  SwapLst, SwapStableToLever, SwapStableToLeverExo,
+  SwapLst, SwapStableToLever, SwapStableToLeverExo, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, pda, stability_pool};
@@ -358,6 +358,28 @@ pub fn swap_stable_to_lever_exo(
     collateral_mint,
     collateral_usd_pyth_feed,
     token_program: token::ID,
+  }
+}
+
+/// Builds account context for withdrawing protocol fees.
+#[must_use]
+pub fn withdraw_fees(
+  payer: Pubkey,
+  treasury: Pubkey,
+  fee_token_mint: Pubkey,
+) -> WithdrawFees {
+  let fee_auth = pda::fee_auth(fee_token_mint);
+  WithdrawFees {
+    payer,
+    treasury,
+    hylo: *pda::HYLO,
+    fee_auth,
+    fee_vault: ata!(fee_auth, fee_token_mint),
+    treasury_ata: ata!(treasury, fee_token_mint),
+    fee_token_mint,
+    associated_token_program: associated_token::ID,
+    token_program: token::ID,
+    system_program: system_program::ID,
   }
 }
 

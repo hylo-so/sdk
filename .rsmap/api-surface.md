@@ -882,6 +882,7 @@ pub trait ExchangeContext {
     fn projected_stability_mode(& self, new_total : UFix64 < N9 >, new_stablecoin : UFix64 < N6 >) -> Result < StabilityMode >;
     fn select_stability_mode_for_fees(& self, projected : StabilityMode) -> StabilityMode;
     fn swap_conversion(& self) -> Result < SwapConversion >;
+    fn stability_pool_cap(& self, stablecoin_in_pool : UFix64 < N6 >, levercoin_in_pool : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
     fn max_mintable_stablecoin(& self) -> Result < UFix64 < N6 > >;
     fn max_swappable_stablecoin(& self) -> Result < UFix64 < N6 > >;
     fn validate_stablecoin_amount(& self, requested : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
@@ -966,7 +967,7 @@ pub struct LstExchangeContext< C > {
     pub clock: C,
     pub total_sol: UFix64 < N9 >,
     pub sol_usd_price: PriceRange < N8 >,
-    stablecoin_supply: UFix64 < N6 >,
+    virtual_stablecoin: VirtualStablecoin,
     levercoin_supply: Option < UFix64 < N6 > >,
     collateral_ratio: UFix64 < N9 >,
     pub stability_controller: StabilityController,
@@ -995,7 +996,7 @@ impl < C : SolanaClock >ExchangeContext for LstExchangeContext < C > {
 
 // NOTE: Inherent methods for loading LST context, computing fees, token conversions, and pool caps.
 impl < C : SolanaClock >LstExchangeContext < C > {
-    pub fn load(clock : C, total_sol_cache : & TotalSolCache, stability_controller : StabilityController, oracle_config : OracleConfig < N8 >, stablecoin_fees : StablecoinFees, levercoin_fees : LevercoinFees, sol_usd_pyth_feed : & PriceUpdateV2, stablecoin_mint : & Mint, levercoin_mint : Option < & Mint >) -> Result < LstExchangeContext < C > >;
+    pub fn load(clock : C, total_sol_cache : & TotalSolCache, stability_controller : StabilityController, oracle_config : OracleConfig < N8 >, stablecoin_fees : StablecoinFees, levercoin_fees : LevercoinFees, sol_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < LstExchangeContext < C > >;
     pub fn stablecoin_mint_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn stablecoin_redeem_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_mint_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
@@ -1003,7 +1004,6 @@ impl < C : SolanaClock >LstExchangeContext < C > {
     pub fn token_conversion(& self, lst_sol_price : & LstSolPrice) -> Result < Conversion >;
     pub fn sol_to_stablecoin(& self, amount_sol : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
     pub fn sol_to_levercoin(& self, amount_sol : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
-    pub fn stability_pool_cap(& self, stablecoin_in_pool : UFix64 < N6 >, levercoin_in_pool : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
     pub fn max_swappable_stablecoin_to_next_threshold(& self) -> Result < UFix64 < N6 > >;
 }
 
@@ -1211,6 +1211,7 @@ macro_rules! generate_curve { ... }
 // NOTE: Per-epoch funding rate for exogenous collateral, capped at ~10% annualized.
 pub struct FundingRateConfig {
     rate: UFixValue64,
+    fee: UFixValue64,
 }
 
 
@@ -1218,9 +1219,11 @@ pub struct FundingRateConfig {
 
 // NOTE: Per-epoch funding rate for exogenous collateral, capped at ~10% annualized.
 impl FundingRateConfig {
-    pub fn new(rate : UFixValue64) -> FundingRateConfig;
+    pub fn new(rate : UFixValue64, fee : UFixValue64) -> FundingRateConfig;
     pub fn rate(& self) -> Result < UFix64 < N8 > >;
-    pub fn apply< Exp >(& self, collateral_value_usd : UFix64 < Exp >) -> Result < UFix64 < Exp > >;
+    pub fn fee(& self) -> Result < UFix64 < N4 > >;
+    pub fn apply_funding_rate< Exp >(& self, collateral_value_usd : UFix64 < Exp >) -> Result < UFix64 < Exp > >;
+    pub fn apply_fee< Exp >(& self, amount : UFix64 < Exp >) -> Result < FeeExtract < Exp > >;
     pub fn validate(& self) -> Result < FundingRateConfig >;
 }
 
@@ -1230,6 +1233,9 @@ impl FundingRateConfig {
 /// Maximum per-epoch rate (~10% annualized at 182 epochs/year)
 // NOTE: Maximum per-epoch funding rate (~10% annualized at 182 epochs/year).
 const MAX_RATE: UFix64 < N8 >;
+
+/// Maximum fee exacted against funding rate
+const MAX_FEE: UFix64 < N4 >;
 
 
 ---
@@ -1290,6 +1296,13 @@ impl From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarve
 // NOTE: Converts IDL HarvestCache into the core domain type.
 impl From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache {
     fn from(idl : hylo_idl :: exchange :: types :: HarvestCache) -> Self;
+}
+
+
+## Impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin
+
+impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin {
+    fn from(idl : hylo_idl :: exchange :: types :: VirtualStablecoin) -> VirtualStablecoin;
 }
 
 
@@ -1601,7 +1614,7 @@ impl SlippageConfig {
 
 /// Abstracts the concept of Solana's onchain clock.
 // NOTE: Abstraction trait over Solana's Clock sysvar providing slot, epoch, and timestamp access.
-pub trait SolanaClock: Serialize {
+pub trait SolanaClock {
     fn slot(& self) -> u64;
     fn epoch_start_timestamp(& self) -> i64;
     fn epoch(& self) -> u64;
@@ -1779,7 +1792,7 @@ macro_rules! eq_tolerance { ... }
 /// Simple counter representing the supply of a "virtual" stablecoin.
 // NOTE: Counter tracking virtual stablecoin supply for exo pairs that don't have a real SPL mint.
 pub struct VirtualStablecoin {
-    supply: UFixValue64,
+    pub(crate) supply: UFixValue64,
 }
 
 
@@ -1900,6 +1913,27 @@ pub fn swap_lever_to_stable(user : Pubkey) -> SwapLeverToStable;
 // NOTE: Builds the Anchor account context for registering a new exogenous collateral pair.
 pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey) -> RegisterExo;
 
+/// Exo levercoin mint (collateral -> exo levercoin).
+pub fn mint_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> MintLevercoinExo;
+
+/// Exo stablecoin mint (collateral -> hyUSD).
+pub fn mint_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> MintStablecoinExo;
+
+/// Exo levercoin redemption (exo levercoin -> collateral).
+pub fn redeem_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> RedeemLevercoinExo;
+
+/// Exo stablecoin redemption (hyUSD -> collateral).
+pub fn redeem_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> RedeemStablecoinExo;
+
+/// Builds account context for harvesting exo funding rate.
+pub fn harvest_funding_rate(payer : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> HarvestFundingRate;
+
+/// Lever-to-stable swap (xAsset -> hyUSD).
+pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapLeverToStableExo;
+
+/// Stable-to-lever swap (hyUSD -> xAsset).
+pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapStableToLeverExo;
+
 /// Builds account context for LST swap feature
 // NOTE: Builds the Anchor account context for swapping between two LST types.
 pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey) -> SwapLst;
@@ -1986,6 +2020,20 @@ pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey, args : & args :: 
 
 // NOTE: Builds the register_exo instruction to add a new exogenous collateral pair.
 pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey, args : & args :: RegisterExo) -> Instruction;
+
+pub fn mint_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: MintLevercoinExo) -> Instruction;
+
+pub fn mint_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: MintStablecoinExo) -> Instruction;
+
+pub fn redeem_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: RedeemLevercoinExo) -> Instruction;
+
+pub fn redeem_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: RedeemStablecoinExo) -> Instruction;
+
+pub fn harvest_funding_rate(payer : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> Instruction;
+
+pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapLeverToStableExo) -> Instruction;
+
+pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapStableToLeverExo) -> Instruction;
 
 // NOTE: Builds the admin instruction to update the fee for LST-to-LST swaps.
 pub fn update_lst_swap_fee(admin : Pubkey, args : & args :: UpdateLstSwapFee) -> Instruction;

@@ -7,7 +7,7 @@
       "github:hercules-ci/flake-parts/9126214d0a59633752a136528f5f3b9aa8565b7d";
     rust-overlay.url =
       "github:oxalica/rust-overlay/42ec85352e419e601775c57256a52f6d48a39906";
-    rsmap.url = "github:0xPlish/rsmap/1bf12f511714e84a49c226b5b68191586f24ed01";
+    rsmap.url = "github:zfedoran/rsmap/941b75c4b1fdd70f433ad755f42cd35c65f9ac61";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, rust-overlay, rsmap }:
     flake-parts.lib.mkFlake { inherit inputs; } {

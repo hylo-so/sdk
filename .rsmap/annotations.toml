@@ -10,6 +10,7 @@ note = "Parent module for Anchor account context builders used by exchange and s
 
 [modules."crate::account_builders::exchange"]
 note = "Builds Anchor account contexts for exchange operations like minting, redeeming, and swapping tokens."
+stale = true
 
 [modules."crate::account_builders::stability_pool"]
 note = "Builds Anchor account contexts for stability pool deposit and withdrawal operations."
@@ -34,12 +35,14 @@ note = "RPC client for executing exchange program transactions including mint, r
 
 [modules."crate::exchange_context"]
 note = "Trait and implementations providing shared exchange state (collateral ratio, fees, NAVs) for protocol math."
+stale = true
 
 [modules."crate::exchange_context::exo"]
 note = "Exchange context implementation for exogenous (non-SOL) collateral pairs with interpolated fee curves."
 
 [modules."crate::exchange_context::lst"]
 note = "Exchange context implementation for SOL/LST collateral pairs using the TotalSolCache and Pyth oracle."
+stale = true
 
 [modules."crate::exchange_math"]
 note = "Pure math functions for collateral ratio, TVL, stablecoin/levercoin NAV, and mint/swap capacity."
@@ -52,15 +55,18 @@ note = "Defines piecewise-linear fee curves for collateral-ratio-dependent mint 
 
 [modules."crate::funding_rate"]
 note = "Per-epoch funding rate applied to exogenous collateral without native yield to cover protocol costs."
+stale = true
 
 [modules."crate::idl_type_bridge"]
 note = "From impls converting Anchor IDL-generated types into hylo-core domain types."
+stale = true
 
 [modules."crate::instruction_builders"]
 note = "Parent module for low-level Solana instruction builders for exchange and stability pool programs."
 
 [modules."crate::instruction_builders::exchange"]
 note = "Builds raw Solana instructions for all exchange program operations (mint, redeem, swap, admin)."
+stale = true
 
 [modules."crate::instruction_builders::stability_pool"]
 note = "Builds raw Solana instructions for stability pool operations (deposit, withdraw, rebalance, admin)."
@@ -103,6 +109,7 @@ note = "Trait and RPC implementation for fetching a full ProtocolState snapshot 
 
 [modules."crate::protocol_state::state"]
 note = "Deserializes raw accounts into a typed ProtocolState containing exchange context, mints, and pools."
+stale = true
 
 [modules."crate::protocol_state_strategy"]
 note = "QuoteStrategy implementation that computes quotes from cached ProtocolState without RPC simulation."
@@ -148,6 +155,7 @@ note = "Client-specified slippage tolerance paired with expected output amount f
 
 [modules."crate::solana_clock"]
 note = "Abstraction trait over Solana's on-chain Clock sysvar for testability."
+stale = true
 
 [modules."crate::stability_mode"]
 note = "Defines protocol stability modes (Normal, Mode1, Mode2, Depeg) based on collateral ratio thresholds."
@@ -190,6 +198,7 @@ note = "Shared utilities: lookup table helpers, test client builders, LST marker
 
 [modules."crate::virtual_stablecoin"]
 note = "Counter tracking the supply of virtual stablecoin for exogenous collateral pairs without a real mint."
+stale = true
 
 [modules."crate::yields"]
 note = "Yield harvest configuration (allocation and fee percentages) and epoch-based harvest caching."
@@ -221,29 +230,51 @@ note = "Marks HYLOSOL as a local type for trait impl coherence in hylo-quotes."
 [items."crate::Local for JITOSOL"]
 note = "Marks JITOSOL as a local type for trait impl coherence in hylo-quotes."
 
+[items."crate::account_builders::exchange::harvest_funding_rate"]
+note = ""
+
 [items."crate::account_builders::exchange::mint_levercoin"]
 note = "Builds the Anchor account context for minting levercoin (xSOL) from LST collateral."
+
+[items."crate::account_builders::exchange::mint_levercoin_exo"]
+note = ""
 
 [items."crate::account_builders::exchange::mint_stablecoin"]
 note = "Builds the Anchor account context for minting stablecoin (hyUSD) from LST collateral."
 
+[items."crate::account_builders::exchange::mint_stablecoin_exo"]
+note = ""
+
 [items."crate::account_builders::exchange::redeem_levercoin"]
 note = "Builds the Anchor account context for redeeming levercoin (xSOL) back to LST."
+
+[items."crate::account_builders::exchange::redeem_levercoin_exo"]
+note = ""
 
 [items."crate::account_builders::exchange::redeem_stablecoin"]
 note = "Builds the Anchor account context for redeeming stablecoin (hyUSD) back to LST."
 
+[items."crate::account_builders::exchange::redeem_stablecoin_exo"]
+note = ""
+
 [items."crate::account_builders::exchange::register_exo"]
 note = "Builds the Anchor account context for registering a new exogenous collateral pair."
+stale = true
 
 [items."crate::account_builders::exchange::swap_lever_to_stable"]
 note = "Builds the Anchor account context for swapping levercoin (xSOL) to stablecoin (hyUSD)."
+
+[items."crate::account_builders::exchange::swap_lever_to_stable_exo"]
+note = ""
 
 [items."crate::account_builders::exchange::swap_lst"]
 note = "Builds the Anchor account context for swapping between two LST types."
 
 [items."crate::account_builders::exchange::swap_stable_to_lever"]
 note = "Builds the Anchor account context for swapping stablecoin (hyUSD) to levercoin (xSOL)."
+
+[items."crate::account_builders::exchange::swap_stable_to_lever_exo"]
+note = ""
 
 [items."crate::account_builders::stability_pool::deposit"]
 note = "Builds the Anchor account context for depositing hyUSD into the stability pool for sHYUSD."
@@ -334,6 +365,7 @@ note = "Provides high-level run_transaction and simulate_event methods on Exchan
 
 [items."crate::exchange_context::ExchangeContext"]
 note = "Trait providing shared exchange state: collateral ratio, NAVs, fees, and mint/swap capacity."
+stale = true
 
 [items."crate::exchange_context::exo::ExchangeContext for ExoExchangeContext < C >"]
 note = "Implements ExchangeContext for exogenous collateral using virtual stablecoin supply and interpolated fees."
@@ -346,12 +378,15 @@ note = "Inherent methods for loading exo context from on-chain state and computi
 
 [items."crate::exchange_context::lst::ExchangeContext for LstExchangeContext < C >"]
 note = "Implements ExchangeContext for SOL/LST collateral using TotalSolCache and SOL/USD oracle."
+stale = true
 
 [items."crate::exchange_context::lst::LstExchangeContext"]
 note = "Exchange context for SOL/LST collateral pairs using real mint supplies and table-based fees."
+stale = true
 
 [items."crate::exchange_context::lst::LstExchangeContext < C >"]
 note = "Inherent methods for loading LST context, computing fees, token conversions, and pool caps."
+stale = true
 
 [items."crate::exchange_context::self::exo::ExoExchangeContext"]
 note = "Re-export of ExoExchangeContext from the exchange_context module."
@@ -415,6 +450,10 @@ note = "Returns the piecewise-linear interpolator for collateral-ratio-dependent
 
 [items."crate::funding_rate::FundingRateConfig"]
 note = "Per-epoch funding rate for exogenous collateral, capped at ~10% annualized."
+stale = true
+
+[items."crate::funding_rate::MAX_FEE"]
+note = ""
 
 [items."crate::funding_rate::MAX_RATE"]
 note = "Maximum per-epoch funding rate (~10% annualized at 182 epochs/year)."
@@ -446,8 +485,14 @@ note = "Converts IDL StablecoinFees into the core domain type."
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache"]
 note = "Converts IDL TotalSolCache into the core domain type."
 
+[items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin"]
+note = ""
+
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig"]
 note = "Converts IDL YieldHarvestConfig into the core domain type."
+
+[items."crate::instruction_builders::exchange::harvest_funding_rate"]
+note = ""
 
 [items."crate::instruction_builders::exchange::harvest_yield"]
 note = "Builds the harvest_yield instruction to collect LST yield and distribute to the stability pool."
@@ -467,14 +512,26 @@ note = "Builds the instruction to initialize the Hylo exchange program with admi
 [items."crate::instruction_builders::exchange::mint_levercoin"]
 note = "Builds the mint_levercoin instruction depositing LST collateral for xSOL."
 
+[items."crate::instruction_builders::exchange::mint_levercoin_exo"]
+note = ""
+
 [items."crate::instruction_builders::exchange::mint_stablecoin"]
 note = "Builds the mint_stablecoin instruction depositing LST collateral for hyUSD."
+
+[items."crate::instruction_builders::exchange::mint_stablecoin_exo"]
+note = ""
 
 [items."crate::instruction_builders::exchange::redeem_levercoin"]
 note = "Builds the redeem_levercoin instruction burning xSOL to withdraw LST."
 
+[items."crate::instruction_builders::exchange::redeem_levercoin_exo"]
+note = ""
+
 [items."crate::instruction_builders::exchange::redeem_stablecoin"]
 note = "Builds the redeem_stablecoin instruction burning hyUSD to withdraw LST."
+
+[items."crate::instruction_builders::exchange::redeem_stablecoin_exo"]
+note = ""
 
 [items."crate::instruction_builders::exchange::register_exo"]
 note = "Builds the register_exo instruction to add a new exogenous collateral pair."
@@ -485,11 +542,17 @@ note = "Builds the register_lst instruction to add a new LST to the registry wit
 [items."crate::instruction_builders::exchange::swap_lever_to_stable"]
 note = "Builds the swap_lever_to_stable instruction converting xSOL to hyUSD."
 
+[items."crate::instruction_builders::exchange::swap_lever_to_stable_exo"]
+note = ""
+
 [items."crate::instruction_builders::exchange::swap_lst"]
 note = "Builds the swap_lst instruction for direct LST-to-LST conversion."
 
 [items."crate::instruction_builders::exchange::swap_stable_to_lever"]
 note = "Builds the swap_stable_to_lever instruction converting hyUSD to xSOL."
+
+[items."crate::instruction_builders::exchange::swap_stable_to_lever_exo"]
+note = ""
 
 [items."crate::instruction_builders::exchange::update_lst_prices"]
 note = "Builds the instruction to refresh all LST-SOL prices from the Sanctum calculators."
@@ -820,6 +883,7 @@ note = "Complete snapshot of Hylo protocol state including exchange context, min
 
 [items."crate::protocol_state::state::ProtocolState < C >"]
 note = "Builder and accessor methods for constructing ProtocolState and querying LST headers."
+stale = true
 
 [items."crate::protocol_state::state::TryFrom < & ProtocolAccounts > for ProtocolState < Clock >"]
 note = "Deserializes raw ProtocolAccounts into a fully-constructed ProtocolState<Clock>."
@@ -1060,6 +1124,7 @@ note = "Client-specified slippage tolerance and expected output amount, validate
 
 [items."crate::solana_clock::SolanaClock"]
 note = "Abstraction trait over Solana's Clock sysvar providing slot, epoch, and timestamp access."
+stale = true
 
 [items."crate::solana_clock::SolanaClock for Clock"]
 note = "Implements SolanaClock for Solana's native Clock type."

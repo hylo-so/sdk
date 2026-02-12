@@ -168,3 +168,23 @@ pub fn update_withdrawal_fee(
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn update_admin(
+  payer: Pubkey,
+  upgrade_authority: Pubkey,
+  args: &args::UpdateAdmin,
+) -> Instruction {
+  let accounts = accounts::UpdateAdmin {
+    payer,
+    upgrade_authority,
+    pool_config: *pda::POOL_CONFIG,
+    program_data: *pda::STABILITY_POOL_PROGRAM_DATA,
+    hylo_stability_pool: stability_pool::ID,
+  };
+  Instruction {
+    program_id: stability_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}

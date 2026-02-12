@@ -29,6 +29,7 @@ From < hylo_idl :: exchange :: types :: LevercoinFees >      <- LevercoinFees
 From < hylo_idl :: exchange :: types :: LstSolPrice >        <- LstSolPrice
 From < hylo_idl :: exchange :: types :: StablecoinFees >     <- StablecoinFees
 From < hylo_idl :: exchange :: types :: TotalSolCache >      <- TotalSolCache
+From < hylo_idl :: exchange :: types :: VirtualStablecoin >  <- VirtualStablecoin
 From < hylo_idl :: exchange :: types :: YieldHarvestConfig > <- YieldHarvestConfig
 InstructionBuilder < HYUSD , L >                             <- ExchangeInstructionBuilder
 InstructionBuilder < HYUSD , SHYUSD >                        <- StabilityPoolInstructionBuilder
@@ -105,12 +106,13 @@ hylo_idl :: exchange :: types :: LevercoinFees -> LevercoinFees
 hylo_idl :: exchange :: types :: LstSolPrice -> LstSolPrice
 hylo_idl :: exchange :: types :: StablecoinFees -> StablecoinFees
 hylo_idl :: exchange :: types :: TotalSolCache -> TotalSolCache
+hylo_idl :: exchange :: types :: VirtualStablecoin -> VirtualStablecoin
 hylo_idl :: exchange :: types :: YieldHarvestConfig -> YieldHarvestConfig
 
 ## Module Dependencies
 
 account_builders                        -> (no internal deps)
-account_builders::exchange              -> ata, exchange::client::accounts, pda, tokens
+account_builders::exchange              -> ata, exchange::client::accounts, pda, stability_pool, tokens
 account_builders::stability_pool        -> pda, stability_pool::client::accounts, tokens
 account_metas                           -> (no internal deps)
 codegen                                 -> (no internal deps)
@@ -119,14 +121,14 @@ crate                                   -> super::account_builders::exchange, su
 error                                   -> (no internal deps)
 exchange                                -> (no internal deps)
 exchange_client                         -> instructions, program_client, syntax_helpers, transaction, util
-exchange_context                        -> conversion, error::CoreError, exchange_math, fee_controller, pyth, stability_mode
+exchange_context                        -> conversion, error::CoreError, exchange_math, fee_controller, pyth, stability_mode, stability_pool_math
 exchange_context::exo                   -> conversion, error::CoreError, exchange_math, fee_controller, fee_curves, interpolated_fees, pyth, solana_clock, stability_mode, super, virtual_stablecoin
-exchange_context::lst                   -> conversion, error::CoreError, exchange_math, fee_controller, lst_sol_price, pyth, solana_clock, stability_mode, stability_pool_math, super, total_sol_cache
+exchange_context::lst                   -> conversion, error::CoreError, exchange_math, fee_controller, lst_sol_price, pyth, solana_clock, stability_mode, super, total_sol_cache, virtual_stablecoin
 exchange_math                           -> error::CoreError, pyth
 fee_controller                          -> error::CoreError, stability_mode::StabilityMode
 fee_curves                              -> interp
-funding_rate                            -> error::CoreError
-idl_type_bridge                         -> fee_controller, lst_sol_price, slippage_config, total_sol_cache, yields
+funding_rate                            -> error::CoreError, fee_controller
+idl_type_bridge                         -> fee_controller, lst_sol_price, slippage_config, total_sol_cache, virtual_stablecoin, yields
 instruction_builders                    -> (no internal deps)
 instruction_builders::exchange          -> exchange, exchange::client, pda, stability_pool, tokens
 instruction_builders::stability_pool    -> exchange, pda, stability_pool, stability_pool::client, tokens
@@ -188,11 +190,11 @@ SolanaClock              — used in 14 modules
 Integer                  — used in 10 modules
 TokenMint                — used in 10 modules
 UFixValue64              — used in 10 modules
+FeeExtract               — used in 9 modules
 OUT                      — used in 9 modules
 ProtocolState            — used in 9 modules
 SHYUSD                   — used in 9 modules
 XSOL                     — used in 9 modules
-FeeExtract               — used in 8 modules
 IN                       — used in 8 modules
 Local                    — used in 8 modules
 ExecutableQuote          — used in 7 modules
@@ -205,6 +207,7 @@ BuildTransactionData     — used in 6 modules
 ExchangeClient           — used in 6 modules
 L1                       — used in 6 modules
 L2                       — used in 6 modules
+N4                       — used in 6 modules
 N8                       — used in 6 modules
 StateProvider            — used in 6 modules
 SwapOperationOutput      — used in 6 modules
@@ -213,7 +216,6 @@ HYLOSOL                  — used in 5 modules
 JITOSOL                  — used in 5 modules
 LevercoinFees            — used in 5 modules
 N2                       — used in 5 modules
-N4                       — used in 5 modules
 ProtocolStateStrategy    — used in 5 modules
 RedeemOperationOutput    — used in 5 modules
 SimulationStrategy       — used in 5 modules
@@ -238,6 +240,7 @@ SimulatedOperation       — used in 4 modules
 StabilityController      — used in 4 modules
 SwapArgs                 — used in 4 modules
 Sync                     — used in 4 modules
+VirtualStablecoin        — used in 4 modules
 AccountMeta              — used in 3 modules
 ClockRef                 — used in 3 modules
 Cluster                  — used in 3 modules

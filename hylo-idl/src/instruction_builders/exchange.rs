@@ -501,3 +501,260 @@ pub fn update_lst_swap_fee(
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn update_levercoin_fees(
+  admin: Pubkey,
+  args: &args::UpdateLevercoinFees,
+) -> Instruction {
+  let accounts = accounts::UpdateLevercoinFees {
+    admin,
+    hylo: *pda::HYLO,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_stablecoin_fees(
+  admin: Pubkey,
+  args: &args::UpdateStablecoinFees,
+) -> Instruction {
+  let accounts = accounts::UpdateStablecoinFees {
+    admin,
+    hylo: *pda::HYLO,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_oracle_interval(
+  admin: Pubkey,
+  args: &args::UpdateOracleInterval,
+) -> Instruction {
+  let accounts = accounts::UpdateOracleInterval {
+    admin,
+    hylo: *pda::HYLO,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_stability_thresholds(
+  admin: Pubkey,
+  args: &args::UpdateStabilityThresholds,
+) -> Instruction {
+  let accounts = accounts::UpdateStabilityThresholds {
+    admin,
+    hylo: *pda::HYLO,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_treasury(
+  admin: Pubkey,
+  args: &args::UpdateTreasury,
+) -> Instruction {
+  let accounts = accounts::UpdateTreasury {
+    admin,
+    hylo: *pda::HYLO,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_yield_harvest_config(
+  admin: Pubkey,
+  args: &args::UpdateYieldHarvestConfig,
+) -> Instruction {
+  let accounts = accounts::UpdateYieldHarvestConfig {
+    admin,
+    hylo: *pda::HYLO,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_funding_rate(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoFundingRate,
+) -> Instruction {
+  let accounts = accounts::UpdateExoFundingRate {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_oracle(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoOracle,
+) -> Instruction {
+  let accounts = accounts::UpdateExoOracle {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_oracle_conf_tolerance(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoOracleConfTolerance,
+) -> Instruction {
+  let accounts = accounts::UpdateExoOracleConfTolerance {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_oracle_interval(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoOracleInterval,
+) -> Instruction {
+  let accounts = accounts::UpdateExoOracleInterval {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_stability_threshold(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoStabilityThreshold,
+) -> Instruction {
+  let accounts = accounts::UpdateExoStabilityThreshold {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_admin(
+  payer: Pubkey,
+  upgrade_authority: Pubkey,
+  args: &args::UpdateAdmin,
+) -> Instruction {
+  let accounts = accounts::UpdateAdmin {
+    payer,
+    upgrade_authority,
+    hylo: *pda::HYLO,
+    program_data: *pda::EXCHANGE_PROGRAM_DATA,
+    hylo_exchange: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
+  let accounts = accounts::InitializeLstVirtualStablecoin {
+    admin,
+    hylo: *pda::HYLO,
+    stablecoin_mint: HYUSD::MINT,
+  };
+  let args = args::InitializeLstVirtualStablecoin {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn get_stats() -> Instruction {
+  let accounts = accounts::GetStats {
+    hylo: *pda::HYLO,
+    stablecoin_mint: HYUSD::MINT,
+    levercoin_mint: XSOL::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+  };
+  let args = args::GetStats {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn withdraw_fees(
+  payer: Pubkey,
+  treasury: Pubkey,
+  fee_token_mint: Pubkey,
+) -> Instruction {
+  let accounts =
+    account_builders::withdraw_fees(payer, treasury, fee_token_mint);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::WithdrawFees {}.data(),
+  }
+}

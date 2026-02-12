@@ -41,59 +41,108 @@
     "kind": "trait",
     "visibility": "pub(crate)"
   },
+  "crate::account_builders::exchange::harvest_funding_rate": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 281,
+    "line_end": 304,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::account_builders::exchange::mint_levercoin": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 37,
-    "line_end": 57,
+    "line_start": 39,
+    "line_end": 59,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::account_builders::exchange::mint_levercoin_exo": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 173,
+    "line_end": 197,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::mint_stablecoin": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 14,
-    "line_end": 33,
+    "line_start": 16,
+    "line_end": 35,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::account_builders::exchange::mint_stablecoin_exo": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 201,
+    "line_end": 224,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::redeem_levercoin": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 83,
-    "line_end": 102,
+    "line_start": 85,
+    "line_end": 104,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::account_builders::exchange::redeem_levercoin_exo": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 228,
+    "line_end": 251,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::redeem_stablecoin": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 61,
-    "line_end": 79,
+    "line_start": 63,
+    "line_end": 81,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::account_builders::exchange::redeem_stablecoin_exo": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 255,
+    "line_end": 277,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::register_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 144,
-    "line_end": 167,
+    "line_start": 146,
+    "line_end": 169,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::swap_lever_to_stable": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 125,
-    "line_end": 140,
+    "line_start": 127,
+    "line_end": 142,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::account_builders::exchange::swap_lever_to_stable_exo": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 308,
+    "line_end": 333,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::swap_lst": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 171,
-    "line_end": 190,
+    "line_start": 366,
+    "line_end": 385,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::swap_stable_to_lever": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 106,
-    "line_end": 121,
+    "line_start": 108,
+    "line_end": 123,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::account_builders::exchange::swap_stable_to_lever_exo": {
+    "file": "hylo-idl/src/account_builders/exchange.rs",
+    "line_start": 337,
+    "line_end": 362,
     "kind": "function",
     "visibility": "pub"
   },
@@ -330,8 +379,8 @@
   },
   "crate::exchange_context::ExchangeContext": {
     "file": "hylo-core/src/exchange_context/mod.rs",
-    "line_start": 29,
-    "line_end": 248,
+    "line_start": 30,
+    "line_end": 267,
     "kind": "trait",
     "visibility": "pub"
   },
@@ -373,7 +422,7 @@
   "crate::exchange_context::lst::impl LstExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/lst.rs",
     "line_start": 72,
-    "line_end": 311,
+    "line_end": 295,
     "kind": "impl LstExchangeContext < C >",
     "visibility": "private"
   },
@@ -540,22 +589,29 @@
   },
   "crate::funding_rate::FundingRateConfig": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 10,
-    "line_end": 12,
+    "line_start": 11,
+    "line_end": 14,
     "kind": "struct",
     "visibility": "pub"
   },
+  "crate::funding_rate::MAX_FEE": {
+    "file": "hylo-core/src/funding_rate.rs",
+    "line_start": 20,
+    "line_end": 20,
+    "kind": "const",
+    "visibility": "private"
+  },
   "crate::funding_rate::MAX_RATE": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 15,
-    "line_end": 15,
+    "line_start": 17,
+    "line_end": 17,
     "kind": "const",
     "visibility": "private"
   },
   "crate::funding_rate::impl FundingRateConfig": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 17,
-    "line_end": 60,
+    "line_start": 22,
+    "line_end": 86,
     "kind": "impl FundingRateConfig",
     "visibility": "private"
   },
@@ -575,57 +631,64 @@
   },
   "crate::idl_type_bridge::impl From < SlippageConfig > for hylo_idl :: exchange :: types :: SlippageConfig": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 61,
-    "line_end": 68,
+    "line_start": 72,
+    "line_end": 79,
     "kind": "impl From < SlippageConfig > for hylo_idl :: exchange :: types :: SlippageConfig",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: FeePair > for FeePair": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 25,
-    "line_end": 29,
+    "line_start": 26,
+    "line_end": 30,
     "kind": "impl From < hylo_idl :: exchange :: types :: FeePair > for FeePair",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 51,
-    "line_end": 59,
+    "line_start": 52,
+    "line_end": 60,
     "kind": "impl From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: LevercoinFees > for LevercoinFees": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 19,
-    "line_end": 23,
+    "line_start": 20,
+    "line_end": 24,
     "kind": "impl From < hylo_idl :: exchange :: types :: LevercoinFees > for LevercoinFees",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: LstSolPrice > for LstSolPrice": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 7,
-    "line_end": 11,
+    "line_start": 8,
+    "line_end": 12,
     "kind": "impl From < hylo_idl :: exchange :: types :: LstSolPrice > for LstSolPrice",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: StablecoinFees > for StablecoinFees": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 13,
-    "line_end": 17,
+    "line_start": 14,
+    "line_end": 18,
     "kind": "impl From < hylo_idl :: exchange :: types :: StablecoinFees > for StablecoinFees",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 31,
-    "line_end": 38,
+    "line_start": 32,
+    "line_end": 39,
     "kind": "impl From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 62,
+    "line_end": 70,
+    "kind": "impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 40,
-    "line_end": 49,
+    "line_start": 41,
+    "line_end": 50,
     "kind": "impl From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig",
     "visibility": "private"
   },
@@ -649,6 +712,13 @@
     "line_end": 197,
     "kind": "impl Local for JITOSOL",
     "visibility": "private"
+  },
+  "crate::instruction_builders::exchange::harvest_funding_rate": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 433,
+    "line_end": 449,
+    "kind": "function",
+    "visibility": "pub"
   },
   "crate::instruction_builders::exchange::harvest_yield": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
@@ -692,10 +762,24 @@
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::instruction_builders::exchange::mint_levercoin_exo": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 357,
+    "line_end": 373,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::instruction_builders::exchange::mint_stablecoin": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
     "line_start": 16,
     "line_end": 27,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::instruction_builders::exchange::mint_stablecoin_exo": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 376,
+    "line_end": 392,
     "kind": "function",
     "visibility": "pub"
   },
@@ -706,10 +790,24 @@
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::instruction_builders::exchange::redeem_levercoin_exo": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 395,
+    "line_end": 411,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::instruction_builders::exchange::redeem_stablecoin": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
     "line_start": 44,
     "line_end": 55,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::instruction_builders::exchange::redeem_stablecoin_exo": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 414,
+    "line_end": 430,
     "kind": "function",
     "visibility": "pub"
   },
@@ -734,6 +832,13 @@
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::instruction_builders::exchange::swap_lever_to_stable_exo": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 452,
+    "line_end": 468,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::instruction_builders::exchange::swap_lst": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
     "line_start": 328,
@@ -748,6 +853,13 @@
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::instruction_builders::exchange::swap_stable_to_lever_exo": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 471,
+    "line_end": 487,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::instruction_builders::exchange::update_lst_prices": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
     "line_start": 308,
@@ -757,8 +869,8 @@
   },
   "crate::instruction_builders::exchange::update_lst_swap_fee": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 357,
-    "line_end": 370,
+    "line_start": 490,
+    "line_end": 503,
     "kind": "function",
     "visibility": "pub"
   },
@@ -2157,22 +2269,22 @@
   },
   "crate::solana_clock::SolanaClock": {
     "file": "hylo-core/src/solana_clock.rs",
-    "line_start": 10,
-    "line_end": 16,
+    "line_start": 9,
+    "line_end": 15,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::solana_clock::impl SolanaClock for Clock": {
     "file": "hylo-core/src/solana_clock.rs",
-    "line_start": 18,
-    "line_end": 38,
+    "line_start": 17,
+    "line_end": 37,
     "kind": "impl SolanaClock for Clock",
     "visibility": "private"
   },
   "crate::solana_clock::impl SolanaClock for ClockRef": {
     "file": "hylo-core/src/solana_clock.rs",
-    "line_start": 41,
-    "line_end": 61,
+    "line_start": 40,
+    "line_end": 60,
     "kind": "impl SolanaClock for ClockRef",
     "visibility": "private"
   },
