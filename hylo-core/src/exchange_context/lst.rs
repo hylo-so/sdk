@@ -3,15 +3,17 @@ use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use super::ExchangeContext;
+use super::{validate_stability_thresholds, ExchangeContext};
 use crate::conversion::Conversion;
 use crate::error::CoreError::{
   DestinationFeeSol, DestinationFeeStablecoin, LevercoinNav,
   NoNextStabilityThreshold,
 };
 use crate::exchange_math::{collateral_ratio, max_swappable_stablecoin};
-use crate::fee_controller::{
-  FeeController, FeeExtract, LevercoinFees, StablecoinFees,
+use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
+use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
+use crate::interpolated_fees::{
+  InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::lst_sol_price::LstSolPrice;
 use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
@@ -31,7 +33,8 @@ pub struct LstExchangeContext<C> {
   collateral_ratio: UFix64<N9>,
   pub stability_controller: StabilityController,
   stability_mode: StabilityMode,
-  stablecoin_fees: StablecoinFees,
+  stablecoin_mint_fees: InterpolatedMintFees,
+  stablecoin_redeem_fees: InterpolatedRedeemFees,
   levercoin_fees: LevercoinFees,
 }
 
@@ -73,14 +76,13 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// Creates context for LST exchange operations from account data.
   ///
   /// # Errors
-  /// * Oracle, cache, or stability controller validation
+  /// * Oracle, cache, curve, or stability controller validation
   #[allow(clippy::too_many_arguments)]
   pub fn load(
     clock: C,
     total_sol_cache: &TotalSolCache,
-    stability_controller: StabilityController,
+    stability_threshold_1: UFix64<N2>,
     oracle_config: OracleConfig<N8>,
-    stablecoin_fees: StablecoinFees,
     levercoin_fees: LevercoinFees,
     sol_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,
@@ -89,6 +91,17 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
     let sol_usd_price =
       query_pyth_price(&clock, sol_usd_pyth_feed, oracle_config)?;
+    let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
+    let stablecoin_redeem_fees =
+      InterpolatedRedeemFees::new(redeem_fee_curve()?);
+    let stability_threshold_2 = stablecoin_mint_fees.stability_threshold_2()?;
+    validate_stability_thresholds(
+      stability_threshold_1,
+      stability_threshold_2,
+      stablecoin_redeem_fees.stability_threshold_2()?,
+    )?;
+    let stability_controller =
+      StabilityController::new(stability_threshold_1, stability_threshold_2)?;
     let stablecoin_supply = virtual_stablecoin.supply()?;
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
@@ -104,16 +117,16 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       collateral_ratio,
       stability_controller,
       stability_mode,
-      stablecoin_fees,
+      stablecoin_mint_fees,
+      stablecoin_redeem_fees,
       levercoin_fees,
     })
   }
 
-  /// Extracts fees from input LST based on stability mode impact
-  /// from minting new stablecoin.
+  /// Stablecoin mint fee via interpolated curve at projected CR.
   ///
   /// # Errors
-  /// * Projection overflow or fee lookup
+  /// * Projection overflow, interpolation, or fee extraction
   pub fn stablecoin_mint_fee(
     &self,
     lst_sol_price: &LstSolPrice,
@@ -124,30 +137,25 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .total_sol
       .checked_add(&new_sol)
       .ok_or(DestinationFeeSol)?;
-
     let new_total_stablecoin = self
       .token_conversion(lst_sol_price)?
       .lst_to_token(amount_lst, self.stablecoin_nav()?)?
       .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationFeeStablecoin)?;
-
-    let stability_mode_for_fees = {
-      let projected =
-        self.projected_stability_mode(new_total_sol, new_total_stablecoin)?;
-      self.select_stability_mode_for_fees(projected)
-    };
-
+    let projected_cr = collateral_ratio(
+      new_total_sol,
+      self.sol_usd_price.lower,
+      new_total_stablecoin,
+    )?;
     self
-      .stablecoin_fees
-      .mint_fee(stability_mode_for_fees)
-      .and_then(|fee| FeeExtract::new(fee, amount_lst))
+      .stablecoin_mint_fees
+      .apply_fee(projected_cr, amount_lst)
   }
 
-  /// Extracts fees from input LST based on stability mode impact
-  /// from redeeming stablecoin.
+  /// Stablecoin redeem fee via interpolated curve at projected CR.
   ///
   /// # Errors
-  /// * Projection underflow or fee lookup
+  /// * Projection underflow, interpolation, or fee extraction
   pub fn stablecoin_redeem_fee(
     &self,
     lst_sol_price: &LstSolPrice,
@@ -158,7 +166,6 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .total_sol
       .checked_sub(&sol_rm)
       .ok_or(DestinationFeeSol)?;
-
     let stablecoin_redeemed = self
       .token_conversion(lst_sol_price)?
       .lst_to_token(amount_lst, self.stablecoin_nav()?)?;
@@ -166,17 +173,14 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationFeeStablecoin)?;
-
-    let stability_mode_for_fees = {
-      let projected =
-        self.projected_stability_mode(new_total_sol, new_total_stablecoin)?;
-      self.select_stability_mode_for_fees(projected)
-    };
-
+    let projected_cr = collateral_ratio(
+      new_total_sol,
+      self.sol_usd_price.lower,
+      new_total_stablecoin,
+    )?;
     self
-      .stablecoin_fees
-      .redeem_fee(stability_mode_for_fees)
-      .and_then(|fee| FeeExtract::new(fee, amount_lst))
+      .stablecoin_redeem_fees
+      .apply_fee(projected_cr, amount_lst)
   }
 
   /// Levercoin mint fee based on projected stability mode.

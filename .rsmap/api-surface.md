@@ -839,8 +839,6 @@ pub enum CoreError {
     YieldHarvestAllocation,
     MintOverflow,
     BurnUnderflow,
-    MintZero,
-    BurnZero,
     InterpInsufficientPoints,
     InterpPointsNotMonotonic,
     InterpOutOfDomain,
@@ -1934,6 +1932,9 @@ pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collate
 /// Stable-to-lever swap (hyUSD -> xAsset).
 pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapStableToLeverExo;
 
+/// Builds account context for withdrawing protocol fees.
+pub fn withdraw_fees(payer : Pubkey, treasury : Pubkey, fee_token_mint : Pubkey) -> WithdrawFees;
+
 /// Builds account context for LST swap feature
 // NOTE: Builds the Anchor account context for swapping between two LST types.
 pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey) -> SwapLst;
@@ -2038,6 +2039,36 @@ pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collate
 // NOTE: Builds the admin instruction to update the fee for LST-to-LST swaps.
 pub fn update_lst_swap_fee(admin : Pubkey, args : & args :: UpdateLstSwapFee) -> Instruction;
 
+pub fn update_levercoin_fees(admin : Pubkey, args : & args :: UpdateLevercoinFees) -> Instruction;
+
+pub fn update_stablecoin_fees(admin : Pubkey, args : & args :: UpdateStablecoinFees) -> Instruction;
+
+pub fn update_oracle_interval(admin : Pubkey, args : & args :: UpdateOracleInterval) -> Instruction;
+
+pub fn update_stability_thresholds(admin : Pubkey, args : & args :: UpdateStabilityThresholds) -> Instruction;
+
+pub fn update_treasury(admin : Pubkey, args : & args :: UpdateTreasury) -> Instruction;
+
+pub fn update_yield_harvest_config(admin : Pubkey, args : & args :: UpdateYieldHarvestConfig) -> Instruction;
+
+pub fn update_exo_funding_rate(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoFundingRate) -> Instruction;
+
+pub fn update_exo_oracle(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoOracle) -> Instruction;
+
+pub fn update_exo_oracle_conf_tolerance(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoOracleConfTolerance) -> Instruction;
+
+pub fn update_exo_oracle_interval(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoOracleInterval) -> Instruction;
+
+pub fn update_exo_stability_threshold(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoStabilityThreshold) -> Instruction;
+
+pub fn update_admin(payer : Pubkey, upgrade_authority : Pubkey, args : & args :: UpdateAdmin) -> Instruction;
+
+pub fn initialize_lst_virtual_stablecoin(admin : Pubkey) -> Instruction;
+
+pub fn get_stats() -> Instruction;
+
+pub fn withdraw_fees(payer : Pubkey, treasury : Pubkey, fee_token_mint : Pubkey) -> Instruction;
+
 
 ---
 
@@ -2069,6 +2100,8 @@ pub fn initialize_lp_token_mint(admin : Pubkey) -> Instruction;
 
 // NOTE: Builds the admin instruction to update the stability pool withdrawal fee.
 pub fn update_withdrawal_fee(admin : Pubkey, args : & args :: UpdateWithdrawalFee) -> Instruction;
+
+pub fn update_admin(payer : Pubkey, upgrade_authority : Pubkey, args : & args :: UpdateAdmin) -> Instruction;
 
 
 ---

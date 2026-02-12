@@ -55,6 +55,7 @@ pub trait InterpolatedFeeController {
   }
 }
 
+#[derive(Clone)]
 pub struct InterpolatedMintFees {
   curve: FixInterp<20, N5>,
 }
@@ -83,6 +84,7 @@ impl InterpolatedFeeController for InterpolatedMintFees {
   }
 }
 
+#[derive(Clone)]
 pub struct InterpolatedRedeemFees {
   curve: FixInterp<20, N5>,
 }

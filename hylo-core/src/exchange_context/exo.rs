@@ -3,11 +3,10 @@ use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use super::ExchangeContext;
+use super::{validate_stability_thresholds, ExchangeContext};
 use crate::conversion::ExoConversion;
 use crate::error::CoreError::{
   ExoDestinationCollateral, ExoDestinationStablecoin, LevercoinNav,
-  StabilityValidation,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
@@ -31,8 +30,8 @@ pub struct ExoExchangeContext<C> {
   stability_mode: StabilityMode,
   pub stability_controller: StabilityController,
   levercoin_fees: LevercoinFees,
-  mint_fees: InterpolatedMintFees,
-  redeem_fees: InterpolatedRedeemFees,
+  stablecoin_mint_fees: InterpolatedMintFees,
+  stablecoin_redeem_fees: InterpolatedRedeemFees,
 }
 
 impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
@@ -87,13 +86,14 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   ) -> Result<ExoExchangeContext<C>> {
     let collateral_usd_price =
       query_pyth_price(&clock, collateral_usd_pyth_feed, oracle_config)?;
-    let mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
-    let redeem_fees = InterpolatedRedeemFees::new(redeem_fee_curve()?);
-    let stability_threshold_2 = mint_fees.stability_threshold_2()?;
-    Self::validate_stability_thresholds(
+    let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
+    let stablecoin_redeem_fees =
+      InterpolatedRedeemFees::new(redeem_fee_curve()?);
+    let stability_threshold_2 = stablecoin_mint_fees.stability_threshold_2()?;
+    validate_stability_thresholds(
       stability_threshold_1,
       stability_threshold_2,
-      redeem_fees.stability_threshold_2()?,
+      stablecoin_redeem_fees.stability_threshold_2()?,
     )?;
     let stability_controller =
       StabilityController::new(stability_threshold_1, stability_threshold_2)?;
@@ -116,27 +116,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       stability_mode,
       stability_controller,
       levercoin_fees,
-      mint_fees,
-      redeem_fees,
+      stablecoin_mint_fees,
+      stablecoin_redeem_fees,
     })
-  }
-
-  /// Ensures validity of configured and static stability thresholds.
-  ///
-  /// * ST1 and ST2 should be in strict order
-  /// * ST2 implied by fee curves should be equivalent
-  ///
-  /// # Errors
-  /// * Thresholds fail validation
-  pub fn validate_stability_thresholds(
-    stability_threshold_1: UFix64<N2>,
-    mint_stability_threshold_2: UFix64<N2>,
-    redeem_stability_threshold_2: UFix64<N2>,
-  ) -> Result<()> {
-    (mint_stability_threshold_2 == redeem_stability_threshold_2
-      && stability_threshold_1 > mint_stability_threshold_2)
-      .then_some(())
-      .ok_or(StabilityValidation.into())
   }
 
   /// Stablecoin mint fee via interpolated curve at projected CR.
@@ -162,7 +144,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       self.collateral_usd_price.lower,
       new_stablecoin,
     )?;
-    self.mint_fees.apply_fee(projected_cr, collateral_amount)
+    self
+      .stablecoin_mint_fees
+      .apply_fee(projected_cr, collateral_amount)
   }
 
   /// Stablecoin redeem fee via interpolated curve at projected CR.
@@ -189,7 +173,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       self.collateral_usd_price.lower,
       new_stablecoin,
     )?;
-    self.redeem_fees.apply_fee(projected_cr, collateral_amount)
+    self
+      .stablecoin_redeem_fees
+      .apply_fee(projected_cr, collateral_amount)
   }
 
   /// Levercoin mint fee based on projected stability mode.

@@ -3,7 +3,7 @@ use fix::prelude::*;
 
 use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
-  NoValidLevercoinRedeemFee, NoValidStablecoinMintFee, NoValidSwapFee,
+  NoValidLevercoinRedeemFee, NoValidSwapFee,
 };
 use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 
@@ -75,46 +75,6 @@ impl<Exp> FeeExtract<Exp> {
       fees_extracted,
       amount_remaining,
     })
-  }
-}
-
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
-pub struct StablecoinFees {
-  normal: FeePair,
-  mode_1: FeePair,
-}
-
-impl StablecoinFees {
-  #[must_use]
-  pub fn new(normal: FeePair, mode_1: FeePair) -> StablecoinFees {
-    StablecoinFees { normal, mode_1 }
-  }
-}
-
-impl FeeController for StablecoinFees {
-  /// Determines fee to charge when minting `hyUSD`
-  /// Fee increases in mode 1, and minting fails in mode 2.
-  fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>> {
-    match mode {
-      Normal => self.normal.mint.try_into(),
-      Mode1 => self.mode_1.mint.try_into(),
-      Mode2 | Depeg => Err(NoValidStablecoinMintFee.into()),
-    }
-  }
-
-  /// Determines fee to charge when redeeming `hyUSD`.
-  fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>> {
-    match mode {
-      Normal => self.normal.redeem.try_into(),
-      Mode1 => self.mode_1.redeem.try_into(),
-      Mode2 | Depeg => Ok(UFix64::zero()),
-    }
-  }
-
-  /// Run validations
-  fn validate(&self) -> Result<()> {
-    self.normal.validate()?;
-    self.mode_1.validate()
   }
 }
 

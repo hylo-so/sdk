@@ -15,6 +15,7 @@ pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError::{
   DestinationFeeStablecoin, LevercoinNav, RequestedStablecoinOverMaxMintable,
+  StabilityValidation,
 };
 use crate::exchange_math::{
   collateral_ratio, depeg_stablecoin_nav, max_mintable_stablecoin,
@@ -25,6 +26,24 @@ use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::PriceRange;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::stability_pool_math::stability_pool_cap;
+
+/// Ensures validity of configured and static stability thresholds.
+///
+/// * ST1 and ST2 should be in strict order
+/// * ST2 implied by fee curves should be equivalent
+///
+/// # Errors
+/// * Thresholds fail validation
+pub fn validate_stability_thresholds(
+  stability_threshold_1: UFix64<N2>,
+  mint_stability_threshold_2: UFix64<N2>,
+  redeem_stability_threshold_2: UFix64<N2>,
+) -> Result<()> {
+  (mint_stability_threshold_2 == redeem_stability_threshold_2
+    && stability_threshold_1 > mint_stability_threshold_2)
+    .then_some(())
+    .ok_or(StabilityValidation.into())
+}
 
 /// Shared interface for exchange context implementations.
 pub trait ExchangeContext {

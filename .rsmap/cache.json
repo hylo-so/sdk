@@ -2,286 +2,286 @@
   "files": {
     "hylo-clients/src/exchange_client.rs": {
       "hash": "e186338d791090c1dfe047bd57699e274df373084c9bab447dddaab33b9ee543",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/instructions.rs": {
       "hash": "40030d09f8201b4cc84271f6b4b8bb07e466c20dec81c22030b11a6e0240694d",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/lib.rs": {
       "hash": "8687c9cd771ec7e76bc942c296716a77715130fe09b12a191ba81ce1ab7f443f",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/prelude.rs": {
       "hash": "5f5e27e96b61f170d22eaa74746878fe1ca50ea82ad7f9250348324918e202d4",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/program_client.rs": {
       "hash": "89cf9e129a08779d14085c604571ebaf402a7a6e19a394a6a7253c6aca4dd788",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/stability_pool_client.rs": {
       "hash": "3ad624ac78d25aaf92e595bd43c321b973f86a5b2db37ee7084abab257d9151d",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/syntax_helpers.rs": {
       "hash": "dad29e267049d9579bb26cbe9756923dc56e3ab065a084a5f4def1c23e3cf605",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/transaction.rs": {
       "hash": "c116655c441e2889ca8b6e935b7c859da157ba85fc74ba06bb85777d71773b8e",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-clients/src/util.rs": {
       "hash": "1c8f8f93fb6f4bb0429e29a444a0e40d26b19a8d7d7b0eda2d580e06ba5e7005",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/conversion.rs": {
       "hash": "8ddb2e50667fe1bb181fa6fa55cbdac10f23547ff056a51f0968ae2d8085df30",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/error.rs": {
-      "hash": "ba342ae3b8d0a873d1849b02e3d3568a787d781d7731b80823a56d641edc62f4",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "hash": "1ed2f4c5d8f4848aa181953e46c4cc580f40db6ac6d3cddb1d5e1152bfa6c31a",
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/exchange_context/exo.rs": {
       "hash": "350a9ab68715caf93a0b3e412fb55390a71b9baaf7c913e272f5c20019ea7916",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/exchange_context/lst.rs": {
       "hash": "3cc3e0040de927b8f5021173e6da356847a55a3ddde166abda75d6e8602c30f4",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/exchange_context/mod.rs": {
       "hash": "4ac011e790f27d4b181301b477bcea294b9bec4eb43f6151f4bcb3b8fc74e048",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/exchange_math.rs": {
       "hash": "e27764fe6a2f149b2dd21c2da3c80db2c8b5bd6033e625513e199635e2b56a0b",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/fee_controller.rs": {
       "hash": "ab83ea004d4ac24197e0ca91132ffcf630a7abe09b3b6fabeb77db9141e2cbc8",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/fee_curves.rs": {
       "hash": "23f5b46417183f9227a89c04c99838623937f2a6edfc9b924edb9baade1d41d0",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/funding_rate.rs": {
       "hash": "d8ce40d02992b0e9b04140aa642fa586fc74031b434d179a9ef650d647144ba5",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/idl_type_bridge.rs": {
       "hash": "dcfd03bf5baa345e4efa3818d341d9cee244d4964b49f1118b68a239b58521f4",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/interp.rs": {
       "hash": "ccd6a9c0c8c379b8715d7cd84e26c5f5a81a467bf859cda720d124e1e9036678",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/interpolated_fees.rs": {
       "hash": "c88791359468ec902abe0433133c59c4b1ce7ecf6ae3758c06a3577c473ee0c9",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/lib.rs": {
       "hash": "a6cef07f25c913968808f15a0aa8e1079b415d8cdfe3456cd25e22066db89985",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/lst_sol_price.rs": {
       "hash": "fdfda13f527338f4fdc5dd7618b46d3aa9602245a29d41cb60b8aee59b1d1834",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/lst_swap_config.rs": {
       "hash": "ed2105a2edc990017e57ff061a7ded0c14d06ce0a5b940e65625aa927e99af70",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/pyth.rs": {
       "hash": "8dd3a85e73e4ea539d4806637c6c7a3a65b8e78d6787720571fcb5e865fbc07a",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/slippage_config.rs": {
       "hash": "1230ee7c2a6bb2aa7785312d6e348426383983ee4d497ca00d741c3a2d5f8982",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/solana_clock.rs": {
       "hash": "5e06b951cc813cdc0884239423e04355f88a125e094c3a94de465ffd4784af7f",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/stability_mode.rs": {
       "hash": "3bb217f82c529e7a64f2019999c87d895b57c438fca23fe7e6aef8ec15c2b0c2",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/stability_pool_math.rs": {
       "hash": "4f5012142b2c5f440cf87062db02437298311ce10f471c41b717d342cce436fc",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/total_sol_cache.rs": {
       "hash": "bc11188550bfa5ff96c47742a49a9db1006c3c1e65c22dd9d7fff702c2bb4833",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/util.rs": {
       "hash": "42be88218f8346726b4d4e137a179f855896dbb25abfb1e7e9c128343135ee0c",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/virtual_stablecoin.rs": {
-      "hash": "684e9a2461ca357c495164d6ec5c7b013800f305c7185e1717be759976a7c6c5",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "hash": "1c1effec3935b509f4587dc3c3abd83ea4dabc19d568235b7f3d3755389d3fe8",
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-core/src/yields.rs": {
       "hash": "4f2a02523a8332e9b91e32c4627e8e5931ee6dfcba216134b1a83fb2b34f45d9",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/account_builders/exchange.rs": {
-      "hash": "0ea985a19d5cbc34bdc5ed8236dfb202a8600affca6d2ae5411357bdbd563640",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "hash": "2d26b3ee4b5f72db690bbaf8d2f60b13c3aa939cdedc60891f70c9d63d6db2a1",
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/account_builders/mod.rs": {
       "hash": "1404f4592c5fa63321bb9ebc716e9f18720c450b1364cfa2a30809bce117d95e",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/account_builders/stability_pool.rs": {
       "hash": "aa8d7dc40da42ea3bbcafd35d11518c83acd4c9554c81eca9b9294573598e4be",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/instruction_builders/exchange.rs": {
-      "hash": "b7793db6d0675f877eb11631e9d38e99b9da80d297c0ce596ff44ca4be7dbb65",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "hash": "3c22ef22782fcb86cc7746df9ffa74cfd86ff9f0d15930586675b3fb9dee3860",
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/instruction_builders/mod.rs": {
       "hash": "1404f4592c5fa63321bb9ebc716e9f18720c450b1364cfa2a30809bce117d95e",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/instruction_builders/stability_pool.rs": {
-      "hash": "7758a1f5b5acf2fcc503b9432dc20b70f1897b6d94c785a3d52f1db38bfc43ff",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "hash": "d452cdcd5e5ee6369218859fc052bbc6641eacc6d325a2d5bb58a590dd182129",
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/lib.rs": {
       "hash": "5a3385fb26f97f3be0363943c5e3e098a6caff66f3e676fe63b037caddf6e077",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/pda.rs": {
       "hash": "f3d5b7564f30e75c288648ae322dce7198cf6fbea4eec90459e959e42d747c46",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/tokens.rs": {
       "hash": "e7703288cc8d3da0fecd37d94b34e5ffe15f5047e7c65e50dd5823d12f2620ae",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-idl/src/type_bridge.rs": {
       "hash": "bdfcad8df61fd40489bc8600d3e90bbfb06573bcb6fd80988bece777e267a181",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-jupiter/src/account_metas.rs": {
       "hash": "5f24f8f00792fdea5937e903ec2e652104dd0075d8e3adc4b7afe238e805f6fc",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-jupiter/src/jupiter.rs": {
       "hash": "640d2bfa25d0481b1029e158f90e4e89ba88becb0fa8c2bfb1d7244dcee360d8",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-jupiter/src/lib.rs": {
       "hash": "665c61ed2a62c74763f3047fdf50e80d1dad377ef9a2ca4ca657ddbff2072ec6",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-jupiter/src/util.rs": {
       "hash": "125a9d9ac70163879cf032333ef07f5cb19399eb1aa41a072208688db59d5f39",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/lib.rs": {
       "hash": "a5bc772320f023d0873d3f939aa59f7ca6e1e1adc7baa99fa2c8e687b903995a",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/prelude.rs": {
       "hash": "6591f228c58054822d02386dacdfdda24f39d34174fad8180ea178b34cc90881",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state/accounts.rs": {
       "hash": "85d50f97b2fe6cfb24f82c599c4a58af4a05cc0ee34a3d1cfae1b8281c39512f",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state/mod.rs": {
       "hash": "035eca16267336a5af48c9568e296bdf8c6c5bf27e25f4e6e6ac50c3e5f91a78",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state/provider.rs": {
       "hash": "f777b34e3a5a3d7814da4c24e7f0f0205125137e2b78f517f5de6cb24dd287b0",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state/state.rs": {
       "hash": "700687881217ede976d7d978c9199c98a395affa07c7b9fda35219024371ee3f",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state_strategy/exchange.rs": {
       "hash": "d0283ef72109ab5b9120df1a2ed92c5bdbdadffb7f85fe333adc3798e34626ff",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state_strategy/mod.rs": {
       "hash": "45580b93535e9058a0acb0065d52293c919e4dfc24fd3219569b7e44c36cfe96",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/protocol_state_strategy/stability_pool.rs": {
       "hash": "a0bec5f1f8116962dd94a910dd81022cc8a3f74a30f930b6fe1de9249a2f4459",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/quote_metadata.rs": {
       "hash": "95e69b48da9c3144ad958f6eb9d358661d3984c5c8ff9e0efe58345577b1feae",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/quote_strategy.rs": {
       "hash": "231a3620647e0b5fa5b736917b3cc829e4c61c09778183e24f19e13c2b238549",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/runtime_quote_strategy.rs": {
       "hash": "e393e3ec3ff04dbdf61802f8b74c8680ec171b20b53093f3de838981a5e487e3",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/simulated_operation/exchange.rs": {
       "hash": "5dbe0dc243ff0fc91af9f51ec2d471b6fc240f966d023a5e0ef2603f7a57da46",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/simulated_operation/mod.rs": {
       "hash": "728920afb51e402d9d9339db4b40d7fb9c82496475c2a4718daff5782c5b692a",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/simulated_operation/stability_pool.rs": {
       "hash": "43658d0d18cc70a9868c924d9c80b2faf65bbf9271aad1e274fc6195fc5f7e70",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/simulation_strategy/exchange.rs": {
       "hash": "3150176fe4e32529427570a0ef59c6daeca47b3fe55b6b5154ba26348200bf68",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/simulation_strategy/mod.rs": {
       "hash": "2917c139dc7c40434d910cb746a94857f4f9466696cce722436aea0d3f990bf6",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/simulation_strategy/stability_pool.rs": {
       "hash": "66ad775ce99bae4d8a005819a7938f000de05a537bb4c87b157f5f5936934dfe",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/token_operation/exchange.rs": {
       "hash": "899bdcf2e3a9d98fabef479f4ce7a1327cfd3a2dc2577401c6c38957de4d983b",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/token_operation/mod.rs": {
       "hash": "c4aeb2ed875a60e71da603521b57df476d599d042b3dea37335323ee4aa30637",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     },
     "hylo-quotes/src/token_operation/stability_pool.rs": {
       "hash": "71a0d4ee4eda523a033c8b9ce5504d30c5e3e94f3c2709d99203d282e3c44eea",
-      "last_indexed": "2026-02-11T23:04:54.145952+00:00"
+      "last_indexed": "2026-02-12T18:56:39.473032+00:00"
     }
   },
   "modules": {
     "crate": "a5bc772320f023d0873d3f939aa59f7ca6e1e1adc7baa99fa2c8e687b903995a",
     "crate::account_builders": "1404f4592c5fa63321bb9ebc716e9f18720c450b1364cfa2a30809bce117d95e",
-    "crate::account_builders::exchange": "0ea985a19d5cbc34bdc5ed8236dfb202a8600affca6d2ae5411357bdbd563640",
+    "crate::account_builders::exchange": "2d26b3ee4b5f72db690bbaf8d2f60b13c3aa939cdedc60891f70c9d63d6db2a1",
     "crate::account_builders::stability_pool": "aa8d7dc40da42ea3bbcafd35d11518c83acd4c9554c81eca9b9294573598e4be",
     "crate::account_metas": "5f24f8f00792fdea5937e903ec2e652104dd0075d8e3adc4b7afe238e805f6fc",
     "crate::codegen": "5a3385fb26f97f3be0363943c5e3e098a6caff66f3e676fe63b037caddf6e077",
     "crate::conversion": "8ddb2e50667fe1bb181fa6fa55cbdac10f23547ff056a51f0968ae2d8085df30",
-    "crate::error": "ba342ae3b8d0a873d1849b02e3d3568a787d781d7731b80823a56d641edc62f4",
+    "crate::error": "1ed2f4c5d8f4848aa181953e46c4cc580f40db6ac6d3cddb1d5e1152bfa6c31a",
     "crate::exchange": "5a3385fb26f97f3be0363943c5e3e098a6caff66f3e676fe63b037caddf6e077",
     "crate::exchange_client": "e186338d791090c1dfe047bd57699e274df373084c9bab447dddaab33b9ee543",
     "crate::exchange_context": "4ac011e790f27d4b181301b477bcea294b9bec4eb43f6151f4bcb3b8fc74e048",
@@ -293,8 +293,8 @@
     "crate::funding_rate": "d8ce40d02992b0e9b04140aa642fa586fc74031b434d179a9ef650d647144ba5",
     "crate::idl_type_bridge": "dcfd03bf5baa345e4efa3818d341d9cee244d4964b49f1118b68a239b58521f4",
     "crate::instruction_builders": "1404f4592c5fa63321bb9ebc716e9f18720c450b1364cfa2a30809bce117d95e",
-    "crate::instruction_builders::exchange": "b7793db6d0675f877eb11631e9d38e99b9da80d297c0ce596ff44ca4be7dbb65",
-    "crate::instruction_builders::stability_pool": "7758a1f5b5acf2fcc503b9432dc20b70f1897b6d94c785a3d52f1db38bfc43ff",
+    "crate::instruction_builders::exchange": "3c22ef22782fcb86cc7746df9ffa74cfd86ff9f0d15930586675b3fb9dee3860",
+    "crate::instruction_builders::stability_pool": "d452cdcd5e5ee6369218859fc052bbc6641eacc6d325a2d5bb58a590dd182129",
     "crate::instructions": "40030d09f8201b4cc84271f6b4b8bb07e466c20dec81c22030b11a6e0240694d",
     "crate::interp": "ccd6a9c0c8c379b8715d7cd84e26c5f5a81a467bf859cda720d124e1e9036678",
     "crate::interpolated_fees": "c88791359468ec902abe0433133c59c4b1ce7ecf6ae3758c06a3577c473ee0c9",
@@ -336,7 +336,7 @@
     "crate::transaction": "c116655c441e2889ca8b6e935b7c859da157ba85fc74ba06bb85777d71773b8e",
     "crate::type_bridge": "bdfcad8df61fd40489bc8600d3e90bbfb06573bcb6fd80988bece777e267a181",
     "crate::util": "125a9d9ac70163879cf032333ef07f5cb19399eb1aa41a072208688db59d5f39",
-    "crate::virtual_stablecoin": "684e9a2461ca357c495164d6ec5c7b013800f305c7185e1717be759976a7c6c5",
+    "crate::virtual_stablecoin": "1c1effec3935b509f4587dc3c3abd83ea4dabc19d568235b7f3d3755389d3fe8",
     "crate::yields": "4f2a02523a8332e9b91e32c4627e8e5931ee6dfcba216134b1a83fb2b34f45d9"
   },
   "items": {
@@ -364,6 +364,7 @@
     "crate::account_builders::exchange::swap_lst": "1aab5208a332c197e0b95f124a830a52f6d334ada81740e41557483f13e4663f",
     "crate::account_builders::exchange::swap_stable_to_lever": "bcc0d9bc7e4bd8778c34b8a1c8762ae7501d26e8dce6de1f8dfd1246600be465",
     "crate::account_builders::exchange::swap_stable_to_lever_exo": "584ccd91e581095031d1380a7b8b1a5a252ac5083b5e3f43003066757b4e8412",
+    "crate::account_builders::exchange::withdraw_fees": "69a38353696dde862fee7ef1fab3335191a37bce091391ef5492ab62a79b9209",
     "crate::account_builders::stability_pool::deposit": "645dd432a4dbaab77959b7b10477cf236cb5d420533912bbe7165c1034c1bcd8",
     "crate::account_builders::stability_pool::withdraw": "bc815d779ea825cee3c2b39d99ab20963ae9ce286e926f8e670bd8f859bbcc5e",
     "crate::account_metas::mint_levercoin": "23d97218fe1f1d1ecee4d7d72fc6a59567b8d3118bccbe71aa38b97bb3685f1f",
@@ -379,7 +380,7 @@
     "crate::conversion::Conversion": "27903b29522e0a7381442b29dcf8de9d09baf1006c64a926e5f36ff0eb8ee721",
     "crate::conversion::ExoConversion": "6e6426ce78e0c55a3c8075f70f510699d6269dc31483ab88fa113af11f72979d",
     "crate::conversion::SwapConversion": "be42b3d02b96b990fb74373aca9f67367d05cf91a16b80483aeb78b3bbd802d0",
-    "crate::error::CoreError": "9a291800345d4d49e5c3fd47f72e29a5f84f0cbf867776d10a7d433941842b5a",
+    "crate::error::CoreError": "c1a207c292968991edf40d13a4013775ea0629b81ff35ff7cc78c62bd3506d2c",
     "crate::exchange::super::account_builders::account_builders": "2304993c8e1ba00caf1222493eebb1c00ec82d41932025c3bef73df3c60ee695",
     "crate::exchange::super::codegen::hylo_exchange::*": "688ff219d9d7bd37725914ace1677615de96c507d045aa9021da2aeaff98cbd5",
     "crate::exchange::super::instruction_builders::instruction_builders": "241c3d2c32e60be16a5ef02865319748ff46ed6f6c88a7c0075d60801029581a",
@@ -434,10 +435,12 @@
     "crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache": "65f099622666c95b00822f730db412beb950e1d15a4de874be6fb2eae9332cdd",
     "crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin": "3f98451eb15fadf9cae201e288dba80f87e4dc39aa5ff0936584a99f7618d4f1",
     "crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig": "2353a53b5c9f9d9fa917be3650efba28027c97362df5474bfa5ee58c230877a1",
+    "crate::instruction_builders::exchange::get_stats": "2f7ea5a7d940af55d30bcb93c13cb918de66a3231a498131c0e7c1c8554d93de",
     "crate::instruction_builders::exchange::harvest_funding_rate": "7272bd3d649d4b9ce9ac5ad8d69e2c5fb6d5eed041e427dea013afcad159756a",
     "crate::instruction_builders::exchange::harvest_yield": "430782a0d55e531bef53550d91e7a91c05316f310c4625a2132b62e4169ba19f",
     "crate::instruction_builders::exchange::initialize_lst_registry": "3489cc9d9660cbaefbe2dd0f1044e0ca9fc3cf3f9558219e0737b6f15c3ada7d",
     "crate::instruction_builders::exchange::initialize_lst_registry_calculators": "d57beaaae418cf8d8415408d605fc1bf936b6d97763b587d0cf5cdf0e9ba855e",
+    "crate::instruction_builders::exchange::initialize_lst_virtual_stablecoin": "c29b59505a6995c5be75df8aafa4f082caaa85d5aa585dda5f520b264daa4832",
     "crate::instruction_builders::exchange::initialize_mints": "aaebaf9de8d2d4f2211e2fddc42065d7f8a26609d32237e8144d4ecf1a90ff4f",
     "crate::instruction_builders::exchange::initialize_protocol": "a096725de0181d3ecf5b5263c19b0a7c7ed96b3640428543429a2d0a486a57e6",
     "crate::instruction_builders::exchange::mint_levercoin": "c619c5c4220834c5ec77181dd83dafe6f88f1a0c501a542f29a2b06c2b8ad0c5",
@@ -455,16 +458,30 @@
     "crate::instruction_builders::exchange::swap_lst": "2bb07c24889def6454b00f951a2e83b123c2b49df8a11eacecf5b8de081b7b85",
     "crate::instruction_builders::exchange::swap_stable_to_lever": "46b51ee717c934b52e4cdc2498b6faaf99bb5cd156e8637be8baf6d0276d35ac",
     "crate::instruction_builders::exchange::swap_stable_to_lever_exo": "c8a0c6926c7c8bf923d81a7d08e0f729b69956367f09808de7faac3c597c6531",
+    "crate::instruction_builders::exchange::update_admin": "68a996f954b424d3391643190f228d613a4f0cd722e75a44203bc0b1cccc3541",
+    "crate::instruction_builders::exchange::update_exo_funding_rate": "29f6ea1c89c6a765ac8d7982fe42042f94636cbcff87778bfec8b26be04e5ca5",
+    "crate::instruction_builders::exchange::update_exo_oracle": "958bc310994dabc50477356c1f6a58c240154fd83c2f104735bbf383f7b9668d",
+    "crate::instruction_builders::exchange::update_exo_oracle_conf_tolerance": "e377a8c54148a5c40d8434ea05bbcb63f8806313d3bcc2cb252d382fe5d00dc9",
+    "crate::instruction_builders::exchange::update_exo_oracle_interval": "e97aa437d784c0e262a8eed51526dab89a3b51a53839e78ca666ec172000bd6c",
+    "crate::instruction_builders::exchange::update_exo_stability_threshold": "c08ee82d8afc18675790c3f1ecf67c2195a97de790bedd8ea25aec61799dde2b",
+    "crate::instruction_builders::exchange::update_levercoin_fees": "ed15ff6ec82c5f63cb421b4cbd005d6b55bfd65988c158412a93e8b6c66348d1",
     "crate::instruction_builders::exchange::update_lst_prices": "49a0ea16c9f0e209bc2f1b262aea0c49dc7f7f1cb921c18cd09dfebfa4fd02d8",
     "crate::instruction_builders::exchange::update_lst_swap_fee": "5e4ed24df0ba0bb184c82db1a4c515a6407d25fa8177602981c2027d64a0426b",
     "crate::instruction_builders::exchange::update_oracle_conf_tolerance": "53e3b67406a5825ed174f92c640e716ffca745572a2d4eb9a8919384df32fc76",
+    "crate::instruction_builders::exchange::update_oracle_interval": "cb955004e7f8dd629ee383f59a63e2bbd51daa5f8c2a58bbce53958f19ce65b2",
     "crate::instruction_builders::exchange::update_sol_usd_oracle": "5bdc67385e2627def1fbcbcebe50081e1326411bf82228d7b860d150ab65ff37",
     "crate::instruction_builders::exchange::update_stability_pool": "685a186f9f96365fdd20b4703bc0ebc27c8d90ae981be09d3b7e197dca7cf817",
+    "crate::instruction_builders::exchange::update_stability_thresholds": "0489cc956d9e4fadb9c69ac0ef0129dce612ba08d24cb8e423cca6ab22b3b20b",
+    "crate::instruction_builders::exchange::update_stablecoin_fees": "dd8362bfa8ba50e46b3f0a90a6e93de967fb3c1f19c27eed43d7d8b58060e739",
+    "crate::instruction_builders::exchange::update_treasury": "c9711005ef6768c59b7cc9a12ebe3a6e7284b8cfd6a0c596297bf3247600910d",
+    "crate::instruction_builders::exchange::update_yield_harvest_config": "19b73b8bae77c4b655e0a235e27fc3fe66af3fa929ca71f644535ba151c66158",
+    "crate::instruction_builders::exchange::withdraw_fees": "984e1a9dbab041c90df1aafa706f37047517562438f83c0cd4833e1c0a2e70be",
     "crate::instruction_builders::stability_pool::get_stats": "0f54a73ff3771a97fa43d1361cf8487b72ea752d850533b04a175766c3469f0d",
     "crate::instruction_builders::stability_pool::initialize_lp_token_mint": "a8a39a140669756992e34ff0f19a14a82a8ba858d317eee9111bb13a0194b8e4",
     "crate::instruction_builders::stability_pool::initialize_stability_pool": "0673dcd1d681d1afe561ffe629381f621dc7682582c6041d0b4b55092fab9bef",
     "crate::instruction_builders::stability_pool::rebalance_lever_to_stable": "494be228735e2638bfef6a7439f2f0720320726c6caa0e5c09188399493ec1d1",
     "crate::instruction_builders::stability_pool::rebalance_stable_to_lever": "51d6e11f33896ccb0969853d41f5a9165d3011416a6d420cf8539c1149a60a36",
+    "crate::instruction_builders::stability_pool::update_admin": "22978caec274273f6b56e98efaee0be5cdae01875d8ac8a6cc639406d8ff6b71",
     "crate::instruction_builders::stability_pool::update_withdrawal_fee": "f33250b2179ee5483ddc0c72daba60873f201ffa2c18a421c1deef9fe43cbc55",
     "crate::instruction_builders::stability_pool::user_deposit": "cc48703961385d860dde7beb2f71333cef034b8dab8a8bffce82f83f5b84046d",
     "crate::instruction_builders::stability_pool::user_withdraw": "f54a7ee653af34c809e6c2cf947fe464a49811601c72b092611929ca2c3ca49c",
@@ -734,7 +751,7 @@
     "crate::util::user_ata_instruction": "f56baf9ecb4b1cbab10cf2bc0f6c1db8327189a33f74992fc79bd6b0c0a7c392",
     "crate::util::validate_swap_params": "248381ad46dafd261bb8bf17a3d6d3e6c7bbb05f381ea18de7b041f297d9e0ac",
     "crate::virtual_stablecoin::Default for VirtualStablecoin": "75921640e8d6a40fa586fb6a4fb930e2594472acff08646e1472ee19a88e6f78",
-    "crate::virtual_stablecoin::VirtualStablecoin": "106b6f3c542f381539e1d505b91392b4bcc01d157d0a41b6ceb15d5a5fbc75b2",
+    "crate::virtual_stablecoin::VirtualStablecoin": "eabaacad92c0a9a11c76bb26d69b3e99fd637a5b467f99ab0b3141497ac2e823",
     "crate::yields::HarvestCache": "95665103aa7bdf89ece77af3fa778f95130dd8bbb14d52751a9c7128f04c559d",
     "crate::yields::YieldHarvestConfig": "f8922fd49795fb2bcace28b37903e551285a25dab60effd7b5fc91bdfb10851b"
   }

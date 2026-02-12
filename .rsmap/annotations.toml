@@ -26,6 +26,7 @@ note = "Price conversion utilities between LST collateral, exogenous collateral,
 
 [modules."crate::error"]
 note = "Custom error types for hylo-core protocol math and validation failures."
+stale = true
 
 [modules."crate::exchange"]
 note = "Re-exports exchange program account builders, IDL codegen, and instruction builders."
@@ -70,6 +71,7 @@ stale = true
 
 [modules."crate::instruction_builders::stability_pool"]
 note = "Builds raw Solana instructions for stability pool operations (deposit, withdraw, rebalance, admin)."
+stale = true
 
 [modules."crate::instructions"]
 note = "Type-safe instruction builder trait and implementations dispatching by token pair to the correct operation."
@@ -276,6 +278,9 @@ note = "Builds the Anchor account context for swapping stablecoin (hyUSD) to lev
 [items."crate::account_builders::exchange::swap_stable_to_lever_exo"]
 note = ""
 
+[items."crate::account_builders::exchange::withdraw_fees"]
+note = ""
+
 [items."crate::account_builders::stability_pool::deposit"]
 note = "Builds the Anchor account context for depositing hyUSD into the stability pool for sHYUSD."
 
@@ -323,6 +328,7 @@ note = "Converts between stablecoin and levercoin using their respective NAVs."
 
 [items."crate::error::CoreError"]
 note = "Comprehensive error enum covering all protocol math, oracle validation, fee, and arithmetic failures."
+stale = true
 
 [items."crate::exchange::super::account_builders::account_builders"]
 note = "Re-export of exchange account builders into the exchange module namespace."
@@ -491,6 +497,9 @@ note = ""
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig"]
 note = "Converts IDL YieldHarvestConfig into the core domain type."
 
+[items."crate::instruction_builders::exchange::get_stats"]
+note = ""
+
 [items."crate::instruction_builders::exchange::harvest_funding_rate"]
 note = ""
 
@@ -502,6 +511,9 @@ note = "Builds the instruction to create a new LST registry account for tracking
 
 [items."crate::instruction_builders::exchange::initialize_lst_registry_calculators"]
 note = "Builds the instruction to initialize Sanctum calculator references in the LST registry."
+
+[items."crate::instruction_builders::exchange::initialize_lst_virtual_stablecoin"]
+note = ""
 
 [items."crate::instruction_builders::exchange::initialize_mints"]
 note = "Builds the instruction to create hyUSD, xSOL, and related token mint accounts."
@@ -554,6 +566,27 @@ note = "Builds the swap_stable_to_lever instruction converting hyUSD to xSOL."
 [items."crate::instruction_builders::exchange::swap_stable_to_lever_exo"]
 note = ""
 
+[items."crate::instruction_builders::exchange::update_admin"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_exo_funding_rate"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_exo_oracle"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_exo_oracle_conf_tolerance"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_exo_oracle_interval"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_exo_stability_threshold"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_levercoin_fees"]
+note = ""
+
 [items."crate::instruction_builders::exchange::update_lst_prices"]
 note = "Builds the instruction to refresh all LST-SOL prices from the Sanctum calculators."
 
@@ -563,11 +596,29 @@ note = "Builds the admin instruction to update the fee for LST-to-LST swaps."
 [items."crate::instruction_builders::exchange::update_oracle_conf_tolerance"]
 note = "Builds the admin instruction to update the Pyth oracle confidence tolerance."
 
+[items."crate::instruction_builders::exchange::update_oracle_interval"]
+note = ""
+
 [items."crate::instruction_builders::exchange::update_sol_usd_oracle"]
 note = "Builds the admin instruction to update the SOL/USD oracle configuration."
 
 [items."crate::instruction_builders::exchange::update_stability_pool"]
 note = "Builds the admin instruction to update the stability pool address in the exchange."
+
+[items."crate::instruction_builders::exchange::update_stability_thresholds"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_stablecoin_fees"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_treasury"]
+note = ""
+
+[items."crate::instruction_builders::exchange::update_yield_harvest_config"]
+note = ""
+
+[items."crate::instruction_builders::exchange::withdraw_fees"]
+note = ""
 
 [items."crate::instruction_builders::stability_pool::get_stats"]
 note = "Builds the instruction to query stability pool statistics via simulation."
@@ -583,6 +634,9 @@ note = "Builds the instruction to rebalance pool by swapping levercoin for stabl
 
 [items."crate::instruction_builders::stability_pool::rebalance_stable_to_lever"]
 note = "Builds the instruction to rebalance pool by swapping stablecoin for levercoin."
+
+[items."crate::instruction_builders::stability_pool::update_admin"]
+note = ""
 
 [items."crate::instruction_builders::stability_pool::update_withdrawal_fee"]
 note = "Builds the admin instruction to update the stability pool withdrawal fee."
@@ -1395,6 +1449,7 @@ note = "Initializes VirtualStablecoin with zero supply."
 
 [items."crate::virtual_stablecoin::VirtualStablecoin"]
 note = "Counter tracking virtual stablecoin supply for exo pairs that don't have a real SPL mint."
+stale = true
 
 [items."crate::yields::HarvestCache"]
 note = "Records the last epoch's yield harvest: pool cap and stablecoin amount distributed."

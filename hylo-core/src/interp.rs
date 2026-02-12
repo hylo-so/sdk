@@ -46,7 +46,7 @@ impl<Exp: Integer> LineSegment<'_, Exp> {
 }
 
 /// Piecewise linear interpolation over a fixed-size point array.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FixInterp<const RES: usize, Exp: Integer> {
   points: [Point<Exp>; RES],
 }
