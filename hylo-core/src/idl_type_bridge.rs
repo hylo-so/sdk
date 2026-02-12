@@ -1,4 +1,4 @@
-use crate::fee_controller::{FeePair, LevercoinFees};
+use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
 use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
@@ -8,6 +8,12 @@ use crate::yields::{HarvestCache, YieldHarvestConfig};
 impl From<hylo_idl::exchange::types::LstSolPrice> for LstSolPrice {
   fn from(idl: hylo_idl::exchange::types::LstSolPrice) -> Self {
     LstSolPrice::new(idl.price.into(), idl.epoch)
+  }
+}
+
+impl From<hylo_idl::exchange::types::StablecoinFees> for StablecoinFees {
+  fn from(idl: hylo_idl::exchange::types::StablecoinFees) -> StablecoinFees {
+    StablecoinFees::new(idl.normal.into(), idl.mode_1.into())
   }
 }
 

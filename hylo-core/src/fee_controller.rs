@@ -78,6 +78,20 @@ impl<Exp> FeeExtract<Exp> {
   }
 }
 
+/// **Deprecated** — retained only for `Hylo` account deserialization.
+#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+pub struct StablecoinFees {
+  normal: FeePair,
+  mode_1: FeePair,
+}
+
+impl StablecoinFees {
+  #[must_use]
+  pub fn new(normal: FeePair, mode_1: FeePair) -> StablecoinFees {
+    StablecoinFees { normal, mode_1 }
+  }
+}
+
 #[derive(Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize)]
 pub struct LevercoinFees {
   normal: FeePair,
