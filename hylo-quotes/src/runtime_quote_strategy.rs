@@ -53,6 +53,11 @@ macro_rules! runtime_quote_strategies {
           }
         }
       }
+
+      /// All quotable pairs; used by [`ProtocolState::quotable_pairs`].
+      pub(crate) const ALL_QUOTABLE_PAIRS: &[(Pubkey, Pubkey, Operation, &'static str)] = &[
+        $( (<$in>::MINT, <$out>::MINT, $op, $desc), )*
+      ];
     };
 }
 

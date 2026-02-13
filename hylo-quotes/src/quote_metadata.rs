@@ -1,5 +1,7 @@
 //! Quote metadata types
 
+use hylo_core::stability_mode::StabilityMode;
+
 /// Operation type for a quote
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
@@ -30,6 +32,37 @@ impl Operation {
       Operation::WithdrawFromStabilityPool => "user_withdraw",
       Operation::WithdrawAndRedeemFromStabilityPool => {
         "user_withdraw_and_redeem"
+      }
+    }
+  }
+
+  /// Whether this operation is quotable given stability mode and pool state.
+  #[must_use]
+  pub(crate) const fn quotable(
+    self,
+    mode: StabilityMode,
+    pool_has_levercoin: bool,
+  ) -> bool {
+    use StabilityMode::{Depeg, Mode1, Mode2, Normal};
+
+    let not_depegged = !matches!(mode, Depeg);
+    let normal_or_mode1 = matches!(mode, Normal | Mode1);
+    let deposit_allowed = matches!(mode, Normal | Mode1 | Mode2);
+
+    match self {
+      Self::MintStablecoin | Self::SwapLeverToStable => normal_or_mode1,
+
+      Self::RedeemStablecoin | Self::LstSwap => true,
+
+      Self::DepositToStabilityPool => deposit_allowed,
+
+      Self::MintLevercoin | Self::RedeemLevercoin | Self::SwapStableToLever => {
+        not_depegged
+      }
+
+      Self::WithdrawFromStabilityPool => !pool_has_levercoin,
+      Self::WithdrawAndRedeemFromStabilityPool => {
+        pool_has_levercoin && not_depegged
       }
     }
   }

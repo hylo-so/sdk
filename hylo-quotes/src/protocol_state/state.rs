@@ -4,6 +4,7 @@
 //! accounts.
 
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
+use anchor_lang::prelude::Pubkey;
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
@@ -20,6 +21,8 @@ use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::ProtocolAccounts;
+use crate::quote_metadata::Operation;
+use crate::runtime_quote_strategy::ALL_QUOTABLE_PAIRS;
 use crate::LST;
 
 /// Complete snapshot of Hylo protocol state
@@ -127,6 +130,23 @@ impl<C: SolanaClock> ProtocolState<C> {
       HYLOSOL::MINT => Ok(&self.hylosol_header),
       _ => Err(anyhow!("LstHeader not found for {}", L::MINT)),
     }
+  }
+
+  /// Returns an iterator over quote pairs that are quotable given the
+  /// current stability mode and pool state.
+  ///
+  /// Derives `StabilityMode` from `exchange_context` and levercoin
+  /// presence from `xsol_pool.amount`.
+  #[must_use = "iterator is lazy and does nothing unless consumed"]
+  pub fn quotable_pairs(
+    &self,
+  ) -> impl Iterator<Item = &'static (Pubkey, Pubkey, Operation, &'static str)>
+  {
+    let mode = self.exchange_context.stability_mode;
+    let pool_has_levercoin = self.xsol_pool.amount > 0;
+    ALL_QUOTABLE_PAIRS
+      .iter()
+      .filter(move |(_, _, op, _)| op.quotable(mode, pool_has_levercoin))
   }
 }
 
