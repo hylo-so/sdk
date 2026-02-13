@@ -2,7 +2,6 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
 
 use crate::quote_metadata::{Operation, QuoteMetadata};
@@ -55,7 +54,7 @@ macro_rules! runtime_quote_strategies {
         }
       }
 
-      /// All quotable pairs; used by [`quotable_pairs`].
+      /// All quotable pairs; used by [`ProtocolState::quotable_pairs`].
       pub(crate) const ALL_QUOTABLE_PAIRS: &[(Pubkey, Pubkey, Operation, &'static str)] = &[
         $( (<$in>::MINT, <$out>::MINT, $op, $desc), )*
       ];
@@ -79,16 +78,4 @@ runtime_quote_strategies! {
   (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
   (SHYUSD, JITOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for JitoSOL"),
   (SHYUSD, HYLOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for hyloSOL"),
-}
-
-/// Returns an iterator over quote pairs that are quotable given the current
-/// stability mode and pool state.
-#[must_use = "iterator is lazy and does nothing unless consumed"]
-pub fn quotable_pairs(
-  mode: StabilityMode,
-  pool_has_levercoin: bool,
-) -> impl Iterator<Item = &'static (Pubkey, Pubkey, Operation, &'static str)> {
-  ALL_QUOTABLE_PAIRS
-    .iter()
-    .filter(move |(_, _, op, _)| op.quotable(mode, pool_has_levercoin))
 }
