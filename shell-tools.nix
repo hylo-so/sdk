@@ -1,5 +1,4 @@
-{ writeShellApplication }:
-{
+{ writeShellApplication }: {
   lint = writeShellApplication {
     name = "lint";
     text = ''
@@ -24,7 +23,7 @@
 
   build = writeShellApplication {
     name = "build";
-    text = ''nix develop --command cargo build'';
+    text = "nix develop --command cargo build";
   };
 
   test = writeShellApplication {
