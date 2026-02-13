@@ -5002,6 +5002,14 @@
           }
         },
         {
+          "name": "levercoin_metadata",
+          "writable": true
+        },
+        {
+          "name": "metadata_program",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -5053,6 +5061,14 @@
           "type": {
             "defined": {
               "name": "FundingRateConfig"
+            }
+          }
+        },
+        {
+          "name": "metadata",
+          "type": {
+            "defined": {
+              "name": "TokenMetadata"
             }
           }
         }
@@ -11284,6 +11300,25 @@
                 "name": "UFixValue64"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenMetadata",
+      "docs": [
+        "Token metadata passed as an instruction argument."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
           }
         ]
       }

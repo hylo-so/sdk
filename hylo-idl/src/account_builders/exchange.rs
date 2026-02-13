@@ -162,6 +162,8 @@ pub fn register_exo(admin: Pubkey, collateral_mint: Pubkey) -> RegisterExo {
     collateral_vault,
     fee_auth,
     fee_vault,
+    levercoin_metadata: pda::metadata(levercoin_mint),
+    metadata_program: mpl_token_metadata::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
