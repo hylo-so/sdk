@@ -12,7 +12,7 @@ macro_rules! normalize_mint_exp {
       9 => Some(fix::prelude::UFix64::<N9>::new($amount)),
       _ => None,
     }
-    .ok_or($crate::error::CoreError::ExoAmountNormalization.into())
+    .ok_or($crate::error::CoreError::ExoAmountNormalization)
   };
 }
 
