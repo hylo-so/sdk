@@ -148,4 +148,7 @@ pub enum CoreError {
   ExoDestinationCollateral,
   #[msg("Over/underflow projecting stablecoin total for exo fee.")]
   ExoDestinationStablecoin,
+  // `normalize_mint_exp`
+  #[msg("Precision conversion failed while normalizing exo amount to N9.")]
+  ExoAmountNormalization,
 }

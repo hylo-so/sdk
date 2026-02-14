@@ -104,24 +104,19 @@ impl ExoConversion {
   ///
   /// # Errors
   /// * Checked conversion or arithmetic failure
-  #[allow(clippy::redundant_closure_for_method_calls)]
-  pub fn exo_to_token<Exp>(
+  pub fn exo_to_token(
     &self,
-    amount: UFix64<Exp>,
+    amount: UFix64<N9>,
     token_nav: UFix64<N9>,
-  ) -> Result<UFix64<N6>>
-  where
-    UFix64<Exp>: FixExt,
-  {
+  ) -> Result<UFix64<N6>> {
     let price = self
       .collateral_usd_price
       .lower
       .checked_convert::<N9>()
       .ok_or(ExoPriceConversion)?;
     amount
-      .checked_convert::<N9>()
-      .and_then(|a| a.mul_div_floor(price, token_nav))
-      .and_then(|v| v.checked_convert::<N6>())
+      .mul_div_floor(price, token_nav)
+      .and_then(UFix64::checked_convert::<N6>)
       .ok_or(ExoToToken.into())
   }
 
@@ -129,14 +124,11 @@ impl ExoConversion {
   ///
   /// # Errors
   /// * Checked conversion or arithmetic failure
-  pub fn token_to_exo<Exp>(
+  pub fn token_to_exo(
     &self,
     amount: UFix64<N6>,
     token_nav: UFix64<N9>,
-  ) -> Result<UFix64<Exp>>
-  where
-    UFix64<Exp>: FixExt,
-  {
+  ) -> Result<UFix64<N9>> {
     let price = self
       .collateral_usd_price
       .upper
@@ -145,7 +137,6 @@ impl ExoConversion {
     amount
       .checked_convert::<N9>()
       .and_then(|a| a.mul_div_floor(token_nav, price))
-      .and_then(|v: UFix64<N9>| v.checked_convert())
       .ok_or(ExoFromToken.into())
   }
 }

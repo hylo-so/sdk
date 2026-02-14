@@ -14,7 +14,7 @@ pub struct FundingRateConfig {
 }
 
 /// Maximum per-epoch rate (~10% annualized at 182 epochs/year)
-const MAX_RATE: UFix64<N8> = UFix64::constant(60_000);
+const MAX_RATE: UFix64<N9> = UFix64::constant(600_000);
 
 /// Maximum fee exacted against funding rate
 const MAX_FEE: UFix64<N4> = UFix64::constant(10_000);
@@ -29,7 +29,7 @@ impl FundingRateConfig {
   ///
   /// # Errors
   /// * Invalid rate data
-  pub fn rate(&self) -> Result<UFix64<N8>> {
+  pub fn rate(&self) -> Result<UFix64<N9>> {
     self.rate.try_into()
   }
 
@@ -41,20 +41,14 @@ impl FundingRateConfig {
     self.fee.try_into()
   }
 
-  /// Applies the funding rate to collateral value in USD.
+  /// Applies the funding rate to a collateral amount.
   ///
   /// # Errors
   /// * Arithmetic overflow
-  pub fn apply_funding_rate<Exp>(
-    &self,
-    collateral_value_usd: UFix64<Exp>,
-  ) -> Result<UFix64<Exp>>
-  where
-    UFix64<Exp>: FixExt,
-  {
+  pub fn apply_funding_rate(&self, amount: UFix64<N9>) -> Result<UFix64<N9>> {
     let rate = self.rate()?;
-    collateral_value_usd
-      .mul_div_floor(rate, UFix64::<N8>::one())
+    amount
+      .mul_div_floor(rate, UFix64::<N9>::one())
       .ok_or(FundingRateApply.into())
   }
 
@@ -62,7 +56,7 @@ impl FundingRateConfig {
   ///
   /// # Errors
   /// * Fee extraction arithmetic
-  pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>> {
+  pub fn apply_fee(&self, amount: UFix64<N9>) -> Result<FeeExtract<N9>> {
     let fee = self.fee()?;
     FeeExtract::new(fee, amount)
   }
@@ -90,7 +84,7 @@ mod tests {
   use super::*;
 
   fn test_config() -> FundingRateConfig {
-    let rate = UFix64::<N8>::new(38462);
+    let rate = UFix64::<N9>::new(384_620);
     let fee = UFix64::<N4>::new(500);
     FundingRateConfig::new(rate.into(), fee.into())
   }
@@ -98,19 +92,19 @@ mod tests {
   #[test]
   fn apply_funding_rate_7_percent_annual() -> Result<()> {
     let config = test_config();
-    let collateral = UFix64::<N6>::new(1_000_000_000_000);
+    let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
     let funding = config.apply_funding_rate(collateral)?;
-    assert_eq!(funding, UFix64::new(384_620_000));
+    assert_eq!(funding, UFix64::new(384_620_000_000));
     Ok(())
   }
 
   #[test]
   fn apply_fee_5_percent() -> Result<()> {
     let config = test_config();
-    let amount = UFix64::<N6>::new(384_620_000);
+    let amount = UFix64::<N9>::new(384_620_000_000);
     let extract = config.apply_fee(amount)?;
-    assert_eq!(extract.fees_extracted, UFix64::new(19_231_000));
-    assert_eq!(extract.amount_remaining, UFix64::new(365_389_000));
+    assert_eq!(extract.fees_extracted, UFix64::new(19_231_000_000));
+    assert_eq!(extract.amount_remaining, UFix64::new(365_389_000_000));
     Ok(())
   }
 
@@ -123,7 +117,7 @@ mod tests {
   #[test]
   fn validate_neg_zero_rate() {
     let config = FundingRateConfig::new(
-      UFix64::<N8>::zero().into(),
+      UFix64::<N9>::zero().into(),
       UFix64::<N4>::new(500).into(),
     );
     assert_eq!(config.validate(), Err(FundingRateValidation.into()));
@@ -132,7 +126,7 @@ mod tests {
   #[test]
   fn validate_neg_high_rate() {
     let config = FundingRateConfig::new(
-      UFix64::<N8>::new(60_001).into(),
+      UFix64::<N9>::new(600_001).into(),
       UFix64::<N4>::new(500).into(),
     );
     assert_eq!(config.validate(), Err(FundingRateValidation.into()));
@@ -141,7 +135,7 @@ mod tests {
   #[test]
   fn validate_neg_zero_fee() {
     let config = FundingRateConfig::new(
-      UFix64::<N8>::new(38462).into(),
+      UFix64::<N9>::new(384_620).into(),
       UFix64::<N4>::zero().into(),
     );
     assert_eq!(config.validate(), Err(FundingRateValidation.into()));
@@ -150,7 +144,7 @@ mod tests {
   #[test]
   fn validate_neg_high_fee() {
     let config = FundingRateConfig::new(
-      UFix64::<N8>::new(38462).into(),
+      UFix64::<N9>::new(384_620).into(),
       UFix64::<N4>::new(10_001).into(),
     );
     assert_eq!(config.validate(), Err(FundingRateValidation.into()));
