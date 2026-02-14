@@ -56,7 +56,7 @@ impl FundingRateConfig {
   ///
   /// # Errors
   /// * Fee extraction arithmetic
-  pub fn apply_fee(&self, amount: UFix64<N9>) -> Result<FeeExtract<N9>> {
+  pub fn apply_fee(&self, amount: UFix64<N6>) -> Result<FeeExtract<N6>> {
     let fee = self.fee()?;
     FeeExtract::new(fee, amount)
   }
@@ -101,10 +101,10 @@ mod tests {
   #[test]
   fn apply_fee_5_percent() -> Result<()> {
     let config = test_config();
-    let amount = UFix64::<N9>::new(384_620_000_000);
+    let amount = UFix64::<N6>::new(384_620_000);
     let extract = config.apply_fee(amount)?;
-    assert_eq!(extract.fees_extracted, UFix64::new(19_231_000_000));
-    assert_eq!(extract.amount_remaining, UFix64::new(365_389_000_000));
+    assert_eq!(extract.fees_extracted, UFix64::new(19_231_000));
+    assert_eq!(extract.amount_remaining, UFix64::new(365_389_000));
     Ok(())
   }
 

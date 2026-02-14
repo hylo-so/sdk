@@ -3,16 +3,16 @@
 macro_rules! normalize_mint_exp {
   ($mint:expr, $amount:expr) => {
     match $mint.decimals {
-      3 => UFix64::<N3>::new($amount).checked_convert::<N9>(),
-      4 => UFix64::<N4>::new($amount).checked_convert::<N9>(),
-      5 => UFix64::<N5>::new($amount).checked_convert::<N9>(),
-      6 => UFix64::<N6>::new($amount).checked_convert::<N9>(),
-      7 => UFix64::<N7>::new($amount).checked_convert::<N9>(),
-      8 => UFix64::<N8>::new($amount).checked_convert::<N9>(),
+      3 => fix::prelude::UFix64::<N3>::new($amount).checked_convert::<N9>(),
+      4 => fix::prelude::UFix64::<N4>::new($amount).checked_convert::<N9>(),
+      5 => fix::prelude::UFix64::<N5>::new($amount).checked_convert::<N9>(),
+      6 => fix::prelude::UFix64::<N6>::new($amount).checked_convert::<N9>(),
+      7 => fix::prelude::UFix64::<N7>::new($amount).checked_convert::<N9>(),
+      8 => fix::prelude::UFix64::<N8>::new($amount).checked_convert::<N9>(),
       9 => Some(fix::prelude::UFix64::<N9>::new($amount)),
       _ => None,
     }
-    .ok_or($crate::error::ErrorCode::ExoAmountNormalization.into())
+    .ok_or($crate::error::CoreError::ExoAmountNormalization.into())
   };
 }
 
