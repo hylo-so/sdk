@@ -1,19 +1,25 @@
-/// Bridges runtime `mint.decimals` to typed `UFix64<N9>`.
-#[macro_export]
-macro_rules! normalize_mint_exp {
-  ($mint:expr, $amount:expr) => {
-    match $mint.decimals {
-      3 => fix::prelude::UFix64::<N3>::new($amount).checked_convert::<N9>(),
-      4 => fix::prelude::UFix64::<N4>::new($amount).checked_convert::<N9>(),
-      5 => fix::prelude::UFix64::<N5>::new($amount).checked_convert::<N9>(),
-      6 => fix::prelude::UFix64::<N6>::new($amount).checked_convert::<N9>(),
-      7 => fix::prelude::UFix64::<N7>::new($amount).checked_convert::<N9>(),
-      8 => fix::prelude::UFix64::<N8>::new($amount).checked_convert::<N9>(),
-      9 => Some(fix::prelude::UFix64::<N9>::new($amount)),
-      _ => None,
-    }
-    .ok_or($crate::error::CoreError::ExoAmountNormalization)
-  };
+use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
+use fix::prelude::*;
+
+use crate::error::CoreError::ExoAmountNormalization;
+
+/// Bridges runtime mint decimals to typed `UFix64<N9>`.
+///
+/// # Errors
+/// * Unsupported decimal count or conversion overflow
+pub fn normalize_mint_exp(mint: &Mint, amount: u64) -> Result<UFix64<N9>> {
+  match mint.decimals {
+    3 => UFix64::<N3>::new(amount).checked_convert::<N9>(),
+    4 => UFix64::<N4>::new(amount).checked_convert::<N9>(),
+    5 => UFix64::<N5>::new(amount).checked_convert::<N9>(),
+    6 => UFix64::<N6>::new(amount).checked_convert::<N9>(),
+    7 => UFix64::<N7>::new(amount).checked_convert::<N9>(),
+    8 => UFix64::<N8>::new(amount).checked_convert::<N9>(),
+    9 => Some(UFix64::<N9>::new(amount)),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization.into())
 }
 
 #[macro_export]
