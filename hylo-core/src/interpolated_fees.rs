@@ -242,5 +242,61 @@ mod tests {
     ) {
       assert_redeem_fee(cr, amount)?;
     }
+
+    #[test]
+    fn mint_fee_decreases_with_cr(
+      cr_a in collateral_ratio(),
+      cr_b in collateral_ratio(),
+      amount in lst_amount(),
+    ) {
+      let (cr_high, cr_low) = if cr_a > cr_b {
+        (cr_a, cr_b)
+      } else {
+        (cr_b, cr_a)
+      };
+      prop_assume!(cr_high > cr_low);
+
+      let fees = mint_fees();
+      if let (Ok(high), Ok(low)) = (
+        fees.apply_fee(cr_high, amount),
+        fees.apply_fee(cr_low, amount),
+      ) {
+        prop_assert!(
+          high.fees_extracted <= low.fees_extracted,
+          "fee({cr_high:?}) = {:?} > fee({cr_low:?}) = {:?}",
+          high.fees_extracted, low.fees_extracted,
+        );
+      } else {
+        Err(TestCaseError::reject("CR below threshold"))?;
+      }
+    }
+
+    #[test]
+    fn redeem_fee_increases_with_cr(
+      cr_a in collateral_ratio(),
+      cr_b in collateral_ratio(),
+      amount in lst_amount(),
+    ) {
+      let (cr_high, cr_low) = if cr_a > cr_b {
+        (cr_a, cr_b)
+      } else {
+        (cr_b, cr_a)
+      };
+      prop_assume!(cr_high > cr_low);
+
+      let fees = redeem_fees();
+      let high = fees.apply_fee(cr_high, amount).map_err(|e| {
+        TestCaseError::fail(format!("at {cr_high:?}: {e}"))
+      })?;
+      let low = fees.apply_fee(cr_low, amount).map_err(|e| {
+        TestCaseError::fail(format!("at {cr_low:?}: {e}"))
+      })?;
+
+      prop_assert!(
+        high.fees_extracted >= low.fees_extracted,
+        "fee({cr_high:?}) = {:?} < fee({cr_low:?}) = {:?}",
+        high.fees_extracted, low.fees_extracted,
+      );
+    }
   }
 }
