@@ -6180,7 +6180,21 @@
           "signer": true
         },
         {
-          "name": "hylo"
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "lst_a_mint"
