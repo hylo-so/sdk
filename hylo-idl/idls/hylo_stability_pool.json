@@ -1611,50 +1611,20 @@
           }
         },
         {
-          "name": "hylo_event_authority"
-        },
-        {
           "name": "hylo_exchange_program",
           "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
-      "args": []
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "RebalanceLeverToStableEvent"
+        }
+      }
     },
     {
       "name": "rebalance_stable_to_lever",
@@ -2340,50 +2310,20 @@
           }
         },
         {
-          "name": "hylo_event_authority"
-        },
-        {
           "name": "hylo_exchange_program",
           "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
-      "args": []
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "RebalanceStableToLeverEvent"
+        }
+      }
     },
     {
       "name": "update_admin",
@@ -2437,38 +2377,6 @@
         {
           "name": "hylo_stability_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -2476,7 +2384,12 @@
           "name": "new_admin",
           "type": "pubkey"
         }
-      ]
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateAdminEvent"
+        }
+      }
     },
     {
       "name": "update_withdrawal_fee",
@@ -2522,38 +2435,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -2565,7 +2446,12 @@
             }
           }
         }
-      ]
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateWithdrawalFeeEvent"
+        }
+      }
     },
     {
       "name": "user_deposit",
@@ -3040,38 +2926,6 @@
         {
           "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -3079,7 +2933,12 @@
           "name": "amount_stablecoin",
           "type": "u64"
         }
-      ]
+      ],
+      "returns": {
+        "defined": {
+          "name": "UserDepositEvent"
+        }
+      }
     },
     {
       "name": "user_withdraw",
@@ -3700,13 +3559,6 @@
           "name": "sol_usd_pyth_feed"
         },
         {
-          "name": "hylo_event_authority"
-        },
-        {
-          "name": "hylo_exchange_program",
-          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -3717,38 +3569,6 @@
         {
           "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -3756,7 +3576,12 @@
           "name": "amount_lp_token",
           "type": "u64"
         }
-      ]
+      ],
+      "returns": {
+        "defined": {
+          "name": "UserWithdrawEventV1"
+        }
+      }
     }
   ],
   "accounts": [
@@ -3949,6 +3774,37 @@
       }
     },
     {
+      "name": "HarvestCache",
+      "docs": [
+        "Records epoch harvest information for off-chain consumers."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "stability_pool_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_to_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "Hylo",
       "type": {
         "kind": "struct",
@@ -4033,7 +3889,7 @@
             "name": "yield_harvest_cache",
             "type": {
               "defined": {
-                "name": "YieldHarvestCache"
+                "name": "HarvestCache"
               }
             }
           },
@@ -4082,11 +3938,19 @@
             }
           },
           {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                78
+                69
               ]
             }
           }
@@ -4372,6 +4236,9 @@
     },
     {
       "name": "StablecoinFees",
+      "docs": [
+        "**Deprecated** — retained only for `Hylo` account deserialization."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -4628,27 +4495,15 @@
       }
     },
     {
-      "name": "YieldHarvestCache",
+      "name": "VirtualStablecoin",
       "docs": [
-        "Records epoch yield harvest information for off-chain consumers."
+        "Simple counter representing the supply of a \"virtual\" stablecoin."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "epoch",
-            "type": "u64"
-          },
-          {
-            "name": "stability_pool_cap",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "stablecoin_yield_to_pool",
+            "name": "supply",
             "type": {
               "defined": {
                 "name": "UFixValue64"

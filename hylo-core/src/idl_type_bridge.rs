@@ -2,7 +2,8 @@ use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
 use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
-use crate::yields::{YieldHarvestCache, YieldHarvestConfig};
+use crate::virtual_stablecoin::VirtualStablecoin;
+use crate::yields::{HarvestCache, YieldHarvestConfig};
 
 impl From<hylo_idl::exchange::types::LstSolPrice> for LstSolPrice {
   fn from(idl: hylo_idl::exchange::types::LstSolPrice) -> Self {
@@ -11,7 +12,7 @@ impl From<hylo_idl::exchange::types::LstSolPrice> for LstSolPrice {
 }
 
 impl From<hylo_idl::exchange::types::StablecoinFees> for StablecoinFees {
-  fn from(idl: hylo_idl::exchange::types::StablecoinFees) -> Self {
+  fn from(idl: hylo_idl::exchange::types::StablecoinFees) -> StablecoinFees {
     StablecoinFees::new(idl.normal.into(), idl.mode_1.into())
   }
 }
@@ -48,12 +49,22 @@ impl From<hylo_idl::exchange::types::YieldHarvestConfig>
   }
 }
 
-impl From<hylo_idl::exchange::types::YieldHarvestCache> for YieldHarvestCache {
-  fn from(idl: hylo_idl::exchange::types::YieldHarvestCache) -> Self {
-    YieldHarvestCache {
+impl From<hylo_idl::exchange::types::HarvestCache> for HarvestCache {
+  fn from(idl: hylo_idl::exchange::types::HarvestCache) -> Self {
+    HarvestCache {
       epoch: idl.epoch,
       stability_pool_cap: idl.stability_pool_cap.into(),
-      stablecoin_yield_to_pool: idl.stablecoin_yield_to_pool.into(),
+      stablecoin_to_pool: idl.stablecoin_to_pool.into(),
+    }
+  }
+}
+
+impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
+  fn from(
+    idl: hylo_idl::exchange::types::VirtualStablecoin,
+  ) -> VirtualStablecoin {
+    VirtualStablecoin {
+      supply: idl.supply.into(),
     }
   }
 }

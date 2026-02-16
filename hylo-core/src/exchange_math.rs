@@ -12,26 +12,29 @@ use crate::pyth::PriceRange;
 ///
 /// NB: If stablecoin supply is zero, returns `u64::MAX` to simulate infinity.
 pub fn collateral_ratio(
-  total_sol: UFix64<N9>,
-  usd_sol_price: UFix64<N8>,
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N8>,
   amount_stablecoin: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
   if amount_stablecoin == UFix64::zero() {
     Ok(UFix64::new(u64::MAX))
   } else {
-    total_sol
-      .mul_div_floor(usd_sol_price, amount_stablecoin.convert())
+    amount_stablecoin
+      .checked_convert::<N8>()
+      .and_then(|stablecoin| {
+        total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
+      })
       .ok_or(CollateralRatio.into())
   }
 }
 
 /// Multiples total SOL by the given spot price to get TVL.
 pub fn total_value_locked(
-  total_sol: UFix64<N9>,
-  sol_usd_price: UFix64<N8>,
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N8>,
 ) -> Result<UFix64<N9>> {
-  total_sol
-    .mul_div_floor(sol_usd_price, UFix64::one())
+  total_collateral
+    .mul_div_floor(usd_collateral_price, UFix64::one())
     .ok_or(TotalValueLocked.into())
 }
 
@@ -42,24 +45,25 @@ pub fn total_value_locked(
 ///   `max_stablecoin = (tvl - target_cr * cur_stablecoin) / (target_cr - 1)`
 pub fn max_mintable_stablecoin(
   target_collateral_ratio: UFix64<N2>,
-  total_sol: UFix64<N9>,
-  usd_sol_price: UFix64<N8>,
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N8>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
   if target_collateral_ratio > UFix64::one() {
     let numerator = {
       let target_supply =
         stablecoin_supply.mul_div_ceil(target_collateral_ratio, UFix64::one());
-      let tvl_usd = total_sol.mul_div_floor(usd_sol_price, UFix64::one());
+      let tvl_usd =
+        total_collateral.mul_div_floor(usd_collateral_price, UFix64::one());
       tvl_usd
         .zip(target_supply)
-        .and_then(|(tvl, target)| tvl.checked_sub(&target.convert()))
+        .and_then(|(tvl, target)| tvl.checked_sub(&target.checked_convert()?))
     };
     let denominator = target_collateral_ratio.checked_sub(&UFix64::<N2>::one());
     numerator
       .zip(denominator)
       .and_then(|(n, d)| n.checked_div(&d))
-      .map(UFix64::convert)
+      .and_then(UFix64::checked_convert)
       .ok_or(MaxMintable.into())
   } else {
     Err(TargetCollateralRatioTooLow.into())
@@ -81,8 +85,8 @@ pub fn max_swappable_stablecoin(
 ) -> Result<UFix64<N6>> {
   total_value_locked
     .checked_div(&target_collateral_ratio)
-    .and_then(|l| l.checked_sub(&stablecoin_supply.convert()))
-    .map(UFix64::convert)
+    .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
+    .and_then(UFix64::checked_convert::<N6>)
     .ok_or(MaxSwappable.into())
 }
 
@@ -95,8 +99,8 @@ pub fn max_swappable_stablecoin(
 ///   `new_nav = free_collateral / n_lever`
 #[must_use]
 pub fn next_levercoin_mint_nav(
-  total_sol: UFix64<N9>,
-  sol_usd_price: PriceRange<N8>,
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: PriceRange<N8>,
   stablecoin_supply: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
   levercoin_supply: UFix64<N6>,
@@ -104,12 +108,12 @@ pub fn next_levercoin_mint_nav(
   if levercoin_supply == UFix64::zero() {
     Some(UFix64::one())
   } else {
-    let collateral_value =
-      total_sol.mul_div_ceil(sol_usd_price.upper, UFix64::one())?;
+    let collateral_value = total_collateral
+      .mul_div_ceil(usd_collateral_price.upper, UFix64::one())?;
     let stablecoin_value =
       stablecoin_supply.mul_div_floor(stablecoin_nav, UFix64::one())?;
     let free_collateral =
-      collateral_value.checked_sub(&stablecoin_value.convert())?;
+      collateral_value.checked_sub(&stablecoin_value.checked_convert()?)?;
     let nav = free_collateral.mul_div_ceil(UFix64::one(), levercoin_supply)?;
     Some(nav)
   }
@@ -118,8 +122,8 @@ pub fn next_levercoin_mint_nav(
 /// Computes lower bound of levercoin NAV for redemption.
 #[must_use]
 pub fn next_levercoin_redeem_nav(
-  total_sol: UFix64<N9>,
-  sol_usd_price: PriceRange<N8>,
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: PriceRange<N8>,
   stablecoin_supply: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
   levercoin_supply: UFix64<N6>,
@@ -127,12 +131,12 @@ pub fn next_levercoin_redeem_nav(
   if levercoin_supply == UFix64::zero() {
     Some(UFix64::one())
   } else {
-    let collateral_value =
-      total_sol.mul_div_floor(sol_usd_price.lower, UFix64::one())?;
+    let collateral_value = total_collateral
+      .mul_div_floor(usd_collateral_price.lower, UFix64::one())?;
     let stablecoin_value =
       stablecoin_supply.mul_div_ceil(stablecoin_nav, UFix64::one())?;
     let free_collateral =
-      collateral_value.checked_sub(&stablecoin_value.convert())?;
+      collateral_value.checked_sub(&stablecoin_value.checked_convert()?)?;
     let nav = free_collateral.mul_div_floor(UFix64::one(), levercoin_supply)?;
     Some(nav)
   }
@@ -142,12 +146,15 @@ pub fn next_levercoin_redeem_nav(
 /// In all other modes, the price of the stablecoin is fixed to $1.
 ///   `NAV = total_sol * sol_usd_price / supply`
 pub fn depeg_stablecoin_nav(
-  total_collateral_sol: UFix64<N9>,
-  sol_usd_price: UFix64<N8>,
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N8>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
-  total_collateral_sol
-    .mul_div_floor(sol_usd_price.convert::<N8>(), stablecoin_supply.convert())
+  stablecoin_supply
+    .checked_convert::<N8>()
+    .and_then(|supply| {
+      total_collateral.mul_div_floor(usd_collateral_price, supply)
+    })
     .ok_or(StablecoinNav.into())
 }
 

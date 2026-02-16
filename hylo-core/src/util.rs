@@ -1,3 +1,46 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
+use fix::prelude::*;
+
+use crate::error::CoreError::ExoAmountNormalization;
+
+/// Bridges runtime mint decimals to typed `UFix64<N9>`.
+///
+/// # Errors
+/// * Unsupported decimal count or conversion overflow
+pub fn normalize_mint_exp(mint: &Mint, amount: u64) -> Result<UFix64<N9>> {
+  match mint.decimals {
+    3 => UFix64::<N3>::new(amount).checked_convert::<N9>(),
+    4 => UFix64::<N4>::new(amount).checked_convert::<N9>(),
+    5 => UFix64::<N5>::new(amount).checked_convert::<N9>(),
+    6 => UFix64::<N6>::new(amount).checked_convert::<N9>(),
+    7 => UFix64::<N7>::new(amount).checked_convert::<N9>(),
+    8 => UFix64::<N8>::new(amount).checked_convert::<N9>(),
+    9 => Some(UFix64::<N9>::new(amount)),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization.into())
+}
+
+/// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
+/// decimals.
+///
+/// # Errors
+/// * Unsupported decimal count
+pub fn denormalize_mint_exp(mint: &Mint, amount: UFix64<N9>) -> Result<u64> {
+  match mint.decimals {
+    3 => Some(amount.convert::<N3>().bits),
+    4 => Some(amount.convert::<N4>().bits),
+    5 => Some(amount.convert::<N5>().bits),
+    6 => Some(amount.convert::<N6>().bits),
+    7 => Some(amount.convert::<N7>().bits),
+    8 => Some(amount.convert::<N8>().bits),
+    9 => Some(amount.bits),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization.into())
+}
+
 #[macro_export]
 macro_rules! eq_tolerance {
   ($l:expr, $r:expr, $place:ty, $tol:expr) => {{

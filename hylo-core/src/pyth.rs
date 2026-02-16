@@ -1,5 +1,4 @@
-use anchor_lang::prelude::{Pubkey, Result};
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::*;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
@@ -16,6 +15,11 @@ use crate::solana_clock::SolanaClock;
 pub const SOL_USD: FeedId = [
   239, 13, 139, 111, 218, 44, 235, 164, 29, 161, 93, 64, 149, 209, 218, 57, 42,
   13, 47, 142, 208, 198, 199, 188, 15, 76, 250, 200, 194, 128, 181, 109,
+];
+
+pub const BTC_USD: FeedId = [
+  230, 45, 246, 200, 180, 168, 95, 225, 166, 125, 180, 77, 193, 45, 229, 219,
+  51, 15, 122, 198, 107, 114, 220, 101, 138, 254, 223, 15, 74, 65, 91, 67,
 ];
 
 pub const SOL_USD_PYTH_FEED: Pubkey =

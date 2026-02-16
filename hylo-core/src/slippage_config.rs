@@ -51,3 +51,63 @@ impl SlippageConfig {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use fix::prelude::*;
+
+  use crate::error::CoreError::SlippageExceeded;
+  use crate::slippage_config::SlippageConfig;
+
+  const ONE_PERCENT: UFix64<N4> = UFix64::constant(100);
+
+  #[test]
+  fn slippage_exact_boundary_pos() {
+    // 1% on 1.0 where minimum acceptable is 0.99
+    let config = SlippageConfig::new(UFix64::<N6>::one(), ONE_PERCENT);
+    let amount = UFix64::<N6>::new(990_000);
+    assert!(config.validate_token_out(amount).is_ok());
+  }
+
+  #[test]
+  fn slippage_one_below_boundary_neg() {
+    // One unit below the boundary
+    let config = SlippageConfig::new(UFix64::<N6>::one(), ONE_PERCENT);
+    let amount = UFix64::<N6>::new(989_999);
+    assert_eq!(
+      config.validate_token_out(amount),
+      Err(SlippageExceeded.into())
+    );
+  }
+
+  #[test]
+  fn slippage_zero_tolerance_exact_pos() {
+    let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::zero());
+    assert!(config.validate_token_out(UFix64::<N6>::one()).is_ok());
+  }
+
+  #[test]
+  fn slippage_zero_tolerance_below_neg() {
+    let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::zero());
+    let amount = UFix64::<N6>::new(999_999);
+    assert_eq!(
+      config.validate_token_out(amount),
+      Err(SlippageExceeded.into())
+    );
+  }
+
+  #[test]
+  fn slippage_favorable_execution_pos() {
+    // Positive slippage (more than expected)
+    let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::new(50));
+    let amount = UFix64::<N6>::new(1_500_000);
+    assert!(config.validate_token_out(amount).is_ok());
+  }
+
+  #[test]
+  fn slippage_full_tolerance_accepts_zero_pos() {
+    // 100% tolerance accepts any output including zero
+    let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::one());
+    assert!(config.validate_token_out(UFix64::<N6>::zero()).is_ok());
+  }
+}
