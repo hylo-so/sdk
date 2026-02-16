@@ -89,11 +89,10 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =
       InterpolatedRedeemFees::new(redeem_fee_curve()?);
-    let stability_threshold_2 = stablecoin_mint_fees.stability_threshold_2()?;
+    let stability_threshold_2 = stablecoin_redeem_fees.cr_floor()?;
     validate_stability_thresholds(
       stability_threshold_1,
       stability_threshold_2,
-      stablecoin_redeem_fees.stability_threshold_2()?,
     )?;
     let stability_controller =
       StabilityController::new(stability_threshold_1, stability_threshold_2)?;

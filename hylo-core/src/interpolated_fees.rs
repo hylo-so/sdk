@@ -17,9 +17,9 @@ pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>> {
 
 /// Interpolated fee curve controller.
 /// Implementors define boundary behavior via `fee_inner`.
-pub trait InterpolatedFeeController {
+pub trait InterpolatedFeeController<const RES: usize> {
   /// Returns a reference to the underlying interpolator.
-  fn curve(&self) -> &FixInterp<20, N5>;
+  fn curve(&self) -> &FixInterp<RES, N5>;
 
   /// Compute fee for collateral ratio from underlying curve.
   ///
@@ -44,8 +44,8 @@ pub trait InterpolatedFeeController {
     FeeExtract::new(fee, amount_in)
   }
 
-  /// Minimum X on the underlying curve corresponds to Stability Threshold 2.
-  fn stability_threshold_2(&self) -> Result<UFix64<N2>> {
+  /// Minimum collateral ratio in the curve's domain.
+  fn cr_floor(&self) -> Result<UFix64<N2>> {
     self
       .curve()
       .x_min()
@@ -57,18 +57,18 @@ pub trait InterpolatedFeeController {
 
 #[derive(Clone)]
 pub struct InterpolatedMintFees {
-  curve: FixInterp<20, N5>,
+  curve: FixInterp<10, N5>,
 }
 
 impl InterpolatedMintFees {
   #[must_use]
-  pub fn new(curve: FixInterp<20, N5>) -> InterpolatedMintFees {
+  pub fn new(curve: FixInterp<10, N5>) -> InterpolatedMintFees {
     InterpolatedMintFees { curve }
   }
 }
 
-impl InterpolatedFeeController for InterpolatedMintFees {
-  fn curve(&self) -> &FixInterp<20, N5> {
+impl InterpolatedFeeController<10> for InterpolatedMintFees {
+  fn curve(&self) -> &FixInterp<10, N5> {
     &self.curve
   }
 
@@ -96,7 +96,7 @@ impl InterpolatedRedeemFees {
   }
 }
 
-impl InterpolatedFeeController for InterpolatedRedeemFees {
+impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
   fn curve(&self) -> &FixInterp<20, N5> {
     &self.curve
   }

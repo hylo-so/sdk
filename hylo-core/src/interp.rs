@@ -152,7 +152,7 @@ mod tests {
   #[test]
   fn interpolate_below_domain() -> anyhow::Result<()> {
     let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(129_999);
+    let x = IFix64::<N5>::constant(149_999);
     assert_eq!(
       interp.interpolate(x).err(),
       Some(CoreError::InterpOutOfDomain.into())
@@ -174,9 +174,9 @@ mod tests {
   #[test]
   fn interpolate_exact_first_point() -> anyhow::Result<()> {
     let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(130_000);
+    let x = IFix64::<N5>::constant(150_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(5000));
+    assert_eq!(y, IFix64::constant(200));
     Ok(())
   }
 
@@ -192,9 +192,9 @@ mod tests {
   #[test]
   fn interpolate_exact_interior_point() -> anyhow::Result<()> {
     let interp = redeem_fee_curve()?;
-    let x = IFix64::<N5>::constant(151_000);
+    let x = IFix64::<N5>::constant(150_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(203));
+    assert_eq!(y, IFix64::constant(200));
     Ok(())
   }
 
@@ -242,7 +242,7 @@ mod tests {
     let interp = mint_fee_curve()?;
     let mut f = File::create("mint_fee_curve.csv")?;
     writeln!(f, "cr,fee")?;
-    (130_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
+    (150_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
       let x = IFix64::<N5>::constant(ix);
       let y = interp.interpolate(x)?;
       writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
