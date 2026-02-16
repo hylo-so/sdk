@@ -13,28 +13,12 @@ macro_rules! generate_curve {
     };
 }
 
-generate_curve!(
-  MINT_FEE_EXP_DECAY,
-  10,
-  N5,
-  (150_000, 200),
-  (155_000, 192),
-  (160_000, 185),
-  (166_000, 177),
-  (172_000, 169),
-  (187_000, 154),
-  (207_000, 139),
-  (232_000, 126),
-  (263_000, 115),
-  (300_000, 108),
-);
-
 /// Loads the mint fee curve into an interpolator.
 ///
 /// # Errors
 /// * Curve validation
-pub fn mint_fee_curve() -> Result<FixInterp<10, N5>> {
-  FixInterp::from_points(*MINT_FEE_EXP_DECAY)
+pub fn mint_fee_curve() -> Result<FixInterp<21, N5>> {
+  FixInterp::from_points(*MINT_FEE_INV)
 }
 
 /// Loads the redeem fee curve into an interpolator.
@@ -44,6 +28,33 @@ pub fn mint_fee_curve() -> Result<FixInterp<10, N5>> {
 pub fn redeem_fee_curve() -> Result<FixInterp<20, N5>> {
   FixInterp::from_points(*REDEEM_FEE_LN)
 }
+
+generate_curve!(
+  MINT_FEE_INV,
+  21,
+  N5,
+  (150_000, 200),
+  (151_000, 180),
+  (152_000, 150),
+  (153_000, 140),
+  (154_000, 120),
+  (155_000, 110),
+  (156_000, 100),
+  (157_000, 90),
+  (158_000, 80),
+  (159_000, 70),
+  (160_000, 60),
+  (161_000, 50),
+  (162_000, 50),
+  (163_000, 40),
+  (164_000, 30),
+  (165_000, 30),
+  (166_000, 20),
+  (167_000, 10),
+  (168_000, 10),
+  (169_000, 0),
+  (170_000, 0),
+);
 
 generate_curve!(
   REDEEM_FEE_LN,

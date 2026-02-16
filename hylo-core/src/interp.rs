@@ -69,6 +69,12 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .ok_or(CoreError::InterpPointsNotMonotonic.into())
   }
 
+  /// Constructs interpolator with no validations.
+  #[must_use]
+  pub fn from_points_unchecked(points: [Point<Exp>; RES]) -> Self {
+    FixInterp { points }
+  }
+
   /// Returns the minimum x value in the domain.
   #[must_use]
   pub fn x_min(&self) -> IFix64<Exp> {
@@ -163,7 +169,7 @@ mod tests {
   #[test]
   fn interpolate_above_domain() -> anyhow::Result<()> {
     let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(300_001);
+    let x = IFix64::<N5>::constant(170_001);
     assert_eq!(
       interp.interpolate(x).err(),
       Some(CoreError::InterpOutOfDomain.into())
@@ -183,9 +189,9 @@ mod tests {
   #[test]
   fn interpolate_exact_last_point() -> anyhow::Result<()> {
     let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(300_000);
+    let x = IFix64::<N5>::constant(170_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(108));
+    assert_eq!(y, IFix64::constant(0));
     Ok(())
   }
 
@@ -242,7 +248,7 @@ mod tests {
     let interp = mint_fee_curve()?;
     let mut f = File::create("mint_fee_curve.csv")?;
     writeln!(f, "cr,fee")?;
-    (150_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
+    (150_000..=170_000).try_for_each(|ix| -> anyhow::Result<()> {
       let x = IFix64::<N5>::constant(ix);
       let y = interp.interpolate(x)?;
       writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;

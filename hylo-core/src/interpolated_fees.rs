@@ -57,18 +57,18 @@ pub trait InterpolatedFeeController<const RES: usize> {
 
 #[derive(Clone)]
 pub struct InterpolatedMintFees {
-  curve: FixInterp<10, N5>,
+  curve: FixInterp<21, N5>,
 }
 
 impl InterpolatedMintFees {
   #[must_use]
-  pub fn new(curve: FixInterp<10, N5>) -> InterpolatedMintFees {
+  pub fn new(curve: FixInterp<21, N5>) -> InterpolatedMintFees {
     InterpolatedMintFees { curve }
   }
 }
 
-impl InterpolatedFeeController<10> for InterpolatedMintFees {
-  fn curve(&self) -> &FixInterp<10, N5> {
+impl InterpolatedFeeController<21> for InterpolatedMintFees {
+  fn curve(&self) -> &FixInterp<21, N5> {
     &self.curve
   }
 
@@ -121,7 +121,7 @@ mod tests {
 
   use super::*;
   use crate::error::CoreError;
-  use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
+  use crate::fee_curves::{MINT_FEE_INV, REDEEM_FEE_LN};
   use crate::util::proptest::*;
 
   fn collateral_ratio() -> BoxedStrategy<UFix64<N9>> {
@@ -129,11 +129,13 @@ mod tests {
   }
 
   fn mint_fees() -> InterpolatedMintFees {
-    InterpolatedMintFees::new(mint_fee_curve().unwrap())
+    let curve = FixInterp::from_points_unchecked(*MINT_FEE_INV);
+    InterpolatedMintFees::new(curve)
   }
 
   fn redeem_fees() -> InterpolatedRedeemFees {
-    InterpolatedRedeemFees::new(redeem_fee_curve().unwrap())
+    let curve = FixInterp::from_points_unchecked(*REDEEM_FEE_LN);
+    InterpolatedRedeemFees::new(curve)
   }
 
   fn assert_conservation<Exp: Integer>(
@@ -177,7 +179,9 @@ mod tests {
     match fees.apply_fee(cr, amount) {
       Ok(extract) => {
         assert_conservation(&extract, amount, cr)?;
-        assert_nonzero_fee(&extract, cr, amount)?;
+        if cr_n5 < interp.x_max() {
+          assert_nonzero_fee(&extract, cr, amount)?;
+        }
       }
       Err(e) => prop_assert!(
         cr_n5 < interp.x_min()
