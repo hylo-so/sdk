@@ -107,6 +107,21 @@ pub trait ExchangeContext {
     .ok_or(LevercoinNav.into())
   }
 
+  /// Spot levercoin NAV from the oracle's unweighted price.
+  ///
+  /// # Errors
+  /// * Missing supply or arithmetic failure
+  fn levercoin_spot_nav(&self) -> Result<UFix64<N9>> {
+    next_levercoin_redeem_nav(
+      self.total_collateral(),
+      PriceRange::one(self.collateral_usd_price().spot),
+      self.virtual_stablecoin_supply()?,
+      self.stablecoin_nav()?,
+      self.levercoin_supply()?,
+    )
+    .ok_or(LevercoinNav.into())
+  }
+
   /// Lower-bound levercoin NAV for redemption.
   ///
   /// # Errors
@@ -159,8 +174,11 @@ pub trait ExchangeContext {
   /// # Errors
   /// * NAV computation failure
   fn swap_conversion(&self) -> Result<SwapConversion> {
-    let levercoin_nav =
-      PriceRange::new(self.levercoin_redeem_nav()?, self.levercoin_mint_nav()?);
+    let levercoin_nav = PriceRange::new(
+      self.levercoin_redeem_nav()?,
+      self.levercoin_spot_nav()?,
+      self.levercoin_mint_nav()?,
+    );
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 

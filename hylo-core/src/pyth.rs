@@ -49,6 +49,7 @@ impl<Exp> OracleConfig<Exp> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PriceRange<Exp: Integer> {
   pub lower: UFix64<Exp>,
+  pub spot: UFix64<Exp>,
   pub upper: UFix64<Exp>,
 }
 
@@ -65,19 +66,23 @@ impl<Exp: Integer> PriceRange<Exp> {
       .checked_sub(&conf)
       .zip(price.checked_add(&conf))
       .ok_or(PythOraclePriceRange)?;
-    Ok(Self::new(lower, upper))
+    Ok(Self::new(lower, price, upper))
   }
 
   /// Makes a range of one price, useful in test scenarios.
   #[must_use]
   pub fn one(price: UFix64<Exp>) -> PriceRange<Exp> {
-    Self::new(price, price)
+    Self::new(price, price, price)
   }
 
   /// Raw construction of range from lower and upper bounds.
   #[must_use]
-  pub fn new(lower: UFix64<Exp>, upper: UFix64<Exp>) -> PriceRange<Exp> {
-    PriceRange { lower, upper }
+  pub fn new(
+    lower: UFix64<Exp>,
+    spot: UFix64<Exp>,
+    upper: UFix64<Exp>,
+  ) -> PriceRange<Exp> {
+    PriceRange { lower, spot, upper }
   }
 }
 
