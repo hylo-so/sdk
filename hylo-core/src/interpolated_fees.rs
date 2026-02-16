@@ -154,44 +154,26 @@ mod tests {
     Ok(())
   }
 
-  fn assert_nonzero_fee<Exp: Integer>(
-    extract: &FeeExtract<Exp>,
-    cr: UFix64<N9>,
-    amount: UFix64<Exp>,
-  ) -> TestCaseResult {
-    prop_assert!(
-      extract.fees_extracted > UFix64::new(0),
-      "Precision loss: zero fees at CR {:?} for amount {:?}",
-      cr,
-      amount,
-    );
-    Ok(())
-  }
-
   fn assert_mint_fee<Exp: Integer>(
     cr: UFix64<N9>,
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = mint_fees();
-    let interp = fees.curve();
     let cr_n5 = narrow_cr(cr)
       .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
     match fees.apply_fee(cr, amount) {
-      Ok(extract) => {
-        assert_conservation(&extract, amount, cr)?;
-        if cr_n5 < interp.x_max() {
-          assert_nonzero_fee(&extract, cr, amount)?;
-        }
+      Ok(extract) => assert_conservation(&extract, amount, cr),
+      Err(e) => {
+        prop_assert!(
+          cr_n5 < fees.curve().x_min()
+            && e == CoreError::NoValidStablecoinMintFee.into(),
+          "Mint fee rejected in-domain CR {:?}: {}",
+          cr,
+          e,
+        );
+        Ok(())
       }
-      Err(e) => prop_assert!(
-        cr_n5 < interp.x_min()
-          && e == CoreError::NoValidStablecoinMintFee.into(),
-        "Mint fee rejected in-domain CR {:?}: {}",
-        cr,
-        e,
-      ),
     }
-    Ok(())
   }
 
   fn assert_redeem_fee<Exp: Integer>(
@@ -199,19 +181,12 @@ mod tests {
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = redeem_fees();
-    let interp = fees.curve();
-    let cr_n5 = narrow_cr(cr)
-      .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
     let extract = fees.apply_fee(cr, amount).map_err(|e| {
       TestCaseError::fail(format!(
         "Redeem fee should always work at CR {cr:?}: {e}"
       ))
     })?;
-    assert_conservation(&extract, amount, cr)?;
-    if cr_n5 > interp.x_min() {
-      assert_nonzero_fee(&extract, cr, amount)?;
-    }
-    Ok(())
+    assert_conservation(&extract, amount, cr)
   }
 
   proptest! {

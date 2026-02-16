@@ -6,3 +6,4 @@
 # everyone who runs the test benefits from these saved cases.
 cc b1f47dd78fa25593a75d098c7f6cf948be49bbf6ded2f82621b741b7605c727a # shrinks to cr = 1500000000x10^-9, amount = 10000x10^-6
 cc 0c4e908a678d00fda39c6e3fb4784a03746631e71bb535a17b7fe94d3aeeebdd # shrinks to cr = 1500000000x10^-9, amount = 1000x10^-9
+cc fbe46a2c2692e5d20d44a6fde7afa69e7f46b4be28fef6f9514ede232043e28f # shrinks to cr = 1690000000x10^-9, amount = 1000x10^-9
