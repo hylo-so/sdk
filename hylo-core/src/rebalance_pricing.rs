@@ -17,8 +17,37 @@ use crate::pyth::OraclePrice;
 /// Confidence interval multipliers for rebalance price curve construction.
 #[derive(Clone, Copy)]
 pub struct RebalanceCurveConfig {
-  pub floor_mult: UFix64<N2>,
-  pub ceil_mult: UFix64<N2>,
+  floor_mult: UFixValue64,
+  ceil_mult: UFixValue64,
+}
+
+impl RebalanceCurveConfig {
+  #[must_use]
+  pub fn new(
+    floor_mult: UFixValue64,
+    ceil_mult: UFixValue64,
+  ) -> RebalanceCurveConfig {
+    RebalanceCurveConfig {
+      floor_mult,
+      ceil_mult,
+    }
+  }
+
+  /// Converts floor CI multiplier to `UFix64`.
+  ///
+  /// # Errors
+  /// * Conversion fails
+  pub fn floor_mult(&self) -> Result<UFix64<N2>> {
+    self.floor_mult.try_into()
+  }
+
+  /// Converts ceil CI multiplier to `UFix64`.
+  ///
+  /// # Errors
+  /// * Conversion fails
+  pub fn ceil_mult(&self) -> Result<UFix64<N2>> {
+    self.ceil_mult.try_into()
+  }
 }
 
 // CR domain boundaries.
@@ -109,8 +138,8 @@ impl SellPriceCurve {
     config: &RebalanceCurveConfig,
   ) -> Result<SellPriceCurve> {
     let (floor, ceil) = spot
-      .checked_sub(&scale_ci(conf, config.floor_mult)?)
-      .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult)?))
+      .checked_sub(&scale_ci(conf, config.floor_mult()?)?)
+      .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult()?)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
     let curve = FixInterp::from_points([
       Point {
@@ -168,8 +197,8 @@ impl BuyPriceCurve {
     config: &RebalanceCurveConfig,
   ) -> Result<BuyPriceCurve> {
     let (floor, ceil) = spot
-      .checked_sub(&scale_ci(conf, config.floor_mult)?)
-      .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult)?))
+      .checked_sub(&scale_ci(conf, config.floor_mult()?)?)
+      .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult()?)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
     let curve = FixInterp::from_points([
       Point {
@@ -224,13 +253,13 @@ mod tests {
   };
 
   const SELL_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
-    floor_mult: UFix64::constant(200),
-    ceil_mult: UFix64::constant(100),
+    floor_mult: UFixValue64 { bits: 200, exp: -2 },
+    ceil_mult: UFixValue64 { bits: 100, exp: -2 },
   };
 
   const BUY_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
-    floor_mult: UFix64::constant(100),
-    ceil_mult: UFix64::constant(100),
+    floor_mult: UFixValue64 { bits: 100, exp: -2 },
+    ceil_mult: UFixValue64 { bits: 100, exp: -2 },
   };
 
   const UCR_1_00: UFix64<N9> = UFix64::constant(1_000_000_000);
