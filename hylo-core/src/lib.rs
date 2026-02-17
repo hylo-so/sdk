@@ -15,6 +15,7 @@ pub mod interpolated_fees;
 pub mod lst_sol_price;
 pub mod lst_swap_config;
 pub mod pyth;
+pub mod rebalance_pricing;
 pub mod slippage_config;
 pub mod solana_clock;
 pub mod stability_mode;

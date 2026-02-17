@@ -31,6 +31,7 @@ hylo-jupiter = { version = "0.5.0", path = "hylo-jupiter" }
 hylo-quotes = { version = "0.5.0", path = "hylo-quotes" }
 itertools = "0.14.0"
 hylo-jupiter-amm-interface = "0.6.0"
+more-asserts = "0.3.1"
 mpl-token-metadata = "5.1.1"
 proptest = "1.5.0"
 pyth-solana-receiver-sdk = "=1.1.0"

@@ -22,4 +22,5 @@ serde.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
+more-asserts.workspace = true
 proptest.workspace = true

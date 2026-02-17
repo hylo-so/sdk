@@ -151,4 +151,13 @@ pub enum CoreError {
   // `normalize_mint_exp`
   #[msg("Precision conversion failed while normalizing exo amount to N9.")]
   ExoAmountNormalization,
+  // `rebalance_pricing`
+  #[msg("Arithmetic error constructing rebalance price curve from oracle.")]
+  RebalancePriceConstruction,
+  #[msg("CR or price conversion failed in rebalance price curve.")]
+  RebalancePriceConversion,
+  #[msg("Sell-side rebalance route is inactive at this CR.")]
+  RebalanceSellInactive,
+  #[msg("Buy-side rebalance route is inactive at this CR.")]
+  RebalanceBuyInactive,
 }

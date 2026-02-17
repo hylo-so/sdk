@@ -165,19 +165,28 @@ fn validate_verification_level(level: VerificationLevel) -> Result<()> {
   }
 }
 
-/// Fetches price range from a Pyth oracle with a number of validations.
-pub fn query_pyth_price<Exp: Integer, C: SolanaClock>(
+/// Validated oracle spot price and confidence interval.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OraclePrice<Exp: Integer> {
+  pub spot: UFix64<Exp>,
+  pub conf: UFix64<Exp>,
+}
+
+/// Fetches validated price and confidence from Pyth.
+///
+/// # Errors
+/// * Validation
+pub fn query_pyth_oracle<Exp: Integer, C: SolanaClock>(
   clock: &C,
   oracle: &PriceUpdateV2,
   OracleConfig {
     interval_secs,
     conf_tolerance,
   }: OracleConfig<Exp>,
-) -> Result<PriceRange<Exp>>
+) -> Result<OraclePrice<Exp>>
 where
   UFix64<Exp>: FixExt,
 {
-  // Price update validations
   validate_verification_level(oracle.verification_level)?;
   validate_publish_time(
     oracle.price_message.publish_time,
@@ -186,15 +195,27 @@ where
   )?;
   validate_posted_slot(oracle.posted_slot, interval_secs, clock.slot())?;
 
-  // Build spot range
-  let spot_price =
+  let spot =
     validate_price(oracle.price_message.price, oracle.price_message.exponent)?;
-  let spot_conf = validate_conf(
-    spot_price,
+  let conf = validate_conf(
+    spot,
     UFix64::new(oracle.price_message.conf),
     conf_tolerance,
   )?;
-  PriceRange::from_conf(spot_price, spot_conf)
+  Ok(OraclePrice { spot, conf })
+}
+
+/// Builds price range from Pyth oracle.
+pub fn query_pyth_price<Exp: Integer, C: SolanaClock>(
+  clock: &C,
+  oracle: &PriceUpdateV2,
+  config: OracleConfig<Exp>,
+) -> Result<PriceRange<Exp>>
+where
+  UFix64<Exp>: FixExt,
+{
+  let oracle_price = query_pyth_oracle(clock, oracle, config)?;
+  PriceRange::from_conf(oracle_price.spot, oracle_price.conf)
 }
 
 #[cfg(test)]
