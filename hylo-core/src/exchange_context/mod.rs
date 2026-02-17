@@ -23,7 +23,10 @@ use crate::exchange_math::{
   total_value_locked,
 };
 use crate::fee_controller::{FeeExtract, LevercoinFees};
-use crate::pyth::PriceRange;
+use crate::pyth::{OraclePrice, PriceRange};
+use crate::rebalance_pricing::{
+  BuyPriceCurve, RebalanceCurveConfig, SellPriceCurve,
+};
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::stability_pool_math::stability_pool_cap;
 
@@ -47,6 +50,31 @@ pub trait ExchangeContext {
 
   /// Collateral/USD oracle price range.
   fn collateral_usd_price(&self) -> PriceRange<N8>;
+
+  /// Raw oracle spot + confidence.
+  fn collateral_oracle_price(&self) -> OraclePrice<N8>;
+
+  /// Sell-side rebalance price curve from oracle confidence.
+  ///
+  /// # Errors
+  /// * Curve construction failure
+  fn rebalance_sell_curve(
+    &self,
+    config: &RebalanceCurveConfig,
+  ) -> Result<SellPriceCurve> {
+    SellPriceCurve::new(self.collateral_oracle_price(), config)
+  }
+
+  /// Buy-side rebalance price curve from oracle confidence.
+  ///
+  /// # Errors
+  /// * Curve construction failure
+  fn rebalance_buy_curve(
+    &self,
+    config: &RebalanceCurveConfig,
+  ) -> Result<BuyPriceCurve> {
+    BuyPriceCurve::new(self.collateral_oracle_price(), config)
+  }
 
   /// Virtual stablecoin supply.
   fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>>;
@@ -107,21 +135,6 @@ pub trait ExchangeContext {
     .ok_or(LevercoinNav.into())
   }
 
-  /// Spot levercoin NAV from the oracle's unweighted price.
-  ///
-  /// # Errors
-  /// * Missing supply or arithmetic failure
-  fn levercoin_spot_nav(&self) -> Result<UFix64<N9>> {
-    next_levercoin_redeem_nav(
-      self.total_collateral(),
-      PriceRange::one(self.collateral_usd_price().spot),
-      self.virtual_stablecoin_supply()?,
-      self.stablecoin_nav()?,
-      self.levercoin_supply()?,
-    )
-    .ok_or(LevercoinNav.into())
-  }
-
   /// Lower-bound levercoin NAV for redemption.
   ///
   /// # Errors
@@ -174,11 +187,8 @@ pub trait ExchangeContext {
   /// # Errors
   /// * NAV computation failure
   fn swap_conversion(&self) -> Result<SwapConversion> {
-    let levercoin_nav = PriceRange::new(
-      self.levercoin_redeem_nav()?,
-      self.levercoin_spot_nav()?,
-      self.levercoin_mint_nav()?,
-    );
+    let levercoin_nav =
+      PriceRange::new(self.levercoin_redeem_nav()?, self.levercoin_mint_nav()?);
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 

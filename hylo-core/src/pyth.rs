@@ -49,7 +49,6 @@ impl<Exp> OracleConfig<Exp> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PriceRange<Exp: Integer> {
   pub lower: UFix64<Exp>,
-  pub spot: UFix64<Exp>,
   pub upper: UFix64<Exp>,
 }
 
@@ -66,23 +65,19 @@ impl<Exp: Integer> PriceRange<Exp> {
       .checked_sub(&conf)
       .zip(price.checked_add(&conf))
       .ok_or(PythOraclePriceRange)?;
-    Ok(Self::new(lower, price, upper))
+    Ok(Self::new(lower, upper))
   }
 
   /// Makes a range of one price, useful in test scenarios.
   #[must_use]
   pub fn one(price: UFix64<Exp>) -> PriceRange<Exp> {
-    Self::new(price, price, price)
+    Self::new(price, price)
   }
 
   /// Raw construction of range from lower and upper bounds.
   #[must_use]
-  pub fn new(
-    lower: UFix64<Exp>,
-    spot: UFix64<Exp>,
-    upper: UFix64<Exp>,
-  ) -> PriceRange<Exp> {
-    PriceRange { lower, spot, upper }
+  pub fn new(lower: UFix64<Exp>, upper: UFix64<Exp>) -> PriceRange<Exp> {
+    PriceRange { lower, upper }
   }
 }
 
@@ -170,6 +165,16 @@ fn validate_verification_level(level: VerificationLevel) -> Result<()> {
 pub struct OraclePrice<Exp: Integer> {
   pub spot: UFix64<Exp>,
   pub conf: UFix64<Exp>,
+}
+
+impl<Exp: Integer> OraclePrice<Exp> {
+  /// Builds a price range from validated spot and confidence.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow from `PriceRange::from_conf`
+  pub fn price_range(&self) -> Result<PriceRange<Exp>> {
+    PriceRange::from_conf(self.spot, self.conf)
+  }
 }
 
 /// Fetches validated price and confidence from Pyth.
