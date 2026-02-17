@@ -16,7 +16,7 @@ use crate::interpolated_fees::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::lst_sol_price::LstSolPrice;
-use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
+use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::total_sol_cache::TotalSolCache;
@@ -27,6 +27,7 @@ use crate::virtual_stablecoin::VirtualStablecoin;
 pub struct LstExchangeContext<C> {
   pub clock: C,
   pub total_sol: UFix64<N9>,
+  pub sol_usd_oracle: OraclePrice<N8>,
   pub sol_usd_price: PriceRange<N8>,
   virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
@@ -45,6 +46,10 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
 
   fn collateral_usd_price(&self) -> PriceRange<N8> {
     self.sol_usd_price
+  }
+
+  fn collateral_oracle_price(&self) -> OraclePrice<N8> {
+    self.sol_usd_oracle
   }
 
   fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
@@ -89,8 +94,9 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     levercoin_mint: Option<&Mint>,
   ) -> Result<LstExchangeContext<C>> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
-    let sol_usd_price =
-      query_pyth_price(&clock, sol_usd_pyth_feed, oracle_config)?;
+    let sol_usd_oracle =
+      query_pyth_oracle(&clock, sol_usd_pyth_feed, oracle_config)?;
+    let sol_usd_price = sol_usd_oracle.price_range()?;
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =
       InterpolatedRedeemFees::new(redeem_fee_curve()?);
@@ -110,6 +116,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     Ok(LstExchangeContext {
       clock,
       total_sol,
+      sol_usd_oracle,
       sol_usd_price,
       virtual_stablecoin,
       levercoin_supply,

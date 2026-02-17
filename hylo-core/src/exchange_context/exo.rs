@@ -14,7 +14,7 @@ use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
 use crate::interpolated_fees::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
-use crate::pyth::{query_pyth_price, OracleConfig, PriceRange};
+use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::virtual_stablecoin::VirtualStablecoin;
@@ -23,6 +23,7 @@ use crate::virtual_stablecoin::VirtualStablecoin;
 pub struct ExoExchangeContext<C> {
   pub clock: C,
   pub total_collateral: UFix64<N9>,
+  pub collateral_oracle: OraclePrice<N8>,
   pub collateral_usd_price: PriceRange<N8>,
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
@@ -41,6 +42,10 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
 
   fn collateral_usd_price(&self) -> PriceRange<N8> {
     self.collateral_usd_price
+  }
+
+  fn collateral_oracle_price(&self) -> OraclePrice<N8> {
+    self.collateral_oracle
   }
 
   fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
@@ -84,8 +89,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
   ) -> Result<ExoExchangeContext<C>> {
-    let collateral_usd_price =
-      query_pyth_price(&clock, collateral_usd_pyth_feed, oracle_config)?;
+    let collateral_oracle =
+      query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
+    let collateral_usd_price = collateral_oracle.price_range()?;
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =
       InterpolatedRedeemFees::new(redeem_fee_curve()?);
@@ -108,6 +114,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     Ok(ExoExchangeContext {
       clock,
       total_collateral,
+      collateral_oracle,
       collateral_usd_price,
       virtual_stablecoin,
       levercoin_supply,

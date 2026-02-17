@@ -14,6 +14,13 @@ use crate::error::CoreError;
 use crate::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
 
+/// Confidence interval multipliers for rebalance price curve construction.
+#[derive(Clone, Copy)]
+pub struct RebalanceCurveConfig {
+  pub floor_mult: UFix64<N2>,
+  pub ceil_mult: UFix64<N2>,
+}
+
 // CR domain boundaries.
 const CR_1_20: IFix64<N9> = IFix64::constant(1_200_000_000);
 const CR_1_35: IFix64<N9> = IFix64::constant(1_350_000_000);
@@ -99,12 +106,11 @@ impl SellPriceCurve {
   /// * Conversion overflow
   pub fn new(
     OraclePrice { spot, conf }: OraclePrice<N8>,
-    floor_mult: UFix64<N2>,
-    ceil_mult: UFix64<N2>,
+    config: &RebalanceCurveConfig,
   ) -> Result<SellPriceCurve> {
     let (floor, ceil) = spot
-      .checked_sub(&scale_ci(conf, floor_mult)?)
-      .zip(spot.checked_add(&scale_ci(conf, ceil_mult)?))
+      .checked_sub(&scale_ci(conf, config.floor_mult)?)
+      .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
     let curve = FixInterp::from_points([
       Point {
@@ -159,12 +165,11 @@ impl BuyPriceCurve {
   /// * Precision conversion
   pub fn new(
     OraclePrice { spot, conf }: OraclePrice<N8>,
-    floor_mult: UFix64<N2>,
-    ceil_mult: UFix64<N2>,
+    config: &RebalanceCurveConfig,
   ) -> Result<BuyPriceCurve> {
     let (floor, ceil) = spot
-      .checked_sub(&scale_ci(conf, floor_mult)?)
-      .zip(spot.checked_add(&scale_ci(conf, ceil_mult)?))
+      .checked_sub(&scale_ci(conf, config.floor_mult)?)
+      .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
     let curve = FixInterp::from_points([
       Point {
@@ -218,6 +223,16 @@ mod tests {
     conf: UFix64::constant(9_463_582),
   };
 
+  const SELL_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
+    floor_mult: UFix64::constant(200),
+    ceil_mult: UFix64::constant(100),
+  };
+
+  const BUY_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
+    floor_mult: UFix64::constant(100),
+    ceil_mult: UFix64::constant(100),
+  };
+
   const UCR_1_00: UFix64<N9> = UFix64::constant(1_000_000_000);
   const UCR_1_15: UFix64<N9> = UFix64::constant(1_150_000_000);
   const UCR_1_20: UFix64<N9> = UFix64::constant(1_200_000_000);
@@ -231,13 +246,13 @@ mod tests {
 
   #[test]
   fn sell_constructs() -> anyhow::Result<()> {
-    SellPriceCurve::new(ORACLE, UFix64::new(200), UFix64::new(100))?;
+    SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
     Ok(())
   }
 
   #[test]
   fn buy_constructs() -> anyhow::Result<()> {
-    BuyPriceCurve::new(ORACLE, UFix64::new(100), UFix64::new(100))?;
+    BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
     Ok(())
   }
 
@@ -247,7 +262,7 @@ mod tests {
       conf: ORACLE.spot,
       ..ORACLE
     };
-    let res = SellPriceCurve::new(huge_ci, UFix64::new(200), UFix64::new(100));
+    let res = SellPriceCurve::new(huge_ci, &SELL_CONFIG);
     assert_eq!(
       res.err(),
       Some(CoreError::RebalancePriceConstruction.into())
@@ -260,7 +275,7 @@ mod tests {
       conf: ORACLE.spot,
       ..ORACLE
     };
-    let res = BuyPriceCurve::new(huge_ci, UFix64::new(200), UFix64::new(100));
+    let res = BuyPriceCurve::new(huge_ci, &BUY_CONFIG);
     assert_eq!(
       res.err(),
       Some(CoreError::RebalancePriceConstruction.into())
@@ -269,16 +284,14 @@ mod tests {
 
   #[test]
   fn sell_flat_below_domain() -> anyhow::Result<()> {
-    let curve =
-      SellPriceCurve::new(ORACLE, UFix64::new(200), UFix64::new(100))?;
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
     assert_eq!(curve.price(UCR_1_00)?, curve.price(UCR_1_15)?);
     Ok(())
   }
 
   #[test]
   fn sell_inactive_above_domain() -> anyhow::Result<()> {
-    let curve =
-      SellPriceCurve::new(ORACLE, UFix64::new(200), UFix64::new(100))?;
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
     assert_eq!(
       curve.price(UCR_1_40).err(),
       Some(CoreError::RebalanceSellInactive.into())
@@ -288,8 +301,7 @@ mod tests {
 
   #[test]
   fn sell_endpoints() -> anyhow::Result<()> {
-    let curve =
-      SellPriceCurve::new(ORACLE, UFix64::new(200), UFix64::new(100))?;
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
     let at_floor = curve.price(UCR_1_20)?;
     let at_ceil = curve.price(UCR_1_35)?;
     assert_lt!(at_floor, at_ceil);
@@ -299,7 +311,7 @@ mod tests {
 
   #[test]
   fn buy_inactive_below_domain() -> anyhow::Result<()> {
-    let curve = BuyPriceCurve::new(ORACLE, UFix64::new(100), UFix64::new(100))?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
     assert_eq!(
       curve.price(UCR_1_60).err(),
       Some(CoreError::RebalanceBuyInactive.into())
@@ -309,14 +321,14 @@ mod tests {
 
   #[test]
   fn buy_flat_above_domain() -> anyhow::Result<()> {
-    let curve = BuyPriceCurve::new(ORACLE, UFix64::new(100), UFix64::new(100))?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
     assert_eq!(curve.price(UCR_1_80)?, curve.price(UCR_2_50)?);
     Ok(())
   }
 
   #[test]
   fn buy_endpoints() -> anyhow::Result<()> {
-    let curve = BuyPriceCurve::new(ORACLE, UFix64::new(100), UFix64::new(100))?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
     let at_floor = curve.price(UCR_1_65)?;
     let at_ceil = curve.price(UCR_1_75)?;
     assert_lt!(at_floor, at_ceil);
@@ -352,9 +364,7 @@ mod tests {
       conf in oracle_ci(),
     ) {
       let oracle = OraclePrice { spot, conf };
-      if let Ok(curve) = SellPriceCurve::new(
-        oracle, UFix64::new(200), UFix64::new(100),
-      ) {
+      if let Ok(curve) = SellPriceCurve::new(oracle, &SELL_CONFIG) {
         curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
@@ -368,9 +378,7 @@ mod tests {
       conf in oracle_ci(),
     ) {
       let oracle = OraclePrice { spot, conf };
-      if let Ok(curve) = BuyPriceCurve::new(
-        oracle, UFix64::new(100), UFix64::new(100),
-      ) {
+      if let Ok(curve) = BuyPriceCurve::new(oracle, &BUY_CONFIG) {
         curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
