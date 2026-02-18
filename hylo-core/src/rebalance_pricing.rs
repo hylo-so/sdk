@@ -55,11 +55,11 @@ impl RebalanceCurveConfig {
   ///
   /// # Errors
   /// * Multiplier has incorrect precision or is zero
-  pub fn validate(&self) -> Result<()> {
+  pub fn validate(self) -> Result<Self> {
     let valid =
       self.floor_mult()? > UFix64::zero() && self.ceil_mult()? > UFix64::zero();
     valid
-      .then_some(())
+      .then_some(self)
       .ok_or(CoreError::RebalanceCurveConfigValidation.into())
   }
 }
