@@ -42,10 +42,10 @@ impl FeePair {
 }
 
 /// Fee configuration table reacts to different stability modes.
-pub trait FeeController {
+pub trait FeeController: Sized {
   fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
   fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
-  fn validate(&self) -> Result<()>;
+  fn validate(self) -> Result<Self>;
 }
 
 /// Combines fee multiplication for a token amount with the remaining token
@@ -123,10 +123,11 @@ impl FeeController for LevercoinFees {
   }
 
   /// Run validations
-  fn validate(&self) -> Result<()> {
+  fn validate(self) -> Result<LevercoinFees> {
     self.normal.validate()?;
     self.mode_1.validate()?;
-    self.mode_2.validate()
+    self.mode_2.validate()?;
+    Ok(self)
   }
 }
 
