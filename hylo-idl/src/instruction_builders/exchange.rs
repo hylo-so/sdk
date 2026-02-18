@@ -678,6 +678,63 @@ pub fn update_exo_stability_threshold(
 }
 
 #[must_use]
+pub fn update_exo_buy_curve(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoBuyCurve,
+) -> Instruction {
+  let accounts = accounts::UpdateExoBuyCurve {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_sell_curve(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoSellCurve,
+) -> Instruction {
+  let accounts = accounts::UpdateExoSellCurve {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_levercoin_fees(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoLevercoinFees,
+) -> Instruction {
+  let accounts = accounts::UpdateExoLevercoinFees {
+    admin,
+    hylo: *pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_admin(
   payer: Pubkey,
   upgrade_authority: Pubkey,

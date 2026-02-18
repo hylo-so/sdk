@@ -2061,22 +2061,6 @@
           "signer": true
         },
         {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "exo_pair",
           "pda": {
             "seeds": [
@@ -3593,22 +3577,6 @@
           "signer": true
         },
         {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "exo_pair",
           "pda": {
             "seeds": [
@@ -5061,6 +5029,30 @@
           "type": {
             "defined": {
               "name": "FundingRateConfig"
+            }
+          }
+        },
+        {
+          "name": "levercoin_fees",
+          "type": {
+            "defined": {
+              "name": "LevercoinFees"
+            }
+          }
+        },
+        {
+          "name": "sell_curve_config",
+          "type": {
+            "defined": {
+              "name": "RebalanceCurveConfig"
+            }
+          }
+        },
+        {
+          "name": "buy_curve_config",
+          "type": {
+            "defined": {
+              "name": "RebalanceCurveConfig"
             }
           }
         },
@@ -7410,6 +7402,90 @@
       }
     },
     {
+      "name": "update_exo_buy_curve",
+      "discriminator": [
+        121,
+        104,
+        59,
+        11,
+        147,
+        243,
+        174,
+        52
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_buy_curve_config",
+          "type": {
+            "defined": {
+              "name": "RebalanceCurveConfig"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateExoBuyCurveEvent"
+        }
+      }
+    },
+    {
       "name": "update_exo_funding_rate",
       "discriminator": [
         196,
@@ -7490,6 +7566,90 @@
       "returns": {
         "defined": {
           "name": "UpdateExoFundingRateEvent"
+        }
+      }
+    },
+    {
+      "name": "update_exo_levercoin_fees",
+      "discriminator": [
+        35,
+        165,
+        222,
+        147,
+        145,
+        150,
+        127,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_levercoin_fees",
+          "type": {
+            "defined": {
+              "name": "LevercoinFees"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateExoLevercoinFeesEvent"
         }
       }
     },
@@ -7734,6 +7894,90 @@
       "returns": {
         "defined": {
           "name": "UpdateExoOracleIntervalEvent"
+        }
+      }
+    },
+    {
+      "name": "update_exo_sell_curve",
+      "discriminator": [
+        252,
+        203,
+        220,
+        190,
+        167,
+        181,
+        6,
+        55
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_sell_curve_config",
+          "type": {
+            "defined": {
+              "name": "RebalanceCurveConfig"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateExoSellCurveEvent"
         }
       }
     },
@@ -9433,6 +9677,30 @@
             }
           },
           {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
@@ -10438,6 +10706,33 @@
       }
     },
     {
+      "name": "RebalanceCurveConfig",
+      "docs": [
+        "Confidence interval multipliers for rebalance price curve construction."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "RedeemLevercoinEventV0",
       "docs": [
         "`RedeemLevercoin`"
@@ -11394,6 +11689,30 @@
       }
     },
     {
+      "name": "UpdateExoBuyCurveEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "new_buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateExoFundingRateEvent",
       "type": {
         "kind": "struct",
@@ -11411,6 +11730,30 @@
             "type": {
               "defined": {
                 "name": "FundingRateConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateExoLevercoinFeesEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "new_levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
               }
             }
           }
@@ -11469,6 +11812,30 @@
           {
             "name": "new_oracle_interval_secs",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateExoSellCurveEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "new_sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
           }
         ]
       }

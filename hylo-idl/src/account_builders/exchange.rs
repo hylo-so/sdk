@@ -182,7 +182,6 @@ pub fn mint_levercoin_exo(
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   MintLevercoinExo {
     user,
-    hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     levercoin_auth: pda::mint_auth(levercoin_mint),
     vault_auth,
@@ -237,7 +236,6 @@ pub fn redeem_levercoin_exo(
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   RedeemLevercoinExo {
     user,
-    hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     vault_auth,
     fee_auth,
