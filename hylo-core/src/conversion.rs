@@ -2,20 +2,20 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
-  ExoFromToken, ExoPriceConversion, ExoToToken, LeverToStable, LstToToken,
-  StableToLever, TokenToLst,
+  ExoFromToken, ExoToToken, LeverToStable, LstToToken, StableToLever,
+  TokenToLst,
 };
 use crate::pyth::PriceRange;
 
 /// Provides conversions between an LST and protocol tokens.
 pub struct Conversion {
-  pub usd_sol_price: PriceRange<N8>,
+  pub usd_sol_price: PriceRange<N9>,
   pub lst_sol_price: UFix64<N9>,
 }
 
 impl Conversion {
   #[must_use]
-  pub fn new(usd_sol_price: PriceRange<N8>, lst_sol_price: UFix64<N9>) -> Self {
+  pub fn new(usd_sol_price: PriceRange<N9>, lst_sol_price: UFix64<N9>) -> Self {
     Conversion {
       usd_sol_price,
       lst_sol_price,
@@ -31,9 +31,7 @@ impl Conversion {
   ) -> Result<UFix64<N6>> {
     amount_lst
       .mul_div_floor(self.lst_sol_price, UFix64::one())
-      .and_then(|sol| {
-        sol.mul_div_floor(self.usd_sol_price.lower.convert(), token_nav)
-      })
+      .and_then(|sol| sol.mul_div_floor(self.usd_sol_price.lower, token_nav))
       .map(UFix64::convert)
       .ok_or(LstToToken.into())
   }
@@ -47,7 +45,7 @@ impl Conversion {
   ) -> Result<UFix64<N9>> {
     amount_token
       .convert::<N9>()
-      .mul_div_floor(token_nav, self.usd_sol_price.upper.convert())
+      .mul_div_floor(token_nav, self.usd_sol_price.upper)
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
       .ok_or(TokenToLst.into())
   }
@@ -96,26 +94,21 @@ impl SwapConversion {
 
 /// Conversions between an exogenous collateral and protocol tokens.
 pub struct ExoConversion {
-  pub collateral_usd_price: PriceRange<N8>,
+  pub collateral_usd_price: PriceRange<N9>,
 }
 
 impl ExoConversion {
   /// Converts collateral amount to a protocol token amount.
   ///
   /// # Errors
-  /// * Checked conversion or arithmetic failure
+  /// * Arithmetic failure
   pub fn exo_to_token(
     &self,
     amount: UFix64<N9>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N6>> {
-    let price = self
-      .collateral_usd_price
-      .lower
-      .checked_convert::<N9>()
-      .ok_or(ExoPriceConversion)?;
     amount
-      .mul_div_floor(price, token_nav)
+      .mul_div_floor(self.collateral_usd_price.lower, token_nav)
       .and_then(UFix64::checked_convert::<N6>)
       .ok_or(ExoToToken.into())
   }
@@ -123,20 +116,15 @@ impl ExoConversion {
   /// Converts a protocol token amount to exogenous collateral.
   ///
   /// # Errors
-  /// * Checked conversion or arithmetic failure
+  /// * Arithmetic failure
   pub fn token_to_exo(
     &self,
     amount: UFix64<N6>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    let price = self
-      .collateral_usd_price
-      .upper
-      .checked_convert::<N9>()
-      .ok_or(ExoPriceConversion)?;
     amount
       .checked_convert::<N9>()
-      .and_then(|a| a.mul_div_floor(token_nav, price))
+      .and_then(|a| a.mul_div_floor(token_nav, self.collateral_usd_price.upper))
       .ok_or(ExoFromToken.into())
   }
 }
@@ -216,7 +204,7 @@ mod tests {
 
   #[test]
   fn amount_to_mint_lever() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount_in = UFix64::<N9>::new(50_123_303_006);
@@ -228,7 +216,7 @@ mod tests {
 
   #[test]
   fn amount_to_mint_stable() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount_in = UFix64::<N9>::new(568);
@@ -239,7 +227,7 @@ mod tests {
 
   #[test]
   fn amount_to_redeem_stable() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount = UFix64::<N6>::new(9_937_412_179);
@@ -250,7 +238,7 @@ mod tests {
 
   #[test]
   fn amount_to_redeem_lever() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let nav = UFix64::<N9>::new(137_992_981_000);

@@ -732,7 +732,7 @@ pub use hylo_idl as idl;
 /// Provides conversions between an LST and protocol tokens.
 // NOTE: Provides bidirectional price conversion between LST collateral and protocol tokens using oracle prices.
 pub struct Conversion {
-    pub usd_sol_price: PriceRange < N8 >,
+    pub usd_sol_price: PriceRange < N9 >,
     pub lst_sol_price: UFix64 < N9 >,
 }
 
@@ -746,7 +746,7 @@ pub struct SwapConversion {
 /// Conversions between an exogenous collateral and protocol tokens.
 // NOTE: Provides bidirectional price conversion between exogenous collateral and protocol tokens.
 pub struct ExoConversion {
-    pub collateral_usd_price: PriceRange < N8 >,
+    pub collateral_usd_price: PriceRange < N9 >,
 }
 
 
@@ -754,7 +754,7 @@ pub struct ExoConversion {
 
 // NOTE: Provides bidirectional price conversion between LST collateral and protocol tokens using oracle prices.
 impl Conversion {
-    pub fn new(usd_sol_price : PriceRange < N8 >, lst_sol_price : UFix64 < N9 >) -> Self;
+    pub fn new(usd_sol_price : PriceRange < N9 >, lst_sol_price : UFix64 < N9 >) -> Self;
     pub fn lst_to_token(& self, amount_lst : UFix64 < N9 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
     pub fn token_to_lst(& self, amount_token : UFix64 < N6 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 }
@@ -774,8 +774,8 @@ impl SwapConversion {
 
 // NOTE: Provides bidirectional price conversion between exogenous collateral and protocol tokens.
 impl ExoConversion {
-    pub fn exo_to_token< Exp >(& self, amount : UFix64 < Exp >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
-    pub fn token_to_exo< Exp >(& self, amount : UFix64 < N6 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < Exp > >;
+    pub fn exo_to_token(& self, amount : UFix64 < N9 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
+    pub fn token_to_exo(& self, amount : UFix64 < N6 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 }
 
 
@@ -849,9 +849,13 @@ pub enum CoreError {
     FundingRateApply,
     ExoToToken,
     ExoFromToken,
-    ExoPriceConversion,
     ExoDestinationCollateral,
     ExoDestinationStablecoin,
+    ExoAmountNormalization,
+    RebalancePriceConstruction,
+    RebalancePriceConversion,
+    RebalanceSellInactive,
+    RebalanceBuyInactive,
 }
 
 
@@ -866,7 +870,10 @@ pub enum CoreError {
 // NOTE: Trait providing shared exchange state: collateral ratio, NAVs, fees, and mint/swap capacity.
 pub trait ExchangeContext {
     fn total_collateral(& self) -> UFix64 < N9 >;
-    fn collateral_usd_price(& self) -> PriceRange < N8 >;
+    fn collateral_usd_price(& self) -> PriceRange < N9 >;
+    fn collateral_oracle_price(& self) -> OraclePrice;
+    fn rebalance_sell_curve(& self, config : & RebalanceCurveConfig) -> Result < SellPriceCurve >;
+    fn rebalance_buy_curve(& self, config : & RebalanceCurveConfig) -> Result < BuyPriceCurve >;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn levercoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn stability_controller(& self) -> & StabilityController;
@@ -890,6 +897,15 @@ pub trait ExchangeContext {
 }
 
 
+## Functions
+
+/// Ensures ST1 is strictly above ST2 (derived from the redeem fee curve).
+/// 
+/// # Errors
+/// * Thresholds fail validation
+pub fn validate_stability_thresholds(stability_threshold_1 : UFix64 < N2 >, stability_threshold_2 : UFix64 < N2 >) -> Result < () >;
+
+
 ## Re-exports
 
 // NOTE: Re-export of ExoExchangeContext from the exchange_context module.
@@ -911,15 +927,16 @@ pub use self :: lst :: LstExchangeContext;
 pub struct ExoExchangeContext< C > {
     pub clock: C,
     pub total_collateral: UFix64 < N9 >,
-    pub collateral_usd_price: PriceRange < N8 >,
+    pub collateral_oracle: OraclePrice,
+    pub collateral_usd_price: PriceRange < N9 >,
     pub virtual_stablecoin: VirtualStablecoin,
     levercoin_supply: Option < UFix64 < N6 > >,
     collateral_ratio: UFix64 < N9 >,
     stability_mode: StabilityMode,
     pub stability_controller: StabilityController,
     levercoin_fees: LevercoinFees,
-    mint_fees: InterpolatedMintFees,
-    redeem_fees: InterpolatedRedeemFees,
+    stablecoin_mint_fees: InterpolatedMintFees,
+    stablecoin_redeem_fees: InterpolatedRedeemFees,
 }
 
 
@@ -928,7 +945,8 @@ pub struct ExoExchangeContext< C > {
 // NOTE: Implements ExchangeContext for exogenous collateral using virtual stablecoin supply and interpolated fees.
 impl < C : SolanaClock >ExchangeContext for ExoExchangeContext < C > {
     fn total_collateral(& self) -> UFix64 < N9 >;
-    fn collateral_usd_price(& self) -> PriceRange < N8 >;
+    fn collateral_usd_price(& self) -> PriceRange < N9 >;
+    fn collateral_oracle_price(& self) -> OraclePrice;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn levercoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn stability_controller(& self) -> & StabilityController;
@@ -942,8 +960,7 @@ impl < C : SolanaClock >ExchangeContext for ExoExchangeContext < C > {
 
 // NOTE: Inherent methods for loading exo context from on-chain state and computing fees for each operation type.
 impl < C : SolanaClock >ExoExchangeContext < C > {
-    pub fn load(clock : C, total_collateral : UFix64 < N9 >, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig < N8 >, levercoin_fees : LevercoinFees, collateral_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < ExoExchangeContext < C > >;
-    pub fn validate_stability_thresholds(stability_threshold_1 : UFix64 < N2 >, mint_stability_threshold_2 : UFix64 < N2 >, redeem_stability_threshold_2 : UFix64 < N2 >) -> Result < () >;
+    pub fn load(clock : C, total_collateral : UFix64 < N9 >, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig, levercoin_fees : LevercoinFees, collateral_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < ExoExchangeContext < C > >;
     pub fn stablecoin_mint_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn stablecoin_redeem_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_mint_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
@@ -964,13 +981,15 @@ impl < C : SolanaClock >ExoExchangeContext < C > {
 pub struct LstExchangeContext< C > {
     pub clock: C,
     pub total_sol: UFix64 < N9 >,
-    pub sol_usd_price: PriceRange < N8 >,
+    pub sol_usd_oracle: OraclePrice,
+    pub sol_usd_price: PriceRange < N9 >,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_supply: Option < UFix64 < N6 > >,
     collateral_ratio: UFix64 < N9 >,
     pub stability_controller: StabilityController,
     stability_mode: StabilityMode,
-    stablecoin_fees: StablecoinFees,
+    stablecoin_mint_fees: InterpolatedMintFees,
+    stablecoin_redeem_fees: InterpolatedRedeemFees,
     levercoin_fees: LevercoinFees,
 }
 
@@ -980,7 +999,8 @@ pub struct LstExchangeContext< C > {
 // NOTE: Implements ExchangeContext for SOL/LST collateral using TotalSolCache and SOL/USD oracle.
 impl < C : SolanaClock >ExchangeContext for LstExchangeContext < C > {
     fn total_collateral(& self) -> UFix64 < N9 >;
-    fn collateral_usd_price(& self) -> PriceRange < N8 >;
+    fn collateral_usd_price(& self) -> PriceRange < N9 >;
+    fn collateral_oracle_price(& self) -> OraclePrice;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn levercoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn stability_controller(& self) -> & StabilityController;
@@ -994,7 +1014,7 @@ impl < C : SolanaClock >ExchangeContext for LstExchangeContext < C > {
 
 // NOTE: Inherent methods for loading LST context, computing fees, token conversions, and pool caps.
 impl < C : SolanaClock >LstExchangeContext < C > {
-    pub fn load(clock : C, total_sol_cache : & TotalSolCache, stability_controller : StabilityController, oracle_config : OracleConfig < N8 >, stablecoin_fees : StablecoinFees, levercoin_fees : LevercoinFees, sol_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < LstExchangeContext < C > >;
+    pub fn load(clock : C, total_sol_cache : & TotalSolCache, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig, levercoin_fees : LevercoinFees, sol_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < LstExchangeContext < C > >;
     pub fn stablecoin_mint_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn stablecoin_redeem_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_mint_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
@@ -1018,11 +1038,11 @@ impl < C : SolanaClock >LstExchangeContext < C > {
 /// 
 /// NB: If stablecoin supply is zero, returns `u64::MAX` to simulate infinity.
 // NOTE: Computes CR = total_collateral_usd / stablecoin_supply, returning u64::MAX when supply is zero.
-pub fn collateral_ratio(total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N8 >, amount_stablecoin : UFix64 < N6 >) -> Result < UFix64 < N9 > >;
+pub fn collateral_ratio(total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N9 >, amount_stablecoin : UFix64 < N6 >) -> Result < UFix64 < N9 > >;
 
 /// Multiples total SOL by the given spot price to get TVL.
 // NOTE: Multiplies total collateral by USD price to compute protocol TVL.
-pub fn total_value_locked(total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N8 >) -> Result < UFix64 < N9 > >;
+pub fn total_value_locked(total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 
 /// Given the next collateral ratio threshold below the current, determines the
 /// amount of stablecoin that can safely be minted.
@@ -1030,7 +1050,7 @@ pub fn total_value_locked(total_collateral : UFix64 < N9 >, usd_collateral_price
 /// Finds `max_stablecoin` assuming stablecoin NAV is $1.
 ///   `max_stablecoin = (tvl - target_cr * cur_stablecoin) / (target_cr - 1)`
 // NOTE: Computes maximum stablecoin mintable before hitting the next collateral ratio threshold.
-pub fn max_mintable_stablecoin(target_collateral_ratio : UFix64 < N2 >, total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N8 >, stablecoin_supply : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
+pub fn max_mintable_stablecoin(target_collateral_ratio : UFix64 < N2 >, total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N9 >, stablecoin_supply : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
 
 /// Without changing TVL, computes how much stablecoin can be swapped from
 /// levercoin.
@@ -1051,17 +1071,17 @@ pub fn max_swappable_stablecoin(target_collateral_ratio : UFix64 < N2 >, total_v
 ///   `free_collateral = (n_collateral * p_collateral) - (n_stable * p_stable)`
 ///   `new_nav = free_collateral / n_lever`
 // NOTE: Computes upper-bound levercoin NAV for minting: free_collateral / levercoin_supply.
-pub fn next_levercoin_mint_nav(total_collateral : UFix64 < N9 >, usd_collateral_price : PriceRange < N8 >, stablecoin_supply : UFix64 < N6 >, stablecoin_nav : UFix64 < N9 >, levercoin_supply : UFix64 < N6 >) -> Option < UFix64 < N9 > >;
+pub fn next_levercoin_mint_nav(total_collateral : UFix64 < N9 >, usd_collateral_price : PriceRange < N9 >, stablecoin_supply : UFix64 < N6 >, stablecoin_nav : UFix64 < N9 >, levercoin_supply : UFix64 < N6 >) -> Option < UFix64 < N9 > >;
 
 /// Computes lower bound of levercoin NAV for redemption.
 // NOTE: Computes lower-bound levercoin NAV for redemption.
-pub fn next_levercoin_redeem_nav(total_collateral : UFix64 < N9 >, usd_collateral_price : PriceRange < N8 >, stablecoin_supply : UFix64 < N6 >, stablecoin_nav : UFix64 < N9 >, levercoin_supply : UFix64 < N6 >) -> Option < UFix64 < N9 > >;
+pub fn next_levercoin_redeem_nav(total_collateral : UFix64 < N9 >, usd_collateral_price : PriceRange < N9 >, stablecoin_supply : UFix64 < N6 >, stablecoin_nav : UFix64 < N9 >, levercoin_supply : UFix64 < N6 >) -> Option < UFix64 < N9 > >;
 
 /// Computes stablecoin NAV during a depeg scenario.
 /// In all other modes, the price of the stablecoin is fixed to $1.
 ///   `NAV = total_sol * sol_usd_price / supply`
 // NOTE: Computes stablecoin NAV during depeg mode as total_collateral_usd / supply.
-pub fn depeg_stablecoin_nav(total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N8 >, stablecoin_supply : UFix64 < N6 >) -> Result < UFix64 < N9 > >;
+pub fn depeg_stablecoin_nav(total_collateral : UFix64 < N9 >, usd_collateral_price : UFix64 < N9 >, stablecoin_supply : UFix64 < N6 >) -> Result < UFix64 < N9 > >;
 
 
 ---
@@ -1088,6 +1108,7 @@ pub struct FeeExtract< Exp > {
     pub amount_remaining: UFix64 < Exp >,
 }
 
+/// **Deprecated** — retained only for `Hylo` account deserialization.
 // NOTE: Fee table for stablecoin operations with two tiers (normal, mode_1).
 pub struct StablecoinFees {
     normal: FeePair,
@@ -1140,16 +1161,6 @@ impl StablecoinFees {
 }
 
 
-## Impl FeeController for StablecoinFees
-
-// NOTE: Selects stablecoin mint/redeem fees from normal or mode_1 fee tables.
-impl FeeController for StablecoinFees {
-    fn mint_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
-    fn redeem_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
-    fn validate(& self) -> Result < () >;
-}
-
-
 ## Impl FeeController for LevercoinFees
 
 // NOTE: Selects levercoin mint/redeem fees from normal, mode_1, or mode_2 fee tables.
@@ -1182,7 +1193,7 @@ impl LevercoinFees {
 /// # Errors
 /// * Curve validation
 // NOTE: Returns the piecewise-linear interpolator for collateral-ratio-dependent mint fees.
-pub fn mint_fee_curve() -> Result < FixInterp < 20 , N5 > >;
+pub fn mint_fee_curve() -> Result < FixInterp < 21 , N5 > >;
 
 /// Loads the redeem fee curve into an interpolator.
 /// 
@@ -1218,10 +1229,10 @@ pub struct FundingRateConfig {
 // NOTE: Per-epoch funding rate for exogenous collateral, capped at ~10% annualized.
 impl FundingRateConfig {
     pub fn new(rate : UFixValue64, fee : UFixValue64) -> FundingRateConfig;
-    pub fn rate(& self) -> Result < UFix64 < N8 > >;
+    pub fn rate(& self) -> Result < UFix64 < N9 > >;
     pub fn fee(& self) -> Result < UFix64 < N4 > >;
-    pub fn apply_funding_rate< Exp >(& self, collateral_value_usd : UFix64 < Exp >) -> Result < UFix64 < Exp > >;
-    pub fn apply_fee< Exp >(& self, amount : UFix64 < Exp >) -> Result < FeeExtract < Exp > >;
+    pub fn apply_funding_rate(& self, amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
+    pub fn apply_fee(& self, amount : UFix64 < N6 >) -> Result < FeeExtract < N6 > >;
     pub fn validate(& self) -> Result < FundingRateConfig >;
 }
 
@@ -1230,7 +1241,7 @@ impl FundingRateConfig {
 
 /// Maximum per-epoch rate (~10% annualized at 182 epochs/year)
 // NOTE: Maximum per-epoch funding rate (~10% annualized at 182 epochs/year).
-const MAX_RATE: UFix64 < N8 >;
+const MAX_RATE: UFix64 < N9 >;
 
 /// Maximum fee exacted against funding rate
 const MAX_FEE: UFix64 < N4 >;
@@ -1253,7 +1264,7 @@ impl From < hylo_idl :: exchange :: types :: LstSolPrice > for LstSolPrice {
 
 // NOTE: Converts IDL StablecoinFees into the core domain type.
 impl From < hylo_idl :: exchange :: types :: StablecoinFees > for StablecoinFees {
-    fn from(idl : hylo_idl :: exchange :: types :: StablecoinFees) -> Self;
+    fn from(idl : hylo_idl :: exchange :: types :: StablecoinFees) -> StablecoinFees;
 }
 
 
@@ -1358,6 +1369,7 @@ impl < Exp : Integer >LineSegment < '_ , Exp > {
 // NOTE: Methods for constructing from points, querying domain/range bounds, and interpolating.
 impl < const RES : usize , Exp : Integer >FixInterp < RES , Exp > {
     pub fn from_points(points : [Point < Exp > ; RES]) -> Result < Self >;
+    pub fn from_points_unchecked(points : [Point < Exp > ; RES]) -> Self;
     pub fn x_min(& self) -> IFix64 < Exp >;
     pub fn x_max(& self) -> IFix64 < Exp >;
     pub fn y_min(& self) -> IFix64 < Exp >;
@@ -1375,7 +1387,7 @@ impl < const RES : usize , Exp : Integer >FixInterp < RES , Exp > {
 
 // NOTE: Wrapper around a FixInterp curve for computing collateral-ratio-dependent mint fees.
 pub struct InterpolatedMintFees {
-    curve: FixInterp < 20 , N5 >,
+    curve: FixInterp < 21 , N5 >,
 }
 
 // NOTE: Wrapper around a FixInterp curve for computing collateral-ratio-dependent redeem fees.
@@ -1389,11 +1401,11 @@ pub struct InterpolatedRedeemFees {
 /// Interpolated fee curve controller.
 /// Implementors define boundary behavior via `fee_inner`.
 // NOTE: Trait for fee controllers that use a piecewise-linear curve indexed by collateral ratio.
-pub trait InterpolatedFeeController {
-    fn curve(& self) -> & FixInterp < 20 , N5 >;
+pub trait InterpolatedFeeController< const RES : usize > {
+    fn curve(& self) -> & FixInterp < RES , N5 >;
     fn fee_inner(& self, cr : IFix64 < N5 >) -> Result < IFix64 < N5 > >;
     fn apply_fee< InExp >(& self, ucr : UFix64 < N9 >, amount_in : UFix64 < InExp >) -> Result < FeeExtract < InExp > >;
-    fn stability_threshold_2(& self) -> Result < UFix64 < N2 > >;
+    fn cr_floor(& self) -> Result < UFix64 < N2 > >;
 }
 
 
@@ -1411,15 +1423,14 @@ pub fn narrow_cr(cr : UFix64 < N9 >) -> Result < IFix64 < N5 > >;
 
 // NOTE: Wrapper around a FixInterp curve for computing collateral-ratio-dependent mint fees.
 impl InterpolatedMintFees {
-    pub fn new(curve : FixInterp < 20 , N5 >) -> InterpolatedMintFees;
+    pub fn new(curve : FixInterp < 21 , N5 >) -> InterpolatedMintFees;
 }
 
 
-## Impl InterpolatedFeeController for InterpolatedMintFees
+## Impl InterpolatedFeeController < 21 > for InterpolatedMintFees
 
-// NOTE: Implements curve-based fee lookup for mint operations, clamping at curve boundaries.
-impl InterpolatedFeeController for InterpolatedMintFees {
-    fn curve(& self) -> & FixInterp < 20 , N5 >;
+impl InterpolatedFeeController < 21 > for InterpolatedMintFees {
+    fn curve(& self) -> & FixInterp < 21 , N5 >;
     fn fee_inner(& self, cr : IFix64 < N5 >) -> Result < IFix64 < N5 > >;
 }
 
@@ -1432,10 +1443,9 @@ impl InterpolatedRedeemFees {
 }
 
 
-## Impl InterpolatedFeeController for InterpolatedRedeemFees
+## Impl InterpolatedFeeController < 20 > for InterpolatedRedeemFees
 
-// NOTE: Implements curve-based fee lookup for redeem operations, clamping at curve boundaries.
-impl InterpolatedFeeController for InterpolatedRedeemFees {
+impl InterpolatedFeeController < 20 > for InterpolatedRedeemFees {
     fn curve(& self) -> & FixInterp < 20 , N5 >;
     fn fee_inner(& self, cr : IFix64 < N5 >) -> Result < IFix64 < N5 > >;
 }
@@ -1499,9 +1509,9 @@ impl LstSwapConfig {
 ## Types
 
 // NOTE: Configuration for a Pyth oracle: staleness interval and confidence tolerance.
-pub struct OracleConfig< Exp > {
+pub struct OracleConfig {
     pub interval_secs: u64,
-    pub conf_tolerance: UFix64 < Exp >,
+    pub conf_tolerance: UFix64 < N9 >,
 }
 
 /// Spread of an asset price, with a lower and upper quote.
@@ -1512,13 +1522,19 @@ pub struct PriceRange< Exp : Integer > {
     pub upper: UFix64 < Exp >,
 }
 
+/// Validated oracle spot price and confidence interval.
+pub struct OraclePrice {
+    pub spot: UFix64 < N9 >,
+    pub conf: UFix64 < N9 >,
+}
+
 
 ## Functions
 
 /// Checks the ratio of `conf / price` against given tolerance.
 /// Guards against unusually large spreads in the oracle price.
 // NOTE: Guards against unusually large oracle confidence/price ratios.
-fn validate_conf< Exp >(price : UFix64 < Exp >, conf : UFix64 < Exp >, tolerance : UFix64 < Exp >) -> Result < UFix64 < Exp > > where UFix64 < Exp > : FixExt ,;
+fn validate_conf(price : UFix64 < N9 >, conf : UFix64 < N9 >, tolerance : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 
 /// Ensures the oracle's publish time is within the inclusive range:
 ///   `[clock_time - oracle_interval, clock_time]`
@@ -1533,25 +1549,43 @@ fn slot_interval(oracle_interval_secs : u64) -> Option < u64 >;
 // NOTE: Ensures the oracle's posted slot is within the configured staleness window.
 fn validate_posted_slot(posted_slot : u64, oracle_interval_secs : u64, current_slot : u64) -> Result < () >;
 
-/// Ensures the `exp` given by Pyth matches the target exponent type.
-/// Also checks if the quoted price is negative.
+/// Validates a Pyth price is positive and normalizes to `N9`.
+/// 
+/// # Errors
+/// * Negative price or unsupported exponent
 // NOTE: Validates Pyth price exponent matches target type and price is non-negative.
-fn validate_price< Exp : Integer >(price : i64, exp : i32) -> Result < UFix64 < Exp > >;
+fn validate_price(price : i64, exp : i32) -> Result < UFix64 < N9 > >;
+
+/// Normalizes a raw Pyth price to canonical `N9` precision.
+/// Accepts Pyth exponents from `-2` through `-9`.
+/// 
+/// # Errors
+/// * Unsupported exponent or conversion overflow
+fn normalize_pyth_price(price : u64, exp : i32) -> Result < UFix64 < N9 > >;
 
 /// Checks Pythnet verification level for the price update.
 // NOTE: Checks that the Pyth price update meets the required Pythnet verification level.
 fn validate_verification_level(level : VerificationLevel) -> Result < () >;
 
-/// Fetches price range from a Pyth oracle with a number of validations.
+/// Fetches validated price and confidence from Pyth.
+/// 
+/// # Errors
+/// * Validation
+pub fn query_pyth_oracle< C : SolanaClock >(clock : & C, oracle : & PriceUpdateV2, OracleConfig { interval_secs , conf_tolerance , } : OracleConfig) -> Result < OraclePrice >;
+
+/// Builds price range from Pyth oracle.
+/// 
+/// # Errors
+/// * Validation
 // NOTE: Fetches and validates a Pyth oracle price, returning a PriceRange with confidence bounds.
-pub fn query_pyth_price< Exp : Integer , C : SolanaClock >(clock : & C, oracle : & PriceUpdateV2, OracleConfig { interval_secs , conf_tolerance , } : OracleConfig < Exp >) -> Result < PriceRange < Exp > > where UFix64 < Exp > : FixExt ,;
+pub fn query_pyth_price< C : SolanaClock >(clock : & C, oracle : & PriceUpdateV2, config : OracleConfig) -> Result < PriceRange < N9 > >;
 
 
-## Impl OracleConfig < Exp >
+## Impl OracleConfig
 
-// NOTE: Constructor for OracleConfig with typed interval and tolerance.
-impl < Exp >OracleConfig < Exp > {
-    pub fn new(interval_secs : u64, conf_tolerance : UFix64 < Exp >) -> OracleConfig < Exp >;
+// NOTE: Configuration for a Pyth oracle: staleness interval and confidence tolerance.
+impl OracleConfig {
+    pub fn new(interval_secs : u64, conf_tolerance : UFix64 < N9 >) -> OracleConfig;
 }
 
 
@@ -1565,6 +1599,13 @@ impl < Exp : Integer >PriceRange < Exp > {
 }
 
 
+## Impl OraclePrice
+
+impl OraclePrice {
+    pub fn price_range(& self) -> Result < PriceRange < N9 > >;
+}
+
+
 ## Constants
 
 // NOTE: Pyth feed ID for the SOL/USD price oracle.
@@ -1575,6 +1616,117 @@ pub const BTC_USD: FeedId;
 
 // NOTE: Hard-coded Pubkey of the SOL/USD Pyth price feed account.
 pub const SOL_USD_PYTH_FEED: Pubkey;
+
+
+---
+
+# crate::rebalance_pricing
+<!-- file: hylo-core/src/rebalance_pricing.rs -->
+
+## Types
+
+/// Confidence interval multipliers for rebalance price curve construction.
+pub struct RebalanceCurveConfig {
+    floor_mult: UFixValue64,
+    ceil_mult: UFixValue64,
+}
+
+/// Sell side rebalance pricing curve.
+/// Active when CR is low (below 1.35).
+pub struct SellPriceCurve {
+    curve: FixInterp < 2 , N9 >,
+}
+
+/// Buy-side rebalance pricing curve.
+/// Active when CR is high (above 1.65).
+pub struct BuyPriceCurve {
+    curve: FixInterp < 2 , N9 >,
+}
+
+
+## Traits
+
+/// Interpolated rebalance price controller.
+/// Implementors define boundary behavior via [`price_inner`].
+pub trait RebalancePriceController {
+    fn curve(& self) -> & FixInterp < 2 , N9 >;
+    fn price_inner(& self, cr : IFix64 < N9 >) -> Result < IFix64 < N9 > >;
+    fn price(& self, ucr : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
+    fn validate(self) -> Result < Self >;
+}
+
+
+## Functions
+
+/// Convert unsigned CR to signed for curve lookup.
+/// 
+/// # Errors
+/// * Conversion overflow
+fn narrow_cr(cr : UFix64 < N9 >) -> Result < IFix64 < N9 > >;
+
+/// Convert unsigned oracle price to signed for curve storage.
+/// 
+/// # Errors
+/// * Conversion overflow
+fn narrow_price(price : UFix64 < N9 >) -> Result < IFix64 < N9 > >;
+
+/// Scales confidence interval by multiplier.
+/// 
+/// # Errors
+/// * Arithmetic overflow
+fn scale_ci(ci : UFix64 < N9 >, mult : UFix64 < N2 >) -> Result < UFix64 < N9 > >;
+
+
+## Impl RebalanceCurveConfig
+
+impl RebalanceCurveConfig {
+    pub fn new(floor_mult : UFixValue64, ceil_mult : UFixValue64) -> RebalanceCurveConfig;
+    pub fn floor_mult(& self) -> Result < UFix64 < N2 > >;
+    pub fn ceil_mult(& self) -> Result < UFix64 < N2 > >;
+}
+
+
+## Impl SellPriceCurve
+
+impl SellPriceCurve {
+    pub fn new(OraclePrice { spot , conf } : OraclePrice, config : & RebalanceCurveConfig) -> Result < SellPriceCurve >;
+}
+
+
+## Impl RebalancePriceController for SellPriceCurve
+
+impl RebalancePriceController for SellPriceCurve {
+    fn curve(& self) -> & FixInterp < 2 , N9 >;
+    fn price_inner(& self, cr : IFix64 < N9 >) -> Result < IFix64 < N9 > >;
+    fn validate(self) -> Result < SellPriceCurve >;
+}
+
+
+## Impl BuyPriceCurve
+
+impl BuyPriceCurve {
+    pub fn new(OraclePrice { spot , conf } : OraclePrice, config : & RebalanceCurveConfig) -> Result < BuyPriceCurve >;
+}
+
+
+## Impl RebalancePriceController for BuyPriceCurve
+
+impl RebalancePriceController for BuyPriceCurve {
+    fn curve(& self) -> & FixInterp < 2 , N9 >;
+    fn price_inner(& self, cr : IFix64 < N9 >) -> Result < IFix64 < N9 > >;
+    fn validate(self) -> Result < BuyPriceCurve >;
+}
+
+
+## Constants
+
+const CR_1_20: IFix64 < N9 >;
+
+const CR_1_35: IFix64 < N9 >;
+
+const CR_1_65: IFix64 < N9 >;
+
+const CR_1_75: IFix64 < N9 >;
 
 
 ---
@@ -1773,6 +1925,22 @@ impl TotalSolCache {
 
 # crate::util
 <!-- file: hylo-core/src/util.rs -->
+
+## Functions
+
+/// Bridges runtime mint decimals to typed `UFix64<N9>`.
+/// 
+/// # Errors
+/// * Unsupported decimal count or conversion overflow
+pub fn normalize_mint_exp(mint : & Mint, amount : u64) -> Result < UFix64 < N9 > >;
+
+/// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
+/// decimals.
+/// 
+/// # Errors
+/// * Unsupported decimal count
+pub fn denormalize_mint_exp(mint : & Mint, amount : UFix64 < N9 >) -> Result < u64 >;
+
 
 ## Macros
 
@@ -2040,8 +2208,6 @@ pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collate
 pub fn update_lst_swap_fee(admin : Pubkey, args : & args :: UpdateLstSwapFee) -> Instruction;
 
 pub fn update_levercoin_fees(admin : Pubkey, args : & args :: UpdateLevercoinFees) -> Instruction;
-
-pub fn update_stablecoin_fees(admin : Pubkey, args : & args :: UpdateStablecoinFees) -> Instruction;
 
 pub fn update_oracle_interval(admin : Pubkey, args : & args :: UpdateOracleInterval) -> Instruction;
 

@@ -20,9 +20,11 @@ note = "Creates Jupiter-compatible SwapAndAccountMetas for each Hylo operation t
 
 [modules."crate::codegen"]
 note = "Auto-generated Anchor IDL code for the exchange and stability pool programs."
+stale = true
 
 [modules."crate::conversion"]
 note = "Price conversion utilities between LST collateral, exogenous collateral, and protocol tokens (hyUSD, xSOL)."
+stale = true
 
 [modules."crate::error"]
 note = "Custom error types for hylo-core protocol math and validation failures."
@@ -30,6 +32,7 @@ stale = true
 
 [modules."crate::exchange"]
 note = "Re-exports exchange program account builders, IDL codegen, and instruction builders."
+stale = true
 
 [modules."crate::exchange_client"]
 note = "RPC client for executing exchange program transactions including mint, redeem, swap, and admin operations."
@@ -40,6 +43,7 @@ stale = true
 
 [modules."crate::exchange_context::exo"]
 note = "Exchange context implementation for exogenous (non-SOL) collateral pairs with interpolated fee curves."
+stale = true
 
 [modules."crate::exchange_context::lst"]
 note = "Exchange context implementation for SOL/LST collateral pairs using the TotalSolCache and Pyth oracle."
@@ -47,12 +51,15 @@ stale = true
 
 [modules."crate::exchange_math"]
 note = "Pure math functions for collateral ratio, TVL, stablecoin/levercoin NAV, and mint/swap capacity."
+stale = true
 
 [modules."crate::fee_controller"]
 note = "Fee configuration types and trait that select mint/redeem fees based on the current stability mode."
+stale = true
 
 [modules."crate::fee_curves"]
 note = "Defines piecewise-linear fee curves for collateral-ratio-dependent mint and redeem fees."
+stale = true
 
 [modules."crate::funding_rate"]
 note = "Per-epoch funding rate applied to exogenous collateral without native yield to cover protocol costs."
@@ -78,9 +85,11 @@ note = "Type-safe instruction builder trait and implementations dispatching by t
 
 [modules."crate::interp"]
 note = "Piecewise linear interpolation over fixed-point coordinates for fee curve evaluation."
+stale = true
 
 [modules."crate::interpolated_fees"]
 note = "Fee controllers that use interpolated curves to compute collateral-ratio-dependent fees for exo pairs."
+stale = true
 
 [modules."crate::jupiter"]
 note = "Jupiter AMM trait implementation allowing Hylo pairs to be routed through Jupiter aggregator."
@@ -124,12 +133,17 @@ note = "Stability pool QuoteStrategy impls for ProtocolStateStrategy covering de
 
 [modules."crate::pyth"]
 note = "Pyth oracle integration with price validation, confidence checks, and staleness guards."
+stale = true
 
 [modules."crate::quote_metadata"]
 note = "Describes a quote's operation type and human-readable route description."
 
 [modules."crate::quote_strategy"]
 note = "Core trait for computing executable quotes for any typed token pair operation."
+
+[modules."crate::rebalance_pricing"]
+note = ""
+stale = true
 
 [modules."crate::runtime_quote_strategy"]
 note = "Macro-generated trait that dispatches runtime Pubkey pairs to compile-time typed QuoteStrategy impls."
@@ -154,6 +168,7 @@ note = "Stability pool QuoteStrategy impls for SimulationStrategy using on-chain
 
 [modules."crate::slippage_config"]
 note = "Client-specified slippage tolerance paired with expected output amount for transaction validation."
+stale = true
 
 [modules."crate::solana_clock"]
 note = "Abstraction trait over Solana's on-chain Clock sysvar for testability."
@@ -164,6 +179,7 @@ note = "Defines protocol stability modes (Normal, Mode1, Mode2, Depeg) based on 
 
 [modules."crate::stability_pool"]
 note = "Re-exports stability pool program account builders, IDL codegen, and instruction builders."
+stale = true
 
 [modules."crate::stability_pool_client"]
 note = "RPC client for executing stability pool transactions including deposit, withdraw, and rebalance."
@@ -319,9 +335,11 @@ note = "Creates Jupiter-compatible SwapAndAccountMetas for swapping hyUSD to xSO
 
 [items."crate::conversion::Conversion"]
 note = "Provides bidirectional price conversion between LST collateral and protocol tokens using oracle prices."
+stale = true
 
 [items."crate::conversion::ExoConversion"]
 note = "Provides bidirectional price conversion between exogenous collateral and protocol tokens."
+stale = true
 
 [items."crate::conversion::SwapConversion"]
 note = "Converts between stablecoin and levercoin using their respective NAVs."
@@ -375,12 +393,15 @@ stale = true
 
 [items."crate::exchange_context::exo::ExchangeContext for ExoExchangeContext < C >"]
 note = "Implements ExchangeContext for exogenous collateral using virtual stablecoin supply and interpolated fees."
+stale = true
 
 [items."crate::exchange_context::exo::ExoExchangeContext"]
 note = "Exchange context for exogenous (non-SOL) collateral pairs with interpolated fee curves and virtual stablecoin tracking."
+stale = true
 
 [items."crate::exchange_context::exo::ExoExchangeContext < C >"]
 note = "Inherent methods for loading exo context from on-chain state and computing fees for each operation type."
+stale = true
 
 [items."crate::exchange_context::lst::ExchangeContext for LstExchangeContext < C >"]
 note = "Implements ExchangeContext for SOL/LST collateral using TotalSolCache and SOL/USD oracle."
@@ -400,26 +421,35 @@ note = "Re-export of ExoExchangeContext from the exchange_context module."
 [items."crate::exchange_context::self::lst::LstExchangeContext"]
 note = "Re-export of LstExchangeContext from the exchange_context module."
 
+[items."crate::exchange_context::validate_stability_thresholds"]
+note = ""
+
 [items."crate::exchange_math::collateral_ratio"]
 note = "Computes CR = total_collateral_usd / stablecoin_supply, returning u64::MAX when supply is zero."
+stale = true
 
 [items."crate::exchange_math::depeg_stablecoin_nav"]
 note = "Computes stablecoin NAV during depeg mode as total_collateral_usd / supply."
+stale = true
 
 [items."crate::exchange_math::max_mintable_stablecoin"]
 note = "Computes maximum stablecoin mintable before hitting the next collateral ratio threshold."
+stale = true
 
 [items."crate::exchange_math::max_swappable_stablecoin"]
 note = "Computes maximum stablecoin obtainable via swap without breaching the target collateral ratio."
 
 [items."crate::exchange_math::next_levercoin_mint_nav"]
 note = "Computes upper-bound levercoin NAV for minting: free_collateral / levercoin_supply."
+stale = true
 
 [items."crate::exchange_math::next_levercoin_redeem_nav"]
 note = "Computes lower-bound levercoin NAV for redemption."
+stale = true
 
 [items."crate::exchange_math::total_value_locked"]
 note = "Multiplies total collateral by USD price to compute protocol TVL."
+stale = true
 
 [items."crate::fee_controller::FeeController"]
 note = "Trait that selects mint/redeem fee rates based on the current stability mode."
@@ -429,6 +459,7 @@ note = "Selects levercoin mint/redeem fees from normal, mode_1, or mode_2 fee ta
 
 [items."crate::fee_controller::FeeController for StablecoinFees"]
 note = "Selects stablecoin mint/redeem fees from normal or mode_1 fee tables."
+removed = true
 
 [items."crate::fee_controller::FeeExtract"]
 note = "Result of fee extraction: the extracted fee amount and the remaining amount after deduction."
@@ -450,6 +481,7 @@ note = "Macro that defines a fee curve as an array of fixed-point coordinate pai
 
 [items."crate::fee_curves::mint_fee_curve"]
 note = "Returns the piecewise-linear interpolator for collateral-ratio-dependent mint fees."
+stale = true
 
 [items."crate::fee_curves::redeem_fee_curve"]
 note = "Returns the piecewise-linear interpolator for collateral-ratio-dependent redeem fees."
@@ -463,6 +495,7 @@ note = ""
 
 [items."crate::funding_rate::MAX_RATE"]
 note = "Maximum per-epoch funding rate (~10% annualized at 182 epochs/year)."
+stale = true
 
 [items."crate::hylo_clients::util::LST"]
 note = "Marker trait for liquid staking tokens with N9 decimal precision."
@@ -487,6 +520,7 @@ note = "Converts IDL LstSolPrice into the core domain type."
 
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: StablecoinFees > for StablecoinFees"]
 note = "Converts IDL StablecoinFees into the core domain type."
+stale = true
 
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache"]
 note = "Converts IDL TotalSolCache into the core domain type."
@@ -610,6 +644,7 @@ note = ""
 
 [items."crate::instruction_builders::exchange::update_stablecoin_fees"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::update_treasury"]
 note = ""
@@ -688,6 +723,7 @@ note = "Piecewise linear interpolator over a compile-time-sized array of fixed-p
 
 [items."crate::interp::FixInterp < RES , Exp >"]
 note = "Methods for constructing from points, querying domain/range bounds, and interpolating."
+stale = true
 
 [items."crate::interp::LineSegment"]
 note = "A pair of Points defining a line segment for linear interpolation."
@@ -703,15 +739,25 @@ note = "Constructor creating a Point from integer x and y values."
 
 [items."crate::interpolated_fees::InterpolatedFeeController"]
 note = "Trait for fee controllers that use a piecewise-linear curve indexed by collateral ratio."
+stale = true
+
+[items."crate::interpolated_fees::InterpolatedFeeController < 20 > for InterpolatedRedeemFees"]
+note = ""
+
+[items."crate::interpolated_fees::InterpolatedFeeController < 21 > for InterpolatedMintFees"]
+note = ""
 
 [items."crate::interpolated_fees::InterpolatedFeeController for InterpolatedMintFees"]
 note = "Implements curve-based fee lookup for mint operations, clamping at curve boundaries."
+removed = true
 
 [items."crate::interpolated_fees::InterpolatedFeeController for InterpolatedRedeemFees"]
 note = "Implements curve-based fee lookup for redeem operations, clamping at curve boundaries."
+removed = true
 
 [items."crate::interpolated_fees::InterpolatedMintFees"]
 note = "Wrapper around a FixInterp curve for computing collateral-ratio-dependent mint fees."
+stale = true
 
 [items."crate::interpolated_fees::InterpolatedRedeemFees"]
 note = "Wrapper around a FixInterp curve for computing collateral-ratio-dependent redeem fees."
@@ -1007,9 +1053,19 @@ note = "Pyth feed ID for the BTC/USD price oracle."
 
 [items."crate::pyth::OracleConfig"]
 note = "Configuration for a Pyth oracle: staleness interval and confidence tolerance."
+stale = true
 
 [items."crate::pyth::OracleConfig < Exp >"]
 note = "Constructor for OracleConfig with typed interval and tolerance."
+removed = true
+
+[items."crate::pyth::OraclePrice"]
+note = ""
+stale = true
+
+[items."crate::pyth::OraclePrice < Exp >"]
+note = ""
+removed = true
 
 [items."crate::pyth::PriceRange"]
 note = "Lower and upper price bounds derived from oracle price +/- confidence interval."
@@ -1023,20 +1079,31 @@ note = "Pyth feed ID for the SOL/USD price oracle."
 [items."crate::pyth::SOL_USD_PYTH_FEED"]
 note = "Hard-coded Pubkey of the SOL/USD Pyth price feed account."
 
+[items."crate::pyth::normalize_pyth_price"]
+note = ""
+stale = true
+
+[items."crate::pyth::query_pyth_oracle"]
+note = ""
+stale = true
+
 [items."crate::pyth::query_pyth_price"]
 note = "Fetches and validates a Pyth oracle price, returning a PriceRange with confidence bounds."
+stale = true
 
 [items."crate::pyth::slot_interval"]
 note = "Converts oracle interval seconds to Solana slot count."
 
 [items."crate::pyth::validate_conf"]
 note = "Guards against unusually large oracle confidence/price ratios."
+stale = true
 
 [items."crate::pyth::validate_posted_slot"]
 note = "Ensures the oracle's posted slot is within the configured staleness window."
 
 [items."crate::pyth::validate_price"]
 note = "Validates Pyth price exponent matches target type and price is non-negative."
+stale = true
 
 [items."crate::pyth::validate_publish_time"]
 note = "Ensures oracle publish time is within the allowed interval from current clock time."
@@ -1061,6 +1128,49 @@ note = "Re-exports Operation and QuoteMetadata."
 
 [items."crate::quote_strategy::QuoteStrategy"]
 note = "Core async trait: given amount, user, and slippage, produces a typed ExecutableQuote for a token pair."
+
+[items."crate::rebalance_pricing::BuyPriceCurve"]
+note = ""
+stale = true
+
+[items."crate::rebalance_pricing::CR_1_20"]
+note = ""
+
+[items."crate::rebalance_pricing::CR_1_35"]
+note = ""
+
+[items."crate::rebalance_pricing::CR_1_65"]
+note = ""
+
+[items."crate::rebalance_pricing::CR_1_75"]
+note = ""
+
+[items."crate::rebalance_pricing::RebalanceCurveConfig"]
+note = ""
+
+[items."crate::rebalance_pricing::RebalancePriceController"]
+note = ""
+
+[items."crate::rebalance_pricing::RebalancePriceController for BuyPriceCurve"]
+note = ""
+
+[items."crate::rebalance_pricing::RebalancePriceController for SellPriceCurve"]
+note = ""
+
+[items."crate::rebalance_pricing::SellPriceCurve"]
+note = ""
+stale = true
+
+[items."crate::rebalance_pricing::narrow_cr"]
+note = ""
+
+[items."crate::rebalance_pricing::narrow_price"]
+note = ""
+stale = true
+
+[items."crate::rebalance_pricing::scale_ci"]
+note = ""
+stale = true
 
 [items."crate::runtime_quote_strategy::RuntimeQuoteStrategy"]
 note = "Trait for runtime dispatch from Pubkey mint pairs to typed QuoteStrategy implementations."
@@ -1414,6 +1524,10 @@ note = "Assembles a signed VersionedTransaction from instructions, lookup tables
 [items."crate::util::cluster_from_env"]
 note = "Reads RPC_URL and RPC_WS_URL environment variables to construct a Cluster."
 
+[items."crate::util::denormalize_mint_exp"]
+note = ""
+stale = true
+
 [items."crate::util::deserialize_lookup_table"]
 note = "Deserializes a Solana account into an AddressLookupTableAccount."
 
@@ -1428,6 +1542,10 @@ note = "Fetches multiple Solana accounts via RPC and loads them into Jupiter's A
 
 [items."crate::util::load_amm_context"]
 note = "Fetches Solana Clock from RPC and constructs Jupiter's AmmContext."
+
+[items."crate::util::normalize_mint_exp"]
+note = ""
+stale = true
 
 [items."crate::util::operation_to_quote"]
 note = "Converts a typed OperationOutput into a Jupiter Quote with fee percentages."

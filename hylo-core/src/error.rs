@@ -142,8 +142,6 @@ pub enum CoreError {
   ExoToToken,
   #[msg("Arithmetic error converting protocol token to exo collateral.")]
   ExoFromToken,
-  #[msg("Precision conversion failed for exo collateral price.")]
-  ExoPriceConversion,
   #[msg("Over/underflow projecting exo collateral total for fee.")]
   ExoDestinationCollateral,
   #[msg("Over/underflow projecting stablecoin total for exo fee.")]

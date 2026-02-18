@@ -27,8 +27,8 @@ use crate::virtual_stablecoin::VirtualStablecoin;
 pub struct LstExchangeContext<C> {
   pub clock: C,
   pub total_sol: UFix64<N9>,
-  pub sol_usd_oracle: OraclePrice<N8>,
-  pub sol_usd_price: PriceRange<N8>,
+  pub sol_usd_oracle: OraclePrice,
+  pub sol_usd_price: PriceRange<N9>,
   virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
@@ -44,11 +44,11 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.total_sol
   }
 
-  fn collateral_usd_price(&self) -> PriceRange<N8> {
+  fn collateral_usd_price(&self) -> PriceRange<N9> {
     self.sol_usd_price
   }
 
-  fn collateral_oracle_price(&self) -> OraclePrice<N8> {
+  fn collateral_oracle_price(&self) -> OraclePrice {
     self.sol_usd_oracle
   }
 
@@ -87,7 +87,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     clock: C,
     total_sol_cache: &TotalSolCache,
     stability_threshold_1: UFix64<N2>,
-    oracle_config: OracleConfig<N8>,
+    oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
     sol_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,

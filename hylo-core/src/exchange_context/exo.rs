@@ -23,8 +23,8 @@ use crate::virtual_stablecoin::VirtualStablecoin;
 pub struct ExoExchangeContext<C> {
   pub clock: C,
   pub total_collateral: UFix64<N9>,
-  pub collateral_oracle: OraclePrice<N8>,
-  pub collateral_usd_price: PriceRange<N8>,
+  pub collateral_oracle: OraclePrice,
+  pub collateral_usd_price: PriceRange<N9>,
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
@@ -40,11 +40,11 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.total_collateral
   }
 
-  fn collateral_usd_price(&self) -> PriceRange<N8> {
+  fn collateral_usd_price(&self) -> PriceRange<N9> {
     self.collateral_usd_price
   }
 
-  fn collateral_oracle_price(&self) -> OraclePrice<N8> {
+  fn collateral_oracle_price(&self) -> OraclePrice {
     self.collateral_oracle
   }
 
@@ -83,7 +83,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     clock: C,
     total_collateral: UFix64<N9>,
     stability_threshold_1: UFix64<N2>,
-    oracle_config: OracleConfig<N8>,
+    oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
     collateral_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,

@@ -71,9 +71,8 @@ fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N9>> {
 ///
 /// # Errors
 /// * Conversion overflow
-fn narrow_price(price: UFix64<N8>) -> Result<IFix64<N9>> {
+fn narrow_price(price: UFix64<N9>) -> Result<IFix64<N9>> {
   price
-    .convert::<N9>()
     .narrow::<i64>()
     .ok_or(CoreError::RebalancePriceConversion.into())
 }
@@ -82,7 +81,7 @@ fn narrow_price(price: UFix64<N8>) -> Result<IFix64<N9>> {
 ///
 /// # Errors
 /// * Arithmetic overflow
-fn scale_ci(ci: UFix64<N8>, mult: UFix64<N2>) -> Result<UFix64<N8>> {
+fn scale_ci(ci: UFix64<N9>, mult: UFix64<N2>) -> Result<UFix64<N9>> {
   ci.mul_div_ceil(mult, UFix64::<N2>::one())
     .ok_or(CoreError::RebalancePriceConstruction.into())
 }
@@ -136,7 +135,7 @@ impl SellPriceCurve {
   /// * Arithmetic underflow/overflow
   /// * Conversion overflow
   pub fn new(
-    OraclePrice { spot, conf }: OraclePrice<N8>,
+    OraclePrice { spot, conf }: OraclePrice,
     config: &RebalanceCurveConfig,
   ) -> Result<SellPriceCurve> {
     let (floor, ceil) = spot
@@ -195,7 +194,7 @@ impl BuyPriceCurve {
   /// * Arithmetic underflow/overflow
   /// * Precision conversion
   pub fn new(
-    OraclePrice { spot, conf }: OraclePrice<N8>,
+    OraclePrice { spot, conf }: OraclePrice,
     config: &RebalanceCurveConfig,
   ) -> Result<BuyPriceCurve> {
     let (floor, ceil) = spot
@@ -249,9 +248,9 @@ mod tests {
   use crate::error::CoreError;
   use crate::pyth::OraclePrice;
 
-  const ORACLE: OraclePrice<N8> = OraclePrice {
-    spot: UFix64::constant(14_640_110_937),
-    conf: UFix64::constant(9_463_582),
+  const ORACLE: OraclePrice = OraclePrice {
+    spot: UFix64::constant(146_401_109_370),
+    conf: UFix64::constant(94_635_820),
   };
 
   const SELL_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
@@ -377,14 +376,14 @@ mod tests {
       .boxed()
   }
 
-  fn oracle_spot() -> BoxedStrategy<UFix64<N8>> {
-    (1_000_000_000u64..100_000_000_000)
+  fn oracle_spot() -> BoxedStrategy<UFix64<N9>> {
+    (10_000_000_000u64..1_000_000_000_000)
       .prop_map(UFix64::new)
       .boxed()
   }
 
-  fn oracle_ci() -> BoxedStrategy<UFix64<N8>> {
-    (1_000u64..50_000_000).prop_map(UFix64::new).boxed()
+  fn oracle_ci() -> BoxedStrategy<UFix64<N9>> {
+    (10_000u64..500_000_000).prop_map(UFix64::new).boxed()
   }
 
   proptest! {

@@ -36,6 +36,7 @@ External deps: anchor-lang, anchor-spl, hylo-fix, hylo-idl, hylo-jupiter-amm-int
   - lst_sol_price — Tracks LST-to-SOL exchange rate per epoch for accurate collateral valuation.
   - lst_swap_config — Configuration and fee logic for direct LST-to-LST swaps within the exchange.
   - pyth — Pyth oracle integration with price validation, confidence checks, and staleness guards.
+  - rebalance_pricing — Oracle-derived collateral rebalancing price curves.
   - slippage_config — Client-specified slippage tolerance paired with expected output amount for transaction validation.
   - solana_clock — Abstraction trait over Solana's on-chain Clock sysvar for testability.
   - stability_mode — Defines protocol stability modes (Normal, Mode1, Mode2, Depeg) based on collateral ratio thresholds.

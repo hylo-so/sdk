@@ -43,8 +43,8 @@
   },
   "crate::account_builders::exchange::harvest_funding_rate": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 281,
-    "line_end": 304,
+    "line_start": 283,
+    "line_end": 306,
     "kind": "function",
     "visibility": "pub"
   },
@@ -57,8 +57,8 @@
   },
   "crate::account_builders::exchange::mint_levercoin_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 173,
-    "line_end": 197,
+    "line_start": 175,
+    "line_end": 199,
     "kind": "function",
     "visibility": "pub"
   },
@@ -71,8 +71,8 @@
   },
   "crate::account_builders::exchange::mint_stablecoin_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 201,
-    "line_end": 224,
+    "line_start": 203,
+    "line_end": 226,
     "kind": "function",
     "visibility": "pub"
   },
@@ -85,8 +85,8 @@
   },
   "crate::account_builders::exchange::redeem_levercoin_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 228,
-    "line_end": 251,
+    "line_start": 230,
+    "line_end": 253,
     "kind": "function",
     "visibility": "pub"
   },
@@ -99,15 +99,15 @@
   },
   "crate::account_builders::exchange::redeem_stablecoin_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 255,
-    "line_end": 277,
+    "line_start": 257,
+    "line_end": 279,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::register_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
     "line_start": 146,
-    "line_end": 169,
+    "line_end": 171,
     "kind": "function",
     "visibility": "pub"
   },
@@ -120,15 +120,15 @@
   },
   "crate::account_builders::exchange::swap_lever_to_stable_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 308,
-    "line_end": 333,
+    "line_start": 310,
+    "line_end": 335,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::swap_lst": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 388,
-    "line_end": 407,
+    "line_start": 390,
+    "line_end": 409,
     "kind": "function",
     "visibility": "pub"
   },
@@ -141,15 +141,15 @@
   },
   "crate::account_builders::exchange::swap_stable_to_lever_exo": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 337,
-    "line_end": 362,
+    "line_start": 339,
+    "line_end": 364,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_builders::exchange::withdraw_fees": {
     "file": "hylo-idl/src/account_builders/exchange.rs",
-    "line_start": 366,
-    "line_end": 384,
+    "line_start": 368,
+    "line_end": 386,
     "kind": "function",
     "visibility": "pub"
   },
@@ -246,43 +246,43 @@
   },
   "crate::conversion::ExoConversion": {
     "file": "hylo-core/src/conversion.rs",
-    "line_start": 98,
-    "line_end": 100,
+    "line_start": 96,
+    "line_end": 98,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::conversion::SwapConversion": {
     "file": "hylo-core/src/conversion.rs",
-    "line_start": 57,
-    "line_end": 60,
+    "line_start": 55,
+    "line_end": 58,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::conversion::impl Conversion": {
     "file": "hylo-core/src/conversion.rs",
     "line_start": 16,
-    "line_end": 54,
+    "line_end": 52,
     "kind": "impl Conversion",
     "visibility": "private"
   },
   "crate::conversion::impl ExoConversion": {
     "file": "hylo-core/src/conversion.rs",
-    "line_start": 102,
-    "line_end": 151,
+    "line_start": 100,
+    "line_end": 130,
     "kind": "impl ExoConversion",
     "visibility": "private"
   },
   "crate::conversion::impl SwapConversion": {
     "file": "hylo-core/src/conversion.rs",
-    "line_start": 62,
-    "line_end": 95,
+    "line_start": 60,
+    "line_end": 93,
     "kind": "impl SwapConversion",
     "visibility": "private"
   },
   "crate::error::CoreError": {
     "file": "hylo-core/src/error.rs",
     "line_start": 4,
-    "line_end": 151,
+    "line_end": 161,
     "kind": "enum",
     "visibility": "pub"
   },
@@ -386,14 +386,14 @@
   },
   "crate::exchange_context::ExchangeContext": {
     "file": "hylo-core/src/exchange_context/mod.rs",
-    "line_start": 30,
-    "line_end": 267,
+    "line_start": 47,
+    "line_end": 309,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::exchange_context::exo::ExoExchangeContext": {
     "file": "hylo-core/src/exchange_context/exo.rs",
-    "line_start": 24,
+    "line_start": 23,
     "line_end": 36,
     "kind": "struct",
     "visibility": "pub"
@@ -401,35 +401,35 @@
   "crate::exchange_context::exo::impl ExchangeContext for ExoExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/exo.rs",
     "line_start": 38,
-    "line_end": 70,
+    "line_end": 74,
     "kind": "impl ExchangeContext for ExoExchangeContext < C >",
     "visibility": "private"
   },
   "crate::exchange_context::exo::impl ExoExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/exo.rs",
-    "line_start": 72,
-    "line_end": 240,
+    "line_start": 76,
+    "line_end": 232,
     "kind": "impl ExoExchangeContext < C >",
     "visibility": "private"
   },
   "crate::exchange_context::lst::LstExchangeContext": {
     "file": "hylo-core/src/exchange_context/lst.rs",
-    "line_start": 25,
-    "line_end": 36,
+    "line_start": 27,
+    "line_end": 40,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::exchange_context::lst::impl ExchangeContext for LstExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/lst.rs",
-    "line_start": 38,
-    "line_end": 70,
+    "line_start": 42,
+    "line_end": 78,
     "kind": "impl ExchangeContext for LstExchangeContext < C >",
     "visibility": "private"
   },
   "crate::exchange_context::lst::impl LstExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/lst.rs",
-    "line_start": 72,
-    "line_end": 295,
+    "line_start": 80,
+    "line_end": 305,
     "kind": "impl LstExchangeContext < C >",
     "visibility": "private"
   },
@@ -445,6 +445,13 @@
     "line_start": 14,
     "line_end": 14,
     "kind": "use",
+    "visibility": "pub"
+  },
+  "crate::exchange_context::validate_stability_thresholds": {
+    "file": "hylo-core/src/exchange_context/mod.rs",
+    "line_start": 37,
+    "line_end": 44,
+    "kind": "function",
     "visibility": "pub"
   },
   "crate::exchange_math::collateral_ratio": {
@@ -519,30 +526,23 @@
   },
   "crate::fee_controller::LevercoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 122,
-    "line_end": 126,
+    "line_start": 96,
+    "line_end": 100,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::fee_controller::StablecoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 82,
-    "line_end": 85,
+    "line_start": 83,
+    "line_end": 86,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::fee_controller::impl FeeController for LevercoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 128,
-    "line_end": 157,
+    "line_start": 102,
+    "line_end": 131,
     "kind": "impl FeeController for LevercoinFees",
-    "visibility": "private"
-  },
-  "crate::fee_controller::impl FeeController for StablecoinFees": {
-    "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 94,
-    "line_end": 119,
-    "kind": "impl FeeController for StablecoinFees",
     "visibility": "private"
   },
   "crate::fee_controller::impl FeeExtract < Exp >": {
@@ -561,15 +561,15 @@
   },
   "crate::fee_controller::impl LevercoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 159,
-    "line_end": 197,
+    "line_start": 133,
+    "line_end": 171,
     "kind": "impl LevercoinFees",
     "visibility": "private"
   },
   "crate::fee_controller::impl StablecoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 87,
-    "line_end": 92,
+    "line_start": 88,
+    "line_end": 93,
     "kind": "impl StablecoinFees",
     "visibility": "private"
   },
@@ -582,15 +582,15 @@
   },
   "crate::fee_curves::mint_fee_curve": {
     "file": "hylo-core/src/fee_curves.rs",
-    "line_start": 46,
-    "line_end": 48,
+    "line_start": 20,
+    "line_end": 22,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::fee_curves::redeem_fee_curve": {
     "file": "hylo-core/src/fee_curves.rs",
-    "line_start": 54,
-    "line_end": 56,
+    "line_start": 28,
+    "line_end": 30,
     "kind": "function",
     "visibility": "pub"
   },
@@ -618,7 +618,7 @@
   "crate::funding_rate::impl FundingRateConfig": {
     "file": "hylo-core/src/funding_rate.rs",
     "line_start": 22,
-    "line_end": 86,
+    "line_end": 80,
     "kind": "impl FundingRateConfig",
     "visibility": "private"
   },
@@ -631,8 +631,8 @@
   },
   "crate::idl": {
     "file": "hylo-core/src/lib.rs",
-    "line_start": 28,
-    "line_end": 28,
+    "line_start": 29,
+    "line_end": 29,
     "kind": "use",
     "visibility": "pub"
   },
@@ -722,8 +722,8 @@
   },
   "crate::instruction_builders::exchange::get_stats": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 732,
-    "line_end": 745,
+    "line_start": 716,
+    "line_end": 729,
     "kind": "function",
     "visibility": "pub"
   },
@@ -757,8 +757,8 @@
   },
   "crate::instruction_builders::exchange::initialize_lst_virtual_stablecoin": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 717,
-    "line_end": 729,
+    "line_start": 701,
+    "line_end": 713,
     "kind": "function",
     "visibility": "pub"
   },
@@ -883,43 +883,43 @@
   },
   "crate::instruction_builders::exchange::update_admin": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 697,
-    "line_end": 714,
+    "line_start": 681,
+    "line_end": 698,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::instruction_builders::exchange::update_exo_funding_rate": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 602,
-    "line_end": 618,
+    "line_start": 586,
+    "line_end": 602,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::instruction_builders::exchange::update_exo_oracle": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 621,
-    "line_end": 637,
+    "line_start": 605,
+    "line_end": 621,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::instruction_builders::exchange::update_exo_oracle_conf_tolerance": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 640,
-    "line_end": 656,
+    "line_start": 624,
+    "line_end": 640,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::instruction_builders::exchange::update_exo_oracle_interval": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 659,
-    "line_end": 675,
+    "line_start": 643,
+    "line_end": 659,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::instruction_builders::exchange::update_exo_stability_threshold": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 678,
-    "line_end": 694,
+    "line_start": 662,
+    "line_end": 678,
     "kind": "function",
     "visibility": "pub"
   },
@@ -953,8 +953,8 @@
   },
   "crate::instruction_builders::exchange::update_oracle_interval": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 538,
-    "line_end": 551,
+    "line_start": 522,
+    "line_end": 535,
     "kind": "function",
     "visibility": "pub"
   },
@@ -974,36 +974,29 @@
   },
   "crate::instruction_builders::exchange::update_stability_thresholds": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
+    "line_start": 538,
+    "line_end": 551,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::instruction_builders::exchange::update_treasury": {
+    "file": "hylo-idl/src/instruction_builders/exchange.rs",
     "line_start": 554,
     "line_end": 567,
     "kind": "function",
     "visibility": "pub"
   },
-  "crate::instruction_builders::exchange::update_stablecoin_fees": {
-    "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 522,
-    "line_end": 535,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::instruction_builders::exchange::update_treasury": {
+  "crate::instruction_builders::exchange::update_yield_harvest_config": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
     "line_start": 570,
     "line_end": 583,
     "kind": "function",
     "visibility": "pub"
   },
-  "crate::instruction_builders::exchange::update_yield_harvest_config": {
-    "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 586,
-    "line_end": 599,
-    "kind": "function",
-    "visibility": "pub"
-  },
   "crate::instruction_builders::exchange::withdraw_fees": {
     "file": "hylo-idl/src/instruction_builders/exchange.rs",
-    "line_start": 748,
-    "line_end": 760,
+    "line_start": 732,
+    "line_end": 744,
     "kind": "function",
     "visibility": "pub"
   },
@@ -1178,7 +1171,7 @@
   "crate::interp::impl FixInterp < RES , Exp >": {
     "file": "hylo-core/src/interp.rs",
     "line_start": 54,
-    "line_end": 115,
+    "line_end": 121,
     "kind": "impl FixInterp < RES , Exp >",
     "visibility": "private"
   },
@@ -1205,43 +1198,43 @@
   },
   "crate::interpolated_fees::InterpolatedMintFees": {
     "file": "hylo-core/src/interpolated_fees.rs",
-    "line_start": 58,
-    "line_end": 60,
+    "line_start": 59,
+    "line_end": 61,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::interpolated_fees::InterpolatedRedeemFees": {
     "file": "hylo-core/src/interpolated_fees.rs",
-    "line_start": 86,
-    "line_end": 88,
+    "line_start": 88,
+    "line_end": 90,
     "kind": "struct",
     "visibility": "pub"
   },
-  "crate::interpolated_fees::impl InterpolatedFeeController for InterpolatedMintFees": {
+  "crate::interpolated_fees::impl InterpolatedFeeController < 20 > for InterpolatedRedeemFees": {
     "file": "hylo-core/src/interpolated_fees.rs",
-    "line_start": 69,
-    "line_end": 84,
-    "kind": "impl InterpolatedFeeController for InterpolatedMintFees",
+    "line_start": 99,
+    "line_end": 114,
+    "kind": "impl InterpolatedFeeController < 20 > for InterpolatedRedeemFees",
     "visibility": "private"
   },
-  "crate::interpolated_fees::impl InterpolatedFeeController for InterpolatedRedeemFees": {
+  "crate::interpolated_fees::impl InterpolatedFeeController < 21 > for InterpolatedMintFees": {
     "file": "hylo-core/src/interpolated_fees.rs",
-    "line_start": 97,
-    "line_end": 112,
-    "kind": "impl InterpolatedFeeController for InterpolatedRedeemFees",
+    "line_start": 70,
+    "line_end": 85,
+    "kind": "impl InterpolatedFeeController < 21 > for InterpolatedMintFees",
     "visibility": "private"
   },
   "crate::interpolated_fees::impl InterpolatedMintFees": {
     "file": "hylo-core/src/interpolated_fees.rs",
-    "line_start": 62,
-    "line_end": 67,
+    "line_start": 63,
+    "line_end": 68,
     "kind": "impl InterpolatedMintFees",
     "visibility": "private"
   },
   "crate::interpolated_fees::impl InterpolatedRedeemFees": {
     "file": "hylo-core/src/interpolated_fees.rs",
-    "line_start": 90,
-    "line_end": 95,
+    "line_start": 92,
+    "line_end": 97,
     "kind": "impl InterpolatedRedeemFees",
     "visibility": "private"
   },
@@ -1786,22 +1779,22 @@
   },
   "crate::protocol_state::state::ProtocolState": {
     "file": "hylo-quotes/src/protocol_state/state.rs",
-    "line_start": 27,
-    "line_end": 60,
+    "line_start": 26,
+    "line_end": 59,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::protocol_state::state::impl ProtocolState < C >": {
     "file": "hylo-quotes/src/protocol_state/state.rs",
-    "line_start": 62,
-    "line_end": 131,
+    "line_start": 61,
+    "line_end": 124,
     "kind": "impl ProtocolState < C >",
     "visibility": "private"
   },
   "crate::protocol_state::state::impl TryFrom < & ProtocolAccounts > for ProtocolState < Clock >": {
     "file": "hylo-quotes/src/protocol_state/state.rs",
-    "line_start": 133,
-    "line_end": 189,
+    "line_start": 126,
+    "line_end": 182,
     "kind": "impl TryFrom < & ProtocolAccounts > for ProtocolState < Clock >",
     "visibility": "private"
   },
@@ -1959,10 +1952,17 @@
     "kind": "struct",
     "visibility": "pub"
   },
+  "crate::pyth::OraclePrice": {
+    "file": "hylo-core/src/pyth.rs",
+    "line_start": 179,
+    "line_end": 182,
+    "kind": "struct",
+    "visibility": "pub"
+  },
   "crate::pyth::PriceRange": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 50,
-    "line_end": 53,
+    "line_start": 47,
+    "line_end": 50,
     "kind": "struct",
     "visibility": "pub"
   },
@@ -1980,66 +1980,87 @@
     "kind": "const",
     "visibility": "pub"
   },
-  "crate::pyth::impl OracleConfig < Exp >": {
+  "crate::pyth::impl OracleConfig": {
     "file": "hylo-core/src/pyth.rs",
     "line_start": 34,
-    "line_end": 45,
-    "kind": "impl OracleConfig < Exp >",
+    "line_end": 42,
+    "kind": "impl OracleConfig",
+    "visibility": "private"
+  },
+  "crate::pyth::impl OraclePrice": {
+    "file": "hylo-core/src/pyth.rs",
+    "line_start": 184,
+    "line_end": 192,
+    "kind": "impl OraclePrice",
     "visibility": "private"
   },
   "crate::pyth::impl PriceRange < Exp >": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 55,
-    "line_end": 82,
+    "line_start": 52,
+    "line_end": 79,
     "kind": "impl PriceRange < Exp >",
     "visibility": "private"
   },
+  "crate::pyth::normalize_pyth_price": {
+    "file": "hylo-core/src/pyth.rs",
+    "line_start": 153,
+    "line_end": 166,
+    "kind": "function",
+    "visibility": "private"
+  },
+  "crate::pyth::query_pyth_oracle": {
+    "file": "hylo-core/src/pyth.rs",
+    "line_start": 198,
+    "line_end": 219,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::pyth::query_pyth_price": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 164,
-    "line_end": 193,
+    "line_start": 225,
+    "line_end": 232,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pyth::slot_interval": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 122,
-    "line_end": 126,
+    "line_start": 116,
+    "line_end": 120,
     "kind": "function",
     "visibility": "private"
   },
   "crate::pyth::validate_conf": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 86,
-    "line_end": 99,
+    "line_start": 83,
+    "line_end": 93,
     "kind": "function",
     "visibility": "private"
   },
   "crate::pyth::validate_posted_slot": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 129,
-    "line_end": 140,
+    "line_start": 123,
+    "line_end": 134,
     "kind": "function",
     "visibility": "private"
   },
   "crate::pyth::validate_price": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 144,
-    "line_end": 152,
+    "line_start": 140,
+    "line_end": 146,
     "kind": "function",
     "visibility": "private"
   },
   "crate::pyth::validate_publish_time": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 103,
-    "line_end": 119,
+    "line_start": 97,
+    "line_end": 113,
     "kind": "function",
     "visibility": "private"
   },
   "crate::pyth::validate_verification_level": {
     "file": "hylo-core/src/pyth.rs",
-    "line_start": 155,
-    "line_end": 161,
+    "line_start": 169,
+    "line_end": 175,
     "kind": "function",
     "visibility": "private"
   },
@@ -2098,6 +2119,118 @@
     "line_end": 25,
     "kind": "trait",
     "visibility": "pub"
+  },
+  "crate::rebalance_pricing::BuyPriceCurve": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 186,
+    "line_end": 188,
+    "kind": "struct",
+    "visibility": "pub"
+  },
+  "crate::rebalance_pricing::CR_1_20": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 56,
+    "line_end": 56,
+    "kind": "const",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::CR_1_35": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 57,
+    "line_end": 57,
+    "kind": "const",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::CR_1_65": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 58,
+    "line_end": 58,
+    "kind": "const",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::CR_1_75": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 59,
+    "line_end": 59,
+    "kind": "const",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::RebalanceCurveConfig": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 21,
+    "line_end": 24,
+    "kind": "struct",
+    "visibility": "pub"
+  },
+  "crate::rebalance_pricing::RebalancePriceController": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 91,
+    "line_end": 122,
+    "kind": "trait",
+    "visibility": "pub"
+  },
+  "crate::rebalance_pricing::SellPriceCurve": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 127,
+    "line_end": 129,
+    "kind": "struct",
+    "visibility": "pub"
+  },
+  "crate::rebalance_pricing::impl BuyPriceCurve": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 190,
+    "line_end": 216,
+    "kind": "impl BuyPriceCurve",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::impl RebalanceCurveConfig": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 26,
+    "line_end": 53,
+    "kind": "impl RebalanceCurveConfig",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::impl RebalancePriceController for BuyPriceCurve": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 218,
+    "line_end": 240,
+    "kind": "impl RebalancePriceController for BuyPriceCurve",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::impl RebalancePriceController for SellPriceCurve": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 159,
+    "line_end": 181,
+    "kind": "impl RebalancePriceController for SellPriceCurve",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::impl SellPriceCurve": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 131,
+    "line_end": 157,
+    "kind": "impl SellPriceCurve",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::narrow_cr": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 65,
+    "line_end": 68,
+    "kind": "function",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::narrow_price": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 74,
+    "line_end": 78,
+    "kind": "function",
+    "visibility": "private"
+  },
+  "crate::rebalance_pricing::scale_ci": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 84,
+    "line_end": 87,
+    "kind": "function",
+    "visibility": "private"
   },
   "crate::runtime_quote_strategy::RuntimeQuoteStrategy": {
     "file": "hylo-quotes/src/lib.rs",
@@ -2946,6 +3079,13 @@
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::util::denormalize_mint_exp": {
+    "file": "hylo-core/src/util.rs",
+    "line_start": 32,
+    "line_end": 46,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::util::deserialize_lookup_table": {
     "file": "hylo-clients/src/util.rs",
     "line_start": 63,
@@ -2955,8 +3095,8 @@
   },
   "crate::util::eq_tolerance": {
     "file": "hylo-core/src/util.rs",
-    "line_start": 2,
-    "line_end": 7,
+    "line_start": 49,
+    "line_end": 54,
     "kind": "macro",
     "visibility": "private"
   },
@@ -2992,6 +3132,13 @@
     "file": "hylo-jupiter/src/util.rs",
     "line_start": 121,
     "line_end": 126,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::util::normalize_mint_exp": {
+    "file": "hylo-core/src/util.rs",
+    "line_start": 11,
+    "line_end": 25,
     "kind": "function",
     "visibility": "pub"
   },

@@ -49,10 +49,10 @@ pub trait ExchangeContext {
   fn total_collateral(&self) -> UFix64<N9>;
 
   /// Collateral/USD oracle price range.
-  fn collateral_usd_price(&self) -> PriceRange<N8>;
+  fn collateral_usd_price(&self) -> PriceRange<N9>;
 
   /// Raw oracle spot + confidence.
-  fn collateral_oracle_price(&self) -> OraclePrice<N8>;
+  fn collateral_oracle_price(&self) -> OraclePrice;
 
   /// Sell-side rebalance price curve from oracle confidence.
   ///

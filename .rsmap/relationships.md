@@ -17,7 +17,7 @@ Clone                                                        <- HyloJupiterPair 
 Default                                                      <- ComputeUnitInfo, VirtualStablecoin
 Display                                                      <- StabilityMode
 ExchangeContext                                              <- ExoExchangeContext < C >, LstExchangeContext < C >
-FeeController                                                <- LevercoinFees, StablecoinFees
+FeeController                                                <- LevercoinFees
 From < ExecutableQuote < InExp , OutExp , FeeExp > >         <- ExecutableQuoteValue
 From < SlippageConfig >                                      <- hylo_idl :: exchange :: types :: SlippageConfig
 From < UFixValue64 >                                         <- crate :: exchange :: types :: UFixValue64
@@ -41,7 +41,8 @@ InstructionBuilder < SHYUSD , HYUSD >                        <- StabilityPoolIns
 InstructionBuilder < XSOL , HYUSD >                          <- ExchangeInstructionBuilder
 InstructionBuilder < XSOL , L >                              <- ExchangeInstructionBuilder
 InstructionBuilderExt                                        <- X
-InterpolatedFeeController                                    <- InterpolatedMintFees, InterpolatedRedeemFees
+InterpolatedFeeController < 20 >                             <- InterpolatedRedeemFees
+InterpolatedFeeController < 21 >                             <- InterpolatedMintFees
 LST                                                          <- HYLOSOL, JITOSOL
 Local                                                        <- HYLOSOL, JITOSOL
 PairConfig < HYLOSOL , HYUSD >                               <- HyloJupiterPair < HYLOSOL , HYUSD >
@@ -61,6 +62,7 @@ QuoteStrategy < SHYUSD , HYUSD , C >                         <- ProtocolStateStr
 QuoteStrategy < SHYUSD , L , C >                             <- ProtocolStateStrategy < S >, SimulationStrategy
 QuoteStrategy < XSOL , HYUSD , C >                           <- ProtocolStateStrategy < S >, SimulationStrategy
 QuoteStrategy < XSOL , L , C >                               <- ProtocolStateStrategy < S >, SimulationStrategy
+RebalancePriceController                                     <- BuyPriceCurve, SellPriceCurve
 RuntimeQuoteStrategy < C >                                   <- ProtocolStateStrategy < S >
 RuntimeQuoteStrategy < Clock >                               <- SimulationStrategy
 SimulatedOperation < HYUSD , L >                             <- ExchangeClient
@@ -121,9 +123,9 @@ crate                                   -> super::account_builders::exchange, su
 error                                   -> (no internal deps)
 exchange                                -> (no internal deps)
 exchange_client                         -> instructions, program_client, syntax_helpers, transaction, util
-exchange_context                        -> conversion, error::CoreError, exchange_math, fee_controller, pyth, stability_mode, stability_pool_math
-exchange_context::exo                   -> conversion, error::CoreError, exchange_math, fee_controller, fee_curves, interpolated_fees, pyth, solana_clock, stability_mode, super, virtual_stablecoin
-exchange_context::lst                   -> conversion, error::CoreError, exchange_math, fee_controller, lst_sol_price, pyth, solana_clock, stability_mode, super, total_sol_cache, virtual_stablecoin
+exchange_context                        -> conversion, error::CoreError, exchange_math, fee_controller, pyth, rebalance_pricing, stability_mode, stability_pool_math
+exchange_context::exo                   -> conversion, error::CoreError, exchange_math, fee_controller, fee_curves, interpolated_fees, pyth, solana_clock, stability_mode, super, super::validate_stability_thresholds, virtual_stablecoin
+exchange_context::lst                   -> conversion, error::CoreError, exchange_math, fee_controller, fee_curves, interpolated_fees, lst_sol_price, pyth, solana_clock, stability_mode, super, super::validate_stability_thresholds, total_sol_cache, virtual_stablecoin
 exchange_math                           -> error::CoreError, pyth
 fee_controller                          -> error::CoreError, stability_mode::StabilityMode
 fee_curves                              -> interp
@@ -151,6 +153,7 @@ protocol_state_strategy::stability_pool -> ComputeUnitStrategy, DEFAULT_CUS_WITH
 pyth                                    -> error::CoreError, solana_clock
 quote_metadata                          -> (no internal deps)
 quote_strategy                          -> ExecutableQuote
+rebalance_pricing                       -> error, interp, pyth
 runtime_quote_strategy                  -> ExecutableQuoteValue, quote_metadata, quote_strategy
 simulated_operation                     -> ComputeUnitStrategy, DEFAULT_CUS_WITH_BUFFER, token_operation
 simulated_operation::exchange           -> LST, Local, simulated_operation, token_operation
@@ -172,24 +175,24 @@ tokens                                  -> (no internal deps)
 total_sol_cache                         -> error::CoreError
 transaction                             -> program_client
 type_bridge                             -> (no internal deps)
-util                                    -> exchange_client, prelude, program_client, stability_pool_client
+util                                    -> error::CoreError, exchange_client, prelude, program_client, stability_pool_client
 virtual_stablecoin                      -> error::CoreError
 yields                                  -> error::CoreError, fee_controller
 
 ## Key Types (referenced from 3+ modules)
 
 Pubkey                   — used in 26 modules
-UFix64                   — used in 24 modules
-N9                       — used in 21 modules
-N6                       — used in 18 modules
-Exp                      — used in 14 modules
+UFix64                   — used in 25 modules
+N9                       — used in 24 modules
+N6                       — used in 19 modules
 FeeExp                   — used in 14 modules
 HYUSD                    — used in 14 modules
 LST                      — used in 14 modules
 SolanaClock              — used in 14 modules
+Exp                      — used in 12 modules
+UFixValue64              — used in 11 modules
 Integer                  — used in 10 modules
 TokenMint                — used in 10 modules
-UFixValue64              — used in 10 modules
 FeeExtract               — used in 9 modules
 OUT                      — used in 9 modules
 ProtocolState            — used in 9 modules
@@ -197,6 +200,7 @@ SHYUSD                   — used in 9 modules
 XSOL                     — used in 9 modules
 IN                       — used in 8 modules
 Local                    — used in 8 modules
+N2                       — used in 8 modules
 ExecutableQuote          — used in 7 modules
 Inputs                   — used in 7 modules
 Instruction              — used in 7 modules
@@ -208,14 +212,13 @@ ExchangeClient           — used in 6 modules
 L1                       — used in 6 modules
 L2                       — used in 6 modules
 N4                       — used in 6 modules
-N8                       — used in 6 modules
 StateProvider            — used in 6 modules
 SwapOperationOutput      — used in 6 modules
 TokenOperation           — used in 6 modules
 HYLOSOL                  — used in 5 modules
 JITOSOL                  — used in 5 modules
 LevercoinFees            — used in 5 modules
-N2                       — used in 5 modules
+OraclePrice              — used in 5 modules
 ProtocolStateStrategy    — used in 5 modules
 RedeemOperationOutput    — used in 5 modules
 SimulationStrategy       — used in 5 modules
@@ -224,9 +227,11 @@ StabilityPoolArgs        — used in 5 modules
 StabilityPoolClient      — used in 5 modules
 TransactionSyntax        — used in 5 modules
 Clock                    — used in 4 modules
+FixInterp                — used in 4 modules
 InExp                    — used in 4 modules
 Keypair                  — used in 4 modules
 LstSwapOperationOutput   — used in 4 modules
+Mint                     — used in 4 modules
 MintArgs                 — used in 4 modules
 MintOperationOutput      — used in 4 modules
 OperationOutput          — used in 4 modules
@@ -249,13 +254,14 @@ ComputeUnitStrategy      — used in 3 modules
 Error                    — used in 3 modules
 Event                    — used in 3 modules
 ExchangeContext          — used in 3 modules
-FixInterp                — used in 3 modules
 From                     — used in 3 modules
+IFix64                   — used in 3 modules
 InstructionBuilder       — used in 3 modules
+InterpolatedMintFees     — used in 3 modules
+InterpolatedRedeemFees   — used in 3 modules
 LstExchangeContext       — used in 3 modules
 LstSolPrice              — used in 3 modules
 LstSwapArgs              — used in 3 modules
-Mint                     — used in 3 modules
 MintLevercoin            — used in 3 modules
 MintStablecoin           — used in 3 modules
 Operation                — used in 3 modules
@@ -269,7 +275,6 @@ RedeemStablecoin         — used in 3 modules
 RpcStateProvider         — used in 3 modules
 Send                     — used in 3 modules
 SlippageConfig           — used in 3 modules
-StablecoinFees           — used in 3 modules
 SwapLeverToStable        — used in 3 modules
 SwapStableToLever        — used in 3 modules
 TotalSolCache            — used in 3 modules

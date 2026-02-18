@@ -13,14 +13,14 @@ use crate::pyth::PriceRange;
 /// NB: If stablecoin supply is zero, returns `u64::MAX` to simulate infinity.
 pub fn collateral_ratio(
   total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N8>,
+  usd_collateral_price: UFix64<N9>,
   amount_stablecoin: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
   if amount_stablecoin == UFix64::zero() {
     Ok(UFix64::new(u64::MAX))
   } else {
     amount_stablecoin
-      .checked_convert::<N8>()
+      .checked_convert::<N9>()
       .and_then(|stablecoin| {
         total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
       })
@@ -31,7 +31,7 @@ pub fn collateral_ratio(
 /// Multiples total SOL by the given spot price to get TVL.
 pub fn total_value_locked(
   total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N8>,
+  usd_collateral_price: UFix64<N9>,
 ) -> Result<UFix64<N9>> {
   total_collateral
     .mul_div_floor(usd_collateral_price, UFix64::one())
@@ -46,7 +46,7 @@ pub fn total_value_locked(
 pub fn max_mintable_stablecoin(
   target_collateral_ratio: UFix64<N2>,
   total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N8>,
+  usd_collateral_price: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
   if target_collateral_ratio > UFix64::one() {
@@ -100,7 +100,7 @@ pub fn max_swappable_stablecoin(
 #[must_use]
 pub fn next_levercoin_mint_nav(
   total_collateral: UFix64<N9>,
-  usd_collateral_price: PriceRange<N8>,
+  usd_collateral_price: PriceRange<N9>,
   stablecoin_supply: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
   levercoin_supply: UFix64<N6>,
@@ -123,7 +123,7 @@ pub fn next_levercoin_mint_nav(
 #[must_use]
 pub fn next_levercoin_redeem_nav(
   total_collateral: UFix64<N9>,
-  usd_collateral_price: PriceRange<N8>,
+  usd_collateral_price: PriceRange<N9>,
   stablecoin_supply: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
   levercoin_supply: UFix64<N6>,
@@ -147,11 +147,11 @@ pub fn next_levercoin_redeem_nav(
 ///   `NAV = total_sol * sol_usd_price / supply`
 pub fn depeg_stablecoin_nav(
   total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N8>,
+  usd_collateral_price: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
   stablecoin_supply
-    .checked_convert::<N8>()
+    .checked_convert::<N9>()
     .and_then(|supply| {
       total_collateral.mul_div_floor(usd_collateral_price, supply)
     })
@@ -161,7 +161,6 @@ pub fn depeg_stablecoin_nav(
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Result;
-  use fix::prelude::typenum::N8;
   use fix::prelude::UFix64;
   use proptest::prelude::*;
 
@@ -204,7 +203,7 @@ mod tests {
   fn max_mintable_simple() -> Result<()> {
     let target = UFix64::<N2>::new(101);
     let total_sol = UFix64::<N9>::new(1_474_848_711_762_305);
-    let usd_sol_price = UFix64::<N8>::new(159_786_642_951);
+    let usd_sol_price = UFix64::<N9>::new(1_597_866_429_510);
     let stablecoin_supply = UFix64::<N6>::new(100_000_000);
     let max = max_mintable_stablecoin(
       target,
@@ -255,7 +254,7 @@ mod tests {
   #[test]
   fn collateral_ratio_low() -> Result<()> {
     let total_sol = UFix64::<N9>::new(8_217_712_567_008);
-    let usd_sol_price = UFix64::<N8>::new(13_770_492_000);
+    let usd_sol_price = UFix64::<N9>::new(137_704_920_000);
     let amount_stablecoin = UFix64::<N6>::new(1_150_380_112_112);
     let cr = collateral_ratio(total_sol, usd_sol_price, amount_stablecoin)?;
     assert_eq!(UFix64::new(983_691_772), cr);
@@ -265,7 +264,7 @@ mod tests {
   #[test]
   fn collateral_ratio_high() -> Result<()> {
     let total_sol = UFix64::<N9>::new(976_123_127_719);
-    let usd_sol_price = UFix64::<N8>::new(13_770_492_000);
+    let usd_sol_price = UFix64::<N9>::new(137_704_920_000);
     let amount_stablecoin = UFix64::<N6>::new(97_411_342_200);
     let cr = collateral_ratio(total_sol, usd_sol_price, amount_stablecoin)?;
     assert_eq!(UFix64::new(1_379_890_207), cr);
@@ -275,7 +274,7 @@ mod tests {
   #[test]
   fn depeg_stablecoin_low() -> Result<()> {
     let total_sol = UFix64::<N9>::new(1_666_312_671);
-    let usd_sol_price = UFix64::<N8>::new(770_492_000);
+    let usd_sol_price = UFix64::<N9>::new(7_704_920_000);
     let amount_stablecoin = UFix64::<N6>::new(974_113_420_200);
     let nav =
       depeg_stablecoin_nav(total_sol, usd_sol_price, amount_stablecoin)?;
@@ -286,7 +285,7 @@ mod tests {
   #[test]
   fn depeg_stablecoin_high() -> Result<()> {
     let total_sol = UFix64::<N9>::new(10_666_312_671);
-    let usd_sol_price = UFix64::<N8>::new(770_492_000);
+    let usd_sol_price = UFix64::<N9>::new(7_704_920_000);
     let amount_stablecoin = UFix64::<N6>::new(97_411_342);
     let nav =
       depeg_stablecoin_nav(total_sol, usd_sol_price, amount_stablecoin)?;
@@ -298,7 +297,7 @@ mod tests {
   fn depeg_stablecoin_redeem_dust() -> Result<()> {
     // Depeg setup at `$200 / 210 = $0.93`, levercoin should be $0
     let total_sol = UFix64::<N9>::new(1_000_000_000);
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(20_000_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(200_000_000_000));
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
@@ -326,7 +325,7 @@ mod tests {
   fn depeg_stablecoin_mint_dust() -> Result<()> {
     // Depeg setup at `$200 / 210 = $0.93`, levercoin should be $0
     let total_sol = UFix64::<N9>::new(1_000_000_000);
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(20_000_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(200_000_000_000));
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
