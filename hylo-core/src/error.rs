@@ -150,6 +150,10 @@ pub enum CoreError {
   #[msg("Precision conversion failed while normalizing exo amount to N9.")]
   ExoAmountNormalization,
   // `rebalance_pricing`
+  #[msg(
+    "Rebalance curve config multiplier is zero or has incorrect precision."
+  )]
+  RebalanceCurveConfigValidation,
   #[msg("Arithmetic error constructing rebalance price curve from oracle.")]
   RebalancePriceConstruction,
   #[msg("CR or price conversion failed in rebalance price curve.")]

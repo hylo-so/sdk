@@ -50,6 +50,18 @@ impl RebalanceCurveConfig {
   pub fn ceil_mult(&self) -> Result<UFix64<N2>> {
     self.ceil_mult.try_into()
   }
+
+  /// Checks both multipliers parse and are nonzero.
+  ///
+  /// # Errors
+  /// * Multiplier has incorrect precision or is zero
+  pub fn validate(&self) -> Result<()> {
+    let valid =
+      self.floor_mult()? > UFix64::zero() && self.ceil_mult()? > UFix64::zero();
+    valid
+      .then_some(())
+      .ok_or(CoreError::RebalanceCurveConfigValidation.into())
+  }
 }
 
 // CR domain boundaries.
