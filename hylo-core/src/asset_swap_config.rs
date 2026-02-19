@@ -22,7 +22,7 @@ impl AssetSwapConfig {
   }
 
   /// Fee must be greater than zero and less than 100%.
-  fn validate_fee(fee: UFix64<N4>) -> Result<()> {
+  pub fn validate_fee(fee: UFix64<N4>) -> Result<()> {
     if fee > UFix64::zero() && fee < UFix64::one() {
       Ok(())
     } else {
