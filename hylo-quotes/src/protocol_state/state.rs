@@ -7,11 +7,11 @@ use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
+use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::fee_controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
-use hylo_core::lst_swap_config::LstSwapConfig;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::total_sol_cache::TotalSolCache;
@@ -55,7 +55,7 @@ pub struct ProtocolState<C: SolanaClock> {
   pub fetched_at: UnixTimestamp,
 
   /// LST swap configuration
-  pub lst_swap_config: LstSwapConfig,
+  pub lst_swap_config: AssetSwapConfig,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -84,7 +84,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       hylo.oracle_conf_tolerance.try_into()?,
     );
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
-    let lst_swap_config = LstSwapConfig::new(hylo.lst_swap_fee.into())?;
+    let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context = LstExchangeContext::load(
       clock,
       &total_sol_cache,

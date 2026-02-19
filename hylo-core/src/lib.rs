@@ -1,6 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
 
+pub mod asset_swap_config;
 pub mod conversion;
 pub mod error;
 pub mod exchange_context;
@@ -13,7 +14,6 @@ pub mod idl_type_bridge;
 pub mod interp;
 pub mod interpolated_fees;
 pub mod lst_sol_price;
-pub mod lst_swap_config;
 pub mod pyth;
 pub mod rebalance_pricing;
 pub mod slippage_config;

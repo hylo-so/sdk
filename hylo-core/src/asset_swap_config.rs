@@ -5,15 +5,15 @@ use crate::error::CoreError::InvalidFees;
 use crate::fee_controller::FeeExtract;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct LstSwapConfig {
+pub struct AssetSwapConfig {
   pub fee: UFix64<N4>,
 }
 
-impl LstSwapConfig {
-  pub fn new(serialized_fee: UFixValue64) -> Result<LstSwapConfig> {
+impl AssetSwapConfig {
+  pub fn new(serialized_fee: UFixValue64) -> Result<AssetSwapConfig> {
     let fee = serialized_fee.try_into()?;
     Self::validate_fee(fee)?;
-    Ok(LstSwapConfig { fee })
+    Ok(AssetSwapConfig { fee })
   }
 
   /// Applies swap fee to a token amount.
@@ -37,7 +37,7 @@ mod tests {
 
   #[test]
   fn apply_fee() -> Result<()> {
-    let config = LstSwapConfig::new(UFixValue64::new(50, -4))?;
+    let config = AssetSwapConfig::new(UFixValue64::new(50, -4))?;
     let amount = UFix64::<N9>::new(1_000_000_000);
     let result = config.apply_fee(amount)?;
     assert_eq!(result.fees_extracted, UFix64::new(5_000_000));
@@ -47,15 +47,15 @@ mod tests {
 
   #[test]
   fn reject_out_of_range_fee() {
-    let zero = LstSwapConfig::new(UFixValue64::new(0, -4));
-    let one = LstSwapConfig::new(UFixValue64::new(10000, -4));
+    let zero = AssetSwapConfig::new(UFixValue64::new(0, -4));
+    let one = AssetSwapConfig::new(UFixValue64::new(10000, -4));
     assert_eq!(zero.err(), Some(InvalidFees.into()));
     assert_eq!(one.err(), Some(InvalidFees.into()));
   }
 
   #[test]
   fn reject_wrong_exp() {
-    let result = LstSwapConfig::new(UFixValue64::new(200, -2));
+    let result = AssetSwapConfig::new(UFixValue64::new(200, -2));
     assert!(result.is_err());
   }
 }
