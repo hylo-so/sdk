@@ -10,7 +10,7 @@ use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 /// Represents the spread of fees between mint and redeem for protocol tokens.
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize)]
 pub struct FeePair {
   mint: UFixValue64,
   redeem: UFixValue64,
@@ -92,7 +92,7 @@ impl StablecoinFees {
   }
 }
 
-#[derive(Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize)]
+#[derive(Copy, Clone, PartialEq, InitSpace, AnchorDeserialize, AnchorSerialize)]
 pub struct LevercoinFees {
   normal: FeePair,
   mode_1: FeePair,
