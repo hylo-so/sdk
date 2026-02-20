@@ -9,7 +9,7 @@ use hylo_core::idl::tokens::{
   TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use hylo_core::idl::{exchange, pda, stability_pool};
-use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use hylo_core::pyth::SOL_USD;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
@@ -359,7 +359,7 @@ where
       XSOL::MINT,
       pda::lst_header(JITOSOL::MINT),
       pda::lst_header(HYLOSOL::MINT),
-      SOL_USD_PYTH_FEED,
+      SOL_USD.address,
       SHYUSD::MINT,
       *pda::HYUSD_POOL,
       *pda::XSOL_POOL,
@@ -376,7 +376,7 @@ where
     let hylosol_header: LstHeader =
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
     let sol_usd: PriceUpdateV2 =
-      account_map_get(account_map, &SOL_USD_PYTH_FEED)?;
+      account_map_get(account_map, &SOL_USD.address)?;
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;

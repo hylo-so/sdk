@@ -7,7 +7,7 @@ use anchor_client::Program;
 use anyhow::Result;
 use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
 use hylo_core::idl::{exchange, pda};
-use hylo_core::pyth::SOL_USD_PYTH_FEED;
+use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
@@ -238,7 +238,7 @@ impl ExchangeClient {
       hylo: *pda::HYLO,
       stablecoin_mint: HYUSD::MINT,
       levercoin_mint: XSOL::MINT,
-      sol_usd_pyth_feed: SOL_USD_PYTH_FEED,
+      sol_usd_pyth_feed: SOL_USD.address,
     };
     let args = args::GetStats {};
     let tx = self
