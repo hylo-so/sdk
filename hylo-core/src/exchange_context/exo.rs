@@ -7,6 +7,7 @@ use super::{validate_stability_thresholds, ExchangeContext};
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
   ExoDestinationCollateral, ExoDestinationStablecoin, LevercoinNav,
+  RebalanceBuySideTarget, RebalanceSellSideLiquidity,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
@@ -15,6 +16,7 @@ use crate::interpolated_fees::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
+use crate::rebalance_math::{max_buyable_collateral, max_sellable_collateral};
 use crate::rebalance_pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
@@ -267,5 +269,45 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_rebalance_usd_price,
       usdc_usd_price,
     })
+  }
+
+  /// Determines amount of available collateral liquidity to sell off for CR
+  /// rebalancing.
+  ///
+  /// # Errors
+  /// * Arithmetic
+  /// * Invalid stablecoin supply
+  pub fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>> {
+    let target_cr = self.stability_controller().stability_threshold_1;
+    let virtual_stablecoin = self.virtual_stablecoin_supply()?;
+    let collateral_usd_price = self.collateral_oracle_price().spot;
+    let total_collateral = self.total_collateral();
+    max_sellable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .ok_or(RebalanceSellSideLiquidity.into())
+  }
+
+  /// Determines amount of collateral protocol is willing to buy for CR
+  /// rebalancing.
+  ///
+  /// # Errors
+  /// * Arithmetic
+  /// * Invalid stablecoin supply
+  pub fn rebalance_buy_target(&self) -> Result<UFix64<N9>> {
+    let target_cr = self.stability_controller().stability_threshold_1;
+    let virtual_stablecoin = self.virtual_stablecoin_supply()?;
+    let collateral_usd_price = self.collateral_oracle_price().spot;
+    let total_collateral = self.total_collateral();
+    max_buyable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .ok_or(RebalanceBuySideTarget.into())
   }
 }
