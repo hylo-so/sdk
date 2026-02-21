@@ -129,6 +129,62 @@ impl ExoConversion {
   }
 }
 
+/// Directional conversion between USDC and stablecoin amounts.
+pub struct UsdcStablecoinConversion {
+  pub usdc_usd_price: PriceRange<N9>,
+}
+
+impl UsdcStablecoinConversion {
+  /// USDC deposit to stablecoin amount using lower bound.
+  ///
+  /// Used for USDC to stablecoin swaps and sell-side collateral swaps to
+  /// compute virtual stablecoins to mint when USDC enters the vault.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow or precision conversion
+  pub fn deposit_to_stablecoin(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    usdc_amount
+      .mul_div_floor(self.usdc_usd_price.lower, UFix64::one())
+      .and_then(UFix64::checked_convert)
+      .ok_or(ExoToToken.into())
+  }
+
+  /// Stablecoin to USDC withdrawal amount using upper bound.
+  /// Used on when user redeems stablecoin to USDC.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow or precision conversion
+  pub fn stablecoin_to_withdrawal(
+    &self,
+    stablecoin_amount: UFix64<N6>,
+  ) -> Result<UFix64<N9>> {
+    stablecoin_amount
+      .checked_convert::<N9>()
+      .and_then(|a| a.mul_div_floor(UFix64::one(), self.usdc_usd_price.upper))
+      .ok_or(ExoFromToken.into())
+  }
+
+  /// USDC withdrawal to stablecoin equivalent using upper bound.
+  ///
+  /// Used on buy-side collateral swaps to compute virtual stablecoins to burn
+  /// when USDC leaves the vault.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow or precision conversion
+  pub fn withdrawal_to_stablecoin(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    usdc_amount
+      .mul_div_floor(self.usdc_usd_price.upper, UFix64::one())
+      .and_then(UFix64::checked_convert)
+      .ok_or(ExoToToken.into())
+  }
+}
+
 /// Conversions between exogenous collateral and USDC via oracle prices.
 pub struct ExoRebalanceConversion {
   pub collateral_rebalance_usd_price: UFix64<N9>,
