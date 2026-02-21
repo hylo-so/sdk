@@ -1,9 +1,11 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
+use crate::util::normalize_mint_exp;
 
 /// Client specified slippage tolerance paired with expected token amount.
 #[derive(Debug, AnchorSerialize, AnchorDeserialize, Serialize, Deserialize)]
@@ -32,13 +34,11 @@ impl SlippageConfig {
     self.slippage_tolerance.try_into()
   }
 
-  /// Checks token amount against the configured lowest tolerable amount
-  pub fn validate_token_out<Exp: Integer>(
-    &self,
+  fn validate_inner<Exp>(
+    expected: UFix64<Exp>,
+    tolerance: UFix64<N4>,
     token_out: UFix64<Exp>,
   ) -> Result<()> {
-    let expected = self.expected_token_out()?;
-    let tolerance = self.slippage_tolerance()?;
     // Invert slippage and multiply with expected amount
     let tolerable_amount = UFix64::<N4>::one()
       .checked_sub(&tolerance)
@@ -49,6 +49,27 @@ impl SlippageConfig {
     } else {
       Err(SlippageExceeded.into())
     }
+  }
+
+  /// Checks token amount against the configured lowest tolerable amount
+  pub fn validate_token_out<Exp: Integer>(
+    &self,
+    token_out: UFix64<Exp>,
+  ) -> Result<()> {
+    let expected = self.expected_token_out()?;
+    let tolerance = self.slippage_tolerance()?;
+    Self::validate_inner(expected, tolerance, token_out)
+  }
+
+  /// Checks token amount against expected output with Mint-normalized decimals
+  pub fn validate_token_out_normalized(
+    &self,
+    mint: &Mint,
+    token_out: UFix64<N9>,
+  ) -> Result<()> {
+    let expected = normalize_mint_exp(mint, self.expected_token_out.bits)?;
+    let tolerance = self.slippage_tolerance()?;
+    Self::validate_inner(expected, tolerance, token_out)
   }
 }
 
