@@ -4,7 +4,7 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{validate_stability_thresholds, ExchangeContext};
-use crate::conversion::ExoConversion;
+use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
   ExoDestinationCollateral, ExoDestinationStablecoin, LevercoinNav,
 };
@@ -15,6 +15,9 @@ use crate::interpolated_fees::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
+use crate::rebalance_pricing::{
+  RebalanceCurveConfig, RebalancePriceController,
+};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::virtual_stablecoin::VirtualStablecoin;
@@ -228,5 +231,41 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     ExoConversion {
       collateral_usd_price: self.collateral_usd_price,
     }
+  }
+
+  /// Builds conversion for sell side rebalancing
+  ///
+  /// # Errors
+  /// * Curve setup or pricing
+  pub fn rebalance_sell_conversion(
+    &self,
+    config: &RebalanceCurveConfig,
+    usdc_usd_price: PriceRange<N9>,
+  ) -> Result<ExoRebalanceConversion> {
+    let curve = self.rebalance_sell_curve(config)?;
+    let collateral_rebalance_usd_price =
+      curve.price(self.collateral_ratio())?;
+    Ok(ExoRebalanceConversion {
+      collateral_rebalance_usd_price,
+      usdc_usd_price,
+    })
+  }
+
+  /// Builds conversion for buy side rebalancing
+  ///
+  /// # Errors
+  /// * Curve setup or pricing
+  pub fn rebalance_buy_conversion(
+    &self,
+    config: &RebalanceCurveConfig,
+    usdc_usd_price: PriceRange<N9>,
+  ) -> Result<ExoRebalanceConversion> {
+    let curve = self.rebalance_buy_curve(config)?;
+    let collateral_rebalance_usd_price =
+      curve.price(self.collateral_ratio())?;
+    Ok(ExoRebalanceConversion {
+      collateral_rebalance_usd_price,
+      usdc_usd_price,
+    })
   }
 }
