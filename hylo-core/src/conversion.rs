@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
-  ExoFromToken, ExoToToken, LeverToStable, LstToToken, StableToLever,
-  TokenToLst,
+  ExoCollateralToUsdc, ExoFromToken, ExoToToken, ExoUsdcToCollateral,
+  LeverToStable, LstToToken, StableToLever, TokenToLst,
 };
 use crate::pyth::PriceRange;
 
@@ -126,6 +126,46 @@ impl ExoConversion {
       .checked_convert::<N9>()
       .and_then(|a| a.mul_div_floor(token_nav, self.collateral_usd_price.upper))
       .ok_or(ExoFromToken.into())
+  }
+}
+
+/// Conversions between exogenous collateral and USDC via oracle prices.
+pub struct ExoRebalanceConversion {
+  pub collateral_rebalance_usd_price: UFix64<N9>,
+  pub usdc_usd_price: PriceRange<N9>,
+}
+
+impl ExoRebalanceConversion {
+  /// Converts exogenous collateral to USDC
+  ///
+  /// # Errors
+  /// * Arithmetic failure
+  pub fn collateral_to_usdc(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>> {
+    collateral_amount
+      .mul_div_floor(
+        self.collateral_rebalance_usd_price,
+        self.usdc_usd_price.upper,
+      )
+      .ok_or(ExoCollateralToUsdc.into())
+  }
+
+  /// Converts USDC to exogenous collateral
+  ///
+  /// # Errors
+  /// * Arithmetic failure
+  pub fn usdc_to_collateral(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>> {
+    usdc_amount
+      .mul_div_floor(
+        self.usdc_usd_price.lower,
+        self.collateral_rebalance_usd_price,
+      )
+      .ok_or(ExoUsdcToCollateral.into())
   }
 }
 
@@ -280,5 +320,34 @@ mod tests {
         eq_tolerance!(amount_lever, amount_lever_out, N6, UFix64::new(10000))
       );
     }
+  }
+
+  const UNDERPEGGED_USDC: PriceRange<N9> = PriceRange {
+    lower: UFix64::constant(997_000_000),
+    upper: UFix64::constant(999_000_000),
+  };
+
+  const COLLATERAL_PRICE: UFix64<N9> = UFix64::constant(148_370_000_000);
+
+  #[test]
+  fn exo_rebalance_collateral_to_usdc() -> Result<()> {
+    let conv = ExoRebalanceConversion {
+      collateral_rebalance_usd_price: COLLATERAL_PRICE,
+      usdc_usd_price: UNDERPEGGED_USDC,
+    };
+    let usdc = conv.collateral_to_usdc(UFix64::new(10_000_000_000))?;
+    assert_eq!(usdc, UFix64::new(1_485_185_185_185));
+    Ok(())
+  }
+
+  #[test]
+  fn exo_rebalance_usdc_to_collateral() -> Result<()> {
+    let conv = ExoRebalanceConversion {
+      collateral_rebalance_usd_price: COLLATERAL_PRICE,
+      usdc_usd_price: UNDERPEGGED_USDC,
+    };
+    let coll = conv.usdc_to_collateral(UFix64::new(1_500_000_000_000))?;
+    assert_eq!(coll, UFix64::new(10_079_530_902));
+    Ok(())
   }
 }

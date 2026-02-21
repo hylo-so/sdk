@@ -149,6 +149,10 @@ pub enum CoreError {
   // `normalize_mint_exp`
   #[msg("Precision conversion failed while normalizing exo amount to N9.")]
   ExoAmountNormalization,
+  #[msg("Arithmetic error converting exo collateral to USDC.")]
+  ExoCollateralToUsdc,
+  #[msg("Arithmetic error converting USDC to exo collateral.")]
+  ExoUsdcToCollateral,
   // `rebalance_pricing`
   #[msg(
     "Rebalance curve config multiplier is zero or has incorrect precision."
