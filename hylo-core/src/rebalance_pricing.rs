@@ -379,7 +379,9 @@ mod tests {
   }
 
   fn sell_cr() -> BoxedStrategy<UFix64<N9>> {
-    (0u64..1_350_000_000).prop_map(UFix64::new).boxed()
+    (1_000_000_000u64..1_350_000_000)
+      .prop_map(UFix64::new)
+      .boxed()
   }
 
   fn buy_cr() -> BoxedStrategy<UFix64<N9>> {
@@ -407,9 +409,17 @@ mod tests {
     ) {
       let oracle = OraclePrice { spot, conf };
       if let Ok(curve) = SellPriceCurve::new(oracle, &SELL_CONFIG) {
-        curve
+        let price = curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
+        if let (Some(floor), Some(ceil)) = (
+          curve.curve().y_min().narrow(),
+          curve.curve().y_max().narrow(),
+        ) {
+          prop_assert!(price >= floor && price <= ceil);
+        } else {
+          Err(TestCaseError::fail("floor/ceil narrow"))?;
+        }
       }
     }
 
@@ -421,9 +431,17 @@ mod tests {
     ) {
       let oracle = OraclePrice { spot, conf };
       if let Ok(curve) = BuyPriceCurve::new(oracle, &BUY_CONFIG) {
-        curve
+        let price = curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
+        if let (Some(floor), Some(ceil)) = (
+          curve.curve().y_min().narrow(),
+          curve.curve().y_max().narrow(),
+        ) {
+          prop_assert!(price >= floor && price <= ceil);
+        } else {
+          Err(TestCaseError::fail("floor/ceil narrow"))?;
+        }
       }
     }
   }

@@ -7,7 +7,9 @@ use crate::error::CoreError::{
 use crate::fee_controller::FeeExtract;
 
 /// Captures yield harvest configuration as two basis point values:
-#[derive(Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
+)]
 pub struct YieldHarvestConfig {
   pub allocation: UFixValue64,
   pub fee: UFixValue64,
