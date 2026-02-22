@@ -1,4 +1,4 @@
-#![allow(clippy::pub_underscore_fields)]
+#![allow(clippy::pub_underscore_fields, clippy::too_many_arguments)]
 
 extern crate anchor_lang;
 

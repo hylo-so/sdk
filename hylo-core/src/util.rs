@@ -1,3 +1,50 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
+use fix::prelude::*;
+
+use crate::error::CoreError::ExoAmountNormalization;
+
+/// Bridges runtime mint decimals to typed `UFix64<N9>`.
+///
+/// # Errors
+/// * Unsupported decimal count or conversion overflow
+pub fn normalize_mint_exp(mint: &Mint, amount: u64) -> Result<UFix64<N9>> {
+  match mint.decimals {
+    2 => UFix64::<N2>::new(amount).checked_convert(),
+    3 => UFix64::<N3>::new(amount).checked_convert(),
+    4 => UFix64::<N4>::new(amount).checked_convert(),
+    5 => UFix64::<N5>::new(amount).checked_convert(),
+    6 => UFix64::<N6>::new(amount).checked_convert(),
+    7 => UFix64::<N7>::new(amount).checked_convert(),
+    8 => UFix64::<N8>::new(amount).checked_convert(),
+    9 => Some(UFix64::<N9>::new(amount)),
+    10 => UFix64::<N10>::new(amount).checked_convert(),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization.into())
+}
+
+/// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
+/// decimals.
+///
+/// # Errors
+/// * Unsupported decimal count
+pub fn denormalize_mint_exp(mint: &Mint, amount: UFix64<N9>) -> Result<u64> {
+  match mint.decimals {
+    2 => amount.checked_convert::<N2>().map(|o| o.bits),
+    3 => amount.checked_convert::<N3>().map(|o| o.bits),
+    4 => amount.checked_convert::<N4>().map(|o| o.bits),
+    5 => amount.checked_convert::<N5>().map(|o| o.bits),
+    6 => amount.checked_convert::<N6>().map(|o| o.bits),
+    7 => amount.checked_convert::<N7>().map(|o| o.bits),
+    8 => amount.checked_convert::<N8>().map(|o| o.bits),
+    9 => Some(amount.bits),
+    10 => amount.checked_convert::<N10>().map(|o| o.bits),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization.into())
+}
+
 #[macro_export]
 macro_rules! eq_tolerance {
   ($l:expr, $r:expr, $place:ty, $tol:expr) => {{
@@ -9,7 +56,7 @@ macro_rules! eq_tolerance {
 #[cfg(test)]
 pub mod proptest {
   use fix::prelude::*;
-  use fix::typenum::{N2, N6, N8, N9};
+  use fix::typenum::{N2, N6, N9};
   use proptest::prelude::*;
 
   use crate::exchange_math::collateral_ratio;
@@ -18,7 +65,7 @@ pub mod proptest {
   /// Always holds the Hylo invariant: `ns * ps = nx * px + nh * ph`.
   #[derive(Debug)]
   pub struct ProtocolState {
-    pub usd_sol_price: UFix64<N8>,
+    pub usd_sol_price: UFix64<N9>,
     pub stablecoin_amount: UFix64<N6>,
     pub stablecoin_nav: UFix64<N9>,
     pub levercoin_amount: UFix64<N6>,
@@ -98,8 +145,8 @@ pub mod proptest {
     }
   }
 
-  pub fn usd_sol_price() -> BoxedStrategy<UFix64<N8>> {
-    (1_000_000_000u64..250_000_000_000u64)
+  pub fn usd_sol_price() -> BoxedStrategy<UFix64<N9>> {
+    (10_000_000_000u64..2_500_000_000_000u64)
       .prop_map(UFix64::new)
       .boxed()
   }

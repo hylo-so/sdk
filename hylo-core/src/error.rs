@@ -48,8 +48,6 @@ pub enum CoreError {
   MaxMintable,
   #[msg("Arithmetic error while computing max swappable stablecoin.")]
   MaxSwappable,
-  #[msg("Arithmetic error while computing stability pool capitalization.")]
-  StabilityPoolCap,
   #[msg("Arithmetic error while computing depegged stablecoin NAV.")]
   StablecoinNav,
   #[msg("Unable to compute max mintable stablecoin with target CR < 1.")]
@@ -104,8 +102,6 @@ pub enum CoreError {
   LpTokenNav,
   #[msg("Arithmetic error while computing LP token amount to give to user.")]
   LpTokenOut,
-  #[msg("Arithmetic error while computing amount of stablecoin to swap.")]
-  StablecoinToSwap,
   #[msg("Arithmetic error while computing amount of token to withdraw.")]
   TokenWithdraw,
   // `yields`
@@ -113,4 +109,62 @@ pub enum CoreError {
   YieldHarvestConfigValidation,
   #[msg("Arithmetic error while computing yield harvest allocation.")]
   YieldHarvestAllocation,
+  // `virtual_stablecoin`
+  #[msg("Overflow while minting virtual stablecoin.")]
+  MintOverflow,
+  #[msg("Overflow while burning virtual stablecoin.")]
+  BurnUnderflow,
+  // `interp`
+  #[msg("Interpolation requires at least two points.")]
+  InterpInsufficientPoints,
+  #[msg("Interpolation points must have strictly increasing x-coordinates.")]
+  InterpPointsNotMonotonic,
+  #[msg("Interpolation input is outside the valid domain.")]
+  InterpOutOfDomain,
+  #[msg("Arithmetic overflow during interpolation calculation.")]
+  InterpArithmetic,
+  // `interpolated_fees`
+  #[msg("Failed to convert collateral ratio from u64 to i64.")]
+  CollateralRatioConversion,
+  #[msg("Failed to convert interpolated fee from i64 to u64.")]
+  InterpFeeConversion,
+  // `funding_rate`
+  #[msg("Funding rate configuration failed validation.")]
+  FundingRateValidation,
+  #[msg("Arithmetic error while applying funding rate.")]
+  FundingRateApply,
+  // `exo_exchange_context`
+  #[msg("Arithmetic error converting exo collateral to protocol token.")]
+  ExoToToken,
+  #[msg("Arithmetic error converting protocol token to exo collateral.")]
+  ExoFromToken,
+  #[msg("Over/underflow projecting exo collateral total for fee.")]
+  ExoDestinationCollateral,
+  #[msg("Over/underflow projecting stablecoin total for exo fee.")]
+  ExoDestinationStablecoin,
+  // `normalize_mint_exp`
+  #[msg("Precision conversion failed while normalizing exo amount to N9.")]
+  ExoAmountNormalization,
+  #[msg("Arithmetic error converting exo collateral to USDC.")]
+  ExoCollateralToUsdc,
+  #[msg("Arithmetic error converting USDC to exo collateral.")]
+  ExoUsdcToCollateral,
+  // `rebalance_pricing`
+  #[msg(
+    "Rebalance curve config multiplier is zero or has incorrect precision."
+  )]
+  RebalanceCurveConfigValidation,
+  #[msg("Arithmetic error constructing rebalance price curve from oracle.")]
+  RebalancePriceConstruction,
+  #[msg("CR or price conversion failed in rebalance price curve.")]
+  RebalancePriceConversion,
+  #[msg("Sell-side rebalance route is inactive at this CR.")]
+  RebalanceSellInactive,
+  #[msg("Buy-side rebalance route is inactive at this CR.")]
+  RebalanceBuyInactive,
+  // `rebalance_math`
+  #[msg("Arithmetic error while computing sell side liquidity.")]
+  RebalanceSellSideLiquidity,
+  #[msg("Arithmetic error while computing buy side target.")]
+  RebalanceBuySideTarget,
 }

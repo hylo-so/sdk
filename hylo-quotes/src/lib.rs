@@ -21,7 +21,7 @@
 //!
 //! ```rust,no_run
 //! use hylo_quotes::prelude::*;
-//! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+//! use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> anyhow::Result<()> {
@@ -84,7 +84,7 @@
 //!
 //! ```rust,ignore
 //! use hylo_quotes::prelude::*;
-//! use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+//! use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 //! use std::sync::Arc;
 //!
 //! # async fn example() -> anyhow::Result<()> {

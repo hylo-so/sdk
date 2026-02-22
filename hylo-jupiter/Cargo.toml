@@ -20,6 +20,7 @@ hylo-jupiter-amm-interface.workspace = true
 hylo-quotes.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 rust_decimal.workspace = true
+solana-rpc-client.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]

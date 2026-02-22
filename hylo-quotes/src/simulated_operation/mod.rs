@@ -4,7 +4,7 @@ mod exchange;
 mod stability_pool;
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_lang::AnchorDeserialize;
 use anyhow::Result;
 use async_trait::async_trait;
 use fix::typenum::Integer;
@@ -54,7 +54,7 @@ impl ComputeUnitInfo {
 /// [`TokenOperation`]: crate::token_operation::TokenOperation
 pub trait SimulatedOperation<IN: TokenMint, OUT: TokenMint> {
   type FeeExp: Integer;
-  type Event: AnchorDeserialize + Discriminator;
+  type Event: AnchorDeserialize;
 
   /// # Errors
   /// * Event parsing or validation.

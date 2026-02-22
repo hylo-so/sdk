@@ -12,7 +12,6 @@ pub enum Operation {
   LstSwap,
   DepositToStabilityPool,
   WithdrawFromStabilityPool,
-  WithdrawAndRedeemFromStabilityPool,
 }
 
 impl Operation {
@@ -28,9 +27,6 @@ impl Operation {
       Operation::LstSwap => "swap_lst",
       Operation::DepositToStabilityPool => "user_deposit",
       Operation::WithdrawFromStabilityPool => "user_withdraw",
-      Operation::WithdrawAndRedeemFromStabilityPool => {
-        "user_withdraw_and_redeem"
-      }
     }
   }
 }

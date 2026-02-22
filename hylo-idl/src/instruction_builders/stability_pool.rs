@@ -46,11 +46,8 @@ pub fn rebalance_stable_to_lever(payer: Pubkey) -> Instruction {
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     stablecoin_auth: *pda::HYUSD_AUTH,
     levercoin_auth: *pda::XSOL_AUTH,
-    hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
     hylo_exchange_program: exchange::ID,
     token_program: token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: stability_pool::ID,
   };
   let instruction_args = args::RebalanceStableToLever {};
   Instruction {
@@ -76,11 +73,8 @@ pub fn rebalance_lever_to_stable(payer: Pubkey) -> Instruction {
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     stablecoin_auth: *pda::HYUSD_AUTH,
     levercoin_auth: *pda::XSOL_AUTH,
-    hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
     hylo_exchange_program: exchange::ID,
     token_program: token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: stability_pool::ID,
   };
   let instruction_args = args::RebalanceLeverToStable {};
   Instruction {
@@ -167,8 +161,26 @@ pub fn update_withdrawal_fee(
   let accounts = accounts::UpdateWithdrawalFee {
     admin,
     pool_config: *pda::POOL_CONFIG,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
-    program: stability_pool::ID,
+  };
+  Instruction {
+    program_id: stability_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_admin(
+  payer: Pubkey,
+  upgrade_authority: Pubkey,
+  args: &args::UpdateAdmin,
+) -> Instruction {
+  let accounts = accounts::UpdateAdmin {
+    payer,
+    upgrade_authority,
+    pool_config: *pda::POOL_CONFIG,
+    program_data: *pda::STABILITY_POOL_PROGRAM_DATA,
+    hylo_stability_pool: stability_pool::ID,
   };
   Instruction {
     program_id: stability_pool::ID,

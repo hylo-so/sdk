@@ -1,4 +1,3 @@
-use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Context, Result};
@@ -14,6 +13,7 @@ use hylo_quotes::token_operation::{
   OperationOutput, TokenOperation, TokenOperationExt,
 };
 use rust_decimal::Decimal;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 /// Computes fee percentage as `Decimal`.
 ///

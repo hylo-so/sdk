@@ -2,7 +2,7 @@
 
 use anchor_client::solana_sdk::signature::Signature;
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::{AnchorDeserialize, Discriminator};
+use anchor_lang::AnchorDeserialize;
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::slippage_config::SlippageConfig;
@@ -100,11 +100,11 @@ pub trait TransactionSyntax {
   ) -> Result<E>
   where
     Self: BuildTransactionData<I, O> + ProgramClient,
-    E: AnchorDeserialize + Discriminator,
+    E: AnchorDeserialize,
   {
     let args = self.build(inputs).await?;
     let tx = self.build_simulation_transaction(&user, &args).await?;
-    self.simulate_transaction_event::<E>(&tx).await
+    self.simulate_transaction_return::<E>(&tx).await
   }
 
   /// Simulates transaction and returns parsed event with compute units.
@@ -115,10 +115,10 @@ pub trait TransactionSyntax {
   ) -> Result<(E, Option<u64>)>
   where
     Self: BuildTransactionData<I, O> + ProgramClient,
-    E: AnchorDeserialize + Discriminator,
+    E: AnchorDeserialize,
   {
     let args = self.build(inputs).await?;
     let tx = self.build_simulation_transaction(&user, &args).await?;
-    self.simulate_transaction_event_with_cus::<E>(&tx).await
+    self.simulate_transaction_return_with_cus::<E>(&tx).await
   }
 }

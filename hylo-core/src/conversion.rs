@@ -2,19 +2,20 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
+  ExoCollateralToUsdc, ExoFromToken, ExoToToken, ExoUsdcToCollateral,
   LeverToStable, LstToToken, StableToLever, TokenToLst,
 };
 use crate::pyth::PriceRange;
 
 /// Provides conversions between an LST and protocol tokens.
 pub struct Conversion {
-  pub usd_sol_price: PriceRange<N8>,
+  pub usd_sol_price: PriceRange<N9>,
   pub lst_sol_price: UFix64<N9>,
 }
 
 impl Conversion {
   #[must_use]
-  pub fn new(usd_sol_price: PriceRange<N8>, lst_sol_price: UFix64<N9>) -> Self {
+  pub fn new(usd_sol_price: PriceRange<N9>, lst_sol_price: UFix64<N9>) -> Self {
     Conversion {
       usd_sol_price,
       lst_sol_price,
@@ -30,9 +31,7 @@ impl Conversion {
   ) -> Result<UFix64<N6>> {
     amount_lst
       .mul_div_floor(self.lst_sol_price, UFix64::one())
-      .and_then(|sol| {
-        sol.mul_div_floor(self.usd_sol_price.lower.convert(), token_nav)
-      })
+      .and_then(|sol| sol.mul_div_floor(self.usd_sol_price.lower, token_nav))
       .map(UFix64::convert)
       .ok_or(LstToToken.into())
   }
@@ -46,7 +45,7 @@ impl Conversion {
   ) -> Result<UFix64<N9>> {
     amount_token
       .convert::<N9>()
-      .mul_div_floor(token_nav, self.usd_sol_price.upper.convert())
+      .mul_div_floor(token_nav, self.usd_sol_price.upper)
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
       .ok_or(TokenToLst.into())
   }
@@ -90,6 +89,139 @@ impl SwapConversion {
       .mul_div_floor(self.levercoin_nav.lower, UFix64::one())
       .and_then(|usd| usd.mul_div_floor(UFix64::one(), self.stablecoin_nav))
       .ok_or(LeverToStable.into())
+  }
+}
+
+/// Conversions between an exogenous collateral and protocol tokens.
+pub struct ExoConversion {
+  pub collateral_usd_price: PriceRange<N9>,
+}
+
+impl ExoConversion {
+  /// Converts collateral amount to a protocol token amount.
+  ///
+  /// # Errors
+  /// * Arithmetic failure
+  pub fn exo_to_token(
+    &self,
+    amount: UFix64<N9>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    amount
+      .mul_div_floor(self.collateral_usd_price.lower, token_nav)
+      .and_then(UFix64::checked_convert::<N6>)
+      .ok_or(ExoToToken.into())
+  }
+
+  /// Converts a protocol token amount to exogenous collateral.
+  ///
+  /// # Errors
+  /// * Arithmetic failure
+  pub fn token_to_exo(
+    &self,
+    amount: UFix64<N6>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N9>> {
+    amount
+      .checked_convert::<N9>()
+      .and_then(|a| a.mul_div_floor(token_nav, self.collateral_usd_price.upper))
+      .ok_or(ExoFromToken.into())
+  }
+}
+
+/// Directional conversion between USDC and stablecoin amounts.
+pub struct UsdcStablecoinConversion {
+  pub usdc_usd_price: PriceRange<N9>,
+}
+
+impl UsdcStablecoinConversion {
+  /// USDC deposit to stablecoin amount using lower bound.
+  ///
+  /// Used for USDC to stablecoin swaps and sell-side collateral swaps to
+  /// compute virtual stablecoins to mint when USDC enters the vault.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow or precision conversion
+  pub fn deposit_to_stablecoin(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    usdc_amount
+      .mul_div_floor(self.usdc_usd_price.lower, UFix64::one())
+      .and_then(UFix64::checked_convert)
+      .ok_or(ExoToToken.into())
+  }
+
+  /// Stablecoin to USDC withdrawal amount using upper bound.
+  /// Used on when user redeems stablecoin to USDC.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow or precision conversion
+  pub fn stablecoin_to_withdrawal(
+    &self,
+    stablecoin_amount: UFix64<N6>,
+  ) -> Result<UFix64<N9>> {
+    stablecoin_amount
+      .checked_convert::<N9>()
+      .and_then(|a| a.mul_div_floor(UFix64::one(), self.usdc_usd_price.upper))
+      .ok_or(ExoFromToken.into())
+  }
+
+  /// USDC withdrawal to stablecoin equivalent using upper bound.
+  ///
+  /// Used on buy-side collateral swaps to compute virtual stablecoins to burn
+  /// when USDC leaves the vault.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow or precision conversion
+  pub fn withdrawal_to_stablecoin(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    usdc_amount
+      .mul_div_floor(self.usdc_usd_price.upper, UFix64::one())
+      .and_then(UFix64::checked_convert)
+      .ok_or(ExoToToken.into())
+  }
+}
+
+/// Conversions between exogenous collateral and USDC via oracle prices.
+pub struct ExoRebalanceConversion {
+  pub collateral_rebalance_usd_price: UFix64<N9>,
+  pub usdc_usd_price: PriceRange<N9>,
+}
+
+impl ExoRebalanceConversion {
+  /// Converts exogenous collateral to USDC
+  ///
+  /// # Errors
+  /// * Arithmetic failure
+  pub fn collateral_to_usdc(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>> {
+    collateral_amount
+      .mul_div_floor(
+        self.collateral_rebalance_usd_price,
+        self.usdc_usd_price.upper,
+      )
+      .ok_or(ExoCollateralToUsdc.into())
+  }
+
+  /// Converts USDC to exogenous collateral
+  ///
+  /// # Errors
+  /// * Arithmetic failure
+  pub fn usdc_to_collateral(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>> {
+    usdc_amount
+      .mul_div_floor(
+        self.usdc_usd_price.lower,
+        self.collateral_rebalance_usd_price,
+      )
+      .ok_or(ExoUsdcToCollateral.into())
   }
 }
 
@@ -168,7 +300,7 @@ mod tests {
 
   #[test]
   fn amount_to_mint_lever() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount_in = UFix64::<N9>::new(50_123_303_006);
@@ -180,7 +312,7 @@ mod tests {
 
   #[test]
   fn amount_to_mint_stable() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount_in = UFix64::<N9>::new(568);
@@ -191,7 +323,7 @@ mod tests {
 
   #[test]
   fn amount_to_redeem_stable() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let amount = UFix64::<N6>::new(9_937_412_179);
@@ -202,7 +334,7 @@ mod tests {
 
   #[test]
   fn amount_to_redeem_lever() -> Result<()> {
-    let usd_sol_price = PriceRange::one(UFix64::<N8>::new(17_103_000_000));
+    let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
     let nav = UFix64::<N9>::new(137_992_981_000);
@@ -244,5 +376,34 @@ mod tests {
         eq_tolerance!(amount_lever, amount_lever_out, N6, UFix64::new(10000))
       );
     }
+  }
+
+  const UNDERPEGGED_USDC: PriceRange<N9> = PriceRange {
+    lower: UFix64::constant(997_000_000),
+    upper: UFix64::constant(999_000_000),
+  };
+
+  const COLLATERAL_PRICE: UFix64<N9> = UFix64::constant(148_370_000_000);
+
+  #[test]
+  fn exo_rebalance_collateral_to_usdc() -> Result<()> {
+    let conv = ExoRebalanceConversion {
+      collateral_rebalance_usd_price: COLLATERAL_PRICE,
+      usdc_usd_price: UNDERPEGGED_USDC,
+    };
+    let usdc = conv.collateral_to_usdc(UFix64::new(10_000_000_000))?;
+    assert_eq!(usdc, UFix64::new(1_485_185_185_185));
+    Ok(())
+  }
+
+  #[test]
+  fn exo_rebalance_usdc_to_collateral() -> Result<()> {
+    let conv = ExoRebalanceConversion {
+      collateral_rebalance_usd_price: COLLATERAL_PRICE,
+      usdc_usd_price: UNDERPEGGED_USDC,
+    };
+    let coll = conv.usdc_to_collateral(UFix64::new(1_500_000_000_000))?;
+    assert_eq!(coll, UFix64::new(10_079_530_902));
+    Ok(())
   }
 }

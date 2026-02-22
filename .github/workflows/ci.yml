@@ -40,8 +40,9 @@ jobs:
     - uses: DeterminateSystems/nix-installer-action@main
     - uses: DeterminateSystems/flakehub-cache-action@main
     - uses: mozilla-actions/sccache-action@v0.0.9
-    - run: nix develop .#nightly --command ./bin/lint.sh
-    - run: nix develop --command ./bin/build.sh
+    - run: nix run .#lint
+    - run: nix run .#build
+    - run: nix run .#test
 
   publish:
     needs: build
@@ -56,4 +57,4 @@ jobs:
     - uses: DeterminateSystems/nix-installer-action@main
     - uses: DeterminateSystems/flakehub-cache-action@main
     - uses: mozilla-actions/sccache-action@v0.0.9
-    - run: nix develop --command ./bin/publish.sh
+    - run: nix run .#publish
