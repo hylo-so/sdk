@@ -269,12 +269,11 @@ impl InstructionBuilder<SHYUSD, HYUSD> for StabilityPoolInstructionBuilder {
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
   ) -> Result<Vec<Instruction>> {
     let hyusd_ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let xsol_ata = user_ata_instruction(&user, &XSOL::MINT);
     let args = stability_pool_args::UserWithdraw {
       amount_lp_token: amount.bits,
     };
     let instruction = user_withdraw(user, &args);
-    Ok(vec![hyusd_ata, xsol_ata, instruction])
+    Ok(vec![hyusd_ata, instruction])
   }
 }
 

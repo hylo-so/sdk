@@ -48,8 +48,6 @@ pub enum CoreError {
   MaxMintable,
   #[msg("Arithmetic error while computing max swappable stablecoin.")]
   MaxSwappable,
-  #[msg("Arithmetic error while computing stability pool capitalization.")]
-  StabilityPoolCap,
   #[msg("Arithmetic error while computing depegged stablecoin NAV.")]
   StablecoinNav,
   #[msg("Unable to compute max mintable stablecoin with target CR < 1.")]
@@ -104,8 +102,6 @@ pub enum CoreError {
   LpTokenNav,
   #[msg("Arithmetic error while computing LP token amount to give to user.")]
   LpTokenOut,
-  #[msg("Arithmetic error while computing amount of stablecoin to swap.")]
-  StablecoinToSwap,
   #[msg("Arithmetic error while computing amount of token to withdraw.")]
   TokenWithdraw,
   // `yields`

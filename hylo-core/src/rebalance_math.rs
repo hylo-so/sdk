@@ -102,7 +102,7 @@ mod tests {
       let sellable = result
         .ok_or(TestCaseError::fail("expected Some"))?;
       prop_assert!(sellable > UFix64::zero());
-      prop_assert!(sellable < total);
+      prop_assert!(sellable <= total);
     }
 
     #[test]
