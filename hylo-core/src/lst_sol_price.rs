@@ -3,7 +3,7 @@ use fix::prelude::*;
 
 use crate::error::CoreError::{
   LstLstPriceConversion, LstSolPriceConversion, LstSolPriceDelta,
-  LstSolPriceEpochOrder, LstSolPriceOutdated,
+  LstSolPriceEpochOrder, LstSolPriceOutdated, SolLstPriceConversion,
 };
 
 /// Captures the true LST price in SOL for the current epoch.
@@ -50,7 +50,12 @@ impl LstSolPrice {
     }
   }
 
-  pub fn convert_sol(
+  /// Converts an amount of this LST to its underlying SOL.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  /// * Price outdated
+  pub fn convert_lst_to_sol(
     &self,
     amount_lst: UFix64<N9>,
     current_epoch: u64,
@@ -62,6 +67,28 @@ impl LstSolPrice {
     Ok(sol)
   }
 
+  /// Converts a SOL amount to this LST.
+  ///
+  /// # Errors
+  /// * Arithmetic
+  /// * Price outdated
+  pub fn convert_sol_to_lst(
+    &self,
+    amount_sol: UFix64<N9>,
+    current_epoch: u64,
+  ) -> Result<UFix64<N9>> {
+    let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
+    let lst = amount_sol
+      .mul_div_floor(UFix64::one(), lst_sol_price)
+      .ok_or(SolLstPriceConversion)?;
+    Ok(lst)
+  }
+
+  /// Converts an amount of this LST to another one using their prices.
+  ///
+  /// # Errors
+  /// * Arithmetic
+  /// * Price outdated
   pub fn convert_lst_amount(
     &self,
     current_epoch: u64,

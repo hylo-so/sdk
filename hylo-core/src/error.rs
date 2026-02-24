@@ -22,6 +22,8 @@ pub enum CoreError {
   LstSolPriceOutdated,
   #[msg("Overflow while computing LstSolPrice conversion.")]
   LstSolPriceConversion,
+  #[msg("Overflow while computing SolLstPrice conversion.")]
+  SolLstPriceConversion,
   #[msg("Arithmetic error during LST to LST conversion.")]
   LstLstPriceConversion,
   // `pyth`

@@ -155,7 +155,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
   ) -> Result<FeeExtract<N9>> {
-    let new_sol = lst_sol_price.convert_sol(amount_lst, self.clock.epoch())?;
+    let new_sol =
+      lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_add(&new_sol)
@@ -184,7 +185,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
   ) -> Result<FeeExtract<N9>> {
-    let sol_rm = lst_sol_price.convert_sol(amount_lst, self.clock.epoch())?;
+    let sol_rm =
+      lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_rm)
@@ -215,7 +217,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
   ) -> Result<FeeExtract<N9>> {
-    let new_sol = lst_sol_price.convert_sol(amount_lst, self.clock.epoch())?;
+    let new_sol =
+      lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_add(&new_sol)
@@ -244,7 +247,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
   ) -> Result<FeeExtract<N9>> {
-    let sol_rm = lst_sol_price.convert_sol(amount_lst, self.clock.epoch())?;
+    let sol_rm =
+      lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_rm)
