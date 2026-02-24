@@ -14,7 +14,8 @@ pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError::{
-  DestinationFeeStablecoin, LevercoinNav, RequestedStablecoinOverMaxMintable,
+  DestinationFeeStablecoin, LevercoinNav, RebalanceBuySideTarget,
+  RebalanceSellSideLiquidity, RequestedStablecoinOverMaxMintable,
   StabilityValidation,
 };
 use crate::exchange_math::{
@@ -24,6 +25,7 @@ use crate::exchange_math::{
 };
 use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
+use crate::rebalance_math::{max_buyable_collateral, max_sellable_collateral};
 use crate::rebalance_pricing::{
   BuyPriceCurve, RebalanceCurveConfig, SellPriceCurve,
 };
@@ -76,6 +78,42 @@ pub trait ExchangeContext {
   /// * Curve construction failure
   fn rebalance_buy_curve(&self) -> Result<BuyPriceCurve> {
     BuyPriceCurve::new(self.collateral_oracle_price(), self.buy_curve_config())
+  }
+
+  /// Available collateral liquidity to sell off for CR rebalancing.
+  ///
+  /// # Errors
+  /// * Arithmetic or invalid stablecoin supply
+  fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>> {
+    let target_cr = self.stability_controller().stability_threshold_1;
+    let virtual_stablecoin = self.virtual_stablecoin_supply()?;
+    let collateral_usd_price = self.collateral_oracle_price().spot;
+    let total_collateral = self.total_collateral();
+    max_sellable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .ok_or(RebalanceSellSideLiquidity.into())
+  }
+
+  /// Collateral the protocol is willing to buy for CR rebalancing.
+  ///
+  /// # Errors
+  /// * Arithmetic or invalid stablecoin supply
+  fn rebalance_buy_target(&self) -> Result<UFix64<N9>> {
+    let target_cr = self.stability_controller().stability_threshold_1;
+    let virtual_stablecoin = self.virtual_stablecoin_supply()?;
+    let collateral_usd_price = self.collateral_oracle_price().spot;
+    let total_collateral = self.total_collateral();
+    max_buyable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .ok_or(RebalanceBuySideTarget.into())
   }
 
   /// Virtual stablecoin supply.
