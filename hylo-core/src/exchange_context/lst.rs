@@ -4,7 +4,7 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{validate_stability_thresholds, ExchangeContext};
-use crate::conversion::Conversion;
+use crate::conversion::{Conversion, LstRebalanceConversion};
 use crate::error::CoreError::{
   DestinationFeeSol, DestinationFeeStablecoin, LevercoinNav,
   NoNextStabilityThreshold,
@@ -17,6 +17,9 @@ use crate::interpolated_fees::{
 };
 use crate::lst_sol_price::LstSolPrice;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
+use crate::rebalance_pricing::{
+  RebalanceCurveConfig, RebalancePriceController,
+};
 use crate::solana_clock::SolanaClock;
 use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::total_sol_cache::TotalSolCache;
@@ -37,6 +40,8 @@ pub struct LstExchangeContext<C> {
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
   levercoin_fees: LevercoinFees,
+  sell_curve_config: RebalanceCurveConfig,
+  buy_curve_config: RebalanceCurveConfig,
 }
 
 impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
@@ -50,6 +55,14 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
 
   fn collateral_oracle_price(&self) -> OraclePrice {
     self.sol_usd_oracle
+  }
+
+  fn sell_curve_config(&self) -> &RebalanceCurveConfig {
+    &self.sell_curve_config
+  }
+
+  fn buy_curve_config(&self) -> &RebalanceCurveConfig {
+    &self.buy_curve_config
   }
 
   fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
@@ -92,6 +105,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     sol_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
+    sell_curve_config: RebalanceCurveConfig,
+    buy_curve_config: RebalanceCurveConfig,
   ) -> Result<LstExchangeContext<C>> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
     let sol_usd_oracle =
@@ -126,6 +141,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
       levercoin_fees,
+      sell_curve_config,
+      buy_curve_config,
     })
   }
 
@@ -281,6 +298,44 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let nav = self.levercoin_mint_nav()?;
     let conversion = Conversion::new(self.sol_usd_price, UFix64::one());
     conversion.lst_to_token(amount_sol, nav)
+  }
+
+  /// Builds conversion for sell-side LST rebalancing.
+  ///
+  /// # Errors
+  /// * Curve setup, pricing, or epoch validation
+  pub fn rebalance_sell_conversion(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    usdc_usd_price: PriceRange<N9>,
+  ) -> Result<LstRebalanceConversion> {
+    let curve = self.rebalance_sell_curve()?;
+    let sol_rebalance_usd_price = curve.price(self.collateral_ratio())?;
+    let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
+    Ok(LstRebalanceConversion {
+      lst_sol_price,
+      sol_rebalance_usd_price,
+      usdc_usd_price,
+    })
+  }
+
+  /// Builds conversion for buy-side LST rebalancing.
+  ///
+  /// # Errors
+  /// * Curve setup, pricing, or epoch validation
+  pub fn rebalance_buy_conversion(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    usdc_usd_price: PriceRange<N9>,
+  ) -> Result<LstRebalanceConversion> {
+    let curve = self.rebalance_buy_curve()?;
+    let sol_rebalance_usd_price = curve.price(self.collateral_ratio())?;
+    let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
+    Ok(LstRebalanceConversion {
+      lst_sol_price,
+      sol_rebalance_usd_price,
+      usdc_usd_price,
+    })
   }
 
   /// Maximum stablecoin swappable from levercoin using the next

@@ -149,6 +149,10 @@ pub enum CoreError {
   ExoCollateralToUsdc,
   #[msg("Arithmetic error converting USDC to exo collateral.")]
   ExoUsdcToCollateral,
+  #[msg("Arithmetic error converting LST to USDC via SOL.")]
+  LstToUsdc,
+  #[msg("Arithmetic error converting USDC to LST via SOL.")]
+  UsdcToLst,
   // `rebalance_pricing`
   #[msg(
     "Rebalance curve config multiplier is zero or has incorrect precision."
