@@ -94,6 +94,8 @@ impl<C: SolanaClock> ProtocolState<C> {
       sol_usd,
       hylo.virtual_stablecoin.into(),
       Some(&xsol_mint),
+      hylo.lst_sell_curve_config.into(),
+      hylo.lst_buy_curve_config.into(),
     )?;
     Ok(Self {
       exchange_context,

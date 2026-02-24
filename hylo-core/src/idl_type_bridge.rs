@@ -1,5 +1,6 @@
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
+use crate::rebalance_pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
 use crate::virtual_stablecoin::VirtualStablecoin;
@@ -66,6 +67,16 @@ impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
     VirtualStablecoin {
       supply: idl.supply.into(),
     }
+  }
+}
+
+impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
+  for RebalanceCurveConfig
+{
+  fn from(
+    idl: hylo_idl::exchange::types::RebalanceCurveConfig,
+  ) -> RebalanceCurveConfig {
+    RebalanceCurveConfig::new(idl.floor_mult.into(), idl.ceil_mult.into())
   }
 }
 

@@ -38,6 +38,8 @@ pub struct ExoExchangeContext<C> {
   levercoin_fees: LevercoinFees,
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
+  sell_curve_config: RebalanceCurveConfig,
+  buy_curve_config: RebalanceCurveConfig,
 }
 
 impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
@@ -51,6 +53,14 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
 
   fn collateral_oracle_price(&self) -> OraclePrice {
     self.collateral_oracle
+  }
+
+  fn sell_curve_config(&self) -> &RebalanceCurveConfig {
+    &self.sell_curve_config
+  }
+
+  fn buy_curve_config(&self) -> &RebalanceCurveConfig {
+    &self.buy_curve_config
   }
 
   fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
@@ -93,6 +103,8 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     collateral_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
+    sell_curve_config: RebalanceCurveConfig,
+    buy_curve_config: RebalanceCurveConfig,
   ) -> Result<ExoExchangeContext<C>> {
     let collateral_oracle =
       query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
@@ -129,6 +141,8 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       levercoin_fees,
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
+      sell_curve_config,
+      buy_curve_config,
     })
   }
 
@@ -241,10 +255,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Curve setup or pricing
   pub fn rebalance_sell_conversion(
     &self,
-    config: &RebalanceCurveConfig,
     usdc_usd_price: PriceRange<N9>,
   ) -> Result<ExoRebalanceConversion> {
-    let curve = self.rebalance_sell_curve(config)?;
+    let curve = self.rebalance_sell_curve()?;
     let collateral_rebalance_usd_price =
       curve.price(self.collateral_ratio())?;
     Ok(ExoRebalanceConversion {
@@ -259,10 +272,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Curve setup or pricing
   pub fn rebalance_buy_conversion(
     &self,
-    config: &RebalanceCurveConfig,
     usdc_usd_price: PriceRange<N9>,
   ) -> Result<ExoRebalanceConversion> {
-    let curve = self.rebalance_buy_curve(config)?;
+    let curve = self.rebalance_buy_curve()?;
     let collateral_rebalance_usd_price =
       curve.price(self.collateral_ratio())?;
     Ok(ExoRebalanceConversion {

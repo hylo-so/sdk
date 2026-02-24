@@ -53,26 +53,29 @@ pub trait ExchangeContext {
   /// Raw oracle spot + confidence.
   fn collateral_oracle_price(&self) -> OraclePrice;
 
+  /// Sell-side rebalance curve configuration.
+  fn sell_curve_config(&self) -> &RebalanceCurveConfig;
+
+  /// Buy-side rebalance curve configuration.
+  fn buy_curve_config(&self) -> &RebalanceCurveConfig;
+
   /// Sell-side rebalance price curve from oracle confidence.
   ///
   /// # Errors
   /// * Curve construction failure
-  fn rebalance_sell_curve(
-    &self,
-    config: &RebalanceCurveConfig,
-  ) -> Result<SellPriceCurve> {
-    SellPriceCurve::new(self.collateral_oracle_price(), config)
+  fn rebalance_sell_curve(&self) -> Result<SellPriceCurve> {
+    SellPriceCurve::new(
+      self.collateral_oracle_price(),
+      self.sell_curve_config(),
+    )
   }
 
   /// Buy-side rebalance price curve from oracle confidence.
   ///
   /// # Errors
   /// * Curve construction failure
-  fn rebalance_buy_curve(
-    &self,
-    config: &RebalanceCurveConfig,
-  ) -> Result<BuyPriceCurve> {
-    BuyPriceCurve::new(self.collateral_oracle_price(), config)
+  fn rebalance_buy_curve(&self) -> Result<BuyPriceCurve> {
+    BuyPriceCurve::new(self.collateral_oracle_price(), self.buy_curve_config())
   }
 
   /// Virtual stablecoin supply.
