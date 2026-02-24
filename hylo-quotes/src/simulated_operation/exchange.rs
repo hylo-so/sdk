@@ -4,9 +4,8 @@ use anyhow::{Context, Result};
 use fix::prelude::*;
 use hylo_clients::prelude::ExchangeClient;
 use hylo_idl::exchange::events::{
-  MintLevercoinEventV2, MintStablecoinEventV2, RedeemLevercoinEventV2,
-  RedeemStablecoinEventV2, SwapLeverToStableEventV1, SwapLstEventV0,
-  SwapStableToLeverEventV1,
+  MintEvent, RedeemEvent, SwapLeverToStableEvent, SwapLstEvent,
+  SwapStableToLeverEvent,
 };
 use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
 
@@ -20,7 +19,7 @@ use crate::{Local, LST};
 /// Mint stablecoin from LST.
 impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
   type FeeExp = N9;
-  type Event = MintStablecoinEventV2;
+  type Event = MintEvent;
 
   fn extract_output(event: &Self::Event) -> Result<MintOperationOutput> {
     let out_amount: UFix64<N6> = event.minted.try_into()?;
@@ -43,7 +42,7 @@ impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
 /// Redeem stablecoin for LST.
 impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
   type FeeExp = N9;
-  type Event = RedeemStablecoinEventV2;
+  type Event = RedeemEvent;
 
   fn extract_output(event: &Self::Event) -> Result<RedeemOperationOutput> {
     let in_amount: UFix64<N6> = event.redeemed.try_into()?;
@@ -65,7 +64,7 @@ impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
 /// Mint levercoin from LST.
 impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
   type FeeExp = N9;
-  type Event = MintLevercoinEventV2;
+  type Event = MintEvent;
 
   fn extract_output(event: &Self::Event) -> Result<MintOperationOutput> {
     let out_amount: UFix64<N6> = event.minted.try_into()?;
@@ -88,7 +87,7 @@ impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
 /// Redeem levercoin for LST.
 impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
   type FeeExp = N9;
-  type Event = RedeemLevercoinEventV2;
+  type Event = RedeemEvent;
 
   fn extract_output(event: &Self::Event) -> Result<RedeemOperationOutput> {
     let in_amount: UFix64<N6> = event.redeemed.try_into()?;
@@ -110,7 +109,7 @@ impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
 /// Swap stablecoin to levercoin.
 impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
   type FeeExp = N6;
-  type Event = SwapStableToLeverEventV1;
+  type Event = SwapStableToLeverEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
     let stablecoin_burned: UFix64<N6> = event.stablecoin_burned.try_into()?;
@@ -132,7 +131,7 @@ impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
 /// Swap levercoin to stablecoin.
 impl SimulatedOperation<XSOL, HYUSD> for ExchangeClient {
   type FeeExp = N6;
-  type Event = SwapLeverToStableEventV1;
+  type Event = SwapLeverToStableEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
     let in_amount: UFix64<N6> = event.levercoin_burned.try_into()?;
@@ -156,7 +155,7 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
   for ExchangeClient
 {
   type FeeExp = N9;
-  type Event = SwapLstEventV0;
+  type Event = SwapLstEvent;
 
   fn extract_output(event: &Self::Event) -> Result<LstSwapOperationOutput> {
     let in_amount: UFix64<N9> = event.lst_a_in.try_into()?;

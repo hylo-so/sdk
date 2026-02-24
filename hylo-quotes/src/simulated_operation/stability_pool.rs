@@ -3,7 +3,7 @@
 use anyhow::{bail, Context, Result};
 use fix::prelude::*;
 use hylo_clients::prelude::StabilityPoolClient;
-use hylo_idl::stability_pool::events::{UserDepositEvent, UserWithdrawEventV1};
+use hylo_idl::stability_pool::events::{UserDepositEvent, UserWithdrawEvent};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulated_operation::SimulatedOperation;
@@ -30,7 +30,7 @@ impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
 /// Withdraw stablecoin.
 impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
   type FeeExp = N6;
-  type Event = UserWithdrawEventV1;
+  type Event = UserWithdrawEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
     if event.levercoin_withdrawn.bits > 0 {
