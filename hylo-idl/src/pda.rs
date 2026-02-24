@@ -136,7 +136,16 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
-// EXO-specific PDAs
+#[must_use]
+pub fn event_auth(program_id: Pubkey) -> Pubkey {
+  Pubkey::find_program_address(&[b"__event_authority"], &program_id).0
+}
+
+pub static EXCHANGE_EVENT_AUTHORITY: LazyLock<Pubkey> =
+  lazy!(event_auth(exchange::ID));
+
+pub static STABILITY_POOL_EVENT_AUTHORITY: LazyLock<Pubkey> =
+  lazy!(event_auth(stability_pool::ID));
 
 #[must_use]
 pub fn exo_pair(collateral_mint: Pubkey) -> Pubkey {

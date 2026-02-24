@@ -214,7 +214,6 @@ impl ExchangeClient {
   pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instruction = instruction_builders::harvest_yield(
-      self.program.payer(),
       LST_REGISTRY_LOOKUP_TABLE,
       remaining_accounts,
     );

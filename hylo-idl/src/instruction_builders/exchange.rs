@@ -212,6 +212,8 @@ pub fn register_lst(
     associated_token_program: associated_token::ID,
     token_program: token::ID,
     system_program: system_program::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   let args = args::RegisterLst {};
   Instruction {
@@ -229,6 +231,8 @@ pub fn update_oracle_conf_tolerance(
   let accounts = accounts::UpdateOracleConfTolerance {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -245,6 +249,8 @@ pub fn update_sol_usd_oracle(
   let accounts = accounts::UpdateSolUsdOracle {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -261,6 +267,8 @@ pub fn update_stability_pool(
   let accounts = accounts::UpdateStabilityPool {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -271,30 +279,24 @@ pub fn update_stability_pool(
 
 #[must_use]
 pub fn harvest_yield(
-  payer: Pubkey,
   lst_registry: Pubkey,
   remaining_accounts: Vec<AccountMeta>,
 ) -> Instruction {
   let accounts = accounts::HarvestYield {
-    payer,
     hylo: *pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
     stablecoin_auth: *pda::HYUSD_AUTH,
-    levercoin_mint: XSOL::MINT,
-    levercoin_auth: *pda::XSOL_AUTH,
     stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
     stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
-    levercoin_fee_auth: pda::fee_auth(XSOL::MINT),
-    levercoin_fee_vault: pda::fee_vault(XSOL::MINT),
     stablecoin_pool: *pda::HYUSD_POOL,
-    levercoin_pool: *pda::XSOL_POOL,
     pool_auth: *pda::POOL_AUTH,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     hylo_stability_pool: stability_pool::ID,
     lst_registry,
     lut_program: address_lookup_table::ID,
     token_program: token::ID,
-    system_program: system_program::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   let args = args::HarvestYield {};
   Instruction {
@@ -315,6 +317,8 @@ pub fn update_lst_prices(
     hylo: *pda::HYLO,
     lst_registry,
     lut_program: address_lookup_table::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   let args = args::UpdateLstPrices {};
   Instruction {
@@ -343,9 +347,11 @@ pub fn swap_lst(
 pub fn register_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
+  exo_usd_pyth_feed: Pubkey,
   args: &args::RegisterExo,
 ) -> Instruction {
-  let accounts = account_builders::register_exo(admin, collateral_mint);
+  let accounts =
+    account_builders::register_exo(admin, collateral_mint, exo_usd_pyth_feed);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -494,6 +500,8 @@ pub fn update_lst_swap_fee(
   let accounts = accounts::UpdateLstSwapFee {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -510,6 +518,8 @@ pub fn update_levercoin_fees(
   let accounts = accounts::UpdateLevercoinFees {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -526,6 +536,8 @@ pub fn update_oracle_interval(
   let accounts = accounts::UpdateOracleInterval {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -542,6 +554,8 @@ pub fn update_stability_thresholds(
   let accounts = accounts::UpdateStabilityThresholds {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -558,6 +572,8 @@ pub fn update_treasury(
   let accounts = accounts::UpdateTreasury {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -574,6 +590,8 @@ pub fn update_yield_harvest_config(
   let accounts = accounts::UpdateYieldHarvestConfig {
     admin,
     hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -593,6 +611,8 @@ pub fn update_exo_funding_rate(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -612,6 +632,8 @@ pub fn update_exo_oracle(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -631,6 +653,8 @@ pub fn update_exo_oracle_conf_tolerance(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -650,6 +674,8 @@ pub fn update_exo_oracle_interval(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -669,6 +695,8 @@ pub fn update_exo_stability_threshold(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -688,6 +716,8 @@ pub fn update_exo_buy_curve(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -707,6 +737,8 @@ pub fn update_exo_sell_curve(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -726,6 +758,8 @@ pub fn update_exo_levercoin_fees(
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -746,6 +780,8 @@ pub fn update_admin(
     hylo: *pda::HYLO,
     program_data: *pda::EXCHANGE_PROGRAM_DATA,
     hylo_exchange: exchange::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   Instruction {
     program_id: exchange::ID,
@@ -760,6 +796,8 @@ pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
     admin,
     hylo: *pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
   };
   let args = args::InitializeLstVirtualStablecoin {};
   Instruction {

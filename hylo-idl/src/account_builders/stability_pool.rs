@@ -2,9 +2,9 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
-use crate::pda;
 use crate::stability_pool::client::accounts::{UserDeposit, UserWithdraw};
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use crate::{pda, stability_pool};
 
 /// Builds account context for stability pool deposit (hyUSD -> sHYUSD).
 #[must_use]
@@ -26,6 +26,8 @@ pub fn deposit(user: Pubkey) -> UserDeposit {
     system_program: system_program::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
+    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    program: stability_pool::ID,
   }
 }
 
@@ -52,5 +54,7 @@ pub fn withdraw(user: Pubkey) -> UserWithdraw {
     system_program: system_program::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
+    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    program: stability_pool::ID,
   }
 }
