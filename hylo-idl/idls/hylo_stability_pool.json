@@ -1611,717 +1611,116 @@
           }
         },
         {
+          "name": "exchange_event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
           "name": "hylo_exchange_program",
           "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [],
       "returns": {
         "defined": {
           "name": "RebalanceLeverToStableEvent"
-        }
-      }
-    },
-    {
-      "name": "rebalance_stable_to_lever",
-      "discriminator": [
-        210,
-        59,
-        29,
-        161,
-        20,
-        10,
-        3,
-        68
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "pool_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "stablecoin_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "stablecoin_pool",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "pool_auth",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "levercoin_pool",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "fee_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  101,
-                  101,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "fee_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "fee_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "levercoin_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  120,
-                  83,
-                  79,
-                  76
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "sol_usd_pyth_feed"
-        },
-        {
-          "name": "stablecoin_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "levercoin_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "hylo_exchange_program",
-          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [],
-      "returns": {
-        "defined": {
-          "name": "RebalanceStableToLeverEvent"
         }
       }
     },
@@ -2377,6 +1776,38 @@
         {
           "name": "hylo_stability_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -2435,6 +1866,38 @@
               }
             ]
           }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -2926,6 +2389,38 @@
         {
           "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -3569,6 +3064,38 @@
         {
           "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
         }
       ],
       "args": [
@@ -3579,7 +3106,7 @@
       ],
       "returns": {
         "defined": {
-          "name": "UserWithdrawEventV1"
+          "name": "UserWithdrawEvent"
         }
       }
     }
@@ -3705,29 +3232,16 @@
       ]
     },
     {
-      "name": "UserWithdrawEventV0",
+      "name": "UserWithdrawEvent",
       "discriminator": [
-        142,
-        135,
-        121,
-        155,
-        248,
-        252,
-        59,
-        161
-      ]
-    },
-    {
-      "name": "UserWithdrawEventV1",
-      "discriminator": [
-        51,
-        241,
-        35,
-        135,
-        62,
-        237,
-        83,
-        122
+        133,
+        189,
+        140,
+        255,
+        132,
+        211,
+        143,
+        89
       ]
     }
   ],
@@ -3946,11 +3460,27 @@
             }
           },
           {
+            "name": "lst_buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "lst_sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                69
+                33
               ]
             }
           }
@@ -4139,6 +3669,33 @@
       }
     },
     {
+      "name": "RebalanceCurveConfig",
+      "docs": [
+        "Confidence interval multipliers for rebalance price curve construction."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "RebalanceLeverToStableEvent",
       "type": {
         "kind": "struct",
@@ -4209,22 +3766,6 @@
           },
           {
             "name": "stablecoin_nav",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "levercoin_in_pool",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "levercoin_nav",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -4374,39 +3915,7 @@
       }
     },
     {
-      "name": "UserWithdrawEventV0",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "lp_token_burned",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "stablecoin_withdrawn",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "levercoin_withdrawn",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "UserWithdrawEventV1",
+      "name": "UserWithdrawEvent",
       "type": {
         "kind": "struct",
         "fields": [
