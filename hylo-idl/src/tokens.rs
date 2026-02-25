@@ -1,4 +1,5 @@
 use anchor_lang::prelude::{pubkey, Pubkey};
+use anchor_spl::mint::USDC as USDC_MINT;
 use fix::prelude::{N6, N9};
 use fix::typenum::Integer;
 
@@ -40,4 +41,11 @@ pub struct HYLOSOL;
 impl TokenMint for HYLOSOL {
   type Exp = N9;
   const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
+}
+
+pub struct USDC;
+
+impl TokenMint for USDC {
+  type Exp = N6;
+  const MINT: Pubkey = USDC_MINT;
 }

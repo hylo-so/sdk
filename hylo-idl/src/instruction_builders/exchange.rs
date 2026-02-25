@@ -565,6 +565,42 @@ pub fn update_stability_thresholds(
 }
 
 #[must_use]
+pub fn update_lst_buy_curve_config(
+  admin: Pubkey,
+  args: &args::UpdateLstBuyCurveConfig,
+) -> Instruction {
+  let accounts = accounts::UpdateLstBuyCurveConfig {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_lst_sell_curve_config(
+  admin: Pubkey,
+  args: &args::UpdateLstSellCurveConfig,
+) -> Instruction {
+  let accounts = accounts::UpdateLstSellCurveConfig {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_treasury(
   admin: Pubkey,
   args: &args::UpdateTreasury,
@@ -800,6 +836,72 @@ pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
     program: exchange::ID,
   };
   let args = args::InitializeLstVirtualStablecoin {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_exo_usdc(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::SwapExoUsdc,
+) -> Instruction {
+  let accounts = account_builders::swap_exo_usdc(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_usdc_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::SwapUsdcExo,
+) -> Instruction {
+  let accounts = account_builders::swap_usdc_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_lst_usdc(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  args: &args::SwapLstUsdc,
+) -> Instruction {
+  let accounts = account_builders::swap_lst_usdc(user, lst_mint);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_usdc_lst(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  args: &args::SwapUsdcLst,
+) -> Instruction {
+  let accounts = account_builders::swap_usdc_lst(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

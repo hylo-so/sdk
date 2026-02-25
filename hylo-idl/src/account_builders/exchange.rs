@@ -5,10 +5,11 @@ use anchor_spl::{associated_token, token};
 use crate::exchange::client::accounts::{
   HarvestFundingRate, MintLevercoin, MintLevercoinExo, MintStablecoin,
   MintStablecoinExo, RedeemLevercoin, RedeemLevercoinExo, RedeemStablecoin,
-  RedeemStablecoinExo, RegisterExo, SwapLeverToStable, SwapLeverToStableExo,
-  SwapLst, SwapStableToLever, SwapStableToLeverExo, WithdrawFees,
+  RedeemStablecoinExo, RegisterExo, SwapExoUsdc, SwapLeverToStable,
+  SwapLeverToStableExo, SwapLst, SwapLstUsdc, SwapStableToLever,
+  SwapStableToLeverExo, SwapUsdcExo, SwapUsdcLst, WithdrawFees,
 };
-use crate::tokens::{TokenMint, HYUSD, XSOL};
+use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{ata, exchange, pda, stability_pool};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
@@ -29,8 +30,6 @@ pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> MintStablecoin {
     stablecoin_mint: HYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -52,11 +51,8 @@ pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> MintLevercoin {
     user_levercoin_ta: pda::xsol_ata(user),
     lst_mint,
     levercoin_mint: XSOL::MINT,
-    stablecoin_mint: HYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -78,9 +74,7 @@ pub fn redeem_stablecoin(user: Pubkey, lst_mint: Pubkey) -> RedeemStablecoin {
     stablecoin_mint: HYUSD::MINT,
     lst_mint,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    system_program: system_program::ID,
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -100,12 +94,9 @@ pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> RedeemLevercoin {
     user_levercoin_ta: pda::xsol_ata(user),
     user_lst_ta: ata!(user, lst_mint),
     levercoin_mint: XSOL::MINT,
-    stablecoin_mint: HYUSD::MINT,
     lst_mint,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    system_program: system_program::ID,
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -437,7 +428,116 @@ pub fn swap_lst(user: Pubkey, lst_a: Pubkey, lst_b: Pubkey) -> SwapLst {
     fee_auth: pda::fee_auth(lst_a),
     fee_vault: pda::fee_vault(lst_a),
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// Exo collateral to USDC swap.
+#[must_use]
+pub fn swap_exo_usdc(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> SwapExoUsdc {
+  let collateral_vault_auth = pda::vault_auth(collateral_mint);
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  SwapExoUsdc {
+    user,
+    exo_pair: pda::exo_pair(collateral_mint),
+    usdc_pair: *pda::USDC_PAIR,
+    collateral_vault_auth,
+    usdc_vault_auth,
+    collateral_vault: ata!(collateral_vault_auth, collateral_mint),
+    usdc_collateral_vault: ata!(usdc_vault_auth, USDC::MINT),
+    user_usdc_ta: pda::usdc_ata(user),
+    user_collateral_ta: ata!(user, collateral_mint),
+    usdc_mint: USDC::MINT,
+    collateral_mint,
+    levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
+    collateral_usd_pyth_feed,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// USDC to exo collateral swap.
+#[must_use]
+pub fn swap_usdc_exo(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> SwapUsdcExo {
+  let collateral_vault_auth = pda::vault_auth(collateral_mint);
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  SwapUsdcExo {
+    user,
+    exo_pair: pda::exo_pair(collateral_mint),
+    usdc_pair: *pda::USDC_PAIR,
+    collateral_vault_auth,
+    usdc_vault_auth,
+    collateral_vault: ata!(collateral_vault_auth, collateral_mint),
+    usdc_collateral_vault: ata!(usdc_vault_auth, USDC::MINT),
+    user_usdc_ta: pda::usdc_ata(user),
+    user_collateral_ta: ata!(user, collateral_mint),
+    usdc_mint: USDC::MINT,
+    collateral_mint,
+    levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
+    collateral_usd_pyth_feed,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// LST to USDC swap.
+#[must_use]
+pub fn swap_lst_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstUsdc {
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  SwapLstUsdc {
+    user,
+    hylo: *pda::HYLO,
+    lst_header: pda::lst_header(lst_mint),
+    usdc_pair: *pda::USDC_PAIR,
+    lst_vault_auth: pda::vault_auth(lst_mint),
+    usdc_vault_auth,
+    lst_vault: pda::vault(lst_mint),
+    usdc_vault: ata!(usdc_vault_auth, USDC::MINT),
+    user_lst_ta: ata!(user, lst_mint),
+    user_usdc_ta: pda::usdc_ata(user),
+    lst_mint,
+    usdc_mint: USDC::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// USDC to LST swap.
+#[must_use]
+pub fn swap_usdc_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcLst {
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  SwapUsdcLst {
+    user,
+    hylo: *pda::HYLO,
+    lst_header: pda::lst_header(lst_mint),
+    usdc_pair: *pda::USDC_PAIR,
+    lst_vault_auth: pda::vault_auth(lst_mint),
+    usdc_vault_auth,
+    lst_vault: pda::vault(lst_mint),
+    usdc_vault: ata!(usdc_vault_auth, USDC::MINT),
+    user_lst_ta: ata!(user, lst_mint),
+    user_usdc_ta: pda::usdc_ata(user),
+    lst_mint,
+    usdc_mint: USDC::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }

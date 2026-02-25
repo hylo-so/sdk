@@ -69,7 +69,6 @@ pub fn get_stats() -> Instruction {
     levercoin_mint: XSOL::MINT,
     pool_auth: *pda::POOL_AUTH,
     stablecoin_pool: *pda::HYUSD_POOL,
-    levercoin_pool: *pda::XSOL_POOL,
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
   };

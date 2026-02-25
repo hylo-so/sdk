@@ -4,7 +4,7 @@ use anchor_lang::prelude::{pubkey, Pubkey};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 use solana_loader_v3_interface::get_program_data_address;
 
-use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use crate::{exchange, stability_pool};
 
 macro_rules! lazy {
@@ -56,6 +56,11 @@ pub fn xsol_ata(auth: Pubkey) -> Pubkey {
 #[must_use]
 pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
   ata!(&auth, &SHYUSD::MINT)
+}
+
+#[must_use]
+pub fn usdc_ata(auth: Pubkey) -> Pubkey {
+  ata!(&auth, &USDC::MINT)
 }
 
 #[must_use]
@@ -136,6 +141,9 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
+pub const USDC_USD_PYTH_FEED: Pubkey =
+  pubkey!("Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX");
+
 #[must_use]
 pub fn event_auth(program_id: Pubkey) -> Pubkey {
   Pubkey::find_program_address(&[b"__event_authority"], &program_id).0
@@ -146,6 +154,9 @@ pub static EXCHANGE_EVENT_AUTHORITY: LazyLock<Pubkey> =
 
 pub static STABILITY_POOL_EVENT_AUTHORITY: LazyLock<Pubkey> =
   lazy!(event_auth(stability_pool::ID));
+
+pub static USDC_PAIR: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::USDC_PAIR));
 
 #[must_use]
 pub fn exo_pair(collateral_mint: Pubkey) -> Pubkey {

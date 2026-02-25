@@ -2195,36 +2195,11 @@
           ]
         },
         {
-          "name": "stablecoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "sol_usd_pyth_feed"
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         },
         {
           "name": "event_authority",
@@ -3040,14 +3015,6 @@
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -3833,42 +3800,14 @@
           ]
         },
         {
-          "name": "stablecoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ]
-          },
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
           "name": "lst_mint"
         },
         {
           "name": "sol_usd_pyth_feed"
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "event_authority",
@@ -4630,16 +4569,8 @@
           "name": "sol_usd_pyth_feed"
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "event_authority",
@@ -5970,6 +5901,447 @@
       }
     },
     {
+      "name": "swap_exo_usdc",
+      "discriminator": [
+        13,
+        140,
+        180,
+        23,
+        195,
+        203,
+        221,
+        126
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "collateral_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "usdc_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  198,
+                  250,
+                  122,
+                  243,
+                  190,
+                  219,
+                  173,
+                  58,
+                  61,
+                  101,
+                  243,
+                  106,
+                  171,
+                  201,
+                  116,
+                  49,
+                  177,
+                  187,
+                  228,
+                  194,
+                  210,
+                  246,
+                  224,
+                  228,
+                  124,
+                  166,
+                  2,
+                  3,
+                  69,
+                  47,
+                  93,
+                  97
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_usdc_ta",
+          "writable": true
+        },
+        {
+          "name": "user_collateral_ta",
+          "writable": true
+        },
+        {
+          "name": "usdc_mint",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_usd_pyth_feed"
+        },
+        {
+          "name": "usdc_usd_pyth_feed"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "SwapExoToUsdcEvent"
+        }
+      }
+    },
+    {
       "name": "swap_lever_to_stable",
       "discriminator": [
         167,
@@ -7195,10 +7567,6 @@
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -7250,6 +7618,400 @@
       "returns": {
         "defined": {
           "name": "SwapLstEvent"
+        }
+      }
+    },
+    {
+      "name": "swap_lst_usdc",
+      "discriminator": [
+        232,
+        4,
+        7,
+        243,
+        69,
+        136,
+        34,
+        63
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_header",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  115,
+                  116,
+                  95,
+                  104,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lst_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "usdc_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_lst_ta",
+          "writable": true
+        },
+        {
+          "name": "user_usdc_ta",
+          "writable": true
+        },
+        {
+          "name": "lst_mint"
+        },
+        {
+          "name": "usdc_mint",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "sol_usd_pyth_feed"
+        },
+        {
+          "name": "usdc_usd_pyth_feed"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "SwapLstToUsdcEvent"
         }
       }
     },
@@ -8544,6 +9306,841 @@
       "returns": {
         "defined": {
           "name": "SwapStablecoinToUsdcEvent"
+        }
+      }
+    },
+    {
+      "name": "swap_usdc_exo",
+      "discriminator": [
+        126,
+        31,
+        8,
+        8,
+        17,
+        175,
+        0,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "collateral_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "usdc_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  198,
+                  250,
+                  122,
+                  243,
+                  190,
+                  219,
+                  173,
+                  58,
+                  61,
+                  101,
+                  243,
+                  106,
+                  171,
+                  201,
+                  116,
+                  49,
+                  177,
+                  187,
+                  228,
+                  194,
+                  210,
+                  246,
+                  224,
+                  228,
+                  124,
+                  166,
+                  2,
+                  3,
+                  69,
+                  47,
+                  93,
+                  97
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_usdc_ta",
+          "writable": true
+        },
+        {
+          "name": "user_collateral_ta",
+          "writable": true
+        },
+        {
+          "name": "usdc_mint",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_usd_pyth_feed"
+        },
+        {
+          "name": "usdc_usd_pyth_feed"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "SwapUsdcToExoEvent"
+        }
+      }
+    },
+    {
+      "name": "swap_usdc_lst",
+      "discriminator": [
+        150,
+        149,
+        223,
+        203,
+        66,
+        89,
+        143,
+        144
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_header",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  115,
+                  116,
+                  95,
+                  104,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lst_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "usdc_vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_lst_ta",
+          "writable": true
+        },
+        {
+          "name": "user_usdc_ta",
+          "writable": true
+        },
+        {
+          "name": "lst_mint"
+        },
+        {
+          "name": "usdc_mint",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "sol_usd_pyth_feed"
+        },
+        {
+          "name": "usdc_usd_pyth_feed"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "SwapUsdcToLstEvent"
         }
       }
     },
@@ -12009,6 +13606,19 @@
       ]
     },
     {
+      "name": "SwapLstToUsdcEvent",
+      "discriminator": [
+        8,
+        54,
+        75,
+        98,
+        162,
+        102,
+        253,
+        37
+      ]
+    },
+    {
       "name": "SwapStableToLeverEvent",
       "discriminator": [
         214,
@@ -12058,6 +13668,19 @@
         167,
         160,
         4
+      ]
+    },
+    {
+      "name": "SwapUsdcToLstEvent",
+      "discriminator": [
+        51,
+        183,
+        182,
+        250,
+        39,
+        255,
+        201,
+        80
       ]
     },
     {
@@ -14018,6 +15641,50 @@
       }
     },
     {
+      "name": "SwapLstToUsdcEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_deposited",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "sol_rebalance_usd_price",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "usdc_withdrawn",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "usdc_usd_price",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "SwapStableToLeverEvent",
       "type": {
         "kind": "struct",
@@ -14216,6 +15883,50 @@
           },
           {
             "name": "collateral_usd_price",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwapUsdcToLstEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_deposited",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "usdc_usd_price",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "lst_withdrawn",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "sol_rebalance_usd_price",
             "type": {
               "defined": {
                 "name": "UFixValue64"
