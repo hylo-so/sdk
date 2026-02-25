@@ -3,11 +3,12 @@ use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
-  HarvestFundingRate, MintLevercoin, MintLevercoinExo, MintStablecoin,
-  MintStablecoinExo, RedeemLevercoin, RedeemLevercoinExo, RedeemStablecoin,
-  RedeemStablecoinExo, RegisterExo, SwapExoUsdc, SwapLeverToStable,
-  SwapLeverToStableExo, SwapLst, SwapLstUsdc, SwapStableToLever,
-  SwapStableToLeverExo, SwapUsdcExo, SwapUsdcLst, WithdrawFees,
+  HarvestFundingRate, InitializeUsdc, MintLevercoin, MintLevercoinExo,
+  MintStablecoin, MintStablecoinExo, RedeemLevercoin, RedeemLevercoinExo,
+  RedeemStablecoin, RedeemStablecoinExo, RegisterExo, SwapExoUsdc,
+  SwapLeverToStable, SwapLeverToStableExo, SwapLst, SwapLstUsdc,
+  SwapStableToLever, SwapStableToLeverExo, SwapStablecoinToUsdc, SwapUsdcExo,
+  SwapUsdcLst, SwapUsdcToStablecoin, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{ata, exchange, pda, stability_pool};
@@ -536,6 +537,86 @@ pub fn swap_usdc_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcLst {
     lst_mint,
     usdc_mint: USDC::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// Builds account context for initializing the USDC pair.
+#[must_use]
+pub fn initialize_usdc(
+  admin: Pubkey,
+  usdc_usd_pyth_feed: Pubkey,
+) -> InitializeUsdc {
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_fee_auth = pda::fee_auth(USDC::MINT);
+  InitializeUsdc {
+    admin,
+    hylo: *pda::HYLO,
+    usdc_pair: *pda::USDC_PAIR,
+    usdc_vault_auth,
+    usdc_fee_auth,
+    usdc_collateral_vault: ata!(usdc_vault_auth, USDC::MINT),
+    usdc_fee_vault: ata!(usdc_fee_auth, USDC::MINT),
+    usdc_mint: USDC::MINT,
+    usdc_usd_pyth_feed,
+    token_program: token::ID,
+    associated_token_program: associated_token::ID,
+    system_program: system_program::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// Builds account context for hyUSD to USDC swap.
+#[must_use]
+pub fn swap_stablecoin_to_usdc(user: Pubkey) -> SwapStablecoinToUsdc {
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_fee_auth = pda::fee_auth(USDC::MINT);
+  SwapStablecoinToUsdc {
+    user,
+    hylo: *pda::HYLO,
+    usdc_pair: *pda::USDC_PAIR,
+    stablecoin_auth: *pda::HYUSD_AUTH,
+    usdc_vault_auth,
+    usdc_fee_auth,
+    stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
+    usdc_collateral_vault: ata!(usdc_vault_auth, USDC::MINT),
+    usdc_fee_vault: ata!(usdc_fee_auth, USDC::MINT),
+    stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
+    user_stablecoin_ta: pda::hyusd_ata(user),
+    user_usdc_ta: pda::usdc_ata(user),
+    stablecoin_mint: HYUSD::MINT,
+    usdc_mint: USDC::MINT,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// Builds account context for USDC to hyUSD swap.
+#[must_use]
+pub fn swap_usdc_to_stablecoin(user: Pubkey) -> SwapUsdcToStablecoin {
+  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_fee_auth = pda::fee_auth(USDC::MINT);
+  SwapUsdcToStablecoin {
+    user,
+    hylo: *pda::HYLO,
+    usdc_pair: *pda::USDC_PAIR,
+    stablecoin_auth: *pda::HYUSD_AUTH,
+    usdc_vault_auth,
+    usdc_fee_auth,
+    stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
+    usdc_collateral_vault: ata!(usdc_vault_auth, USDC::MINT),
+    usdc_fee_vault: ata!(usdc_fee_auth, USDC::MINT),
+    stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
+    user_stablecoin_ta: pda::hyusd_ata(user),
+    user_usdc_ta: pda::usdc_ata(user),
+    stablecoin_mint: HYUSD::MINT,
+    usdc_mint: USDC::MINT,
     usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
     token_program: token::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,

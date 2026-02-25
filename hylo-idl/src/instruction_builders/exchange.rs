@@ -827,6 +827,103 @@ pub fn update_admin(
 }
 
 #[must_use]
+pub fn initialize_usdc(
+  admin: Pubkey,
+  usdc_usd_pyth_feed: Pubkey,
+  args: &args::InitializeUsdc,
+) -> Instruction {
+  let accounts = account_builders::initialize_usdc(admin, usdc_usd_pyth_feed);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_stablecoin_to_usdc(
+  user: Pubkey,
+  args: &args::SwapStablecoinToUsdc,
+) -> Instruction {
+  let accounts = account_builders::swap_stablecoin_to_usdc(user);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_usdc_to_stablecoin(
+  user: Pubkey,
+  args: &args::SwapUsdcToStablecoin,
+) -> Instruction {
+  let accounts = account_builders::swap_usdc_to_stablecoin(user);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_usdc_oracle_conf_tolerance(
+  admin: Pubkey,
+  args: &args::UpdateUsdcOracleConfTolerance,
+) -> Instruction {
+  let accounts = accounts::UpdateUsdcOracleConfTolerance {
+    admin,
+    hylo: *pda::HYLO,
+    usdc_pair: *pda::USDC_PAIR,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_usdc_oracle_interval(
+  admin: Pubkey,
+  args: &args::UpdateUsdcOracleInterval,
+) -> Instruction {
+  let accounts = accounts::UpdateUsdcOracleInterval {
+    admin,
+    hylo: *pda::HYLO,
+    usdc_pair: *pda::USDC_PAIR,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_usdc_swap_fee(
+  admin: Pubkey,
+  args: &args::UpdateUsdcSwapFee,
+) -> Instruction {
+  let accounts = accounts::UpdateUsdcSwapFee {
+    admin,
+    hylo: *pda::HYLO,
+    usdc_pair: *pda::USDC_PAIR,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
   let accounts = accounts::InitializeLstVirtualStablecoin {
     admin,
