@@ -100,10 +100,6 @@
       ],
       "accounts": [
         {
-          "name": "payer",
-          "signer": true
-        },
-        {
           "name": "hylo",
           "pda": {
             "seeds": [
@@ -905,7 +901,6 @@
         },
         {
           "name": "lst_registry",
-          "writable": true,
           "relations": [
             "hylo"
           ]
@@ -13990,8 +13985,8 @@
     },
     {
       "code": 6019,
-      "name": "YieldHarvestDisabled",
-      "msg": "Yield harvest disabled due to protocol collateral ratio."
+      "name": "YieldHarvestAlreadyRun",
+      "msg": "Yield harvest has already occurred during this epoch."
     },
     {
       "code": 6020,

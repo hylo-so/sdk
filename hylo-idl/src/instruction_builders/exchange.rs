@@ -437,12 +437,10 @@ pub fn redeem_stablecoin_exo(
 
 #[must_use]
 pub fn harvest_funding_rate(
-  payer: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> Instruction {
   let accounts = account_builders::harvest_funding_rate(
-    payer,
     collateral_mint,
     collateral_usd_pyth_feed,
   );

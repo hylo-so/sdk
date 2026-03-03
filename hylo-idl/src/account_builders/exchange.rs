@@ -298,13 +298,11 @@ pub fn redeem_stablecoin_exo(
 /// Builds account context for harvesting exo funding rate.
 #[must_use]
 pub fn harvest_funding_rate(
-  payer: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> HarvestFundingRate {
   let vault_auth = pda::vault_auth(collateral_mint);
   HarvestFundingRate {
-    payer,
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     stablecoin_auth: *pda::HYUSD_AUTH,
