@@ -63,7 +63,7 @@ impl ProtocolAccounts {
       *pda::POOL_CONFIG,
       *pda::HYUSD_POOL,
       *pda::XSOL_POOL,
-      hylo_core::pyth::SOL_USD_PYTH_FEED,
+      hylo_core::pyth::SOL_USD.address,
       sysvar::clock::ID,
     ]
   }

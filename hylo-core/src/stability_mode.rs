@@ -33,17 +33,27 @@ impl Display for StabilityMode {
 pub struct StabilityController {
   pub stability_threshold_1: UFix64<N2>,
   pub stability_threshold_2: UFix64<N2>,
+  pub min_stability_threshold: UFix64<N2>,
 }
 
 impl StabilityController {
   /// Parses stability thresholds into controller.
+  ///
+  /// `min_stability_threshold` is derived as 10% below
+  /// `stability_threshold_2` (e.g. 1.30 → 1.20) and must remain
+  /// above 1.0.
   pub fn new(
     stability_threshold_1: UFix64<N2>,
     stability_threshold_2: UFix64<N2>,
   ) -> Result<StabilityController> {
+    let min_stability_threshold = stability_threshold_2
+      .checked_sub(&UFix64::new(10))
+      .filter(|t| *t > UFix64::one())
+      .ok_or(StabilityValidation)?;
     let controller = StabilityController {
       stability_threshold_1,
       stability_threshold_2,
+      min_stability_threshold,
     };
     controller.validate()?;
     Ok(controller)
@@ -99,10 +109,10 @@ impl StabilityController {
     }
   }
 
-  /// Lowest tolerable threshold.
+  /// Lowest tolerable threshold — 10% below `stability_threshold_2`.
   #[must_use]
   pub fn min_stability_threshold(&self) -> UFix64<N2> {
-    self.stability_threshold_2
+    self.min_stability_threshold
   }
 
   /// Ensures stability thresholds:
