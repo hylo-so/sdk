@@ -1,6 +1,6 @@
 use anchor_lang::prelude::{pubkey, Pubkey};
 use anchor_spl::mint::USDC as USDC_MINT;
-use fix::prelude::{N6, N9};
+use fix::prelude::{N6, N8, N9};
 use fix::typenum::Integer;
 
 pub trait TokenMint {
@@ -48,4 +48,11 @@ pub struct USDC;
 impl TokenMint for USDC {
   type Exp = N6;
   const MINT: Pubkey = USDC_MINT;
+}
+
+pub struct CBBTC;
+
+impl TokenMint for CBBTC {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
 }
