@@ -1,4 +1,4 @@
-//! Integration tests comparing ProtocolStateStrategy vs SimulationStrategy.
+//! Integration tests comparing `ProtocolStateStrategy` vs `SimulationStrategy`.
 //!
 //! Requires `RPC_URL` environment variable.
 

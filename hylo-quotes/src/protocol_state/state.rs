@@ -7,6 +7,7 @@ use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
+use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::fee_controller::LevercoinFees;
@@ -79,10 +80,10 @@ impl<C: SolanaClock> ProtocolState<C> {
   ) -> Result<Self> {
     let fetched_at = clock.unix_timestamp();
     let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
-    let oracle_config = OracleConfig::new(
-      hylo.oracle_interval_secs,
-      hylo.oracle_conf_tolerance.try_into()?,
-    );
+    // TODO: Remove conversion when mainnet `conf_tolerance` migrates to N9
+    let conf_tolerance: UFix64<N8> = hylo.oracle_conf_tolerance.try_into()?;
+    let oracle_config =
+      OracleConfig::new(hylo.oracle_interval_secs, conf_tolerance.convert());
     let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context = LstExchangeContext::load(
