@@ -1,9 +1,9 @@
 name: "Hylo SDK CI"
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "main-v2"]
   push:
-    branches: ["main"]
+    branches: ["main", "main-v2"]
 
 env:
   SCCACHE_GHA_ENABLED: "true"
