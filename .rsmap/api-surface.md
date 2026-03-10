@@ -449,7 +449,6 @@ impl ProgramClient for StabilityPoolClient {
 
 // NOTE: Anchor-based RPC client for the Hylo Stability Pool program, supporting deposit, withdraw, and rebalance.
 impl StabilityPoolClient {
-    pub async fn rebalance_stable_to_lever(& self) -> Result < Signature >;
     pub async fn rebalance_lever_to_stable(& self) -> Result < Signature >;
     pub async fn get_stats(& self) -> Result < StabilityPoolStats >;
     pub fn initialize_stability_pool(& self, upgrade_authority : Pubkey) -> Result < VersionedTransactionData >;
@@ -473,15 +472,6 @@ impl BuildTransactionData < HYUSD , SHYUSD > for StabilityPoolClient {
 impl BuildTransactionData < SHYUSD , HYUSD > for StabilityPoolClient {
     type Inputs = StabilityPoolArgs;
     async fn build(& self, inputs : StabilityPoolArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < SHYUSD , OUT > for StabilityPoolClient
-
-// NOTE: Builds combined withdraw-and-redeem transaction data requiring both stability pool and exchange clients.
-impl < OUT : LST >BuildTransactionData < SHYUSD , OUT > for StabilityPoolClient {
-    type Inputs = (ExchangeClient , StabilityPoolArgs);
-    async fn build(& self, (exchange , StabilityPoolArgs { amount , user }) : (ExchangeClient , StabilityPoolArgs ,)) -> Result < VersionedTransactionData >;
 }
 
 
@@ -724,6 +714,27 @@ pub use hylo_idl as idl;
 
 ---
 
+# crate::asset_swap_config
+<!-- file: hylo-core/src/asset_swap_config.rs -->
+
+## Types
+
+pub struct AssetSwapConfig {
+    pub fee: UFix64 < N4 >,
+}
+
+
+## Impl AssetSwapConfig
+
+impl AssetSwapConfig {
+    pub fn new(serialized_fee : UFixValue64) -> Result < AssetSwapConfig >;
+    pub fn apply_fee< Exp >(& self, amount : UFix64 < Exp >) -> Result < FeeExtract < Exp > >;
+    pub fn validate_fee(fee : UFix64 < N4 >) -> Result < () >;
+}
+
+
+---
+
 # crate::conversion
 <!-- file: hylo-core/src/conversion.rs -->
 
@@ -747,6 +758,24 @@ pub struct SwapConversion {
 // NOTE: Provides bidirectional price conversion between exogenous collateral and protocol tokens.
 pub struct ExoConversion {
     pub collateral_usd_price: PriceRange < N9 >,
+}
+
+/// Directional conversion between USDC and stablecoin amounts.
+pub struct UsdcStablecoinConversion {
+    pub usdc_usd_price: PriceRange < N9 >,
+}
+
+/// Conversions between exogenous collateral and USDC via oracle prices.
+pub struct ExoRebalanceConversion {
+    pub collateral_rebalance_usd_price: UFix64 < N9 >,
+    pub usdc_usd_price: PriceRange < N9 >,
+}
+
+/// Conversions between LST and USDC via SOL for rebalancing.
+pub struct LstRebalanceConversion {
+    pub lst_sol_price: UFix64 < N9 >,
+    pub sol_rebalance_usd_price: UFix64 < N9 >,
+    pub usdc_usd_price: PriceRange < N9 >,
 }
 
 
@@ -779,6 +808,31 @@ impl ExoConversion {
 }
 
 
+## Impl UsdcStablecoinConversion
+
+impl UsdcStablecoinConversion {
+    pub fn deposit_to_stablecoin(& self, usdc_amount : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
+    pub fn stablecoin_to_withdrawal(& self, stablecoin_amount : UFix64 < N6 >) -> Result < UFix64 < N9 > >;
+    pub fn withdrawal_to_stablecoin(& self, usdc_amount : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
+}
+
+
+## Impl ExoRebalanceConversion
+
+impl ExoRebalanceConversion {
+    pub fn collateral_to_usdc(& self, collateral_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
+    pub fn usdc_to_collateral(& self, usdc_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
+}
+
+
+## Impl LstRebalanceConversion
+
+impl LstRebalanceConversion {
+    pub fn lst_to_usdc(& self, lst_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
+    pub fn usdc_to_lst(& self, usdc_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
+}
+
+
 ---
 
 # crate::error
@@ -797,6 +851,7 @@ pub enum CoreError {
     LstSolPriceEpochOrder,
     LstSolPriceOutdated,
     LstSolPriceConversion,
+    SolLstPriceConversion,
     LstLstPriceConversion,
     PythOracleConfidence,
     PythOracleExponent,
@@ -809,7 +864,6 @@ pub enum CoreError {
     CollateralRatio,
     MaxMintable,
     MaxSwappable,
-    StabilityPoolCap,
     StablecoinNav,
     TargetCollateralRatioTooLow,
     TotalValueLocked,
@@ -833,7 +887,6 @@ pub enum CoreError {
     RequestedStablecoinOverMaxMintable,
     LpTokenNav,
     LpTokenOut,
-    StablecoinToSwap,
     TokenWithdraw,
     YieldHarvestConfigValidation,
     YieldHarvestAllocation,
@@ -852,10 +905,17 @@ pub enum CoreError {
     ExoDestinationCollateral,
     ExoDestinationStablecoin,
     ExoAmountNormalization,
+    ExoCollateralToUsdc,
+    ExoUsdcToCollateral,
+    LstToUsdc,
+    UsdcToLst,
+    RebalanceCurveConfigValidation,
     RebalancePriceConstruction,
     RebalancePriceConversion,
     RebalanceSellInactive,
     RebalanceBuyInactive,
+    RebalanceSellSideLiquidity,
+    RebalanceBuySideTarget,
 }
 
 
@@ -872,8 +932,12 @@ pub trait ExchangeContext {
     fn total_collateral(& self) -> UFix64 < N9 >;
     fn collateral_usd_price(& self) -> PriceRange < N9 >;
     fn collateral_oracle_price(& self) -> OraclePrice;
-    fn rebalance_sell_curve(& self, config : & RebalanceCurveConfig) -> Result < SellPriceCurve >;
-    fn rebalance_buy_curve(& self, config : & RebalanceCurveConfig) -> Result < BuyPriceCurve >;
+    fn sell_curve_config(& self) -> & RebalanceCurveConfig;
+    fn buy_curve_config(& self) -> & RebalanceCurveConfig;
+    fn rebalance_sell_curve(& self) -> Result < SellPriceCurve >;
+    fn rebalance_buy_curve(& self) -> Result < BuyPriceCurve >;
+    fn rebalance_sell_liquidity(& self) -> Result < UFix64 < N9 > >;
+    fn rebalance_buy_target(& self) -> Result < UFix64 < N9 > >;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn levercoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn stability_controller(& self) -> & StabilityController;
@@ -887,7 +951,6 @@ pub trait ExchangeContext {
     fn projected_stability_mode(& self, new_total : UFix64 < N9 >, new_stablecoin : UFix64 < N6 >) -> Result < StabilityMode >;
     fn select_stability_mode_for_fees(& self, projected : StabilityMode) -> StabilityMode;
     fn swap_conversion(& self) -> Result < SwapConversion >;
-    fn stability_pool_cap(& self, stablecoin_in_pool : UFix64 < N6 >, levercoin_in_pool : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
     fn max_mintable_stablecoin(& self) -> Result < UFix64 < N6 > >;
     fn max_swappable_stablecoin(& self) -> Result < UFix64 < N6 > >;
     fn validate_stablecoin_amount(& self, requested : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
@@ -937,6 +1000,8 @@ pub struct ExoExchangeContext< C > {
     levercoin_fees: LevercoinFees,
     stablecoin_mint_fees: InterpolatedMintFees,
     stablecoin_redeem_fees: InterpolatedRedeemFees,
+    sell_curve_config: RebalanceCurveConfig,
+    buy_curve_config: RebalanceCurveConfig,
 }
 
 
@@ -947,6 +1012,8 @@ impl < C : SolanaClock >ExchangeContext for ExoExchangeContext < C > {
     fn total_collateral(& self) -> UFix64 < N9 >;
     fn collateral_usd_price(& self) -> PriceRange < N9 >;
     fn collateral_oracle_price(& self) -> OraclePrice;
+    fn sell_curve_config(& self) -> & RebalanceCurveConfig;
+    fn buy_curve_config(& self) -> & RebalanceCurveConfig;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn levercoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn stability_controller(& self) -> & StabilityController;
@@ -960,12 +1027,14 @@ impl < C : SolanaClock >ExchangeContext for ExoExchangeContext < C > {
 
 // NOTE: Inherent methods for loading exo context from on-chain state and computing fees for each operation type.
 impl < C : SolanaClock >ExoExchangeContext < C > {
-    pub fn load(clock : C, total_collateral : UFix64 < N9 >, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig, levercoin_fees : LevercoinFees, collateral_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < ExoExchangeContext < C > >;
+    pub fn load(clock : C, total_collateral : UFix64 < N9 >, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig, levercoin_fees : LevercoinFees, collateral_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >, sell_curve_config : RebalanceCurveConfig, buy_curve_config : RebalanceCurveConfig) -> Result < ExoExchangeContext < C > >;
     pub fn stablecoin_mint_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn stablecoin_redeem_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_mint_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_redeem_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn exo_conversion(& self) -> ExoConversion;
+    pub fn rebalance_sell_conversion(& self, usdc_usd_price : PriceRange < N9 >) -> Result < ExoRebalanceConversion >;
+    pub fn rebalance_buy_conversion(& self, usdc_usd_price : PriceRange < N9 >) -> Result < ExoRebalanceConversion >;
 }
 
 
@@ -991,6 +1060,8 @@ pub struct LstExchangeContext< C > {
     stablecoin_mint_fees: InterpolatedMintFees,
     stablecoin_redeem_fees: InterpolatedRedeemFees,
     levercoin_fees: LevercoinFees,
+    sell_curve_config: RebalanceCurveConfig,
+    buy_curve_config: RebalanceCurveConfig,
 }
 
 
@@ -1001,6 +1072,8 @@ impl < C : SolanaClock >ExchangeContext for LstExchangeContext < C > {
     fn total_collateral(& self) -> UFix64 < N9 >;
     fn collateral_usd_price(& self) -> PriceRange < N9 >;
     fn collateral_oracle_price(& self) -> OraclePrice;
+    fn sell_curve_config(& self) -> & RebalanceCurveConfig;
+    fn buy_curve_config(& self) -> & RebalanceCurveConfig;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn levercoin_supply(& self) -> Result < UFix64 < N6 > >;
     fn stability_controller(& self) -> & StabilityController;
@@ -1014,7 +1087,7 @@ impl < C : SolanaClock >ExchangeContext for LstExchangeContext < C > {
 
 // NOTE: Inherent methods for loading LST context, computing fees, token conversions, and pool caps.
 impl < C : SolanaClock >LstExchangeContext < C > {
-    pub fn load(clock : C, total_sol_cache : & TotalSolCache, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig, levercoin_fees : LevercoinFees, sol_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >) -> Result < LstExchangeContext < C > >;
+    pub fn load(clock : C, total_sol_cache : & TotalSolCache, stability_threshold_1 : UFix64 < N2 >, oracle_config : OracleConfig, levercoin_fees : LevercoinFees, sol_usd_pyth_feed : & PriceUpdateV2, virtual_stablecoin : VirtualStablecoin, levercoin_mint : Option < & Mint >, sell_curve_config : RebalanceCurveConfig, buy_curve_config : RebalanceCurveConfig) -> Result < LstExchangeContext < C > >;
     pub fn stablecoin_mint_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn stablecoin_redeem_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_mint_fee(& self, lst_sol_price : & LstSolPrice, amount_lst : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
@@ -1022,6 +1095,8 @@ impl < C : SolanaClock >LstExchangeContext < C > {
     pub fn token_conversion(& self, lst_sol_price : & LstSolPrice) -> Result < Conversion >;
     pub fn sol_to_stablecoin(& self, amount_sol : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
     pub fn sol_to_levercoin(& self, amount_sol : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
+    pub fn rebalance_sell_conversion(& self, lst_sol_price : & LstSolPrice, usdc_usd_price : PriceRange < N9 >) -> Result < LstRebalanceConversion >;
+    pub fn rebalance_buy_conversion(& self, lst_sol_price : & LstSolPrice, usdc_usd_price : PriceRange < N9 >) -> Result < LstRebalanceConversion >;
     pub fn max_swappable_stablecoin_to_next_threshold(& self) -> Result < UFix64 < N6 > >;
 }
 
@@ -1127,10 +1202,10 @@ pub struct LevercoinFees {
 
 /// Fee configuration table reacts to different stability modes.
 // NOTE: Trait that selects mint/redeem fee rates based on the current stability mode.
-pub trait FeeController {
+pub trait FeeController: Sized {
     fn mint_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
     fn redeem_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
-    fn validate(& self) -> Result < () >;
+    fn validate(self) -> Result < Self >;
 }
 
 
@@ -1167,7 +1242,7 @@ impl StablecoinFees {
 impl FeeController for LevercoinFees {
     fn mint_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
     fn redeem_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
-    fn validate(& self) -> Result < () >;
+    fn validate(self) -> Result < LevercoinFees >;
 }
 
 
@@ -1312,6 +1387,13 @@ impl From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache {
 
 impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin {
     fn from(idl : hylo_idl :: exchange :: types :: VirtualStablecoin) -> VirtualStablecoin;
+}
+
+
+## Impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for RebalanceCurveConfig
+
+impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for RebalanceCurveConfig {
+    fn from(idl : hylo_idl :: exchange :: types :: RebalanceCurveConfig) -> RebalanceCurveConfig;
 }
 
 
@@ -1473,31 +1555,9 @@ impl LstSolPrice {
     pub fn new(price : UFixValue64, epoch : u64) -> LstSolPrice;
     pub fn checked_delta(& self, prev : & LstSolPrice) -> Result < UFix64 < N9 > >;
     pub fn get_epoch_price(& self, current_epoch : u64) -> Result < UFix64 < N9 > >;
-    pub fn convert_sol(& self, amount_lst : UFix64 < N9 >, current_epoch : u64) -> Result < UFix64 < N9 > >;
+    pub fn convert_lst_to_sol(& self, amount_lst : UFix64 < N9 >, current_epoch : u64) -> Result < UFix64 < N9 > >;
+    pub fn convert_sol_to_lst(& self, amount_sol : UFix64 < N9 >, current_epoch : u64) -> Result < UFix64 < N9 > >;
     pub fn convert_lst_amount(& self, current_epoch : u64, amount_lst : UFix64 < N9 >, other : & LstSolPrice) -> Result < UFix64 < N9 > >;
-}
-
-
----
-
-# crate::lst_swap_config
-<!-- file: hylo-core/src/lst_swap_config.rs -->
-
-## Types
-
-// NOTE: Configuration for LST-to-LST swaps including the fee rate and fee application logic.
-pub struct LstSwapConfig {
-    pub fee: UFix64 < N4 >,
-}
-
-
-## Impl LstSwapConfig
-
-// NOTE: Configuration for LST-to-LST swaps including the fee rate and fee application logic.
-impl LstSwapConfig {
-    pub fn new(serialized_fee : UFixValue64) -> Result < LstSwapConfig >;
-    pub fn apply_fee< Exp >(& self, amount : UFix64 < Exp >) -> Result < FeeExtract < Exp > >;
-    fn validate_fee(fee : UFix64 < N4 >) -> Result < () >;
 }
 
 
@@ -1507,6 +1567,11 @@ impl LstSwapConfig {
 <!-- file: hylo-core/src/pyth.rs -->
 
 ## Types
+
+pub struct PythFeed {
+    pub feed_id: FeedId,
+    pub address: Pubkey,
+}
 
 // NOTE: Configuration for a Pyth oracle: staleness interval and confidence tolerance.
 pub struct OracleConfig {
@@ -1609,13 +1674,38 @@ impl OraclePrice {
 ## Constants
 
 // NOTE: Pyth feed ID for the SOL/USD price oracle.
-pub const SOL_USD: FeedId;
+pub const SOL_USD: PythFeed;
 
 // NOTE: Pyth feed ID for the BTC/USD price oracle.
-pub const BTC_USD: FeedId;
+pub const BTC_USD: PythFeed;
 
-// NOTE: Hard-coded Pubkey of the SOL/USD Pyth price feed account.
-pub const SOL_USD_PYTH_FEED: Pubkey;
+pub const USDC_USD: PythFeed;
+
+
+---
+
+# crate::rebalance_math
+<!-- file: hylo-core/src/rebalance_math.rs -->
+
+## Functions
+
+/// Max sellable collateral until exo pair CR rises to target.
+/// 
+/// ```text
+///   target_cr * virtual_stablecoin - collateral_usd_price * total_collateral
+///   ────────────────────────────────────────────────────────────────────────
+///                  collateral_usd_price * (target_cr - 1)
+/// ```
+pub fn max_sellable_collateral(target_cr : UFix64 < N2 >, virtual_stablecoin : UFix64 < N6 >, collateral_usd_price : UFix64 < N9 >, total_collateral : UFix64 < N9 >) -> Option < UFix64 < N9 > >;
+
+/// Max buyable collateral until exo pair CR falls to the target.
+/// 
+/// ```text
+///   collateral_usd_price * total_collateral - target_cr * virtual_stablecoin
+///   ────────────────────────────────────────────────────────────────────────
+///                  collateral_usd_price * (target_cr - 1)
+/// ```
+pub fn max_buyable_collateral(target_cr : UFix64 < N2 >, virtual_stablecoin : UFix64 < N6 >, collateral_usd_price : UFix64 < N9 >, total_collateral : UFix64 < N9 >) -> Option < UFix64 < N9 > >;
 
 
 ---
@@ -1683,6 +1773,7 @@ impl RebalanceCurveConfig {
     pub fn new(floor_mult : UFixValue64, ceil_mult : UFixValue64) -> RebalanceCurveConfig;
     pub fn floor_mult(& self) -> Result < UFix64 < N2 > >;
     pub fn ceil_mult(& self) -> Result < UFix64 < N2 > >;
+    pub fn validate(self) -> Result < Self >;
 }
 
 
@@ -1751,7 +1842,9 @@ impl SlippageConfig {
     pub fn new< Exp : Integer >(expected_token_out : UFix64 < Exp >, slippage_tolerance : UFix64 < N4 >) -> SlippageConfig;
     pub fn expected_token_out< Exp : Integer >(& self) -> Result < UFix64 < Exp > >;
     pub fn slippage_tolerance(& self) -> Result < UFix64 < N4 > >;
+    fn validate_inner< Exp >(expected : UFix64 < Exp >, tolerance : UFix64 < N4 >, token_out : UFix64 < Exp >) -> Result < () >;
     pub fn validate_token_out< Exp : Integer >(& self, token_out : UFix64 < Exp >) -> Result < () >;
+    pub fn validate_token_out_normalized(& self, mint : & Mint, token_out : UFix64 < N9 >) -> Result < () >;
 }
 
 
@@ -1818,6 +1911,7 @@ pub enum StabilityMode {
 pub struct StabilityController {
     pub stability_threshold_1: UFix64 < N2 >,
     pub stability_threshold_2: UFix64 < N2 >,
+    pub min_stability_threshold: UFix64 < N2 >,
 }
 
 
@@ -1849,24 +1943,15 @@ impl StabilityController {
 
 ## Functions
 
-/// Calculates total dollar value of stablecoin and levercoin in stability pool.
-/// 
-/// ```txt                
-/// stability_pool_cap = stable_nav * stable_in_pool + lever_nav * lever_in_pool
-/// ```
-// NOTE: Computes total USD value of the stability pool from stablecoin and levercoin holdings.
-pub fn stability_pool_cap(stablecoin_nav : UFix64 < N9 >, stablecoin_in_pool : UFix64 < N6 >, levercoin_nav : UFix64 < N9 >, levercoin_in_pool : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
-
-/// Computes NAV for the stability pool's LP token, based on the amount of each
-/// protocol token in pools and their current NAV.
+/// Computes NAV for the stability pool's LP token.
 /// 
 /// ```txt
-///                  stability_pool_cap
+///                  stablecoin_in_pool
 /// lp_token_nav =  --------------------
 ///                   lp_token_supply
 /// ```
 // NOTE: Computes sHYUSD LP token NAV as stability_pool_cap / lp_token_supply.
-pub fn lp_token_nav(stablecoin_nav : UFix64 < N9 >, stablecoin_in_pool : UFix64 < N6 >, levercoin_nav : UFix64 < N9 >, levercoin_in_pool : UFix64 < N6 >, lp_token_supply : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
+pub fn lp_token_nav(stablecoin_in_pool : UFix64 < N6 >, lp_token_supply : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
 
 /// Simply divides the amount of stablecoin being deposited by the LP token NAV.
 // NOTE: Computes LP tokens minted for a given stablecoin deposit amount.
@@ -1876,23 +1961,14 @@ pub fn lp_token_out(amount_stablecoin_in : UFix64 < N6 >, lp_token_nav : UFix64 
 // NOTE: Computes a user's proportional share of a pool token based on their LP token holdings.
 pub fn amount_token_to_withdraw(user_lp_token_amount : UFix64 < N6 >, lp_token_supply : UFix64 < N6 >, pool_amount : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
 
-/// Given the next target highest stability threshold, determines the amount
-/// of stablecoin to swap out from the pool.
-// NOTE: Computes stablecoin amount to swap out of pool to maintain target collateral ratio.
-pub fn amount_stable_to_swap(stablecoin_in_pool : UFix64 < N6 >, target_stability_threshold : UFix64 < N2 >, current_stablecoin_supply : UFix64 < N6 >, total_value_locked : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
-
 /// Computes a stablecoin target based on levercoin in pool.
 /// Compares to max mintable stablecoin and returns lesser of the two.
 // NOTE: Computes stablecoin amount to swap from levercoin in pool, capped by max_swappable.
 pub fn amount_lever_to_swap(levercoin_in_pool : UFix64 < N6 >, levercoin_nav : PriceRange < N9 >, max_swappable_stablecoin : UFix64 < N6 >) -> Result < UFix64 < N6 > >;
 
-/// Extracts single-sided fees in terms of stablecoin for user withdrawals.
-/// * Computes total cap of user's allocation (stablecoin + levercoin)
-/// * Extracts withdrawal fee in stablecoin
-/// * Validates fee amount against total stablecoin in pool
-/// * Returns extracted fees and the remaining stablecoin after fee deduction
+/// Extracts withdrawal fee from stablecoin amount.
 // NOTE: Extracts single-sided withdrawal fees in stablecoin from a user's proportional allocation.
-pub fn stablecoin_withdrawal_fee(stablecoin_in_pool : UFix64 < N6 >, stablecoin_to_withdraw : UFix64 < N6 >, stablecoin_nav : UFix64 < N9 >, levercoin_to_withdraw : UFix64 < N6 >, levercoin_nav : UFix64 < N9 >, withdrawal_fee : UFix64 < N4 >) -> Result < FeeExtract < N6 > >;
+pub fn stablecoin_withdrawal_fee(stablecoin_to_withdraw : UFix64 < N6 >, withdrawal_fee : UFix64 < N4 >) -> Result < FeeExtract < N6 > >;
 
 
 ---
@@ -2077,7 +2153,7 @@ pub fn swap_lever_to_stable(user : Pubkey) -> SwapLeverToStable;
 
 /// Builds account context for registering an EXO pair.
 // NOTE: Builds the Anchor account context for registering a new exogenous collateral pair.
-pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey) -> RegisterExo;
+pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey, exo_usd_pyth_feed : Pubkey) -> RegisterExo;
 
 /// Exo levercoin mint (collateral -> exo levercoin).
 pub fn mint_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> MintLevercoinExo;
@@ -2092,7 +2168,7 @@ pub fn redeem_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_
 pub fn redeem_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> RedeemStablecoinExo;
 
 /// Builds account context for harvesting exo funding rate.
-pub fn harvest_funding_rate(payer : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> HarvestFundingRate;
+pub fn harvest_funding_rate(collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> HarvestFundingRate;
 
 /// Lever-to-stable swap (xAsset -> hyUSD).
 pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapLeverToStableExo;
@@ -2106,6 +2182,27 @@ pub fn withdraw_fees(payer : Pubkey, treasury : Pubkey, fee_token_mint : Pubkey)
 /// Builds account context for LST swap feature
 // NOTE: Builds the Anchor account context for swapping between two LST types.
 pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey) -> SwapLst;
+
+/// Exo collateral to USDC swap.
+pub fn swap_exo_usdc(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapExoUsdc;
+
+/// USDC to exo collateral swap.
+pub fn swap_usdc_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapUsdcExo;
+
+/// LST to USDC swap.
+pub fn swap_lst_usdc(user : Pubkey, lst_mint : Pubkey) -> SwapLstUsdc;
+
+/// USDC to LST swap.
+pub fn swap_usdc_lst(user : Pubkey, lst_mint : Pubkey) -> SwapUsdcLst;
+
+/// Builds account context for initializing the USDC pair.
+pub fn initialize_usdc(admin : Pubkey, usdc_usd_pyth_feed : Pubkey) -> InitializeUsdc;
+
+/// Builds account context for hyUSD to USDC swap.
+pub fn swap_stablecoin_to_usdc(user : Pubkey) -> SwapStablecoinToUsdc;
+
+/// Builds account context for USDC to hyUSD swap.
+pub fn swap_usdc_to_stablecoin(user : Pubkey) -> SwapUsdcToStablecoin;
 
 
 ---
@@ -2179,7 +2276,7 @@ pub fn update_sol_usd_oracle(admin : Pubkey, args : & args :: UpdateSolUsdOracle
 pub fn update_stability_pool(admin : Pubkey, args : & args :: UpdateStabilityPool) -> Instruction;
 
 // NOTE: Builds the harvest_yield instruction to collect LST yield and distribute to the stability pool.
-pub fn harvest_yield(payer : Pubkey, lst_registry : Pubkey, remaining_accounts : Vec < AccountMeta >) -> Instruction;
+pub fn harvest_yield(lst_registry : Pubkey, remaining_accounts : Vec < AccountMeta >) -> Instruction;
 
 // NOTE: Builds the instruction to refresh all LST-SOL prices from the Sanctum calculators.
 pub fn update_lst_prices(payer : Pubkey, lst_registry : Pubkey, remaining_accounts : Vec < AccountMeta >) -> Instruction;
@@ -2188,7 +2285,7 @@ pub fn update_lst_prices(payer : Pubkey, lst_registry : Pubkey, remaining_accoun
 pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey, args : & args :: SwapLst) -> Instruction;
 
 // NOTE: Builds the register_exo instruction to add a new exogenous collateral pair.
-pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey, args : & args :: RegisterExo) -> Instruction;
+pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey, exo_usd_pyth_feed : Pubkey, args : & args :: RegisterExo) -> Instruction;
 
 pub fn mint_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: MintLevercoinExo) -> Instruction;
 
@@ -2198,7 +2295,7 @@ pub fn redeem_levercoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_
 
 pub fn redeem_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: RedeemStablecoinExo) -> Instruction;
 
-pub fn harvest_funding_rate(payer : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> Instruction;
+pub fn harvest_funding_rate(collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> Instruction;
 
 pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapLeverToStableExo) -> Instruction;
 
@@ -2212,6 +2309,10 @@ pub fn update_levercoin_fees(admin : Pubkey, args : & args :: UpdateLevercoinFee
 pub fn update_oracle_interval(admin : Pubkey, args : & args :: UpdateOracleInterval) -> Instruction;
 
 pub fn update_stability_thresholds(admin : Pubkey, args : & args :: UpdateStabilityThresholds) -> Instruction;
+
+pub fn update_lst_buy_curve_config(admin : Pubkey, args : & args :: UpdateLstBuyCurveConfig) -> Instruction;
+
+pub fn update_lst_sell_curve_config(admin : Pubkey, args : & args :: UpdateLstSellCurveConfig) -> Instruction;
 
 pub fn update_treasury(admin : Pubkey, args : & args :: UpdateTreasury) -> Instruction;
 
@@ -2227,9 +2328,35 @@ pub fn update_exo_oracle_interval(admin : Pubkey, collateral_mint : Pubkey, args
 
 pub fn update_exo_stability_threshold(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoStabilityThreshold) -> Instruction;
 
+pub fn update_exo_buy_curve(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoBuyCurve) -> Instruction;
+
+pub fn update_exo_sell_curve(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoSellCurve) -> Instruction;
+
+pub fn update_exo_levercoin_fees(admin : Pubkey, collateral_mint : Pubkey, args : & args :: UpdateExoLevercoinFees) -> Instruction;
+
 pub fn update_admin(payer : Pubkey, upgrade_authority : Pubkey, args : & args :: UpdateAdmin) -> Instruction;
 
+pub fn initialize_usdc(admin : Pubkey, usdc_usd_pyth_feed : Pubkey, args : & args :: InitializeUsdc) -> Instruction;
+
+pub fn swap_stablecoin_to_usdc(user : Pubkey, args : & args :: SwapStablecoinToUsdc) -> Instruction;
+
+pub fn swap_usdc_to_stablecoin(user : Pubkey, args : & args :: SwapUsdcToStablecoin) -> Instruction;
+
+pub fn update_usdc_oracle_conf_tolerance(admin : Pubkey, args : & args :: UpdateUsdcOracleConfTolerance) -> Instruction;
+
+pub fn update_usdc_oracle_interval(admin : Pubkey, args : & args :: UpdateUsdcOracleInterval) -> Instruction;
+
+pub fn update_usdc_swap_fee(admin : Pubkey, args : & args :: UpdateUsdcSwapFee) -> Instruction;
+
 pub fn initialize_lst_virtual_stablecoin(admin : Pubkey) -> Instruction;
+
+pub fn swap_exo_usdc(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapExoUsdc) -> Instruction;
+
+pub fn swap_usdc_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapUsdcExo) -> Instruction;
+
+pub fn swap_lst_usdc(user : Pubkey, lst_mint : Pubkey, args : & args :: SwapLstUsdc) -> Instruction;
+
+pub fn swap_usdc_lst(user : Pubkey, lst_mint : Pubkey, args : & args :: SwapUsdcLst) -> Instruction;
 
 pub fn get_stats() -> Instruction;
 
@@ -2248,9 +2375,6 @@ pub fn user_deposit(user : Pubkey, args : & args :: UserDeposit) -> Instruction;
 
 // NOTE: Builds the instruction for a user to withdraw sHYUSD from the stability pool.
 pub fn user_withdraw(user : Pubkey, args : & args :: UserWithdraw) -> Instruction;
-
-// NOTE: Builds the instruction to rebalance pool by swapping stablecoin for levercoin.
-pub fn rebalance_stable_to_lever(payer : Pubkey) -> Instruction;
 
 // NOTE: Builds the instruction to rebalance pool by swapping levercoin for stablecoin.
 pub fn rebalance_lever_to_stable(payer : Pubkey) -> Instruction;
@@ -2323,6 +2447,8 @@ pub fn xsol_ata(auth : Pubkey) -> Pubkey;
 // NOTE: Derives the sHYUSD Associated Token Account for a given authority.
 pub fn shyusd_ata(auth : Pubkey) -> Pubkey;
 
+pub fn usdc_ata(auth : Pubkey) -> Pubkey;
+
 // NOTE: Derives the PDA for a token's vault account.
 pub fn vault(mint : Pubkey) -> Pubkey;
 
@@ -2343,6 +2469,8 @@ pub fn fee_auth(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for a token's mint authority.
 pub fn mint_auth(mint : Pubkey) -> Pubkey;
+
+pub fn event_auth(program_id : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for an exogenous collateral pair's state account.
 pub fn exo_pair(collateral_mint : Pubkey) -> Pubkey;
@@ -2389,6 +2517,14 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock < Pubkey >;
 // NOTE: Hard-coded Pubkey of the Pyth SOL/USD price feed account.
 pub const SOL_USD_PYTH_FEED: Pubkey;
 
+pub const USDC_USD_PYTH_FEED: Pubkey;
+
+pub static EXCHANGE_EVENT_AUTHORITY: LazyLock < Pubkey >;
+
+pub static STABILITY_POOL_EVENT_AUTHORITY: LazyLock < Pubkey >;
+
+pub static USDC_PAIR: LazyLock < Pubkey >;
+
 
 ## Macros
 
@@ -2423,6 +2559,10 @@ pub struct JITOSOL;
 
 // NOTE: Type-safe marker for the HYLOSOL liquid staking token (N9 precision).
 pub struct HYLOSOL;
+
+pub struct USDC;
+
+pub struct CBBTC;
 
 
 ## Traits
@@ -2475,6 +2615,22 @@ impl TokenMint for JITOSOL {
 // NOTE: Associates HYLOSOL with its mint address and N9 exponent.
 impl TokenMint for HYLOSOL {
     type Exp = N9;
+    const MINT: Pubkey;
+}
+
+
+## Impl TokenMint for USDC
+
+impl TokenMint for USDC {
+    type Exp = N6;
+    const MINT: Pubkey;
+}
+
+
+## Impl TokenMint for CBBTC
+
+impl TokenMint for CBBTC {
+    type Exp = N8;
     const MINT: Pubkey;
 }
 
@@ -3083,7 +3239,7 @@ pub struct ProtocolState< C : SolanaClock > {
     pub hyusd_pool: TokenAccount,
     pub xsol_pool: TokenAccount,
     pub fetched_at: UnixTimestamp,
-    pub lst_swap_config: LstSwapConfig,
+    pub lst_swap_config: AssetSwapConfig,
 }
 
 
@@ -3230,9 +3386,6 @@ type DepositQuote = ExecutableQuote < N6 , N6 , N6 >;
 // NOTE: Type alias for ExecutableQuote<N6, N6, N6> used in stability pool withdrawal quotes.
 type WithdrawQuote = ExecutableQuote < N6 , N6 , N6 >;
 
-// NOTE: Type alias for ExecutableQuote<N6, N9, N9> used in withdraw-and-redeem quotes.
-type WithdrawRedeemQuote = ExecutableQuote < N6 , N9 , N9 >;
-
 
 ## Impl QuoteStrategy < HYUSD , SHYUSD , C > for ProtocolStateStrategy < S >
 
@@ -3249,15 +3402,6 @@ impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < HYUSD , SHYUSD
 impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < SHYUSD , HYUSD , C > for ProtocolStateStrategy < S > {
     type FeeExp = N6;
     async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < WithdrawQuote >;
-}
-
-
-## Impl QuoteStrategy < SHYUSD , L , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes withdraw-and-redeem quotes (sHYUSD -> LST) from cached state.
-impl < L : LST + Local , S : StateProvider < C > , C : SolanaClock >QuoteStrategy < SHYUSD , L , C > for ProtocolStateStrategy < S > {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < WithdrawRedeemQuote >;
 }
 
 
@@ -3280,7 +3424,6 @@ pub enum Operation {
     LstSwap,
     DepositToStabilityPool,
     WithdrawFromStabilityPool,
-    WithdrawAndRedeemFromStabilityPool,
 }
 
 /// Metadata for a quote route.
@@ -3421,7 +3564,7 @@ impl < X >SimulatedOperationExt for X {
 // NOTE: Extracts mint stablecoin output from MintStablecoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < L , HYUSD > for ExchangeClient {
     type FeeExp = N9;
-    type Event = MintStablecoinEventV2;
+    type Event = MintEvent;
     fn extract_output(event : & Self :: Event) -> Result < MintOperationOutput >;
 }
 
@@ -3432,7 +3575,7 @@ impl < L : LST + Local >SimulatedOperation < L , HYUSD > for ExchangeClient {
 // NOTE: Extracts redeem stablecoin output from RedeemStablecoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < HYUSD , L > for ExchangeClient {
     type FeeExp = N9;
-    type Event = RedeemStablecoinEventV2;
+    type Event = RedeemEvent;
     fn extract_output(event : & Self :: Event) -> Result < RedeemOperationOutput >;
 }
 
@@ -3443,7 +3586,7 @@ impl < L : LST + Local >SimulatedOperation < HYUSD , L > for ExchangeClient {
 // NOTE: Extracts mint levercoin output from MintLevercoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < L , XSOL > for ExchangeClient {
     type FeeExp = N9;
-    type Event = MintLevercoinEventV2;
+    type Event = MintEvent;
     fn extract_output(event : & Self :: Event) -> Result < MintOperationOutput >;
 }
 
@@ -3454,7 +3597,7 @@ impl < L : LST + Local >SimulatedOperation < L , XSOL > for ExchangeClient {
 // NOTE: Extracts redeem levercoin output from RedeemLevercoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < XSOL , L > for ExchangeClient {
     type FeeExp = N9;
-    type Event = RedeemLevercoinEventV2;
+    type Event = RedeemEvent;
     fn extract_output(event : & Self :: Event) -> Result < RedeemOperationOutput >;
 }
 
@@ -3465,7 +3608,7 @@ impl < L : LST + Local >SimulatedOperation < XSOL , L > for ExchangeClient {
 // NOTE: Extracts hyUSD-to-xSOL swap output from SwapStableToLeverEventV1 simulation logs.
 impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient {
     type FeeExp = N6;
-    type Event = SwapStableToLeverEventV1;
+    type Event = SwapStableToLeverEvent;
     fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
 }
 
@@ -3476,7 +3619,7 @@ impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient {
 // NOTE: Extracts xSOL-to-hyUSD swap output from SwapLeverToStableEventV1 simulation logs.
 impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient {
     type FeeExp = N6;
-    type Event = SwapLeverToStableEventV1;
+    type Event = SwapLeverToStableEvent;
     fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
 }
 
@@ -3487,7 +3630,7 @@ impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient {
 // NOTE: Extracts LST-to-LST swap output from SwapLstEventV0 simulation logs.
 impl < L1 : LST + Local , L2 : LST + Local >SimulatedOperation < L1 , L2 > for ExchangeClient {
     type FeeExp = N9;
-    type Event = SwapLstEventV0;
+    type Event = SwapLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < LstSwapOperationOutput >;
 }
 
@@ -3514,7 +3657,7 @@ impl SimulatedOperation < HYUSD , SHYUSD > for StabilityPoolClient {
 // NOTE: Extracts stability pool withdrawal output from UserWithdrawEventV1 simulation logs.
 impl SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient {
     type FeeExp = N6;
-    type Event = UserWithdrawEventV1;
+    type Event = UserWithdrawEvent;
     fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
 }
 
@@ -3653,9 +3796,6 @@ type DepositQuote = ExecutableQuote < N6 , N6 , N6 >;
 // NOTE: Type alias for ExecutableQuote<N6, N6, N6> in simulation-based withdrawal quotes.
 type WithdrawQuote = ExecutableQuote < N6 , N6 , N6 >;
 
-// NOTE: Type alias for ExecutableQuote<N6, N9, N9> in simulation-based withdraw-and-redeem quotes.
-type WithdrawRedeemQuote = ExecutableQuote < N6 , N9 , N9 >;
-
 
 ## Impl QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrategy
 
@@ -3672,24 +3812,6 @@ impl < C : SolanaClock >QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrat
 impl < C : SolanaClock >QuoteStrategy < SHYUSD , HYUSD , C > for SimulationStrategy {
     type FeeExp = N6;
     async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < WithdrawQuote >;
-}
-
-
-## Impl BuildTransactionData < SHYUSD , L > for SimulationStrategy
-
-// NOTE: Builds combined withdraw-and-redeem transaction data for stability pool to LST.
-impl < L : LST + Local >BuildTransactionData < SHYUSD , L > for SimulationStrategy {
-    type Inputs = StabilityPoolArgs;
-    async fn build(& self, StabilityPoolArgs { amount , user } : StabilityPoolArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl QuoteStrategy < SHYUSD , L , C > for SimulationStrategy
-
-// NOTE: Computes withdraw-and-redeem quotes via transaction simulation.
-impl < L : LST + Local , C : SolanaClock >QuoteStrategy < SHYUSD , L , C > for SimulationStrategy {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < WithdrawRedeemQuote >;
 }
 
 
@@ -3842,16 +3964,6 @@ impl < C : SolanaClock >TokenOperation < HYUSD , SHYUSD > for ProtocolState < C 
 impl < C : SolanaClock >TokenOperation < SHYUSD , HYUSD > for ProtocolState < C > {
     type FeeExp = N6;
     fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < SwapOperationOutput >;
-}
-
-
-## Impl TokenOperation < SHYUSD , L > for ProtocolState < C >
-
-/// Withdraw LP token from stability pool and redeem for LST.
-// NOTE: Computes withdraw-and-redeem: sHYUSD in, proportional stablecoin withdrawn and redeemed to LST.
-impl < L : LST + Local , C : SolanaClock >TokenOperation < SHYUSD , L > for ProtocolState < C > {
-    type FeeExp = N9;
-    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < RedeemOperationOutput >;
 }
 
 

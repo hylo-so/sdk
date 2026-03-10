@@ -21,6 +21,7 @@ External deps: anchor-lang, anchor-spl, hylo-fix, hylo-idl, hylo-jupiter-amm-int
 
 ## Module Tree
 - crate — Root module for each crate in the Hylo Protocol SDK workspace.
+  - asset_swap_config
   - conversion — Price conversion utilities between LST collateral, exogenous collateral, and protocol tokens (hyUSD, xSOL).
   - error — Custom error types for hylo-core protocol math and validation failures.
   - exchange_context — Exchange context trait and implementations.
@@ -34,8 +35,8 @@ External deps: anchor-lang, anchor-spl, hylo-fix, hylo-idl, hylo-jupiter-amm-int
   - interp — Piecewise linear interpolation for fee curves.
   - interpolated_fees — Fee controllers that use interpolated curves to compute collateral-ratio-dependent fees for exo pairs.
   - lst_sol_price — Tracks LST-to-SOL exchange rate per epoch for accurate collateral valuation.
-  - lst_swap_config — Configuration and fee logic for direct LST-to-LST swaps within the exchange.
   - pyth — Pyth oracle integration with price validation, confidence checks, and staleness guards.
+  - rebalance_math
   - rebalance_pricing — Oracle-derived collateral rebalancing price curves.
   - slippage_config — Client-specified slippage tolerance paired with expected output amount for transaction validation.
   - solana_clock — Abstraction trait over Solana's on-chain Clock sysvar for testability.
