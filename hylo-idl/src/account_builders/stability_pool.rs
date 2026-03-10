@@ -1,10 +1,9 @@
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::system_program;
-use anchor_spl::{associated_token, token};
+use anchor_spl::token;
 
 use crate::stability_pool::client::accounts::{UserDeposit, UserWithdraw};
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
-use crate::{exchange, pda, stability_pool};
+use crate::{pda, stability_pool};
 
 /// Builds account context for stability pool deposit (hyUSD -> sHYUSD).
 #[must_use]
@@ -14,19 +13,15 @@ pub fn deposit(user: Pubkey) -> UserDeposit {
     pool_config: *pda::POOL_CONFIG,
     hylo: *pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
-    levercoin_mint: XSOL::MINT,
     user_stablecoin_ta: pda::hyusd_ata(user),
     user_lp_token_ta: pda::shyusd_ata(user),
     pool_auth: *pda::POOL_AUTH,
     stablecoin_pool: *pda::HYUSD_POOL,
-    levercoin_pool: *pda::XSOL_POOL,
     lp_token_auth: *pda::SHYUSD_AUTH,
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    system_program: system_program::ID,
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
+    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   }
 }
@@ -48,15 +43,10 @@ pub fn withdraw(user: Pubkey) -> UserWithdraw {
     levercoin_mint: XSOL::MINT,
     levercoin_pool: *pda::XSOL_POOL,
     user_levercoin_ta: pda::xsol_ata(user),
-    lp_token_auth: *pda::SHYUSD_AUTH,
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    hylo_event_authority: *pda::EXCHANGE_EVENT_AUTH,
-    hylo_exchange_program: exchange::ID,
-    system_program: system_program::ID,
     token_program: token::ID,
-    associated_token_program: associated_token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTH,
+    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   }
 }

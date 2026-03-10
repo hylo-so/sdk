@@ -71,6 +71,4 @@ runtime_quote_strategies! {
   (HYLOSOL, JITOSOL, Operation::LstSwap, "Swap hyloSOL to JitoSOL"),
   (HYUSD, SHYUSD, Operation::DepositToStabilityPool, "Deposit hyUSD to Stability Pool"),
   (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
-  (SHYUSD, JITOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for JitoSOL"),
-  (SHYUSD, HYLOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for hyloSOL"),
 }

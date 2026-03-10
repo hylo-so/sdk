@@ -1,11 +1,10 @@
-//! Integration tests comparing ProtocolStateStrategy vs SimulationStrategy.
+//! Integration tests comparing `ProtocolStateStrategy` vs `SimulationStrategy`.
 //!
 //! Requires `RPC_URL` environment variable.
 
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::Cluster;
 use anyhow::{Context, Result};
@@ -19,6 +18,7 @@ use hylo_quotes::prelude::{
   SimulationStrategy,
 };
 use hylo_quotes::ExecutableQuoteValue;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use test_context::{test_context, AsyncTestContext};
 use tokio::join;
 
@@ -178,6 +178,7 @@ async fn xsol_to_jitosol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
+#[ignore = "re-enable after mainnet is on v2"]
 async fn hyusd_to_xsol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -200,6 +201,7 @@ async fn hyusd_to_xsol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
+#[ignore = "re-enable after mainnet is on v2"]
 async fn xsol_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(

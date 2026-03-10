@@ -1,11 +1,10 @@
 use std::sync::LazyLock;
 
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 use solana_loader_v3_interface::get_program_data_address;
 
-use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use crate::{exchange, stability_pool};
 
 macro_rules! lazy {
@@ -60,6 +59,11 @@ pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
 }
 
 #[must_use]
+pub fn usdc_ata(auth: Pubkey) -> Pubkey {
+  ata!(&auth, &USDC::MINT)
+}
+
+#[must_use]
 pub fn vault(mint: Pubkey) -> Pubkey {
   ata!(&vault_auth(mint), &mint)
 }
@@ -96,26 +100,17 @@ pub fn fee_auth(mint: Pubkey) -> Pubkey {
 pub static HYLO: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::HYLO));
 
-pub static HYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
-  exchange::ID,
-  exchange::constants::MINT_AUTH,
-  HYUSD::MINT
-));
+#[must_use]
+pub fn mint_auth(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::MINT_AUTH, mint)
+}
 
-pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
-  exchange::ID,
-  exchange::constants::MINT_AUTH,
-  XSOL::MINT
-));
+pub static HYUSD_AUTH: LazyLock<Pubkey> = lazy!(mint_auth(HYUSD::MINT));
+
+pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(mint_auth(XSOL::MINT));
 
 pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
   lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
-
-pub static EXCHANGE_EVENT_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, "__event_authority"));
-
-pub static STABILITY_POOL_EVENT_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(stability_pool::ID, "__event_authority"));
 
 pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
   stability_pool::ID,
@@ -145,3 +140,34 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+
+pub const USDC_USD_PYTH_FEED: Pubkey =
+  pubkey!("Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX");
+
+#[must_use]
+pub fn event_auth(program_id: Pubkey) -> Pubkey {
+  Pubkey::find_program_address(&[b"__event_authority"], &program_id).0
+}
+
+pub static EXCHANGE_EVENT_AUTHORITY: LazyLock<Pubkey> =
+  lazy!(event_auth(exchange::ID));
+
+pub static STABILITY_POOL_EVENT_AUTHORITY: LazyLock<Pubkey> =
+  lazy!(event_auth(stability_pool::ID));
+
+pub static USDC_PAIR: LazyLock<Pubkey> =
+  lazy!(pda!(exchange::ID, exchange::constants::USDC_PAIR));
+
+#[must_use]
+pub fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
+}
+
+#[must_use]
+pub fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
+  pda!(
+    exchange::ID,
+    exchange::constants::EXO_LEVERCOIN,
+    collateral_mint
+  )
+}

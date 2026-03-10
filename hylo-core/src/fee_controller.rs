@@ -3,14 +3,16 @@ use fix::prelude::*;
 
 use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
-  NoValidLevercoinRedeemFee, NoValidStablecoinMintFee, NoValidSwapFee,
+  NoValidLevercoinRedeemFee, NoValidSwapFee,
 };
 use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 
 /// Represents the spread of fees between mint and redeem for protocol tokens.
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
+)]
 pub struct FeePair {
   mint: UFixValue64,
   redeem: UFixValue64,
@@ -42,10 +44,10 @@ impl FeePair {
 }
 
 /// Fee configuration table reacts to different stability modes.
-pub trait FeeController {
+pub trait FeeController: Sized {
   fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
   fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
-  fn validate(&self) -> Result<()>;
+  fn validate(self) -> Result<Self>;
 }
 
 /// Combines fee multiplication for a token amount with the remaining token
@@ -56,12 +58,15 @@ pub struct FeeExtract<Exp> {
 }
 
 impl<Exp> FeeExtract<Exp> {
-  pub fn new(
-    fee: UFix64<N4>,
+  pub fn new<FeeExp>(
+    fee: UFix64<FeeExp>,
     amount_in: UFix64<Exp>,
-  ) -> Result<FeeExtract<Exp>> {
+  ) -> Result<FeeExtract<Exp>>
+  where
+    UFix64<FeeExp>: FixExt,
+  {
     let fees_extracted = amount_in
-      .mul_div_ceil(fee, UFix64::<N4>::one())
+      .mul_div_ceil(fee, UFix64::<FeeExp>::one())
       .ok_or(FeeExtraction)?;
 
     let amount_remaining = amount_in
@@ -75,6 +80,7 @@ impl<Exp> FeeExtract<Exp> {
   }
 }
 
+/// **Deprecated** — retained only for `Hylo` account deserialization.
 #[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
 pub struct StablecoinFees {
   normal: FeePair,
@@ -88,34 +94,9 @@ impl StablecoinFees {
   }
 }
 
-impl FeeController for StablecoinFees {
-  /// Determines fee to charge when minting `hyUSD`
-  /// Fee increases in mode 1, and minting fails in mode 2.
-  fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>> {
-    match mode {
-      Normal => self.normal.mint.try_into(),
-      Mode1 => self.mode_1.mint.try_into(),
-      Mode2 | Depeg => Err(NoValidStablecoinMintFee.into()),
-    }
-  }
-
-  /// Determines fee to charge when redeeming `hyUSD`.
-  fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>> {
-    match mode {
-      Normal => self.normal.redeem.try_into(),
-      Mode1 => self.mode_1.redeem.try_into(),
-      Mode2 | Depeg => Ok(UFix64::zero()),
-    }
-  }
-
-  /// Run validations
-  fn validate(&self) -> Result<()> {
-    self.normal.validate()?;
-    self.mode_1.validate()
-  }
-}
-
-#[derive(Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize)]
+#[derive(
+  Copy, Clone, PartialEq, InitSpace, AnchorDeserialize, AnchorSerialize,
+)]
 pub struct LevercoinFees {
   normal: FeePair,
   mode_1: FeePair,
@@ -146,10 +127,11 @@ impl FeeController for LevercoinFees {
   }
 
   /// Run validations
-  fn validate(&self) -> Result<()> {
+  fn validate(self) -> Result<LevercoinFees> {
     self.normal.validate()?;
     self.mode_1.validate()?;
-    self.mode_2.validate()
+    self.mode_2.validate()?;
+    Ok(self)
   }
 }
 
@@ -199,7 +181,7 @@ mod tests {
 
   #[test]
   fn fee_extraction() -> Result<()> {
-    let fee = UFix64::new(50);
+    let fee = UFix64::<N4>::new(50);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount)?;
     assert_eq!(out.fees_extracted, UFix64::new(348_094_081));
@@ -209,9 +191,9 @@ mod tests {
 
   #[test]
   fn fee_extraction_underflow() {
-    let fee = UFix64::new(10001);
+    let fee = UFix64::<N4>::new(10001);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
-    assert!(out.is_err());
+    assert_eq!(out.err(), Some(FeeExtraction.into()));
   }
 }

@@ -2,6 +2,7 @@
 
 use anyhow::{ensure, Result};
 use fix::prelude::*;
+use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
@@ -26,7 +27,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode <= StabilityMode::Mode1,
+      self.exchange_context.stability_mode() <= StabilityMode::Mode1,
       "Mint operations disabled in current stability mode"
     );
     let lst_header = self.lst_header::<L>()?;
@@ -99,7 +100,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode != StabilityMode::Depeg,
+      self.exchange_context.stability_mode() != StabilityMode::Depeg,
       "Levercoin mint disabled in current stability mode"
     );
     let lst_header = self.lst_header::<L>()?;
@@ -136,7 +137,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
   ) -> Result<RedeemOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode != StabilityMode::Depeg,
+      self.exchange_context.stability_mode() != StabilityMode::Depeg,
       "Levercoin redemption disabled in current stability mode"
     );
     let lst_header = self.lst_header::<L>()?;
@@ -171,7 +172,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
   ) -> Result<SwapOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode != StabilityMode::Depeg,
+      self.exchange_context.stability_mode() != StabilityMode::Depeg,
       "Swaps are disabled in current stability mode"
     );
     let FeeExtract {
@@ -204,7 +205,7 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
   ) -> Result<SwapOperationOutput> {
     ensure!(
       matches!(
-        self.exchange_context.stability_mode,
+        self.exchange_context.stability_mode(),
         StabilityMode::Normal | StabilityMode::Mode1
       ),
       "Swaps are disabled in current stability mode"
