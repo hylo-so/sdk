@@ -8,6 +8,7 @@ use anchor_spl::{associated_token, token};
 
 use crate::stability_pool::account_builders;
 use crate::stability_pool::client::{accounts, args};
+use crate::stability_pool::types::TokenMetadata;
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use crate::{exchange, pda, stability_pool};
 
@@ -110,7 +111,10 @@ pub fn initialize_stability_pool(
 }
 
 #[must_use]
-pub fn initialize_lp_token_mint(admin: Pubkey) -> Instruction {
+pub fn initialize_lp_token_mint(
+  admin: Pubkey,
+  lp_token_metadata: TokenMetadata,
+) -> Instruction {
   let accounts = accounts::InitializeLpTokenMint {
     admin,
     pool_config: *pda::POOL_CONFIG,
@@ -122,7 +126,7 @@ pub fn initialize_lp_token_mint(admin: Pubkey) -> Instruction {
     rent: rent::ID,
     system_program: system_program::ID,
   };
-  let args = args::InitializeLpTokenMint {};
+  let args = args::InitializeLpTokenMint { lp_token_metadata };
   Instruction {
     program_id: stability_pool::ID,
     accounts: accounts.to_account_metas(None),

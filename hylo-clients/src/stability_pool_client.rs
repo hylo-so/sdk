@@ -8,6 +8,7 @@ use anyhow::Result;
 use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::events::StabilityPoolStats;
 use hylo_idl::stability_pool::instruction_builders;
+use hylo_idl::stability_pool::types::TokenMetadata;
 use hylo_idl::tokens::{HYUSD, SHYUSD};
 
 use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
@@ -134,9 +135,14 @@ impl StabilityPoolClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn initialize_lp_token_mint(&self) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::initialize_lp_token_mint(self.program.payer());
+  pub fn initialize_lp_token_mint(
+    &self,
+    lp_token_metadata: TokenMetadata,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::initialize_lp_token_mint(
+      self.program.payer(),
+      lp_token_metadata,
+    );
     Ok(VersionedTransactionData::one(instruction))
   }
 
