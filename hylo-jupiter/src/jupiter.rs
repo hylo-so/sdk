@@ -101,10 +101,10 @@ impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
   ) -> Result<SwapAndAccountMetas> {
     match (input_mint, output_mint) {
       (JITOSOL::MINT, HYUSD::MINT) => {
-        Ok(account_metas::mint_stablecoin(user, JITOSOL::MINT))
+        Ok(account_metas::mint_stablecoin_lst(user, JITOSOL::MINT))
       }
       (HYUSD::MINT, JITOSOL::MINT) => {
-        Ok(account_metas::redeem_stablecoin(user, JITOSOL::MINT))
+        Ok(account_metas::redeem_stablecoin_lst(user, JITOSOL::MINT))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -142,10 +142,10 @@ impl PairConfig<HYLOSOL, HYUSD> for HyloJupiterPair<HYLOSOL, HYUSD> {
   ) -> Result<SwapAndAccountMetas> {
     match (input_mint, output_mint) {
       (HYLOSOL::MINT, HYUSD::MINT) => {
-        Ok(account_metas::mint_stablecoin(user, HYLOSOL::MINT))
+        Ok(account_metas::mint_stablecoin_lst(user, HYLOSOL::MINT))
       }
       (HYUSD::MINT, HYLOSOL::MINT) => {
-        Ok(account_metas::redeem_stablecoin(user, HYLOSOL::MINT))
+        Ok(account_metas::redeem_stablecoin_lst(user, HYLOSOL::MINT))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -183,10 +183,10 @@ impl PairConfig<JITOSOL, XSOL> for HyloJupiterPair<JITOSOL, XSOL> {
   ) -> Result<SwapAndAccountMetas> {
     match (input_mint, output_mint) {
       (JITOSOL::MINT, XSOL::MINT) => {
-        Ok(account_metas::mint_levercoin(user, JITOSOL::MINT))
+        Ok(account_metas::mint_levercoin_lst(user, JITOSOL::MINT))
       }
       (XSOL::MINT, JITOSOL::MINT) => {
-        Ok(account_metas::redeem_levercoin(user, JITOSOL::MINT))
+        Ok(account_metas::redeem_levercoin_lst(user, JITOSOL::MINT))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -224,10 +224,10 @@ impl PairConfig<HYLOSOL, XSOL> for HyloJupiterPair<HYLOSOL, XSOL> {
   ) -> Result<SwapAndAccountMetas> {
     match (input_mint, output_mint) {
       (HYLOSOL::MINT, XSOL::MINT) => {
-        Ok(account_metas::mint_levercoin(user, HYLOSOL::MINT))
+        Ok(account_metas::mint_levercoin_lst(user, HYLOSOL::MINT))
       }
       (XSOL::MINT, HYLOSOL::MINT) => {
-        Ok(account_metas::redeem_levercoin(user, HYLOSOL::MINT))
+        Ok(account_metas::redeem_levercoin_lst(user, HYLOSOL::MINT))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -265,10 +265,10 @@ impl PairConfig<HYUSD, XSOL> for HyloJupiterPair<HYUSD, XSOL> {
   ) -> Result<SwapAndAccountMetas> {
     match (input_mint, output_mint) {
       (HYUSD::MINT, XSOL::MINT) => {
-        Ok(account_metas::swap_stable_to_lever(user))
+        Ok(account_metas::convert_stable_to_lever_lst(user))
       }
       (XSOL::MINT, HYUSD::MINT) => {
-        Ok(account_metas::swap_lever_to_stable(user))
+        Ok(account_metas::convert_lever_to_stable_lst(user))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -446,7 +446,9 @@ mod tests {
     build_test_exchange_client, build_test_stability_pool_client,
   };
   use hylo_core::idl::exchange::events::{
-    MintEvent, RedeemEvent, SwapLeverToStableEvent, SwapStableToLeverEvent,
+    ConvertLeverToStableLstEvent, ConvertStableToLeverLstEvent,
+    MintLevercoinLstEvent, MintStablecoinLstEvent, RedeemLevercoinLstEvent,
+    RedeemStablecoinLstEvent,
   };
   use hylo_core::idl::stability_pool::events::{
     UserDepositEvent, UserWithdrawEvent,
@@ -557,7 +559,9 @@ mod tests {
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo.simulate_transaction_return::<MintEvent>(&tx).await?;
+    let sim = hylo
+      .simulate_transaction_return::<MintStablecoinLstEvent>(&tx)
+      .await?;
     let quote = jup.quote(&quote_params)?;
     assert_mint!(sim, quote);
     Ok(())
@@ -582,7 +586,9 @@ mod tests {
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo.simulate_transaction_return::<RedeemEvent>(&tx).await?;
+    let sim = hylo
+      .simulate_transaction_return::<RedeemStablecoinLstEvent>(&tx)
+      .await?;
     let quote = jup.quote(&quote_params)?;
     assert_redeem!(sim, quote);
     Ok(())
@@ -607,7 +613,9 @@ mod tests {
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo.simulate_transaction_return::<MintEvent>(&tx).await?;
+    let sim = hylo
+      .simulate_transaction_return::<MintLevercoinLstEvent>(&tx)
+      .await?;
     let quote = jup.quote(&quote_params)?;
     assert_mint!(sim, quote);
     Ok(())
@@ -632,7 +640,9 @@ mod tests {
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo.simulate_transaction_return::<RedeemEvent>(&tx).await?;
+    let sim = hylo
+      .simulate_transaction_return::<RedeemLevercoinLstEvent>(&tx)
+      .await?;
     let quote = jup.quote(&quote_params)?;
     assert_redeem!(sim, quote);
     Ok(())
@@ -658,7 +668,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_return::<SwapStableToLeverEvent>(&tx)
+      .simulate_transaction_return::<ConvertStableToLeverLstEvent>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
 
@@ -700,7 +710,7 @@ mod tests {
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
     let sim = hylo
-      .simulate_transaction_return::<SwapLeverToStableEvent>(&tx)
+      .simulate_transaction_return::<ConvertLeverToStableLstEvent>(&tx)
       .await?;
     let quote = jup.quote(&quote_params)?;
 

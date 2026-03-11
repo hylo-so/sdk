@@ -13,12 +13,12 @@ use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{exchange, stability_pool};
 
 #[must_use]
-pub fn mint_stablecoin(
+pub fn mint_stablecoin_lst(
   user: Pubkey,
   lst_mint: Pubkey,
-  args: &args::MintStablecoin,
+  args: &args::MintStablecoinLst,
 ) -> Instruction {
-  let accounts = account_builders::mint_stablecoin(user, lst_mint);
+  let accounts = account_builders::mint_stablecoin_lst(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -27,12 +27,12 @@ pub fn mint_stablecoin(
 }
 
 #[must_use]
-pub fn mint_levercoin(
+pub fn mint_levercoin_lst(
   user: Pubkey,
   lst_mint: Pubkey,
-  args: &args::MintLevercoin,
+  args: &args::MintLevercoinLst,
 ) -> Instruction {
-  let accounts = account_builders::mint_levercoin(user, lst_mint);
+  let accounts = account_builders::mint_levercoin_lst(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -41,12 +41,12 @@ pub fn mint_levercoin(
 }
 
 #[must_use]
-pub fn redeem_stablecoin(
+pub fn redeem_stablecoin_lst(
   user: Pubkey,
   lst_mint: Pubkey,
-  args: &args::RedeemStablecoin,
+  args: &args::RedeemStablecoinLst,
 ) -> Instruction {
-  let accounts = account_builders::redeem_stablecoin(user, lst_mint);
+  let accounts = account_builders::redeem_stablecoin_lst(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -55,12 +55,12 @@ pub fn redeem_stablecoin(
 }
 
 #[must_use]
-pub fn redeem_levercoin(
+pub fn redeem_levercoin_lst(
   user: Pubkey,
   lst_mint: Pubkey,
-  args: &args::RedeemLevercoin,
+  args: &args::RedeemLevercoinLst,
 ) -> Instruction {
-  let accounts = account_builders::redeem_levercoin(user, lst_mint);
+  let accounts = account_builders::redeem_levercoin_lst(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -69,11 +69,11 @@ pub fn redeem_levercoin(
 }
 
 #[must_use]
-pub fn swap_stable_to_lever(
+pub fn convert_stable_to_lever_lst(
   user: Pubkey,
-  args: &args::SwapStableToLever,
+  args: &args::ConvertStableToLeverLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_stable_to_lever(user);
+  let accounts = account_builders::convert_stable_to_lever_lst(user);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -82,11 +82,11 @@ pub fn swap_stable_to_lever(
 }
 
 #[must_use]
-pub fn swap_lever_to_stable(
+pub fn convert_lever_to_stable_lst(
   user: Pubkey,
-  args: &args::SwapLeverToStable,
+  args: &args::ConvertLeverToStableLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_lever_to_stable(user);
+  let accounts = account_builders::convert_lever_to_stable_lst(user);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -329,13 +329,13 @@ pub fn update_lst_prices(
 }
 
 #[must_use]
-pub fn swap_lst(
+pub fn swap_lst_to_lst(
   user: Pubkey,
   lst_a: Pubkey,
   lst_b: Pubkey,
-  args: &args::SwapLst,
+  args: &args::SwapLstToLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_lst(user, lst_a, lst_b);
+  let accounts = account_builders::swap_lst_to_lst(user, lst_a, lst_b);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -453,13 +453,13 @@ pub fn harvest_funding_rate(
 }
 
 #[must_use]
-pub fn swap_lever_to_stable_exo(
+pub fn convert_lever_to_stable_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-  args: &args::SwapLeverToStableExo,
+  args: &args::ConvertLeverToStableExo,
 ) -> Instruction {
-  let accounts = account_builders::swap_lever_to_stable_exo(
+  let accounts = account_builders::convert_lever_to_stable_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
@@ -472,13 +472,13 @@ pub fn swap_lever_to_stable_exo(
 }
 
 #[must_use]
-pub fn swap_stable_to_lever_exo(
+pub fn convert_stable_to_lever_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-  args: &args::SwapStableToLeverExo,
+  args: &args::ConvertStableToLeverExo,
 ) -> Instruction {
-  let accounts = account_builders::swap_stable_to_lever_exo(
+  let accounts = account_builders::convert_stable_to_lever_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
@@ -839,11 +839,11 @@ pub fn initialize_usdc(
 }
 
 #[must_use]
-pub fn swap_stablecoin_to_usdc(
+pub fn redeem_stablecoin_usdc(
   user: Pubkey,
-  args: &args::SwapStablecoinToUsdc,
+  args: &args::RedeemStablecoinUsdc,
 ) -> Instruction {
-  let accounts = account_builders::swap_stablecoin_to_usdc(user);
+  let accounts = account_builders::redeem_stablecoin_usdc(user);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -852,11 +852,11 @@ pub fn swap_stablecoin_to_usdc(
 }
 
 #[must_use]
-pub fn swap_usdc_to_stablecoin(
+pub fn mint_stablecoin_usdc(
   user: Pubkey,
-  args: &args::SwapUsdcToStablecoin,
+  args: &args::MintStablecoinUsdc,
 ) -> Instruction {
-  let accounts = account_builders::swap_usdc_to_stablecoin(user);
+  let accounts = account_builders::mint_stablecoin_usdc(user);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -939,13 +939,13 @@ pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
 }
 
 #[must_use]
-pub fn swap_exo_usdc(
+pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-  args: &args::SwapExoUsdc,
+  args: &args::SwapExoToUsdc,
 ) -> Instruction {
-  let accounts = account_builders::swap_exo_usdc(
+  let accounts = account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
@@ -958,13 +958,13 @@ pub fn swap_exo_usdc(
 }
 
 #[must_use]
-pub fn swap_usdc_exo(
+pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-  args: &args::SwapUsdcExo,
+  args: &args::SwapUsdcToExo,
 ) -> Instruction {
-  let accounts = account_builders::swap_usdc_exo(
+  let accounts = account_builders::swap_usdc_to_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
@@ -977,12 +977,12 @@ pub fn swap_usdc_exo(
 }
 
 #[must_use]
-pub fn swap_lst_usdc(
+pub fn swap_lst_to_usdc(
   user: Pubkey,
   lst_mint: Pubkey,
-  args: &args::SwapLstUsdc,
+  args: &args::SwapLstToUsdc,
 ) -> Instruction {
-  let accounts = account_builders::swap_lst_usdc(user, lst_mint);
+  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -991,12 +991,12 @@ pub fn swap_lst_usdc(
 }
 
 #[must_use]
-pub fn swap_usdc_lst(
+pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
-  args: &args::SwapUsdcLst,
+  args: &args::SwapUsdcToLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_usdc_lst(user, lst_mint);
+  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
