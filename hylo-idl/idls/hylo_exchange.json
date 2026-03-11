@@ -2916,11 +2916,32 @@
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "stablecoin_metadata",
+          "type": {
+            "defined": {
+              "name": "TokenMetadata"
+            }
+          }
+        },
+        {
+          "name": "levercoin_metadata",
+          "type": {
+            "defined": {
+              "name": "TokenMetadata"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "initialize_protocol",
@@ -7964,6 +7985,10 @@
         {
           "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         },
         {
           "name": "system_program",

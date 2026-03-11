@@ -456,11 +456,24 @@
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "lp_token_metadata",
+          "type": {
+            "defined": {
+              "name": "TokenMetadata"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "initialize_stability_pool",
@@ -3526,6 +3539,25 @@
                 "name": "FeePair"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenMetadata",
+      "docs": [
+        "Token metadata passed as an instruction argument."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
           }
         ]
       }

@@ -11,6 +11,7 @@ use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
+use hylo_idl::exchange::types::TokenMetadata;
 
 use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -122,9 +123,16 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn initialize_mints(&self) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::initialize_mints(self.program.payer());
+  pub fn initialize_mints(
+    &self,
+    stablecoin_metadata: TokenMetadata,
+    levercoin_metadata: TokenMetadata,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::initialize_mints(
+      self.program.payer(),
+      stablecoin_metadata,
+      levercoin_metadata,
+    );
     Ok(VersionedTransactionData::one(instruction))
   }
 

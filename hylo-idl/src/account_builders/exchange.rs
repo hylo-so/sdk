@@ -1,4 +1,5 @@
 use anchor_lang::prelude::Pubkey;
+use anchor_lang::solana_program::sysvar::rent;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
@@ -185,6 +186,7 @@ pub fn register_exo(
     metadata_program: mpl_token_metadata::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
+    rent: rent::ID,
     system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
