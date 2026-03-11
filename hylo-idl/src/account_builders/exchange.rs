@@ -3,20 +3,24 @@ use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
-  HarvestFundingRate, InitializeUsdc, MintLevercoin, MintLevercoinExo,
-  MintStablecoin, MintStablecoinExo, RedeemLevercoin, RedeemLevercoinExo,
-  RedeemStablecoin, RedeemStablecoinExo, RegisterExo, SwapExoUsdc,
-  SwapLeverToStable, SwapLeverToStableExo, SwapLst, SwapLstUsdc,
-  SwapStableToLever, SwapStableToLeverExo, SwapStablecoinToUsdc, SwapUsdcExo,
-  SwapUsdcLst, SwapUsdcToStablecoin, WithdrawFees,
+  ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
+  ConvertStableToLeverLst, HarvestFundingRate, InitializeUsdc,
+  MintLevercoinExo, MintLevercoinLst, MintStablecoinExo, MintStablecoinLst,
+  MintStablecoinUsdc, RedeemLevercoinExo, RedeemLevercoinLst,
+  RedeemStablecoinExo, RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
+  SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
+  WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{ata, exchange, pda, stability_pool};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
 #[must_use]
-pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> MintStablecoin {
-  MintStablecoin {
+pub fn mint_stablecoin_lst(
+  user: Pubkey,
+  lst_mint: Pubkey,
+) -> MintStablecoinLst {
+  MintStablecoinLst {
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
@@ -38,8 +42,8 @@ pub fn mint_stablecoin(user: Pubkey, lst_mint: Pubkey) -> MintStablecoin {
 
 /// Builds account context for levercoin mint (LST -> xSOL).
 #[must_use]
-pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> MintLevercoin {
-  MintLevercoin {
+pub fn mint_levercoin_lst(user: Pubkey, lst_mint: Pubkey) -> MintLevercoinLst {
+  MintLevercoinLst {
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
@@ -61,8 +65,11 @@ pub fn mint_levercoin(user: Pubkey, lst_mint: Pubkey) -> MintLevercoin {
 
 /// Builds account context for stablecoin redemption (hyUSD -> LST).
 #[must_use]
-pub fn redeem_stablecoin(user: Pubkey, lst_mint: Pubkey) -> RedeemStablecoin {
-  RedeemStablecoin {
+pub fn redeem_stablecoin_lst(
+  user: Pubkey,
+  lst_mint: Pubkey,
+) -> RedeemStablecoinLst {
+  RedeemStablecoinLst {
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
@@ -83,8 +90,11 @@ pub fn redeem_stablecoin(user: Pubkey, lst_mint: Pubkey) -> RedeemStablecoin {
 
 /// Builds account context for levercoin redemption (xSOL -> LST).
 #[must_use]
-pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> RedeemLevercoin {
-  RedeemLevercoin {
+pub fn redeem_levercoin_lst(
+  user: Pubkey,
+  lst_mint: Pubkey,
+) -> RedeemLevercoinLst {
+  RedeemLevercoinLst {
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
@@ -103,10 +113,10 @@ pub fn redeem_levercoin(user: Pubkey, lst_mint: Pubkey) -> RedeemLevercoin {
   }
 }
 
-/// Builds account context for stable-to-lever swap (hyUSD -> xSOL).
+/// Builds account context for stable-to-lever convert (hyUSD -> xSOL).
 #[must_use]
-pub fn swap_stable_to_lever(user: Pubkey) -> SwapStableToLever {
-  SwapStableToLever {
+pub fn convert_stable_to_lever_lst(user: Pubkey) -> ConvertStableToLeverLst {
+  ConvertStableToLeverLst {
     user,
     hylo: *pda::HYLO,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
@@ -124,10 +134,10 @@ pub fn swap_stable_to_lever(user: Pubkey) -> SwapStableToLever {
   }
 }
 
-/// Builds account context for lever-to-stable swap (xSOL -> hyUSD).
+/// Builds account context for lever-to-stable convert (xSOL -> hyUSD).
 #[must_use]
-pub fn swap_lever_to_stable(user: Pubkey) -> SwapLeverToStable {
-  SwapLeverToStable {
+pub fn convert_lever_to_stable_lst(user: Pubkey) -> ConvertLeverToStableLst {
+  ConvertLeverToStableLst {
     user,
     hylo: *pda::HYLO,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
@@ -322,16 +332,16 @@ pub fn harvest_funding_rate(
   }
 }
 
-/// Lever-to-stable swap (xAsset -> hyUSD).
+/// Lever-to-stable convert exo (xAsset -> hyUSD).
 #[must_use]
-pub fn swap_lever_to_stable_exo(
+pub fn convert_lever_to_stable_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapLeverToStableExo {
+) -> ConvertLeverToStableExo {
   let vault_auth = pda::vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-  SwapLeverToStableExo {
+  ConvertLeverToStableExo {
     user,
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -353,16 +363,16 @@ pub fn swap_lever_to_stable_exo(
   }
 }
 
-/// Stable-to-lever swap (hyUSD -> xAsset).
+/// Stable-to-lever convert exo (hyUSD -> xAsset).
 #[must_use]
-pub fn swap_stable_to_lever_exo(
+pub fn convert_stable_to_lever_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapStableToLeverExo {
+) -> ConvertStableToLeverExo {
   let vault_auth = pda::vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-  SwapStableToLeverExo {
+  ConvertStableToLeverExo {
     user,
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -408,10 +418,14 @@ pub fn withdraw_fees(
   }
 }
 
-/// Builds account context for LST swap feature
+/// Builds account context for LST-to-LST swap.
 #[must_use]
-pub fn swap_lst(user: Pubkey, lst_a: Pubkey, lst_b: Pubkey) -> SwapLst {
-  SwapLst {
+pub fn swap_lst_to_lst(
+  user: Pubkey,
+  lst_a: Pubkey,
+  lst_b: Pubkey,
+) -> SwapLstToLst {
+  SwapLstToLst {
     user,
     hylo: *pda::HYLO,
     lst_a_mint: lst_a,
@@ -434,14 +448,14 @@ pub fn swap_lst(user: Pubkey, lst_a: Pubkey, lst_b: Pubkey) -> SwapLst {
 
 /// Exo collateral to USDC swap.
 #[must_use]
-pub fn swap_exo_usdc(
+pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapExoUsdc {
+) -> SwapExoToUsdc {
   let collateral_vault_auth = pda::vault_auth(collateral_mint);
   let usdc_vault_auth = pda::vault_auth(USDC::MINT);
-  SwapExoUsdc {
+  SwapExoToUsdc {
     user,
     exo_pair: pda::exo_pair(collateral_mint),
     usdc_pair: *pda::USDC_PAIR,
@@ -464,14 +478,14 @@ pub fn swap_exo_usdc(
 
 /// USDC to exo collateral swap.
 #[must_use]
-pub fn swap_usdc_exo(
+pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapUsdcExo {
+) -> SwapUsdcToExo {
   let collateral_vault_auth = pda::vault_auth(collateral_mint);
   let usdc_vault_auth = pda::vault_auth(USDC::MINT);
-  SwapUsdcExo {
+  SwapUsdcToExo {
     user,
     exo_pair: pda::exo_pair(collateral_mint),
     usdc_pair: *pda::USDC_PAIR,
@@ -494,9 +508,9 @@ pub fn swap_usdc_exo(
 
 /// LST to USDC swap.
 #[must_use]
-pub fn swap_lst_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstUsdc {
+pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
   let usdc_vault_auth = pda::vault_auth(USDC::MINT);
-  SwapLstUsdc {
+  SwapLstToUsdc {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
@@ -519,9 +533,9 @@ pub fn swap_lst_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstUsdc {
 
 /// USDC to LST swap.
 #[must_use]
-pub fn swap_usdc_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcLst {
+pub fn swap_usdc_to_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcToLst {
   let usdc_vault_auth = pda::vault_auth(USDC::MINT);
-  SwapUsdcLst {
+  SwapUsdcToLst {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
@@ -568,12 +582,12 @@ pub fn initialize_usdc(
   }
 }
 
-/// Builds account context for hyUSD to USDC swap.
+/// Builds account context for hyUSD mint from USDC.
 #[must_use]
-pub fn swap_stablecoin_to_usdc(user: Pubkey) -> SwapStablecoinToUsdc {
+pub fn mint_stablecoin_usdc(user: Pubkey) -> MintStablecoinUsdc {
   let usdc_vault_auth = pda::vault_auth(USDC::MINT);
   let usdc_fee_auth = pda::fee_auth(USDC::MINT);
-  SwapStablecoinToUsdc {
+  MintStablecoinUsdc {
     user,
     hylo: *pda::HYLO,
     usdc_pair: *pda::USDC_PAIR,
@@ -595,12 +609,12 @@ pub fn swap_stablecoin_to_usdc(user: Pubkey) -> SwapStablecoinToUsdc {
   }
 }
 
-/// Builds account context for USDC to hyUSD swap.
+/// Builds account context for hyUSD redeem to USDC.
 #[must_use]
-pub fn swap_usdc_to_stablecoin(user: Pubkey) -> SwapUsdcToStablecoin {
+pub fn redeem_stablecoin_usdc(user: Pubkey) -> RedeemStablecoinUsdc {
   let usdc_vault_auth = pda::vault_auth(USDC::MINT);
   let usdc_fee_auth = pda::fee_auth(USDC::MINT);
-  SwapUsdcToStablecoin {
+  RedeemStablecoinUsdc {
     user,
     hylo: *pda::HYLO,
     usdc_pair: *pda::USDC_PAIR,

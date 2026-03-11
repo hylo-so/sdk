@@ -3,13 +3,13 @@
 /// Operation type for a quote
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
-  MintStablecoin,
-  RedeemStablecoin,
-  MintLevercoin,
-  RedeemLevercoin,
-  SwapStableToLever,
-  SwapLeverToStable,
-  LstSwap,
+  MintStablecoinLst,
+  RedeemStablecoinLst,
+  MintLevercoinLst,
+  RedeemLevercoinLst,
+  ConvertStableToLeverLst,
+  ConvertLeverToStableLst,
+  SwapLstToLst,
   DepositToStabilityPool,
   WithdrawFromStabilityPool,
 }
@@ -18,13 +18,13 @@ impl Operation {
   #[must_use]
   pub const fn as_str(&self) -> &'static str {
     match self {
-      Operation::MintStablecoin => "mint_stablecoin",
-      Operation::RedeemStablecoin => "redeem_stablecoin",
-      Operation::MintLevercoin => "mint_levercoin",
-      Operation::RedeemLevercoin => "redeem_levercoin",
-      Operation::SwapStableToLever => "swap_stable_to_lever",
-      Operation::SwapLeverToStable => "swap_lever_to_stable",
-      Operation::LstSwap => "swap_lst",
+      Operation::MintStablecoinLst => "mint_stablecoin_lst",
+      Operation::RedeemStablecoinLst => "redeem_stablecoin_lst",
+      Operation::MintLevercoinLst => "mint_levercoin_lst",
+      Operation::RedeemLevercoinLst => "redeem_levercoin_lst",
+      Operation::ConvertStableToLeverLst => "convert_stable_to_lever_lst",
+      Operation::ConvertLeverToStableLst => "convert_lever_to_stable_lst",
+      Operation::SwapLstToLst => "swap_lst_to_lst",
       Operation::DepositToStabilityPool => "user_deposit",
       Operation::WithdrawFromStabilityPool => "user_withdraw",
     }

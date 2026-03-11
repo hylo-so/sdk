@@ -31,8 +31,9 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anyhow::Result;
 use hylo_idl::exchange::client::args as exchange_args;
 use hylo_idl::exchange::instruction_builders::{
-  mint_levercoin, mint_stablecoin, redeem_levercoin, redeem_stablecoin,
-  swap_lever_to_stable, swap_lst, swap_stable_to_lever,
+  convert_lever_to_stable_lst, convert_stable_to_lever_lst, mint_levercoin_lst,
+  mint_stablecoin_lst, redeem_levercoin_lst, redeem_stablecoin_lst,
+  swap_lst_to_lst,
 };
 use hylo_idl::stability_pool::client::args as stability_pool_args;
 use hylo_idl::stability_pool::instruction_builders::{
@@ -86,11 +87,11 @@ impl<L: LST> InstructionBuilder<L, HYUSD> for ExchangeInstructionBuilder {
     }: MintArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let args = exchange_args::MintStablecoin {
+    let args = exchange_args::MintStablecoinLst {
       amount_lst_to_deposit: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = mint_stablecoin(user, L::MINT, &args);
+    let instruction = mint_stablecoin_lst(user, L::MINT, &args);
     Ok(vec![ata, instruction])
   }
 }
@@ -113,11 +114,11 @@ impl<L: LST> InstructionBuilder<HYUSD, L> for ExchangeInstructionBuilder {
     }: RedeemArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &L::MINT);
-    let args = exchange_args::RedeemStablecoin {
+    let args = exchange_args::RedeemStablecoinLst {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = redeem_stablecoin(user, L::MINT, &args);
+    let instruction = redeem_stablecoin_lst(user, L::MINT, &args);
     Ok(vec![ata, instruction])
   }
 }
@@ -140,11 +141,11 @@ impl<L: LST> InstructionBuilder<L, XSOL> for ExchangeInstructionBuilder {
     }: MintArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let args = exchange_args::MintLevercoin {
+    let args = exchange_args::MintLevercoinLst {
       amount_lst_to_deposit: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = mint_levercoin(user, L::MINT, &args);
+    let instruction = mint_levercoin_lst(user, L::MINT, &args);
     Ok(vec![ata, instruction])
   }
 }
@@ -167,17 +168,17 @@ impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
     }: RedeemArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &L::MINT);
-    let args = exchange_args::RedeemLevercoin {
+    let args = exchange_args::RedeemLevercoinLst {
       amount_to_redeem: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = redeem_levercoin(user, L::MINT, &args);
+    let instruction = redeem_levercoin_lst(user, L::MINT, &args);
     Ok(vec![ata, instruction])
   }
 }
 
 // ============================================================================
-// HYUSD → XSOL (swap stable to lever)
+// HYUSD → XSOL (convert stable to lever)
 // ============================================================================
 
 impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
@@ -193,17 +194,17 @@ impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
     }: SwapArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &XSOL::MINT);
-    let args = exchange_args::SwapStableToLever {
+    let args = exchange_args::ConvertStableToLeverLst {
       amount_stablecoin: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = swap_stable_to_lever(user, &args);
+    let instruction = convert_stable_to_lever_lst(user, &args);
     Ok(vec![ata, instruction])
   }
 }
 
 // ============================================================================
-// XSOL → HYUSD (swap lever to stable)
+// XSOL → HYUSD (convert lever to stable)
 // ============================================================================
 
 impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
@@ -219,11 +220,11 @@ impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
     }: SwapArgs,
   ) -> Result<Vec<Instruction>> {
     let ata = user_ata_instruction(&user, &HYUSD::MINT);
-    let args = exchange_args::SwapLeverToStable {
+    let args = exchange_args::ConvertLeverToStableLst {
       amount_levercoin: amount.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = swap_lever_to_stable(user, &args);
+    let instruction = convert_lever_to_stable_lst(user, &args);
     Ok(vec![ata, instruction])
   }
 }
@@ -299,11 +300,11 @@ impl<L1: LST, L2: LST> InstructionBuilder<L1, L2>
     }: LstSwapArgs,
   ) -> Result<Vec<Instruction>> {
     let user_lst_b_ata = user_ata_instruction(&user, &L2::MINT);
-    let args = exchange_args::SwapLst {
+    let args = exchange_args::SwapLstToLst {
       amount_lst_a: amount_lst_a.bits,
       slippage_config: slippage_config.map(Into::into),
     };
-    let instruction = swap_lst(user, lst_a_mint, lst_b_mint, &args);
+    let instruction = swap_lst_to_lst(user, lst_a_mint, lst_b_mint, &args);
     Ok(vec![user_lst_b_ata, instruction])
   }
 }
