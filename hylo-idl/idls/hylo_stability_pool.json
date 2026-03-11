@@ -456,6 +456,10 @@
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
