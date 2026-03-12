@@ -25,10 +25,10 @@ pub fn mint_stablecoin_lst(
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
+    vault_auth: pda::lst_vault_auth(lst_mint),
     stablecoin_auth: *pda::HYUSD_AUTH,
     fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
+    lst_vault: pda::lst_vault(lst_mint),
     lst_header: pda::lst_header(lst_mint),
     user_lst_ta: ata!(user, lst_mint),
     user_stablecoin_ta: pda::hyusd_ata(user),
@@ -48,10 +48,10 @@ pub fn mint_levercoin_lst(user: Pubkey, lst_mint: Pubkey) -> MintLevercoinLst {
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
+    vault_auth: pda::lst_vault_auth(lst_mint),
     levercoin_auth: *pda::XSOL_AUTH,
     fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
+    lst_vault: pda::lst_vault(lst_mint),
     lst_header: pda::lst_header(lst_mint),
     user_lst_ta: ata!(user, lst_mint),
     user_levercoin_ta: pda::xsol_ata(user),
@@ -74,9 +74,9 @@ pub fn redeem_stablecoin_lst(
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
+    vault_auth: pda::lst_vault_auth(lst_mint),
     fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
+    lst_vault: pda::lst_vault(lst_mint),
     lst_header: pda::lst_header(lst_mint),
     user_stablecoin_ta: pda::hyusd_ata(user),
     user_lst_ta: ata!(user, lst_mint),
@@ -99,9 +99,9 @@ pub fn redeem_levercoin_lst(
     user,
     hylo: *pda::HYLO,
     fee_auth: pda::fee_auth(lst_mint),
-    vault_auth: pda::vault_auth(lst_mint),
+    vault_auth: pda::lst_vault_auth(lst_mint),
     fee_vault: pda::fee_vault(lst_mint),
-    lst_vault: pda::vault(lst_mint),
+    lst_vault: pda::lst_vault(lst_mint),
     lst_header: pda::lst_header(lst_mint),
     user_levercoin_ta: pda::xsol_ata(user),
     user_lst_ta: ata!(user, lst_mint),
@@ -166,7 +166,7 @@ pub fn register_exo(
   let exo_pair = pda::exo_pair(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   let levercoin_auth = pda::mint_auth(levercoin_mint);
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let collateral_vault = ata!(vault_auth, collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
   let fee_vault = ata!(fee_auth, collateral_mint);
@@ -200,7 +200,7 @@ pub fn mint_levercoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> MintLevercoinExo {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   MintLevercoinExo {
@@ -229,7 +229,7 @@ pub fn mint_stablecoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> MintStablecoinExo {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
   MintStablecoinExo {
     user,
@@ -258,7 +258,7 @@ pub fn redeem_levercoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> RedeemLevercoinExo {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   RedeemLevercoinExo {
@@ -286,7 +286,7 @@ pub fn redeem_stablecoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> RedeemStablecoinExo {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
   RedeemStablecoinExo {
     user,
@@ -313,7 +313,7 @@ pub fn harvest_funding_rate(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> HarvestFundingRate {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   HarvestFundingRate {
     hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -341,7 +341,7 @@ pub fn convert_lever_to_stable_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> ConvertLeverToStableExo {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   ConvertLeverToStableExo {
     user,
@@ -372,7 +372,7 @@ pub fn convert_stable_to_lever_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> ConvertStableToLeverExo {
-  let vault_auth = pda::vault_auth(collateral_mint);
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   ConvertStableToLeverExo {
     user,
@@ -432,13 +432,13 @@ pub fn swap_lst_to_lst(
     hylo: *pda::HYLO,
     lst_a_mint: lst_a,
     lst_a_user_ta: ata!(user, lst_a),
-    lst_a_vault_auth: pda::vault_auth(lst_a),
-    lst_a_vault: pda::vault(lst_a),
+    lst_a_vault_auth: pda::lst_vault_auth(lst_a),
+    lst_a_vault: pda::lst_vault(lst_a),
     lst_a_header: pda::lst_header(lst_a),
     lst_b_mint: lst_b,
     lst_b_user_ta: ata!(user, lst_b),
-    lst_b_vault_auth: pda::vault_auth(lst_b),
-    lst_b_vault: pda::vault(lst_b),
+    lst_b_vault_auth: pda::lst_vault_auth(lst_b),
+    lst_b_vault: pda::lst_vault(lst_b),
     lst_b_header: pda::lst_header(lst_b),
     fee_auth: pda::fee_auth(lst_a),
     fee_vault: pda::fee_vault(lst_a),
@@ -455,8 +455,8 @@ pub fn swap_exo_to_usdc(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> SwapExoToUsdc {
-  let collateral_vault_auth = pda::vault_auth(collateral_mint);
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapExoToUsdc {
     user,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -485,8 +485,8 @@ pub fn swap_usdc_to_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> SwapUsdcToExo {
-  let collateral_vault_auth = pda::vault_auth(collateral_mint);
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapUsdcToExo {
     user,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -511,15 +511,15 @@ pub fn swap_usdc_to_exo(
 /// LST to USDC swap.
 #[must_use]
 pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapLstToUsdc {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
     usdc_pair: *pda::USDC_PAIR,
-    lst_vault_auth: pda::vault_auth(lst_mint),
+    lst_vault_auth: pda::lst_vault_auth(lst_mint),
     usdc_vault_auth,
-    lst_vault: pda::vault(lst_mint),
+    lst_vault: pda::lst_vault(lst_mint),
     usdc_vault: ata!(usdc_vault_auth, USDC::MINT),
     user_lst_ta: ata!(user, lst_mint),
     user_usdc_ta: pda::usdc_ata(user),
@@ -536,15 +536,15 @@ pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
 /// USDC to LST swap.
 #[must_use]
 pub fn swap_usdc_to_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcToLst {
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapUsdcToLst {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
     usdc_pair: *pda::USDC_PAIR,
-    lst_vault_auth: pda::vault_auth(lst_mint),
+    lst_vault_auth: pda::lst_vault_auth(lst_mint),
     usdc_vault_auth,
-    lst_vault: pda::vault(lst_mint),
+    lst_vault: pda::lst_vault(lst_mint),
     usdc_vault: ata!(usdc_vault_auth, USDC::MINT),
     user_lst_ta: ata!(user, lst_mint),
     user_usdc_ta: pda::usdc_ata(user),
@@ -564,7 +564,7 @@ pub fn initialize_usdc(
   admin: Pubkey,
   usdc_usd_pyth_feed: Pubkey,
 ) -> InitializeUsdc {
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   let usdc_fee_auth = pda::fee_auth(USDC::MINT);
   InitializeUsdc {
     admin,
@@ -587,7 +587,7 @@ pub fn initialize_usdc(
 /// Builds account context for hyUSD mint from USDC.
 #[must_use]
 pub fn mint_stablecoin_usdc(user: Pubkey) -> MintStablecoinUsdc {
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   let usdc_fee_auth = pda::fee_auth(USDC::MINT);
   MintStablecoinUsdc {
     user,
@@ -614,7 +614,7 @@ pub fn mint_stablecoin_usdc(user: Pubkey) -> MintStablecoinUsdc {
 /// Builds account context for hyUSD redeem to USDC.
 #[must_use]
 pub fn redeem_stablecoin_usdc(user: Pubkey) -> RedeemStablecoinUsdc {
-  let usdc_vault_auth = pda::vault_auth(USDC::MINT);
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   let usdc_fee_auth = pda::fee_auth(USDC::MINT);
   RedeemStablecoinUsdc {
     user,
