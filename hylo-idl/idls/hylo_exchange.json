@@ -14041,156 +14041,161 @@
     },
     {
       "code": 6005,
+      "name": "LstRegistryCalculatorsAlreadyInitialized",
+      "msg": "LST registry calculators were already added to lookup table."
+    },
+    {
+      "code": 6006,
       "name": "LstRegistryEmpty",
       "msg": "LST specific accounts found empty when attempting to load registry."
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "LstRegistryPreamble",
       "msg": "Sanctum calculator contexts in LST registry preamble are malformed."
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "LstRegistryLookupTableDeser",
       "msg": "Failed to deserialize registry lookup table."
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "LstRegistryLookupTableInvalid",
       "msg": "Contents of LST registry did not match remaining_accounts."
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "LstBlockInvalid",
       "msg": "Mint/vault/pool accounts in registry block do not match header."
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "LstContextInvalid",
       "msg": "Attempted to register an LST with invalid Sanctum context accounts."
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "LstAdditionOverflow",
       "msg": "Addition overflow while computing total SOL in LST registry."
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "LstPriceOutdated",
       "msg": "Cached LST price not from current epoch. Run pricing crank to update."
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "LstPriceDelta",
       "msg": "Failed to compute delta between current and previous LST prices."
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "LstPriceEpochsInvalid",
       "msg": "Found current epoch less than previous in LST header."
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "LstSolAppreciation",
       "msg": "Overflow while computing LST SOL appreciation."
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "StablecoinMintDisabled",
       "msg": "Stablecoin mint disabled. Protocol is in Mode2 or Depeg."
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "LevercoinMintDisabled",
       "msg": "Levercoin mint disabled. Protocol is in Depeg."
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "YieldHarvestConfigValidation",
       "msg": "Yield harvest configuration percentages failed validation."
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "YieldHarvestAlreadyRun",
       "msg": "Yield harvest has already occurred during this epoch."
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "YieldHarvestAllocation",
       "msg": "Arithmetic error while computing yield harvest allocation."
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "YieldHarvestEpoch",
       "msg": "Yield harvest already occurred during this epoch."
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "YieldHarvestHasNotRun",
       "msg": "Yield harvest has not yet occurred during this epoch."
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "ZeroRedeem",
       "msg": "Cannot withdraw amount of 0 in a redemption action."
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "ZeroMint",
       "msg": "Cannot deposit amount of 0 in a minting action."
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "ZeroSwap",
       "msg": "Cannot swap amount of 0."
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "IdentitySwap",
       "msg": "Cannot swap from an asset to itself."
     },
     {
-      "code": 6027,
+      "code": 6028,
       "name": "ExoAmountDecimals",
       "msg": "Incorrect decimals assumption for given collateral mint."
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "ExoAmountUpConversion",
       "msg": "Unable to upconvert amount to desired exponent."
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "ExoOracleInvalid",
       "msg": "Oracle for exo collateral does not match given feed_id."
     },
     {
-      "code": 6030,
+      "code": 6031,
       "name": "FundingRateHarvestHasNotRun",
       "msg": "Funding rate harvest has not yet occurred during this epoch."
     },
     {
-      "code": 6031,
+      "code": 6032,
       "name": "FundingRateHarvestAlreadyRun",
       "msg": "Funding rate harvest has already occurred during this epoch."
     },
     {
-      "code": 6032,
+      "code": 6033,
       "name": "LstVirtualStablecoinAlreadyInitialized",
       "msg": "Virtual stablecoin already initialized for LSTs."
     },
     {
-      "code": 6033,
+      "code": 6034,
       "name": "AdminNoop",
       "msg": "Cannot update configuration with identical value."
     },
     {
-      "code": 6034,
+      "code": 6035,
       "name": "InsufficientLiquidity",
       "msg": "Insufficient liquidity to complete swap."
     },
     {
-      "code": 6035,
+      "code": 6036,
       "name": "RebalanceBuyTarget",
       "msg": "Collateral amount exceeds rebalancing buy target."
     }
@@ -14249,7 +14254,7 @@
             "name": "collateral_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -14368,7 +14373,7 @@
             "name": "collateral_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -14759,7 +14764,7 @@
             "name": "sol_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           }
@@ -15156,7 +15161,7 @@
             "name": "collateral_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15204,7 +15209,7 @@
             "name": "sol_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15268,7 +15273,7 @@
             "name": "collateral_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15335,7 +15340,7 @@
             "name": "sol_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15403,12 +15408,39 @@
             "name": "usdc_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
           {
             "name": "virtual_stablecoin_supply",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OraclePriceEvent",
+      "docs": [
+        "Serializable oracle price for event emission."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "spot",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "conf",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -15582,7 +15614,7 @@
             "name": "collateral_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15630,7 +15662,7 @@
             "name": "sol_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15694,7 +15726,7 @@
             "name": "collateral_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15758,7 +15790,7 @@
             "name": "sol_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -15826,7 +15858,7 @@
             "name": "usdc_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -16046,7 +16078,7 @@
             "name": "usdc_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           }
@@ -16130,7 +16162,7 @@
             "name": "usdc_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           }
@@ -16158,7 +16190,7 @@
             "name": "usdc_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
@@ -16202,7 +16234,7 @@
             "name": "usdc_usd_price",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "OraclePriceEvent"
               }
             }
           },
