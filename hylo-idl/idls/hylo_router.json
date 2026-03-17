@@ -23,6 +23,10 @@
         {
           "name": "hylo_exchange",
           "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "hylo_stability_pool",
+          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         }
       ],
       "args": [
