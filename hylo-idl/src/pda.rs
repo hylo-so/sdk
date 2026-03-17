@@ -64,13 +64,33 @@ pub fn usdc_ata(auth: Pubkey) -> Pubkey {
 }
 
 #[must_use]
-pub fn vault(mint: Pubkey) -> Pubkey {
-  ata!(&vault_auth(mint), &mint)
+pub fn lst_vault(mint: Pubkey) -> Pubkey {
+  ata!(&lst_vault_auth(mint), &mint)
 }
 
 #[must_use]
-pub fn vault_auth(mint: Pubkey) -> Pubkey {
+pub fn exo_vault(mint: Pubkey) -> Pubkey {
+  ata!(&exo_vault_auth(mint), &mint)
+}
+
+#[must_use]
+pub fn usdc_vault(mint: Pubkey) -> Pubkey {
+  ata!(&usdc_vault_auth(mint), &mint)
+}
+
+#[must_use]
+pub fn lst_vault_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::VAULT_AUTH, mint)
+}
+
+#[must_use]
+pub fn exo_vault_auth(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::EXO_VAULT_AUTH, mint)
+}
+
+#[must_use]
+pub fn usdc_vault_auth(mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::USDC_VAULT_AUTH, mint)
 }
 
 #[must_use]

@@ -2996,6 +2996,16 @@
       "code": 6001,
       "name": "DepositDisabled",
       "msg": "Deposits to pool disabled due to active rebalancing."
+    },
+    {
+      "code": 6002,
+      "name": "ZeroLpDeposit",
+      "msg": "Cannot process deposit yielding zero LP tokens."
+    },
+    {
+      "code": 6003,
+      "name": "ZeroTokenWithdrawal",
+      "msg": "Cannot process withdrawal resulting in zero protocol tokens."
     }
   ],
   "types": [
