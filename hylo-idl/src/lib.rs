@@ -24,7 +24,6 @@ pub mod stability_pool {
 }
 
 pub mod router {
-  pub use super::account_builders::router as account_builders;
   pub use super::codegen::hylo_router::*;
   pub use super::instruction_builders::router as instruction_builders;
 }
