@@ -27,7 +27,7 @@ use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance_math::{max_buyable_collateral, max_sellable_collateral};
 use crate::rebalance_pricing::{
-  BuyPriceCurve, RebalanceCurveConfig, SellPriceCurve,
+  BuyPriceCurve, RebalanceCurveConfig, SellPriceCurve, UCR_1_35, UCR_1_65,
 };
 use crate::stability_mode::{StabilityController, StabilityMode};
 
@@ -85,7 +85,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>> {
-    let target_cr = self.stability_controller().stability_threshold_1;
+    let target_cr = UCR_1_35;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -103,7 +103,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>> {
-    let target_cr = self.stability_controller().stability_threshold_1;
+    let target_cr = UCR_1_65;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -134,7 +134,7 @@ pub trait ExchangeContext {
   /// Levercoin fee configuration.
   fn levercoin_fees(&self) -> &LevercoinFees;
 
-  /// TVL in USD at N9 precision.
+  /// TVL in USD.
   ///
   /// # Errors
   /// * Arithmetic overflow

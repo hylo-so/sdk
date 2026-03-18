@@ -9,12 +9,11 @@ use fix::prelude::*;
 /// ```
 #[must_use]
 pub fn max_sellable_collateral(
-  target_cr: UFix64<N2>,
+  target_cr: UFix64<N9>,
   virtual_stablecoin: UFix64<N6>,
   collateral_usd_price: UFix64<N9>,
   total_collateral: UFix64<N9>,
 ) -> Option<UFix64<N9>> {
-  let target_cr = target_cr.checked_convert::<N9>()?;
   let virtual_stablecoin = virtual_stablecoin.checked_convert::<N9>()?;
   let num_1 = target_cr.mul_div_floor(virtual_stablecoin, UFix64::one())?;
   let num_2 =
@@ -34,12 +33,11 @@ pub fn max_sellable_collateral(
 /// ```
 #[must_use]
 pub fn max_buyable_collateral(
-  target_cr: UFix64<N2>,
+  target_cr: UFix64<N9>,
   virtual_stablecoin: UFix64<N6>,
   collateral_usd_price: UFix64<N9>,
   total_collateral: UFix64<N9>,
 ) -> Option<UFix64<N9>> {
-  let target_cr = target_cr.checked_convert::<N9>()?;
   let virtual_stablecoin = virtual_stablecoin.checked_convert::<N9>()?;
   let num_1 =
     collateral_usd_price.mul_div_floor(total_collateral, UFix64::one())?;
@@ -57,7 +55,7 @@ mod tests {
 
   use super::*;
 
-  const TARGET_CR: UFix64<N2> = UFix64::constant(150);
+  const TARGET_CR: UFix64<N9> = UFix64::constant(1_500_000_000);
 
   fn spot_price() -> BoxedStrategy<UFix64<N9>> {
     (10_000_000_000u64..500_000_000_000)
