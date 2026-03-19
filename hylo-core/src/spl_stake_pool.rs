@@ -5,6 +5,7 @@ pub const TOTAL_LAMPORTS_OFFSET: usize = 258;
 pub const POOL_TOKEN_SUPPLY_OFFSET: usize = TOTAL_LAMPORTS_OFFSET + 8;
 
 /// Simplified view of stake pool PDA used in all SPL LST programs.
+#[derive(Debug)]
 pub struct SplStakePool {
   pub total_lamports: UFix64<N9>,
   pub pool_token_supply: UFix64<N9>,
