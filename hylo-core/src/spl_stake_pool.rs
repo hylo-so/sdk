@@ -5,8 +5,10 @@ use std::mem::size_of;
 use anchor_lang::prelude::{ProgramError, Result};
 use fix::prelude::*;
 
+use crate::error::CoreError;
+
 /// Byte offset of `total_lamports` in [`StakePool`].
-/// [`StakePool`]: <https://docs.rs/spl-stake-pool/latest/spl_stake_pool/state/struct.StakePool.html>
+/// <https://docs.rs/spl-stake-pool/latest/spl_stake_pool/state/struct.StakePool.html>
 const TOTAL_LAMPORTS_OFFSET: usize = 258;
 const POOL_TOKEN_SUPPLY_OFFSET: usize = TOTAL_LAMPORTS_OFFSET + U64_SIZE;
 const U64_SIZE: usize = size_of::<u64>();
@@ -44,12 +46,15 @@ impl SplStakePool {
     })
   }
 
-  /// Computes the true price of the LST via `total_lamports /
-  /// pool_token_supply`.
-  #[must_use]
-  pub fn true_price(&self) -> Option<UFix64<N9>> {
+  /// Computes true price of this stake pool's LST.
+  /// `total_lamports / pool_token_supply`
+  ///
+  /// # Errors
+  /// * `pool_token_supply` is zero
+  pub fn true_price(&self) -> Result<UFix64<N9>> {
     self
       .total_lamports
       .mul_div_floor(UFix64::one(), self.pool_token_supply)
+      .ok_or(CoreError::StakePoolDivByZero.into())
   }
 }

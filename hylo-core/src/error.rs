@@ -173,4 +173,7 @@ pub enum CoreError {
   RebalanceSellSideLiquidity,
   #[msg("Arithmetic error while computing buy side target.")]
   RebalanceBuySideTarget,
+  // `spl_stake_pool`
+  #[msg("Division by zero computing SPL stake pool price.")]
+  StakePoolDivByZero,
 }
