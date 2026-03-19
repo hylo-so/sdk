@@ -307,14 +307,15 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// Builds conversion for sell-side LST rebalancing.
   ///
   /// # Errors
-  /// * Curve setup or pricing
+  /// * Curve setup, pricing, or epoch validation
   pub fn rebalance_sell_conversion(
     &self,
-    lst_sol_price: UFix64<N9>,
+    lst_sol_price: &LstSolPrice,
     usdc_usd_price: PriceRange<N9>,
   ) -> Result<LstRebalanceConversion> {
     let curve = self.rebalance_sell_curve()?;
     let sol_rebalance_usd_price = curve.price(self.collateral_ratio())?;
+    let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     Ok(LstRebalanceConversion {
       lst_sol_price,
       sol_rebalance_usd_price,
@@ -325,14 +326,15 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// Builds conversion for buy-side LST rebalancing.
   ///
   /// # Errors
-  /// * Curve setup or pricing
+  /// * Curve setup, pricing, or epoch validation
   pub fn rebalance_buy_conversion(
     &self,
-    lst_sol_price: UFix64<N9>,
+    lst_sol_price: &LstSolPrice,
     usdc_usd_price: PriceRange<N9>,
   ) -> Result<LstRebalanceConversion> {
     let curve = self.rebalance_buy_curve()?;
     let sol_rebalance_usd_price = curve.price(self.collateral_ratio())?;
+    let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     Ok(LstRebalanceConversion {
       lst_sol_price,
       sol_rebalance_usd_price,
