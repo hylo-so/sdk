@@ -1,12 +1,17 @@
-use anchor_lang::prelude::{ProgramError, Result};
-use fix::prelude::*;
+//! Lightweight SPL stake pool deserialization.
+
 use std::mem::size_of;
 
-const U64_SIZE: usize = size_of::<u64>();
+use anchor_lang::prelude::{ProgramError, Result};
+use fix::prelude::*;
+
+/// Byte offset of `total_lamports` in [`StakePool`].
+/// [`StakePool`]: <https://docs.rs/spl-stake-pool/latest/spl_stake_pool/state/struct.StakePool.html>
 const TOTAL_LAMPORTS_OFFSET: usize = 258;
 const POOL_TOKEN_SUPPLY_OFFSET: usize = TOTAL_LAMPORTS_OFFSET + U64_SIZE;
+const U64_SIZE: usize = size_of::<u64>();
 
-/// Simplified view of stake pool PDA used in all SPL LST programs.
+/// Minimal view of stake pool PDA used in all SPL LST programs.
 #[derive(Debug)]
 pub struct SplStakePool {
   pub total_lamports: UFix64<N9>,
@@ -15,6 +20,9 @@ pub struct SplStakePool {
 
 impl SplStakePool {
   /// Deserializes [`SplStakePool`] from Borsh account data.
+  ///
+  /// # Errors
+  /// * Invalid account data
   pub fn from_bytes(data: &[u8]) -> Result<SplStakePool> {
     let total_lamports = data
       .get(TOTAL_LAMPORTS_OFFSET..TOTAL_LAMPORTS_OFFSET + U64_SIZE)
@@ -36,7 +44,8 @@ impl SplStakePool {
     })
   }
 
-  /// Computes the true price of the LST via `total_lamports / pool_token_supply`.
+  /// Computes the true price of the LST via `total_lamports /
+  /// pool_token_supply`.
   #[must_use]
   pub fn true_price(&self) -> Option<UFix64<N9>> {
     self

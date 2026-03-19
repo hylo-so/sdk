@@ -8548,7 +8548,16 @@
           "name": "program"
         }
       ],
-      "args": [],
+      "args": [
+        {
+          "name": "rebalance_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
       "returns": {
         "defined": {
           "name": "RegisterLstEvent"
@@ -12028,6 +12037,121 @@
       }
     },
     {
+      "name": "update_lst_rebalance_fee",
+      "discriminator": [
+        27,
+        3,
+        7,
+        125,
+        154,
+        26,
+        49,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_header",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  115,
+                  116,
+                  95,
+                  104,
+                  101,
+                  97,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lst_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lst_mint"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_rebalance_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateLstRebalanceFeeEvent"
+        }
+      }
+    },
+    {
       "name": "update_lst_sell_curve_config",
       "discriminator": [
         137,
@@ -13883,6 +14007,19 @@
       ]
     },
     {
+      "name": "UpdateLstRebalanceFeeEvent",
+      "discriminator": [
+        17,
+        84,
+        12,
+        240,
+        183,
+        23,
+        159,
+        70
+      ]
+    },
+    {
       "name": "UpdateOracleAddressEvent",
       "discriminator": [
         28,
@@ -15074,11 +15211,19 @@
             "type": "u64"
           },
           {
+            "name": "rebalance_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                55
               ]
             }
           }
@@ -16417,6 +16562,34 @@
           },
           {
             "name": "new_total_sol",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateLstRebalanceFeeEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "old_rebalance_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_rebalance_fee",
             "type": {
               "defined": {
                 "name": "UFixValue64"

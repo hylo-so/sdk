@@ -10,7 +10,7 @@ use crate::exchange::client::accounts::{
   MintStablecoinUsdc, RedeemLevercoinExo, RedeemLevercoinLst,
   RedeemStablecoinExo, RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
   SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
-  WithdrawFees,
+  UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{ata, exchange, pda, stability_pool};
@@ -633,6 +633,21 @@ pub fn redeem_stablecoin_usdc(user: Pubkey) -> RedeemStablecoinUsdc {
     usdc_mint: USDC::MINT,
     usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
     token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn update_lst_rebalance_fee(
+  admin: Pubkey,
+  lst_mint: Pubkey,
+) -> UpdateLstRebalanceFee {
+  UpdateLstRebalanceFee {
+    admin,
+    hylo: *pda::HYLO,
+    lst_header: pda::lst_header(lst_mint),
+    lst_mint,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
