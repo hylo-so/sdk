@@ -56,3 +56,10 @@ impl TokenMint for CBBTC {
   type Exp = N8;
   const MINT: Pubkey = pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
 }
+
+pub struct XBTC;
+
+impl TokenMint for XBTC {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("2zCo6bUowJMvr89ajxuWsPadAqJ2F9akCkxumNsSdgsL");
+}

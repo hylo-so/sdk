@@ -3006,6 +3006,11 @@
       "code": 6003,
       "name": "ZeroTokenWithdrawal",
       "msg": "Cannot process withdrawal resulting in zero protocol tokens."
+    },
+    {
+      "code": 6004,
+      "name": "AdminNoop",
+      "msg": "Cannot update configuration with identical value."
     }
   ],
   "types": [

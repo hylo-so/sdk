@@ -67,7 +67,11 @@ impl RebalanceCurveConfig {
 // CR domain boundaries.
 const CR_1_20: IFix64<N9> = IFix64::constant(1_200_000_000);
 const CR_1_35: IFix64<N9> = IFix64::constant(1_350_000_000);
+/// Sell curve upper boundary.
+pub const UCR_1_35: UFix64<N9> = UFix64::constant(1_350_000_000);
 const CR_1_65: IFix64<N9> = IFix64::constant(1_650_000_000);
+/// Buy curve lower boundary.
+pub const UCR_1_65: UFix64<N9> = UFix64::constant(1_650_000_000);
 const CR_1_75: IFix64<N9> = IFix64::constant(1_750_000_000);
 
 /// Convert unsigned CR to signed for curve lookup.

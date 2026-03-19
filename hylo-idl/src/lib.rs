@@ -4,6 +4,7 @@ extern crate anchor_lang;
 
 mod codegen {
   anchor_lang::declare_program!(hylo_exchange);
+  anchor_lang::declare_program!(hylo_router);
   anchor_lang::declare_program!(hylo_stability_pool);
 }
 
@@ -20,6 +21,11 @@ pub mod stability_pool {
   pub use super::account_builders::stability_pool as account_builders;
   pub use super::codegen::hylo_stability_pool::*;
   pub use super::instruction_builders::stability_pool as instruction_builders;
+}
+
+pub mod router {
+  pub use super::codegen::hylo_router::*;
+  pub use super::instruction_builders::router as instruction_builders;
 }
 
 pub mod pda;
