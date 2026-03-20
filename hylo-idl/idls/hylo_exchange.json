@@ -9580,6 +9580,12 @@
           }
         },
         {
+          "name": "pool_state",
+          "relations": [
+            "lst_header"
+          ]
+        },
+        {
           "name": "usdc_pair",
           "writable": true,
           "pda": {
@@ -10427,6 +10433,12 @@
               }
             ]
           }
+        },
+        {
+          "name": "pool_state",
+          "relations": [
+            "lst_header"
+          ]
         },
         {
           "name": "usdc_pair",

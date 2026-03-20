@@ -510,12 +510,17 @@ pub fn swap_usdc_to_exo(
 
 /// LST to USDC swap.
 #[must_use]
-pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
+pub fn swap_lst_to_usdc(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  pool_state: Pubkey,
+) -> SwapLstToUsdc {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapLstToUsdc {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
+    pool_state,
     usdc_pair: *pda::USDC_PAIR,
     lst_vault_auth: pda::lst_vault_auth(lst_mint),
     usdc_vault_auth,
@@ -535,12 +540,17 @@ pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
 
 /// USDC to LST swap.
 #[must_use]
-pub fn swap_usdc_to_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcToLst {
+pub fn swap_usdc_to_lst(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  pool_state: Pubkey,
+) -> SwapUsdcToLst {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapUsdcToLst {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
+    pool_state,
     usdc_pair: *pda::USDC_PAIR,
     lst_vault_auth: pda::lst_vault_auth(lst_mint),
     usdc_vault_auth,

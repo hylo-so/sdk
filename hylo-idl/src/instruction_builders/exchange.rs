@@ -1005,9 +1005,10 @@ pub fn swap_usdc_to_exo(
 pub fn swap_lst_to_usdc(
   user: Pubkey,
   lst_mint: Pubkey,
+  pool_state: Pubkey,
   args: &args::SwapLstToUsdc,
 ) -> Instruction {
-  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint);
+  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint, pool_state);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -1019,9 +1020,10 @@ pub fn swap_lst_to_usdc(
 pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
+  pool_state: Pubkey,
   args: &args::SwapUsdcToLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint);
+  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
