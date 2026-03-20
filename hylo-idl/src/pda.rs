@@ -158,12 +158,6 @@ pub static STABILITY_POOL_PROGRAM_DATA: LazyLock<Pubkey> =
 pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
   lazy!(get_program_data_address(&exchange::ID));
 
-pub const JITOSOL_POOL_STATE: Pubkey =
-  pubkey!("Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb");
-
-pub const HYLOSOL_POOL_STATE: Pubkey =
-  pubkey!("hy1oDeVCVRDGkxS26qLVDvRhDpZGfWJ6w9AMvwMegwL");
-
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 

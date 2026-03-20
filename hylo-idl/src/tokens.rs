@@ -8,6 +8,10 @@ pub trait TokenMint {
   const MINT: Pubkey;
 }
 
+pub trait StakePool: TokenMint<Exp = N9> {
+  const POOL_STATE: Pubkey;
+}
+
 pub struct HYUSD;
 
 impl TokenMint for HYUSD {
@@ -36,11 +40,21 @@ impl TokenMint for JITOSOL {
   const MINT: Pubkey = pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
 }
 
+impl StakePool for JITOSOL {
+  const POOL_STATE: Pubkey =
+    pubkey!("Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb");
+}
+
 pub struct HYLOSOL;
 
 impl TokenMint for HYLOSOL {
   type Exp = N9;
   const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
+}
+
+impl StakePool for HYLOSOL {
+  const POOL_STATE: Pubkey =
+    pubkey!("hy1oDeVCVRDGkxS26qLVDvRhDpZGfWJ6w9AMvwMegwL");
 }
 
 pub struct USDC;

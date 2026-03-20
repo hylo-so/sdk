@@ -17,8 +17,7 @@ use anchor_lang::prelude::AccountMeta;
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
 use anyhow::{anyhow, Result};
-use fix::typenum::N9;
-use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
+use hylo_core::idl::tokens::{StakePool, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_rpc_client_api::config::RpcSimulateTransactionConfig;
 
@@ -27,7 +26,7 @@ use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
-pub trait LST: TokenMint<Exp = N9> {}
+pub trait LST: StakePool {}
 impl LST for JITOSOL {}
 impl LST for HYLOSOL {}
 
