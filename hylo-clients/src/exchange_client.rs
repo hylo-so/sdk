@@ -11,7 +11,7 @@ use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
 use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
-use hylo_idl::exchange::types::TokenMetadata;
+use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
 use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -179,6 +179,7 @@ impl ExchangeClient {
     sanctum_calculator_state: Pubkey,
     stake_pool_program: Pubkey,
     stake_pool_program_data: Pubkey,
+    rebalance_fee: UFixValue64,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::register_lst(
       lst_mint,
@@ -189,6 +190,7 @@ impl ExchangeClient {
       stake_pool_program_data,
       lst_registry,
       self.program.payer(),
+      rebalance_fee,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

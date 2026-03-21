@@ -5,6 +5,7 @@ use crate::error::CoreError::{
   LstLstPriceConversion, LstSolPriceConversion, LstSolPriceDelta,
   LstSolPriceEpochOrder, LstSolPriceOutdated, SolLstPriceConversion,
 };
+use crate::fee_controller::FeeExtract;
 
 /// Captures the true LST price in SOL for the current epoch.
 #[derive(
@@ -27,6 +28,20 @@ impl LstSolPrice {
   #[must_use]
   pub fn new(price: UFixValue64, epoch: u64) -> LstSolPrice {
     LstSolPrice { price, epoch }
+  }
+
+  /// Returns a new [`LstSolPrice`] with the fee-discounted price
+  /// at the same epoch.
+  ///
+  /// # Errors
+  /// * Fee extraction arithmetic
+  pub fn adjust_price(&self, fee: UFix64<N5>) -> Result<LstSolPrice> {
+    let price: UFix64<N9> = self.price.try_into()?;
+    let extract = FeeExtract::new(fee, price)?;
+    Ok(LstSolPrice::new(
+      extract.amount_remaining.into(),
+      self.epoch,
+    ))
   }
 
   /// Computes difference between previous and current LST SOL price:

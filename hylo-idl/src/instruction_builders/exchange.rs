@@ -9,7 +9,7 @@ use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::account_builders;
 use crate::exchange::client::{accounts, args};
-use crate::exchange::types::TokenMetadata;
+use crate::exchange::types::{TokenMetadata, UFixValue64};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{exchange, stability_pool};
@@ -201,6 +201,7 @@ pub fn register_lst(
   stake_pool_program_data: Pubkey,
   lst_registry: Pubkey,
   admin: Pubkey,
+  rebalance_fee: UFixValue64,
 ) -> Instruction {
   let accounts = accounts::RegisterLst {
     admin,
@@ -225,7 +226,21 @@ pub fn register_lst(
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   };
-  let args = args::RegisterLst {};
+  let args = args::RegisterLst { rebalance_fee };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_lst_rebalance_fee(
+  admin: Pubkey,
+  lst_mint: Pubkey,
+  args: &args::UpdateLstRebalanceFee,
+) -> Instruction {
+  let accounts = account_builders::update_lst_rebalance_fee(admin, lst_mint);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -990,9 +1005,10 @@ pub fn swap_usdc_to_exo(
 pub fn swap_lst_to_usdc(
   user: Pubkey,
   lst_mint: Pubkey,
+  pool_state: Pubkey,
   args: &args::SwapLstToUsdc,
 ) -> Instruction {
-  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint);
+  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint, pool_state);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -1004,9 +1020,10 @@ pub fn swap_lst_to_usdc(
 pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
+  pool_state: Pubkey,
   args: &args::SwapUsdcToLst,
 ) -> Instruction {
-  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint);
+  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

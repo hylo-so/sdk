@@ -10,7 +10,7 @@ use crate::exchange::client::accounts::{
   MintStablecoinUsdc, RedeemLevercoinExo, RedeemLevercoinLst,
   RedeemStablecoinExo, RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
   SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
-  WithdrawFees,
+  UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{ata, exchange, pda, stability_pool};
@@ -510,12 +510,17 @@ pub fn swap_usdc_to_exo(
 
 /// LST to USDC swap.
 #[must_use]
-pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
+pub fn swap_lst_to_usdc(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  pool_state: Pubkey,
+) -> SwapLstToUsdc {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapLstToUsdc {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
+    pool_state,
     usdc_pair: *pda::USDC_PAIR,
     lst_vault_auth: pda::lst_vault_auth(lst_mint),
     usdc_vault_auth,
@@ -535,12 +540,17 @@ pub fn swap_lst_to_usdc(user: Pubkey, lst_mint: Pubkey) -> SwapLstToUsdc {
 
 /// USDC to LST swap.
 #[must_use]
-pub fn swap_usdc_to_lst(user: Pubkey, lst_mint: Pubkey) -> SwapUsdcToLst {
+pub fn swap_usdc_to_lst(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  pool_state: Pubkey,
+) -> SwapUsdcToLst {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapUsdcToLst {
     user,
     hylo: *pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
+    pool_state,
     usdc_pair: *pda::USDC_PAIR,
     lst_vault_auth: pda::lst_vault_auth(lst_mint),
     usdc_vault_auth,
@@ -633,6 +643,21 @@ pub fn redeem_stablecoin_usdc(user: Pubkey) -> RedeemStablecoinUsdc {
     usdc_mint: USDC::MINT,
     usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
     token_program: token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn update_lst_rebalance_fee(
+  admin: Pubkey,
+  lst_mint: Pubkey,
+) -> UpdateLstRebalanceFee {
+  UpdateLstRebalanceFee {
+    admin,
+    hylo: *pda::HYLO,
+    lst_header: pda::lst_header(lst_mint),
+    lst_mint,
     event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
