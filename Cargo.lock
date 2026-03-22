@@ -1624,9 +1624,9 @@ dependencies = [
 
 [[package]]
 name = "hylo-fix"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c93bc6ff29e1a3805ef8318c313ab4babcb24bdb1638defbe5cef3ff29d98ecb"
+checksum = "9eba5bfa1ca6d09311078b77db957731d7b8b5e556c0c12cbc43dea43ada2a42"
 dependencies = [
  "anchor-lang",
  "anyhow",
