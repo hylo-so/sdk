@@ -307,39 +307,79 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// Builds conversion for sell-side LST rebalancing.
   ///
   /// # Errors
-  /// * Curve setup, pricing, or epoch validation
+  /// * Curve setup, pricing, projection overflow, or epoch validation
   pub fn rebalance_sell_conversion(
     &self,
     lst_sol_price: &LstSolPrice,
     usdc_usd_price: PriceRange<N9>,
+    usdc_amount: UFix64<N9>,
   ) -> Result<LstRebalanceConversion> {
-    let curve = self.rebalance_sell_curve()?;
-    let sol_rebalance_usd_price = curve.price(self.collateral_ratio())?;
+    let sol_spot_price = self.collateral_oracle_price().spot;
     let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
-    Ok(LstRebalanceConversion {
+    let lst_delta = LstRebalanceConversion::new(
       lst_sol_price,
-      sol_rebalance_usd_price,
+      sol_spot_price,
       usdc_usd_price,
-    })
+    )
+    .usdc_to_lst(usdc_amount)?;
+    let sol_delta = lst_delta
+      .mul_div_floor(lst_sol_price, UFix64::one())
+      .ok_or(DestinationFeeSol)?;
+    let new_total_sol = self
+      .total_sol
+      .checked_sub(&sol_delta)
+      .ok_or(DestinationFeeSol)?;
+    let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
+      .lst_to_token(lst_delta, self.stablecoin_nav()?)?;
+    let new_stablecoin = self
+      .virtual_stablecoin_supply()?
+      .checked_sub(&stablecoin_delta)
+      .ok_or(DestinationFeeStablecoin)?;
+    let projected_cr =
+      collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
+    let curve = self.rebalance_sell_curve()?;
+    let sol_usd_price = curve.price(projected_cr)?;
+    Ok(LstRebalanceConversion::new(
+      lst_sol_price,
+      sol_usd_price,
+      usdc_usd_price,
+    ))
   }
 
   /// Builds conversion for buy-side LST rebalancing.
   ///
   /// # Errors
-  /// * Curve setup, pricing, or epoch validation
+  /// * Curve setup, pricing, projection overflow, or epoch validation
   pub fn rebalance_buy_conversion(
     &self,
     lst_sol_price: &LstSolPrice,
     usdc_usd_price: PriceRange<N9>,
+    lst_amount: UFix64<N9>,
   ) -> Result<LstRebalanceConversion> {
-    let curve = self.rebalance_buy_curve()?;
-    let sol_rebalance_usd_price = curve.price(self.collateral_ratio())?;
+    let sol_spot_price = self.collateral_oracle_price().spot;
     let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
-    Ok(LstRebalanceConversion {
+    let sol_delta = lst_amount
+      .mul_div_floor(lst_sol_price, UFix64::one())
+      .ok_or(DestinationFeeSol)?;
+    let new_total_sol = self
+      .total_sol
+      .checked_add(&sol_delta)
+      .ok_or(DestinationFeeSol)?;
+    let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
+      .lst_to_token(lst_amount, self.stablecoin_nav()?)?;
+    let new_stablecoin = self
+      .virtual_stablecoin_supply()?
+      .checked_add(&stablecoin_delta)
+      .ok_or(DestinationFeeStablecoin)?;
+    let projected_cr =
+      collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
+    let curve = self.rebalance_buy_curve()?;
+    let sol_usd_price = curve.price(projected_cr)?;
+    Ok(LstRebalanceConversion::new(
       lst_sol_price,
-      sol_rebalance_usd_price,
+      sol_usd_price,
       usdc_usd_price,
-    })
+    ))
   }
 
   /// Maximum stablecoin swappable from levercoin using the next
