@@ -162,10 +162,8 @@ pub enum CoreError {
   RebalancePriceConstruction,
   #[msg("CR or price conversion failed in rebalance price curve.")]
   RebalancePriceConversion,
-  #[msg("Sell-side rebalance route is inactive at this CR.")]
-  RebalanceSellInactive,
-  #[msg("Buy-side rebalance route is inactive at this CR.")]
-  RebalanceBuyInactive,
+  #[msg("CR is outside the rebalance pricing curve domain.")]
+  RebalanceOutOfDomain,
   #[msg("Rebalance amount projects CR outside the pricing curve domain.")]
   RebalanceAmountExceeded,
   // `rebalance_math`
