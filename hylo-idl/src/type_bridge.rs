@@ -53,3 +53,25 @@ impl From<UFixValue64> for crate::exchange::types::UFixValue64 {
     }
   }
 }
+
+impl From<UFixValue64> for crate::router::types::UFixValue64 {
+  fn from(val: UFixValue64) -> Self {
+    crate::router::types::UFixValue64 {
+      bits: val.bits,
+      exp: val.exp,
+    }
+  }
+}
+
+impl From<crate::exchange::types::SlippageConfig>
+  for crate::router::types::SlippageConfig
+{
+  fn from(val: crate::exchange::types::SlippageConfig) -> Self {
+    let expected: UFixValue64 = val.expected_token_out.into();
+    let tolerance: UFixValue64 = val.slippage_tolerance.into();
+    crate::router::types::SlippageConfig {
+      expected_token_out: expected.into(),
+      slippage_tolerance: tolerance.into(),
+    }
+  }
+}

@@ -39,6 +39,13 @@ pub struct LstSwapArgs {
   pub slippage_config: Option<SlippageConfig>,
 }
 
+/// Arguments for router-based exo/USDC exchange operations.
+pub struct RouterArgs {
+  pub amount: u64,
+  pub user: Pubkey,
+  pub slippage_config: Option<SlippageConfig>,
+}
+
 /// Arguments for stability pool operations (deposit/withdraw sHYUSD).
 pub struct StabilityPoolArgs {
   pub amount: UFix64<N6>,

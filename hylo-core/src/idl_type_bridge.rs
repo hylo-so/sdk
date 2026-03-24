@@ -88,3 +88,10 @@ impl From<SlippageConfig> for hylo_idl::exchange::types::SlippageConfig {
     }
   }
 }
+
+impl From<SlippageConfig> for hylo_idl::router::types::SlippageConfig {
+  fn from(val: SlippageConfig) -> Self {
+    let exchange_sc: hylo_idl::exchange::types::SlippageConfig = val.into();
+    exchange_sc.into()
+  }
+}
