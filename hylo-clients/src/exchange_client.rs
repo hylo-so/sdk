@@ -13,12 +13,15 @@ use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
+use hylo_core::idl::tokens::{CBBTC, USDC, XBTC};
+
 use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
+use crate::instructions::RouterInstructionBuilder as RouterIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SwapArgs,
-  TransactionSyntax,
+  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, RouterArgs,
+  SwapArgs, TransactionSyntax,
 };
 use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 
@@ -409,6 +412,45 @@ impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
+
+// ============================================================================
+// Router-based exo/USDC BuildTransactionData impls
+// ============================================================================
+
+/// Helper to build router-based transaction data via `RouterIB`.
+macro_rules! router_btd {
+  ($in:ty, $out:ty) => {
+    #[async_trait::async_trait]
+    impl BuildTransactionData<$in, $out> for ExchangeClient {
+      type Inputs = RouterArgs;
+
+      async fn build(
+        &self,
+        inputs: RouterArgs,
+      ) -> Result<VersionedTransactionData> {
+        let instructions =
+          RouterIB::build_instructions::<$in, $out>(inputs)?;
+        let lut_addresses =
+          RouterIB::lookup_tables::<$in, $out>();
+        let lookup_tables =
+          self.load_multiple_lookup_tables(lut_addresses).await?;
+        Ok(VersionedTransactionData::new(
+          instructions,
+          lookup_tables,
+        ))
+      }
+    }
+  };
+}
+
+router_btd!(USDC, HYUSD);
+router_btd!(HYUSD, USDC);
+router_btd!(CBBTC, HYUSD);
+router_btd!(HYUSD, CBBTC);
+router_btd!(CBBTC, XBTC);
+router_btd!(XBTC, CBBTC);
+router_btd!(HYUSD, XBTC);
+router_btd!(XBTC, HYUSD);
 
 #[async_trait::async_trait]
 impl TransactionSyntax for ExchangeClient {}

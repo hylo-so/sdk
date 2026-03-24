@@ -1,14 +1,17 @@
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use async_trait::async_trait;
-use fix::prelude::{UFix64, N4, N6, N9};
+use fix::prelude::{UFix64, N4, N6, N8, N9};
 use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
+use hylo_clients::instructions::RouterInstructionBuilder as RouterIB;
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
-use hylo_clients::transaction::{LstSwapArgs, MintArgs, RedeemArgs, SwapArgs};
+use hylo_clients::transaction::{
+  LstSwapArgs, MintArgs, RedeemArgs, RouterArgs, SwapArgs,
+};
 use hylo_clients::util::LST;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::tokens::{HYUSD, XSOL};
+use hylo_idl::tokens::{CBBTC, HYUSD, USDC, XBTC, XSOL};
 
 use crate::simulated_operation::SimulatedOperationExt;
 use crate::simulation_strategy::SimulationStrategy;
@@ -18,6 +21,8 @@ type MintQuote = ExecutableQuote<N9, N6, N9>;
 type RedeemQuote = ExecutableQuote<N6, N9, N9>;
 type SwapQuote = ExecutableQuote<N6, N6, N6>;
 type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
+type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
+type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
@@ -379,6 +384,388 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
     let instructions = ExchangeIB::build_instructions::<L1, L2>(args)?;
     let address_lookup_tables = ExchangeIB::lookup_tables::<L1, L2>().into();
 
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// ============================================================================
+// Exo / USDC routes (estimated CUs — simulation not yet wired for router)
+// ============================================================================
+
+/// Builds a router-based quote using simulation of the exchange client
+/// but with estimated (not simulated) compute units.
+///
+/// Until `BuildTransactionData` is implemented for exo pairs through
+/// the router, these impls delegate to the exchange client simulation
+/// for event extraction but fall back to estimated CUs.
+fn estimated_router_args(
+  amount_in: u64,
+  user: Pubkey,
+  slippage_config: Option<SlippageConfig>,
+) -> RouterArgs {
+  RouterArgs {
+    amount: amount_in,
+    user,
+    slippage_config,
+  }
+}
+
+// USDC -> HYUSD
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C>
+  for SimulationStrategy
+{
+  type FeeExp = N6;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<SwapQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<USDC, HYUSD>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<USDC, HYUSD>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<USDC, HYUSD>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// HYUSD -> USDC
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C>
+  for SimulationStrategy
+{
+  type FeeExp = N6;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<SwapQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<HYUSD, USDC>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<HYUSD, USDC>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<HYUSD, USDC>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// CBBTC -> HYUSD
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C>
+  for SimulationStrategy
+{
+  type FeeExp = N9;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<ExoMintQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<CBBTC, HYUSD>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<CBBTC, HYUSD>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<CBBTC, HYUSD>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// HYUSD -> CBBTC
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C>
+  for SimulationStrategy
+{
+  type FeeExp = N9;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<ExoRedeemQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<HYUSD, CBBTC>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<HYUSD, CBBTC>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<HYUSD, CBBTC>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// CBBTC -> XBTC
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C>
+  for SimulationStrategy
+{
+  type FeeExp = N9;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<ExoMintQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<CBBTC, XBTC>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<CBBTC, XBTC>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<CBBTC, XBTC>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// XBTC -> CBBTC
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C>
+  for SimulationStrategy
+{
+  type FeeExp = N9;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<ExoRedeemQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<XBTC, CBBTC>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<XBTC, CBBTC>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<XBTC, CBBTC>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// HYUSD -> XBTC
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C>
+  for SimulationStrategy
+{
+  type FeeExp = N6;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<SwapQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<HYUSD, XBTC>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<HYUSD, XBTC>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<HYUSD, XBTC>().into();
+    Ok(ExecutableQuote {
+      amount_in: output.in_amount,
+      amount_out: output.out_amount,
+      compute_units: cu_info.compute_units,
+      compute_unit_strategy: cu_info.strategy,
+      fee_amount: output.fee_amount,
+      fee_mint: output.fee_mint,
+      instructions,
+      address_lookup_tables,
+    })
+  }
+}
+
+// XBTC -> HYUSD
+#[async_trait]
+impl<C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C>
+  for SimulationStrategy
+{
+  type FeeExp = N6;
+
+  async fn get_quote(
+    &self,
+    amount_in: u64,
+    user: Pubkey,
+    slippage_tolerance: u64,
+  ) -> Result<SwapQuote> {
+    let (output, cu_info) = self
+      .exchange_client
+      .simulate_output::<XBTC, HYUSD>(
+        user,
+        estimated_router_args(amount_in, user, None),
+      )
+      .await?;
+    let args = estimated_router_args(
+      amount_in,
+      user,
+      Some(SlippageConfig::new(
+        output.out_amount,
+        UFix64::<N4>::new(slippage_tolerance),
+      )),
+    );
+    let instructions =
+      RouterIB::build_instructions::<XBTC, HYUSD>(args)?;
+    let address_lookup_tables =
+      RouterIB::lookup_tables::<XBTC, HYUSD>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,
