@@ -7,7 +7,9 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_idl::pda;
-use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_idl::tokens::{
+  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+};
 use serde::{Deserialize, Serialize};
 
 /// Type-safe collection of protocol state accounts
@@ -45,6 +47,25 @@ pub struct ProtocolAccounts {
 
   /// Solana clock sysvar
   pub clock: Account,
+
+  // -- Exo collateral accounts (optional) --
+  /// cbBTC `ExoPair` PDA
+  pub cbbtc_exo_pair: Option<Account>,
+
+  /// cbBTC collateral vault token account
+  pub cbbtc_vault: Option<Account>,
+
+  /// xBTC levercoin mint
+  pub xbtc_mint: Option<Account>,
+
+  /// Pyth BTC/USD price feed
+  pub btc_usd_pyth: Option<Account>,
+
+  /// `UsdcPair` PDA
+  pub usdc_pair: Option<Account>,
+
+  /// Pyth USDC/USD price feed
+  pub usdc_usd_pyth: Option<Account>,
 }
 
 impl ProtocolAccounts {
@@ -65,13 +86,20 @@ impl ProtocolAccounts {
       *pda::XSOL_POOL,
       hylo_core::pyth::SOL_USD.address,
       sysvar::clock::ID,
+      // exo accounts (may be missing on some deployments)
+      pda::exo_pair(CBBTC::MINT),
+      pda::exo_vault(CBBTC::MINT),
+      pda::exo_levercoin_mint(CBBTC::MINT),
+      pda::BTC_USD_PYTH_FEED,
+      *pda::USDC_PAIR,
+      pda::USDC_USD_PYTH_FEED,
     ]
   }
 
   /// Expected number of protocol accounts
   #[must_use]
   pub const fn expected_count() -> usize {
-    11
+    17
   }
 
   /// Validate that pubkeys and accounts match expected protocol accounts
@@ -185,6 +213,14 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
         .as_ref()
         .context("Clock sysvar not found")?
         .clone(),
+
+      // Exo accounts are optional — may not exist on all deployments
+      cbbtc_exo_pair: accounts[11].clone(),
+      cbbtc_vault: accounts[12].clone(),
+      xbtc_mint: accounts[13].clone(),
+      btc_usd_pyth: accounts[14].clone(),
+      usdc_pair: accounts[15].clone(),
+      usdc_usd_pyth: accounts[16].clone(),
     })
   }
 }
