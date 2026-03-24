@@ -1,13 +1,13 @@
 //! `TokenOperation` implementations for exchange pairs.
 
-use anyhow::{ensure, Result};
+use anyhow::{anyhow, ensure, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityMode;
-use hylo_idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
@@ -263,6 +263,266 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
       fee_amount: fees_extracted,
       fee_mint: L1::MINT,
       fee_base: in_amount,
+    })
+  }
+}
+
+// ============================================================================
+// Exogenous collateral operations
+// ============================================================================
+
+/// Mint stablecoin (HYUSD) from USDC.
+impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
+  type FeeExp = N6;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N6, N6>> {
+    let usdc_state = self.usdc_exchange_state()?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = usdc_state.apply_fee(in_amount)?;
+    let remaining_n9: UFix64<N9> = amount_remaining
+      .checked_convert()
+      .ok_or_else(|| anyhow!("USDC N6->N9 overflow"))?;
+    let out_amount = usdc_state
+      .conversion()
+      .deposit_to_stablecoin(remaining_n9)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: USDC::MINT,
+      fee_base: in_amount,
+    })
+  }
+}
+
+/// Redeem stablecoin (HYUSD) for USDC.
+impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
+  type FeeExp = N6;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N6, N6>> {
+    let usdc_state = self.usdc_exchange_state()?;
+    let usdc_out_n9 = usdc_state
+      .conversion()
+      .stablecoin_to_withdrawal(in_amount)?;
+    let usdc_out: UFix64<N6> = usdc_out_n9
+      .checked_convert()
+      .ok_or_else(|| anyhow!("USDC N9->N6 overflow"))?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = usdc_state.apply_fee(usdc_out)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount: amount_remaining,
+      fee_amount: fees_extracted,
+      fee_mint: USDC::MINT,
+      fee_base: usdc_out,
+    })
+  }
+}
+
+/// Mint stablecoin (HYUSD) from cbBTC.
+impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N8>,
+  ) -> Result<OperationOutput<N8, N6, N9>> {
+    let exo = self.cbbtc_exo_context()?;
+    ensure!(
+      exo.stability_mode() <= StabilityMode::Mode1,
+      "Exo stablecoin mint disabled in current stability mode"
+    );
+    let collateral_n9: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or_else(|| anyhow!("cbBTC N8->N9 overflow"))?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = exo.stablecoin_mint_fee(collateral_n9)?;
+    let stablecoin_nav = exo.stablecoin_nav()?;
+    let converted = exo
+      .exo_conversion()
+      .exo_to_token(amount_remaining, stablecoin_nav)?;
+    let out_amount = exo.validate_stablecoin_amount(converted)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: CBBTC::MINT,
+      fee_base: collateral_n9,
+    })
+  }
+}
+
+/// Redeem stablecoin (HYUSD) for cbBTC.
+impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N8, N9>> {
+    let exo = self.cbbtc_exo_context()?;
+    let stablecoin_nav = exo.stablecoin_nav()?;
+    let collateral_n9 = exo
+      .exo_conversion()
+      .token_to_exo(in_amount, stablecoin_nav)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = exo.stablecoin_redeem_fee(collateral_n9)?;
+    let out_amount: UFix64<N8> = amount_remaining
+      .checked_convert()
+      .ok_or_else(|| anyhow!("cbBTC N9->N8 overflow"))?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: CBBTC::MINT,
+      fee_base: collateral_n9,
+    })
+  }
+}
+
+/// Mint levercoin (xBTC) from cbBTC.
+impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N8>,
+  ) -> Result<OperationOutput<N8, N6, N9>> {
+    let exo = self.cbbtc_exo_context()?;
+    ensure!(
+      exo.stability_mode() != StabilityMode::Depeg,
+      "Exo levercoin mint disabled in current stability mode"
+    );
+    let collateral_n9: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or_else(|| anyhow!("cbBTC N8->N9 overflow"))?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = exo.levercoin_mint_fee(collateral_n9)?;
+    let levercoin_nav = exo.levercoin_mint_nav()?;
+    let out_amount = exo
+      .exo_conversion()
+      .exo_to_token(amount_remaining, levercoin_nav)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: CBBTC::MINT,
+      fee_base: collateral_n9,
+    })
+  }
+}
+
+/// Redeem levercoin (xBTC) for cbBTC.
+impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N8, N9>> {
+    let exo = self.cbbtc_exo_context()?;
+    ensure!(
+      exo.stability_mode() != StabilityMode::Depeg,
+      "Exo levercoin redemption disabled in current stability mode"
+    );
+    let levercoin_nav = exo.levercoin_redeem_nav()?;
+    let collateral_n9 = exo
+      .exo_conversion()
+      .token_to_exo(in_amount, levercoin_nav)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = exo.levercoin_redeem_fee(collateral_n9)?;
+    let out_amount: UFix64<N8> = amount_remaining
+      .checked_convert()
+      .ok_or_else(|| anyhow!("cbBTC N9->N8 overflow"))?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: CBBTC::MINT,
+      fee_base: collateral_n9,
+    })
+  }
+}
+
+/// Swap stablecoin (HYUSD) to exo levercoin (xBTC).
+impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
+  type FeeExp = N6;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N6, N6>> {
+    let exo = self.cbbtc_exo_context()?;
+    ensure!(
+      exo.stability_mode() != StabilityMode::Depeg,
+      "Exo swaps disabled in current stability mode"
+    );
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = exo.stablecoin_to_levercoin_fee(in_amount)?;
+    let out_amount = exo
+      .swap_conversion()?
+      .stable_to_lever(amount_remaining)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: HYUSD::MINT,
+      fee_base: in_amount,
+    })
+  }
+}
+
+/// Swap exo levercoin (xBTC) to stablecoin (HYUSD).
+impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
+  type FeeExp = N6;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N6, N6>> {
+    let exo = self.cbbtc_exo_context()?;
+    ensure!(
+      matches!(
+        exo.stability_mode(),
+        StabilityMode::Normal | StabilityMode::Mode1
+      ),
+      "Exo swaps disabled in current stability mode"
+    );
+    let converted = exo
+      .swap_conversion()?
+      .lever_to_stable(in_amount)?;
+    let hyusd_total =
+      exo.validate_stablecoin_swap_amount(converted)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = exo.levercoin_to_stablecoin_fee(hyusd_total)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount: amount_remaining,
+      fee_amount: fees_extracted,
+      fee_mint: HYUSD::MINT,
+      fee_base: hyusd_total,
     })
   }
 }
