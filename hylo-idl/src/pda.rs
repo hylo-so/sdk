@@ -164,6 +164,9 @@ pub const SOL_USD_PYTH_FEED: Pubkey =
 pub const USDC_USD_PYTH_FEED: Pubkey =
   pubkey!("Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX");
 
+pub const BTC_USD_PYTH_FEED: Pubkey =
+  pubkey!("4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo");
+
 #[must_use]
 pub fn event_auth(program_id: Pubkey) -> Pubkey {
   Pubkey::find_program_address(&[b"__event_authority"], &program_id).0

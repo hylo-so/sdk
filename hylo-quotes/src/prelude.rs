@@ -7,7 +7,9 @@ pub use anchor_lang::prelude::Pubkey;
 pub use anyhow::Result;
 pub use fix::prelude::*;
 // Token types
-pub use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+pub use hylo_idl::tokens::{
+  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+};
 
 // Protocol state
 pub use crate::protocol_state::{

@@ -12,6 +12,14 @@ pub enum Operation {
   SwapLstToLst,
   DepositToStabilityPool,
   WithdrawFromStabilityPool,
+  MintStablecoinUsdc,
+  RedeemStablecoinUsdc,
+  MintStablecoinExo,
+  RedeemStablecoinExo,
+  MintLevercoinExo,
+  RedeemLevercoinExo,
+  ConvertStableToLeverExo,
+  ConvertLeverToStableExo,
 }
 
 impl Operation {
@@ -27,6 +35,18 @@ impl Operation {
       Operation::SwapLstToLst => "swap_lst_to_lst",
       Operation::DepositToStabilityPool => "user_deposit",
       Operation::WithdrawFromStabilityPool => "user_withdraw",
+      Operation::MintStablecoinUsdc => "mint_stablecoin_usdc",
+      Operation::RedeemStablecoinUsdc => "redeem_stablecoin_usdc",
+      Operation::MintStablecoinExo => "mint_stablecoin_exo",
+      Operation::RedeemStablecoinExo => "redeem_stablecoin_exo",
+      Operation::MintLevercoinExo => "mint_levercoin_exo",
+      Operation::RedeemLevercoinExo => "redeem_levercoin_exo",
+      Operation::ConvertStableToLeverExo => {
+        "convert_stable_to_lever_exo"
+      }
+      Operation::ConvertLeverToStableExo => {
+        "convert_lever_to_stable_exo"
+      }
     }
   }
 }
