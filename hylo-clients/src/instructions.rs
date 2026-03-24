@@ -342,8 +342,7 @@ fn build_route_instruction<A: anchor_lang::ToAccountMetas>(
 impl InstructionBuilder<USDC, HYUSD> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -369,8 +368,7 @@ impl InstructionBuilder<USDC, HYUSD> for RouterInstructionBuilder {
 impl InstructionBuilder<HYUSD, USDC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -396,8 +394,7 @@ impl InstructionBuilder<HYUSD, USDC> for RouterInstructionBuilder {
 impl InstructionBuilder<CBBTC, HYUSD> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -427,8 +424,7 @@ impl InstructionBuilder<CBBTC, HYUSD> for RouterInstructionBuilder {
 impl InstructionBuilder<HYUSD, CBBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -458,8 +454,7 @@ impl InstructionBuilder<HYUSD, CBBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<CBBTC, XBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -490,8 +485,7 @@ impl InstructionBuilder<CBBTC, XBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<XBTC, CBBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -521,8 +515,7 @@ impl InstructionBuilder<XBTC, CBBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<HYUSD, XBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -553,8 +546,7 @@ impl InstructionBuilder<HYUSD, XBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<XBTC, HYUSD> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {

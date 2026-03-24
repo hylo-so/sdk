@@ -41,12 +41,8 @@ impl Operation {
       Operation::RedeemStablecoinExo => "redeem_stablecoin_exo",
       Operation::MintLevercoinExo => "mint_levercoin_exo",
       Operation::RedeemLevercoinExo => "redeem_levercoin_exo",
-      Operation::ConvertStableToLeverExo => {
-        "convert_stable_to_lever_exo"
-      }
-      Operation::ConvertLeverToStableExo => {
-        "convert_lever_to_stable_exo"
-      }
+      Operation::ConvertStableToLeverExo => "convert_stable_to_lever_exo",
+      Operation::ConvertLeverToStableExo => "convert_lever_to_stable_exo",
     }
   }
 }

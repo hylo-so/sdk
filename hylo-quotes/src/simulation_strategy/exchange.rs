@@ -421,9 +421,7 @@ fn estimated_router_args(
 
 // USDC -> HYUSD
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C> for SimulationStrategy {
   type FeeExp = N6;
 
   async fn get_quote(
@@ -447,10 +445,8 @@ impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<USDC, HYUSD>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<USDC, HYUSD>().into();
+    let instructions = RouterIB::build_instructions::<USDC, HYUSD>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<USDC, HYUSD>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,
@@ -466,9 +462,7 @@ impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C>
 
 // HYUSD -> USDC
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C> for SimulationStrategy {
   type FeeExp = N6;
 
   async fn get_quote(
@@ -492,10 +486,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<HYUSD, USDC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<HYUSD, USDC>().into();
+    let instructions = RouterIB::build_instructions::<HYUSD, USDC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<HYUSD, USDC>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,
@@ -511,9 +503,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C>
 
 // CBBTC -> HYUSD
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C> for SimulationStrategy {
   type FeeExp = N9;
 
   async fn get_quote(
@@ -537,8 +527,7 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<CBBTC, HYUSD>(args)?;
+    let instructions = RouterIB::build_instructions::<CBBTC, HYUSD>(args)?;
     let address_lookup_tables =
       RouterIB::lookup_tables::<CBBTC, HYUSD>().into();
     Ok(ExecutableQuote {
@@ -556,9 +545,7 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C>
 
 // HYUSD -> CBBTC
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C> for SimulationStrategy {
   type FeeExp = N9;
 
   async fn get_quote(
@@ -582,8 +569,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<HYUSD, CBBTC>(args)?;
+    let instructions = RouterIB::build_instructions::<HYUSD, CBBTC>(args)?;
     let address_lookup_tables =
       RouterIB::lookup_tables::<HYUSD, CBBTC>().into();
     Ok(ExecutableQuote {
@@ -601,9 +587,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C>
 
 // CBBTC -> XBTC
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C> for SimulationStrategy {
   type FeeExp = N9;
 
   async fn get_quote(
@@ -627,10 +611,8 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<CBBTC, XBTC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<CBBTC, XBTC>().into();
+    let instructions = RouterIB::build_instructions::<CBBTC, XBTC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<CBBTC, XBTC>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,
@@ -646,9 +628,7 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C>
 
 // XBTC -> CBBTC
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C> for SimulationStrategy {
   type FeeExp = N9;
 
   async fn get_quote(
@@ -672,10 +652,8 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<XBTC, CBBTC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<XBTC, CBBTC>().into();
+    let instructions = RouterIB::build_instructions::<XBTC, CBBTC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<XBTC, CBBTC>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,
@@ -691,9 +669,7 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C>
 
 // HYUSD -> XBTC
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C> for SimulationStrategy {
   type FeeExp = N6;
 
   async fn get_quote(
@@ -717,10 +693,8 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<HYUSD, XBTC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<HYUSD, XBTC>().into();
+    let instructions = RouterIB::build_instructions::<HYUSD, XBTC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<HYUSD, XBTC>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,
@@ -736,9 +710,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C>
 
 // XBTC -> HYUSD
 #[async_trait]
-impl<C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C>
-  for SimulationStrategy
-{
+impl<C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C> for SimulationStrategy {
   type FeeExp = N6;
 
   async fn get_quote(
@@ -762,10 +734,8 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<XBTC, HYUSD>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<XBTC, HYUSD>().into();
+    let instructions = RouterIB::build_instructions::<XBTC, HYUSD>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<XBTC, HYUSD>().into();
     Ok(ExecutableQuote {
       amount_in: output.in_amount,
       amount_out: output.out_amount,

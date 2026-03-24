@@ -185,10 +185,8 @@ impl SimulatedOperation<USDC, HYUSD> for ExchangeClient {
   type Event = MintStablecoinUsdcEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let usdc_deposited: UFix64<N6> =
-      event.usdc_deposited.try_into()?;
-    let out_amount: UFix64<N6> =
-      event.stablecoin_minted.try_into()?;
+    let usdc_deposited: UFix64<N6> = event.usdc_deposited.try_into()?;
+    let out_amount: UFix64<N6> = event.stablecoin_minted.try_into()?;
     let fee_amount: UFix64<N6> = event.usdc_fees.try_into()?;
     let fee_base = usdc_deposited
       .checked_add(&fee_amount)
@@ -209,12 +207,9 @@ impl SimulatedOperation<HYUSD, USDC> for ExchangeClient {
   type Event = RedeemStablecoinUsdcEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let in_amount: UFix64<N6> =
-      event.stablecoin_burned.try_into()?;
-    let usdc_withdrawn: UFix64<N6> =
-      event.usdc_withdrawn.try_into()?;
-    let fee_amount: UFix64<N6> =
-      event.stablecoin_fees.try_into()?;
+    let in_amount: UFix64<N6> = event.stablecoin_burned.try_into()?;
+    let usdc_withdrawn: UFix64<N6> = event.usdc_withdrawn.try_into()?;
+    let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;
     let fee_base = usdc_withdrawn
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
@@ -243,9 +238,8 @@ impl SimulatedOperation<CBBTC, HYUSD> for ExchangeClient {
     let fee_base = collateral_deposited
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
-    let in_amount: UFix64<N8> = fee_base
-      .checked_convert()
-      .context("N9->N8 conversion")?;
+    let in_amount: UFix64<N8> =
+      fee_base.checked_convert().context("N9->N8 conversion")?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -299,9 +293,8 @@ impl SimulatedOperation<CBBTC, XBTC> for ExchangeClient {
     let fee_base = collateral_deposited
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
-    let in_amount: UFix64<N8> = fee_base
-      .checked_convert()
-      .context("N9->N8 conversion")?;
+    let in_amount: UFix64<N8> =
+      fee_base.checked_convert().context("N9->N8 conversion")?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -346,12 +339,9 @@ impl SimulatedOperation<HYUSD, XBTC> for ExchangeClient {
   type Event = ConvertStableToLeverExoEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let stablecoin_burned: UFix64<N6> =
-      event.stablecoin_burned.try_into()?;
-    let out_amount: UFix64<N6> =
-      event.levercoin_minted.try_into()?;
-    let fee_amount: UFix64<N6> =
-      event.stablecoin_fees.try_into()?;
+    let stablecoin_burned: UFix64<N6> = event.stablecoin_burned.try_into()?;
+    let out_amount: UFix64<N6> = event.levercoin_minted.try_into()?;
+    let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;
     let fee_base = stablecoin_burned
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
@@ -371,12 +361,9 @@ impl SimulatedOperation<XBTC, HYUSD> for ExchangeClient {
   type Event = ConvertLeverToStableExoEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let in_amount: UFix64<N6> =
-      event.levercoin_burned.try_into()?;
-    let out_amount: UFix64<N6> =
-      event.stablecoin_minted_user.try_into()?;
-    let fee_amount: UFix64<N6> =
-      event.stablecoin_minted_fees.try_into()?;
+    let in_amount: UFix64<N6> = event.levercoin_burned.try_into()?;
+    let out_amount: UFix64<N6> = event.stablecoin_minted_user.try_into()?;
+    let fee_amount: UFix64<N6> = event.stablecoin_minted_fees.try_into()?;
     let fee_base = out_amount
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;

@@ -350,10 +350,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<USDC, HYUSD, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<USDC, HYUSD>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<USDC, HYUSD>().into();
+    let instructions = RouterIB::build_instructions::<USDC, HYUSD>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<USDC, HYUSD>().into();
     Ok(ExecutableQuote {
       amount_in: op.in_amount,
       amount_out: op.out_amount,
@@ -390,10 +388,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, USDC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<HYUSD, USDC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<HYUSD, USDC>().into();
+    let instructions = RouterIB::build_instructions::<HYUSD, USDC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<HYUSD, USDC>().into();
     Ok(ExecutableQuote {
       amount_in: op.in_amount,
       amount_out: op.out_amount,
@@ -421,8 +417,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C>
     slippage_tolerance: u64,
   ) -> Result<ExoMintQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op =
-      state.output::<CBBTC, HYUSD>(UFix64::new(amount_in))?;
+    let op = state.output::<CBBTC, HYUSD>(UFix64::new(amount_in))?;
     let args = router_args(
       amount_in,
       user,
@@ -431,8 +426,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<CBBTC, HYUSD>(args)?;
+    let instructions = RouterIB::build_instructions::<CBBTC, HYUSD>(args)?;
     let address_lookup_tables =
       RouterIB::lookup_tables::<CBBTC, HYUSD>().into();
     Ok(ExecutableQuote {
@@ -462,8 +456,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C>
     slippage_tolerance: u64,
   ) -> Result<ExoRedeemQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op =
-      state.output::<HYUSD, CBBTC>(UFix64::new(amount_in))?;
+    let op = state.output::<HYUSD, CBBTC>(UFix64::new(amount_in))?;
     let args = router_args(
       amount_in,
       user,
@@ -472,8 +465,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<HYUSD, CBBTC>(args)?;
+    let instructions = RouterIB::build_instructions::<HYUSD, CBBTC>(args)?;
     let address_lookup_tables =
       RouterIB::lookup_tables::<HYUSD, CBBTC>().into();
     Ok(ExecutableQuote {
@@ -503,8 +495,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C>
     slippage_tolerance: u64,
   ) -> Result<ExoMintQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op =
-      state.output::<CBBTC, XBTC>(UFix64::new(amount_in))?;
+    let op = state.output::<CBBTC, XBTC>(UFix64::new(amount_in))?;
     let args = router_args(
       amount_in,
       user,
@@ -513,10 +504,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<CBBTC, XBTC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<CBBTC, XBTC>().into();
+    let instructions = RouterIB::build_instructions::<CBBTC, XBTC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<CBBTC, XBTC>().into();
     Ok(ExecutableQuote {
       amount_in: op.in_amount,
       amount_out: op.out_amount,
@@ -544,8 +533,7 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C>
     slippage_tolerance: u64,
   ) -> Result<ExoRedeemQuote> {
     let state = self.state_provider.fetch_state().await?;
-    let op =
-      state.output::<XBTC, CBBTC>(UFix64::new(amount_in))?;
+    let op = state.output::<XBTC, CBBTC>(UFix64::new(amount_in))?;
     let args = router_args(
       amount_in,
       user,
@@ -554,10 +542,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<XBTC, CBBTC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<XBTC, CBBTC>().into();
+    let instructions = RouterIB::build_instructions::<XBTC, CBBTC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<XBTC, CBBTC>().into();
     Ok(ExecutableQuote {
       amount_in: op.in_amount,
       amount_out: op.out_amount,
@@ -594,10 +580,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<HYUSD, XBTC>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<HYUSD, XBTC>().into();
+    let instructions = RouterIB::build_instructions::<HYUSD, XBTC>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<HYUSD, XBTC>().into();
     Ok(ExecutableQuote {
       amount_in: op.in_amount,
       amount_out: op.out_amount,
@@ -634,10 +618,8 @@ impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C>
         UFix64::<N4>::new(slippage_tolerance),
       )),
     );
-    let instructions =
-      RouterIB::build_instructions::<XBTC, HYUSD>(args)?;
-    let address_lookup_tables =
-      RouterIB::lookup_tables::<XBTC, HYUSD>().into();
+    let instructions = RouterIB::build_instructions::<XBTC, HYUSD>(args)?;
+    let address_lookup_tables = RouterIB::lookup_tables::<XBTC, HYUSD>().into();
     Ok(ExecutableQuote {
       amount_in: op.in_amount,
       amount_out: op.out_amount,

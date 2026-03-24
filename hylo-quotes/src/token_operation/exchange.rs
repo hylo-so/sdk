@@ -479,9 +479,8 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       fees_extracted,
       amount_remaining,
     } = exo.stablecoin_to_levercoin_fee(in_amount)?;
-    let out_amount = exo
-      .swap_conversion()?
-      .stable_to_lever(amount_remaining)?;
+    let out_amount =
+      exo.swap_conversion()?.stable_to_lever(amount_remaining)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -508,11 +507,8 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
       ),
       "Exo swaps disabled in current stability mode"
     );
-    let converted = exo
-      .swap_conversion()?
-      .lever_to_stable(in_amount)?;
-    let hyusd_total =
-      exo.validate_stablecoin_swap_amount(converted)?;
+    let converted = exo.swap_conversion()?.lever_to_stable(in_amount)?;
+    let hyusd_total = exo.validate_stablecoin_swap_amount(converted)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,

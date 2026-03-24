@@ -428,16 +428,11 @@ macro_rules! router_btd {
         &self,
         inputs: RouterArgs,
       ) -> Result<VersionedTransactionData> {
-        let instructions =
-          RouterIB::build_instructions::<$in, $out>(inputs)?;
-        let lut_addresses =
-          RouterIB::lookup_tables::<$in, $out>();
+        let instructions = RouterIB::build_instructions::<$in, $out>(inputs)?;
+        let lut_addresses = RouterIB::lookup_tables::<$in, $out>();
         let lookup_tables =
           self.load_multiple_lookup_tables(lut_addresses).await?;
-        Ok(VersionedTransactionData::new(
-          instructions,
-          lookup_tables,
-        ))
+        Ok(VersionedTransactionData::new(instructions, lookup_tables))
       }
     }
   };

@@ -397,6 +397,8 @@ where
       hyusd_pool,
       xsol_pool,
       &sol_usd,
+      None, // cbbtc_exo_context
+      None, // usdc_exchange_state
     )?);
     Ok(())
   }

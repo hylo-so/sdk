@@ -48,10 +48,7 @@ impl UsdcExchangeState {
   ///
   /// # Errors
   /// * Arithmetic failure in fee extraction
-  pub fn apply_fee(
-    &self,
-    amount: UFix64<N6>,
-  ) -> Result<FeeExtract<N6>> {
+  pub fn apply_fee(&self, amount: UFix64<N6>) -> Result<FeeExtract<N6>> {
     Ok(FeeExtract::new(self.swap_fee, amount)?)
   }
 }
@@ -173,9 +170,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// # Errors
   /// * cbBTC exo pair not initialized
-  pub fn cbbtc_exo_context(
-    &self,
-  ) -> Result<&ExoExchangeContext<C>> {
+  pub fn cbbtc_exo_context(&self) -> Result<&ExoExchangeContext<C>> {
     self
       .cbbtc_exo_context
       .as_deref()
@@ -186,9 +181,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// # Errors
   /// * USDC pair not initialized
-  pub fn usdc_exchange_state(
-    &self,
-  ) -> Result<&UsdcExchangeState> {
+  pub fn usdc_exchange_state(&self) -> Result<&UsdcExchangeState> {
     self
       .usdc_exchange_state
       .as_ref()
@@ -215,17 +208,11 @@ fn try_build_cbbtc_exo_context(
     return Ok(None);
   };
 
-  let exo_pair =
-    ExoPair::try_deserialize(&mut pair_acct.data.as_slice())?;
-  let vault = TokenAccount::try_deserialize(
-    &mut vault_acct.data.as_slice(),
-  )?;
-  let xbtc_mint =
-    Mint::try_deserialize(&mut xbtc_acct.data.as_slice())?;
-  let btc_usd = PriceUpdateV2::try_deserialize(
-    &mut pyth_acct.data.as_slice(),
-  )
-  .map_err(|e| anyhow!("Failed to deserialize BTC/USD Pyth: {e}"))?;
+  let exo_pair = ExoPair::try_deserialize(&mut pair_acct.data.as_slice())?;
+  let vault = TokenAccount::try_deserialize(&mut vault_acct.data.as_slice())?;
+  let xbtc_mint = Mint::try_deserialize(&mut xbtc_acct.data.as_slice())?;
+  let btc_usd = PriceUpdateV2::try_deserialize(&mut pyth_acct.data.as_slice())
+    .map_err(|e| anyhow!("Failed to deserialize BTC/USD Pyth: {e}"))?;
 
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -263,19 +250,15 @@ fn try_build_usdc_exchange_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
 ) -> Result<Option<UsdcExchangeState>> {
-  let (Some(pair_acct), Some(pyth_acct)) = (
-    accounts.usdc_pair.as_ref(),
-    accounts.usdc_usd_pyth.as_ref(),
-  ) else {
+  let (Some(pair_acct), Some(pyth_acct)) =
+    (accounts.usdc_pair.as_ref(), accounts.usdc_usd_pyth.as_ref())
+  else {
     return Ok(None);
   };
 
-  let usdc_pair =
-    UsdcPair::try_deserialize(&mut pair_acct.data.as_slice())?;
-  let usdc_usd = PriceUpdateV2::try_deserialize(
-    &mut pyth_acct.data.as_slice(),
-  )
-  .map_err(|e| anyhow!("Failed to deserialize USDC/USD Pyth: {e}"))?;
+  let usdc_pair = UsdcPair::try_deserialize(&mut pair_acct.data.as_slice())?;
+  let usdc_usd = PriceUpdateV2::try_deserialize(&mut pyth_acct.data.as_slice())
+    .map_err(|e| anyhow!("Failed to deserialize USDC/USD Pyth: {e}"))?;
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
@@ -334,10 +317,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
     let cbbtc_exo_context =
-      try_build_cbbtc_exo_context(clock.clone(), accounts)?
-        .map(Arc::new);
-    let usdc_exchange_state =
-      try_build_usdc_exchange_state(&clock, accounts)?;
+      try_build_cbbtc_exo_context(clock.clone(), accounts)?.map(Arc::new);
+    let usdc_exchange_state = try_build_usdc_exchange_state(&clock, accounts)?;
 
     Self::build(
       clock,
