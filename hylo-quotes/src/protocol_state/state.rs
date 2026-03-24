@@ -44,11 +44,14 @@ impl UsdcExchangeState {
     }
   }
 
-  /// Applies the swap fee to a USDC amount.
+  /// Applies the swap fee to an amount at any precision.
   ///
   /// # Errors
   /// * Arithmetic failure in fee extraction
-  pub fn apply_fee(&self, amount: UFix64<N6>) -> Result<FeeExtract<N6>> {
+  pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>>
+  where
+    UFix64<N9>: FixExt,
+  {
     Ok(FeeExtract::new(self.swap_fee, amount)?)
   }
 }

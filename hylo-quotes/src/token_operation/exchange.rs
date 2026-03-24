@@ -272,7 +272,42 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
 // ============================================================================
 
 /// Mint stablecoin (HYUSD) from USDC.
+///
+/// On-chain flow: normalize USDC to N9, apply fee at N9, then convert
+/// to stablecoin. Fee is denominated in USDC (at N9 precision).
 impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn compute_output(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, N6, N9>> {
+    let usdc_state = self.usdc_exchange_state()?;
+    let amount_n9: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or_else(|| anyhow!("USDC N6->N9 overflow"))?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = usdc_state.apply_fee(amount_n9)?;
+    let out_amount = usdc_state
+      .conversion()
+      .deposit_to_stablecoin(amount_remaining)?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: USDC::MINT,
+      fee_base: amount_n9,
+    })
+  }
+}
+
+/// Redeem stablecoin (HYUSD) for USDC.
+///
+/// On-chain flow: apply fee to HYUSD input first, then convert
+/// remaining HYUSD to USDC. Fee is denominated in HYUSD.
+impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   type FeeExp = N6;
 
   fn compute_output(
@@ -284,47 +319,18 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
       fees_extracted,
       amount_remaining,
     } = usdc_state.apply_fee(in_amount)?;
-    let remaining_n9: UFix64<N9> = amount_remaining
-      .checked_convert()
-      .ok_or_else(|| anyhow!("USDC N6->N9 overflow"))?;
-    let out_amount = usdc_state
+    let usdc_out_n9 = usdc_state
       .conversion()
-      .deposit_to_stablecoin(remaining_n9)?;
+      .stablecoin_to_withdrawal(amount_remaining)?;
+    let out_amount: UFix64<N6> = usdc_out_n9
+      .checked_convert()
+      .ok_or_else(|| anyhow!("USDC N9->N6 overflow"))?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
-      fee_mint: USDC::MINT,
+      fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-    })
-  }
-}
-
-/// Redeem stablecoin (HYUSD) for USDC.
-impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn compute_output(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>> {
-    let usdc_state = self.usdc_exchange_state()?;
-    let usdc_out_n9 = usdc_state
-      .conversion()
-      .stablecoin_to_withdrawal(in_amount)?;
-    let usdc_out: UFix64<N6> = usdc_out_n9
-      .checked_convert()
-      .ok_or_else(|| anyhow!("USDC N9->N6 overflow"))?;
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = usdc_state.apply_fee(usdc_out)?;
-    Ok(OperationOutput {
-      in_amount,
-      out_amount: amount_remaining,
-      fee_amount: fees_extracted,
-      fee_mint: USDC::MINT,
-      fee_base: usdc_out,
     })
   }
 }

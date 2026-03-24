@@ -106,7 +106,7 @@ impl ProtocolAccounts {
   ///
   /// Validates:
   /// - Pubkeys and accounts have matching lengths
-  /// - We have the expected number of accounts (11)
+  /// - We have the expected number of accounts (17)
   /// - Each pubkey matches the expected protocol account in order
   ///
   /// # Errors

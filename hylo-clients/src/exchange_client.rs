@@ -5,7 +5,7 @@ use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
 use anyhow::Result;
-use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_core::idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
 use hylo_core::idl::{exchange, pda};
 use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
@@ -13,10 +13,10 @@ use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
-use hylo_core::idl::tokens::{CBBTC, USDC, XBTC};
-
-use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
-use crate::instructions::RouterInstructionBuilder as RouterIB;
+use crate::instructions::{
+  ExchangeInstructionBuilder as ExchangeIB,
+  RouterInstructionBuilder as RouterIB,
+};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{

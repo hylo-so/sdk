@@ -2,8 +2,10 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::{UFix64, N4, N6, N8, N9};
-use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
-use hylo_clients::instructions::RouterInstructionBuilder as RouterIB;
+use hylo_clients::instructions::{
+  ExchangeInstructionBuilder as ExchangeIB,
+  RouterInstructionBuilder as RouterIB,
+};
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{
   LstSwapArgs, MintArgs, RedeemArgs, RouterArgs, SwapArgs,
@@ -23,6 +25,7 @@ type SwapQuote = ExecutableQuote<N6, N6, N6>;
 type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
 type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
 type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
+type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
 
 // ============================================================================
 // Implementations for LST → HYUSD (mint stablecoin)
@@ -398,16 +401,11 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
 }
 
 // ============================================================================
-// Exo / USDC routes (estimated CUs — simulation not yet wired for router)
+// Exo / USDC routes (via router)
 // ============================================================================
 
-/// Builds a router-based quote using simulation of the exchange client
-/// but with estimated (not simulated) compute units.
-///
-/// Until `BuildTransactionData` is implemented for exo pairs through
-/// the router, these impls delegate to the exchange client simulation
-/// for event extraction but fall back to estimated CUs.
-fn estimated_router_args(
+/// Builds `RouterArgs` for an exo or USDC route.
+fn router_args(
   amount_in: u64,
   user: Pubkey,
   slippage_config: Option<SlippageConfig>,
@@ -422,22 +420,22 @@ fn estimated_router_args(
 // USDC -> HYUSD
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C> for SimulationStrategy {
-  type FeeExp = N6;
+  type FeeExp = N9;
 
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<SwapQuote> {
+  ) -> Result<UsdcMintQuote> {
     let (output, cu_info) = self
       .exchange_client
       .simulate_output::<USDC, HYUSD>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -475,10 +473,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<HYUSD, USDC>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -516,10 +514,10 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<CBBTC, HYUSD>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -558,10 +556,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<HYUSD, CBBTC>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -600,10 +598,10 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<CBBTC, XBTC>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -641,10 +639,10 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<XBTC, CBBTC>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -682,10 +680,10 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<HYUSD, XBTC>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(
@@ -723,10 +721,10 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C> for SimulationStrategy {
       .exchange_client
       .simulate_output::<XBTC, HYUSD>(
         user,
-        estimated_router_args(amount_in, user, None),
+        router_args(amount_in, user, None),
       )
       .await?;
-    let args = estimated_router_args(
+    let args = router_args(
       amount_in,
       user,
       Some(SlippageConfig::new(

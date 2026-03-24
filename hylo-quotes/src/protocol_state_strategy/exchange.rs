@@ -4,8 +4,10 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use async_trait::async_trait;
 use fix::prelude::*;
-use hylo_clients::instructions::ExchangeInstructionBuilder as ExchangeIB;
-use hylo_clients::instructions::RouterInstructionBuilder as RouterIB;
+use hylo_clients::instructions::{
+  ExchangeInstructionBuilder as ExchangeIB,
+  RouterInstructionBuilder as RouterIB,
+};
 use hylo_clients::syntax_helpers::InstructionBuilderExt;
 use hylo_clients::transaction::{
   LstSwapArgs, MintArgs, RedeemArgs, RouterArgs, SwapArgs,
@@ -28,6 +30,7 @@ type SwapQuote = ExecutableQuote<N6, N6, N6>;
 type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
 type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
 type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
+type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
 
 // LST -> HYUSD (mint stablecoin)
 #[async_trait]
@@ -332,14 +335,14 @@ fn router_args(
 impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<USDC, HYUSD, C>
   for ProtocolStateStrategy<S>
 {
-  type FeeExp = N6;
+  type FeeExp = N9;
 
   async fn get_quote(
     &self,
     amount_in: u64,
     user: Pubkey,
     slippage_tolerance: u64,
-  ) -> Result<SwapQuote> {
+  ) -> Result<UsdcMintQuote> {
     let state = self.state_provider.fetch_state().await?;
     let op = state.output::<USDC, HYUSD>(UFix64::new(amount_in))?;
     let args = router_args(

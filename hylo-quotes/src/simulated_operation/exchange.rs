@@ -180,19 +180,26 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
 // ============================================================================
 
 /// Mint stablecoin from USDC.
+///
+/// On-chain: USDC is normalized to N9 before fee extraction, so
+/// event amounts `usdc_deposited` and `usdc_fees` are N9.
 impl SimulatedOperation<USDC, HYUSD> for ExchangeClient {
-  type FeeExp = N6;
+  type FeeExp = N9;
   type Event = MintStablecoinUsdcEvent;
 
-  fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let usdc_deposited: UFix64<N6> = event.usdc_deposited.try_into()?;
+  fn extract_output(
+    event: &Self::Event,
+  ) -> Result<OperationOutput<N6, N6, N9>> {
+    let usdc_deposited: UFix64<N9> = event.usdc_deposited.try_into()?;
     let out_amount: UFix64<N6> = event.stablecoin_minted.try_into()?;
-    let fee_amount: UFix64<N6> = event.usdc_fees.try_into()?;
+    let fee_amount: UFix64<N9> = event.usdc_fees.try_into()?;
     let fee_base = usdc_deposited
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
-    Ok(SwapOperationOutput {
-      in_amount: fee_base,
+    let in_amount: UFix64<N6> =
+      fee_base.checked_convert().context("N9->N6 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
       out_amount,
       fee_amount,
       fee_mint: USDC::MINT,
@@ -202,22 +209,26 @@ impl SimulatedOperation<USDC, HYUSD> for ExchangeClient {
 }
 
 /// Redeem stablecoin to USDC.
+///
+/// On-chain: fee is applied to HYUSD input before conversion.
+/// `fee_base` is the total HYUSD input (`stablecoin_burned +
+/// stablecoin_fees`) and `fee_mint` is HYUSD.
 impl SimulatedOperation<HYUSD, USDC> for ExchangeClient {
   type FeeExp = N6;
   type Event = RedeemStablecoinUsdcEvent;
 
   fn extract_output(event: &Self::Event) -> Result<SwapOperationOutput> {
-    let in_amount: UFix64<N6> = event.stablecoin_burned.try_into()?;
+    let stablecoin_burned: UFix64<N6> = event.stablecoin_burned.try_into()?;
     let usdc_withdrawn: UFix64<N6> = event.usdc_withdrawn.try_into()?;
     let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;
-    let fee_base = usdc_withdrawn
+    let fee_base = stablecoin_burned
       .checked_add(&fee_amount)
       .context("fee_base overflow")?;
     Ok(SwapOperationOutput {
-      in_amount,
+      in_amount: fee_base,
       out_amount: usdc_withdrawn,
       fee_amount,
-      fee_mint: USDC::MINT,
+      fee_mint: HYUSD::MINT,
       fee_base,
     })
   }
