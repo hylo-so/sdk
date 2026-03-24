@@ -7,6 +7,7 @@ use super::{validate_stability_thresholds, ExchangeContext};
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
   ExoDestinationCollateral, ExoDestinationStablecoin, LevercoinNav,
+  RebalanceAmountExceeded,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
@@ -261,16 +262,18 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_delta)
-      .ok_or(ExoDestinationCollateral)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
-      .ok_or(ExoDestinationStablecoin)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
     let curve = self.rebalance_sell_curve()?;
-    let collateral_usd_price = curve.price(projected_cr)?;
+    let collateral_usd_price = curve
+      .price(projected_cr)
+      .map_err(|_| RebalanceAmountExceeded)?;
     Ok(ExoRebalanceConversion::new(
       collateral_usd_price,
       usdc_usd_price,
@@ -299,7 +302,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .ok_or(ExoDestinationStablecoin)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
     let curve = self.rebalance_buy_curve()?;
-    let collateral_usd_price = curve.price(projected_cr)?;
+    let collateral_usd_price = curve
+      .price(projected_cr)
+      .map_err(|_| RebalanceAmountExceeded)?;
     Ok(ExoRebalanceConversion::new(
       collateral_usd_price,
       usdc_usd_price,

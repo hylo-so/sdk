@@ -166,6 +166,8 @@ pub enum CoreError {
   RebalanceSellInactive,
   #[msg("Buy-side rebalance route is inactive at this CR.")]
   RebalanceBuyInactive,
+  #[msg("Rebalance amount projects CR outside the pricing curve domain.")]
+  RebalanceAmountExceeded,
   // `rebalance_math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,

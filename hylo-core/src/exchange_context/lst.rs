@@ -7,7 +7,7 @@ use super::{validate_stability_thresholds, ExchangeContext};
 use crate::conversion::{Conversion, LstRebalanceConversion};
 use crate::error::CoreError::{
   DestinationFeeSol, DestinationFeeStablecoin, LevercoinNav,
-  NoNextStabilityThreshold,
+  NoNextStabilityThreshold, RebalanceAmountExceeded,
 };
 use crate::exchange_math::{collateral_ratio, max_swappable_stablecoin};
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
@@ -324,21 +324,23 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     .usdc_to_lst(usdc_amount)?;
     let sol_delta = lst_delta
       .mul_div_floor(lst_sol_price, UFix64::one())
-      .ok_or(DestinationFeeSol)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_delta)
-      .ok_or(DestinationFeeSol)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
       .lst_to_token(lst_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
-      .ok_or(DestinationFeeStablecoin)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let projected_cr =
       collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
     let curve = self.rebalance_sell_curve()?;
-    let sol_usd_price = curve.price(projected_cr)?;
+    let sol_usd_price = curve
+      .price(projected_cr)
+      .map_err(|_| Error::from(RebalanceAmountExceeded))?;
     Ok(LstRebalanceConversion::new(
       lst_sol_price,
       sol_usd_price,
@@ -360,21 +362,23 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     let sol_delta = lst_amount
       .mul_div_floor(lst_sol_price, UFix64::one())
-      .ok_or(DestinationFeeSol)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let new_total_sol = self
       .total_sol
       .checked_add(&sol_delta)
-      .ok_or(DestinationFeeSol)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
       .lst_to_token(lst_amount, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_add(&stablecoin_delta)
-      .ok_or(DestinationFeeStablecoin)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let projected_cr =
       collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
     let curve = self.rebalance_buy_curve()?;
-    let sol_usd_price = curve.price(projected_cr)?;
+    let sol_usd_price = curve
+      .price(projected_cr)
+      .map_err(|_| Error::from(RebalanceAmountExceeded))?;
     Ok(LstRebalanceConversion::new(
       lst_sol_price,
       sol_usd_price,
