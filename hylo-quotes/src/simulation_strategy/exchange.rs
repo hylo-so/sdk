@@ -430,10 +430,7 @@ impl<C: SolanaClock> QuoteStrategy<USDC, HYUSD, C> for SimulationStrategy {
   ) -> Result<UsdcMintQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<USDC, HYUSD>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<USDC, HYUSD>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -471,10 +468,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, USDC, C> for SimulationStrategy {
   ) -> Result<SwapQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<HYUSD, USDC>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<HYUSD, USDC>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -512,10 +506,7 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, HYUSD, C> for SimulationStrategy {
   ) -> Result<ExoMintQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<CBBTC, HYUSD>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<CBBTC, HYUSD>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -554,10 +545,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, CBBTC, C> for SimulationStrategy {
   ) -> Result<ExoRedeemQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<HYUSD, CBBTC>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<HYUSD, CBBTC>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -596,10 +584,7 @@ impl<C: SolanaClock> QuoteStrategy<CBBTC, XBTC, C> for SimulationStrategy {
   ) -> Result<ExoMintQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<CBBTC, XBTC>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<CBBTC, XBTC>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -637,10 +622,7 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, CBBTC, C> for SimulationStrategy {
   ) -> Result<ExoRedeemQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<XBTC, CBBTC>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<XBTC, CBBTC>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -678,10 +660,7 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XBTC, C> for SimulationStrategy {
   ) -> Result<SwapQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<HYUSD, XBTC>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<HYUSD, XBTC>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
@@ -719,10 +698,7 @@ impl<C: SolanaClock> QuoteStrategy<XBTC, HYUSD, C> for SimulationStrategy {
   ) -> Result<SwapQuote> {
     let (output, cu_info) = self
       .exchange_client
-      .simulate_output::<XBTC, HYUSD>(
-        user,
-        router_args(amount_in, user, None),
-      )
+      .simulate_output::<XBTC, HYUSD>(user, router_args(amount_in, user, None))
       .await?;
     let args = router_args(
       amount_in,
