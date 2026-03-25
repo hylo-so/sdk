@@ -328,7 +328,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_delta)
-      .ok_or(DestinationCollateral)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
       .lst_to_token(lst_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self

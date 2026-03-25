@@ -262,7 +262,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_delta)
-      .ok_or(DestinationCollateral)?;
+      .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self
