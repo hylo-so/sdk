@@ -50,10 +50,9 @@ pub fn max_buyable_collateral(
 
 #[cfg(test)]
 mod tests {
+  use super::*;
   use anyhow::{Context, Result};
   use proptest::prelude::*;
-
-  use super::*;
 
   const TARGET_CR: UFix64<N9> = UFix64::constant(1_500_000_000);
 

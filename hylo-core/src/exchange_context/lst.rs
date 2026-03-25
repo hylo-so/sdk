@@ -340,7 +340,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let curve = self.rebalance_sell_curve()?;
     let sol_usd_price = curve
       .price(projected_cr)
-      .map_err(|_| Error::from(RebalanceAmountExceeded))?;
+      .map_err(|_| RebalanceAmountExceeded)?;
     Ok(LstRebalanceConversion::new(
       lst_sol_price,
       sol_usd_price,
@@ -378,7 +378,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let curve = self.rebalance_buy_curve()?;
     let sol_usd_price = curve
       .price(projected_cr)
-      .map_err(|_| Error::from(RebalanceAmountExceeded))?;
+      .map_err(|_| RebalanceAmountExceeded)?;
     Ok(LstRebalanceConversion::new(
       lst_sol_price,
       sol_usd_price,
