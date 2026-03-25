@@ -4,6 +4,9 @@ use fix::prelude::*;
 use crate::error::CoreError::InvalidFees;
 use crate::fee_controller::FeeExtract;
 
+/// 100 bps (1%)
+const MAX_FEE: UFix64<N4> = UFix64::constant(100);
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AssetSwapConfig {
   pub fee: UFix64<N4>,
@@ -21,9 +24,8 @@ impl AssetSwapConfig {
     FeeExtract::new(self.fee, amount)
   }
 
-  /// Fee must be greater than zero and less than 100%.
   pub fn validate_fee(fee: UFix64<N4>) -> Result<()> {
-    if fee > UFix64::zero() && fee < UFix64::one() {
+    if fee > UFix64::zero() && fee <= MAX_FEE {
       Ok(())
     } else {
       Err(InvalidFees.into())
