@@ -27,7 +27,8 @@ use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance_math::{max_buyable_collateral, max_sellable_collateral};
 use crate::rebalance_pricing::{
-  BuyPriceCurve, RebalanceCurveConfig, SellPriceCurve, UCR_1_35, UCR_1_65,
+  BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController,
+  SellPriceCurve, UCR_1_35, UCR_1_65,
 };
 use crate::stability_mode::{StabilityController, StabilityMode};
 
@@ -78,6 +79,20 @@ pub trait ExchangeContext {
   /// * Curve construction failure
   fn rebalance_buy_curve(&self) -> Result<BuyPriceCurve> {
     BuyPriceCurve::new(self.collateral_oracle_price(), self.buy_curve_config())
+  }
+
+  /// Returns true if sell-side rebalancing is active at the current CR.
+  fn rebalance_sell_active(&self) -> bool {
+    self
+      .rebalance_sell_curve()
+      .is_ok_and(|c| c.is_active(self.collateral_ratio()))
+  }
+
+  /// Returns true if buy-side rebalancing is active at the current CR.
+  fn rebalance_buy_active(&self) -> bool {
+    self
+      .rebalance_buy_curve()
+      .is_ok_and(|c| c.is_active(self.collateral_ratio()))
   }
 
   /// Available collateral liquidity to sell off for CR rebalancing.
