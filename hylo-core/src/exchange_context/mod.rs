@@ -14,7 +14,7 @@ pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError::{
-  DestinationFeeStablecoin, LevercoinNav, RebalanceBuySideTarget,
+  DestinationStablecoin, LevercoinNav, RebalanceBuySideTarget,
   RebalanceSellSideLiquidity, RequestedStablecoinOverMaxMintable,
   StabilityValidation,
 };
@@ -317,7 +317,7 @@ pub trait ExchangeContext {
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_add(&amount_stablecoin)
-      .ok_or(DestinationFeeStablecoin)?;
+      .ok_or(DestinationStablecoin)?;
     let projected =
       self.projected_stability_mode(self.total_collateral(), new_stablecoin)?;
     let mode = self.select_stability_mode_for_fees(projected);
@@ -336,7 +336,7 @@ pub trait ExchangeContext {
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_sub(&amount_stablecoin)
-      .ok_or(DestinationFeeStablecoin)?;
+      .ok_or(DestinationStablecoin)?;
     let projected =
       self.projected_stability_mode(self.total_collateral(), new_stablecoin)?;
     let mode = self.select_stability_mode_for_fees(projected);

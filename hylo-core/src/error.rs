@@ -89,10 +89,10 @@ pub enum CoreError {
   // `exchange_context`
   #[msg("Arithmetic error or missing data while computing levercoin NAV.")]
   LevercoinNav,
-  #[msg("Over/underflow projecting total SOL.")]
-  DestinationFeeSol,
+  #[msg("Over/underflow projecting total collateral.")]
+  DestinationCollateral,
   #[msg("Over/underflow projecting total stablecoin.")]
-  DestinationFeeStablecoin,
+  DestinationStablecoin,
   #[msg("There is no next stability threshold; current mode is Depeg.")]
   NoNextStabilityThreshold,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
@@ -138,10 +138,6 @@ pub enum CoreError {
   ExoToToken,
   #[msg("Arithmetic error converting protocol token to exo collateral.")]
   ExoFromToken,
-  #[msg("Over/underflow projecting exo collateral total.")]
-  ExoDestinationCollateral,
-  #[msg("Over/underflow projecting stablecoin total for exo.")]
-  ExoDestinationStablecoin,
   // `normalize_mint_exp`
   #[msg("Precision conversion failed while normalizing exo amount to N9.")]
   ExoAmountNormalization,

@@ -14511,6 +14511,16 @@
       "code": 6037,
       "name": "ProtocolPaused",
       "msg": "Protocol operations are paused by admin."
+    },
+    {
+      "code": 6038,
+      "name": "RebalanceSellInactive",
+      "msg": "Sell-side rebalancing is inactive at this CR."
+    },
+    {
+      "code": 6039,
+      "name": "RebalanceBuyInactive",
+      "msg": "Buy-side rebalancing is inactive at this CR."
     }
   ],
   "types": [

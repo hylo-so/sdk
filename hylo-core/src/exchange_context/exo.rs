@@ -6,7 +6,7 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use super::{validate_stability_thresholds, ExchangeContext};
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
-  ExoDestinationCollateral, ExoDestinationStablecoin, LevercoinNav,
+  DestinationCollateral, DestinationStablecoin, LevercoinNav,
   RebalanceAmountExceeded,
 };
 use crate::exchange_math::collateral_ratio;
@@ -156,13 +156,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_add(&collateral_amount)
-      .ok_or(ExoDestinationCollateral)?;
+      .ok_or(DestinationCollateral)?;
     let stablecoin_minted = self
       .exo_conversion()
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
     let new_stablecoin = stablecoin_minted
       .checked_add(&self.virtual_stablecoin_supply()?)
-      .ok_or(ExoDestinationStablecoin)?;
+      .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(
       new_total,
       self.collateral_usd_price.lower,
@@ -184,14 +184,14 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_amount)
-      .ok_or(ExoDestinationCollateral)?;
+      .ok_or(DestinationCollateral)?;
     let stablecoin_redeemed = self
       .exo_conversion()
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
-      .ok_or(ExoDestinationStablecoin)?;
+      .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(
       new_total,
       self.collateral_usd_price.lower,
@@ -213,7 +213,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_add(&collateral_amount)
-      .ok_or(ExoDestinationCollateral)?;
+      .ok_or(DestinationCollateral)?;
     let projected = self
       .projected_stability_mode(new_total, self.virtual_stablecoin_supply()?)?;
     let mode = self.select_stability_mode_for_fees(projected);
@@ -232,7 +232,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_amount)
-      .ok_or(ExoDestinationCollateral)?;
+      .ok_or(DestinationCollateral)?;
     let projected = self
       .projected_stability_mode(new_total, self.virtual_stablecoin_supply()?)?;
     let mode = self.select_stability_mode_for_fees(projected);
@@ -262,13 +262,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_delta)
-      .ok_or(RebalanceAmountExceeded)?;
+      .ok_or(DestinationCollateral)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
-      .ok_or(RebalanceAmountExceeded)?;
+      .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
     let curve = self.rebalance_sell_curve()?;
     let collateral_usd_price = curve
@@ -293,13 +293,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let new_total = self
       .total_collateral
       .checked_add(&collateral_amount)
-      .ok_or(ExoDestinationCollateral)?;
+      .ok_or(DestinationCollateral)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_add(&stablecoin_delta)
-      .ok_or(ExoDestinationStablecoin)?;
+      .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
     let curve = self.rebalance_buy_curve()?;
     let collateral_usd_price = curve
