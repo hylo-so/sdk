@@ -73,6 +73,8 @@ runtime_quote_strategies! {
   (HYLOSOL, JITOSOL, Operation::SwapLstToLst, "Swap hyloSOL to JitoSOL"),
   (HYUSD, SHYUSD, Operation::DepositToStabilityPool, "Deposit hyUSD to Stability Pool"),
   (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
+  (SHYUSD, JITOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for JitoSOL"),
+  (SHYUSD, HYLOSOL, Operation::WithdrawAndRedeemFromStabilityPool, "Withdraw sHYUSD and redeem for hyloSOL"),
   // Exo collateral routes
   (USDC, HYUSD, Operation::MintStablecoinUsdc, "Mint hyUSD with USDC"),
   (HYUSD, USDC, Operation::RedeemStablecoinUsdc, "Redeem hyUSD for USDC"),

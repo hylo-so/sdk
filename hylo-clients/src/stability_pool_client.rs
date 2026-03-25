@@ -6,18 +6,22 @@ use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hylo_idl::stability_pool::client::args;
-use hylo_idl::stability_pool::events::StabilityPoolStats;
+use hylo_idl::stability_pool::events::{StabilityPoolStats, UserWithdrawEvent};
 use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::stability_pool::types::TokenMetadata;
-use hylo_idl::tokens::{HYUSD, SHYUSD};
+use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
+use crate::exchange_client::ExchangeClient;
 use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, StabilityPoolArgs, TransactionSyntax,
+  BuildTransactionData, RedeemArgs, StabilityPoolArgs, TransactionSyntax,
 };
-use crate::util::{EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE};
+use crate::util::{
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
+  STABILITY_POOL_LOOKUP_TABLE,
+};
 
 /// Client for interacting with the Hylo Stability Pool program.
 ///
@@ -188,6 +192,68 @@ impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
       StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(inputs)?;
     let lut_addresses = StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>();
     let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    Ok(VersionedTransactionData::new(instructions, lookup_tables))
+  }
+}
+
+#[async_trait::async_trait]
+impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
+  type Inputs = (ExchangeClient, StabilityPoolArgs);
+
+  async fn build(
+    &self,
+    (exchange, StabilityPoolArgs { amount, user }): (
+      ExchangeClient,
+      StabilityPoolArgs,
+    ),
+  ) -> Result<VersionedTransactionData> {
+    let redeem_shyusd_args = self
+      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
+        amount,
+        user,
+      })
+      .await?;
+    let redeem_shyusd_tx = self
+      .build_simulation_transaction(&user, &redeem_shyusd_args)
+      .await?;
+    let redeem_shyusd_sim = self
+      .simulate_transaction_event::<UserWithdrawEvent>(&redeem_shyusd_tx)
+      .await?;
+    let mut instructions = vec![user_ata_instruction(&user, &OUT::MINT)];
+    instructions.extend(redeem_shyusd_args.instructions);
+
+    // If simulated transaction yields hyUSD, redeem it
+    if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
+      let redeem_hyusd_args = exchange
+        .build_transaction_data::<HYUSD, OUT>(RedeemArgs {
+          amount: redeem_shyusd_sim.stablecoin_withdrawn.try_into()?,
+          user,
+          slippage_config: None,
+        })
+        .await?;
+      instructions.extend(vec![user_ata_instruction(&user, &HYUSD::MINT)]);
+      instructions.extend(redeem_hyusd_args.instructions);
+    }
+
+    // If simulated transaction yields xSOL, redeem it
+    if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
+      let redeem_xsol_args = exchange
+        .build_transaction_data::<XSOL, OUT>(RedeemArgs {
+          amount: redeem_shyusd_sim.levercoin_withdrawn.try_into()?,
+          user,
+          slippage_config: None,
+        })
+        .await?;
+      instructions.extend(vec![user_ata_instruction(&user, &XSOL::MINT)]);
+      instructions.extend(redeem_xsol_args.instructions);
+    }
+    let lookup_tables = self
+      .load_multiple_lookup_tables(&[
+        EXCHANGE_LOOKUP_TABLE,
+        LST_REGISTRY_LOOKUP_TABLE,
+        STABILITY_POOL_LOOKUP_TABLE,
+      ])
+      .await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
