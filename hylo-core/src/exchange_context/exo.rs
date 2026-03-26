@@ -271,9 +271,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
     let curve = self.rebalance_sell_curve()?;
-    let collateral_usd_price = curve
-      .price(projected_cr)
-      .map_err(|_| RebalanceAmountExceeded)?;
+    let collateral_usd_price = curve.price(projected_cr)?;
     Ok(ExoRebalanceConversion::new(
       collateral_usd_price,
       usdc_usd_price,
@@ -302,9 +300,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
     let curve = self.rebalance_buy_curve()?;
-    let collateral_usd_price = curve
-      .price(projected_cr)
-      .map_err(|_| RebalanceAmountExceeded)?;
+    let collateral_usd_price = curve.price(projected_cr)?;
     Ok(ExoRebalanceConversion::new(
       collateral_usd_price,
       usdc_usd_price,

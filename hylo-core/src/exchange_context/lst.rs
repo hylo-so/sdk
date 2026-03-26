@@ -338,9 +338,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let projected_cr =
       collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
     let curve = self.rebalance_sell_curve()?;
-    let sol_usd_price = curve
-      .price(projected_cr)
-      .map_err(|_| RebalanceAmountExceeded)?;
+    let sol_usd_price = curve.price(projected_cr)?;
     Ok(LstRebalanceConversion::new(
       lst_sol_price,
       sol_usd_price,
@@ -376,9 +374,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let projected_cr =
       collateral_ratio(new_total_sol, usd_sol_price, new_stablecoin)?;
     let curve = self.rebalance_buy_curve()?;
-    let sol_usd_price = curve
-      .price(projected_cr)
-      .map_err(|_| RebalanceAmountExceeded)?;
+    let sol_usd_price = curve.price(projected_cr)?;
     Ok(LstRebalanceConversion::new(
       lst_sol_price,
       sol_usd_price,
