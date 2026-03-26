@@ -733,6 +733,12 @@ impl AssetSwapConfig {
 }
 
 
+## Constants
+
+/// 100 bps (1%)
+const MAX_FEE: UFix64 < N4 >;
+
+
 ---
 
 # crate::conversion
@@ -1260,6 +1266,12 @@ impl LevercoinFees {
     pub fn swap_to_stablecoin_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
     pub fn swap_from_stablecoin_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
 }
+
+
+## Constants
+
+/// 1000 bps (10%)
+const MAX_FEE: UFix64 < N4 >;
 
 
 ---
@@ -2153,6 +2165,12 @@ impl HarvestCache {
     pub fn update(& mut self, stability_pool_cap : UFix64 < N6 >, stablecoin_to_pool : UFix64 < N6 >, epoch : u64) -> Result < () >;
     pub fn is_stale(& self, current_epoch : u64) -> bool;
 }
+
+
+## Constants
+
+/// 1000 bps (10%)
+const MAX_FEE: UFix64 < N4 >;
 
 
 ---

@@ -22,6 +22,7 @@ stale = true
 
 [modules."crate::asset_swap_config"]
 note = ""
+stale = true
 
 [modules."crate::codegen"]
 note = "Auto-generated Anchor IDL code for the exchange and stability pool programs."
@@ -501,6 +502,10 @@ removed = true
 
 [items."crate::asset_swap_config::AssetSwapConfig"]
 note = ""
+stale = true
+
+[items."crate::asset_swap_config::MAX_FEE"]
+note = ""
 
 [items."crate::conversion::Conversion"]
 note = "Provides bidirectional price conversion between LST collateral and protocol tokens using oracle prices."
@@ -652,9 +657,13 @@ note = "Constructor that computes fee extraction from a basis-point fee and inpu
 
 [items."crate::fee_controller::FeePair"]
 note = "A mint/redeem fee pair stored as raw UFixValue64 values in basis points."
+stale = true
 
 [items."crate::fee_controller::LevercoinFees"]
 note = "Fee table for levercoin operations with three tiers (normal, mode_1, mode_2) plus swap fees."
+
+[items."crate::fee_controller::MAX_FEE"]
+note = ""
 
 [items."crate::fee_controller::StablecoinFees"]
 note = "Fee table for stablecoin operations with two tiers (normal, mode_1)."
@@ -2056,5 +2065,9 @@ stale = true
 [items."crate::yields::HarvestCache"]
 note = "Records the last epoch's yield harvest: pool cap and stablecoin amount distributed."
 
+[items."crate::yields::MAX_FEE"]
+note = ""
+
 [items."crate::yields::YieldHarvestConfig"]
 note = "Configures what fraction of LST yield is harvested and what fee is taken from harvested yield."
+stale = true

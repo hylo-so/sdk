@@ -235,6 +235,7 @@ InExp                    — used in 4 modules
 Keypair                  — used in 4 modules
 LstSolPrice              — used in 4 modules
 LstSwapOperationOutput   — used in 4 modules
+MAX_FEE                  — used in 4 modules
 MintArgs                 — used in 4 modules
 MintOperationOutput      — used in 4 modules
 OperationOutput          — used in 4 modules
