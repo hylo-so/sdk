@@ -18,9 +18,11 @@ stale = true
 
 [modules."crate::account_metas"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for each Hylo operation type."
+stale = true
 
 [modules."crate::asset_swap_config"]
 note = ""
+stale = true
 
 [modules."crate::codegen"]
 note = "Auto-generated Anchor IDL code for the exchange and stability pool programs."
@@ -76,10 +78,14 @@ stale = true
 
 [modules."crate::instruction_builders"]
 note = "Parent module for low-level Solana instruction builders for exchange and stability pool programs."
+stale = true
 
 [modules."crate::instruction_builders::exchange"]
 note = "Builds raw Solana instructions for all exchange program operations (mint, redeem, swap, admin)."
 stale = true
+
+[modules."crate::instruction_builders::router"]
+note = ""
 
 [modules."crate::instruction_builders::stability_pool"]
 note = "Builds raw Solana instructions for stability pool operations (deposit, withdraw, rebalance, admin)."
@@ -156,10 +162,14 @@ note = "Core trait for computing executable quotes for any typed token pair oper
 
 [modules."crate::rebalance_math"]
 note = ""
+stale = true
 
 [modules."crate::rebalance_pricing"]
 note = ""
 stale = true
+
+[modules."crate::router"]
+note = ""
 
 [modules."crate::runtime_quote_strategy"]
 note = "Macro-generated trait that dispatches runtime Pubkey pairs to compile-time typed QuoteStrategy impls."
@@ -193,6 +203,9 @@ stale = true
 [modules."crate::solana_clock"]
 note = "Abstraction trait over Solana's on-chain Clock sysvar for testability."
 stale = true
+
+[modules."crate::spl_stake_pool"]
+note = ""
 
 [modules."crate::stability_mode"]
 note = "Defines protocol stability modes (Normal, Mode1, Mode2, Depeg) based on collateral ratio thresholds."
@@ -274,85 +287,149 @@ note = "Marks HYLOSOL as a local type for trait impl coherence in hylo-quotes."
 [items."crate::Local for JITOSOL"]
 note = "Marks JITOSOL as a local type for trait impl coherence in hylo-quotes."
 
+[items."crate::account_builders::exchange::convert_lever_to_stable_exo"]
+note = ""
+
+[items."crate::account_builders::exchange::convert_lever_to_stable_lst"]
+note = ""
+
+[items."crate::account_builders::exchange::convert_stable_to_lever_exo"]
+note = ""
+
+[items."crate::account_builders::exchange::convert_stable_to_lever_lst"]
+note = ""
+
 [items."crate::account_builders::exchange::harvest_funding_rate"]
 note = ""
 stale = true
 
 [items."crate::account_builders::exchange::initialize_usdc"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::mint_levercoin"]
 note = "Builds the Anchor account context for minting levercoin (xSOL) from LST collateral."
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::mint_levercoin_exo"]
 note = ""
 stale = true
 
+[items."crate::account_builders::exchange::mint_levercoin_lst"]
+note = ""
+
 [items."crate::account_builders::exchange::mint_stablecoin"]
 note = "Builds the Anchor account context for minting stablecoin (hyUSD) from LST collateral."
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::mint_stablecoin_exo"]
 note = ""
 stale = true
 
+[items."crate::account_builders::exchange::mint_stablecoin_lst"]
+note = ""
+
+[items."crate::account_builders::exchange::mint_stablecoin_usdc"]
+note = ""
+
 [items."crate::account_builders::exchange::redeem_levercoin"]
 note = "Builds the Anchor account context for redeeming levercoin (xSOL) back to LST."
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::redeem_levercoin_exo"]
 note = ""
 stale = true
 
+[items."crate::account_builders::exchange::redeem_levercoin_lst"]
+note = ""
+
 [items."crate::account_builders::exchange::redeem_stablecoin"]
 note = "Builds the Anchor account context for redeeming stablecoin (hyUSD) back to LST."
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::redeem_stablecoin_exo"]
 note = ""
 stale = true
 
+[items."crate::account_builders::exchange::redeem_stablecoin_lst"]
+note = ""
+
+[items."crate::account_builders::exchange::redeem_stablecoin_usdc"]
+note = ""
+
 [items."crate::account_builders::exchange::register_exo"]
 note = "Builds the Anchor account context for registering a new exogenous collateral pair."
 stale = true
 
+[items."crate::account_builders::exchange::swap_exo_to_usdc"]
+note = ""
+
 [items."crate::account_builders::exchange::swap_exo_usdc"]
 note = ""
+removed = true
 
 [items."crate::account_builders::exchange::swap_lever_to_stable"]
 note = "Builds the Anchor account context for swapping levercoin (xSOL) to stablecoin (hyUSD)."
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::swap_lever_to_stable_exo"]
 note = ""
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::swap_lst"]
 note = "Builds the Anchor account context for swapping between two LST types."
 stale = true
+removed = true
+
+[items."crate::account_builders::exchange::swap_lst_to_lst"]
+note = ""
+
+[items."crate::account_builders::exchange::swap_lst_to_usdc"]
+note = ""
 
 [items."crate::account_builders::exchange::swap_lst_usdc"]
 note = ""
+removed = true
 
 [items."crate::account_builders::exchange::swap_stable_to_lever"]
 note = "Builds the Anchor account context for swapping stablecoin (hyUSD) to levercoin (xSOL)."
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::swap_stable_to_lever_exo"]
 note = ""
 stale = true
+removed = true
 
 [items."crate::account_builders::exchange::swap_stablecoin_to_usdc"]
 note = ""
+removed = true
 
 [items."crate::account_builders::exchange::swap_usdc_exo"]
 note = ""
+removed = true
 
 [items."crate::account_builders::exchange::swap_usdc_lst"]
 note = ""
+removed = true
+
+[items."crate::account_builders::exchange::swap_usdc_to_exo"]
+note = ""
+
+[items."crate::account_builders::exchange::swap_usdc_to_lst"]
+note = ""
 
 [items."crate::account_builders::exchange::swap_usdc_to_stablecoin"]
+note = ""
+removed = true
+
+[items."crate::account_builders::exchange::update_lst_rebalance_fee"]
 note = ""
 
 [items."crate::account_builders::exchange::withdraw_fees"]
@@ -367,37 +444,67 @@ stale = true
 note = "Builds the Anchor account context for withdrawing sHYUSD from the stability pool."
 stale = true
 
+[items."crate::account_metas::convert_lever_to_stable_lst"]
+note = ""
+
+[items."crate::account_metas::convert_stable_to_lever_lst"]
+note = ""
+
 [items."crate::account_metas::mint_levercoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for minting levercoin from LST."
+removed = true
+
+[items."crate::account_metas::mint_levercoin_lst"]
+note = ""
 
 [items."crate::account_metas::mint_stablecoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for minting stablecoin from LST."
+removed = true
+
+[items."crate::account_metas::mint_stablecoin_lst"]
+note = ""
 
 [items."crate::account_metas::redeem_levercoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for redeeming levercoin to LST."
+removed = true
+
+[items."crate::account_metas::redeem_levercoin_lst"]
+note = ""
 
 [items."crate::account_metas::redeem_stablecoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for redeeming stablecoin to LST."
+removed = true
+
+[items."crate::account_metas::redeem_stablecoin_lst"]
+note = ""
 
 [items."crate::account_metas::stability_pool_deposit"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for depositing hyUSD into the stability pool."
 
 [items."crate::account_metas::stability_pool_liquidate"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for withdrawing and redeeming stablecoin from the stability pool to LST."
+stale = true
 
 [items."crate::account_metas::stability_pool_liquidate_levercoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for fully liquidating a stability pool position to LST via both hyUSD and xSOL."
+stale = true
 
 [items."crate::account_metas::stability_pool_withdraw"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for withdrawing sHYUSD from the stability pool."
 
 [items."crate::account_metas::swap_lever_to_stable"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for swapping xSOL to hyUSD."
+removed = true
 
 [items."crate::account_metas::swap_stable_to_lever"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for swapping hyUSD to xSOL."
+removed = true
 
 [items."crate::asset_swap_config::AssetSwapConfig"]
+note = ""
+stale = true
+
+[items."crate::asset_swap_config::MAX_FEE"]
 note = ""
 
 [items."crate::conversion::Conversion"]
@@ -410,9 +517,11 @@ stale = true
 
 [items."crate::conversion::ExoRebalanceConversion"]
 note = ""
+stale = true
 
 [items."crate::conversion::LstRebalanceConversion"]
 note = ""
+stale = true
 
 [items."crate::conversion::SwapConversion"]
 note = "Converts between stablecoin and levercoin using their respective NAVs."
@@ -548,9 +657,13 @@ note = "Constructor that computes fee extraction from a basis-point fee and inpu
 
 [items."crate::fee_controller::FeePair"]
 note = "A mint/redeem fee pair stored as raw UFixValue64 values in basis points."
+stale = true
 
 [items."crate::fee_controller::LevercoinFees"]
 note = "Fee table for levercoin operations with three tiers (normal, mode_1, mode_2) plus swap fees."
+
+[items."crate::fee_controller::MAX_FEE"]
+note = ""
 
 [items."crate::fee_controller::StablecoinFees"]
 note = "Fee table for stablecoin operations with two tiers (normal, mode_1)."
@@ -613,6 +726,18 @@ note = ""
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig"]
 note = "Converts IDL YieldHarvestConfig into the core domain type."
 
+[items."crate::instruction_builders::exchange::convert_lever_to_stable_exo"]
+note = ""
+
+[items."crate::instruction_builders::exchange::convert_lever_to_stable_lst"]
+note = ""
+
+[items."crate::instruction_builders::exchange::convert_stable_to_lever_exo"]
+note = ""
+
+[items."crate::instruction_builders::exchange::convert_stable_to_lever_lst"]
+note = ""
+
 [items."crate::instruction_builders::exchange::get_stats"]
 note = ""
 
@@ -636,6 +761,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::initialize_mints"]
 note = "Builds the instruction to create hyUSD, xSOL, and related token mint accounts."
+stale = true
 
 [items."crate::instruction_builders::exchange::initialize_protocol"]
 note = "Builds the instruction to initialize the Hylo exchange program with admin settings."
@@ -645,26 +771,48 @@ note = ""
 
 [items."crate::instruction_builders::exchange::mint_levercoin"]
 note = "Builds the mint_levercoin instruction depositing LST collateral for xSOL."
+removed = true
 
 [items."crate::instruction_builders::exchange::mint_levercoin_exo"]
 note = ""
 
+[items."crate::instruction_builders::exchange::mint_levercoin_lst"]
+note = ""
+
 [items."crate::instruction_builders::exchange::mint_stablecoin"]
 note = "Builds the mint_stablecoin instruction depositing LST collateral for hyUSD."
+removed = true
 
 [items."crate::instruction_builders::exchange::mint_stablecoin_exo"]
 note = ""
 
+[items."crate::instruction_builders::exchange::mint_stablecoin_lst"]
+note = ""
+
+[items."crate::instruction_builders::exchange::mint_stablecoin_usdc"]
+note = ""
+
 [items."crate::instruction_builders::exchange::redeem_levercoin"]
 note = "Builds the redeem_levercoin instruction burning xSOL to withdraw LST."
+removed = true
 
 [items."crate::instruction_builders::exchange::redeem_levercoin_exo"]
 note = ""
 
+[items."crate::instruction_builders::exchange::redeem_levercoin_lst"]
+note = ""
+
 [items."crate::instruction_builders::exchange::redeem_stablecoin"]
 note = "Builds the redeem_stablecoin instruction burning hyUSD to withdraw LST."
+removed = true
 
 [items."crate::instruction_builders::exchange::redeem_stablecoin_exo"]
+note = ""
+
+[items."crate::instruction_builders::exchange::redeem_stablecoin_lst"]
+note = ""
+
+[items."crate::instruction_builders::exchange::redeem_stablecoin_usdc"]
 note = ""
 
 [items."crate::instruction_builders::exchange::register_exo"]
@@ -675,38 +823,64 @@ stale = true
 note = "Builds the register_lst instruction to add a new LST to the registry with its Sanctum calculator."
 stale = true
 
+[items."crate::instruction_builders::exchange::swap_exo_to_usdc"]
+note = ""
+
 [items."crate::instruction_builders::exchange::swap_exo_usdc"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_lever_to_stable"]
 note = "Builds the swap_lever_to_stable instruction converting xSOL to hyUSD."
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_lever_to_stable_exo"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_lst"]
 note = "Builds the swap_lst instruction for direct LST-to-LST conversion."
+removed = true
+
+[items."crate::instruction_builders::exchange::swap_lst_to_lst"]
+note = ""
+
+[items."crate::instruction_builders::exchange::swap_lst_to_usdc"]
+note = ""
 
 [items."crate::instruction_builders::exchange::swap_lst_usdc"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_stable_to_lever"]
 note = "Builds the swap_stable_to_lever instruction converting hyUSD to xSOL."
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_stable_to_lever_exo"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_stablecoin_to_usdc"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_usdc_exo"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::swap_usdc_lst"]
+note = ""
+removed = true
+
+[items."crate::instruction_builders::exchange::swap_usdc_to_exo"]
+note = ""
+
+[items."crate::instruction_builders::exchange::swap_usdc_to_lst"]
 note = ""
 
 [items."crate::instruction_builders::exchange::swap_usdc_to_stablecoin"]
 note = ""
+removed = true
 
 [items."crate::instruction_builders::exchange::update_admin"]
 note = ""
@@ -752,6 +926,9 @@ note = ""
 note = "Builds the instruction to refresh all LST-SOL prices from the Sanctum calculators."
 stale = true
 
+[items."crate::instruction_builders::exchange::update_lst_rebalance_fee"]
+note = ""
+
 [items."crate::instruction_builders::exchange::update_lst_sell_curve_config"]
 note = ""
 
@@ -766,6 +943,9 @@ stale = true
 [items."crate::instruction_builders::exchange::update_oracle_interval"]
 note = ""
 stale = true
+
+[items."crate::instruction_builders::exchange::update_paused"]
+note = ""
 
 [items."crate::instruction_builders::exchange::update_sol_usd_oracle"]
 note = "Builds the admin instruction to update the SOL/USD oracle configuration."
@@ -803,12 +983,16 @@ stale = true
 [items."crate::instruction_builders::exchange::withdraw_fees"]
 note = ""
 
+[items."crate::instruction_builders::router::route"]
+note = ""
+
 [items."crate::instruction_builders::stability_pool::get_stats"]
 note = "Builds the instruction to query stability pool statistics via simulation."
 stale = true
 
 [items."crate::instruction_builders::stability_pool::initialize_lp_token_mint"]
 note = "Builds the instruction to create the sHYUSD LP token mint."
+stale = true
 
 [items."crate::instruction_builders::stability_pool::initialize_stability_pool"]
 note = "Builds the instruction to initialize the stability pool program."
@@ -843,21 +1027,26 @@ note = "Trait for statically type-safe instruction building: given token pair ty
 
 [items."crate::instructions::InstructionBuilder < HYUSD , L > for ExchangeInstructionBuilder"]
 note = "Builds redeem stablecoin instructions for hyUSD -> any LST."
+stale = true
 
 [items."crate::instructions::InstructionBuilder < HYUSD , SHYUSD > for StabilityPoolInstructionBuilder"]
 note = "Builds deposit instructions for hyUSD -> sHYUSD."
 
 [items."crate::instructions::InstructionBuilder < HYUSD , XSOL > for ExchangeInstructionBuilder"]
 note = "Builds swap instructions for hyUSD -> xSOL."
+stale = true
 
 [items."crate::instructions::InstructionBuilder < L , HYUSD > for ExchangeInstructionBuilder"]
 note = "Builds mint stablecoin instructions for any LST -> hyUSD."
+stale = true
 
 [items."crate::instructions::InstructionBuilder < L , XSOL > for ExchangeInstructionBuilder"]
 note = "Builds mint levercoin instructions for any LST -> xSOL."
+stale = true
 
 [items."crate::instructions::InstructionBuilder < L1 , L2 > for ExchangeInstructionBuilder"]
 note = "Builds LST-to-LST swap instructions."
+stale = true
 
 [items."crate::instructions::InstructionBuilder < SHYUSD , HYUSD > for StabilityPoolInstructionBuilder"]
 note = "Builds withdrawal instructions for sHYUSD -> hyUSD."
@@ -865,9 +1054,11 @@ stale = true
 
 [items."crate::instructions::InstructionBuilder < XSOL , HYUSD > for ExchangeInstructionBuilder"]
 note = "Builds swap instructions for xSOL -> hyUSD."
+stale = true
 
 [items."crate::instructions::InstructionBuilder < XSOL , L > for ExchangeInstructionBuilder"]
 note = "Builds redeem levercoin instructions for xSOL -> any LST."
+stale = true
 
 [items."crate::instructions::StabilityPoolInstructionBuilder"]
 note = "Zero-sized type implementing InstructionBuilder for stability pool deposit and withdrawal."
@@ -934,21 +1125,26 @@ note = "Trait providing pair-specific configuration: program ID, label, quoting,
 
 [items."crate::jupiter::PairConfig < HYLOSOL , HYUSD > for HyloJupiterPair < HYLOSOL , HYUSD >"]
 note = "Jupiter pair config for HYLOSOL/hyUSD mint and redeem routes."
+stale = true
 
 [items."crate::jupiter::PairConfig < HYLOSOL , XSOL > for HyloJupiterPair < HYLOSOL , XSOL >"]
 note = "Jupiter pair config for HYLOSOL/xSOL mint and redeem routes."
+stale = true
 
 [items."crate::jupiter::PairConfig < HYUSD , SHYUSD > for HyloJupiterPair < HYUSD , SHYUSD >"]
 note = "Jupiter pair config for hyUSD/sHYUSD stability pool deposit and withdrawal."
 
 [items."crate::jupiter::PairConfig < HYUSD , XSOL > for HyloJupiterPair < HYUSD , XSOL >"]
 note = "Jupiter pair config for hyUSD/xSOL swap routes."
+stale = true
 
 [items."crate::jupiter::PairConfig < JITOSOL , HYUSD > for HyloJupiterPair < JITOSOL , HYUSD >"]
 note = "Jupiter pair config for JITOSOL/hyUSD mint and redeem routes."
+stale = true
 
 [items."crate::jupiter::PairConfig < JITOSOL , XSOL > for HyloJupiterPair < JITOSOL , XSOL >"]
 note = "Jupiter pair config for JITOSOL/xSOL mint and redeem routes."
+stale = true
 
 [items."crate::jupiter::{...}"]
 note = "Re-exports HyloJupiterPair and PairConfig from the jupiter module."
@@ -1021,6 +1217,12 @@ note = "Derives the PDA for an exogenous pair's levercoin mint given its collate
 [items."crate::pda::exo_pair"]
 note = "Derives the PDA for an exogenous collateral pair's state account."
 
+[items."crate::pda::exo_vault"]
+note = ""
+
+[items."crate::pda::exo_vault_auth"]
+note = ""
+
 [items."crate::pda::fee_auth"]
 note = "Derives the PDA for a token's fee authority."
 
@@ -1035,6 +1237,12 @@ note = "Macro for lazily computing and caching PDAs using LazyLock."
 
 [items."crate::pda::lst_header"]
 note = "Derives the PDA for an LST's header account in the registry."
+
+[items."crate::pda::lst_vault"]
+note = ""
+
+[items."crate::pda::lst_vault_auth"]
+note = ""
 
 [items."crate::pda::metadata"]
 note = "Derives the Metaplex token metadata PDA for a given mint."
@@ -1054,11 +1262,19 @@ note = "Derives the sHYUSD Associated Token Account for a given authority."
 [items."crate::pda::usdc_ata"]
 note = ""
 
+[items."crate::pda::usdc_vault"]
+note = ""
+
+[items."crate::pda::usdc_vault_auth"]
+note = ""
+
 [items."crate::pda::vault"]
 note = "Derives the PDA for a token's vault account."
+removed = true
 
 [items."crate::pda::vault_auth"]
 note = "Derives the PDA for a token vault's authority."
+removed = true
 
 [items."crate::pda::xsol_ata"]
 note = "Derives the xSOL Associated Token Account for a given authority."
@@ -1320,9 +1536,11 @@ note = "Core async trait: given amount, user, and slippage, produces a typed Exe
 
 [items."crate::rebalance_math::max_buyable_collateral"]
 note = ""
+stale = true
 
 [items."crate::rebalance_math::max_sellable_collateral"]
 note = ""
+stale = true
 
 [items."crate::rebalance_pricing::BuyPriceCurve"]
 note = ""
@@ -1346,16 +1564,25 @@ stale = true
 
 [items."crate::rebalance_pricing::RebalancePriceController"]
 note = ""
+stale = true
 
 [items."crate::rebalance_pricing::RebalancePriceController for BuyPriceCurve"]
 note = ""
+stale = true
 
 [items."crate::rebalance_pricing::RebalancePriceController for SellPriceCurve"]
 note = ""
+stale = true
 
 [items."crate::rebalance_pricing::SellPriceCurve"]
 note = ""
 stale = true
+
+[items."crate::rebalance_pricing::UCR_1_35"]
+note = ""
+
+[items."crate::rebalance_pricing::UCR_1_65"]
+note = ""
 
 [items."crate::rebalance_pricing::narrow_cr"]
 note = ""
@@ -1367,6 +1594,12 @@ stale = true
 [items."crate::rebalance_pricing::scale_ci"]
 note = ""
 stale = true
+
+[items."crate::router::super::codegen::hylo_router::*"]
+note = ""
+
+[items."crate::router::super::instruction_builders::instruction_builders"]
+note = ""
 
 [items."crate::runtime_quote_strategy::RuntimeQuoteStrategy"]
 note = "Trait for runtime dispatch from Pubkey mint pairs to typed QuoteStrategy implementations."
@@ -1503,6 +1736,21 @@ note = "Implements SolanaClock for Solana's native Clock type."
 
 [items."crate::solana_clock::SolanaClock for ClockRef"]
 note = "Implements SolanaClock for the serializable ClockRef wrapper."
+
+[items."crate::spl_stake_pool::LAST_UPDATE_EPOCH_OFFSET"]
+note = ""
+
+[items."crate::spl_stake_pool::POOL_TOKEN_SUPPLY_OFFSET"]
+note = ""
+
+[items."crate::spl_stake_pool::SplStakePool"]
+note = ""
+
+[items."crate::spl_stake_pool::TOTAL_LAMPORTS_OFFSET"]
+note = ""
+
+[items."crate::spl_stake_pool::U64_SIZE"]
+note = ""
 
 [items."crate::stability_mode::Display for StabilityMode"]
 note = "Human-readable display formatting for stability mode variants."
@@ -1645,6 +1893,15 @@ note = "Type-safe marker for the JITOSOL liquid staking token (N9 precision)."
 [items."crate::tokens::SHYUSD"]
 note = "Type-safe marker for the sHYUSD stability pool LP token (N6 precision)."
 
+[items."crate::tokens::StakePool"]
+note = ""
+
+[items."crate::tokens::StakePool for HYLOSOL"]
+note = ""
+
+[items."crate::tokens::StakePool for JITOSOL"]
+note = ""
+
 [items."crate::tokens::TokenMint"]
 note = "Trait associating a token with its mint Pubkey and decimal precision exponent type."
 
@@ -1666,10 +1923,16 @@ note = "Associates SHYUSD with its mint address and N6 exponent."
 [items."crate::tokens::TokenMint for USDC"]
 note = ""
 
+[items."crate::tokens::TokenMint for XBTC"]
+note = ""
+
 [items."crate::tokens::TokenMint for XSOL"]
 note = "Associates XSOL with its mint address and N6 exponent."
 
 [items."crate::tokens::USDC"]
+note = ""
+
+[items."crate::tokens::XBTC"]
 note = ""
 
 [items."crate::tokens::XSOL"]
@@ -1719,6 +1982,7 @@ note = "Pubkey of the address lookup table for exchange program instructions."
 
 [items."crate::util::LST"]
 note = "Marker trait for liquid staking tokens, requiring N9 decimal precision."
+stale = true
 
 [items."crate::util::LST for HYLOSOL"]
 note = "Marks HYLOSOL as a valid LST collateral type."
@@ -1801,5 +2065,9 @@ stale = true
 [items."crate::yields::HarvestCache"]
 note = "Records the last epoch's yield harvest: pool cap and stablecoin amount distributed."
 
+[items."crate::yields::MAX_FEE"]
+note = ""
+
 [items."crate::yields::YieldHarvestConfig"]
 note = "Configures what fraction of LST yield is harvested and what fee is taken from harvested yield."
+stale = true

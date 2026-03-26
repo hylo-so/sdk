@@ -86,10 +86,10 @@ impl ProgramClient for ExchangeClient {
 // NOTE: Anchor-based RPC client for the Hylo Exchange program, supporting mint/redeem/swap and admin operations.
 impl ExchangeClient {
     pub fn initialize_protocol(& self, upgrade_authority : Pubkey, treasury : Pubkey, args : & args :: InitializeProtocol) -> Result < VersionedTransactionData >;
-    pub fn initialize_mints(& self) -> Result < VersionedTransactionData >;
+    pub fn initialize_mints(& self, stablecoin_metadata : TokenMetadata, levercoin_metadata : TokenMetadata) -> Result < VersionedTransactionData >;
     pub fn initialize_lst_registry(& self, slot : u64) -> Result < VersionedTransactionData >;
     pub fn initialize_lst_registry_calculators(& self, lst_registry : Pubkey) -> Result < VersionedTransactionData >;
-    pub fn register_lst(& self, lst_registry : Pubkey, lst_mint : Pubkey, lst_stake_pool_state : Pubkey, sanctum_calculator_program : Pubkey, sanctum_calculator_state : Pubkey, stake_pool_program : Pubkey, stake_pool_program_data : Pubkey) -> Result < VersionedTransactionData >;
+    pub fn register_lst(& self, lst_registry : Pubkey, lst_mint : Pubkey, lst_stake_pool_state : Pubkey, sanctum_calculator_program : Pubkey, sanctum_calculator_state : Pubkey, stake_pool_program : Pubkey, stake_pool_program_data : Pubkey, rebalance_fee : UFixValue64) -> Result < VersionedTransactionData >;
     pub async fn update_lst_prices(& self) -> Result < VersionedTransactionData >;
     pub async fn harvest_yield(& self) -> Result < VersionedTransactionData >;
     pub async fn get_stats(& self) -> Result < ExchangeStats >;
@@ -452,7 +452,7 @@ impl StabilityPoolClient {
     pub async fn rebalance_lever_to_stable(& self) -> Result < Signature >;
     pub async fn get_stats(& self) -> Result < StabilityPoolStats >;
     pub fn initialize_stability_pool(& self, upgrade_authority : Pubkey) -> Result < VersionedTransactionData >;
-    pub fn initialize_lp_token_mint(& self) -> Result < VersionedTransactionData >;
+    pub fn initialize_lp_token_mint(& self, lp_token_metadata : TokenMetadata) -> Result < VersionedTransactionData >;
     pub fn update_withdrawal_fee(& self, args : & args :: UpdateWithdrawalFee) -> Result < VersionedTransactionData >;
 }
 
@@ -603,7 +603,7 @@ pub trait TransactionSyntax {
 ## Traits
 
 // NOTE: Marker trait for liquid staking tokens, requiring N9 decimal precision.
-pub trait LST: TokenMint < Exp = N9 > {
+pub trait LST: StakePool {
 
 }
 
@@ -733,6 +733,12 @@ impl AssetSwapConfig {
 }
 
 
+## Constants
+
+/// 100 bps (1%)
+const MAX_FEE: UFix64 < N4 >;
+
+
 ---
 
 # crate::conversion
@@ -757,7 +763,7 @@ pub struct SwapConversion {
 /// Conversions between an exogenous collateral and protocol tokens.
 // NOTE: Provides bidirectional price conversion between exogenous collateral and protocol tokens.
 pub struct ExoConversion {
-    pub collateral_usd_price: PriceRange < N9 >,
+    collateral_usd_price: PriceRange < N9 >,
 }
 
 /// Directional conversion between USDC and stablecoin amounts.
@@ -767,15 +773,15 @@ pub struct UsdcStablecoinConversion {
 
 /// Conversions between exogenous collateral and USDC via oracle prices.
 pub struct ExoRebalanceConversion {
-    pub collateral_rebalance_usd_price: UFix64 < N9 >,
-    pub usdc_usd_price: PriceRange < N9 >,
+    collateral_usd_price: UFix64 < N9 >,
+    usdc_usd_price: PriceRange < N9 >,
 }
 
 /// Conversions between LST and USDC via SOL for rebalancing.
 pub struct LstRebalanceConversion {
-    pub lst_sol_price: UFix64 < N9 >,
-    pub sol_rebalance_usd_price: UFix64 < N9 >,
-    pub usdc_usd_price: PriceRange < N9 >,
+    lst_sol: UFix64 < N9 >,
+    sol_usd: UFix64 < N9 >,
+    usdc_usd: PriceRange < N9 >,
 }
 
 
@@ -784,6 +790,7 @@ pub struct LstRebalanceConversion {
 // NOTE: Provides bidirectional price conversion between LST collateral and protocol tokens using oracle prices.
 impl Conversion {
     pub fn new(usd_sol_price : PriceRange < N9 >, lst_sol_price : UFix64 < N9 >) -> Self;
+    pub fn spot(usd_sol_price : UFix64 < N9 >, lst_sol_price : UFix64 < N9 >) -> Conversion;
     pub fn lst_to_token(& self, amount_lst : UFix64 < N9 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
     pub fn token_to_lst(& self, amount_token : UFix64 < N6 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 }
@@ -803,6 +810,8 @@ impl SwapConversion {
 
 // NOTE: Provides bidirectional price conversion between exogenous collateral and protocol tokens.
 impl ExoConversion {
+    pub fn new(collateral_usd_price : PriceRange < N9 >) -> ExoConversion;
+    pub fn spot(collateral_usd_price : UFix64 < N9 >) -> ExoConversion;
     pub fn exo_to_token(& self, amount : UFix64 < N9 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
     pub fn token_to_exo(& self, amount : UFix64 < N6 >, token_nav : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 }
@@ -820,6 +829,7 @@ impl UsdcStablecoinConversion {
 ## Impl ExoRebalanceConversion
 
 impl ExoRebalanceConversion {
+    pub fn new(collateral_usd_price : UFix64 < N9 >, usdc_usd_price : PriceRange < N9 >) -> ExoRebalanceConversion;
     pub fn collateral_to_usdc(& self, collateral_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
     pub fn usdc_to_collateral(& self, usdc_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 }
@@ -828,6 +838,7 @@ impl ExoRebalanceConversion {
 ## Impl LstRebalanceConversion
 
 impl LstRebalanceConversion {
+    pub fn new(lst_sol : UFix64 < N9 >, sol_usd : UFix64 < N9 >, usdc_usd : PriceRange < N9 >) -> LstRebalanceConversion;
     pub fn lst_to_usdc(& self, lst_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
     pub fn usdc_to_lst(& self, usdc_amount : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
 }
@@ -881,8 +892,8 @@ pub enum CoreError {
     NoValidSwapFee,
     InvalidFees,
     LevercoinNav,
-    DestinationFeeSol,
-    DestinationFeeStablecoin,
+    DestinationCollateral,
+    DestinationStablecoin,
     NoNextStabilityThreshold,
     RequestedStablecoinOverMaxMintable,
     LpTokenNav,
@@ -902,8 +913,6 @@ pub enum CoreError {
     FundingRateApply,
     ExoToToken,
     ExoFromToken,
-    ExoDestinationCollateral,
-    ExoDestinationStablecoin,
     ExoAmountNormalization,
     ExoCollateralToUsdc,
     ExoUsdcToCollateral,
@@ -912,10 +921,11 @@ pub enum CoreError {
     RebalanceCurveConfigValidation,
     RebalancePriceConstruction,
     RebalancePriceConversion,
-    RebalanceSellInactive,
-    RebalanceBuyInactive,
+    RebalanceOutOfDomain,
+    RebalanceAmountExceeded,
     RebalanceSellSideLiquidity,
     RebalanceBuySideTarget,
+    StakePoolDivByZero,
 }
 
 
@@ -936,6 +946,8 @@ pub trait ExchangeContext {
     fn buy_curve_config(& self) -> & RebalanceCurveConfig;
     fn rebalance_sell_curve(& self) -> Result < SellPriceCurve >;
     fn rebalance_buy_curve(& self) -> Result < BuyPriceCurve >;
+    fn rebalance_sell_active(& self) -> bool;
+    fn rebalance_buy_active(& self) -> bool;
     fn rebalance_sell_liquidity(& self) -> Result < UFix64 < N9 > >;
     fn rebalance_buy_target(& self) -> Result < UFix64 < N9 > >;
     fn virtual_stablecoin_supply(& self) -> Result < UFix64 < N6 > >;
@@ -1033,8 +1045,8 @@ impl < C : SolanaClock >ExoExchangeContext < C > {
     pub fn levercoin_mint_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn levercoin_redeem_fee(& self, collateral_amount : UFix64 < N9 >) -> Result < FeeExtract < N9 > >;
     pub fn exo_conversion(& self) -> ExoConversion;
-    pub fn rebalance_sell_conversion(& self, usdc_usd_price : PriceRange < N9 >) -> Result < ExoRebalanceConversion >;
-    pub fn rebalance_buy_conversion(& self, usdc_usd_price : PriceRange < N9 >) -> Result < ExoRebalanceConversion >;
+    pub fn rebalance_sell_conversion(& self, usdc_usd_price : PriceRange < N9 >, usdc_amount : UFix64 < N9 >) -> Result < ExoRebalanceConversion >;
+    pub fn rebalance_buy_conversion(& self, usdc_usd_price : PriceRange < N9 >, collateral_amount : UFix64 < N9 >) -> Result < ExoRebalanceConversion >;
 }
 
 
@@ -1095,8 +1107,8 @@ impl < C : SolanaClock >LstExchangeContext < C > {
     pub fn token_conversion(& self, lst_sol_price : & LstSolPrice) -> Result < Conversion >;
     pub fn sol_to_stablecoin(& self, amount_sol : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
     pub fn sol_to_levercoin(& self, amount_sol : UFix64 < N9 >) -> Result < UFix64 < N6 > >;
-    pub fn rebalance_sell_conversion(& self, lst_sol_price : & LstSolPrice, usdc_usd_price : PriceRange < N9 >) -> Result < LstRebalanceConversion >;
-    pub fn rebalance_buy_conversion(& self, lst_sol_price : & LstSolPrice, usdc_usd_price : PriceRange < N9 >) -> Result < LstRebalanceConversion >;
+    pub fn rebalance_sell_conversion(& self, lst_sol_price : & LstSolPrice, usdc_usd_price : PriceRange < N9 >, usdc_amount : UFix64 < N9 >) -> Result < LstRebalanceConversion >;
+    pub fn rebalance_buy_conversion(& self, lst_sol_price : & LstSolPrice, usdc_usd_price : PriceRange < N9 >, lst_amount : UFix64 < N9 >) -> Result < LstRebalanceConversion >;
     pub fn max_swappable_stablecoin_to_next_threshold(& self) -> Result < UFix64 < N6 > >;
 }
 
@@ -1254,6 +1266,12 @@ impl LevercoinFees {
     pub fn swap_to_stablecoin_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
     pub fn swap_from_stablecoin_fee(& self, mode : StabilityMode) -> Result < UFix64 < N4 > >;
 }
+
+
+## Constants
+
+/// 1000 bps (10%)
+const MAX_FEE: UFix64 < N4 >;
 
 
 ---
@@ -1553,6 +1571,7 @@ pub struct LstSolPrice {
 // NOTE: Tracks an LST's SOL exchange rate for a specific epoch, with staleness and delta validation.
 impl LstSolPrice {
     pub fn new(price : UFixValue64, epoch : u64) -> LstSolPrice;
+    pub fn adjust_price(& self, fee : UFix64 < N5 >) -> Result < LstSolPrice >;
     pub fn checked_delta(& self, prev : & LstSolPrice) -> Result < UFix64 < N9 > >;
     pub fn get_epoch_price(& self, current_epoch : u64) -> Result < UFix64 < N9 > >;
     pub fn convert_lst_to_sol(& self, amount_lst : UFix64 < N9 >, current_epoch : u64) -> Result < UFix64 < N9 > >;
@@ -1696,7 +1715,7 @@ pub const USDC_USD: PythFeed;
 ///   ────────────────────────────────────────────────────────────────────────
 ///                  collateral_usd_price * (target_cr - 1)
 /// ```
-pub fn max_sellable_collateral(target_cr : UFix64 < N2 >, virtual_stablecoin : UFix64 < N6 >, collateral_usd_price : UFix64 < N9 >, total_collateral : UFix64 < N9 >) -> Option < UFix64 < N9 > >;
+pub fn max_sellable_collateral(target_cr : UFix64 < N9 >, virtual_stablecoin : UFix64 < N6 >, collateral_usd_price : UFix64 < N9 >, total_collateral : UFix64 < N9 >) -> Option < UFix64 < N9 > >;
 
 /// Max buyable collateral until exo pair CR falls to the target.
 /// 
@@ -1705,7 +1724,7 @@ pub fn max_sellable_collateral(target_cr : UFix64 < N2 >, virtual_stablecoin : U
 ///   ────────────────────────────────────────────────────────────────────────
 ///                  collateral_usd_price * (target_cr - 1)
 /// ```
-pub fn max_buyable_collateral(target_cr : UFix64 < N2 >, virtual_stablecoin : UFix64 < N6 >, collateral_usd_price : UFix64 < N9 >, total_collateral : UFix64 < N9 >) -> Option < UFix64 < N9 > >;
+pub fn max_buyable_collateral(target_cr : UFix64 < N9 >, virtual_stablecoin : UFix64 < N6 >, collateral_usd_price : UFix64 < N9 >, total_collateral : UFix64 < N9 >) -> Option < UFix64 < N9 > >;
 
 
 ---
@@ -1740,6 +1759,7 @@ pub struct BuyPriceCurve {
 /// Implementors define boundary behavior via [`price_inner`].
 pub trait RebalancePriceController {
     fn curve(& self) -> & FixInterp < 2 , N9 >;
+    fn is_active(& self, ucr : UFix64 < N9 >) -> bool;
     fn price_inner(& self, cr : IFix64 < N9 >) -> Result < IFix64 < N9 > >;
     fn price(& self, ucr : UFix64 < N9 >) -> Result < UFix64 < N9 > >;
     fn validate(self) -> Result < Self >;
@@ -1788,6 +1808,7 @@ impl SellPriceCurve {
 
 impl RebalancePriceController for SellPriceCurve {
     fn curve(& self) -> & FixInterp < 2 , N9 >;
+    fn is_active(& self, ucr : UFix64 < N9 >) -> bool;
     fn price_inner(& self, cr : IFix64 < N9 >) -> Result < IFix64 < N9 > >;
     fn validate(self) -> Result < SellPriceCurve >;
 }
@@ -1804,12 +1825,19 @@ impl BuyPriceCurve {
 
 impl RebalancePriceController for BuyPriceCurve {
     fn curve(& self) -> & FixInterp < 2 , N9 >;
+    fn is_active(& self, ucr : UFix64 < N9 >) -> bool;
     fn price_inner(& self, cr : IFix64 < N9 >) -> Result < IFix64 < N9 > >;
     fn validate(self) -> Result < BuyPriceCurve >;
 }
 
 
 ## Constants
+
+/// Sell curve upper boundary
+pub const UCR_1_35: UFix64 < N9 >;
+
+/// Buy curve lower boundary
+pub const UCR_1_65: UFix64 < N9 >;
 
 const CR_1_20: IFix64 < N9 >;
 
@@ -1888,6 +1916,42 @@ impl SolanaClock for ClockRef {
     fn leader_schedule_epoch(& self) -> u64;
     fn unix_timestamp(& self) -> i64;
 }
+
+
+---
+
+# crate::spl_stake_pool
+<!-- file: hylo-core/src/spl_stake_pool.rs -->
+
+## Types
+
+/// Minimal view of stake pool PDA used in all SPL LST programs.
+pub struct SplStakePool {
+    pub total_lamports: UFix64 < N9 >,
+    pub pool_token_supply: UFix64 < N9 >,
+    pub last_update_epoch: u64,
+}
+
+
+## Impl SplStakePool
+
+impl SplStakePool {
+    pub fn from_bytes(data : & [u8]) -> Result < SplStakePool >;
+    pub fn true_price(& self) -> Result < LstSolPrice >;
+}
+
+
+## Constants
+
+/// Byte offsets in [`StakePool`].
+/// <https://docs.rs/spl-stake-pool/latest/spl_stake_pool/state/struct.StakePool.html>
+const TOTAL_LAMPORTS_OFFSET: usize;
+
+const POOL_TOKEN_SUPPLY_OFFSET: usize;
+
+const LAST_UPDATE_EPOCH_OFFSET: usize;
+
+const U64_SIZE: usize;
 
 
 ---
@@ -2103,6 +2167,12 @@ impl HarvestCache {
 }
 
 
+## Constants
+
+/// 1000 bps (10%)
+const MAX_FEE: UFix64 < N4 >;
+
+
 ---
 
 # Crate: hylo_idl (lib)
@@ -2128,28 +2198,22 @@ impl HarvestCache {
 ## Functions
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
-// NOTE: Builds the Anchor account context for minting stablecoin (hyUSD) from LST collateral.
-pub fn mint_stablecoin(user : Pubkey, lst_mint : Pubkey) -> MintStablecoin;
+pub fn mint_stablecoin_lst(user : Pubkey, lst_mint : Pubkey) -> MintStablecoinLst;
 
 /// Builds account context for levercoin mint (LST -> xSOL).
-// NOTE: Builds the Anchor account context for minting levercoin (xSOL) from LST collateral.
-pub fn mint_levercoin(user : Pubkey, lst_mint : Pubkey) -> MintLevercoin;
+pub fn mint_levercoin_lst(user : Pubkey, lst_mint : Pubkey) -> MintLevercoinLst;
 
 /// Builds account context for stablecoin redemption (hyUSD -> LST).
-// NOTE: Builds the Anchor account context for redeeming stablecoin (hyUSD) back to LST.
-pub fn redeem_stablecoin(user : Pubkey, lst_mint : Pubkey) -> RedeemStablecoin;
+pub fn redeem_stablecoin_lst(user : Pubkey, lst_mint : Pubkey) -> RedeemStablecoinLst;
 
 /// Builds account context for levercoin redemption (xSOL -> LST).
-// NOTE: Builds the Anchor account context for redeeming levercoin (xSOL) back to LST.
-pub fn redeem_levercoin(user : Pubkey, lst_mint : Pubkey) -> RedeemLevercoin;
+pub fn redeem_levercoin_lst(user : Pubkey, lst_mint : Pubkey) -> RedeemLevercoinLst;
 
-/// Builds account context for stable-to-lever swap (hyUSD -> xSOL).
-// NOTE: Builds the Anchor account context for swapping stablecoin (hyUSD) to levercoin (xSOL).
-pub fn swap_stable_to_lever(user : Pubkey) -> SwapStableToLever;
+/// Builds account context for stable-to-lever convert (hyUSD -> xSOL).
+pub fn convert_stable_to_lever_lst(user : Pubkey) -> ConvertStableToLeverLst;
 
-/// Builds account context for lever-to-stable swap (xSOL -> hyUSD).
-// NOTE: Builds the Anchor account context for swapping levercoin (xSOL) to stablecoin (hyUSD).
-pub fn swap_lever_to_stable(user : Pubkey) -> SwapLeverToStable;
+/// Builds account context for lever-to-stable convert (xSOL -> hyUSD).
+pub fn convert_lever_to_stable_lst(user : Pubkey) -> ConvertLeverToStableLst;
 
 /// Builds account context for registering an EXO pair.
 // NOTE: Builds the Anchor account context for registering a new exogenous collateral pair.
@@ -2170,39 +2234,40 @@ pub fn redeem_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral
 /// Builds account context for harvesting exo funding rate.
 pub fn harvest_funding_rate(collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> HarvestFundingRate;
 
-/// Lever-to-stable swap (xAsset -> hyUSD).
-pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapLeverToStableExo;
+/// Lever-to-stable convert exo (xAsset -> hyUSD).
+pub fn convert_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> ConvertLeverToStableExo;
 
-/// Stable-to-lever swap (hyUSD -> xAsset).
-pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapStableToLeverExo;
+/// Stable-to-lever convert exo (hyUSD -> xAsset).
+pub fn convert_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> ConvertStableToLeverExo;
 
 /// Builds account context for withdrawing protocol fees.
 pub fn withdraw_fees(payer : Pubkey, treasury : Pubkey, fee_token_mint : Pubkey) -> WithdrawFees;
 
-/// Builds account context for LST swap feature
-// NOTE: Builds the Anchor account context for swapping between two LST types.
-pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey) -> SwapLst;
+/// Builds account context for LST-to-LST swap.
+pub fn swap_lst_to_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey) -> SwapLstToLst;
 
 /// Exo collateral to USDC swap.
-pub fn swap_exo_usdc(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapExoUsdc;
+pub fn swap_exo_to_usdc(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapExoToUsdc;
 
 /// USDC to exo collateral swap.
-pub fn swap_usdc_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapUsdcExo;
+pub fn swap_usdc_to_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> SwapUsdcToExo;
 
 /// LST to USDC swap.
-pub fn swap_lst_usdc(user : Pubkey, lst_mint : Pubkey) -> SwapLstUsdc;
+pub fn swap_lst_to_usdc(user : Pubkey, lst_mint : Pubkey, pool_state : Pubkey) -> SwapLstToUsdc;
 
 /// USDC to LST swap.
-pub fn swap_usdc_lst(user : Pubkey, lst_mint : Pubkey) -> SwapUsdcLst;
+pub fn swap_usdc_to_lst(user : Pubkey, lst_mint : Pubkey, pool_state : Pubkey) -> SwapUsdcToLst;
 
 /// Builds account context for initializing the USDC pair.
 pub fn initialize_usdc(admin : Pubkey, usdc_usd_pyth_feed : Pubkey) -> InitializeUsdc;
 
-/// Builds account context for hyUSD to USDC swap.
-pub fn swap_stablecoin_to_usdc(user : Pubkey) -> SwapStablecoinToUsdc;
+/// Builds account context for hyUSD mint from USDC.
+pub fn mint_stablecoin_usdc(user : Pubkey) -> MintStablecoinUsdc;
 
-/// Builds account context for USDC to hyUSD swap.
-pub fn swap_usdc_to_stablecoin(user : Pubkey) -> SwapUsdcToStablecoin;
+/// Builds account context for hyUSD redeem to USDC.
+pub fn redeem_stablecoin_usdc(user : Pubkey) -> RedeemStablecoinUsdc;
+
+pub fn update_lst_rebalance_fee(admin : Pubkey, lst_mint : Pubkey) -> UpdateLstRebalanceFee;
 
 
 ---
@@ -2233,29 +2298,23 @@ pub fn withdraw(user : Pubkey) -> UserWithdraw;
 
 ## Functions
 
-// NOTE: Builds the mint_stablecoin instruction depositing LST collateral for hyUSD.
-pub fn mint_stablecoin(user : Pubkey, lst_mint : Pubkey, args : & args :: MintStablecoin) -> Instruction;
+pub fn mint_stablecoin_lst(user : Pubkey, lst_mint : Pubkey, args : & args :: MintStablecoinLst) -> Instruction;
 
-// NOTE: Builds the mint_levercoin instruction depositing LST collateral for xSOL.
-pub fn mint_levercoin(user : Pubkey, lst_mint : Pubkey, args : & args :: MintLevercoin) -> Instruction;
+pub fn mint_levercoin_lst(user : Pubkey, lst_mint : Pubkey, args : & args :: MintLevercoinLst) -> Instruction;
 
-// NOTE: Builds the redeem_stablecoin instruction burning hyUSD to withdraw LST.
-pub fn redeem_stablecoin(user : Pubkey, lst_mint : Pubkey, args : & args :: RedeemStablecoin) -> Instruction;
+pub fn redeem_stablecoin_lst(user : Pubkey, lst_mint : Pubkey, args : & args :: RedeemStablecoinLst) -> Instruction;
 
-// NOTE: Builds the redeem_levercoin instruction burning xSOL to withdraw LST.
-pub fn redeem_levercoin(user : Pubkey, lst_mint : Pubkey, args : & args :: RedeemLevercoin) -> Instruction;
+pub fn redeem_levercoin_lst(user : Pubkey, lst_mint : Pubkey, args : & args :: RedeemLevercoinLst) -> Instruction;
 
-// NOTE: Builds the swap_stable_to_lever instruction converting hyUSD to xSOL.
-pub fn swap_stable_to_lever(user : Pubkey, args : & args :: SwapStableToLever) -> Instruction;
+pub fn convert_stable_to_lever_lst(user : Pubkey, args : & args :: ConvertStableToLeverLst) -> Instruction;
 
-// NOTE: Builds the swap_lever_to_stable instruction converting xSOL to hyUSD.
-pub fn swap_lever_to_stable(user : Pubkey, args : & args :: SwapLeverToStable) -> Instruction;
+pub fn convert_lever_to_stable_lst(user : Pubkey, args : & args :: ConvertLeverToStableLst) -> Instruction;
 
 // NOTE: Builds the instruction to initialize the Hylo exchange program with admin settings.
 pub fn initialize_protocol(admin : Pubkey, upgrade_authority : Pubkey, treasury : Pubkey, args : & args :: InitializeProtocol) -> Instruction;
 
 // NOTE: Builds the instruction to create hyUSD, xSOL, and related token mint accounts.
-pub fn initialize_mints(admin : Pubkey) -> Instruction;
+pub fn initialize_mints(admin : Pubkey, stablecoin_metadata : TokenMetadata, levercoin_metadata : TokenMetadata) -> Instruction;
 
 // NOTE: Builds the instruction to create a new LST registry account for tracking supported LSTs.
 pub fn initialize_lst_registry(slot : u64, admin : Pubkey) -> Instruction;
@@ -2264,7 +2323,9 @@ pub fn initialize_lst_registry(slot : u64, admin : Pubkey) -> Instruction;
 pub fn initialize_lst_registry_calculators(lst_registry : Pubkey, admin : Pubkey) -> Instruction;
 
 // NOTE: Builds the register_lst instruction to add a new LST to the registry with its Sanctum calculator.
-pub fn register_lst(lst_mint : Pubkey, lst_stake_pool_state : Pubkey, sanctum_calculator_program : Pubkey, sanctum_calculator_state : Pubkey, stake_pool_program : Pubkey, stake_pool_program_data : Pubkey, lst_registry : Pubkey, admin : Pubkey) -> Instruction;
+pub fn register_lst(lst_mint : Pubkey, lst_stake_pool_state : Pubkey, sanctum_calculator_program : Pubkey, sanctum_calculator_state : Pubkey, stake_pool_program : Pubkey, stake_pool_program_data : Pubkey, lst_registry : Pubkey, admin : Pubkey, rebalance_fee : UFixValue64) -> Instruction;
+
+pub fn update_lst_rebalance_fee(admin : Pubkey, lst_mint : Pubkey, args : & args :: UpdateLstRebalanceFee) -> Instruction;
 
 // NOTE: Builds the admin instruction to update the Pyth oracle confidence tolerance.
 pub fn update_oracle_conf_tolerance(admin : Pubkey, args : & args :: UpdateOracleConfTolerance) -> Instruction;
@@ -2281,8 +2342,7 @@ pub fn harvest_yield(lst_registry : Pubkey, remaining_accounts : Vec < AccountMe
 // NOTE: Builds the instruction to refresh all LST-SOL prices from the Sanctum calculators.
 pub fn update_lst_prices(payer : Pubkey, lst_registry : Pubkey, remaining_accounts : Vec < AccountMeta >) -> Instruction;
 
-// NOTE: Builds the swap_lst instruction for direct LST-to-LST conversion.
-pub fn swap_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey, args : & args :: SwapLst) -> Instruction;
+pub fn swap_lst_to_lst(user : Pubkey, lst_a : Pubkey, lst_b : Pubkey, args : & args :: SwapLstToLst) -> Instruction;
 
 // NOTE: Builds the register_exo instruction to add a new exogenous collateral pair.
 pub fn register_exo(admin : Pubkey, collateral_mint : Pubkey, exo_usd_pyth_feed : Pubkey, args : & args :: RegisterExo) -> Instruction;
@@ -2297,9 +2357,9 @@ pub fn redeem_stablecoin_exo(user : Pubkey, collateral_mint : Pubkey, collateral
 
 pub fn harvest_funding_rate(collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> Instruction;
 
-pub fn swap_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapLeverToStableExo) -> Instruction;
+pub fn convert_lever_to_stable_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: ConvertLeverToStableExo) -> Instruction;
 
-pub fn swap_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapStableToLeverExo) -> Instruction;
+pub fn convert_stable_to_lever_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: ConvertStableToLeverExo) -> Instruction;
 
 // NOTE: Builds the admin instruction to update the fee for LST-to-LST swaps.
 pub fn update_lst_swap_fee(admin : Pubkey, args : & args :: UpdateLstSwapFee) -> Instruction;
@@ -2309,6 +2369,8 @@ pub fn update_levercoin_fees(admin : Pubkey, args : & args :: UpdateLevercoinFee
 pub fn update_oracle_interval(admin : Pubkey, args : & args :: UpdateOracleInterval) -> Instruction;
 
 pub fn update_stability_thresholds(admin : Pubkey, args : & args :: UpdateStabilityThresholds) -> Instruction;
+
+pub fn update_paused(admin : Pubkey, args : & args :: UpdatePaused) -> Instruction;
 
 pub fn update_lst_buy_curve_config(admin : Pubkey, args : & args :: UpdateLstBuyCurveConfig) -> Instruction;
 
@@ -2338,9 +2400,9 @@ pub fn update_admin(payer : Pubkey, upgrade_authority : Pubkey, args : & args ::
 
 pub fn initialize_usdc(admin : Pubkey, usdc_usd_pyth_feed : Pubkey, args : & args :: InitializeUsdc) -> Instruction;
 
-pub fn swap_stablecoin_to_usdc(user : Pubkey, args : & args :: SwapStablecoinToUsdc) -> Instruction;
+pub fn redeem_stablecoin_usdc(user : Pubkey, args : & args :: RedeemStablecoinUsdc) -> Instruction;
 
-pub fn swap_usdc_to_stablecoin(user : Pubkey, args : & args :: SwapUsdcToStablecoin) -> Instruction;
+pub fn mint_stablecoin_usdc(user : Pubkey, args : & args :: MintStablecoinUsdc) -> Instruction;
 
 pub fn update_usdc_oracle_conf_tolerance(admin : Pubkey, args : & args :: UpdateUsdcOracleConfTolerance) -> Instruction;
 
@@ -2350,17 +2412,29 @@ pub fn update_usdc_swap_fee(admin : Pubkey, args : & args :: UpdateUsdcSwapFee) 
 
 pub fn initialize_lst_virtual_stablecoin(admin : Pubkey) -> Instruction;
 
-pub fn swap_exo_usdc(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapExoUsdc) -> Instruction;
+pub fn swap_exo_to_usdc(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapExoToUsdc) -> Instruction;
 
-pub fn swap_usdc_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapUsdcExo) -> Instruction;
+pub fn swap_usdc_to_exo(user : Pubkey, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey, args : & args :: SwapUsdcToExo) -> Instruction;
 
-pub fn swap_lst_usdc(user : Pubkey, lst_mint : Pubkey, args : & args :: SwapLstUsdc) -> Instruction;
+pub fn swap_lst_to_usdc(user : Pubkey, lst_mint : Pubkey, pool_state : Pubkey, args : & args :: SwapLstToUsdc) -> Instruction;
 
-pub fn swap_usdc_lst(user : Pubkey, lst_mint : Pubkey, args : & args :: SwapUsdcLst) -> Instruction;
+pub fn swap_usdc_to_lst(user : Pubkey, lst_mint : Pubkey, pool_state : Pubkey, args : & args :: SwapUsdcToLst) -> Instruction;
 
 pub fn get_stats() -> Instruction;
 
 pub fn withdraw_fees(payer : Pubkey, treasury : Pubkey, fee_token_mint : Pubkey) -> Instruction;
+
+
+---
+
+# crate::instruction_builders::router
+<!-- file: hylo-idl/src/instruction_builders/router.rs -->
+
+## Functions
+
+/// Routes through the proxy program, forwarding the given accounts
+/// to the target program via CPI.
+pub fn route< A : ToAccountMetas >(args : & args :: Route, inner_accounts : & A) -> Instruction;
 
 
 ---
@@ -2386,7 +2460,7 @@ pub fn get_stats() -> Instruction;
 pub fn initialize_stability_pool(admin : Pubkey, upgrade_authority : Pubkey) -> Instruction;
 
 // NOTE: Builds the instruction to create the sHYUSD LP token mint.
-pub fn initialize_lp_token_mint(admin : Pubkey) -> Instruction;
+pub fn initialize_lp_token_mint(admin : Pubkey, lp_token_metadata : TokenMetadata) -> Instruction;
 
 // NOTE: Builds the admin instruction to update the stability pool withdrawal fee.
 pub fn update_withdrawal_fee(admin : Pubkey, args : & args :: UpdateWithdrawalFee) -> Instruction;
@@ -2430,6 +2504,18 @@ pub use super :: instruction_builders :: stability_pool as instruction_builders;
 
 ---
 
+# crate::router
+<!-- file: hylo-idl/src/lib.rs -->
+
+## Re-exports
+
+pub use super :: codegen :: hylo_router :: *;
+
+pub use super :: instruction_builders :: router as instruction_builders;
+
+
+---
+
 # crate::pda
 <!-- file: hylo-idl/src/pda.rs -->
 
@@ -2449,11 +2535,17 @@ pub fn shyusd_ata(auth : Pubkey) -> Pubkey;
 
 pub fn usdc_ata(auth : Pubkey) -> Pubkey;
 
-// NOTE: Derives the PDA for a token's vault account.
-pub fn vault(mint : Pubkey) -> Pubkey;
+pub fn lst_vault(mint : Pubkey) -> Pubkey;
 
-// NOTE: Derives the PDA for a token vault's authority.
-pub fn vault_auth(mint : Pubkey) -> Pubkey;
+pub fn exo_vault(mint : Pubkey) -> Pubkey;
+
+pub fn usdc_vault(mint : Pubkey) -> Pubkey;
+
+pub fn lst_vault_auth(mint : Pubkey) -> Pubkey;
+
+pub fn exo_vault_auth(mint : Pubkey) -> Pubkey;
+
+pub fn usdc_vault_auth(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for an LST registry keyed by creation slot.
 pub fn new_lst_registry(slot : u64) -> Pubkey;
@@ -2564,6 +2656,8 @@ pub struct USDC;
 
 pub struct CBBTC;
 
+pub struct XBTC;
+
 
 ## Traits
 
@@ -2571,6 +2665,10 @@ pub struct CBBTC;
 pub trait TokenMint {
     type Exp: Integer;
     const MINT: Pubkey;
+}
+
+pub trait StakePool: TokenMint < Exp = N9 > {
+    const POOL_STATE: Pubkey;
 }
 
 
@@ -2610,12 +2708,26 @@ impl TokenMint for JITOSOL {
 }
 
 
+## Impl StakePool for JITOSOL
+
+impl StakePool for JITOSOL {
+    const POOL_STATE: Pubkey;
+}
+
+
 ## Impl TokenMint for HYLOSOL
 
 // NOTE: Associates HYLOSOL with its mint address and N9 exponent.
 impl TokenMint for HYLOSOL {
     type Exp = N9;
     const MINT: Pubkey;
+}
+
+
+## Impl StakePool for HYLOSOL
+
+impl StakePool for HYLOSOL {
+    const POOL_STATE: Pubkey;
 }
 
 
@@ -2631,6 +2743,14 @@ impl TokenMint for USDC {
 
 impl TokenMint for CBBTC {
     type Exp = N8;
+    const MINT: Pubkey;
+}
+
+
+## Impl TokenMint for XBTC
+
+impl TokenMint for XBTC {
+    type Exp = N6;
     const MINT: Pubkey;
 }
 
@@ -2703,28 +2823,24 @@ pub use jupiter :: { HyloJupiterPair , PairConfig };
 ## Functions
 
 /// Creates account metas for minting stablecoin (LST -> hyUSD).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for minting stablecoin from LST.
-pub fn mint_stablecoin(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
+pub fn mint_stablecoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
 /// Creates account metas for minting levercoin (LST -> xSOL).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for minting levercoin from LST.
-pub fn mint_levercoin(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
+pub fn mint_levercoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
 /// Creates account metas for redeeming stablecoin (hyUSD -> LST).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for redeeming stablecoin to LST.
-pub fn redeem_stablecoin(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
+pub fn redeem_stablecoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
 /// Creates account metas for redeeming levercoin (xSOL -> LST).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for redeeming levercoin to LST.
-pub fn redeem_levercoin(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
+pub fn redeem_levercoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for swapping stablecoin to levercoin (hyUSD -> xSOL).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for swapping hyUSD to xSOL.
-pub fn swap_stable_to_lever(user : Pubkey) -> SwapAndAccountMetas;
+/// Creates account metas for converting stablecoin to levercoin
+/// (hyUSD -> xSOL).
+pub fn convert_stable_to_lever_lst(user : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for swapping levercoin to stablecoin (xSOL -> hyUSD).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for swapping xSOL to hyUSD.
-pub fn swap_lever_to_stable(user : Pubkey) -> SwapAndAccountMetas;
+/// Creates account metas for converting levercoin to stablecoin
+/// (xSOL -> hyUSD).
+pub fn convert_lever_to_stable_lst(user : Pubkey) -> SwapAndAccountMetas;
 
 /// Creates account metas for depositing into stability pool (hyUSD -> shyUSD).
 // NOTE: Creates Jupiter-compatible SwapAndAccountMetas for depositing hyUSD into the stability pool.
@@ -3415,13 +3531,13 @@ impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < SHYUSD , HYUSD
 /// Operation type for a quote
 // NOTE: Enum of all supported quote operation types (mint, redeem, swap, deposit, withdraw, etc.).
 pub enum Operation {
-    MintStablecoin,
-    RedeemStablecoin,
-    MintLevercoin,
-    RedeemLevercoin,
-    SwapStableToLever,
-    SwapLeverToStable,
-    LstSwap,
+    MintStablecoinLst,
+    RedeemStablecoinLst,
+    MintLevercoinLst,
+    RedeemLevercoinLst,
+    ConvertStableToLeverLst,
+    ConvertLeverToStableLst,
+    SwapLstToLst,
     DepositToStabilityPool,
     WithdrawFromStabilityPool,
 }
@@ -3564,7 +3680,7 @@ impl < X >SimulatedOperationExt for X {
 // NOTE: Extracts mint stablecoin output from MintStablecoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < L , HYUSD > for ExchangeClient {
     type FeeExp = N9;
-    type Event = MintEvent;
+    type Event = MintStablecoinLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < MintOperationOutput >;
 }
 
@@ -3575,7 +3691,7 @@ impl < L : LST + Local >SimulatedOperation < L , HYUSD > for ExchangeClient {
 // NOTE: Extracts redeem stablecoin output from RedeemStablecoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < HYUSD , L > for ExchangeClient {
     type FeeExp = N9;
-    type Event = RedeemEvent;
+    type Event = RedeemStablecoinLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < RedeemOperationOutput >;
 }
 
@@ -3586,7 +3702,7 @@ impl < L : LST + Local >SimulatedOperation < HYUSD , L > for ExchangeClient {
 // NOTE: Extracts mint levercoin output from MintLevercoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < L , XSOL > for ExchangeClient {
     type FeeExp = N9;
-    type Event = MintEvent;
+    type Event = MintLevercoinLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < MintOperationOutput >;
 }
 
@@ -3597,29 +3713,29 @@ impl < L : LST + Local >SimulatedOperation < L , XSOL > for ExchangeClient {
 // NOTE: Extracts redeem levercoin output from RedeemLevercoinEventV2 simulation logs.
 impl < L : LST + Local >SimulatedOperation < XSOL , L > for ExchangeClient {
     type FeeExp = N9;
-    type Event = RedeemEvent;
+    type Event = RedeemLevercoinLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < RedeemOperationOutput >;
 }
 
 
 ## Impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient
 
-/// Swap stablecoin to levercoin.
+/// Convert stablecoin to levercoin.
 // NOTE: Extracts hyUSD-to-xSOL swap output from SwapStableToLeverEventV1 simulation logs.
 impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient {
     type FeeExp = N6;
-    type Event = SwapStableToLeverEvent;
+    type Event = ConvertStableToLeverLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
 }
 
 
 ## Impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient
 
-/// Swap levercoin to stablecoin.
+/// Convert levercoin to stablecoin.
 // NOTE: Extracts xSOL-to-hyUSD swap output from SwapLeverToStableEventV1 simulation logs.
 impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient {
     type FeeExp = N6;
-    type Event = SwapLeverToStableEvent;
+    type Event = ConvertLeverToStableLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
 }
 
@@ -3630,7 +3746,7 @@ impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient {
 // NOTE: Extracts LST-to-LST swap output from SwapLstEventV0 simulation logs.
 impl < L1 : LST + Local , L2 : LST + Local >SimulatedOperation < L1 , L2 > for ExchangeClient {
     type FeeExp = N9;
-    type Event = SwapLstEvent;
+    type Event = SwapLstToLstEvent;
     fn extract_output(event : & Self :: Event) -> Result < LstSwapOperationOutput >;
 }
 

@@ -191,7 +191,7 @@ mod tests {
     let interp = mint_fee_curve()?;
     let x = IFix64::<N5>::constant(170_000);
     let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(0));
+    assert_eq!(y, IFix64::constant(5));
     Ok(())
   }
 

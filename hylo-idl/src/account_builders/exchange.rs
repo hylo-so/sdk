@@ -205,6 +205,7 @@ pub fn mint_levercoin_exo(
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   MintLevercoinExo {
     user,
+    hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     levercoin_auth: pda::mint_auth(levercoin_mint),
     vault_auth,
@@ -263,6 +264,7 @@ pub fn redeem_levercoin_exo(
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   RedeemLevercoinExo {
     user,
+    hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     vault_auth,
     fee_auth,
@@ -459,6 +461,7 @@ pub fn swap_exo_to_usdc(
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapExoToUsdc {
     user,
+    hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     usdc_pair: *pda::USDC_PAIR,
     collateral_vault_auth,
@@ -489,6 +492,7 @@ pub fn swap_usdc_to_exo(
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   SwapUsdcToExo {
     user,
+    hylo: *pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     usdc_pair: *pda::USDC_PAIR,
     collateral_vault_auth,

@@ -588,6 +588,21 @@ pub fn update_stability_thresholds(
 }
 
 #[must_use]
+pub fn update_paused(admin: Pubkey, args: &args::UpdatePaused) -> Instruction {
+  let accounts = accounts::UpdatePaused {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_lst_buy_curve_config(
   admin: Pubkey,
   args: &args::UpdateLstBuyCurveConfig,

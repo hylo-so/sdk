@@ -89,12 +89,10 @@ pub enum CoreError {
   // `exchange_context`
   #[msg("Arithmetic error or missing data while computing levercoin NAV.")]
   LevercoinNav,
-  #[msg("Over/underflow while computing total SOL for destination fee.")]
-  DestinationFeeSol,
-  #[msg(
-    "Over/underflow while computing total stablecoin for destination fee."
-  )]
-  DestinationFeeStablecoin,
+  #[msg("Over/underflow projecting total collateral.")]
+  DestinationCollateral,
+  #[msg("Over/underflow projecting total stablecoin.")]
+  DestinationStablecoin,
   #[msg("There is no next stability threshold; current mode is Depeg.")]
   NoNextStabilityThreshold,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
@@ -140,10 +138,6 @@ pub enum CoreError {
   ExoToToken,
   #[msg("Arithmetic error converting protocol token to exo collateral.")]
   ExoFromToken,
-  #[msg("Over/underflow projecting exo collateral total for fee.")]
-  ExoDestinationCollateral,
-  #[msg("Over/underflow projecting stablecoin total for exo fee.")]
-  ExoDestinationStablecoin,
   // `normalize_mint_exp`
   #[msg("Precision conversion failed while normalizing exo amount to N9.")]
   ExoAmountNormalization,
@@ -164,10 +158,10 @@ pub enum CoreError {
   RebalancePriceConstruction,
   #[msg("CR or price conversion failed in rebalance price curve.")]
   RebalancePriceConversion,
-  #[msg("Sell-side rebalance route is inactive at this CR.")]
-  RebalanceSellInactive,
-  #[msg("Buy-side rebalance route is inactive at this CR.")]
-  RebalanceBuyInactive,
+  #[msg("CR is outside the rebalance pricing curve domain.")]
+  RebalanceOutOfDomain,
+  #[msg("Rebalance amount projects CR outside the pricing curve domain.")]
+  RebalanceAmountExceeded,
   // `rebalance_math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,

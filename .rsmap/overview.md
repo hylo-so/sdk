@@ -40,6 +40,7 @@ External deps: anchor-lang, anchor-spl, hylo-fix, hylo-idl, hylo-jupiter-amm-int
   - rebalance_pricing — Oracle-derived collateral rebalancing price curves.
   - slippage_config — Client-specified slippage tolerance paired with expected output amount for transaction validation.
   - solana_clock — Abstraction trait over Solana's on-chain Clock sysvar for testability.
+  - spl_stake_pool — Lightweight SPL stake pool deserialization.
   - stability_mode — Defines protocol stability modes (Normal, Mode1, Mode2, Depeg) based on collateral ratio thresholds.
   - stability_pool_math — Pure math for LP token NAV, pool capacity, withdrawal fees, and rebalancing targets.
   - total_sol_cache — Epoch-validated cache of total SOL collateral held by the exchange, updated on deposits and withdrawals.
@@ -60,9 +61,11 @@ External deps: anchor-lang, anchor-spl, anyhow, hylo-fix, mpl-token-metadata, so
     - stability_pool — Builds Anchor account contexts for stability pool deposit and withdrawal operations.
   - instruction_builders — Parent module for low-level Solana instruction builders for exchange and stability pool programs.
     - exchange — Instruction builders for Hylo Exchange.
+    - router
     - stability_pool — Instruction builders for Hylo Stability Pool.
   - exchange — Re-exports exchange program account builders, IDL codegen, and instruction builders.
   - stability_pool — Re-exports stability pool program account builders, IDL codegen, and instruction builders.
+  - router
   - pda — Program Derived Address constants and derivation functions for all protocol accounts.
   - tokens — Type-safe token definitions (HYUSD, XSOL, SHYUSD, JITOSOL, HYLOSOL) with mint addresses and decimal precision.
   - type_bridge — Conversions between IDL-generated UFixValue64 and hylo-fix's UFix64 across both programs.

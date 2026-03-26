@@ -3011,6 +3011,11 @@
       "code": 6004,
       "name": "AdminNoop",
       "msg": "Cannot update configuration with identical value."
+    },
+    {
+      "code": 6005,
+      "name": "ProtocolPaused",
+      "msg": "Protocol operations are paused by admin."
     }
   ],
   "types": [
@@ -3232,11 +3237,15 @@
             }
           },
           {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                33
+                32
               ]
             }
           }

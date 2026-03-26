@@ -22,6 +22,14 @@ impl Conversion {
     }
   }
 
+  #[must_use]
+  pub fn spot(
+    usd_sol_price: UFix64<N9>,
+    lst_sol_price: UFix64<N9>,
+  ) -> Conversion {
+    Conversion::new(PriceRange::one(usd_sol_price), lst_sol_price)
+  }
+
   /// Computes how much of a protocol token to emit for an input amount of SOL.
   ///   `LST * (SOL/LST) * (USD/SOL) / NAV`
   pub fn lst_to_token(
@@ -94,10 +102,22 @@ impl SwapConversion {
 
 /// Conversions between an exogenous collateral and protocol tokens.
 pub struct ExoConversion {
-  pub collateral_usd_price: PriceRange<N9>,
+  collateral_usd_price: PriceRange<N9>,
 }
 
 impl ExoConversion {
+  #[must_use]
+  pub fn new(collateral_usd_price: PriceRange<N9>) -> ExoConversion {
+    ExoConversion {
+      collateral_usd_price,
+    }
+  }
+
+  #[must_use]
+  pub fn spot(collateral_usd_price: UFix64<N9>) -> ExoConversion {
+    ExoConversion::new(PriceRange::one(collateral_usd_price))
+  }
+
   /// Converts collateral amount to a protocol token amount.
   ///
   /// # Errors
@@ -187,11 +207,22 @@ impl UsdcStablecoinConversion {
 
 /// Conversions between exogenous collateral and USDC via oracle prices.
 pub struct ExoRebalanceConversion {
-  pub collateral_rebalance_usd_price: UFix64<N9>,
-  pub usdc_usd_price: PriceRange<N9>,
+  collateral_usd_price: UFix64<N9>,
+  usdc_usd_price: PriceRange<N9>,
 }
 
 impl ExoRebalanceConversion {
+  #[must_use]
+  pub fn new(
+    collateral_usd_price: UFix64<N9>,
+    usdc_usd_price: PriceRange<N9>,
+  ) -> ExoRebalanceConversion {
+    ExoRebalanceConversion {
+      collateral_usd_price,
+      usdc_usd_price,
+    }
+  }
+
   /// Converts exogenous collateral to USDC
   ///
   /// # Errors
@@ -201,10 +232,7 @@ impl ExoRebalanceConversion {
     collateral_amount: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
     collateral_amount
-      .mul_div_floor(
-        self.collateral_rebalance_usd_price,
-        self.usdc_usd_price.upper,
-      )
+      .mul_div_floor(self.collateral_usd_price, self.usdc_usd_price.upper)
       .ok_or(ExoCollateralToUsdc.into())
   }
 
@@ -217,35 +245,40 @@ impl ExoRebalanceConversion {
     usdc_amount: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
     usdc_amount
-      .mul_div_floor(
-        self.usdc_usd_price.lower,
-        self.collateral_rebalance_usd_price,
-      )
+      .mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
       .ok_or(ExoUsdcToCollateral.into())
   }
 }
 
 /// Conversions between LST and USDC via SOL for rebalancing.
 pub struct LstRebalanceConversion {
-  pub lst_sol_price: UFix64<N9>,
-  pub sol_rebalance_usd_price: UFix64<N9>,
-  pub usdc_usd_price: PriceRange<N9>,
+  lst_sol: UFix64<N9>,
+  sol_usd: UFix64<N9>,
+  usdc_usd: PriceRange<N9>,
 }
 
 impl LstRebalanceConversion {
+  #[must_use]
+  pub fn new(
+    lst_sol: UFix64<N9>,
+    sol_usd: UFix64<N9>,
+    usdc_usd: PriceRange<N9>,
+  ) -> LstRebalanceConversion {
+    LstRebalanceConversion {
+      lst_sol,
+      sol_usd,
+      usdc_usd,
+    }
+  }
+
   /// Converts LST to USDC for sell-side rebalancing.
   ///
   /// # Errors
   /// * Arithmetic failure
   pub fn lst_to_usdc(&self, lst_amount: UFix64<N9>) -> Result<UFix64<N9>> {
     lst_amount
-      .mul_div_floor(self.lst_sol_price, UFix64::one())
-      .and_then(|sol| {
-        sol.mul_div_floor(
-          self.sol_rebalance_usd_price,
-          self.usdc_usd_price.upper,
-        )
-      })
+      .mul_div_floor(self.lst_sol, UFix64::one())
+      .and_then(|sol| sol.mul_div_floor(self.sol_usd, self.usdc_usd.upper))
       .ok_or(LstToUsdc.into())
   }
 
@@ -255,8 +288,8 @@ impl LstRebalanceConversion {
   /// * Arithmetic failure
   pub fn usdc_to_lst(&self, usdc_amount: UFix64<N9>) -> Result<UFix64<N9>> {
     usdc_amount
-      .mul_div_floor(self.usdc_usd_price.lower, self.sol_rebalance_usd_price)
-      .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
+      .mul_div_floor(self.usdc_usd.lower, self.sol_usd)
+      .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
       .ok_or(UsdcToLst.into())
   }
 }
@@ -423,10 +456,7 @@ mod tests {
 
   #[test]
   fn exo_rebalance_collateral_to_usdc() -> Result<()> {
-    let conv = ExoRebalanceConversion {
-      collateral_rebalance_usd_price: COLLATERAL_PRICE,
-      usdc_usd_price: UNDERPEGGED_USDC,
-    };
+    let conv = ExoRebalanceConversion::new(COLLATERAL_PRICE, UNDERPEGGED_USDC);
     let usdc = conv.collateral_to_usdc(UFix64::new(10_000_000_000))?;
     assert_eq!(usdc, UFix64::new(1_485_185_185_185));
     Ok(())
@@ -434,25 +464,18 @@ mod tests {
 
   #[test]
   fn exo_rebalance_usdc_to_collateral() -> Result<()> {
-    let conv = ExoRebalanceConversion {
-      collateral_rebalance_usd_price: COLLATERAL_PRICE,
-      usdc_usd_price: UNDERPEGGED_USDC,
-    };
+    let conv = ExoRebalanceConversion::new(COLLATERAL_PRICE, UNDERPEGGED_USDC);
     let coll = conv.usdc_to_collateral(UFix64::new(1_500_000_000_000))?;
     assert_eq!(coll, UFix64::new(10_079_530_902));
     Ok(())
   }
 
   const LST_SOL: UFix64<N9> = UFix64::constant(1_136_000_000);
-  const SOL_REBALANCE_USD: UFix64<N9> = UFix64::constant(171_030_000_000);
+  const SOL_USD: UFix64<N9> = UFix64::constant(171_030_000_000);
 
   #[test]
   fn lst_rebalance_lst_to_usdc() -> Result<()> {
-    let conv = LstRebalanceConversion {
-      lst_sol_price: LST_SOL,
-      sol_rebalance_usd_price: SOL_REBALANCE_USD,
-      usdc_usd_price: UNDERPEGGED_USDC,
-    };
+    let conv = LstRebalanceConversion::new(LST_SOL, SOL_USD, UNDERPEGGED_USDC);
     let usdc = conv.lst_to_usdc(UFix64::new(10_000_000_000))?;
     assert_eq!(usdc, UFix64::new(1_944_845_645_645));
     Ok(())
@@ -460,11 +483,7 @@ mod tests {
 
   #[test]
   fn lst_rebalance_usdc_to_lst() -> Result<()> {
-    let conv = LstRebalanceConversion {
-      lst_sol_price: LST_SOL,
-      sol_rebalance_usd_price: SOL_REBALANCE_USD,
-      usdc_usd_price: UNDERPEGGED_USDC,
-    };
+    let conv = LstRebalanceConversion::new(LST_SOL, SOL_USD, UNDERPEGGED_USDC);
     let lst = conv.usdc_to_lst(UFix64::new(200_000_000_000))?;
     assert_eq!(lst, UFix64::new(1_026_300_467));
     Ok(())
