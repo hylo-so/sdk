@@ -60,7 +60,7 @@ impl YieldHarvestConfig {
     if fee > UFix64::zero()
       && fee <= MAX_FEE
       && allocation > UFix64::zero()
-      && allocation <= MAX_FEE
+      && allocation <= UFix64::one()
     {
       Ok(*self)
     } else {
