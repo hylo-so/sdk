@@ -286,6 +286,21 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
+  /// Sets the maximum staleness for oracle price updates.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_oracle_interval(
+    &self,
+    args: &args::UpdateOracleInterval,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_oracle_interval(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
   /// Updates the SOL/USD oracle address.
   ///
   /// # Errors

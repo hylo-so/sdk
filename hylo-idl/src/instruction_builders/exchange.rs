@@ -252,6 +252,24 @@ pub fn update_oracle_conf_tolerance(
 }
 
 #[must_use]
+pub fn update_oracle_interval(
+  admin: Pubkey,
+  args: &args::UpdateOracleInterval,
+) -> Instruction {
+  let accounts = accounts::UpdateOracleInterval {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_sol_usd_oracle(
   admin: Pubkey,
   args: &args::UpdateSolUsdOracle,
