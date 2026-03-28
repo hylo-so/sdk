@@ -8,8 +8,13 @@ use crate::error::CoreError::{
 };
 
 #[derive(
-  AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Copy,
-  Serialize, Deserialize,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Clone,
+  Copy,
+  Serialize,
+  Deserialize,
 )]
 pub struct TotalSolCache {
   pub current_update_epoch: u64,

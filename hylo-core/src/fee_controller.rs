@@ -12,8 +12,13 @@ use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
 #[derive(
-  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
-  Serialize, Deserialize,
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct FeePair {
   pub mint: UFixValue64,
@@ -80,8 +85,13 @@ impl<Exp> FeeExtract<Exp> {
 }
 
 #[derive(
-  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
-  Serialize, Deserialize,
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct StablecoinFees {
   pub normal: FeePair,
@@ -123,8 +133,13 @@ impl FeeController for StablecoinFees {
 }
 
 #[derive(
-  Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize,
-  Serialize, Deserialize,
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorDeserialize,
+  AnchorSerialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct LevercoinFees {
   pub normal: FeePair,

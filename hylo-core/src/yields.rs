@@ -9,8 +9,13 @@ use crate::fee_controller::FeeExtract;
 
 /// Captures yield harvest configuration as two basis point values:
 #[derive(
-  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
-  Serialize, Deserialize,
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct YieldHarvestConfig {
   pub allocation: UFixValue64,
@@ -70,8 +75,13 @@ impl YieldHarvestConfig {
 
 /// Records epoch yield harvest information for off-chain consumers.
 #[derive(
-  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
-  Serialize, Deserialize,
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct YieldHarvestCache {
   pub epoch: u64,

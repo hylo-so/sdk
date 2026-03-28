@@ -293,10 +293,8 @@ impl ExchangeClient {
     &self,
     args: &args::UpdateLevercoinFees,
   ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_levercoin_fees(
-      self.program.payer(),
-      args,
-    );
+    let instruction =
+      instruction_builders::update_levercoin_fees(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -304,10 +302,8 @@ impl ExchangeClient {
     &self,
     args: &args::UpdateStablecoinFees,
   ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_stablecoin_fees(
-      self.program.payer(),
-      args,
-    );
+    let instruction =
+      instruction_builders::update_stablecoin_fees(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -365,10 +361,8 @@ impl ExchangeClient {
     &self,
     args: &args::UpdateOracleInterval,
   ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_oracle_interval(
-      self.program.payer(),
-      args,
-    );
+    let instruction =
+      instruction_builders::update_oracle_interval(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
