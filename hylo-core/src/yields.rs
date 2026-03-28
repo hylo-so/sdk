@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{
   YieldHarvestAllocation, YieldHarvestConfigValidation,
@@ -7,7 +8,10 @@ use crate::error::CoreError::{
 use crate::fee_controller::FeeExtract;
 
 /// Captures yield harvest configuration as two basis point values:
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Serialize, Deserialize,
+)]
 pub struct YieldHarvestConfig {
   pub allocation: UFixValue64,
   pub fee: UFixValue64,

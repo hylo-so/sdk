@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
@@ -10,10 +11,13 @@ use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 /// Represents the spread of fees between mint and redeem for protocol tokens.
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Serialize, Deserialize,
+)]
 pub struct FeePair {
-  mint: UFixValue64,
-  redeem: UFixValue64,
+  pub mint: UFixValue64,
+  pub redeem: UFixValue64,
 }
 
 impl FeePair {
@@ -75,10 +79,13 @@ impl<Exp> FeeExtract<Exp> {
   }
 }
 
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Serialize, Deserialize,
+)]
 pub struct StablecoinFees {
-  normal: FeePair,
-  mode_1: FeePair,
+  pub normal: FeePair,
+  pub mode_1: FeePair,
 }
 
 impl StablecoinFees {
@@ -115,11 +122,14 @@ impl FeeController for StablecoinFees {
   }
 }
 
-#[derive(Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize)]
+#[derive(
+  Copy, Clone, InitSpace, AnchorDeserialize, AnchorSerialize,
+  Serialize, Deserialize,
+)]
 pub struct LevercoinFees {
-  normal: FeePair,
-  mode_1: FeePair,
-  mode_2: FeePair,
+  pub normal: FeePair,
+  pub mode_1: FeePair,
+  pub mode_2: FeePair,
 }
 
 impl FeeController for LevercoinFees {

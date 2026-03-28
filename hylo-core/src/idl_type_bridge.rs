@@ -58,6 +58,45 @@ impl From<hylo_idl::exchange::types::YieldHarvestCache> for YieldHarvestCache {
   }
 }
 
+impl From<FeePair> for hylo_idl::exchange::types::FeePair {
+  fn from(val: FeePair) -> Self {
+    Self {
+      mint: val.mint.into(),
+      redeem: val.redeem.into(),
+    }
+  }
+}
+
+impl From<StablecoinFees> for hylo_idl::exchange::types::StablecoinFees {
+  fn from(val: StablecoinFees) -> Self {
+    Self {
+      normal: val.normal.into(),
+      mode_1: val.mode_1.into(),
+    }
+  }
+}
+
+impl From<LevercoinFees> for hylo_idl::exchange::types::LevercoinFees {
+  fn from(val: LevercoinFees) -> Self {
+    Self {
+      normal: val.normal.into(),
+      mode_1: val.mode_1.into(),
+      mode_2: val.mode_2.into(),
+    }
+  }
+}
+
+impl From<YieldHarvestConfig>
+  for hylo_idl::exchange::types::YieldHarvestConfig
+{
+  fn from(val: YieldHarvestConfig) -> Self {
+    Self {
+      allocation: val.allocation.into(),
+      fee: val.fee.into(),
+    }
+  }
+}
+
 impl From<SlippageConfig> for hylo_idl::exchange::types::SlippageConfig {
   fn from(val: SlippageConfig) -> Self {
     hylo_idl::exchange::types::SlippageConfig {
