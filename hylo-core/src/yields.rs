@@ -69,7 +69,10 @@ impl YieldHarvestConfig {
 }
 
 /// Records epoch yield harvest information for off-chain consumers.
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Serialize, Deserialize,
+)]
 pub struct YieldHarvestCache {
   pub epoch: u64,
   pub stability_pool_cap: UFixValue64,
