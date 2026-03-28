@@ -30,7 +30,7 @@ pub struct HYUSD;
 
 impl TokenMint for HYUSD {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("5YMkXAYccHSGnHn9nob9xEvv6Pvka9DZWH7nTbotTu9E");
+  const MINT: Pubkey = pubkey!("6hxiteDeaUt1mVHapfZCnLcZ6wTogQWLE3zNcuTBaZNL");
 }
 
 try_from_pubkey!(HYUSD);
@@ -39,7 +39,7 @@ pub struct SHYUSD;
 
 impl TokenMint for SHYUSD {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("HnnGv3HrSqjRpgdFmx7vQGjntNEoex1SU4e9Lxcxuihz");
+  const MINT: Pubkey = pubkey!("AayEwKC9oN2vAX7sTQNPLMGnebdEzizQHhdL7ebvhw4i");
 }
 
 try_from_pubkey!(SHYUSD);
@@ -48,7 +48,7 @@ pub struct XSOL;
 
 impl TokenMint for XSOL {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs");
+  const MINT: Pubkey = pubkey!("6LBhoz13JunysSHJZVmCiMYrVhfR4r25q28ft2oHNGcH");
 }
 
 try_from_pubkey!(XSOL);
