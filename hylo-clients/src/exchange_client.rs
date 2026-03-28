@@ -271,6 +271,77 @@ impl ExchangeClient {
     self.simulate_transaction_return(tx).await
   }
 
+  /// Transfers the admin role to a new address. Requires the program
+  /// upgrade authority as cosigner.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_admin(
+    &self,
+    upgrade_authority: Pubkey,
+    args: &args::UpdateAdmin,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_admin(
+      self.program.payer(),
+      upgrade_authority,
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  pub fn update_levercoin_fees(
+    &self,
+    args: &args::UpdateLevercoinFees,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_levercoin_fees(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  pub fn update_stablecoin_fees(
+    &self,
+    args: &args::UpdateStablecoinFees,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_stablecoin_fees(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  pub fn update_stability_thresholds(
+    &self,
+    args: &args::UpdateStabilityThresholds,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_stability_thresholds(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  pub fn update_treasury(
+    &self,
+    args: &args::UpdateTreasury,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_treasury(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  pub fn update_yield_harvest_config(
+    &self,
+    args: &args::UpdateYieldHarvestConfig,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_yield_harvest_config(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
   /// Updates the oracle confidence tolerance.
   ///
   /// # Errors

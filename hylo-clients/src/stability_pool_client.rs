@@ -169,6 +169,24 @@ impl StabilityPoolClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
+  /// Transfers the admin role to a new address. Requires the program
+  /// upgrade authority as cosigner.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_admin(
+    &self,
+    upgrade_authority: Pubkey,
+    args: &args::UpdateAdmin,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_admin(
+      self.program.payer(),
+      upgrade_authority,
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
   /// Updates the withdrawal fee for the stability pool.
   ///
   /// # Errors
