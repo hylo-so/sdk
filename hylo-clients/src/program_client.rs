@@ -14,9 +14,12 @@ use anyhow::{anyhow, Result};
 use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
 
+use hylo_core::idl::exchange::accounts::Hylo;
+use hylo_core::idl::pda;
+
 use crate::util::{
   build_lst_registry, build_v0_transaction, deserialize_lookup_table,
-  parse_event, simulation_config, LST_REGISTRY_LOOKUP_TABLE,
+  parse_event, simulation_config,
 };
 
 /// Components from which a [`VersionedTransaction`] can be built.
@@ -150,6 +153,16 @@ pub trait ProgramClient: Sized {
     Ok(sig)
   }
 
+  /// Reads the LST registry address from the on-chain Hylo account.
+  ///
+  /// # Errors
+  /// - Failed to fetch or deserialize Hylo account
+  async fn lst_registry_address(&self) -> Result<Pubkey> {
+    let data = self.program().rpc().get_account_data(&pda::HYLO).await?;
+    let hylo = Hylo::try_from_slice(&data[8..])?;
+    Ok(hylo.lst_registry)
+  }
+
   /// Loads LST registry lookup table and parses it into `remaining_accounts`.
   ///
   /// # Errors
@@ -157,7 +170,8 @@ pub trait ProgramClient: Sized {
   async fn load_lst_registry(
     &self,
   ) -> Result<(Vec<AccountMeta>, AddressLookupTableAccount)> {
-    let table = self.load_lookup_table(&LST_REGISTRY_LOOKUP_TABLE).await?;
+    let address = self.lst_registry_address().await?;
+    let table = self.load_lookup_table(&address).await?;
     build_lst_registry(table)
   }
 

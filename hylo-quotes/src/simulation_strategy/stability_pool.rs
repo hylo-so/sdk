@@ -13,7 +13,7 @@ use hylo_clients::transaction::{
 };
 use hylo_clients::util::{
   parse_event, simulation_config, user_ata_instruction, EXCHANGE_LOOKUP_TABLE,
-  LST, LST_REGISTRY_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE,
+  LST, STABILITY_POOL_LOOKUP_TABLE,
 };
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::exchange::events::{
@@ -171,11 +171,15 @@ impl<L: LST + Local> BuildTransactionData<SHYUSD, L> for SimulationStrategy {
       instructions.extend(redeem_xsol.instructions);
     }
 
+    let registry = self
+      .stability_pool_client
+      .lst_registry_address()
+      .await?;
     let lookup_tables = self
       .stability_pool_client
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
+        registry,
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;

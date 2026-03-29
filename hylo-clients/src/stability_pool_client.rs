@@ -20,8 +20,8 @@ use crate::transaction::{
   BuildTransactionData, RedeemArgs, StabilityPoolArgs, TransactionSyntax,
 };
 use crate::util::{
-  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
-  REFERENCE_WALLET, STABILITY_POOL_LOOKUP_TABLE,
+  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, REFERENCE_WALLET,
+  STABILITY_POOL_LOOKUP_TABLE,
 };
 
 /// Client for interacting with the Hylo Stability Pool program.
@@ -284,10 +284,11 @@ impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
       instructions.extend(vec![user_ata_instruction(&user, &XSOL::MINT)]);
       instructions.extend(redeem_xsol_args.instructions);
     }
+    let registry = self.lst_registry_address().await?;
     let lookup_tables = self
       .load_multiple_lookup_tables(&[
         EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
+        registry,
         STABILITY_POOL_LOOKUP_TABLE,
       ])
       .await?;

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
@@ -19,9 +20,7 @@ use crate::transaction::{
   BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SwapArgs,
   TransactionSyntax,
 };
-use crate::util::{
-  EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
-};
+use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, REFERENCE_WALLET};
 
 /// Client for interacting with the Hylo Exchange program.
 ///
@@ -202,7 +201,7 @@ impl ExchangeClient {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instruction = instruction_builders::update_lst_prices(
       self.program().payer(),
-      LST_REGISTRY_LOOKUP_TABLE,
+      registry_lut.key,
       remaining_accounts,
     );
     let instructions = self
@@ -224,7 +223,7 @@ impl ExchangeClient {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instruction = instruction_builders::harvest_yield(
       self.program.payer(),
-      LST_REGISTRY_LOOKUP_TABLE,
+      registry_lut.key,
       remaining_accounts,
     );
     let instructions = self
@@ -396,6 +395,18 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
+  async fn load_lookup_tables_with_registry(
+    &self,
+    static_tables: &[Pubkey],
+  ) -> Result<Vec<AddressLookupTableAccount>> {
+    let registry = self.lst_registry_address().await?;
+    self
+      .load_multiple_lookup_tables(
+        &[static_tables, &[registry]].concat(),
+      )
+      .await
+  }
+
   pub fn update_lst_swap_fee(
     &self,
     args: &args::UpdateLstSwapFee,
@@ -415,8 +426,9 @@ impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
     inputs: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
     let instructions = ExchangeIB::build_instructions::<HYUSD, OUT>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, OUT>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    let tables = ExchangeIB::lookup_tables::<HYUSD, OUT>();
+    let lookup_tables =
+      self.load_lookup_tables_with_registry(tables).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -430,8 +442,9 @@ impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
     inputs: RedeemArgs,
   ) -> Result<VersionedTransactionData> {
     let instructions = ExchangeIB::build_instructions::<XSOL, OUT>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, OUT>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    let tables = ExchangeIB::lookup_tables::<XSOL, OUT>();
+    let lookup_tables =
+      self.load_lookup_tables_with_registry(tables).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -442,8 +455,9 @@ impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
 
   async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
     let instructions = ExchangeIB::build_instructions::<IN, HYUSD>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<IN, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    let tables = ExchangeIB::lookup_tables::<IN, HYUSD>();
+    let lookup_tables =
+      self.load_lookup_tables_with_registry(tables).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -454,8 +468,9 @@ impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
 
   async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
     let instructions = ExchangeIB::build_instructions::<IN, XSOL>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<IN, XSOL>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    let tables = ExchangeIB::lookup_tables::<IN, XSOL>();
+    let lookup_tables =
+      self.load_lookup_tables_with_registry(tables).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
@@ -493,8 +508,9 @@ impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
     inputs: LstSwapArgs,
   ) -> Result<VersionedTransactionData> {
     let instructions = ExchangeIB::build_instructions::<L1, L2>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<L1, L2>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
+    let tables = ExchangeIB::lookup_tables::<L1, L2>();
+    let lookup_tables =
+      self.load_lookup_tables_with_registry(tables).await?;
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
