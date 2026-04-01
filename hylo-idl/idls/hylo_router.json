@@ -1,10 +1,10 @@
 {
-  "address": "hYPRoX92CJ1fCm4Wof2HPVCFUQR9PC4xrfCEoer7bJC",
+  "address": "hyRouTRDAgn65xyyJ3L5c4k5SFmSdr3NxDV8Euzjy3f",
   "metadata": {
     "name": "hylo_router",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Created with Anchor"
+    "description": "Hylo Router Program"
   },
   "instructions": [
     {
