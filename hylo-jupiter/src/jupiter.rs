@@ -78,7 +78,7 @@ impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
     "Hylo JITOSOL<->HYUSD"
   }
   fn key() -> Pubkey {
-    *pda::HYLO
+    pda::HYLO
   }
 
   fn quote(
@@ -119,7 +119,7 @@ impl PairConfig<HYLOSOL, HYUSD> for HyloJupiterPair<HYLOSOL, HYUSD> {
     "Hylo HYLOSOL<->HYUSD"
   }
   fn key() -> Pubkey {
-    *pda::HYLO
+    pda::HYLO
   }
 
   fn quote(
@@ -160,7 +160,7 @@ impl PairConfig<JITOSOL, XSOL> for HyloJupiterPair<JITOSOL, XSOL> {
     "Hylo JITOSOL<->XSOL"
   }
   fn key() -> Pubkey {
-    *pda::HYLO
+    pda::HYLO
   }
 
   fn quote(
@@ -201,7 +201,7 @@ impl PairConfig<HYLOSOL, XSOL> for HyloJupiterPair<HYLOSOL, XSOL> {
     "Hylo HYLOSOL<->XSOL"
   }
   fn key() -> Pubkey {
-    *pda::HYLO
+    pda::HYLO
   }
 
   fn quote(
@@ -242,7 +242,7 @@ impl PairConfig<HYUSD, XSOL> for HyloJupiterPair<HYUSD, XSOL> {
     "Hylo HYUSD<->XSOL"
   }
   fn key() -> Pubkey {
-    *pda::HYLO
+    pda::HYLO
   }
 
   fn quote(
@@ -283,7 +283,7 @@ impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
     "Hylo HYUSD<->SHYUSD"
   }
   fn key() -> Pubkey {
-    *pda::POOL_CONFIG
+    pda::POOL_CONFIG
   }
 
   fn quote(
@@ -354,16 +354,16 @@ where
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
     vec![
-      *pda::HYLO,
+      pda::HYLO,
       HYUSD::MINT,
       XSOL::MINT,
       pda::lst_header(JITOSOL::MINT),
       pda::lst_header(HYLOSOL::MINT),
       SOL_USD.address,
       SHYUSD::MINT,
-      *pda::HYUSD_POOL,
-      *pda::XSOL_POOL,
-      *pda::POOL_CONFIG,
+      pda::HYUSD_POOL,
+      pda::XSOL_POOL,
+      pda::POOL_CONFIG,
     ]
   }
 

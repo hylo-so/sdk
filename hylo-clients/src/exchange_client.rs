@@ -244,7 +244,7 @@ impl ExchangeClient {
   /// - Failed to deserialize return data
   pub async fn get_stats(&self) -> Result<ExchangeStats> {
     let accounts = accounts::GetStats {
-      hylo: *pda::HYLO,
+      hylo: pda::HYLO,
       stablecoin_mint: HYUSD::MINT,
       levercoin_mint: XSOL::MINT,
       sol_usd_pyth_feed: SOL_USD.address,

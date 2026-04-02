@@ -3,6 +3,8 @@ use anchor_spl::mint::USDC as USDC_MINT;
 use fix::prelude::{N6, N8, N9};
 use fix::typenum::Integer;
 
+use crate::{exchange, pda, stability_pool};
+
 pub trait TokenMint {
   type Exp: Integer;
   const MINT: Pubkey;
@@ -16,21 +18,22 @@ pub struct HYUSD;
 
 impl TokenMint for HYUSD {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("5YMkXAYccHSGnHn9nob9xEvv6Pvka9DZWH7nTbotTu9E");
+  const MINT: Pubkey = pda::mint(exchange::ID, exchange::constants::HYUSD);
 }
 
 pub struct SHYUSD;
 
 impl TokenMint for SHYUSD {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("HnnGv3HrSqjRpgdFmx7vQGjntNEoex1SU4e9Lxcxuihz");
+  const MINT: Pubkey =
+    pda::mint(stability_pool::ID, stability_pool::constants::STAKED_HYUSD);
 }
 
 pub struct XSOL;
 
 impl TokenMint for XSOL {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("4sWNB8zGWHkh6UnmwiEtzNxL4XrN7uK9tosbESbJFfVs");
+  const MINT: Pubkey = pda::mint(exchange::ID, exchange::constants::XSOL);
 }
 
 pub struct JITOSOL;
@@ -75,5 +78,5 @@ pub struct XBTC;
 
 impl TokenMint for XBTC {
   type Exp = N6;
-  const MINT: Pubkey = pubkey!("2zCo6bUowJMvr89ajxuWsPadAqJ2F9akCkxumNsSdgsL");
+  const MINT: Pubkey = pda::exo_levercoin_mint(CBBTC::MINT);
 }
