@@ -6,6 +6,9 @@ description = "Quote computation and execution layer for Hylo protocol"
 license.workspace = true
 homepage.workspace = true
 
+[features]
+shadow = ["hylo-idl/shadow", "hylo-core/shadow", "hylo-clients/shadow"]
+
 [dependencies]
 anchor-client.workspace = true
 anchor-lang.workspace = true

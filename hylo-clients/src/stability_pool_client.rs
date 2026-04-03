@@ -17,7 +17,7 @@ use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
   BuildTransactionData, StabilityPoolArgs, TransactionSyntax,
 };
-use crate::util::{EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE};
+use crate::util::HYLO_LOOKUP_TABLE;
 
 /// Client for interacting with the Hylo Stability Pool program.
 ///
@@ -87,13 +87,8 @@ impl StabilityPoolClient {
     let instruction =
       instruction_builders::rebalance_lever_to_stable(self.program.payer());
     let instructions = vec![instruction];
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        STABILITY_POOL_LOOKUP_TABLE,
-      ])
-      .await?;
-    let tx_args = VersionedTransactionData::new(instructions, lookup_tables);
+    let lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    let tx_args = VersionedTransactionData::new(instructions, vec![lut]);
     let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
   }

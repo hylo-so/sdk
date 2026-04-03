@@ -6,6 +6,14 @@ description = "Jupiter integration for Hylo Exchange and Stability Pool."
 license.workspace = true
 homepage.workspace = true
 
+[features]
+shadow = [
+  "hylo-idl/shadow",
+  "hylo-core/shadow",
+  "hylo-clients/shadow",
+  "hylo-quotes/shadow",
+]
+
 [dependencies]
 anchor-client.workspace = true
 anchor-lang.workspace = true

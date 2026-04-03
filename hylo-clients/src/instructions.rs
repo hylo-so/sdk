@@ -45,8 +45,7 @@ use crate::transaction::{
   LstSwapArgs, MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs,
 };
 use crate::util::{
-  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
-  STABILITY_POOL_LOOKUP_TABLE,
+  user_ata_instruction, HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
 };
 
 /// Statically type-safe instruction builder for token pair operations.
@@ -77,7 +76,7 @@ impl<L: LST> InstructionBuilder<L, HYUSD> for ExchangeInstructionBuilder {
   type Inputs = MintArgs;
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+    &[HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
   fn build(
     MintArgs {
@@ -104,7 +103,7 @@ impl<L: LST> InstructionBuilder<HYUSD, L> for ExchangeInstructionBuilder {
   type Inputs = RedeemArgs;
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+    &[HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
   fn build(
     RedeemArgs {
@@ -131,7 +130,7 @@ impl<L: LST> InstructionBuilder<L, XSOL> for ExchangeInstructionBuilder {
   type Inputs = MintArgs;
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+    &[HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
   fn build(
     MintArgs {
@@ -158,7 +157,7 @@ impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
   type Inputs = RedeemArgs;
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+    &[HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
   fn build(
     RedeemArgs {
@@ -184,7 +183,7 @@ impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
 impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
   type Inputs = SwapArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     SwapArgs {
@@ -210,7 +209,7 @@ impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
 impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
   type Inputs = SwapArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     SwapArgs {
@@ -239,8 +238,7 @@ pub struct StabilityPoolInstructionBuilder;
 impl InstructionBuilder<HYUSD, SHYUSD> for StabilityPoolInstructionBuilder {
   type Inputs = StabilityPoolArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
@@ -263,8 +261,7 @@ impl InstructionBuilder<HYUSD, SHYUSD> for StabilityPoolInstructionBuilder {
 impl InstructionBuilder<SHYUSD, HYUSD> for StabilityPoolInstructionBuilder {
   type Inputs = StabilityPoolArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, STABILITY_POOL_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     StabilityPoolArgs { amount, user }: StabilityPoolArgs,
@@ -288,7 +285,7 @@ impl<L1: LST, L2: LST> InstructionBuilder<L1, L2>
   type Inputs = LstSwapArgs;
 
   const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] =
-    &[EXCHANGE_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+    &[HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
 
   fn build(
     LstSwapArgs {

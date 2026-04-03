@@ -2,9 +2,9 @@
   "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn",
   "metadata": {
     "name": "hylo_exchange",
-    "version": "0.1.4",
+    "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Created with Anchor"
+    "description": "Hylo Exchange Program"
   },
   "instructions": [
     {

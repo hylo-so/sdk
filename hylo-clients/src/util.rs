@@ -30,19 +30,28 @@ pub trait LST: StakePool {}
 impl LST for JITOSOL {}
 impl LST for HYLOSOL {}
 
-pub const EXCHANGE_LOOKUP_TABLE: Pubkey =
-  pubkey!("E1jD3vdypYukwy9SWgWCnAJEvKC4Uj7MEc3c4S2LogD9");
+#[cfg(not(feature = "shadow"))]
+pub const HYLO_LOOKUP_TABLE: Pubkey =
+  pubkey!("71Upv8sJ7wtMpX95ndwVWJvCG3QtpDdVrsh2uJXJvtUz");
+#[cfg(feature = "shadow")]
+pub const HYLO_LOOKUP_TABLE: Pubkey =
+  pubkey!("AUJBw5F13K3pSJMZWok21xKueaNR9N5gM3r3ZFyx7det");
 
-pub const STABILITY_POOL_LOOKUP_TABLE: Pubkey =
-  pubkey!("Gb35n7SYMZCwCZbmxJMqoFsFX1mVhdSXmwo8wAJ8whWC");
-
+#[cfg(not(feature = "shadow"))]
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
   pubkey!("9Mb2Mt76AN7eNY3BBA4LgfTicARXhcEEokTBfsN47noK");
+#[cfg(feature = "shadow")]
+pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
+  pubkey!("CoBiwzy3VjtXumzT4YsGZb7mQKRrwkpkeixsvnfEEeL4");
 
 /// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and
 /// sHYUSD. Useful for simulations of mint and redemption.
+#[cfg(not(feature = "shadow"))]
 pub const REFERENCE_WALLET: Pubkey =
   pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
+#[cfg(feature = "shadow")]
+pub const REFERENCE_WALLET: Pubkey =
+  pubkey!("EvSpFLUfdJT38di12JhAwfU6xe6YCKS6BL1gN3VDWYQG");
 
 /// Default configuration to use in simulated transactions.
 #[must_use]

@@ -10,18 +10,18 @@ use crate::{pda, stability_pool};
 pub fn deposit(user: Pubkey) -> UserDeposit {
   UserDeposit {
     user,
-    pool_config: *pda::POOL_CONFIG,
-    hylo: *pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    hylo: pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
     user_stablecoin_ta: pda::hyusd_ata(user),
     user_lp_token_ta: pda::shyusd_ata(user),
-    pool_auth: *pda::POOL_AUTH,
-    stablecoin_pool: *pda::HYUSD_POOL,
-    lp_token_auth: *pda::SHYUSD_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    lp_token_auth: pda::SHYUSD_AUTH,
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   }
 }
@@ -31,22 +31,22 @@ pub fn deposit(user: Pubkey) -> UserDeposit {
 pub fn withdraw(user: Pubkey) -> UserWithdraw {
   UserWithdraw {
     user,
-    pool_config: *pda::POOL_CONFIG,
-    hylo: *pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    hylo: pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
     user_stablecoin_ta: pda::hyusd_ata(user),
     fee_auth: pda::fee_auth(HYUSD::MINT),
     fee_vault: pda::fee_vault(HYUSD::MINT),
     user_lp_token_ta: pda::shyusd_ata(user),
-    pool_auth: *pda::POOL_AUTH,
-    stablecoin_pool: *pda::HYUSD_POOL,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
     levercoin_mint: XSOL::MINT,
-    levercoin_pool: *pda::XSOL_POOL,
+    levercoin_pool: pda::XSOL_POOL,
     user_levercoin_ta: pda::xsol_ata(user),
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   }
 }

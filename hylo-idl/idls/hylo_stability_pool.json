@@ -2,9 +2,9 @@
   "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ",
   "metadata": {
     "name": "hylo_stability_pool",
-    "version": "0.1.4",
+    "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Created with Anchor"
+    "description": "Hylo Stability Pool Program"
   },
   "instructions": [
     {
