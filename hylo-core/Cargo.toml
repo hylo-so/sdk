@@ -9,6 +9,7 @@ homepage.workspace = true
 [features]
 default = []
 offchain = ["dep:hylo-idl", "dep:hylo-jupiter-amm-interface"]
+shadow = ["hylo-idl?/shadow"]
 
 [dependencies]
 anchor-lang.workspace = true

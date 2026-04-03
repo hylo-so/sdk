@@ -20,7 +20,7 @@ use crate::transaction::{
   BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SwapArgs,
   TransactionSyntax,
 };
-use crate::util::{EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
 
 /// Client for interacting with the Hylo Exchange program.
 ///
@@ -211,7 +211,7 @@ impl ExchangeClient {
       .request()
       .instruction(instruction)
       .instructions()?;
-    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
@@ -232,7 +232,7 @@ impl ExchangeClient {
       .request()
       .instruction(instruction)
       .instructions()?;
-    let exchange_lut = self.load_lookup_table(&EXCHANGE_LOOKUP_TABLE).await?;
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }

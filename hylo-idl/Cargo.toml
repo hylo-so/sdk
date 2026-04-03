@@ -7,6 +7,13 @@ license.workspace = true
 homepage.workspace = true
 include = ["idls/", "src/"]
 
+[features]
+shadow = []
+
+[[bin]]
+name = "lut-accounts"
+path = "src/bin/lut_accounts.rs"
+
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true

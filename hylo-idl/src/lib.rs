@@ -12,20 +12,40 @@ mod account_builders;
 mod instruction_builders;
 
 pub mod exchange {
+  #[cfg(feature = "shadow")]
+  use anchor_lang::prelude::{pubkey, Pubkey};
+
   pub use super::account_builders::exchange as account_builders;
   pub use super::codegen::hylo_exchange::*;
   pub use super::instruction_builders::exchange as instruction_builders;
+
+  #[cfg(feature = "shadow")]
+  pub const ID: Pubkey =
+    pubkey!("HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH");
 }
 
 pub mod stability_pool {
+  #[cfg(feature = "shadow")]
+  use anchor_lang::prelude::{pubkey, Pubkey};
+
   pub use super::account_builders::stability_pool as account_builders;
   pub use super::codegen::hylo_stability_pool::*;
   pub use super::instruction_builders::stability_pool as instruction_builders;
+
+  #[cfg(feature = "shadow")]
+  pub const ID: Pubkey =
+    pubkey!("HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk");
 }
 
 pub mod router {
+  #[cfg(feature = "shadow")]
+  use anchor_lang::prelude::{pubkey, Pubkey};
+
   pub use super::codegen::hylo_router::*;
   pub use super::instruction_builders::router as instruction_builders;
+
+  #[cfg(feature = "shadow")]
+  pub const ID: Pubkey = pubkey!("hyshRoSsynsCxF5Dt9KnHc5pS1u8saVT79NywtWUSsv");
 }
 
 pub mod pda;
