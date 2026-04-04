@@ -4,8 +4,8 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
-use anyhow::Result;
-use hylo_core::idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
+use anyhow::{anyhow, Result};
+use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
 use hylo_core::idl::{exchange, pda};
 use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
@@ -23,7 +23,9 @@ use crate::transaction::{
   BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, RouterArgs,
   SwapArgs, TransactionSyntax,
 };
-use crate::util::{HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{
+  EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
+};
 
 /// Client for interacting with the Hylo Exchange program.
 ///
@@ -242,6 +244,9 @@ impl ExchangeClient {
 
   /// Gets exchange stats via RPC simulation.
   ///
+  /// Uses `REFERENCE_WALLET` as the fee payer to allow simulation without
+  /// requiring the client keypair to exist on-chain.
+  ///
   /// # Errors
   /// - Failed to simulate transaction
   /// - Failed to deserialize return data
@@ -253,16 +258,22 @@ impl ExchangeClient {
       sol_usd_pyth_feed: SOL_USD.address,
     };
     let args = args::GetStats {};
-    let tx = self
+    let instructions = self
       .program
       .request()
       .accounts(accounts)
       .args(args)
-      .signed_transaction()
+      .instructions()?;
+    let vtd = VersionedTransactionData::one(
+      instructions
+        .into_iter()
+        .next()
+        .ok_or_else(|| anyhow!("No instruction generated for get_stats"))?,
+    );
+    let tx = self
+      .build_simulation_transaction(&REFERENCE_WALLET, &vtd)
       .await?;
-    let tx: VersionedTransaction = tx.into();
-    let stats = self.simulate_transaction_return(&tx).await?;
-    Ok(stats)
+    self.simulate_transaction_return(tx).await
   }
 
   /// Updates the oracle confidence tolerance.
