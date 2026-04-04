@@ -1,162 +1,174 @@
-use std::sync::LazyLock;
-
-use anchor_lang::prelude::{pubkey, Pubkey};
+use anchor_lang::prelude::{bpf_loader_upgradeable, pubkey, Pubkey};
+use anchor_spl::associated_token::spl_associated_token_account;
+use anchor_spl::token;
+use const_crypto::ed25519;
 use solana_address_lookup_table_interface::program as address_lookup_table;
-use solana_loader_v3_interface::get_program_data_address;
 
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use crate::{exchange, stability_pool};
 
-macro_rules! lazy {
-  ($x:expr) => {
-    LazyLock::new(|| $x)
-  };
-}
-
 macro_rules! pda {
-  ($program_id:expr, $base:expr) => {
-    Pubkey::find_program_address(&[$base.as_ref()], &$program_id).0
-  };
-  ($program_id:expr, $base:expr, $key:expr) => {
-    Pubkey::find_program_address(&[$base.as_ref(), $key.as_ref()], &$program_id)
-      .0
-  };
-}
-
-#[macro_export]
-macro_rules! ata {
-  ($auth:expr, $mint:expr) => {
-    anchor_spl::associated_token::get_associated_token_address(&$auth, &$mint)
-  };
+  ($program_id:expr, $base:expr) => {{
+    let (key, _bump) = ed25519::derive_program_address(
+      &[$base.as_slice()],
+      $program_id.as_array(),
+    );
+    Pubkey::new_from_array(key)
+  }};
+  ($program_id:expr, $base:expr, $key:expr) => {{
+    let (key, _bump) = ed25519::derive_program_address(
+      &[$base.as_slice(), $key.as_array()],
+      $program_id.as_array(),
+    );
+    Pubkey::new_from_array(key)
+  }};
 }
 
 #[must_use]
-pub fn metadata(mint: Pubkey) -> Pubkey {
-  Pubkey::find_program_address(
+pub const fn mint<const N: usize>(program_id: Pubkey, seed: [u8; N]) -> Pubkey {
+  let (key, _bump) =
+    ed25519::derive_program_address(&[&seed], program_id.as_array());
+  Pubkey::new_from_array(key)
+}
+
+#[must_use]
+pub const fn ata(auth: Pubkey, mint: Pubkey) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
+    &[auth.as_array(), token::ID.as_array(), mint.as_array()],
+    spl_associated_token_account::ID.as_array(),
+  );
+  Pubkey::new_from_array(key)
+}
+
+#[must_use]
+pub const fn progdata(program_id: Pubkey) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
+    &[program_id.as_array()],
+    bpf_loader_upgradeable::ID.as_array(),
+  );
+  Pubkey::new_from_array(key)
+}
+
+#[must_use]
+pub const fn metadata(mint: Pubkey) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
     &[
-      "metadata".as_ref(),
-      mpl_token_metadata::ID.as_ref(),
-      mint.as_ref(),
+      b"metadata",
+      mpl_token_metadata::ID.as_array(),
+      mint.as_array(),
     ],
-    &mpl_token_metadata::ID,
-  )
-  .0
+    mpl_token_metadata::ID.as_array(),
+  );
+  Pubkey::new_from_array(key)
 }
 
 #[must_use]
-pub fn hyusd_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &HYUSD::MINT)
+pub const fn hyusd_ata(auth: Pubkey) -> Pubkey {
+  ata(auth, HYUSD::MINT)
 }
 
 #[must_use]
-pub fn xsol_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &XSOL::MINT)
+pub const fn xsol_ata(auth: Pubkey) -> Pubkey {
+  ata(auth, XSOL::MINT)
 }
 
 #[must_use]
-pub fn shyusd_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &SHYUSD::MINT)
+pub const fn shyusd_ata(auth: Pubkey) -> Pubkey {
+  ata(auth, SHYUSD::MINT)
 }
 
 #[must_use]
-pub fn usdc_ata(auth: Pubkey) -> Pubkey {
-  ata!(&auth, &USDC::MINT)
+pub const fn usdc_ata(auth: Pubkey) -> Pubkey {
+  ata(auth, USDC::MINT)
 }
 
 #[must_use]
-pub fn lst_vault(mint: Pubkey) -> Pubkey {
-  ata!(&lst_vault_auth(mint), &mint)
+pub const fn lst_vault(mint: Pubkey) -> Pubkey {
+  ata(lst_vault_auth(mint), mint)
 }
 
 #[must_use]
-pub fn exo_vault(mint: Pubkey) -> Pubkey {
-  ata!(&exo_vault_auth(mint), &mint)
+pub const fn exo_vault(mint: Pubkey) -> Pubkey {
+  ata(exo_vault_auth(mint), mint)
 }
 
 #[must_use]
-pub fn usdc_vault(mint: Pubkey) -> Pubkey {
-  ata!(&usdc_vault_auth(mint), &mint)
+pub const fn usdc_vault(mint: Pubkey) -> Pubkey {
+  ata(usdc_vault_auth(mint), mint)
 }
 
 #[must_use]
-pub fn lst_vault_auth(mint: Pubkey) -> Pubkey {
+pub const fn lst_vault_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::VAULT_AUTH, mint)
 }
 
 #[must_use]
-pub fn exo_vault_auth(mint: Pubkey) -> Pubkey {
+pub const fn exo_vault_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::EXO_VAULT_AUTH, mint)
 }
 
 #[must_use]
-pub fn usdc_vault_auth(mint: Pubkey) -> Pubkey {
+pub const fn usdc_vault_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::USDC_VAULT_AUTH, mint)
 }
 
 #[must_use]
-pub fn new_lst_registry(slot: u64) -> Pubkey {
-  Pubkey::find_program_address(
-    &[LST_REGISTRY_AUTH.as_ref(), &slot.to_le_bytes()],
-    &address_lookup_table::ID,
-  )
-  .0
+pub const fn new_lst_registry(slot: u64) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
+    &[LST_REGISTRY_AUTH.as_array(), &slot.to_le_bytes()],
+    address_lookup_table::ID.as_array(),
+  );
+  Pubkey::new_from_array(key)
 }
 
 #[must_use]
-pub fn lst_header(mint: Pubkey) -> Pubkey {
+pub const fn lst_header(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::LST_HEADER, mint)
 }
 
 #[must_use]
-pub fn fee_vault(mint: Pubkey) -> Pubkey {
-  ata!(&fee_auth(mint), &mint)
+pub const fn fee_vault(mint: Pubkey) -> Pubkey {
+  ata(fee_auth(mint), mint)
 }
 
 #[must_use]
-pub fn fee_auth(mint: Pubkey) -> Pubkey {
+pub const fn fee_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::FEE_AUTH, mint)
 }
 
-pub static HYLO: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::HYLO));
+pub const HYLO: Pubkey = pda!(exchange::ID, exchange::constants::HYLO);
 
 #[must_use]
-pub fn mint_auth(mint: Pubkey) -> Pubkey {
+pub const fn mint_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::MINT_AUTH, mint)
 }
 
-pub static HYUSD_AUTH: LazyLock<Pubkey> = lazy!(mint_auth(HYUSD::MINT));
+pub const HYUSD_AUTH: Pubkey = mint_auth(HYUSD::MINT);
 
-pub static XSOL_AUTH: LazyLock<Pubkey> = lazy!(mint_auth(XSOL::MINT));
+pub const XSOL_AUTH: Pubkey = mint_auth(XSOL::MINT);
 
-pub static LST_REGISTRY_AUTH: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH));
+pub const LST_REGISTRY_AUTH: Pubkey =
+  pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH);
 
-pub static POOL_CONFIG: LazyLock<Pubkey> = lazy!(pda!(
-  stability_pool::ID,
-  stability_pool::constants::POOL_CONFIG
-));
+pub const POOL_CONFIG: Pubkey =
+  pda!(stability_pool::ID, stability_pool::constants::POOL_CONFIG);
 
-pub static SHYUSD_AUTH: LazyLock<Pubkey> = lazy!(pda!(
+pub const SHYUSD_AUTH: Pubkey = pda!(
   stability_pool::ID,
   exchange::constants::MINT_AUTH,
   SHYUSD::MINT
-));
+);
 
-pub static POOL_AUTH: LazyLock<Pubkey> = lazy!(pda!(
-  stability_pool::ID,
-  stability_pool::constants::POOL_AUTH
-));
+pub const POOL_AUTH: Pubkey =
+  pda!(stability_pool::ID, stability_pool::constants::POOL_AUTH);
 
-pub static HYUSD_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, HYUSD::MINT));
+pub const HYUSD_POOL: Pubkey = ata(POOL_AUTH, HYUSD::MINT);
 
-pub static XSOL_POOL: LazyLock<Pubkey> = lazy!(ata!(POOL_AUTH, XSOL::MINT));
+pub const XSOL_POOL: Pubkey = ata(POOL_AUTH, XSOL::MINT);
 
-pub static STABILITY_POOL_PROGRAM_DATA: LazyLock<Pubkey> =
-  lazy!(get_program_data_address(&stability_pool::ID));
+pub const STABILITY_POOL_PROGRAM_DATA: Pubkey = progdata(stability_pool::ID);
 
-pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
-  lazy!(get_program_data_address(&exchange::ID));
+pub const EXCHANGE_PROGRAM_DATA: Pubkey = progdata(exchange::ID);
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
   pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
@@ -168,26 +180,29 @@ pub const BTC_USD_PYTH_FEED: Pubkey =
   pubkey!("4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo");
 
 #[must_use]
-pub fn event_auth(program_id: Pubkey) -> Pubkey {
-  Pubkey::find_program_address(&[b"__event_authority"], &program_id).0
+pub const fn event_auth(program_id: Pubkey) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
+    &[b"__event_authority"],
+    program_id.as_array(),
+  );
+  Pubkey::new_from_array(key)
 }
 
-pub static EXCHANGE_EVENT_AUTHORITY: LazyLock<Pubkey> =
-  lazy!(event_auth(exchange::ID));
+pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 
-pub static STABILITY_POOL_EVENT_AUTHORITY: LazyLock<Pubkey> =
-  lazy!(event_auth(stability_pool::ID));
+pub const STABILITY_POOL_EVENT_AUTHORITY: Pubkey =
+  event_auth(stability_pool::ID);
 
-pub static USDC_PAIR: LazyLock<Pubkey> =
-  lazy!(pda!(exchange::ID, exchange::constants::USDC_PAIR));
+pub const USDC_PAIR: Pubkey =
+  pda!(exchange::ID, exchange::constants::USDC_PAIR);
 
 #[must_use]
-pub fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
+pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
 }
 
 #[must_use]
-pub fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
+pub const fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
   pda!(
     exchange::ID,
     exchange::constants::EXO_LEVERCOIN,

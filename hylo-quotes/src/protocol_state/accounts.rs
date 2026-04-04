@@ -75,15 +75,15 @@ impl ProtocolAccounts {
   #[must_use]
   pub fn pubkeys() -> Vec<Pubkey> {
     vec![
-      *pda::HYLO,
+      pda::HYLO,
       pda::lst_header(JITOSOL::MINT),
       pda::lst_header(HYLOSOL::MINT),
       HYUSD::MINT,
       SHYUSD::MINT,
       XSOL::MINT,
-      *pda::POOL_CONFIG,
-      *pda::HYUSD_POOL,
-      *pda::XSOL_POOL,
+      pda::POOL_CONFIG,
+      pda::HYUSD_POOL,
+      pda::XSOL_POOL,
       hylo_core::pyth::SOL_USD.address,
       sysvar::clock::ID,
       // exo accounts (may be missing on some deployments)

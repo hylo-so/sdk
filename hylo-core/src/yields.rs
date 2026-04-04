@@ -6,6 +6,9 @@ use crate::error::CoreError::{
 };
 use crate::fee_controller::FeeExtract;
 
+/// 1000 bps (10%)
+const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
+
 /// Captures yield harvest configuration as two basis point values:
 #[derive(
   Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
@@ -51,14 +54,14 @@ impl YieldHarvestConfig {
     Ok(extract)
   }
 
-  /// Yield harvest fee and allocation parse to bps and are less than or equal
-  /// to 100%
   pub fn validate(&self) -> Result<Self> {
     let fee: UFix64<N4> = self.fee.try_into()?;
     let allocation: UFix64<N4> = self.allocation.try_into()?;
-    let one = UFix64::new(10000);
-    let zero = UFix64::zero();
-    if fee > zero && fee <= one && allocation > zero && allocation <= one {
+    if fee > UFix64::zero()
+      && fee <= MAX_FEE
+      && allocation > UFix64::zero()
+      && allocation <= UFix64::one()
+    {
       Ok(*self)
     } else {
       Err(YieldHarvestConfigValidation.into())

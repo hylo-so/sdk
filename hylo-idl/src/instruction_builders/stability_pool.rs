@@ -36,22 +36,22 @@ pub fn user_withdraw(user: Pubkey, args: &args::UserWithdraw) -> Instruction {
 pub fn rebalance_lever_to_stable(payer: Pubkey) -> Instruction {
   let accounts = accounts::RebalanceLeverToStable {
     payer,
-    pool_config: *pda::POOL_CONFIG,
-    hylo: *pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    hylo: pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
-    stablecoin_pool: *pda::HYUSD_POOL,
-    pool_auth: *pda::POOL_AUTH,
-    levercoin_pool: *pda::XSOL_POOL,
+    stablecoin_pool: pda::HYUSD_POOL,
+    pool_auth: pda::POOL_AUTH,
+    levercoin_pool: pda::XSOL_POOL,
     fee_auth: pda::fee_auth(HYUSD::MINT),
     fee_vault: pda::fee_vault(HYUSD::MINT),
     levercoin_mint: XSOL::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    stablecoin_auth: *pda::HYUSD_AUTH,
-    levercoin_auth: *pda::XSOL_AUTH,
-    exchange_event_authority: *pda::EXCHANGE_EVENT_AUTHORITY,
+    stablecoin_auth: pda::HYUSD_AUTH,
+    levercoin_auth: pda::XSOL_AUTH,
+    exchange_event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     hylo_exchange_program: exchange::ID,
     token_program: token::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   };
   let instruction_args = args::RebalanceLeverToStable {};
@@ -65,12 +65,12 @@ pub fn rebalance_lever_to_stable(payer: Pubkey) -> Instruction {
 #[must_use]
 pub fn get_stats() -> Instruction {
   let accounts = accounts::GetStats {
-    pool_config: *pda::POOL_CONFIG,
-    hylo: *pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    hylo: pda::HYLO,
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint: XSOL::MINT,
-    pool_auth: *pda::POOL_AUTH,
-    stablecoin_pool: *pda::HYUSD_POOL,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
   };
@@ -90,16 +90,16 @@ pub fn initialize_stability_pool(
   let accounts = accounts::InitializeStabilityPool {
     admin,
     upgrade_authority,
-    pool_config: *pda::POOL_CONFIG,
-    pool_auth: *pda::POOL_AUTH,
-    stablecoin_pool: *pda::HYUSD_POOL,
-    levercoin_pool: *pda::XSOL_POOL,
+    pool_config: pda::POOL_CONFIG,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    levercoin_pool: pda::XSOL_POOL,
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint: XSOL::MINT,
     associated_token_program: associated_token::ID,
     token_program: token::ID,
     system_program: system_program::ID,
-    program_data: *pda::STABILITY_POOL_PROGRAM_DATA,
+    program_data: pda::STABILITY_POOL_PROGRAM_DATA,
     hylo_stability_pool: stability_pool::ID,
   };
   let args = args::InitializeStabilityPool {};
@@ -117,8 +117,8 @@ pub fn initialize_lp_token_mint(
 ) -> Instruction {
   let accounts = accounts::InitializeLpTokenMint {
     admin,
-    pool_config: *pda::POOL_CONFIG,
-    lp_token_auth: *pda::SHYUSD_AUTH,
+    pool_config: pda::POOL_CONFIG,
+    lp_token_auth: pda::SHYUSD_AUTH,
     lp_token_mint: SHYUSD::MINT,
     lp_token_metadata: pda::metadata(SHYUSD::MINT),
     metadata_program: mpl_token_metadata::ID,
@@ -141,8 +141,8 @@ pub fn update_withdrawal_fee(
 ) -> Instruction {
   let accounts = accounts::UpdateWithdrawalFee {
     admin,
-    pool_config: *pda::POOL_CONFIG,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    pool_config: pda::POOL_CONFIG,
+    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   };
   Instruction {
@@ -161,10 +161,10 @@ pub fn update_admin(
   let accounts = accounts::UpdateAdmin {
     payer,
     upgrade_authority,
-    pool_config: *pda::POOL_CONFIG,
-    program_data: *pda::STABILITY_POOL_PROGRAM_DATA,
+    pool_config: pda::POOL_CONFIG,
+    program_data: pda::STABILITY_POOL_PROGRAM_DATA,
     hylo_stability_pool: stability_pool::ID,
-    event_authority: *pda::STABILITY_POOL_EVENT_AUTHORITY,
+    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   };
   Instruction {

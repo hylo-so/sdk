@@ -14,6 +14,18 @@ use crate::error::CoreError;
 use crate::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
 
+/// Sell curve upper boundary
+pub const UCR_1_35: UFix64<N9> = UFix64::constant(1_350_000_000);
+
+/// Buy curve lower boundary
+pub const UCR_1_65: UFix64<N9> = UFix64::constant(1_650_000_000);
+
+// CR domain boundaries
+const CR_1_20: IFix64<N9> = IFix64::constant(1_200_000_000);
+const CR_1_35: IFix64<N9> = IFix64::constant(1_350_000_000);
+const CR_1_65: IFix64<N9> = IFix64::constant(1_650_000_000);
+const CR_1_75: IFix64<N9> = IFix64::constant(1_750_000_000);
+
 /// Confidence interval multipliers for rebalance price curve construction.
 #[derive(
   Copy, Clone, Debug, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
@@ -64,16 +76,6 @@ impl RebalanceCurveConfig {
   }
 }
 
-// CR domain boundaries.
-const CR_1_20: IFix64<N9> = IFix64::constant(1_200_000_000);
-const CR_1_35: IFix64<N9> = IFix64::constant(1_350_000_000);
-/// Sell curve upper boundary.
-pub const UCR_1_35: UFix64<N9> = UFix64::constant(1_350_000_000);
-const CR_1_65: IFix64<N9> = IFix64::constant(1_650_000_000);
-/// Buy curve lower boundary.
-pub const UCR_1_65: UFix64<N9> = UFix64::constant(1_650_000_000);
-const CR_1_75: IFix64<N9> = IFix64::constant(1_750_000_000);
-
 /// Convert unsigned CR to signed for curve lookup.
 ///
 /// # Errors
@@ -108,18 +110,19 @@ pub trait RebalancePriceController {
   /// Reference to the underlying interpolator.
   fn curve(&self) -> &FixInterp<2, N9>;
 
+  /// Whether the given CR falls within the active domain.
+  fn is_active(&self, ucr: UFix64<N9>) -> bool;
+
   /// Compute price for CR from underlying curve with boundary handling.
   ///
   /// # Errors
-  /// * Domain, arithmetic, or route-inactive errors.
+  /// * Domain or arithmetic errors.
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>>;
 
   /// Collateral price at the given CR.
   ///
   /// # Errors
-  /// * CR conversion
-  /// * Domain
-  /// * Route inactive
+  /// * CR conversion, domain, or arithmetic
   fn price(&self, ucr: UFix64<N9>) -> Result<UFix64<N9>> {
     let cr = narrow_cr(ucr)?;
     self
@@ -177,12 +180,16 @@ impl RebalancePriceController for SellPriceCurve {
     &self.curve
   }
 
+  fn is_active(&self, ucr: UFix64<N9>) -> bool {
+    ucr <= UCR_1_35
+  }
+
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {
     let interp = self.curve();
     if cr < interp.x_min() {
       Ok(interp.y_min())
     } else if cr > interp.x_max() {
-      Err(CoreError::RebalanceSellInactive.into())
+      Err(CoreError::RebalanceOutOfDomain.into())
     } else {
       interp.interpolate(cr)
     }
@@ -236,10 +243,14 @@ impl RebalancePriceController for BuyPriceCurve {
     &self.curve
   }
 
+  fn is_active(&self, ucr: UFix64<N9>) -> bool {
+    ucr >= UCR_1_65
+  }
+
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {
     let interp = self.curve();
     if cr < interp.x_min() {
-      Err(CoreError::RebalanceBuyInactive.into())
+      Err(CoreError::RebalanceOutOfDomain.into())
     } else if cr > interp.x_max() {
       Ok(interp.y_max())
     } else {
@@ -340,7 +351,7 @@ mod tests {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
     assert_eq!(
       curve.price(UCR_1_40).err(),
-      Some(CoreError::RebalanceSellInactive.into())
+      Some(CoreError::RebalanceOutOfDomain.into())
     );
     Ok(())
   }
@@ -360,7 +371,7 @@ mod tests {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
     assert_eq!(
       curve.price(UCR_1_60).err(),
-      Some(CoreError::RebalanceBuyInactive.into())
+      Some(CoreError::RebalanceOutOfDomain.into())
     );
     Ok(())
   }

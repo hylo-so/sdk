@@ -6,6 +6,9 @@ description = "Hylo RPC clients"
 license.workspace = true
 homepage.workspace = true
 
+[features]
+shadow = ["hylo-idl/shadow", "hylo-core/shadow"]
+
 [dependencies]
 anchor-client.workspace = true
 anchor-lang.workspace = true

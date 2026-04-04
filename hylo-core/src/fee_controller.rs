@@ -7,6 +7,9 @@ use crate::error::CoreError::{
 };
 use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
 
+/// 1000 bps (10%)
+const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
+
 /// Represents the spread of fees between mint and redeem for protocol tokens.
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
@@ -32,10 +35,8 @@ impl FeePair {
     self.redeem.try_into()
   }
 
-  /// Fees must be less than 100%
   pub fn validate(&self) -> Result<()> {
-    let one = UFix64::one();
-    if self.mint()? < one && self.redeem()? < one {
+    if self.mint()? <= MAX_FEE && self.redeem()? <= MAX_FEE {
       Ok(())
     } else {
       Err(InvalidFees.into())

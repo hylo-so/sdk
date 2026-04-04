@@ -904,6 +904,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-crypto"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c06f1eb05f06cf2e380fdded278fbf056a38974299d77960555a311dcf91a52"
+dependencies = [
+ "keccak-const",
+ "sha2-const-stable",
+]
+
+[[package]]
 name = "constant_time_eq"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1625,9 +1635,9 @@ dependencies = [
 
 [[package]]
 name = "hylo-fix"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c93bc6ff29e1a3805ef8318c313ab4babcb24bdb1638defbe5cef3ff29d98ecb"
+checksum = "9eba5bfa1ca6d09311078b77db957731d7b8b5e556c0c12cbc43dea43ada2a42"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -1646,6 +1656,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "anyhow",
+ "const-crypto",
  "hylo-fix",
  "mpl-token-metadata",
  "solana-address-lookup-table-interface",
@@ -2021,6 +2032,12 @@ checksum = "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
 dependencies = [
  "cpufeatures",
 ]
+
+[[package]]
+name = "keccak-const"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57d8d8ce877200136358e0bbff3a77965875db3af755a11e1fa6b1b3e2df13ea"
 
 [[package]]
 name = "lazy_static"
@@ -3194,6 +3211,12 @@ dependencies = [
  "cpufeatures",
  "digest 0.10.7",
 ]
+
+[[package]]
+name = "sha2-const-stable"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f179d4e11094a893b82fff208f74d448a7512f99f5a0acbd5c679b705f83ed9"
 
 [[package]]
 name = "sha3"

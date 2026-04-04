@@ -2,9 +2,9 @@
   "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn",
   "metadata": {
     "name": "hylo_exchange",
-    "version": "0.1.4",
+    "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Created with Anchor"
+    "description": "Hylo Exchange Program"
   },
   "instructions": [
     {
@@ -3449,6 +3449,22 @@
           "signer": true
         },
         {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "exo_pair",
           "pda": {
             "seeds": [
@@ -5612,6 +5628,22 @@
           "name": "user",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "exo_pair",
@@ -8582,6 +8614,22 @@
           "signer": true
         },
         {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "exo_pair",
           "writable": true,
           "pda": {
@@ -9940,6 +9988,22 @@
         {
           "name": "user",
           "signer": true
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "exo_pair",
@@ -12504,6 +12568,88 @@
       }
     },
     {
+      "name": "update_paused",
+      "discriminator": [
+        78,
+        236,
+        85,
+        104,
+        169,
+        231,
+        205,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_paused",
+          "type": "bool"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdatePausedEvent"
+        }
+      }
+    },
+    {
       "name": "update_sol_usd_oracle",
       "discriminator": [
         95,
@@ -14071,6 +14217,19 @@
       ]
     },
     {
+      "name": "UpdatePausedEvent",
+      "discriminator": [
+        28,
+        75,
+        20,
+        52,
+        60,
+        91,
+        191,
+        82
+      ]
+    },
+    {
       "name": "UpdateRebalanceCurveConfigEvent",
       "discriminator": [
         91,
@@ -14347,6 +14506,21 @@
       "code": 6036,
       "name": "RebalanceBuyTarget",
       "msg": "Collateral amount exceeds rebalancing buy target."
+    },
+    {
+      "code": 6037,
+      "name": "ProtocolPaused",
+      "msg": "Protocol operations are paused by admin."
+    },
+    {
+      "code": 6038,
+      "name": "RebalanceSellInactive",
+      "msg": "Sell-side rebalancing is inactive at this CR."
+    },
+    {
+      "code": 6039,
+      "name": "RebalanceBuyInactive",
+      "msg": "Buy-side rebalancing is inactive at this CR."
     }
   ],
   "types": [
@@ -15078,11 +15252,15 @@
             }
           },
           {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                33
+                32
               ]
             }
           }
@@ -16663,6 +16841,22 @@
           {
             "name": "new_oracle_interval_secs",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdatePausedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_paused",
+            "type": "bool"
+          },
+          {
+            "name": "new_paused",
+            "type": "bool"
           }
         ]
       }
