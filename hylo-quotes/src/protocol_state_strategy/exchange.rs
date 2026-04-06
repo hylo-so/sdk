@@ -313,10 +313,6 @@ where
   }
 }
 
-// ============================================================================
-// Exo / USDC routes (router-based)
-// ============================================================================
-
 /// Builds `RouterArgs` for a router-based quote.
 fn router_args(
   amount_in: u64,

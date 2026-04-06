@@ -72,10 +72,6 @@ pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
 /// Instruction builder implementation for exchange operations.
 pub struct ExchangeInstructionBuilder;
 
-// ============================================================================
-// LST → HYUSD (mint stablecoin)
-// ============================================================================
-
 impl<L: LST> InstructionBuilder<L, HYUSD> for ExchangeInstructionBuilder {
   type Inputs = MintArgs;
 
@@ -98,10 +94,6 @@ impl<L: LST> InstructionBuilder<L, HYUSD> for ExchangeInstructionBuilder {
     Ok(vec![ata, instruction])
   }
 }
-
-// ============================================================================
-// HYUSD → LST (redeem stablecoin)
-// ============================================================================
 
 impl<L: LST> InstructionBuilder<HYUSD, L> for ExchangeInstructionBuilder {
   type Inputs = RedeemArgs;
@@ -126,10 +118,6 @@ impl<L: LST> InstructionBuilder<HYUSD, L> for ExchangeInstructionBuilder {
   }
 }
 
-// ============================================================================
-// LST → XSOL (mint levercoin)
-// ============================================================================
-
 impl<L: LST> InstructionBuilder<L, XSOL> for ExchangeInstructionBuilder {
   type Inputs = MintArgs;
 
@@ -152,10 +140,6 @@ impl<L: LST> InstructionBuilder<L, XSOL> for ExchangeInstructionBuilder {
     Ok(vec![ata, instruction])
   }
 }
-
-// ============================================================================
-// XSOL → LST (redeem levercoin)
-// ============================================================================
 
 impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
   type Inputs = RedeemArgs;
@@ -180,10 +164,6 @@ impl<L: LST> InstructionBuilder<XSOL, L> for ExchangeInstructionBuilder {
   }
 }
 
-// ============================================================================
-// HYUSD → XSOL (convert stable to lever)
-// ============================================================================
-
 impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
   type Inputs = SwapArgs;
 
@@ -205,10 +185,6 @@ impl InstructionBuilder<HYUSD, XSOL> for ExchangeInstructionBuilder {
     Ok(vec![ata, instruction])
   }
 }
-
-// ============================================================================
-// XSOL → HYUSD (convert lever to stable)
-// ============================================================================
 
 impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
   type Inputs = SwapArgs;
@@ -235,10 +211,6 @@ impl InstructionBuilder<XSOL, HYUSD> for ExchangeInstructionBuilder {
 /// Instruction builder implementation for stability pool operations.
 pub struct StabilityPoolInstructionBuilder;
 
-// ============================================================================
-// HYUSD → SHYUSD (stability pool deposit)
-// ============================================================================
-
 impl InstructionBuilder<HYUSD, SHYUSD> for StabilityPoolInstructionBuilder {
   type Inputs = StabilityPoolArgs;
 
@@ -258,10 +230,6 @@ impl InstructionBuilder<HYUSD, SHYUSD> for StabilityPoolInstructionBuilder {
   }
 }
 
-// ============================================================================
-// SHYUSD → HYUSD (stability pool withdrawal)
-// ============================================================================
-
 impl InstructionBuilder<SHYUSD, HYUSD> for StabilityPoolInstructionBuilder {
   type Inputs = StabilityPoolArgs;
 
@@ -278,10 +246,6 @@ impl InstructionBuilder<SHYUSD, HYUSD> for StabilityPoolInstructionBuilder {
     Ok(vec![hyusd_ata, instruction])
   }
 }
-
-// ============================================================================
-// LST → LST (swap within exchange)
-// ============================================================================
 
 impl<L1: LST, L2: LST> InstructionBuilder<L1, L2>
   for ExchangeInstructionBuilder
@@ -310,10 +274,6 @@ impl<L1: LST, L2: LST> InstructionBuilder<L1, L2>
   }
 }
 
-// ============================================================================
-// Router-based instruction builder for exo/USDC operations
-// ============================================================================
-
 /// Instruction builder for exo and USDC operations routed through
 /// the Hylo router program.
 pub struct RouterInstructionBuilder;
@@ -339,7 +299,7 @@ fn build_route_instruction<A: anchor_lang::ToAccountMetas>(
 impl InstructionBuilder<USDC, HYUSD> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -365,7 +325,7 @@ impl InstructionBuilder<USDC, HYUSD> for RouterInstructionBuilder {
 impl InstructionBuilder<HYUSD, USDC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -391,7 +351,7 @@ impl InstructionBuilder<HYUSD, USDC> for RouterInstructionBuilder {
 impl InstructionBuilder<CBBTC, HYUSD> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -421,7 +381,7 @@ impl InstructionBuilder<CBBTC, HYUSD> for RouterInstructionBuilder {
 impl InstructionBuilder<HYUSD, CBBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -451,7 +411,7 @@ impl InstructionBuilder<HYUSD, CBBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<CBBTC, XBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -482,7 +442,7 @@ impl InstructionBuilder<CBBTC, XBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<XBTC, CBBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -512,7 +472,7 @@ impl InstructionBuilder<XBTC, CBBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<HYUSD, XBTC> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {
@@ -543,7 +503,7 @@ impl InstructionBuilder<HYUSD, XBTC> for RouterInstructionBuilder {
 impl InstructionBuilder<XBTC, HYUSD> for RouterInstructionBuilder {
   type Inputs = RouterArgs;
 
-  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[EXCHANGE_LOOKUP_TABLE];
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey] = &[HYLO_LOOKUP_TABLE];
 
   fn build(
     RouterArgs {

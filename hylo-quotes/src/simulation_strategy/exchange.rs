@@ -27,10 +27,6 @@ type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
 type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
 type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
 
-// ============================================================================
-// Implementations for LST → HYUSD (mint stablecoin)
-// ============================================================================
-
 #[async_trait]
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
   for SimulationStrategy
@@ -79,10 +75,6 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, HYUSD, C>
     })
   }
 }
-
-// ============================================================================
-// Implementation for HYUSD → LST (redeem stablecoin)
-// ============================================================================
 
 #[async_trait]
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
@@ -133,10 +125,6 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<HYUSD, L, C>
   }
 }
 
-// ============================================================================
-// Implementation for LST → XSOL (mint levercoin)
-// ============================================================================
-
 #[async_trait]
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
   for SimulationStrategy
@@ -185,10 +173,6 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<L, XSOL, C>
     })
   }
 }
-
-// ============================================================================
-// Implementation for XSOL → LST (redeem levercoin)
-// ============================================================================
 
 #[async_trait]
 impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
@@ -239,10 +223,6 @@ impl<L: LST + Local, C: SolanaClock> QuoteStrategy<XSOL, L, C>
   }
 }
 
-// ============================================================================
-// Implementation for HYUSD → XSOL (swap stable to lever)
-// ============================================================================
-
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
   type FeeExp = N6;
@@ -291,10 +271,6 @@ impl<C: SolanaClock> QuoteStrategy<HYUSD, XSOL, C> for SimulationStrategy {
   }
 }
 
-// ============================================================================
-// Implementation for XSOL → HYUSD (swap lever to stable)
-// ============================================================================
-
 #[async_trait]
 impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
   type FeeExp = N6;
@@ -342,10 +318,6 @@ impl<C: SolanaClock> QuoteStrategy<XSOL, HYUSD, C> for SimulationStrategy {
     })
   }
 }
-
-// ============================================================================
-// Implementation for LST → LST swap
-// ============================================================================
 
 #[async_trait]
 impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
@@ -399,10 +371,6 @@ impl<C: SolanaClock, L1: LST + Local, L2: LST + Local> QuoteStrategy<L1, L2, C>
     })
   }
 }
-
-// ============================================================================
-// Exo / USDC routes (via router)
-// ============================================================================
 
 /// Builds `RouterArgs` for an exo or USDC route.
 fn router_args(

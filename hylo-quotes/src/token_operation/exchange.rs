@@ -267,10 +267,6 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
   }
 }
 
-// ============================================================================
-// Exogenous collateral operations
-// ============================================================================
-
 /// Mint stablecoin (HYUSD) from USDC.
 ///
 /// On-chain flow: normalize USDC to N9, apply fee at N9, then convert
