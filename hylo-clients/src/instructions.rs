@@ -29,6 +29,7 @@
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anyhow::Result;
+use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::exchange::account_builders;
 use hylo_idl::exchange::client::args as exchange_args;
 use hylo_idl::exchange::instruction_builders::{
@@ -283,7 +284,7 @@ fn build_route_instruction<A: anchor_lang::ToAccountMetas>(
   token_a: Pubkey,
   token_b: Pubkey,
   amount: u64,
-  slippage_config: Option<hylo_core::slippage_config::SlippageConfig>,
+  slippage_config: Option<SlippageConfig>,
   inner_accounts: &A,
 ) -> Instruction {
   let args = router_args::Route {
