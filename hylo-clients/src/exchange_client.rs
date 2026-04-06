@@ -2,10 +2,9 @@ use std::sync::Arc;
 
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
-use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
 use anyhow::{anyhow, Result};
-use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
+use hylo_core::idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
 use hylo_core::idl::{exchange, pda};
 use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
@@ -24,7 +23,7 @@ use crate::transaction::{
   SwapArgs, TransactionSyntax,
 };
 use crate::util::{
-  EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
+  HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
 };
 
 /// Client for interacting with the Hylo Exchange program.
@@ -273,7 +272,7 @@ impl ExchangeClient {
     let tx = self
       .build_simulation_transaction(&REFERENCE_WALLET, &vtd)
       .await?;
-    self.simulate_transaction_return(tx).await
+    self.simulate_transaction_return(&tx).await
   }
 
   /// Updates the oracle confidence tolerance.
@@ -423,10 +422,6 @@ impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
-
-// ============================================================================
-// Router-based exo/USDC BuildTransactionData impls
-// ============================================================================
 
 /// Helper to build router-based transaction data via `RouterIB`.
 macro_rules! router_btd {

@@ -91,7 +91,7 @@ impl ProtocolAccounts {
       pda::exo_vault(CBBTC::MINT),
       pda::exo_levercoin_mint(CBBTC::MINT),
       pda::BTC_USD_PYTH_FEED,
-      *pda::USDC_PAIR,
+      pda::USDC_PAIR,
       pda::USDC_USD_PYTH_FEED,
     ]
   }
