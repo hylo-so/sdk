@@ -48,7 +48,6 @@ pub struct ProtocolAccounts {
   /// Solana clock sysvar
   pub clock: Account,
 
-  // -- Exo collateral accounts (optional) --
   /// cbBTC `ExoPair` PDA
   pub cbbtc_exo_pair: Option<Account>,
 

@@ -4,7 +4,7 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
 use anyhow::{anyhow, Result};
-use hylo_core::idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
+use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
 use hylo_core::idl::{exchange, pda};
 use hylo_core::pyth::SOL_USD;
 use hylo_idl::exchange::client::{accounts, args};
@@ -12,15 +12,12 @@ use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
-use crate::instructions::{
-  ExchangeInstructionBuilder as ExchangeIB,
-  RouterInstructionBuilder as RouterIB,
-};
+use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{
-  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, RouterArgs,
-  SwapArgs, TransactionSyntax,
+  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SwapArgs,
+  TransactionSyntax,
 };
 use crate::util::{
   HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
@@ -422,36 +419,6 @@ impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 }
-
-/// Helper to build router-based transaction data via `RouterIB`.
-macro_rules! router_btd {
-  ($in:ty, $out:ty) => {
-    #[async_trait::async_trait]
-    impl BuildTransactionData<$in, $out> for ExchangeClient {
-      type Inputs = RouterArgs;
-
-      async fn build(
-        &self,
-        inputs: RouterArgs,
-      ) -> Result<VersionedTransactionData> {
-        let instructions = RouterIB::build_instructions::<$in, $out>(inputs)?;
-        let lut_addresses = RouterIB::lookup_tables::<$in, $out>();
-        let lookup_tables =
-          self.load_multiple_lookup_tables(lut_addresses).await?;
-        Ok(VersionedTransactionData::new(instructions, lookup_tables))
-      }
-    }
-  };
-}
-
-router_btd!(USDC, HYUSD);
-router_btd!(HYUSD, USDC);
-router_btd!(CBBTC, HYUSD);
-router_btd!(HYUSD, CBBTC);
-router_btd!(CBBTC, XBTC);
-router_btd!(XBTC, CBBTC);
-router_btd!(HYUSD, XBTC);
-router_btd!(XBTC, HYUSD);
 
 #[async_trait::async_trait]
 impl TransactionSyntax for ExchangeClient {}
