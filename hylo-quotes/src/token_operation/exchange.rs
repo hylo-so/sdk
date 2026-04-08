@@ -8,7 +8,7 @@ use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{
-  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, USDC, XBTC, XSOL,
+  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, USDC, XBTC, XSOL,
 };
 
 use crate::protocol_state::ProtocolState;
@@ -536,8 +536,8 @@ impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
     in_amount: UFix64<N9>,
   ) -> Result<OperationOutput<N9, N6, N9>> {
     let header = self.lst_header::<JITOSOL>()?;
-    let price: LstSolPrice = header.price_sol.into();
-    let adjusted = price.adjust_price(header.rebalance_fee.try_into()?)?;
+    let true_price = self.true_price::<JITOSOL>()?;
+    let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .exchange_context
@@ -563,8 +563,8 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
     in_amount: UFix64<N9>,
   ) -> Result<OperationOutput<N9, N6, N9>> {
     let header = self.lst_header::<HYLOSOL>()?;
-    let price: LstSolPrice = header.price_sol.into();
-    let adjusted = price.adjust_price(header.rebalance_fee.try_into()?)?;
+    let true_price = self.true_price::<HYLOSOL>()?;
+    let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .exchange_context
@@ -592,8 +592,8 @@ impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
     let normalized: UFix64<N9> =
       in_amount.checked_convert().context("usdc N6->N9")?;
     let header = self.lst_header::<JITOSOL>()?;
-    let price: LstSolPrice = header.price_sol.into();
-    let adjusted = price.adjust_price(header.rebalance_fee.try_into()?)?;
+    let true_price = self.true_price::<JITOSOL>()?;
+    let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .exchange_context
@@ -620,8 +620,8 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
     let normalized: UFix64<N9> =
       in_amount.checked_convert().context("usdc N6->N9")?;
     let header = self.lst_header::<HYLOSOL>()?;
-    let price: LstSolPrice = header.price_sol.into();
-    let adjusted = price.adjust_price(header.rebalance_fee.try_into()?)?;
+    let true_price = self.true_price::<HYLOSOL>()?;
+    let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .exchange_context

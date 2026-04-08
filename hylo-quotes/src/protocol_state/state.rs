@@ -16,8 +16,10 @@ use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
 use hylo_core::fee_controller::{FeeExtract, LevercoinFees};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
+use hylo_core::lst_sol_price::LstSolPrice;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_core::total_sol_cache::TotalSolCache;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
@@ -97,6 +99,12 @@ pub struct ProtocolState<C: SolanaClock> {
 
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
+
+  /// `JitoSOL` true LST/SOL price from stake pool
+  pub jitosol_true_price: LstSolPrice,
+
+  /// `hyloSOL` true LST/SOL price from stake pool
+  pub hylosol_true_price: LstSolPrice,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -119,6 +127,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     sol_usd: &PriceUpdateV2,
     cbbtc_exo_context: Arc<ExoExchangeContext<C>>,
     usdc_exchange_state: UsdcExchangeState,
+    jitosol_true_price: LstSolPrice,
+    hylosol_true_price: LstSolPrice,
   ) -> Result<Self> {
     let fetched_at = clock.unix_timestamp();
     let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
@@ -154,6 +164,8 @@ impl<C: SolanaClock> ProtocolState<C> {
       lst_swap_config,
       cbbtc_exo_context,
       usdc_exchange_state,
+      jitosol_true_price,
+      hylosol_true_price,
     })
   }
 
@@ -166,6 +178,18 @@ impl<C: SolanaClock> ProtocolState<C> {
       JITOSOL::MINT => Ok(&self.jitosol_header),
       HYLOSOL::MINT => Ok(&self.hylosol_header),
       _ => Err(anyhow!("LstHeader not found for {}", L::MINT)),
+    }
+  }
+
+  /// True LST/SOL price from the SPL stake pool state.
+  ///
+  /// # Errors
+  /// * LST type not recognized
+  pub fn true_price<L: LST>(&self) -> Result<&LstSolPrice> {
+    match L::MINT {
+      JITOSOL::MINT => Ok(&self.jitosol_true_price),
+      HYLOSOL::MINT => Ok(&self.hylosol_true_price),
+      _ => Err(anyhow!("true_price not found for {}", L::MINT)),
     }
   }
 
@@ -298,6 +322,13 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       Arc::new(build_cbbtc_exo_context(clock.clone(), accounts)?);
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
+    let jitosol_true_price =
+      SplStakePool::from_bytes(&accounts.jitosol_pool_state.data)?
+        .true_price()?;
+    let hylosol_true_price =
+      SplStakePool::from_bytes(&accounts.hylosol_pool_state.data)?
+        .true_price()?;
+
     Self::build(
       clock,
       &hylo,
@@ -312,6 +343,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       &sol_usd,
       cbbtc_exo_context,
       usdc_exchange_state,
+      jitosol_true_price,
+      hylosol_true_price,
     )
   }
 }

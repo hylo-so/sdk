@@ -8,10 +8,11 @@ use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use hylo_core::idl::{exchange, pda, stability_pool};
 use hylo_core::pyth::{OracleConfig, SOL_USD};
+use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
@@ -443,6 +444,17 @@ where
       swap_fee: usdc_pair.swap_fee.try_into()?,
     };
 
+    let jitosol_pool = account_map
+      .get(&JITOSOL::POOL_STATE)
+      .context("JitoSOL pool state not found")?;
+    let jitosol_true_price =
+      SplStakePool::from_bytes(&jitosol_pool.data)?.true_price()?;
+    let hylosol_pool = account_map
+      .get(&HYLOSOL::POOL_STATE)
+      .context("hyloSOL pool state not found")?;
+    let hylosol_true_price =
+      SplStakePool::from_bytes(&hylosol_pool.data)?.true_price()?;
+
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
       &hylo,
@@ -457,6 +469,8 @@ where
       &sol_usd,
       cbbtc_exo_context,
       usdc_exchange_state,
+      jitosol_true_price,
+      hylosol_true_price,
     )?);
     Ok(())
   }

@@ -8,7 +8,7 @@ use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_idl::pda;
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +65,12 @@ pub struct ProtocolAccounts {
 
   /// Pyth USDC/USD price feed
   pub usdc_usd_pyth: Account,
+
+  /// `JitoSOL` SPL stake pool state
+  pub jitosol_pool_state: Account,
+
+  /// `hyloSOL` SPL stake pool state
+  pub hylosol_pool_state: Account,
 }
 
 impl ProtocolAccounts {
@@ -92,13 +98,15 @@ impl ProtocolAccounts {
       pda::BTC_USD_PYTH_FEED,
       pda::USDC_PAIR,
       pda::USDC_USD_PYTH_FEED,
+      JITOSOL::POOL_STATE,
+      HYLOSOL::POOL_STATE,
     ]
   }
 
   /// Expected number of protocol accounts
   #[must_use]
   pub const fn expected_count() -> usize {
-    17
+    19
   }
 
   /// Validate that pubkeys and accounts match expected protocol accounts
@@ -233,6 +241,14 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
       usdc_usd_pyth: accounts[16]
         .as_ref()
         .context("USDC/USD Pyth feed not found")?
+        .clone(),
+      jitosol_pool_state: accounts[17]
+        .as_ref()
+        .context("JitoSOL pool state not found")?
+        .clone(),
+      hylosol_pool_state: accounts[18]
+        .as_ref()
+        .context("hyloSOL pool state not found")?
         .clone(),
     })
   }
