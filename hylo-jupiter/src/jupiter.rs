@@ -4,6 +4,7 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
+use fix::prelude::{UFix64, N8};
 use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
@@ -11,7 +12,7 @@ use hylo_core::idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use hylo_core::idl::{exchange, pda, stability_pool};
-use hylo_core::pyth::{OracleConfig, SOL_USD};
+use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
 use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
@@ -410,10 +411,9 @@ where
       exo_pair.oracle_interval_secs,
       exo_pair.oracle_conf_tolerance.try_into()?,
     );
-    let total_collateral =
-      fix::prelude::UFix64::<fix::prelude::N8>::new(cbbtc_vault.amount)
-        .checked_convert()
-        .context("cbBTC vault N8->N9 overflow")?;
+    let total_collateral = UFix64::<N8>::new(cbbtc_vault.amount)
+      .checked_convert()
+      .context("cbBTC vault N8->N9 overflow")?;
     let cbbtc_exo_context = Arc::new(
       ExoExchangeContext::load(
         self.clock.clone(),
@@ -434,11 +434,8 @@ where
       usdc_pair.oracle_interval_secs,
       usdc_pair.oracle_conf_tolerance.try_into()?,
     );
-    let usdc_oracle = hylo_core::pyth::query_pyth_oracle(
-      &self.clock,
-      &usdc_usd,
-      usdc_oracle_config,
-    )?;
+    let usdc_oracle =
+      query_pyth_oracle(&self.clock, &usdc_usd, usdc_oracle_config)?;
     let usdc_exchange_state = UsdcExchangeState {
       usdc_usd_price: usdc_oracle.price_range()?,
       swap_fee: usdc_pair.swap_fee.try_into()?,
