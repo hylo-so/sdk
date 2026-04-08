@@ -163,6 +163,7 @@ pub const fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
     collateral_mint
   )
 }
+
 pub const HYLO: Pubkey = pda!(exchange::ID, exchange::constants::HYLO);
 
 pub const HYUSD_AUTH: Pubkey = mint_auth(HYUSD::MINT);

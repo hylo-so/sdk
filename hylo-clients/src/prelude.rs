@@ -9,9 +9,7 @@ pub use hylo_core::idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
 pub use crate::exchange_client::ExchangeClient;
 pub use crate::program_client::{ProgramClient, VersionedTransactionData};
 pub use crate::router_client::{
-  InstructionBuilder, InstructionBuilderExt, RouterClient,
+  InstructionBuilder, InstructionBuilderExt, RouterArgs, RouterClient,
 };
 pub use crate::stability_pool_client::StabilityPoolClient;
-pub use crate::transaction::{
-  BuildTransactionData, RouterArgs, TransactionSyntax,
-};
+pub use crate::transaction::{BuildTransactionData, TransactionSyntax};

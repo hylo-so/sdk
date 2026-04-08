@@ -9,10 +9,18 @@ use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
 use anyhow::Result;
 use async_trait::async_trait;
+use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::tokens::TokenMint;
 
 use crate::program_client::ProgramClient;
 use crate::transaction::TransactionSyntax;
+
+/// Arguments for all router-based token operations.
+pub struct RouterArgs {
+  pub amount: u64,
+  pub user: Pubkey,
+  pub slippage_config: Option<SlippageConfig>,
+}
 
 pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
   type Inputs;

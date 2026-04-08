@@ -1,19 +1,11 @@
-//! Transaction building traits and argument types.
+//! Transaction building traits.
 
 use anchor_client::solana_sdk::signature::Signature;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::AnchorDeserialize;
 use anyhow::Result;
-use hylo_core::slippage_config::SlippageConfig;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-
-/// Arguments for all router-based token operations.
-pub struct RouterArgs {
-  pub amount: u64,
-  pub user: Pubkey,
-  pub slippage_config: Option<SlippageConfig>,
-}
 
 /// Builds transaction data for a token pair operation.
 #[async_trait::async_trait]
