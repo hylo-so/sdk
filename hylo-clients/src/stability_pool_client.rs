@@ -18,9 +18,8 @@ use crate::util::{HYLO_LOOKUP_TABLE, REFERENCE_WALLET};
 /// stability pool. Supports transaction execution and price simulation for
 /// offchain quoting.
 ///
-/// # Examples
+/// # Example
 ///
-/// ## Setup
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
 ///
@@ -30,21 +29,6 @@ use crate::util::{HYLO_LOOKUP_TABLE, REFERENCE_WALLET};
 ///   CommitmentConfig::confirmed(),
 /// )?;
 /// # Ok(client)
-/// # }
-/// ```
-///
-/// ## Transaction Execution
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn execute_transaction(client: StabilityPoolClient) -> Result<Signature> {
-/// // Deposit HYUSD → sHYUSD
-/// let user = Pubkey::new_unique();
-/// let signature = client.run_transaction::<HYUSD, SHYUSD>(StabilityPoolArgs {
-///   amount: UFix64::new(100),
-///   user,
-/// }).await?;
-/// # Ok(signature)
 /// # }
 /// ```
 pub struct StabilityPoolClient {

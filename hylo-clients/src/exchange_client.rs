@@ -23,9 +23,8 @@ use crate::util::{
 /// LST collateral. Supports transaction execution and price simulation for
 /// offchain quoting.
 ///
-/// # Examples
+/// # Example
 ///
-/// ## Setup
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
 ///
@@ -35,39 +34,6 @@ use crate::util::{
 ///   CommitmentConfig::confirmed(),
 /// )?;
 /// # Ok(client)
-/// # }
-/// ```
-///
-/// ## Transaction Execution
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn execute_transaction(client: ExchangeClient) -> Result<Signature> {
-/// // Mint JITOSOL → hyUSD
-/// let user = Pubkey::new_unique();
-/// let signature = client.run_transaction::<JITOSOL, HYUSD>(MintArgs {
-///   amount: UFix64::one(),
-///   user,
-///   slippage_config: None,
-/// }).await?;
-/// # Ok(signature)
-/// # }
-/// ```
-///
-/// ## Transaction Building
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn build_transaction(client: ExchangeClient) -> Result<()> {
-/// let user = Pubkey::new_unique();
-///
-/// // Build transaction data without executing
-/// let tx_data = client.build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
-///   amount: UFix64::new(50),
-///   user,
-///   slippage_config: None,
-/// }).await?;
-/// # Ok(())
 /// # }
 /// ```
 pub struct ExchangeClient {

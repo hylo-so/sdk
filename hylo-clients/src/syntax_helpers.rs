@@ -11,12 +11,13 @@ use crate::instructions::InstructionBuilder;
 ///
 /// ```rust,no_run
 /// use hylo_clients::prelude::*;
+/// use hylo_idl::tokens::{HYUSD, JITOSOL};
 ///
 /// # fn example() -> Result<()> {
 /// let user = Pubkey::new_unique();
-/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
-/// let instructions = ExchangeInstructionBuilder::build_instructions::<JITOSOL, HYUSD>(args)?;
-/// let luts = ExchangeInstructionBuilder::lookup_tables::<JITOSOL, HYUSD>();
+/// let args = RouterArgs { amount: 1_000_000_000, user, slippage_config: None };
+/// let instructions = RouterClient::build_instructions::<JITOSOL, HYUSD>(args)?;
+/// let luts = RouterClient::lookup_tables::<JITOSOL, HYUSD>();
 /// # Ok(())
 /// # }
 /// ```
