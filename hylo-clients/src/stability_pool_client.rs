@@ -8,14 +8,8 @@ use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::events::StabilityPoolStats;
 use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::stability_pool::types::TokenMetadata;
-use hylo_idl::tokens::{HYUSD, SHYUSD};
 
-use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::syntax_helpers::InstructionBuilderExt;
-use crate::transaction::{
-  BuildTransactionData, StabilityPoolArgs, TransactionSyntax,
-};
 use crate::util::{HYLO_LOOKUP_TABLE, REFERENCE_WALLET};
 
 /// Client for interacting with the Hylo Stability Pool program.
@@ -152,38 +146,3 @@ impl StabilityPoolClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 }
-
-#[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
-  type Inputs = StabilityPoolArgs;
-
-  async fn build(
-    &self,
-    inputs: StabilityPoolArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions =
-      StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(inputs)?;
-    let lut_addresses = StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
-  type Inputs = StabilityPoolArgs;
-
-  async fn build(
-    &self,
-    inputs: StabilityPoolArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions =
-      StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(inputs)?;
-    let lut_addresses = StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl TransactionSyntax for StabilityPoolClient {}

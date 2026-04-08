@@ -12,15 +12,9 @@ use hylo_idl::exchange::events::ExchangeStats;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
-use crate::instructions::ExchangeInstructionBuilder as ExchangeIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::syntax_helpers::InstructionBuilderExt;
-use crate::transaction::{
-  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, SwapArgs,
-  TransactionSyntax,
-};
 use crate::util::{
-  HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
+  HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
 };
 
 /// Client for interacting with the Hylo Exchange program.
@@ -326,99 +320,3 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 }
-
-#[async_trait::async_trait]
-impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
-  type Inputs = RedeemArgs;
-
-  async fn build(
-    &self,
-    inputs: RedeemArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<HYUSD, OUT>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, OUT>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
-  type Inputs = RedeemArgs;
-
-  async fn build(
-    &self,
-    inputs: RedeemArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<XSOL, OUT>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, OUT>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
-  type Inputs = MintArgs;
-
-  async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<IN, HYUSD>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<IN, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
-  type Inputs = MintArgs;
-
-  async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<IN, XSOL>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<IN, XSOL>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
-  type Inputs = SwapArgs;
-
-  async fn build(&self, inputs: SwapArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<HYUSD, XSOL>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, XSOL>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
-  type Inputs = SwapArgs;
-
-  async fn build(&self, inputs: SwapArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<XSOL, HYUSD>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
-  type Inputs = LstSwapArgs;
-
-  async fn build(
-    &self,
-    inputs: LstSwapArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<L1, L2>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<L1, L2>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl TransactionSyntax for ExchangeClient {}
