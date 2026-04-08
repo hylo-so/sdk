@@ -17,25 +17,9 @@ use crate::util::{
   HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
 };
 
-/// Client for interacting with the Hylo Exchange program.
-///
-/// Provides functionality for minting/redeem/swap between hyUSD and xSOL and
-/// LST collateral. Supports transaction execution and price simulation for
-/// offchain quoting.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # fn setup_client() -> Result<ExchangeClient> {
-/// let client = ExchangeClient::new_random_keypair(
-///   Cluster::Mainnet,
-///   CommitmentConfig::confirmed(),
-/// )?;
-/// # Ok(client)
-/// # }
-/// ```
+/// Admin client for the Hylo exchange program. Manages LST
+/// registration, oracle configuration, fee updates, and protocol
+/// stats. User-facing operations go through [`RouterClient`].
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

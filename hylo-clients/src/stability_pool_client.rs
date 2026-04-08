@@ -12,25 +12,9 @@ use hylo_idl::stability_pool::types::TokenMetadata;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::{HYLO_LOOKUP_TABLE, REFERENCE_WALLET};
 
-/// Client for interacting with the Hylo Stability Pool program.
-///
-/// Provides functionality for depositing and withdrawing sHYUSD from the
-/// stability pool. Supports transaction execution and price simulation for
-/// offchain quoting.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # fn setup_client() -> Result<StabilityPoolClient> {
-/// let client = StabilityPoolClient::new_random_keypair(
-///   Cluster::Mainnet,
-///   CommitmentConfig::confirmed(),
-/// )?;
-/// # Ok(client)
-/// # }
-/// ```
+/// Admin client for the Hylo stability pool program. Manages pool
+/// initialization, rebalancing, fee configuration, and stats.
+/// User-facing deposit/withdraw goes through [`RouterClient`].
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
