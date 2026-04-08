@@ -22,9 +22,7 @@ use hylo_idl::tokens::{
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::syntax_helpers::InstructionBuilderExt;
-use crate::transaction::{
-  BuildTransactionData, RouterArgs, TransactionSyntax,
-};
+use crate::transaction::{BuildTransactionData, RouterArgs, TransactionSyntax};
 
 pub struct RouterClient {
   program: Program<Arc<Keypair>>,
@@ -67,9 +65,7 @@ macro_rules! router_transaction_data {
             RouterClient::lookup_tables::<$in, $out>(),
           )
           .await?;
-        Ok(VersionedTransactionData::new(
-          instructions, lookup_tables,
-        ))
+        Ok(VersionedTransactionData::new(instructions, lookup_tables))
       }
     }
   };

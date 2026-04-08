@@ -53,9 +53,7 @@ fn quote_args<E: Integer>(
 macro_rules! simulation_quote {
   ($in:ty, $out:ty, $fee_exp:ty, $quote_ty:ty) => {
     #[async_trait]
-    impl<C: SolanaClock> QuoteStrategy<$in, $out, C>
-      for SimulationStrategy
-    {
+    impl<C: SolanaClock> QuoteStrategy<$in, $out, C> for SimulationStrategy {
       type FeeExp = $fee_exp;
 
       async fn get_quote(
@@ -66,19 +64,11 @@ macro_rules! simulation_quote {
       ) -> Result<$quote_ty> {
         let (output, cu_info) = self
           .router_client
-          .simulate_output::<$in, $out>(
-            user,
-            sim_args(amount_in, user),
-          )
+          .simulate_output::<$in, $out>(user, sim_args(amount_in, user))
           .await?;
-        let args = quote_args(
-          amount_in,
-          user,
-          output.out_amount,
-          slippage_tolerance,
-        );
-        let instructions =
-          RouterClient::build_instructions::<$in, $out>(args)?;
+        let args =
+          quote_args(amount_in, user, output.out_amount, slippage_tolerance);
+        let instructions = RouterClient::build_instructions::<$in, $out>(args)?;
         let address_lookup_tables =
           RouterClient::lookup_tables::<$in, $out>().into();
         Ok(ExecutableQuote {

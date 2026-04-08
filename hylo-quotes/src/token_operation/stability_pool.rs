@@ -10,7 +10,9 @@ use hylo_core::stability_pool_math::{
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
-use crate::token_operation::{OperationOutput, SwapOperationOutput, TokenOperation};
+use crate::token_operation::{
+  OperationOutput, SwapOperationOutput, TokenOperation,
+};
 
 /// Deposit stablecoin (HYUSD) into stability pool for LP token (SHYUSD).
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
@@ -66,4 +68,3 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     })
   }
 }
-

@@ -25,12 +25,12 @@
 //!
 //! ## Clients
 //!
-//! - [`router_client::RouterClient`] — All user-facing token operations
-//!   (mint, redeem, swap, stability pool) via the router program
-//! - [`exchange_client::ExchangeClient`] — Admin operations for the
-//!   exchange program
-//! - [`stability_pool_client::StabilityPoolClient`] — Admin operations
-//!   for the stability pool program
+//! - [`router_client::RouterClient`] — All user-facing token operations (mint,
+//!   redeem, swap, stability pool) via the router program
+//! - [`exchange_client::ExchangeClient`] — Admin operations for the exchange
+//!   program
+//! - [`stability_pool_client::StabilityPoolClient`] — Admin operations for the
+//!   stability pool program
 
 pub mod exchange_client;
 pub mod instructions;

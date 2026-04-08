@@ -66,8 +66,7 @@ pub trait TransactionSyntax {
     E: AnchorDeserialize,
   {
     let args = self.build(inputs).await?;
-    let tx =
-      self.build_simulation_transaction(&user, &args).await?;
+    let tx = self.build_simulation_transaction(&user, &args).await?;
     self.simulate_transaction_return::<E>(&tx).await
   }
 
@@ -83,8 +82,7 @@ pub trait TransactionSyntax {
     E: AnchorDeserialize,
   {
     let args = self.build(inputs).await?;
-    let tx =
-      self.build_simulation_transaction(&user, &args).await?;
+    let tx = self.build_simulation_transaction(&user, &args).await?;
     self.simulate_transaction_return_with_cus::<E>(&tx).await
   }
 }

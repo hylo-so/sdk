@@ -17,8 +17,7 @@ use crate::protocol_state::StateProvider;
 use crate::protocol_state_strategy::ProtocolStateStrategy;
 use crate::token_operation::TokenOperationExt;
 use crate::{
-  ComputeUnitStrategy, ExecutableQuote, QuoteStrategy,
-  DEFAULT_CUS_WITH_BUFFER,
+  ComputeUnitStrategy, ExecutableQuote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
 
 type MintQuote = ExecutableQuote<N9, N6, N9>;
@@ -32,8 +31,8 @@ type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
 macro_rules! state_quote {
   ($in:ty, $out:ty, $fee_exp:ty, $quote_ty:ty) => {
     #[async_trait]
-    impl<S: StateProvider<C>, C: SolanaClock>
-      QuoteStrategy<$in, $out, C> for ProtocolStateStrategy<S>
+    impl<S: StateProvider<C>, C: SolanaClock> QuoteStrategy<$in, $out, C>
+      for ProtocolStateStrategy<S>
     {
       type FeeExp = $fee_exp;
 
@@ -53,8 +52,7 @@ macro_rules! state_quote {
             UFix64::<N4>::new(slippage_tolerance),
           )),
         };
-        let instructions =
-          RouterClient::build_instructions::<$in, $out>(args)?;
+        let instructions = RouterClient::build_instructions::<$in, $out>(args)?;
         let address_lookup_tables =
           RouterClient::lookup_tables::<$in, $out>().into();
         Ok(ExecutableQuote {
