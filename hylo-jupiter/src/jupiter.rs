@@ -440,13 +440,10 @@ mod tests {
   use anchor_lang::pubkey;
   use fix::prelude::*;
   use hylo_clients::prelude::{
-    MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs, TransactionSyntax,
-    HYUSD, JITOSOL, SHYUSD, XSOL,
+    RouterArgs, TransactionSyntax, HYUSD, JITOSOL, SHYUSD, XSOL,
   };
   use hylo_clients::program_client::ProgramClient;
-  use hylo_clients::util::{
-    build_test_exchange_client, build_test_stability_pool_client,
-  };
+  use hylo_clients::util::build_test_router_client;
   use hylo_core::idl::exchange::events::{
     ConvertLeverToStableLstEvent, ConvertStableToLeverLstEvent,
     MintLevercoinLstEvent, MintStablecoinLstEvent, RedeemLevercoinLstEvent,
@@ -552,10 +549,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, HYUSD>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
-        amount: amount_lst,
+      .build_transaction_data::<JITOSOL, HYUSD>(RouterArgs {
+        amount: amount_lst.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -579,10 +576,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, HYUSD>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
-        amount: amount_hyusd,
+      .build_transaction_data::<HYUSD, JITOSOL>(RouterArgs {
+        amount: amount_hyusd.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -606,10 +603,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<JITOSOL, XSOL>(MintArgs {
-        amount: amount_lst,
+      .build_transaction_data::<JITOSOL, XSOL>(RouterArgs {
+        amount: amount_lst.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -633,10 +630,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
-        amount: amount_xsol,
+      .build_transaction_data::<XSOL, JITOSOL>(RouterArgs {
+        amount: amount_xsol.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -660,10 +657,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<HYUSD, XSOL>(SwapArgs {
-        amount: amount_hyusd,
+      .build_transaction_data::<HYUSD, XSOL>(RouterArgs {
+        amount: amount_hyusd.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -702,10 +699,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<XSOL, HYUSD>(SwapArgs {
-        amount: amount_xsol,
+      .build_transaction_data::<XSOL, HYUSD>(RouterArgs {
+        amount: amount_xsol.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -744,11 +741,12 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, SHYUSD>().await?;
-    let hylo = build_test_stability_pool_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<HYUSD, SHYUSD>(StabilityPoolArgs {
-        amount: amount_hyusd,
+      .build_transaction_data::<HYUSD, SHYUSD>(RouterArgs {
+        amount: amount_hyusd.bits,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
@@ -781,11 +779,12 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, SHYUSD>().await?;
-    let hylo = build_test_stability_pool_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
-        amount: amount_shyusd,
+      .build_transaction_data::<SHYUSD, HYUSD>(RouterArgs {
+        amount: amount_shyusd.bits,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
