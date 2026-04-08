@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result};
 use fix::prelude::*;
-use hylo_clients::prelude::ExchangeClient;
+use hylo_clients::router_client::RouterClient;
 use hylo_idl::exchange::events::{
   ConvertLeverToStableExoEvent, ConvertLeverToStableLstEvent,
   ConvertStableToLeverExoEvent, ConvertStableToLeverLstEvent,
@@ -21,7 +21,7 @@ use crate::token_operation::{
 use crate::{Local, LST};
 
 /// Mint stablecoin from LST.
-impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
+impl<L: LST + Local> SimulatedOperation<L, HYUSD> for RouterClient {
   type FeeExp = N9;
   type Event = MintStablecoinLstEvent;
 
@@ -46,7 +46,7 @@ impl<L: LST + Local> SimulatedOperation<L, HYUSD> for ExchangeClient {
 }
 
 /// Redeem stablecoin for LST.
-impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
+impl<L: LST + Local> SimulatedOperation<HYUSD, L> for RouterClient {
   type FeeExp = N9;
   type Event = RedeemStablecoinLstEvent;
 
@@ -70,7 +70,7 @@ impl<L: LST + Local> SimulatedOperation<HYUSD, L> for ExchangeClient {
 }
 
 /// Mint levercoin from LST.
-impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
+impl<L: LST + Local> SimulatedOperation<L, XSOL> for RouterClient {
   type FeeExp = N9;
   type Event = MintLevercoinLstEvent;
 
@@ -95,7 +95,7 @@ impl<L: LST + Local> SimulatedOperation<L, XSOL> for ExchangeClient {
 }
 
 /// Redeem levercoin for LST.
-impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
+impl<L: LST + Local> SimulatedOperation<XSOL, L> for RouterClient {
   type FeeExp = N9;
   type Event = RedeemLevercoinLstEvent;
 
@@ -119,7 +119,7 @@ impl<L: LST + Local> SimulatedOperation<XSOL, L> for ExchangeClient {
 }
 
 /// Convert stablecoin to levercoin.
-impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
+impl SimulatedOperation<HYUSD, XSOL> for RouterClient {
   type FeeExp = N6;
   type Event = ConvertStableToLeverLstEvent;
 
@@ -143,7 +143,7 @@ impl SimulatedOperation<HYUSD, XSOL> for ExchangeClient {
 }
 
 /// Convert levercoin to stablecoin.
-impl SimulatedOperation<XSOL, HYUSD> for ExchangeClient {
+impl SimulatedOperation<XSOL, HYUSD> for RouterClient {
   type FeeExp = N6;
   type Event = ConvertLeverToStableLstEvent;
 
@@ -168,7 +168,7 @@ impl SimulatedOperation<XSOL, HYUSD> for ExchangeClient {
 
 /// Swap between LSTs.
 impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
-  for ExchangeClient
+  for RouterClient
 {
   type FeeExp = N9;
   type Event = SwapLstToLstEvent;
@@ -193,7 +193,7 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
 ///
 /// On-chain: USDC is normalized to N9 before fee extraction, so
 /// event amounts `usdc_deposited` and `usdc_fees` are N9.
-impl SimulatedOperation<USDC, HYUSD> for ExchangeClient {
+impl SimulatedOperation<USDC, HYUSD> for RouterClient {
   type FeeExp = N9;
   type Event = MintStablecoinUsdcEvent;
 
@@ -223,7 +223,7 @@ impl SimulatedOperation<USDC, HYUSD> for ExchangeClient {
 /// On-chain: fee is applied to HYUSD input before conversion.
 /// `fee_base` is the total HYUSD input (`stablecoin_burned +
 /// stablecoin_fees`) and `fee_mint` is HYUSD.
-impl SimulatedOperation<HYUSD, USDC> for ExchangeClient {
+impl SimulatedOperation<HYUSD, USDC> for RouterClient {
   type FeeExp = N6;
   type Event = RedeemStablecoinUsdcEvent;
 
@@ -247,7 +247,7 @@ impl SimulatedOperation<HYUSD, USDC> for ExchangeClient {
 }
 
 /// Mint stablecoin from exo collateral (cbBTC -> HYUSD).
-impl SimulatedOperation<CBBTC, HYUSD> for ExchangeClient {
+impl SimulatedOperation<CBBTC, HYUSD> for RouterClient {
   type FeeExp = N9;
   type Event = MintStablecoinExoEvent;
 
@@ -274,7 +274,7 @@ impl SimulatedOperation<CBBTC, HYUSD> for ExchangeClient {
 }
 
 /// Redeem stablecoin for exo collateral (HYUSD -> cbBTC).
-impl SimulatedOperation<HYUSD, CBBTC> for ExchangeClient {
+impl SimulatedOperation<HYUSD, CBBTC> for RouterClient {
   type FeeExp = N9;
   type Event = RedeemStablecoinExoEvent;
 
@@ -302,7 +302,7 @@ impl SimulatedOperation<HYUSD, CBBTC> for ExchangeClient {
 }
 
 /// Mint levercoin from exo collateral (cbBTC -> xBTC).
-impl SimulatedOperation<CBBTC, XBTC> for ExchangeClient {
+impl SimulatedOperation<CBBTC, XBTC> for RouterClient {
   type FeeExp = N9;
   type Event = MintLevercoinExoEvent;
 
@@ -329,7 +329,7 @@ impl SimulatedOperation<CBBTC, XBTC> for ExchangeClient {
 }
 
 /// Redeem levercoin for exo collateral (xBTC -> cbBTC).
-impl SimulatedOperation<XBTC, CBBTC> for ExchangeClient {
+impl SimulatedOperation<XBTC, CBBTC> for RouterClient {
   type FeeExp = N9;
   type Event = RedeemLevercoinExoEvent;
 
@@ -357,7 +357,7 @@ impl SimulatedOperation<XBTC, CBBTC> for ExchangeClient {
 }
 
 /// Convert stablecoin to exo levercoin (HYUSD -> xBTC).
-impl SimulatedOperation<HYUSD, XBTC> for ExchangeClient {
+impl SimulatedOperation<HYUSD, XBTC> for RouterClient {
   type FeeExp = N6;
   type Event = ConvertStableToLeverExoEvent;
 
@@ -381,7 +381,7 @@ impl SimulatedOperation<HYUSD, XBTC> for ExchangeClient {
 }
 
 /// Convert exo levercoin to stablecoin (xBTC -> HYUSD).
-impl SimulatedOperation<XBTC, HYUSD> for ExchangeClient {
+impl SimulatedOperation<XBTC, HYUSD> for RouterClient {
   type FeeExp = N6;
   type Event = ConvertLeverToStableExoEvent;
 

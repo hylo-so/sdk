@@ -2,7 +2,7 @@
 
 use anyhow::{bail, Context, Result};
 use fix::prelude::*;
-use hylo_clients::prelude::StabilityPoolClient;
+use hylo_clients::router_client::RouterClient;
 use hylo_idl::stability_pool::events::{UserDepositEvent, UserWithdrawEvent};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
@@ -10,7 +10,7 @@ use crate::simulated_operation::SimulatedOperation;
 use crate::token_operation::SwapOperationOutput;
 
 /// Deposit stablecoin.
-impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
+impl SimulatedOperation<HYUSD, SHYUSD> for RouterClient {
   type FeeExp = N6;
   type Event = UserDepositEvent;
 
@@ -30,7 +30,7 @@ impl SimulatedOperation<HYUSD, SHYUSD> for StabilityPoolClient {
 }
 
 /// Withdraw stablecoin.
-impl SimulatedOperation<SHYUSD, HYUSD> for StabilityPoolClient {
+impl SimulatedOperation<SHYUSD, HYUSD> for RouterClient {
   type FeeExp = N6;
   type Event = UserWithdrawEvent;
 
