@@ -49,22 +49,22 @@ pub struct ProtocolAccounts {
   pub clock: Account,
 
   /// cbBTC `ExoPair` PDA
-  pub cbbtc_exo_pair: Option<Account>,
+  pub cbbtc_exo_pair: Account,
 
   /// cbBTC collateral vault token account
-  pub cbbtc_vault: Option<Account>,
+  pub cbbtc_vault: Account,
 
   /// xBTC levercoin mint
-  pub xbtc_mint: Option<Account>,
+  pub xbtc_mint: Account,
 
   /// Pyth BTC/USD price feed
-  pub btc_usd_pyth: Option<Account>,
+  pub btc_usd_pyth: Account,
 
   /// `UsdcPair` PDA
-  pub usdc_pair: Option<Account>,
+  pub usdc_pair: Account,
 
   /// Pyth USDC/USD price feed
-  pub usdc_usd_pyth: Option<Account>,
+  pub usdc_usd_pyth: Account,
 }
 
 impl ProtocolAccounts {
@@ -213,13 +213,27 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
         .context("Clock sysvar not found")?
         .clone(),
 
-      // Exo accounts are optional — may not exist on all deployments
-      cbbtc_exo_pair: accounts[11].clone(),
-      cbbtc_vault: accounts[12].clone(),
-      xbtc_mint: accounts[13].clone(),
-      btc_usd_pyth: accounts[14].clone(),
-      usdc_pair: accounts[15].clone(),
-      usdc_usd_pyth: accounts[16].clone(),
+      cbbtc_exo_pair: accounts[11]
+        .as_ref()
+        .context("cbBTC ExoPair not found")?
+        .clone(),
+      cbbtc_vault: accounts[12]
+        .as_ref()
+        .context("cbBTC vault not found")?
+        .clone(),
+      xbtc_mint: accounts[13]
+        .as_ref()
+        .context("xBTC mint not found")?
+        .clone(),
+      btc_usd_pyth: accounts[14]
+        .as_ref()
+        .context("BTC/USD Pyth feed not found")?
+        .clone(),
+      usdc_pair: accounts[15].as_ref().context("UsdcPair not found")?.clone(),
+      usdc_usd_pyth: accounts[16]
+        .as_ref()
+        .context("USDC/USD Pyth feed not found")?
+        .clone(),
     })
   }
 }

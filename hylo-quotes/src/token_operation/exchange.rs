@@ -278,7 +278,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N9>> {
-    let usdc_state = self.usdc_exchange_state()?;
+    let usdc_state = self.usdc_exchange_state();
     let amount_n9: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or_else(|| anyhow!("USDC N6->N9 overflow"))?;
@@ -310,7 +310,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>> {
-    let usdc_state = self.usdc_exchange_state()?;
+    let usdc_state = self.usdc_exchange_state();
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -339,7 +339,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N8>,
   ) -> Result<OperationOutput<N8, N6, N9>> {
-    let exo = self.cbbtc_exo_context()?;
+    let exo = self.cbbtc_exo_context();
     ensure!(
       exo.stability_mode() <= StabilityMode::Mode1,
       "Exo stablecoin mint disabled in current stability mode"
@@ -374,7 +374,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N8, N9>> {
-    let exo = self.cbbtc_exo_context()?;
+    let exo = self.cbbtc_exo_context();
     let stablecoin_nav = exo.stablecoin_nav()?;
     let collateral_n9 = exo
       .exo_conversion()
@@ -404,7 +404,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N8>,
   ) -> Result<OperationOutput<N8, N6, N9>> {
-    let exo = self.cbbtc_exo_context()?;
+    let exo = self.cbbtc_exo_context();
     ensure!(
       exo.stability_mode() != StabilityMode::Depeg,
       "Exo levercoin mint disabled in current stability mode"
@@ -438,7 +438,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N8, N9>> {
-    let exo = self.cbbtc_exo_context()?;
+    let exo = self.cbbtc_exo_context();
     ensure!(
       exo.stability_mode() != StabilityMode::Depeg,
       "Exo levercoin redemption disabled in current stability mode"
@@ -472,7 +472,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>> {
-    let exo = self.cbbtc_exo_context()?;
+    let exo = self.cbbtc_exo_context();
     ensure!(
       exo.stability_mode() != StabilityMode::Depeg,
       "Exo swaps disabled in current stability mode"
@@ -501,7 +501,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>> {
-    let exo = self.cbbtc_exo_context()?;
+    let exo = self.cbbtc_exo_context();
     ensure!(
       matches!(
         exo.stability_mode(),

@@ -1,20 +1,22 @@
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
-use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
+use hylo_core::exchange_context::ExoExchangeContext;
+use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{
-  TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use hylo_core::idl::{exchange, pda, stability_pool};
-use hylo_core::pyth::SOL_USD;
+use hylo_core::pyth::{OracleConfig, SOL_USD};
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
-use hylo_quotes::protocol_state::ProtocolState;
+use hylo_quotes::protocol_state::{ProtocolState, UsdcExchangeState};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
@@ -364,6 +366,12 @@ where
       pda::HYUSD_POOL,
       pda::XSOL_POOL,
       pda::POOL_CONFIG,
+      pda::exo_pair(CBBTC::MINT),
+      pda::exo_vault(CBBTC::MINT),
+      pda::exo_levercoin_mint(CBBTC::MINT),
+      pda::BTC_USD_PYTH_FEED,
+      pda::USDC_PAIR,
+      pda::USDC_USD_PYTH_FEED,
     ]
   }
 
@@ -385,6 +393,56 @@ where
     let pool_config: PoolConfig =
       account_map_get(account_map, &pda::POOL_CONFIG)?;
 
+    let exo_pair: ExoPair =
+      account_map_get(account_map, &pda::exo_pair(CBBTC::MINT))?;
+    let cbbtc_vault: TokenAccount =
+      account_map_get(account_map, &pda::exo_vault(CBBTC::MINT))?;
+    let xbtc_mint: Mint =
+      account_map_get(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?;
+    let btc_usd: PriceUpdateV2 =
+      account_map_get(account_map, &pda::BTC_USD_PYTH_FEED)?;
+    let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
+    let usdc_usd: PriceUpdateV2 =
+      account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
+
+    let exo_oracle_config = OracleConfig::new(
+      exo_pair.oracle_interval_secs,
+      exo_pair.oracle_conf_tolerance.try_into()?,
+    );
+    let total_collateral =
+      fix::prelude::UFix64::<fix::prelude::N8>::new(cbbtc_vault.amount)
+        .checked_convert()
+        .context("cbBTC vault N8->N9 overflow")?;
+    let cbbtc_exo_context = Arc::new(
+      ExoExchangeContext::load(
+        self.clock.clone(),
+        total_collateral,
+        exo_pair.stability_threshold_1.try_into()?,
+        exo_oracle_config,
+        exo_pair.levercoin_fees.into(),
+        &btc_usd,
+        exo_pair.virtual_stablecoin.into(),
+        Some(&xbtc_mint),
+        exo_pair.sell_curve_config.into(),
+        exo_pair.buy_curve_config.into(),
+      )
+      .context("ExoExchangeContext::load")?,
+    );
+
+    let usdc_oracle_config = OracleConfig::new(
+      usdc_pair.oracle_interval_secs,
+      usdc_pair.oracle_conf_tolerance.try_into()?,
+    );
+    let usdc_oracle = hylo_core::pyth::query_pyth_oracle(
+      &self.clock,
+      &usdc_usd,
+      usdc_oracle_config,
+    )?;
+    let usdc_exchange_state = UsdcExchangeState {
+      usdc_usd_price: usdc_oracle.price_range()?,
+      swap_fee: usdc_pair.swap_fee.try_into()?,
+    };
+
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
       &hylo,
@@ -397,8 +455,8 @@ where
       hyusd_pool,
       xsol_pool,
       &sol_usd,
-      None, // cbbtc_exo_context
-      None, // usdc_exchange_state
+      cbbtc_exo_context,
+      usdc_exchange_state,
     )?);
     Ok(())
   }
