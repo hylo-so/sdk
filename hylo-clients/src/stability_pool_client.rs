@@ -5,12 +5,11 @@ use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hylo_idl::stability_pool::client::args;
-use hylo_idl::stability_pool::events::StabilityPoolStats;
 use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::stability_pool::types::TokenMetadata;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::util::{HYLO_LOOKUP_TABLE, REFERENCE_WALLET};
+use crate::util::HYLO_LOOKUP_TABLE;
 
 /// Admin client for the Hylo stability pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
@@ -52,23 +51,6 @@ impl StabilityPoolClient {
     let tx_args = VersionedTransactionData::new(instructions, vec![lut]);
     let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
-  }
-
-  /// Simulates the `get_stats` instruction on the stability pool.
-  ///
-  /// Uses `REFERENCE_WALLET` as the fee payer to allow simulation without
-  /// requiring the client keypair to exist on-chain.
-  ///
-  /// # Errors
-  /// - Simulation failure
-  /// - Return data access or deserialization
-  pub async fn get_stats(&self) -> Result<StabilityPoolStats> {
-    let instruction = instruction_builders::get_stats();
-    let vtd = VersionedTransactionData::one(instruction);
-    let tx = self
-      .build_simulation_transaction(&REFERENCE_WALLET, &vtd)
-      .await?;
-    self.simulate_transaction_return(&tx).await
   }
 
   /// Initializes the stability pool.
