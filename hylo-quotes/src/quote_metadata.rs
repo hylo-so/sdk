@@ -20,6 +20,10 @@ pub enum Operation {
   RedeemLevercoinExo,
   ConvertStableToLeverExo,
   ConvertLeverToStableExo,
+  SwapLstToUsdc,
+  SwapUsdcToLst,
+  SwapExoToUsdc,
+  SwapUsdcToExo,
 }
 
 impl Operation {
@@ -43,6 +47,10 @@ impl Operation {
       Operation::RedeemLevercoinExo => "redeem_levercoin_exo",
       Operation::ConvertStableToLeverExo => "convert_stable_to_lever_exo",
       Operation::ConvertLeverToStableExo => "convert_lever_to_stable_exo",
+      Operation::SwapLstToUsdc => "swap_lst_to_usdc",
+      Operation::SwapUsdcToLst => "swap_usdc_to_lst",
+      Operation::SwapExoToUsdc => "swap_exo_to_usdc",
+      Operation::SwapUsdcToExo => "swap_usdc_to_exo",
     }
   }
 }

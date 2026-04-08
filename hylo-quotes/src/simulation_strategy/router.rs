@@ -25,6 +25,10 @@ type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
 type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
 type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
 type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
+type SwapLstToUsdcQuote = ExecutableQuote<N9, N6, N9>;
+type SwapUsdcToLstQuote = ExecutableQuote<N6, N9, N6>;
+type SwapExoToUsdcQuote = ExecutableQuote<N8, N6, N8>;
+type SwapUsdcToExoQuote = ExecutableQuote<N6, N8, N6>;
 
 fn sim_args(amount_in: u64, user: Pubkey) -> RouterArgs {
   RouterArgs {
@@ -135,6 +139,20 @@ simulation_quote!(HYUSD, XBTC, N6, SwapQuote);
 
 // `convert_lever_to_stable_exo`
 simulation_quote!(XBTC, HYUSD, N6, SwapQuote);
+
+// `swap_lst_to_usdc`
+simulation_quote!(JITOSOL, USDC, N9, SwapLstToUsdcQuote);
+simulation_quote!(HYLOSOL, USDC, N9, SwapLstToUsdcQuote);
+
+// `swap_usdc_to_lst`
+simulation_quote!(USDC, JITOSOL, N6, SwapUsdcToLstQuote);
+simulation_quote!(USDC, HYLOSOL, N6, SwapUsdcToLstQuote);
+
+// `swap_exo_to_usdc`
+simulation_quote!(CBBTC, USDC, N8, SwapExoToUsdcQuote);
+
+// `swap_usdc_to_exo`
+simulation_quote!(USDC, CBBTC, N6, SwapUsdcToExoQuote);
 
 // `user_deposit`
 simulation_quote!(HYUSD, SHYUSD, N6, SwapQuote);

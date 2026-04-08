@@ -121,6 +121,20 @@ router_transaction_data!(HYUSD, XBTC);
 // `convert_lever_to_stable_exo`
 router_transaction_data!(XBTC, HYUSD);
 
+// `swap_lst_to_usdc`
+router_transaction_data!(JITOSOL, USDC);
+router_transaction_data!(HYLOSOL, USDC);
+
+// `swap_usdc_to_lst`
+router_transaction_data!(USDC, JITOSOL);
+router_transaction_data!(USDC, HYLOSOL);
+
+// `swap_exo_to_usdc`
+router_transaction_data!(CBBTC, USDC);
+
+// `swap_usdc_to_exo`
+router_transaction_data!(USDC, CBBTC);
+
 // `user_deposit`
 router_transaction_data!(HYUSD, SHYUSD);
 

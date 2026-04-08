@@ -11,7 +11,8 @@ use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route;
 use hylo_idl::stability_pool::account_builders as sp_account_builders;
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC,
+  XSOL,
 };
 
 use crate::instructions::InstructionBuilder;
@@ -196,6 +197,48 @@ router_instruction!(XBTC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
     user,
     CBBTC::MINT,
     pda::BTC_USD_PYTH_FEED,
+  )
+});
+
+// `swap_lst_to_usdc`
+router_instruction!(
+  JITOSOL, USDC, LST_LOOKUP_TABLES, USDC::MINT,
+  |user| account_builders::swap_lst_to_usdc(
+    user, JITOSOL::MINT, JITOSOL::POOL_STATE,
+  )
+);
+router_instruction!(
+  HYLOSOL, USDC, LST_LOOKUP_TABLES, USDC::MINT,
+  |user| account_builders::swap_lst_to_usdc(
+    user, HYLOSOL::MINT, HYLOSOL::POOL_STATE,
+  )
+);
+
+// `swap_usdc_to_lst`
+router_instruction!(
+  USDC, JITOSOL, LST_LOOKUP_TABLES, JITOSOL::MINT,
+  |user| account_builders::swap_usdc_to_lst(
+    user, JITOSOL::MINT, JITOSOL::POOL_STATE,
+  )
+);
+router_instruction!(
+  USDC, HYLOSOL, LST_LOOKUP_TABLES, HYLOSOL::MINT,
+  |user| account_builders::swap_usdc_to_lst(
+    user, HYLOSOL::MINT, HYLOSOL::POOL_STATE,
+  )
+);
+
+// `swap_exo_to_usdc`
+router_instruction!(CBBTC, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_exo_to_usdc(
+    user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED,
+  )
+});
+
+// `swap_usdc_to_exo`
+router_instruction!(USDC, CBBTC, BASE_LOOKUP_TABLES, CBBTC::MINT, |user| {
+  account_builders::swap_usdc_to_exo(
+    user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED,
   )
 });
 
