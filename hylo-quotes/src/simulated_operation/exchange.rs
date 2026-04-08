@@ -390,8 +390,7 @@ impl<L: LST + Local> SimulatedOperation<L, USDC> for RouterClient {
     event: &SwapLstToUsdcEvent,
   ) -> Result<OperationOutput<N9, N6, N9>> {
     let in_amount: UFix64<N9> = event.lst_deposited.try_into()?;
-    let usdc_withdrawn: UFix64<N9> =
-      event.usdc_withdrawn.try_into()?;
+    let usdc_withdrawn: UFix64<N9> = event.usdc_withdrawn.try_into()?;
     let out_amount: UFix64<N6> = usdc_withdrawn
       .checked_convert()
       .context("N9->N6 conversion")?;
@@ -413,8 +412,7 @@ impl<L: LST + Local> SimulatedOperation<USDC, L> for RouterClient {
   fn extract_output(
     event: &SwapUsdcToLstEvent,
   ) -> Result<OperationOutput<N6, N9, N6>> {
-    let usdc_deposited: UFix64<N9> =
-      event.usdc_deposited.try_into()?;
+    let usdc_deposited: UFix64<N9> = event.usdc_deposited.try_into()?;
     let in_amount: UFix64<N6> = usdc_deposited
       .checked_convert()
       .context("N9->N6 conversion")?;
@@ -442,8 +440,7 @@ impl SimulatedOperation<CBBTC, USDC> for RouterClient {
     let in_amount: UFix64<N8> = collateral_deposited
       .checked_convert()
       .context("N9->N8 conversion")?;
-    let usdc_withdrawn: UFix64<N9> =
-      event.usdc_withdrawn.try_into()?;
+    let usdc_withdrawn: UFix64<N9> = event.usdc_withdrawn.try_into()?;
     let out_amount: UFix64<N6> = usdc_withdrawn
       .checked_convert()
       .context("N9->N6 conversion")?;
@@ -465,8 +462,7 @@ impl SimulatedOperation<USDC, CBBTC> for RouterClient {
   fn extract_output(
     event: &SwapUsdcToExoEvent,
   ) -> Result<OperationOutput<N6, N8, N6>> {
-    let usdc_deposited: UFix64<N9> =
-      event.usdc_deposited.try_into()?;
+    let usdc_deposited: UFix64<N9> = event.usdc_deposited.try_into()?;
     let in_amount: UFix64<N6> = usdc_deposited
       .checked_convert()
       .context("N9->N6 conversion")?;

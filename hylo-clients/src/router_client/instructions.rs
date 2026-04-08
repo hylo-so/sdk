@@ -201,45 +201,29 @@ router_instruction!(XBTC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
 });
 
 // `swap_lst_to_usdc`
-router_instruction!(
-  JITOSOL, USDC, LST_LOOKUP_TABLES, USDC::MINT,
-  |user| account_builders::swap_lst_to_usdc(
-    user, JITOSOL::MINT, JITOSOL::POOL_STATE,
-  )
-);
-router_instruction!(
-  HYLOSOL, USDC, LST_LOOKUP_TABLES, USDC::MINT,
-  |user| account_builders::swap_lst_to_usdc(
-    user, HYLOSOL::MINT, HYLOSOL::POOL_STATE,
-  )
-);
+router_instruction!(JITOSOL, USDC, LST_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_lst_to_usdc(user, JITOSOL::MINT, JITOSOL::POOL_STATE)
+});
+router_instruction!(HYLOSOL, USDC, LST_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_lst_to_usdc(user, HYLOSOL::MINT, HYLOSOL::POOL_STATE)
+});
 
 // `swap_usdc_to_lst`
-router_instruction!(
-  USDC, JITOSOL, LST_LOOKUP_TABLES, JITOSOL::MINT,
-  |user| account_builders::swap_usdc_to_lst(
-    user, JITOSOL::MINT, JITOSOL::POOL_STATE,
-  )
-);
-router_instruction!(
-  USDC, HYLOSOL, LST_LOOKUP_TABLES, HYLOSOL::MINT,
-  |user| account_builders::swap_usdc_to_lst(
-    user, HYLOSOL::MINT, HYLOSOL::POOL_STATE,
-  )
-);
+router_instruction!(USDC, JITOSOL, LST_LOOKUP_TABLES, JITOSOL::MINT, |user| {
+  account_builders::swap_usdc_to_lst(user, JITOSOL::MINT, JITOSOL::POOL_STATE)
+});
+router_instruction!(USDC, HYLOSOL, LST_LOOKUP_TABLES, HYLOSOL::MINT, |user| {
+  account_builders::swap_usdc_to_lst(user, HYLOSOL::MINT, HYLOSOL::POOL_STATE)
+});
 
 // `swap_exo_to_usdc`
 router_instruction!(CBBTC, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
-  account_builders::swap_exo_to_usdc(
-    user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED,
-  )
+  account_builders::swap_exo_to_usdc(user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED)
 });
 
 // `swap_usdc_to_exo`
 router_instruction!(USDC, CBBTC, BASE_LOOKUP_TABLES, CBBTC::MINT, |user| {
-  account_builders::swap_usdc_to_exo(
-    user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED,
-  )
+  account_builders::swap_usdc_to_exo(user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED)
 });
 
 // `user_deposit`
