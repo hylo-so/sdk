@@ -3,19 +3,14 @@ use std::sync::Arc;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
-use anyhow::{anyhow, Result};
-use hylo_core::idl::tokens::{TokenMint, HYUSD, XSOL};
-use hylo_core::idl::{exchange, pda};
-use hylo_core::pyth::SOL_USD;
-use hylo_idl::exchange::client::{accounts, args};
-use hylo_idl::exchange::events::ExchangeStats;
+use anyhow::Result;
+use hylo_core::idl::exchange;
+use hylo_idl::exchange::client::args;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::util::{
-  HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE, REFERENCE_WALLET,
-};
+use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
 /// Admin client for the Hylo exchange program. Manages LST
 /// registration, oracle configuration, fee updates, and protocol
@@ -180,40 +175,6 @@ impl ExchangeClient {
     let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
     let lookup_tables = vec![registry_lut, exchange_lut];
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-
-  /// Gets exchange stats via RPC simulation.
-  ///
-  /// Uses `REFERENCE_WALLET` as the fee payer to allow simulation without
-  /// requiring the client keypair to exist on-chain.
-  ///
-  /// # Errors
-  /// - Failed to simulate transaction
-  /// - Failed to deserialize return data
-  pub async fn get_stats(&self) -> Result<ExchangeStats> {
-    let accounts = accounts::GetStats {
-      hylo: pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      levercoin_mint: XSOL::MINT,
-      sol_usd_pyth_feed: SOL_USD.address,
-    };
-    let args = args::GetStats {};
-    let instructions = self
-      .program
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .instructions()?;
-    let vtd = VersionedTransactionData::one(
-      instructions
-        .into_iter()
-        .next()
-        .ok_or_else(|| anyhow!("No instruction generated for get_stats"))?,
-    );
-    let tx = self
-      .build_simulation_transaction(&REFERENCE_WALLET, &vtd)
-      .await?;
-    self.simulate_transaction_return(&tx).await
   }
 
   /// Updates the oracle confidence tolerance.
