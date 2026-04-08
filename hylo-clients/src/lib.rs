@@ -33,11 +33,9 @@
 //!   stability pool program
 
 pub mod exchange_client;
-pub mod instructions;
 pub mod prelude;
 pub mod program_client;
 pub mod router_client;
 pub mod stability_pool_client;
-pub mod syntax_helpers;
 pub mod transaction;
 pub mod util;

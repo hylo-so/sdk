@@ -42,6 +42,6 @@ pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
   /// Builds instructions for the token pair operation.
   ///
   /// # Errors
-  /// Returns error if instruction building fails.
+  /// * Instruction building fails.
   fn build(inputs: Self::Inputs) -> Result<Vec<Instruction>>;
 }

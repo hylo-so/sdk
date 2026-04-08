@@ -3,13 +3,69 @@ mod transaction_data;
 
 use std::sync::Arc;
 
+use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
+use anyhow::Result;
 use async_trait::async_trait;
+use hylo_idl::tokens::TokenMint;
 
 use crate::program_client::ProgramClient;
 use crate::transaction::TransactionSyntax;
+
+pub trait InstructionBuilder<IN: TokenMint, OUT: TokenMint> {
+  type Inputs;
+  const REQUIRED_LOOKUP_TABLES: &'static [Pubkey];
+
+  /// Static type-safe instruction builder for token pair operations.
+  ///
+  /// # Errors
+  /// Returns error if instruction building fails.
+  fn build(inputs: Self::Inputs) -> Result<Vec<Instruction>>;
+}
+
+pub trait InstructionBuilderExt {
+  /// Turbofish syntax for [`InstructionBuilder`].
+  ///
+  /// # Errors
+  /// * Instruction building fails.
+  fn build_instructions<IN, OUT>(
+    inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
+  ) -> Result<Vec<Instruction>>
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
+
+  fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint;
+}
+
+impl<X> InstructionBuilderExt for X {
+  fn build_instructions<IN, OUT>(
+    inputs: <Self as InstructionBuilder<IN, OUT>>::Inputs,
+  ) -> Result<Vec<Instruction>>
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as InstructionBuilder<IN, OUT>>::build(inputs)
+  }
+
+  fn lookup_tables<IN, OUT>() -> &'static [Pubkey]
+  where
+    Self: InstructionBuilder<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+  {
+    <Self as InstructionBuilder<IN, OUT>>::REQUIRED_LOOKUP_TABLES
+  }
+}
 
 /// Builds and executes transactions through the Hylo router program.
 /// Handles all user-facing token operations: mint, redeem, swap, and

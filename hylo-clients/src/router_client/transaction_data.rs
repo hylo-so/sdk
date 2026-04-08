@@ -5,9 +5,8 @@ use hylo_idl::tokens::{
   CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
 };
 
-use super::RouterClient;
+use super::{InstructionBuilderExt, RouterClient};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::syntax_helpers::InstructionBuilderExt;
 use crate::transaction::{BuildTransactionData, RouterArgs};
 
 macro_rules! router_transaction_data {

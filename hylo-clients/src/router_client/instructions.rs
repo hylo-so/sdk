@@ -1,4 +1,4 @@
-//! [`InstructionBuilder`] impls for [`RouterClient`].
+//! [`InstructionBuilder`] impls for [`RouterClient`](super::RouterClient).
 
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
@@ -15,8 +15,7 @@ use hylo_idl::tokens::{
   XSOL,
 };
 
-use crate::instructions::InstructionBuilder;
-use crate::router_client::RouterClient;
+use super::{InstructionBuilder, RouterClient};
 use crate::transaction::RouterArgs;
 use crate::util::{
   user_ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
