@@ -20,18 +20,6 @@ use crate::{
   ComputeUnitStrategy, ExecutableQuote, QuoteStrategy, DEFAULT_CUS_WITH_BUFFER,
 };
 
-type MintQuote = ExecutableQuote<N9, N6, N9>;
-type RedeemQuote = ExecutableQuote<N6, N9, N9>;
-type SwapQuote = ExecutableQuote<N6, N6, N6>;
-type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
-type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
-type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
-type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
-type SwapLstToUsdcQuote = ExecutableQuote<N9, N6, N9>;
-type SwapUsdcToLstQuote = ExecutableQuote<N6, N9, N6>;
-type SwapExoToUsdcQuote = ExecutableQuote<N8, N6, N8>;
-type SwapUsdcToExoQuote = ExecutableQuote<N6, N8, N6>;
-
 macro_rules! state_quote {
   ($in:ty, $out:ty, $fee_exp:ty, $quote_ty:ty) => {
     #[async_trait]
@@ -75,71 +63,71 @@ macro_rules! state_quote {
 }
 
 // `mint_stablecoin_lst`
-state_quote!(JITOSOL, HYUSD, N9, MintQuote);
-state_quote!(HYLOSOL, HYUSD, N9, MintQuote);
+state_quote!(JITOSOL, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
+state_quote!(HYLOSOL, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
 
 // `redeem_stablecoin_lst`
-state_quote!(HYUSD, JITOSOL, N9, RedeemQuote);
-state_quote!(HYUSD, HYLOSOL, N9, RedeemQuote);
+state_quote!(HYUSD, JITOSOL, N9, ExecutableQuote<N6, N9, N9>);
+state_quote!(HYUSD, HYLOSOL, N9, ExecutableQuote<N6, N9, N9>);
 
 // `mint_levercoin_lst`
-state_quote!(JITOSOL, XSOL, N9, MintQuote);
-state_quote!(HYLOSOL, XSOL, N9, MintQuote);
+state_quote!(JITOSOL, XSOL, N9, ExecutableQuote<N9, N6, N9>);
+state_quote!(HYLOSOL, XSOL, N9, ExecutableQuote<N9, N6, N9>);
 
 // `redeem_levercoin_lst`
-state_quote!(XSOL, JITOSOL, N9, RedeemQuote);
-state_quote!(XSOL, HYLOSOL, N9, RedeemQuote);
+state_quote!(XSOL, JITOSOL, N9, ExecutableQuote<N6, N9, N9>);
+state_quote!(XSOL, HYLOSOL, N9, ExecutableQuote<N6, N9, N9>);
 
 // `convert_stable_to_lever_lst`
-state_quote!(HYUSD, XSOL, N6, SwapQuote);
+state_quote!(HYUSD, XSOL, N6, ExecutableQuote<N6, N6, N6>);
 
 // `convert_lever_to_stable_lst`
-state_quote!(XSOL, HYUSD, N6, SwapQuote);
+state_quote!(XSOL, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `swap_lst_to_lst`
-state_quote!(JITOSOL, HYLOSOL, N9, LstSwapQuote);
-state_quote!(HYLOSOL, JITOSOL, N9, LstSwapQuote);
+state_quote!(JITOSOL, HYLOSOL, N9, ExecutableQuote<N9, N9, N9>);
+state_quote!(HYLOSOL, JITOSOL, N9, ExecutableQuote<N9, N9, N9>);
 
 // `mint_stablecoin_usdc`
-state_quote!(USDC, HYUSD, N9, UsdcMintQuote);
+state_quote!(USDC, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
 
 // `redeem_stablecoin_usdc`
-state_quote!(HYUSD, USDC, N6, SwapQuote);
+state_quote!(HYUSD, USDC, N6, ExecutableQuote<N6, N6, N6>);
 
 // `mint_stablecoin_exo`
-state_quote!(CBBTC, HYUSD, N9, ExoMintQuote);
+state_quote!(CBBTC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
 
 // `redeem_stablecoin_exo`
-state_quote!(HYUSD, CBBTC, N9, ExoRedeemQuote);
+state_quote!(HYUSD, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
 
 // `mint_levercoin_exo`
-state_quote!(CBBTC, XBTC, N9, ExoMintQuote);
+state_quote!(CBBTC, XBTC, N9, ExecutableQuote<N8, N6, N9>);
 
 // `redeem_levercoin_exo`
-state_quote!(XBTC, CBBTC, N9, ExoRedeemQuote);
+state_quote!(XBTC, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
 
 // `convert_stable_to_lever_exo`
-state_quote!(HYUSD, XBTC, N6, SwapQuote);
+state_quote!(HYUSD, XBTC, N6, ExecutableQuote<N6, N6, N6>);
 
 // `convert_lever_to_stable_exo`
-state_quote!(XBTC, HYUSD, N6, SwapQuote);
+state_quote!(XBTC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `swap_lst_to_usdc`
-state_quote!(JITOSOL, USDC, N9, SwapLstToUsdcQuote);
-state_quote!(HYLOSOL, USDC, N9, SwapLstToUsdcQuote);
+state_quote!(JITOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
+state_quote!(HYLOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
 
 // `swap_usdc_to_lst`
-state_quote!(USDC, JITOSOL, N6, SwapUsdcToLstQuote);
-state_quote!(USDC, HYLOSOL, N6, SwapUsdcToLstQuote);
+state_quote!(USDC, JITOSOL, N6, ExecutableQuote<N6, N9, N6>);
+state_quote!(USDC, HYLOSOL, N6, ExecutableQuote<N6, N9, N6>);
 
 // `swap_exo_to_usdc`
-state_quote!(CBBTC, USDC, N8, SwapExoToUsdcQuote);
+state_quote!(CBBTC, USDC, N8, ExecutableQuote<N8, N6, N8>);
 
 // `swap_usdc_to_exo`
-state_quote!(USDC, CBBTC, N6, SwapUsdcToExoQuote);
+state_quote!(USDC, CBBTC, N6, ExecutableQuote<N6, N8, N6>);
 
 // `user_deposit`
-state_quote!(HYUSD, SHYUSD, N6, SwapQuote);
+state_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `user_withdraw`
-state_quote!(SHYUSD, HYUSD, N6, SwapQuote);
+state_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);

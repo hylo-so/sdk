@@ -18,18 +18,6 @@ use crate::simulated_operation::SimulatedOperationExt;
 use crate::simulation_strategy::SimulationStrategy;
 use crate::{ExecutableQuote, QuoteStrategy};
 
-type MintQuote = ExecutableQuote<N9, N6, N9>;
-type RedeemQuote = ExecutableQuote<N6, N9, N9>;
-type SwapQuote = ExecutableQuote<N6, N6, N6>;
-type LstSwapQuote = ExecutableQuote<N9, N9, N9>;
-type ExoMintQuote = ExecutableQuote<N8, N6, N9>;
-type ExoRedeemQuote = ExecutableQuote<N6, N8, N9>;
-type UsdcMintQuote = ExecutableQuote<N6, N6, N9>;
-type SwapLstToUsdcQuote = ExecutableQuote<N9, N6, N9>;
-type SwapUsdcToLstQuote = ExecutableQuote<N6, N9, N6>;
-type SwapExoToUsdcQuote = ExecutableQuote<N8, N6, N8>;
-type SwapUsdcToExoQuote = ExecutableQuote<N6, N8, N6>;
-
 fn sim_args(amount_in: u64, user: Pubkey) -> RouterArgs {
   RouterArgs {
     amount: amount_in,
@@ -91,71 +79,71 @@ macro_rules! simulation_quote {
 }
 
 // `mint_stablecoin_lst`
-simulation_quote!(JITOSOL, HYUSD, N9, MintQuote);
-simulation_quote!(HYLOSOL, HYUSD, N9, MintQuote);
+simulation_quote!(JITOSOL, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(HYLOSOL, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
 
 // `redeem_stablecoin_lst`
-simulation_quote!(HYUSD, JITOSOL, N9, RedeemQuote);
-simulation_quote!(HYUSD, HYLOSOL, N9, RedeemQuote);
+simulation_quote!(HYUSD, JITOSOL, N9, ExecutableQuote<N6, N9, N9>);
+simulation_quote!(HYUSD, HYLOSOL, N9, ExecutableQuote<N6, N9, N9>);
 
 // `mint_levercoin_lst`
-simulation_quote!(JITOSOL, XSOL, N9, MintQuote);
-simulation_quote!(HYLOSOL, XSOL, N9, MintQuote);
+simulation_quote!(JITOSOL, XSOL, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(HYLOSOL, XSOL, N9, ExecutableQuote<N9, N6, N9>);
 
 // `redeem_levercoin_lst`
-simulation_quote!(XSOL, JITOSOL, N9, RedeemQuote);
-simulation_quote!(XSOL, HYLOSOL, N9, RedeemQuote);
+simulation_quote!(XSOL, JITOSOL, N9, ExecutableQuote<N6, N9, N9>);
+simulation_quote!(XSOL, HYLOSOL, N9, ExecutableQuote<N6, N9, N9>);
 
 // `convert_stable_to_lever_lst`
-simulation_quote!(HYUSD, XSOL, N6, SwapQuote);
+simulation_quote!(HYUSD, XSOL, N6, ExecutableQuote<N6, N6, N6>);
 
 // `convert_lever_to_stable_lst`
-simulation_quote!(XSOL, HYUSD, N6, SwapQuote);
+simulation_quote!(XSOL, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `swap_lst_to_lst`
-simulation_quote!(JITOSOL, HYLOSOL, N9, LstSwapQuote);
-simulation_quote!(HYLOSOL, JITOSOL, N9, LstSwapQuote);
+simulation_quote!(JITOSOL, HYLOSOL, N9, ExecutableQuote<N9, N9, N9>);
+simulation_quote!(HYLOSOL, JITOSOL, N9, ExecutableQuote<N9, N9, N9>);
 
 // `mint_stablecoin_usdc`
-simulation_quote!(USDC, HYUSD, N9, UsdcMintQuote);
+simulation_quote!(USDC, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
 
 // `redeem_stablecoin_usdc`
-simulation_quote!(HYUSD, USDC, N6, SwapQuote);
+simulation_quote!(HYUSD, USDC, N6, ExecutableQuote<N6, N6, N6>);
 
 // `mint_stablecoin_exo`
-simulation_quote!(CBBTC, HYUSD, N9, ExoMintQuote);
+simulation_quote!(CBBTC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
 
 // `redeem_stablecoin_exo`
-simulation_quote!(HYUSD, CBBTC, N9, ExoRedeemQuote);
+simulation_quote!(HYUSD, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
 
 // `mint_levercoin_exo`
-simulation_quote!(CBBTC, XBTC, N9, ExoMintQuote);
+simulation_quote!(CBBTC, XBTC, N9, ExecutableQuote<N8, N6, N9>);
 
 // `redeem_levercoin_exo`
-simulation_quote!(XBTC, CBBTC, N9, ExoRedeemQuote);
+simulation_quote!(XBTC, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
 
 // `convert_stable_to_lever_exo`
-simulation_quote!(HYUSD, XBTC, N6, SwapQuote);
+simulation_quote!(HYUSD, XBTC, N6, ExecutableQuote<N6, N6, N6>);
 
 // `convert_lever_to_stable_exo`
-simulation_quote!(XBTC, HYUSD, N6, SwapQuote);
+simulation_quote!(XBTC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `swap_lst_to_usdc`
-simulation_quote!(JITOSOL, USDC, N9, SwapLstToUsdcQuote);
-simulation_quote!(HYLOSOL, USDC, N9, SwapLstToUsdcQuote);
+simulation_quote!(JITOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(HYLOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
 
 // `swap_usdc_to_lst`
-simulation_quote!(USDC, JITOSOL, N6, SwapUsdcToLstQuote);
-simulation_quote!(USDC, HYLOSOL, N6, SwapUsdcToLstQuote);
+simulation_quote!(USDC, JITOSOL, N6, ExecutableQuote<N6, N9, N6>);
+simulation_quote!(USDC, HYLOSOL, N6, ExecutableQuote<N6, N9, N6>);
 
 // `swap_exo_to_usdc`
-simulation_quote!(CBBTC, USDC, N8, SwapExoToUsdcQuote);
+simulation_quote!(CBBTC, USDC, N8, ExecutableQuote<N8, N6, N8>);
 
 // `swap_usdc_to_exo`
-simulation_quote!(USDC, CBBTC, N6, SwapUsdcToExoQuote);
+simulation_quote!(USDC, CBBTC, N6, ExecutableQuote<N6, N8, N6>);
 
 // `user_deposit`
-simulation_quote!(HYUSD, SHYUSD, N6, SwapQuote);
+simulation_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `user_withdraw`
-simulation_quote!(SHYUSD, HYUSD, N6, SwapQuote);
+simulation_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
