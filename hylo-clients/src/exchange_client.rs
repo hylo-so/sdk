@@ -2,82 +2,19 @@ use std::sync::Arc;
 
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
-use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
 use anyhow::Result;
-use hylo_core::idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
-use hylo_core::idl::{exchange, pda};
-use hylo_core::pyth::SOL_USD;
-use hylo_idl::exchange::client::{accounts, args};
-use hylo_idl::exchange::events::ExchangeStats;
+use hylo_core::idl::exchange;
+use hylo_idl::exchange::client::args;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
 
-use crate::instructions::{
-  ExchangeInstructionBuilder as ExchangeIB,
-  RouterInstructionBuilder as RouterIB,
-};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::syntax_helpers::InstructionBuilderExt;
-use crate::transaction::{
-  BuildTransactionData, LstSwapArgs, MintArgs, RedeemArgs, RouterArgs,
-  SwapArgs, TransactionSyntax,
-};
-use crate::util::{HYLO_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
-/// Client for interacting with the Hylo Exchange program.
-///
-/// Provides functionality for minting/redeem/swap between hyUSD and xSOL and
-/// LST collateral. Supports transaction execution and price simulation for
-/// offchain quoting.
-///
-/// # Examples
-///
-/// ## Setup
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # fn setup_client() -> Result<ExchangeClient> {
-/// let client = ExchangeClient::new_random_keypair(
-///   Cluster::Mainnet,
-///   CommitmentConfig::confirmed(),
-/// )?;
-/// # Ok(client)
-/// # }
-/// ```
-///
-/// ## Transaction Execution
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn execute_transaction(client: ExchangeClient) -> Result<Signature> {
-/// // Mint JITOSOL → hyUSD
-/// let user = Pubkey::new_unique();
-/// let signature = client.run_transaction::<JITOSOL, HYUSD>(MintArgs {
-///   amount: UFix64::one(),
-///   user,
-///   slippage_config: None,
-/// }).await?;
-/// # Ok(signature)
-/// # }
-/// ```
-///
-/// ## Transaction Building
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn build_transaction(client: ExchangeClient) -> Result<()> {
-/// let user = Pubkey::new_unique();
-///
-/// // Build transaction data without executing
-/// let tx_data = client.build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
-///   amount: UFix64::new(50),
-///   user,
-///   slippage_config: None,
-/// }).await?;
-/// # Ok(())
-/// # }
-/// ```
+/// Admin client for the Hylo exchange program. Manages LST
+/// registration, oracle configuration, fee updates, and protocol
+/// stats. User-facing operations go through [`RouterClient`].
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
@@ -240,31 +177,6 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::new(instructions, lookup_tables))
   }
 
-  /// Gets exchange stats via RPC simulation.
-  ///
-  /// # Errors
-  /// - Failed to simulate transaction
-  /// - Failed to deserialize return data
-  pub async fn get_stats(&self) -> Result<ExchangeStats> {
-    let accounts = accounts::GetStats {
-      hylo: pda::HYLO,
-      stablecoin_mint: HYUSD::MINT,
-      levercoin_mint: XSOL::MINT,
-      sol_usd_pyth_feed: SOL_USD.address,
-    };
-    let args = args::GetStats {};
-    let tx = self
-      .program
-      .request()
-      .accounts(accounts)
-      .args(args)
-      .signed_transaction()
-      .await?;
-    let tx: VersionedTransaction = tx.into();
-    let stats = self.simulate_transaction_return(&tx).await?;
-    Ok(stats)
-  }
-
   /// Updates the oracle confidence tolerance.
   ///
   /// # Errors
@@ -319,133 +231,3 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 }
-
-#[async_trait::async_trait]
-impl<OUT: LST> BuildTransactionData<HYUSD, OUT> for ExchangeClient {
-  type Inputs = RedeemArgs;
-
-  async fn build(
-    &self,
-    inputs: RedeemArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<HYUSD, OUT>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, OUT>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<OUT: TokenMint + LST> BuildTransactionData<XSOL, OUT> for ExchangeClient {
-  type Inputs = RedeemArgs;
-
-  async fn build(
-    &self,
-    inputs: RedeemArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<XSOL, OUT>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, OUT>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<IN: LST> BuildTransactionData<IN, HYUSD> for ExchangeClient {
-  type Inputs = MintArgs;
-
-  async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<IN, HYUSD>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<IN, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<IN: LST> BuildTransactionData<IN, XSOL> for ExchangeClient {
-  type Inputs = MintArgs;
-
-  async fn build(&self, inputs: MintArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<IN, XSOL>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<IN, XSOL>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, XSOL> for ExchangeClient {
-  type Inputs = SwapArgs;
-
-  async fn build(&self, inputs: SwapArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<HYUSD, XSOL>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<HYUSD, XSOL>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl BuildTransactionData<XSOL, HYUSD> for ExchangeClient {
-  type Inputs = SwapArgs;
-
-  async fn build(&self, inputs: SwapArgs) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<XSOL, HYUSD>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<XSOL, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<L1: LST, L2: LST> BuildTransactionData<L1, L2> for ExchangeClient {
-  type Inputs = LstSwapArgs;
-
-  async fn build(
-    &self,
-    inputs: LstSwapArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions = ExchangeIB::build_instructions::<L1, L2>(inputs)?;
-    let lut_addresses = ExchangeIB::lookup_tables::<L1, L2>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-// ============================================================================
-// Router-based exo/USDC BuildTransactionData impls
-// ============================================================================
-
-/// Helper to build router-based transaction data via `RouterIB`.
-macro_rules! router_btd {
-  ($in:ty, $out:ty) => {
-    #[async_trait::async_trait]
-    impl BuildTransactionData<$in, $out> for ExchangeClient {
-      type Inputs = RouterArgs;
-
-      async fn build(
-        &self,
-        inputs: RouterArgs,
-      ) -> Result<VersionedTransactionData> {
-        let instructions = RouterIB::build_instructions::<$in, $out>(inputs)?;
-        let lut_addresses = RouterIB::lookup_tables::<$in, $out>();
-        let lookup_tables =
-          self.load_multiple_lookup_tables(lut_addresses).await?;
-        Ok(VersionedTransactionData::new(instructions, lookup_tables))
-      }
-    }
-  };
-}
-
-router_btd!(USDC, HYUSD);
-router_btd!(HYUSD, USDC);
-router_btd!(CBBTC, HYUSD);
-router_btd!(HYUSD, CBBTC);
-router_btd!(CBBTC, XBTC);
-router_btd!(XBTC, CBBTC);
-router_btd!(HYUSD, XBTC);
-router_btd!(XBTC, HYUSD);
-
-#[async_trait::async_trait]
-impl TransactionSyntax for ExchangeClient {}

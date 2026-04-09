@@ -136,12 +136,12 @@ pub const DEFAULT_CUS_WITH_BUFFER_X3: u64 = 300_000;
 
 /// Typed executable quote with amounts, instructions, and compute units.
 #[derive(Clone, Debug)]
-pub struct ExecutableQuote<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
-  pub amount_in: UFix64<InExp>,
-  pub amount_out: UFix64<OutExp>,
+pub struct ExecutableQuote<In: Integer, Out: Integer, Fee: Integer> {
+  pub amount_in: UFix64<In>,
+  pub amount_out: UFix64<Out>,
   pub compute_units: u64,
   pub compute_unit_strategy: ComputeUnitStrategy,
-  pub fee_amount: UFix64<FeeExp>,
+  pub fee_amount: UFix64<Fee>,
   pub fee_mint: Pubkey,
   pub instructions: Vec<Instruction>,
   pub address_lookup_tables: Vec<Pubkey>,
@@ -160,12 +160,10 @@ pub struct ExecutableQuoteValue {
   pub address_lookup_tables: Vec<Pubkey>,
 }
 
-impl<InExp: Integer, OutExp: Integer, FeeExp: Integer>
-  From<ExecutableQuote<InExp, OutExp, FeeExp>> for ExecutableQuoteValue
+impl<In: Integer, Out: Integer, Fee: Integer>
+  From<ExecutableQuote<In, Out, Fee>> for ExecutableQuoteValue
 {
-  fn from(
-    quote: ExecutableQuote<InExp, OutExp, FeeExp>,
-  ) -> ExecutableQuoteValue {
+  fn from(quote: ExecutableQuote<In, Out, Fee>) -> ExecutableQuoteValue {
     ExecutableQuoteValue {
       amount_in: quote.amount_in.into(),
       amount_out: quote.amount_out.into(),

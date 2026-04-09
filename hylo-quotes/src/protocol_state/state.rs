@@ -8,7 +8,7 @@ use std::sync::Arc;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::conversion::UsdcStablecoinConversion;
@@ -18,6 +18,7 @@ use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_core::total_sol_cache::TotalSolCache;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
@@ -92,11 +93,17 @@ pub struct ProtocolState<C: SolanaClock> {
   /// LST swap configuration
   pub lst_swap_config: AssetSwapConfig,
 
-  /// cbBTC exo exchange context (None if not initialized)
-  pub cbbtc_exo_context: Option<Arc<ExoExchangeContext<C>>>,
+  /// cbBTC exo exchange context
+  pub cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
 
-  /// USDC exchange state (None if not initialized)
-  pub usdc_exchange_state: Option<UsdcExchangeState>,
+  /// USDC exchange state
+  pub usdc_exchange_state: UsdcExchangeState,
+
+  /// `JitoSOL` SPL stake pool
+  pub jitosol_stake_pool: SplStakePool,
+
+  /// `hyloSOL` SPL stake pool
+  pub hylosol_stake_pool: SplStakePool,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -117,8 +124,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     hyusd_pool: TokenAccount,
     xsol_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
-    cbbtc_exo_context: Option<Arc<ExoExchangeContext<C>>>,
-    usdc_exchange_state: Option<UsdcExchangeState>,
+    cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
+    usdc_exchange_state: UsdcExchangeState,
+    jitosol_stake_pool: SplStakePool,
+    hylosol_stake_pool: SplStakePool,
   ) -> Result<Self> {
     let fetched_at = clock.unix_timestamp();
     let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
@@ -152,8 +161,10 @@ impl<C: SolanaClock> ProtocolState<C> {
       xsol_pool,
       fetched_at,
       lst_swap_config,
-      cbbtc_exo_context,
+      cbbtc_exchange_context,
       usdc_exchange_state,
+      jitosol_stake_pool,
+      hylosol_stake_pool,
     })
   }
 
@@ -169,53 +180,46 @@ impl<C: SolanaClock> ProtocolState<C> {
     }
   }
 
-  /// Returns the cbBTC `ExoExchangeContext`, if available.
+  /// SPL stake pool for the given LST.
   ///
   /// # Errors
-  /// * cbBTC exo pair not initialized
-  pub fn cbbtc_exo_context(&self) -> Result<&ExoExchangeContext<C>> {
-    self
-      .cbbtc_exo_context
-      .as_deref()
-      .ok_or_else(|| anyhow!("cbBTC exo pair not initialized"))
+  /// * Unknown LST mint
+  pub fn stake_pool<L: LST>(&self) -> Result<&SplStakePool> {
+    match L::MINT {
+      JITOSOL::MINT => Ok(&self.jitosol_stake_pool),
+      HYLOSOL::MINT => Ok(&self.hylosol_stake_pool),
+      _ => Err(anyhow!("stake_pool not found for mint {}", L::MINT)),
+    }
   }
 
-  /// Returns the USDC exchange state, if available.
-  ///
-  /// # Errors
-  /// * USDC pair not initialized
-  pub fn usdc_exchange_state(&self) -> Result<&UsdcExchangeState> {
-    self
-      .usdc_exchange_state
-      .as_ref()
-      .ok_or_else(|| anyhow!("USDC pair not initialized"))
+  #[must_use]
+  pub fn cbbtc_exchange_context(&self) -> &ExoExchangeContext<C> {
+    &self.cbbtc_exchange_context
+  }
+
+  #[must_use]
+  pub fn usdc_exchange_state(&self) -> &UsdcExchangeState {
+    &self.usdc_exchange_state
   }
 }
 
-/// Attempts to build a cbBTC `ExoExchangeContext` from optional accounts.
-///
-/// Returns `None` if any required account is missing.
+/// Builds the cbBTC `ExoExchangeContext` from protocol accounts.
 ///
 /// # Errors
-/// * Deserialization or context-load failure when accounts are present
-fn try_build_cbbtc_exo_context(
+/// * Deserialization or context-load failure
+fn build_cbbtc_exchange_context(
   clock: Clock,
   accounts: &ProtocolAccounts,
-) -> Result<Option<ExoExchangeContext<Clock>>> {
-  let (Some(pair_acct), Some(vault_acct), Some(xbtc_acct), Some(pyth_acct)) = (
-    accounts.cbbtc_exo_pair.as_ref(),
-    accounts.cbbtc_vault.as_ref(),
-    accounts.xbtc_mint.as_ref(),
-    accounts.btc_usd_pyth.as_ref(),
-  ) else {
-    return Ok(None);
-  };
-
-  let exo_pair = ExoPair::try_deserialize(&mut pair_acct.data.as_slice())?;
-  let vault = TokenAccount::try_deserialize(&mut vault_acct.data.as_slice())?;
-  let xbtc_mint = Mint::try_deserialize(&mut xbtc_acct.data.as_slice())?;
-  let btc_usd = PriceUpdateV2::try_deserialize(&mut pyth_acct.data.as_slice())
-    .map_err(|e| anyhow!("Failed to deserialize BTC/USD Pyth: {e}"))?;
+) -> Result<ExoExchangeContext<Clock>> {
+  let exo_pair =
+    ExoPair::try_deserialize(&mut accounts.cbbtc_exo_pair.data.as_slice())?;
+  let vault =
+    TokenAccount::try_deserialize(&mut accounts.cbbtc_vault.data.as_slice())?;
+  let xbtc_mint =
+    Mint::try_deserialize(&mut accounts.xbtc_mint.data.as_slice())?;
+  let btc_usd =
+    PriceUpdateV2::try_deserialize(&mut accounts.btc_usd_pyth.data.as_slice())
+      .context("BTC/USD Pyth deserialization")?;
 
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -228,7 +232,7 @@ fn try_build_cbbtc_exo_context(
     .checked_convert()
     .ok_or_else(|| anyhow!("cbBTC vault amount N8->N9 overflow"))?;
 
-  let ctx = ExoExchangeContext::load(
+  ExoExchangeContext::load(
     clock,
     total_collateral,
     exo_pair.stability_threshold_1.try_into()?,
@@ -239,29 +243,23 @@ fn try_build_cbbtc_exo_context(
     Some(&xbtc_mint),
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
-  )?;
-  Ok(Some(ctx))
+  )
+  .context("ExoExchangeContext::load")
 }
 
-/// Attempts to build USDC exchange state from optional accounts.
-///
-/// Returns `None` if any required account is missing.
+/// Builds USDC exchange state from protocol accounts.
 ///
 /// # Errors
-/// * Deserialization or oracle failure when accounts are present
-fn try_build_usdc_exchange_state(
+/// * Deserialization or oracle failure
+fn build_usdc_exchange_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
-) -> Result<Option<UsdcExchangeState>> {
-  let (Some(pair_acct), Some(pyth_acct)) =
-    (accounts.usdc_pair.as_ref(), accounts.usdc_usd_pyth.as_ref())
-  else {
-    return Ok(None);
-  };
-
-  let usdc_pair = UsdcPair::try_deserialize(&mut pair_acct.data.as_slice())?;
-  let usdc_usd = PriceUpdateV2::try_deserialize(&mut pyth_acct.data.as_slice())
-    .map_err(|e| anyhow!("Failed to deserialize USDC/USD Pyth: {e}"))?;
+) -> Result<UsdcExchangeState> {
+  let usdc_pair =
+    UsdcPair::try_deserialize(&mut accounts.usdc_pair.data.as_slice())?;
+  let usdc_usd =
+    PriceUpdateV2::try_deserialize(&mut accounts.usdc_usd_pyth.data.as_slice())
+      .context("USDC/USD Pyth deserialization")?;
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
@@ -271,10 +269,10 @@ fn try_build_usdc_exchange_state(
     hylo_core::pyth::query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
   let usdc_usd_price = usdc_oracle.price_range()?;
 
-  Ok(Some(UsdcExchangeState {
+  Ok(UsdcExchangeState {
     usdc_usd_price,
     swap_fee: usdc_pair.swap_fee.try_into()?,
-  }))
+  })
 }
 
 impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
@@ -314,14 +312,19 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let sol_usd = PriceUpdateV2::try_deserialize(
       &mut accounts.sol_usd_pyth.data.as_slice(),
     )
-    .map_err(|e| anyhow!("Failed to deserialize Pyth: {e}"))?;
+    .context("SOL/USD Pyth deserialization")?;
 
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_exo_context =
-      try_build_cbbtc_exo_context(clock.clone(), accounts)?.map(Arc::new);
-    let usdc_exchange_state = try_build_usdc_exchange_state(&clock, accounts)?;
+    let cbbtc_exchange_context =
+      Arc::new(build_cbbtc_exchange_context(clock.clone(), accounts)?);
+    let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
+
+    let jitosol_stake_pool =
+      SplStakePool::from_bytes(&accounts.jitosol_pool_state.data)?;
+    let hylosol_stake_pool =
+      SplStakePool::from_bytes(&accounts.hylosol_pool_state.data)?;
 
     Self::build(
       clock,
@@ -335,8 +338,10 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       hyusd_pool,
       xsol_pool,
       &sol_usd,
-      cbbtc_exo_context,
+      cbbtc_exchange_context,
       usdc_exchange_state,
+      jitosol_stake_pool,
+      hylosol_stake_pool,
     )
   }
 }

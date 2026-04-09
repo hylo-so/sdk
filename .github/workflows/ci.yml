@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: ["main", "main-v2"]
   push:
-    branches: ["main", "main-v2"]
+    branches: ["main"]
 
 env:
   SCCACHE_GHA_ENABLED: "true"

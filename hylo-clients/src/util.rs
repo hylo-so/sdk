@@ -29,6 +29,7 @@ use solana_transaction_status_client_types::{
 use crate::exchange_client::ExchangeClient;
 use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
+use crate::router_client::RouterClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
 pub trait LST: StakePool {}
@@ -216,6 +217,19 @@ pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
     CommitmentConfig::confirmed(),
   )?;
   Ok(client)
+}
+
+/// Builds test router client with random keypair.
+///
+/// # Errors
+/// - Environment variable access
+/// - Client initialization
+pub fn build_test_router_client() -> Result<RouterClient> {
+  RouterClient::new_from_keypair(
+    cluster_from_env()?,
+    Keypair::new(),
+    CommitmentConfig::confirmed(),
+  )
 }
 
 /// Builds ATA creation instruction for a user and mint.

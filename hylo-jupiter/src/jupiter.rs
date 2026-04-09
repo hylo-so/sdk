@@ -1,20 +1,24 @@
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
-use hylo_core::idl::exchange::accounts::{Hylo, LstHeader};
+use fix::prelude::{UFix64, N8};
+use hylo_core::exchange_context::ExoExchangeContext;
+use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{
-  TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use hylo_core::idl::{exchange, pda, stability_pool};
-use hylo_core::pyth::SOL_USD;
+use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
-use hylo_quotes::protocol_state::ProtocolState;
+use hylo_quotes::protocol_state::{ProtocolState, UsdcExchangeState};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
@@ -364,10 +368,17 @@ where
       pda::HYUSD_POOL,
       pda::XSOL_POOL,
       pda::POOL_CONFIG,
+      pda::exo_pair(CBBTC::MINT),
+      pda::exo_vault(CBBTC::MINT),
+      pda::exo_levercoin_mint(CBBTC::MINT),
+      pda::BTC_USD_PYTH_FEED,
+      pda::USDC_PAIR,
+      pda::USDC_USD_PYTH_FEED,
     ]
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
+    // Core protocol state
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
     let xsol_mint: Mint = account_map_get(account_map, &XSOL::MINT)?;
@@ -377,6 +388,8 @@ where
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
     let sol_usd: PriceUpdateV2 =
       account_map_get(account_map, &SOL_USD.address)?;
+
+    // Stability pool
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -384,6 +397,65 @@ where
       account_map_get(account_map, &pda::XSOL_POOL)?;
     let pool_config: PoolConfig =
       account_map_get(account_map, &pda::POOL_CONFIG)?;
+
+    // cbBTC exo context
+    let exo_pair: ExoPair =
+      account_map_get(account_map, &pda::exo_pair(CBBTC::MINT))?;
+    let cbbtc_vault: TokenAccount =
+      account_map_get(account_map, &pda::exo_vault(CBBTC::MINT))?;
+    let xbtc_mint: Mint =
+      account_map_get(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?;
+    let btc_usd: PriceUpdateV2 =
+      account_map_get(account_map, &pda::BTC_USD_PYTH_FEED)?;
+    let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
+    let usdc_usd: PriceUpdateV2 =
+      account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
+    let exo_oracle_config = OracleConfig::new(
+      exo_pair.oracle_interval_secs,
+      exo_pair.oracle_conf_tolerance.try_into()?,
+    );
+    let total_collateral = UFix64::<N8>::new(cbbtc_vault.amount)
+      .checked_convert()
+      .context("cbBTC vault N8->N9 overflow")?;
+    let cbbtc_exchange_context = Arc::new(
+      ExoExchangeContext::load(
+        self.clock.clone(),
+        total_collateral,
+        exo_pair.stability_threshold_1.try_into()?,
+        exo_oracle_config,
+        exo_pair.levercoin_fees.into(),
+        &btc_usd,
+        exo_pair.virtual_stablecoin.into(),
+        Some(&xbtc_mint),
+        exo_pair.sell_curve_config.into(),
+        exo_pair.buy_curve_config.into(),
+      )
+      .context("ExoExchangeContext::load")?,
+    );
+
+    // USDC exchange state
+    let usdc_oracle_config = OracleConfig::new(
+      usdc_pair.oracle_interval_secs,
+      usdc_pair.oracle_conf_tolerance.try_into()?,
+    );
+    let usdc_oracle =
+      query_pyth_oracle(&self.clock, &usdc_usd, usdc_oracle_config)?;
+    let usdc_exchange_state = UsdcExchangeState {
+      usdc_usd_price: usdc_oracle.price_range()?,
+      swap_fee: usdc_pair.swap_fee.try_into()?,
+    };
+
+    // Stake pools
+    let jitosol_pool_state = account_map
+      .get(&JITOSOL::POOL_STATE)
+      .context("JitoSOL pool state not found")?;
+    let jitosol_stake_pool =
+      SplStakePool::from_bytes(&jitosol_pool_state.data)?;
+    let hylosol_pool_state = account_map
+      .get(&HYLOSOL::POOL_STATE)
+      .context("hyloSOL pool state not found")?;
+    let hylosol_stake_pool =
+      SplStakePool::from_bytes(&hylosol_pool_state.data)?;
 
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
@@ -397,9 +469,12 @@ where
       hyusd_pool,
       xsol_pool,
       &sol_usd,
-      None, // cbbtc_exo_context
-      None, // usdc_exchange_state
+      cbbtc_exchange_context,
+      usdc_exchange_state,
+      jitosol_stake_pool,
+      hylosol_stake_pool,
     )?);
+
     Ok(())
   }
 
@@ -440,13 +515,10 @@ mod tests {
   use anchor_lang::pubkey;
   use fix::prelude::*;
   use hylo_clients::prelude::{
-    MintArgs, RedeemArgs, StabilityPoolArgs, SwapArgs, TransactionSyntax,
-    HYUSD, JITOSOL, SHYUSD, XSOL,
+    RouterArgs, TransactionSyntax, HYUSD, JITOSOL, SHYUSD, XSOL,
   };
   use hylo_clients::program_client::ProgramClient;
-  use hylo_clients::util::{
-    build_test_exchange_client, build_test_stability_pool_client,
-  };
+  use hylo_clients::util::build_test_router_client;
   use hylo_core::idl::exchange::events::{
     ConvertLeverToStableLstEvent, ConvertStableToLeverLstEvent,
     MintLevercoinLstEvent, MintStablecoinLstEvent, RedeemLevercoinLstEvent,
@@ -552,10 +624,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, HYUSD>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
-        amount: amount_lst,
+      .build_transaction_data::<JITOSOL, HYUSD>(RouterArgs {
+        amount: amount_lst.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -579,10 +651,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, HYUSD>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<HYUSD, JITOSOL>(RedeemArgs {
-        amount: amount_hyusd,
+      .build_transaction_data::<HYUSD, JITOSOL>(RouterArgs {
+        amount: amount_hyusd.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -606,10 +678,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<JITOSOL, XSOL>(MintArgs {
-        amount: amount_lst,
+      .build_transaction_data::<JITOSOL, XSOL>(RouterArgs {
+        amount: amount_lst.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -633,10 +705,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<JITOSOL, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<XSOL, JITOSOL>(RedeemArgs {
-        amount: amount_xsol,
+      .build_transaction_data::<XSOL, JITOSOL>(RouterArgs {
+        amount: amount_xsol.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -660,10 +732,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<HYUSD, XSOL>(SwapArgs {
-        amount: amount_hyusd,
+      .build_transaction_data::<HYUSD, XSOL>(RouterArgs {
+        amount: amount_hyusd.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -702,10 +774,10 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, XSOL>().await?;
-    let hylo = build_test_exchange_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<XSOL, HYUSD>(SwapArgs {
-        amount: amount_xsol,
+      .build_transaction_data::<XSOL, HYUSD>(RouterArgs {
+        amount: amount_xsol.bits,
         user: TESTER,
         slippage_config: None,
       })
@@ -744,11 +816,12 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, SHYUSD>().await?;
-    let hylo = build_test_stability_pool_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<HYUSD, SHYUSD>(StabilityPoolArgs {
-        amount: amount_hyusd,
+      .build_transaction_data::<HYUSD, SHYUSD>(RouterArgs {
+        amount: amount_hyusd.bits,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
@@ -781,11 +854,12 @@ mod tests {
       swap_mode: SwapMode::ExactIn,
     };
     let jup = build_jupiter_pair::<HYUSD, SHYUSD>().await?;
-    let hylo = build_test_stability_pool_client()?;
+    let hylo = build_test_router_client()?;
     let args = hylo
-      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
-        amount: amount_shyusd,
+      .build_transaction_data::<SHYUSD, HYUSD>(RouterArgs {
+        amount: amount_shyusd.bits,
         user: TESTER,
+        slippage_config: None,
       })
       .await?;
     let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;

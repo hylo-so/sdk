@@ -8,7 +8,7 @@ use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_idl::pda;
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use serde::{Deserialize, Serialize};
 
@@ -48,24 +48,29 @@ pub struct ProtocolAccounts {
   /// Solana clock sysvar
   pub clock: Account,
 
-  // -- Exo collateral accounts (optional) --
   /// cbBTC `ExoPair` PDA
-  pub cbbtc_exo_pair: Option<Account>,
+  pub cbbtc_exo_pair: Account,
 
   /// cbBTC collateral vault token account
-  pub cbbtc_vault: Option<Account>,
+  pub cbbtc_vault: Account,
 
   /// xBTC levercoin mint
-  pub xbtc_mint: Option<Account>,
+  pub xbtc_mint: Account,
 
   /// Pyth BTC/USD price feed
-  pub btc_usd_pyth: Option<Account>,
+  pub btc_usd_pyth: Account,
 
   /// `UsdcPair` PDA
-  pub usdc_pair: Option<Account>,
+  pub usdc_pair: Account,
 
   /// Pyth USDC/USD price feed
-  pub usdc_usd_pyth: Option<Account>,
+  pub usdc_usd_pyth: Account,
+
+  /// `JitoSOL` SPL stake pool state
+  pub jitosol_pool_state: Account,
+
+  /// `hyloSOL` SPL stake pool state
+  pub hylosol_pool_state: Account,
 }
 
 impl ProtocolAccounts {
@@ -91,15 +96,17 @@ impl ProtocolAccounts {
       pda::exo_vault(CBBTC::MINT),
       pda::exo_levercoin_mint(CBBTC::MINT),
       pda::BTC_USD_PYTH_FEED,
-      *pda::USDC_PAIR,
+      pda::USDC_PAIR,
       pda::USDC_USD_PYTH_FEED,
+      JITOSOL::POOL_STATE,
+      HYLOSOL::POOL_STATE,
     ]
   }
 
   /// Expected number of protocol accounts
   #[must_use]
   pub const fn expected_count() -> usize {
-    17
+    19
   }
 
   /// Validate that pubkeys and accounts match expected protocol accounts
@@ -214,13 +221,35 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
         .context("Clock sysvar not found")?
         .clone(),
 
-      // Exo accounts are optional — may not exist on all deployments
-      cbbtc_exo_pair: accounts[11].clone(),
-      cbbtc_vault: accounts[12].clone(),
-      xbtc_mint: accounts[13].clone(),
-      btc_usd_pyth: accounts[14].clone(),
-      usdc_pair: accounts[15].clone(),
-      usdc_usd_pyth: accounts[16].clone(),
+      cbbtc_exo_pair: accounts[11]
+        .as_ref()
+        .context("cbBTC ExoPair not found")?
+        .clone(),
+      cbbtc_vault: accounts[12]
+        .as_ref()
+        .context("cbBTC vault not found")?
+        .clone(),
+      xbtc_mint: accounts[13]
+        .as_ref()
+        .context("xBTC mint not found")?
+        .clone(),
+      btc_usd_pyth: accounts[14]
+        .as_ref()
+        .context("BTC/USD Pyth feed not found")?
+        .clone(),
+      usdc_pair: accounts[15].as_ref().context("UsdcPair not found")?.clone(),
+      usdc_usd_pyth: accounts[16]
+        .as_ref()
+        .context("USDC/USD Pyth feed not found")?
+        .clone(),
+      jitosol_pool_state: accounts[17]
+        .as_ref()
+        .context("JitoSOL pool state not found")?
+        .clone(),
+      hylosol_pool_state: accounts[18]
+        .as_ref()
+        .context("hyloSOL pool state not found")?
+        .clone(),
     })
   }
 }

@@ -1,64 +1,19 @@
 use std::sync::Arc;
 
 use anchor_client::solana_sdk::signature::{Keypair, Signature};
-use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
 use hylo_idl::stability_pool::client::args;
-use hylo_idl::stability_pool::events::{StabilityPoolStats, UserWithdrawEvent};
 use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::stability_pool::types::TokenMetadata;
-use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
-use crate::exchange_client::ExchangeClient;
-use crate::instructions::StabilityPoolInstructionBuilder as StabilityPoolIB;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::syntax_helpers::InstructionBuilderExt;
-use crate::transaction::{
-  BuildTransactionData, RedeemArgs, StabilityPoolArgs, TransactionSyntax,
-};
-use crate::util::{
-  user_ata_instruction, EXCHANGE_LOOKUP_TABLE, LST, LST_REGISTRY_LOOKUP_TABLE,
-  STABILITY_POOL_LOOKUP_TABLE,
-};
 use crate::util::HYLO_LOOKUP_TABLE;
 
-/// Client for interacting with the Hylo Stability Pool program.
-///
-/// Provides functionality for depositing and withdrawing sHYUSD from the
-/// stability pool. Supports transaction execution and price simulation for
-/// offchain quoting.
-///
-/// # Examples
-///
-/// ## Setup
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # fn setup_client() -> Result<StabilityPoolClient> {
-/// let client = StabilityPoolClient::new_random_keypair(
-///   Cluster::Mainnet,
-///   CommitmentConfig::confirmed(),
-/// )?;
-/// # Ok(client)
-/// # }
-/// ```
-///
-/// ## Transaction Execution
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-///
-/// # async fn execute_transaction(client: StabilityPoolClient) -> Result<Signature> {
-/// // Deposit HYUSD → sHYUSD
-/// let user = Pubkey::new_unique();
-/// let signature = client.run_transaction::<HYUSD, SHYUSD>(StabilityPoolArgs {
-///   amount: UFix64::new(100),
-///   user,
-/// }).await?;
-/// # Ok(signature)
-/// # }
-/// ```
+/// Admin client for the Hylo stability pool program. Manages pool
+/// initialization, rebalancing, fee configuration, and stats.
+/// User-facing deposit/withdraw goes through [`RouterClient`].
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
@@ -96,24 +51,6 @@ impl StabilityPoolClient {
     let tx_args = VersionedTransactionData::new(instructions, vec![lut]);
     let sig = self.send_v0_transaction(&tx_args).await?;
     Ok(sig)
-  }
-
-  /// Simulates the `get_stats` instruction on the stability pool.
-  ///
-  /// # Errors
-  /// - Simulation failure
-  /// - Return data access or deserialization
-  pub async fn get_stats(&self) -> Result<StabilityPoolStats> {
-    let instruction = instruction_builders::get_stats();
-    let tx = self
-      .program
-      .request()
-      .instruction(instruction)
-      .signed_transaction()
-      .await?;
-    let tx: VersionedTransaction = tx.into();
-    let stats = self.simulate_transaction_return(&tx).await?;
-    Ok(stats)
   }
 
   /// Initializes the stability pool.
@@ -159,100 +96,3 @@ impl StabilityPoolClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 }
-
-#[async_trait::async_trait]
-impl BuildTransactionData<HYUSD, SHYUSD> for StabilityPoolClient {
-  type Inputs = StabilityPoolArgs;
-
-  async fn build(
-    &self,
-    inputs: StabilityPoolArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions =
-      StabilityPoolIB::build_instructions::<HYUSD, SHYUSD>(inputs)?;
-    let lut_addresses = StabilityPoolIB::lookup_tables::<HYUSD, SHYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl BuildTransactionData<SHYUSD, HYUSD> for StabilityPoolClient {
-  type Inputs = StabilityPoolArgs;
-
-  async fn build(
-    &self,
-    inputs: StabilityPoolArgs,
-  ) -> Result<VersionedTransactionData> {
-    let instructions =
-      StabilityPoolIB::build_instructions::<SHYUSD, HYUSD>(inputs)?;
-    let lut_addresses = StabilityPoolIB::lookup_tables::<SHYUSD, HYUSD>();
-    let lookup_tables = self.load_multiple_lookup_tables(lut_addresses).await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl<OUT: LST> BuildTransactionData<SHYUSD, OUT> for StabilityPoolClient {
-  type Inputs = (ExchangeClient, StabilityPoolArgs);
-
-  async fn build(
-    &self,
-    (exchange, StabilityPoolArgs { amount, user }): (
-      ExchangeClient,
-      StabilityPoolArgs,
-    ),
-  ) -> Result<VersionedTransactionData> {
-    let redeem_shyusd_args = self
-      .build_transaction_data::<SHYUSD, HYUSD>(StabilityPoolArgs {
-        amount,
-        user,
-      })
-      .await?;
-    let redeem_shyusd_tx = self
-      .build_simulation_transaction(&user, &redeem_shyusd_args)
-      .await?;
-    let redeem_shyusd_sim = self
-      .simulate_transaction_event::<UserWithdrawEvent>(&redeem_shyusd_tx)
-      .await?;
-    let mut instructions = vec![user_ata_instruction(&user, &OUT::MINT)];
-    instructions.extend(redeem_shyusd_args.instructions);
-
-    // If simulated transaction yields hyUSD, redeem it
-    if redeem_shyusd_sim.stablecoin_withdrawn.bits > 0 {
-      let redeem_hyusd_args = exchange
-        .build_transaction_data::<HYUSD, OUT>(RedeemArgs {
-          amount: redeem_shyusd_sim.stablecoin_withdrawn.try_into()?,
-          user,
-          slippage_config: None,
-        })
-        .await?;
-      instructions.extend(vec![user_ata_instruction(&user, &HYUSD::MINT)]);
-      instructions.extend(redeem_hyusd_args.instructions);
-    }
-
-    // If simulated transaction yields xSOL, redeem it
-    if redeem_shyusd_sim.levercoin_withdrawn.bits > 0 {
-      let redeem_xsol_args = exchange
-        .build_transaction_data::<XSOL, OUT>(RedeemArgs {
-          amount: redeem_shyusd_sim.levercoin_withdrawn.try_into()?,
-          user,
-          slippage_config: None,
-        })
-        .await?;
-      instructions.extend(vec![user_ata_instruction(&user, &XSOL::MINT)]);
-      instructions.extend(redeem_xsol_args.instructions);
-    }
-    let lookup_tables = self
-      .load_multiple_lookup_tables(&[
-        EXCHANGE_LOOKUP_TABLE,
-        LST_REGISTRY_LOOKUP_TABLE,
-        STABILITY_POOL_LOOKUP_TABLE,
-      ])
-      .await?;
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
-  }
-}
-
-#[async_trait::async_trait]
-impl TransactionSyntax for StabilityPoolClient {}

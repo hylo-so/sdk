@@ -3,8 +3,7 @@
 //! Computes quotes using protocol state and SDK machinery like
 //! `ExchangeContext`, without requiring transaction simulation.
 
-mod exchange;
-mod stability_pool;
+mod router;
 
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;

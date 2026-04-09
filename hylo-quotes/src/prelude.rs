@@ -36,4 +36,5 @@ pub use crate::{
   ComputeUnitInfo, ComputeUnitStrategy, ExecutableQuote, ExecutableQuoteValue,
   Operation, QuoteMetadata, DEFAULT_CUS_WITH_BUFFER,
 };
+// Quoting strategies
 pub use crate::{RuntimeQuoteStrategy, SimulationStrategy};
