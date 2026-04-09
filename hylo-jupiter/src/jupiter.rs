@@ -378,6 +378,7 @@ where
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
+    // Core protocol state
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
     let xsol_mint: Mint = account_map_get(account_map, &XSOL::MINT)?;
@@ -387,6 +388,8 @@ where
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
     let sol_usd: PriceUpdateV2 =
       account_map_get(account_map, &SOL_USD.address)?;
+
+    // Stability pool
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -395,6 +398,7 @@ where
     let pool_config: PoolConfig =
       account_map_get(account_map, &pda::POOL_CONFIG)?;
 
+    // cbBTC exo context
     let exo_pair: ExoPair =
       account_map_get(account_map, &pda::exo_pair(CBBTC::MINT))?;
     let cbbtc_vault: TokenAccount =
@@ -406,7 +410,6 @@ where
     let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
     let usdc_usd: PriceUpdateV2 =
       account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
-
     let exo_oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
       exo_pair.oracle_conf_tolerance.try_into()?,
@@ -430,6 +433,7 @@ where
       .context("ExoExchangeContext::load")?,
     );
 
+    // USDC exchange state
     let usdc_oracle_config = OracleConfig::new(
       usdc_pair.oracle_interval_secs,
       usdc_pair.oracle_conf_tolerance.try_into()?,
@@ -441,14 +445,17 @@ where
       swap_fee: usdc_pair.swap_fee.try_into()?,
     };
 
-    let jitosol_pool = account_map
+    // Stake pools
+    let jitosol_pool_state = account_map
       .get(&JITOSOL::POOL_STATE)
       .context("JitoSOL pool state not found")?;
-    let jitosol_stake_pool = SplStakePool::from_bytes(&jitosol_pool.data)?;
-    let hylosol_pool = account_map
+    let jitosol_stake_pool =
+      SplStakePool::from_bytes(&jitosol_pool_state.data)?;
+    let hylosol_pool_state = account_map
       .get(&HYLOSOL::POOL_STATE)
       .context("hyloSOL pool state not found")?;
-    let hylosol_stake_pool = SplStakePool::from_bytes(&hylosol_pool.data)?;
+    let hylosol_stake_pool =
+      SplStakePool::from_bytes(&hylosol_pool_state.data)?;
 
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
@@ -467,6 +474,7 @@ where
       jitosol_stake_pool,
       hylosol_stake_pool,
     )?);
+
     Ok(())
   }
 
