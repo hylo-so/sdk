@@ -63,6 +63,15 @@ impl From<UFixValue64> for crate::router::types::UFixValue64 {
   }
 }
 
+impl From<UFixValue64> for crate::stability_pool::types::UFixValue64 {
+  fn from(val: UFixValue64) -> Self {
+    crate::stability_pool::types::UFixValue64 {
+      bits: val.bits,
+      exp: val.exp,
+    }
+  }
+}
+
 impl From<crate::exchange::types::SlippageConfig>
   for crate::router::types::SlippageConfig
 {
