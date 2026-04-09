@@ -24,12 +24,12 @@ base64 = "0.22.1"
 const-crypto = "0.3.0"
 bincode = "1.3.3"
 futures = "0.3.31"
-hylo-clients = { version = "0.4.1", path = "hylo-clients" }
-hylo-core = { version = "0.4.1", path = "hylo-core" }
+hylo-clients = { version = "1.0.0", path = "hylo-clients" }
+hylo-core = { version = "1.0.0", path = "hylo-core" }
 hylo-fix = "0.5.3"
-hylo-idl = { version = "0.4.1", path = "hylo-idl" }
-hylo-jupiter = { version = "0.4.1", path = "hylo-jupiter" }
-hylo-quotes = { version = "0.4.1", path = "hylo-quotes" }
+hylo-idl = { version = "1.0.0", path = "hylo-idl" }
+hylo-jupiter = { version = "1.0.0", path = "hylo-jupiter" }
+hylo-quotes = { version = "1.0.0", path = "hylo-quotes" }
 itertools = "0.14.0"
 hylo-jupiter-amm-interface = "0.6.0"
 more-asserts = "0.3.1"
