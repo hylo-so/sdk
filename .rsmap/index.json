@@ -1,8 +1,8 @@
 {
   "crate::ComputeUnitStrategy": {
     "file": "hylo-quotes/src/lib.rs",
-    "line_start": 183,
-    "line_end": 188,
+    "line_start": 181,
+    "line_end": 186,
     "kind": "enum",
     "visibility": "pub"
   },
@@ -34,10 +34,17 @@
     "kind": "struct",
     "visibility": "pub"
   },
+  "crate::LUT_ACCOUNTS": {
+    "file": "hylo-idl/src/bin/lut_accounts.rs",
+    "line_start": 31,
+    "line_end": 98,
+    "kind": "const",
+    "visibility": "private"
+  },
   "crate::Local": {
     "file": "hylo-quotes/src/lib.rs",
-    "line_start": 196,
-    "line_end": 196,
+    "line_start": 194,
+    "line_end": 194,
     "kind": "trait",
     "visibility": "pub(crate)"
   },
@@ -225,71 +232,64 @@
   },
   "crate::account_metas::convert_lever_to_stable_lst": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 95,
-    "line_end": 105,
+    "line_start": 79,
+    "line_end": 82,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_metas::convert_stable_to_lever_lst": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 80,
-    "line_end": 90,
+    "line_start": 72,
+    "line_end": 75,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_metas::mint_levercoin_lst": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 26,
-    "line_end": 39,
+    "line_start": 40,
+    "line_end": 46,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_metas::mint_stablecoin_lst": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 8,
-    "line_end": 22,
+    "line_start": 29,
+    "line_end": 36,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_metas::redeem_levercoin_lst": {
     "file": "hylo-jupiter/src/account_metas.rs",
     "line_start": 61,
-    "line_end": 75,
+    "line_end": 68,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_metas::redeem_stablecoin_lst": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 43,
+    "line_start": 50,
     "line_end": 57,
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::account_metas::route_account_metas": {
+    "file": "hylo-jupiter/src/account_metas.rs",
+    "line_start": 12,
+    "line_end": 25,
+    "kind": "function",
+    "visibility": "private"
+  },
   "crate::account_metas::stability_pool_deposit": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 109,
-    "line_end": 119,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::account_metas::stability_pool_liquidate": {
-    "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 138,
-    "line_end": 156,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::account_metas::stability_pool_liquidate_levercoin": {
-    "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 161,
-    "line_end": 178,
+    "line_start": 86,
+    "line_end": 89,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::account_metas::stability_pool_withdraw": {
     "file": "hylo-jupiter/src/account_metas.rs",
-    "line_start": 123,
-    "line_end": 133,
+    "line_start": 93,
+    "line_end": 96,
     "kind": "function",
     "visibility": "pub"
   },
@@ -405,6 +405,13 @@
     "kind": "enum",
     "visibility": "pub"
   },
+  "crate::exchange::ID": {
+    "file": "hylo-idl/src/lib.rs",
+    "line_start": 1,
+    "line_end": 1,
+    "kind": "const",
+    "visibility": "pub"
+  },
   "crate::exchange::super::account_builders::account_builders": {
     "file": "hylo-idl/src/lib.rs",
     "line_start": 1,
@@ -428,79 +435,23 @@
   },
   "crate::exchange_client::ExchangeClient": {
     "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 78,
-    "line_end": 81,
+    "line_start": 18,
+    "line_end": 21,
     "kind": "struct",
     "visibility": "pub"
   },
-  "crate::exchange_client::impl BuildTransactionData < HYUSD , OUT > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 321,
-    "line_end": 333,
-    "kind": "impl BuildTransactionData < HYUSD , OUT > for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl BuildTransactionData < HYUSD , XSOL > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 375,
-    "line_end": 384,
-    "kind": "impl BuildTransactionData < HYUSD , XSOL > for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl BuildTransactionData < IN , HYUSD > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 351,
-    "line_end": 360,
-    "kind": "impl BuildTransactionData < IN , HYUSD > for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl BuildTransactionData < IN , XSOL > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 363,
-    "line_end": 372,
-    "kind": "impl BuildTransactionData < IN , XSOL > for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl BuildTransactionData < L1 , L2 > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 399,
-    "line_end": 411,
-    "kind": "impl BuildTransactionData < L1 , L2 > for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl BuildTransactionData < XSOL , HYUSD > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 387,
-    "line_end": 396,
-    "kind": "impl BuildTransactionData < XSOL , HYUSD > for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl BuildTransactionData < XSOL , OUT > for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 336,
-    "line_end": 348,
-    "kind": "impl BuildTransactionData < XSOL , OUT > for ExchangeClient",
-    "visibility": "private"
-  },
   "crate::exchange_client::impl ExchangeClient": {
     "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 102,
-    "line_end": 318,
+    "line_start": 42,
+    "line_end": 640,
     "kind": "impl ExchangeClient",
     "visibility": "private"
   },
   "crate::exchange_client::impl ProgramClient for ExchangeClient": {
     "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 83,
-    "line_end": 100,
+    "line_start": 23,
+    "line_end": 40,
     "kind": "impl ProgramClient for ExchangeClient",
-    "visibility": "private"
-  },
-  "crate::exchange_client::impl TransactionSyntax for ExchangeClient": {
-    "file": "hylo-clients/src/exchange_client.rs",
-    "line_start": 414,
-    "line_end": 414,
-    "kind": "impl TransactionSyntax for ExchangeClient",
     "visibility": "private"
   },
   "crate::exchange_context::ExchangeContext": {
@@ -527,7 +478,7 @@
   "crate::exchange_context::exo::impl ExoExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/exo.rs",
     "line_start": 90,
-    "line_end": 313,
+    "line_end": 309,
     "kind": "impl ExoExchangeContext < C >",
     "visibility": "private"
   },
@@ -548,7 +499,7 @@
   "crate::exchange_context::lst::impl LstExchangeContext < C >": {
     "file": "hylo-core/src/exchange_context/lst.rs",
     "line_start": 93,
-    "line_end": 408,
+    "line_end": 404,
     "kind": "impl LstExchangeContext < C >",
     "visibility": "private"
   },
@@ -624,78 +575,78 @@
   },
   "crate::fee_controller::FeeController": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 48,
-    "line_end": 52,
+    "line_start": 56,
+    "line_end": 60,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::fee_controller::FeeExtract": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 56,
-    "line_end": 59,
+    "line_start": 64,
+    "line_end": 67,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::fee_controller::FeePair": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 19,
-    "line_end": 22,
+    "line_start": 27,
+    "line_end": 30,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::fee_controller::LevercoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 101,
-    "line_end": 105,
+    "line_start": 124,
+    "line_end": 128,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::fee_controller::MAX_FEE": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 11,
-    "line_end": 11,
+    "line_start": 12,
+    "line_end": 12,
     "kind": "const",
     "visibility": "private"
   },
   "crate::fee_controller::StablecoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 86,
-    "line_end": 89,
+    "line_start": 102,
+    "line_end": 105,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::fee_controller::impl FeeController for LevercoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 107,
-    "line_end": 137,
+    "line_start": 130,
+    "line_end": 160,
     "kind": "impl FeeController for LevercoinFees",
     "visibility": "private"
   },
   "crate::fee_controller::impl FeeExtract < Exp >": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 61,
-    "line_end": 82,
+    "line_start": 69,
+    "line_end": 90,
     "kind": "impl FeeExtract < Exp >",
     "visibility": "private"
   },
   "crate::fee_controller::impl FeePair": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 24,
-    "line_end": 45,
+    "line_start": 32,
+    "line_end": 53,
     "kind": "impl FeePair",
     "visibility": "private"
   },
   "crate::fee_controller::impl LevercoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 139,
-    "line_end": 177,
+    "line_start": 162,
+    "line_end": 200,
     "kind": "impl LevercoinFees",
     "visibility": "private"
   },
   "crate::fee_controller::impl StablecoinFees": {
     "file": "hylo-core/src/fee_controller.rs",
-    "line_start": 91,
-    "line_end": 96,
+    "line_start": 107,
+    "line_end": 112,
     "kind": "impl StablecoinFees",
     "visibility": "private"
   },
@@ -722,29 +673,29 @@
   },
   "crate::funding_rate::FundingRateConfig": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 11,
-    "line_end": 14,
+    "line_start": 20,
+    "line_end": 23,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::funding_rate::MAX_FEE": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 20,
-    "line_end": 20,
+    "line_start": 29,
+    "line_end": 29,
     "kind": "const",
     "visibility": "private"
   },
   "crate::funding_rate::MAX_RATE": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 17,
-    "line_end": 17,
+    "line_start": 26,
+    "line_end": 26,
     "kind": "const",
     "visibility": "private"
   },
   "crate::funding_rate::impl FundingRateConfig": {
     "file": "hylo-core/src/funding_rate.rs",
-    "line_start": 22,
-    "line_end": 80,
+    "line_start": 31,
+    "line_end": 89,
     "kind": "impl FundingRateConfig",
     "visibility": "private"
   },
@@ -762,94 +713,150 @@
     "kind": "use",
     "visibility": "pub"
   },
+  "crate::idl_type_bridge::impl From < FeePair > for hylo_idl :: exchange :: types :: FeePair": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 110,
+    "line_end": 117,
+    "kind": "impl From < FeePair > for hylo_idl :: exchange :: types :: FeePair",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < FundingRateConfig > for hylo_idl :: exchange :: types :: FundingRateConfig": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 160,
+    "line_end": 167,
+    "kind": "impl From < FundingRateConfig > for hylo_idl :: exchange :: types :: FundingRateConfig",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < LevercoinFees > for hylo_idl :: exchange :: types :: LevercoinFees": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 128,
+    "line_end": 136,
+    "kind": "impl From < LevercoinFees > for hylo_idl :: exchange :: types :: LevercoinFees",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < RebalanceCurveConfig > for hylo_idl :: exchange :: types :: RebalanceCurveConfig": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 149,
+    "line_end": 158,
+    "kind": "impl From < RebalanceCurveConfig > for hylo_idl :: exchange :: types :: RebalanceCurveConfig",
+    "visibility": "private"
+  },
   "crate::idl_type_bridge::impl From < SlippageConfig > for hylo_idl :: exchange :: types :: SlippageConfig": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 83,
-    "line_end": 90,
+    "line_start": 94,
+    "line_end": 101,
     "kind": "impl From < SlippageConfig > for hylo_idl :: exchange :: types :: SlippageConfig",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < SlippageConfig > for hylo_idl :: router :: types :: SlippageConfig": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 103,
+    "line_end": 108,
+    "kind": "impl From < SlippageConfig > for hylo_idl :: router :: types :: SlippageConfig",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < StablecoinFees > for hylo_idl :: exchange :: types :: StablecoinFees": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 119,
+    "line_end": 126,
+    "kind": "impl From < StablecoinFees > for hylo_idl :: exchange :: types :: StablecoinFees",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < YieldHarvestConfig > for hylo_idl :: exchange :: types :: YieldHarvestConfig": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 138,
+    "line_end": 147,
+    "kind": "impl From < YieldHarvestConfig > for hylo_idl :: exchange :: types :: YieldHarvestConfig",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: FeePair > for FeePair": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 27,
-    "line_end": 31,
+    "line_start": 28,
+    "line_end": 32,
     "kind": "impl From < hylo_idl :: exchange :: types :: FeePair > for FeePair",
+    "visibility": "private"
+  },
+  "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: FundingRateConfig > for FundingRateConfig": {
+    "file": "hylo-core/src/idl_type_bridge.rs",
+    "line_start": 74,
+    "line_end": 82,
+    "kind": "impl From < hylo_idl :: exchange :: types :: FundingRateConfig > for FundingRateConfig",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 53,
-    "line_end": 61,
+    "line_start": 54,
+    "line_end": 62,
     "kind": "impl From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: LevercoinFees > for LevercoinFees": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 21,
-    "line_end": 25,
+    "line_start": 22,
+    "line_end": 26,
     "kind": "impl From < hylo_idl :: exchange :: types :: LevercoinFees > for LevercoinFees",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: LstSolPrice > for LstSolPrice": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 9,
-    "line_end": 13,
+    "line_start": 10,
+    "line_end": 14,
     "kind": "impl From < hylo_idl :: exchange :: types :: LstSolPrice > for LstSolPrice",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for RebalanceCurveConfig": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 73,
-    "line_end": 81,
+    "line_start": 84,
+    "line_end": 92,
     "kind": "impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for RebalanceCurveConfig",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: StablecoinFees > for StablecoinFees": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 15,
-    "line_end": 19,
+    "line_start": 16,
+    "line_end": 20,
     "kind": "impl From < hylo_idl :: exchange :: types :: StablecoinFees > for StablecoinFees",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 33,
-    "line_end": 40,
+    "line_start": 34,
+    "line_end": 41,
     "kind": "impl From < hylo_idl :: exchange :: types :: TotalSolCache > for TotalSolCache",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 63,
-    "line_end": 71,
+    "line_start": 64,
+    "line_end": 72,
     "kind": "impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStablecoin",
     "visibility": "private"
   },
   "crate::idl_type_bridge::impl From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig": {
     "file": "hylo-core/src/idl_type_bridge.rs",
-    "line_start": 42,
-    "line_end": 51,
+    "line_start": 43,
+    "line_end": 52,
     "kind": "impl From < hylo_idl :: exchange :: types :: YieldHarvestConfig > for YieldHarvestConfig",
     "visibility": "private"
   },
-  "crate::impl From < ExecutableQuote < InExp , OutExp , FeeExp > > for ExecutableQuoteValue": {
+  "crate::impl From < ExecutableQuote < In , Out , Fee > > for ExecutableQuoteValue": {
     "file": "hylo-quotes/src/lib.rs",
     "line_start": 163,
-    "line_end": 180,
-    "kind": "impl From < ExecutableQuote < InExp , OutExp , FeeExp > > for ExecutableQuoteValue",
+    "line_end": 178,
+    "kind": "impl From < ExecutableQuote < In , Out , Fee > > for ExecutableQuoteValue",
     "visibility": "private"
   },
   "crate::impl Local for HYLOSOL": {
     "file": "hylo-quotes/src/lib.rs",
-    "line_start": 198,
-    "line_end": 198,
+    "line_start": 196,
+    "line_end": 196,
     "kind": "impl Local for HYLOSOL",
     "visibility": "private"
   },
   "crate::impl Local for JITOSOL": {
     "file": "hylo-quotes/src/lib.rs",
-    "line_start": 197,
-    "line_end": 197,
+    "line_start": 195,
+    "line_end": 195,
     "kind": "impl Local for JITOSOL",
     "visibility": "private"
   },
@@ -1315,90 +1322,6 @@
     "kind": "function",
     "visibility": "pub"
   },
-  "crate::instructions::ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 70,
-    "line_end": 70,
-    "kind": "struct",
-    "visibility": "pub"
-  },
-  "crate::instructions::InstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 57,
-    "line_end": 67,
-    "kind": "trait",
-    "visibility": "pub"
-  },
-  "crate::instructions::StabilityPoolInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 233,
-    "line_end": 233,
-    "kind": "struct",
-    "visibility": "pub"
-  },
-  "crate::instructions::impl InstructionBuilder < HYUSD , L > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 103,
-    "line_end": 124,
-    "kind": "impl InstructionBuilder < HYUSD , L > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < HYUSD , SHYUSD > for StabilityPoolInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 239,
-    "line_end": 257,
-    "kind": "impl InstructionBuilder < HYUSD , SHYUSD > for StabilityPoolInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < HYUSD , XSOL > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 184,
-    "line_end": 204,
-    "kind": "impl InstructionBuilder < HYUSD , XSOL > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < L , HYUSD > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 76,
-    "line_end": 97,
-    "kind": "impl InstructionBuilder < L , HYUSD > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < L , XSOL > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 130,
-    "line_end": 151,
-    "kind": "impl InstructionBuilder < L , XSOL > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < L1 , L2 > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 285,
-    "line_end": 310,
-    "kind": "impl InstructionBuilder < L1 , L2 > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < SHYUSD , HYUSD > for StabilityPoolInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 263,
-    "line_end": 279,
-    "kind": "impl InstructionBuilder < SHYUSD , HYUSD > for StabilityPoolInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < XSOL , HYUSD > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 210,
-    "line_end": 230,
-    "kind": "impl InstructionBuilder < XSOL , HYUSD > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
-  "crate::instructions::impl InstructionBuilder < XSOL , L > for ExchangeInstructionBuilder": {
-    "file": "hylo-clients/src/instructions.rs",
-    "line_start": 157,
-    "line_end": 178,
-    "kind": "impl InstructionBuilder < XSOL , L > for ExchangeInstructionBuilder",
-    "visibility": "private"
-  },
   "crate::interp::FixInterp": {
     "file": "hylo-core/src/interp.rs",
     "line_start": 50,
@@ -1499,71 +1422,71 @@
   },
   "crate::jupiter::HyloJupiterPair": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 24,
-    "line_end": 32,
+    "line_start": 28,
+    "line_end": 36,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::jupiter::PairConfig": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 45,
-    "line_end": 71,
+    "line_start": 49,
+    "line_end": 75,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::jupiter::impl Amm for HyloJupiterPair < IN , OUT >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 319,
-    "line_end": 434,
+    "line_start": 323,
+    "line_end": 511,
     "kind": "impl Amm for HyloJupiterPair < IN , OUT >",
     "visibility": "private"
   },
   "crate::jupiter::impl Clone for HyloJupiterPair < IN , OUT >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 34,
-    "line_end": 42,
+    "line_start": 38,
+    "line_end": 46,
     "kind": "impl Clone for HyloJupiterPair < IN , OUT >",
     "visibility": "private"
   },
   "crate::jupiter::impl PairConfig < HYLOSOL , HYUSD > for HyloJupiterPair < HYLOSOL , HYUSD >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 114,
-    "line_end": 153,
+    "line_start": 118,
+    "line_end": 157,
     "kind": "impl PairConfig < HYLOSOL , HYUSD > for HyloJupiterPair < HYLOSOL , HYUSD >",
     "visibility": "private"
   },
   "crate::jupiter::impl PairConfig < HYLOSOL , XSOL > for HyloJupiterPair < HYLOSOL , XSOL >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 196,
-    "line_end": 235,
+    "line_start": 200,
+    "line_end": 239,
     "kind": "impl PairConfig < HYLOSOL , XSOL > for HyloJupiterPair < HYLOSOL , XSOL >",
     "visibility": "private"
   },
   "crate::jupiter::impl PairConfig < HYUSD , SHYUSD > for HyloJupiterPair < HYUSD , SHYUSD >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 278,
-    "line_end": 317,
+    "line_start": 282,
+    "line_end": 321,
     "kind": "impl PairConfig < HYUSD , SHYUSD > for HyloJupiterPair < HYUSD , SHYUSD >",
     "visibility": "private"
   },
   "crate::jupiter::impl PairConfig < HYUSD , XSOL > for HyloJupiterPair < HYUSD , XSOL >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 237,
-    "line_end": 276,
+    "line_start": 241,
+    "line_end": 280,
     "kind": "impl PairConfig < HYUSD , XSOL > for HyloJupiterPair < HYUSD , XSOL >",
     "visibility": "private"
   },
   "crate::jupiter::impl PairConfig < JITOSOL , HYUSD > for HyloJupiterPair < JITOSOL , HYUSD >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 73,
-    "line_end": 112,
+    "line_start": 77,
+    "line_end": 116,
     "kind": "impl PairConfig < JITOSOL , HYUSD > for HyloJupiterPair < JITOSOL , HYUSD >",
     "visibility": "private"
   },
   "crate::jupiter::impl PairConfig < JITOSOL , XSOL > for HyloJupiterPair < JITOSOL , XSOL >": {
     "file": "hylo-jupiter/src/jupiter.rs",
-    "line_start": 155,
-    "line_end": 194,
+    "line_start": 159,
+    "line_end": 198,
     "kind": "impl PairConfig < JITOSOL , XSOL > for HyloJupiterPair < JITOSOL , XSOL >",
     "visibility": "private"
   },
@@ -1588,269 +1511,290 @@
     "kind": "impl LstSolPrice",
     "visibility": "private"
   },
+  "crate::main": {
+    "file": "hylo-idl/src/bin/lut_accounts.rs",
+    "line_start": 101,
+    "line_end": 103,
+    "kind": "function",
+    "visibility": "private"
+  },
+  "crate::pda::BTC_USD_PYTH_FEED": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 202,
+    "line_end": 203,
+    "kind": "const",
+    "visibility": "pub"
+  },
   "crate::pda::EXCHANGE_EVENT_AUTHORITY": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 172,
-    "line_end": 173,
-    "kind": "static",
+    "line_start": 205,
+    "line_end": 205,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::EXCHANGE_PROGRAM_DATA": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 158,
-    "line_end": 159,
-    "kind": "static",
+    "line_start": 194,
+    "line_end": 194,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::HYLO": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 120,
-    "line_end": 121,
-    "kind": "static",
+    "line_start": 167,
+    "line_end": 167,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::HYUSD_AUTH": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 128,
-    "line_end": 128,
-    "kind": "static",
+    "line_start": 169,
+    "line_end": 169,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::HYUSD_POOL": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 151,
-    "line_end": 151,
-    "kind": "static",
+    "line_start": 188,
+    "line_end": 188,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::LST_REGISTRY_AUTH": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 132,
-    "line_end": 133,
-    "kind": "static",
+    "line_start": 173,
+    "line_end": 174,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::POOL_AUTH": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 146,
-    "line_end": 149,
-    "kind": "static",
+    "line_start": 185,
+    "line_end": 186,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::POOL_CONFIG": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 135,
-    "line_end": 138,
-    "kind": "static",
+    "line_start": 176,
+    "line_end": 177,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::SHYUSD_AUTH": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 140,
-    "line_end": 144,
-    "kind": "static",
+    "line_start": 179,
+    "line_end": 183,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::SOL_USD_PYTH_FEED": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 161,
-    "line_end": 162,
+    "line_start": 196,
+    "line_end": 197,
     "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::STABILITY_POOL_EVENT_AUTHORITY": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 175,
-    "line_end": 176,
-    "kind": "static",
+    "line_start": 207,
+    "line_end": 208,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::STABILITY_POOL_PROGRAM_DATA": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 155,
-    "line_end": 156,
-    "kind": "static",
+    "line_start": 192,
+    "line_end": 192,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::USDC_PAIR": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 178,
-    "line_end": 179,
-    "kind": "static",
+    "line_start": 210,
+    "line_end": 211,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::USDC_USD_PYTH_FEED": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 164,
-    "line_end": 165,
+    "line_start": 199,
+    "line_end": 200,
     "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::XSOL_AUTH": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 130,
-    "line_end": 130,
-    "kind": "static",
+    "line_start": 171,
+    "line_end": 171,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::XSOL_POOL": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 153,
-    "line_end": 153,
-    "kind": "static",
+    "line_start": 190,
+    "line_end": 190,
+    "kind": "const",
     "visibility": "pub"
   },
   "crate::pda::ata": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 27,
-    "line_end": 31,
-    "kind": "macro",
-    "visibility": "private"
+    "line_start": 35,
+    "line_end": 41,
+    "kind": "function",
+    "visibility": "pub"
   },
   "crate::pda::event_auth": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 168,
-    "line_end": 170,
+    "line_start": 145,
+    "line_end": 151,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::exo_levercoin_mint": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 187,
-    "line_end": 193,
+    "line_start": 159,
+    "line_end": 165,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::exo_pair": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 182,
-    "line_end": 184,
+    "line_start": 154,
+    "line_end": 156,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::exo_vault": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 72,
-    "line_end": 74,
+    "line_start": 91,
+    "line_end": 93,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::exo_vault_auth": {
-    "file": "hylo-idl/src/pda.rs",
-    "line_start": 87,
-    "line_end": 89,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::pda::fee_auth": {
-    "file": "hylo-idl/src/pda.rs",
-    "line_start": 116,
-    "line_end": 118,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::pda::fee_vault": {
-    "file": "hylo-idl/src/pda.rs",
-    "line_start": 111,
-    "line_end": 113,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::pda::hyusd_ata": {
-    "file": "hylo-idl/src/pda.rs",
-    "line_start": 47,
-    "line_end": 49,
-    "kind": "function",
-    "visibility": "pub"
-  },
-  "crate::pda::lazy": {
-    "file": "hylo-idl/src/pda.rs",
-    "line_start": 10,
-    "line_end": 14,
-    "kind": "macro",
-    "visibility": "private"
-  },
-  "crate::pda::lst_header": {
     "file": "hylo-idl/src/pda.rs",
     "line_start": 106,
     "line_end": 108,
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::pda::fee_auth": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 135,
+    "line_end": 137,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::pda::fee_vault": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 130,
+    "line_end": 132,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::pda::hyusd_ata": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 66,
+    "line_end": 68,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::pda::lst_header": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 125,
+    "line_end": 127,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::pda::lst_vault": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 67,
-    "line_end": 69,
+    "line_start": 86,
+    "line_end": 88,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::lst_vault_auth": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 82,
-    "line_end": 84,
+    "line_start": 101,
+    "line_end": 103,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::metadata": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 34,
-    "line_end": 44,
+    "line_start": 53,
+    "line_end": 63,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::pda::mint": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 28,
+    "line_end": 32,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::mint_auth": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 124,
-    "line_end": 126,
+    "line_start": 140,
+    "line_end": 142,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::new_lst_registry": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 97,
-    "line_end": 103,
+    "line_start": 116,
+    "line_end": 122,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::pda": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 16,
-    "line_end": 24,
+    "line_start": 10,
+    "line_end": 25,
     "kind": "macro",
     "visibility": "private"
   },
+  "crate::pda::progdata": {
+    "file": "hylo-idl/src/pda.rs",
+    "line_start": 44,
+    "line_end": 50,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::pda::shyusd_ata": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 57,
-    "line_end": 59,
+    "line_start": 76,
+    "line_end": 78,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::usdc_ata": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 62,
-    "line_end": 64,
+    "line_start": 81,
+    "line_end": 83,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::usdc_vault": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 77,
-    "line_end": 79,
+    "line_start": 96,
+    "line_end": 98,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::usdc_vault_auth": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 92,
-    "line_end": 94,
+    "line_start": 111,
+    "line_end": 113,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::pda::xsol_ata": {
     "file": "hylo-idl/src/pda.rs",
-    "line_start": 52,
-    "line_end": 54,
+    "line_start": 71,
+    "line_end": 73,
     "kind": "function",
     "visibility": "pub"
   },
@@ -1891,22 +1835,22 @@
   },
   "crate::prelude::crate::LST": {
     "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 31,
-    "line_end": 31,
+    "line_start": 33,
+    "line_end": 33,
     "kind": "use",
     "visibility": "pub"
   },
   "crate::prelude::crate::ProtocolStateStrategy": {
     "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 27,
-    "line_end": 27,
+    "line_start": 29,
+    "line_end": 29,
     "kind": "use",
     "visibility": "pub"
   },
   "crate::prelude::crate::QuoteStrategy": {
     "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 29,
-    "line_end": 29,
+    "line_start": 31,
+    "line_end": 31,
     "kind": "use",
     "visibility": "pub"
   },
@@ -1917,66 +1861,59 @@
     "kind": "use",
     "visibility": "pub"
   },
-  "crate::prelude::crate::instructions::{...}": {
+  "crate::prelude::crate::program_client::{...}": {
     "file": "hylo-clients/src/prelude.rs",
     "line_start": 10,
+    "line_end": 10,
+    "kind": "use",
+    "visibility": "pub"
+  },
+  "crate::prelude::crate::protocol_state::{...}": {
+    "file": "hylo-quotes/src/prelude.rs",
+    "line_start": 15,
+    "line_end": 17,
+    "kind": "use",
+    "visibility": "pub"
+  },
+  "crate::prelude::crate::router_client::{...}": {
+    "file": "hylo-clients/src/prelude.rs",
+    "line_start": 11,
     "line_end": 13,
     "kind": "use",
     "visibility": "pub"
   },
-  "crate::prelude::crate::program_client::{...}": {
+  "crate::prelude::crate::simulated_operation::{...}": {
+    "file": "hylo-quotes/src/prelude.rs",
+    "line_start": 19,
+    "line_end": 21,
+    "kind": "use",
+    "visibility": "pub"
+  },
+  "crate::prelude::crate::stability_pool_client::StabilityPoolClient": {
     "file": "hylo-clients/src/prelude.rs",
     "line_start": 14,
     "line_end": 14,
     "kind": "use",
     "visibility": "pub"
   },
-  "crate::prelude::crate::protocol_state::{...}": {
+  "crate::prelude::crate::token_operation::{...}": {
     "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 13,
-    "line_end": 15,
+    "line_start": 23,
+    "line_end": 27,
     "kind": "use",
     "visibility": "pub"
   },
-  "crate::prelude::crate::simulated_operation::{...}": {
-    "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 17,
-    "line_end": 19,
-    "kind": "use",
-    "visibility": "pub"
-  },
-  "crate::prelude::crate::stability_pool_client::StabilityPoolClient": {
+  "crate::prelude::crate::transaction::{...}": {
     "file": "hylo-clients/src/prelude.rs",
     "line_start": 15,
     "line_end": 15,
     "kind": "use",
     "visibility": "pub"
   },
-  "crate::prelude::crate::syntax_helpers::InstructionBuilderExt": {
-    "file": "hylo-clients/src/prelude.rs",
-    "line_start": 16,
-    "line_end": 16,
-    "kind": "use",
-    "visibility": "pub"
-  },
-  "crate::prelude::crate::token_operation::{...}": {
-    "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 21,
-    "line_end": 25,
-    "kind": "use",
-    "visibility": "pub"
-  },
-  "crate::prelude::crate::transaction::{...}": {
-    "file": "hylo-clients/src/prelude.rs",
-    "line_start": 17,
-    "line_end": 20,
-    "kind": "use",
-    "visibility": "pub"
-  },
   "crate::prelude::crate::{...}": {
     "file": "hylo-quotes/src/prelude.rs",
-    "line_start": 37,
-    "line_end": 37,
+    "line_start": 40,
+    "line_end": 40,
     "kind": "use",
     "visibility": "pub"
   },
@@ -1997,14 +1934,14 @@
   "crate::prelude::hylo_idl::tokens::{...}": {
     "file": "hylo-quotes/src/prelude.rs",
     "line_start": 10,
-    "line_end": 10,
+    "line_end": 12,
     "kind": "use",
     "visibility": "pub"
   },
   "crate::program_client::ProgramClient": {
     "file": "hylo-clients/src/program_client.rs",
     "line_start": 51,
-    "line_end": 249,
+    "line_end": 287,
     "kind": "trait",
     "visibility": "pub"
   },
@@ -2024,29 +1961,29 @@
   },
   "crate::protocol_state::accounts::ProtocolAccounts": {
     "file": "hylo-quotes/src/protocol_state/accounts.rs",
-    "line_start": 15,
-    "line_end": 48,
+    "line_start": 17,
+    "line_end": 74,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::protocol_state::accounts::impl ProtocolAccounts": {
     "file": "hylo-quotes/src/protocol_state/accounts.rs",
-    "line_start": 50,
-    "line_end": 121,
+    "line_start": 76,
+    "line_end": 156,
     "kind": "impl ProtocolAccounts",
     "visibility": "private"
   },
   "crate::protocol_state::accounts::impl TryFrom < (& [Pubkey] , & [Option < Account >]) > for ProtocolAccounts": {
     "file": "hylo-quotes/src/protocol_state/accounts.rs",
-    "line_start": 129,
-    "line_end": 190,
+    "line_start": 164,
+    "line_end": 255,
     "kind": "impl TryFrom < (& [Pubkey] , & [Option < Account >]) > for ProtocolAccounts",
     "visibility": "private"
   },
   "crate::protocol_state::provider::RpcStateProvider": {
     "file": "hylo-quotes/src/protocol_state/provider.rs",
-    "line_start": 40,
-    "line_end": 42,
+    "line_start": 36,
+    "line_end": 38,
     "kind": "struct",
     "visibility": "pub"
   },
@@ -2059,8 +1996,8 @@
   },
   "crate::protocol_state::provider::impl RpcStateProvider": {
     "file": "hylo-quotes/src/protocol_state/provider.rs",
-    "line_start": 44,
-    "line_end": 53,
+    "line_start": 40,
+    "line_end": 49,
     "kind": "impl RpcStateProvider",
     "visibility": "private"
   },
@@ -2073,8 +2010,8 @@
   },
   "crate::protocol_state::provider::impl StateProvider < Clock > for RpcStateProvider": {
     "file": "hylo-quotes/src/protocol_state/provider.rs",
-    "line_start": 56,
-    "line_end": 70,
+    "line_start": 52,
+    "line_end": 66,
     "kind": "impl StateProvider < Clock > for RpcStateProvider",
     "visibility": "private"
   },
@@ -2087,149 +2024,86 @@
   },
   "crate::protocol_state::state::ProtocolState": {
     "file": "hylo-quotes/src/protocol_state/state.rs",
-    "line_start": 26,
-    "line_end": 59,
+    "line_start": 62,
+    "line_end": 107,
     "kind": "struct",
     "visibility": "pub"
   },
+  "crate::protocol_state::state::UsdcExchangeState": {
+    "file": "hylo-quotes/src/protocol_state/state.rs",
+    "line_start": 32,
+    "line_end": 37,
+    "kind": "struct",
+    "visibility": "pub"
+  },
+  "crate::protocol_state::state::build_cbbtc_exchange_context": {
+    "file": "hylo-quotes/src/protocol_state/state.rs",
+    "line_start": 210,
+    "line_end": 248,
+    "kind": "function",
+    "visibility": "private"
+  },
+  "crate::protocol_state::state::build_usdc_exchange_state": {
+    "file": "hylo-quotes/src/protocol_state/state.rs",
+    "line_start": 254,
+    "line_end": 276,
+    "kind": "function",
+    "visibility": "private"
+  },
   "crate::protocol_state::state::impl ProtocolState < C >": {
     "file": "hylo-quotes/src/protocol_state/state.rs",
-    "line_start": 61,
-    "line_end": 126,
+    "line_start": 109,
+    "line_end": 204,
     "kind": "impl ProtocolState < C >",
     "visibility": "private"
   },
   "crate::protocol_state::state::impl TryFrom < & ProtocolAccounts > for ProtocolState < Clock >": {
     "file": "hylo-quotes/src/protocol_state/state.rs",
-    "line_start": 128,
-    "line_end": 184,
+    "line_start": 278,
+    "line_end": 347,
     "kind": "impl TryFrom < & ProtocolAccounts > for ProtocolState < Clock >",
     "visibility": "private"
   },
+  "crate::protocol_state::state::impl UsdcExchangeState": {
+    "file": "hylo-quotes/src/protocol_state/state.rs",
+    "line_start": 39,
+    "line_end": 58,
+    "kind": "impl UsdcExchangeState",
+    "visibility": "private"
+  },
+  "crate::protocol_state::state::{...}": {
+    "file": "hylo-quotes/src/protocol_state/mod.rs",
+    "line_start": 7,
+    "line_end": 7,
+    "kind": "use",
+    "visibility": "pub"
+  },
   "crate::protocol_state_strategy::ProtocolStateStrategy": {
     "file": "hylo-quotes/src/protocol_state_strategy/mod.rs",
-    "line_start": 15,
-    "line_end": 17,
+    "line_start": 14,
+    "line_end": 16,
     "kind": "struct",
     "visibility": "pub"
   },
-  "crate::protocol_state_strategy::exchange::LstSwapQuote": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 25,
-    "line_end": 25,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::MintQuote": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 22,
-    "line_end": 22,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::RedeemQuote": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 23,
-    "line_end": 23,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::SwapQuote": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 24,
-    "line_end": 24,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < HYUSD , L , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 69,
-    "line_end": 105,
-    "kind": "impl QuoteStrategy < HYUSD , L , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < HYUSD , XSOL , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 189,
-    "line_end": 224,
-    "kind": "impl QuoteStrategy < HYUSD , XSOL , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < L , HYUSD , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 29,
-    "line_end": 65,
-    "kind": "impl QuoteStrategy < L , HYUSD , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < L , XSOL , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 109,
-    "line_end": 145,
-    "kind": "impl QuoteStrategy < L , XSOL , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < L1 , L2 , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 267,
-    "line_end": 306,
-    "kind": "impl QuoteStrategy < L1 , L2 , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < XSOL , HYUSD , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 228,
-    "line_end": 263,
-    "kind": "impl QuoteStrategy < XSOL , HYUSD , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::exchange::impl QuoteStrategy < XSOL , L , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/exchange.rs",
-    "line_start": 149,
-    "line_end": 185,
-    "kind": "impl QuoteStrategy < XSOL , L , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
   "crate::protocol_state_strategy::impl ProtocolStateStrategy < S >": {
     "file": "hylo-quotes/src/protocol_state_strategy/mod.rs",
-    "line_start": 19,
-    "line_end": 24,
+    "line_start": 18,
+    "line_end": 23,
     "kind": "impl ProtocolStateStrategy < S >",
     "visibility": "private"
   },
   "crate::protocol_state_strategy::impl RuntimeQuoteStrategy < C > for ProtocolStateStrategy < S >": {
     "file": "hylo-quotes/src/protocol_state_strategy/mod.rs",
-    "line_start": 27,
-    "line_end": 30,
+    "line_start": 26,
+    "line_end": 29,
     "kind": "impl RuntimeQuoteStrategy < C > for ProtocolStateStrategy < S >",
     "visibility": "private"
   },
-  "crate::protocol_state_strategy::stability_pool::DepositQuote": {
-    "file": "hylo-quotes/src/protocol_state_strategy/stability_pool.rs",
-    "line_start": 21,
-    "line_end": 21,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::stability_pool::WithdrawQuote": {
-    "file": "hylo-quotes/src/protocol_state_strategy/stability_pool.rs",
-    "line_start": 22,
-    "line_end": 22,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::stability_pool::impl QuoteStrategy < HYUSD , SHYUSD , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/stability_pool.rs",
-    "line_start": 26,
-    "line_end": 58,
-    "kind": "impl QuoteStrategy < HYUSD , SHYUSD , C > for ProtocolStateStrategy < S >",
-    "visibility": "private"
-  },
-  "crate::protocol_state_strategy::stability_pool::impl QuoteStrategy < SHYUSD , HYUSD , C > for ProtocolStateStrategy < S >": {
-    "file": "hylo-quotes/src/protocol_state_strategy/stability_pool.rs",
-    "line_start": 62,
-    "line_end": 94,
-    "kind": "impl QuoteStrategy < SHYUSD , HYUSD , C > for ProtocolStateStrategy < S >",
+  "crate::protocol_state_strategy::router::state_quote": {
+    "file": "hylo-quotes/src/protocol_state_strategy/router.rs",
+    "line_start": 23,
+    "line_end": 63,
+    "kind": "macro",
     "visibility": "private"
   },
   "crate::pyth::BTC_USD": {
@@ -2368,42 +2242,42 @@
   "crate::quote_metadata::Operation": {
     "file": "hylo-quotes/src/quote_metadata.rs",
     "line_start": 5,
-    "line_end": 15,
+    "line_end": 27,
     "kind": "enum",
     "visibility": "pub"
   },
   "crate::quote_metadata::QuoteMetadata": {
     "file": "hylo-quotes/src/quote_metadata.rs",
-    "line_start": 48,
-    "line_end": 54,
+    "line_start": 72,
+    "line_end": 78,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::quote_metadata::impl AsRef < str > for Operation": {
     "file": "hylo-quotes/src/quote_metadata.rs",
-    "line_start": 34,
-    "line_end": 38,
+    "line_start": 58,
+    "line_end": 62,
     "kind": "impl AsRef < str > for Operation",
     "visibility": "private"
   },
   "crate::quote_metadata::impl Operation": {
     "file": "hylo-quotes/src/quote_metadata.rs",
-    "line_start": 17,
-    "line_end": 32,
+    "line_start": 29,
+    "line_end": 56,
     "kind": "impl Operation",
     "visibility": "private"
   },
   "crate::quote_metadata::impl QuoteMetadata": {
     "file": "hylo-quotes/src/quote_metadata.rs",
-    "line_start": 56,
-    "line_end": 64,
+    "line_start": 80,
+    "line_end": 88,
     "kind": "impl QuoteMetadata",
     "visibility": "private"
   },
   "crate::quote_metadata::impl std :: fmt :: Display for Operation": {
     "file": "hylo-quotes/src/quote_metadata.rs",
-    "line_start": 40,
-    "line_end": 44,
+    "line_start": 64,
+    "line_end": 68,
     "kind": "impl std :: fmt :: Display for Operation",
     "visibility": "private"
   },
@@ -2437,129 +2311,136 @@
   },
   "crate::rebalance_pricing::BuyPriceCurve": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 209,
-    "line_end": 211,
+    "line_start": 218,
+    "line_end": 220,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::rebalance_pricing::CR_1_20": {
-    "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 24,
-    "line_end": 24,
-    "kind": "const",
-    "visibility": "private"
-  },
-  "crate::rebalance_pricing::CR_1_35": {
     "file": "hylo-core/src/rebalance_pricing.rs",
     "line_start": 25,
     "line_end": 25,
     "kind": "const",
     "visibility": "private"
   },
-  "crate::rebalance_pricing::CR_1_65": {
+  "crate::rebalance_pricing::CR_1_35": {
     "file": "hylo-core/src/rebalance_pricing.rs",
     "line_start": 26,
     "line_end": 26,
     "kind": "const",
     "visibility": "private"
   },
-  "crate::rebalance_pricing::CR_1_75": {
+  "crate::rebalance_pricing::CR_1_65": {
     "file": "hylo-core/src/rebalance_pricing.rs",
     "line_start": 27,
     "line_end": 27,
     "kind": "const",
     "visibility": "private"
   },
+  "crate::rebalance_pricing::CR_1_75": {
+    "file": "hylo-core/src/rebalance_pricing.rs",
+    "line_start": 28,
+    "line_end": 28,
+    "kind": "const",
+    "visibility": "private"
+  },
   "crate::rebalance_pricing::RebalanceCurveConfig": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 33,
-    "line_end": 36,
+    "line_start": 42,
+    "line_end": 45,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::rebalance_pricing::RebalancePriceController": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 109,
-    "line_end": 141,
+    "line_start": 118,
+    "line_end": 150,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::rebalance_pricing::SellPriceCurve": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 146,
-    "line_end": 148,
+    "line_start": 155,
+    "line_end": 157,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::rebalance_pricing::UCR_1_35": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 18,
-    "line_end": 18,
+    "line_start": 19,
+    "line_end": 19,
     "kind": "const",
     "visibility": "pub"
   },
   "crate::rebalance_pricing::UCR_1_65": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 21,
-    "line_end": 21,
+    "line_start": 22,
+    "line_end": 22,
     "kind": "const",
     "visibility": "pub"
   },
   "crate::rebalance_pricing::impl BuyPriceCurve": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 213,
-    "line_end": 239,
+    "line_start": 222,
+    "line_end": 248,
     "kind": "impl BuyPriceCurve",
     "visibility": "private"
   },
   "crate::rebalance_pricing::impl RebalanceCurveConfig": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 38,
-    "line_end": 77,
+    "line_start": 47,
+    "line_end": 86,
     "kind": "impl RebalanceCurveConfig",
     "visibility": "private"
   },
   "crate::rebalance_pricing::impl RebalancePriceController for BuyPriceCurve": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 241,
-    "line_end": 267,
+    "line_start": 250,
+    "line_end": 276,
     "kind": "impl RebalancePriceController for BuyPriceCurve",
     "visibility": "private"
   },
   "crate::rebalance_pricing::impl RebalancePriceController for SellPriceCurve": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 178,
-    "line_end": 204,
+    "line_start": 187,
+    "line_end": 213,
     "kind": "impl RebalancePriceController for SellPriceCurve",
     "visibility": "private"
   },
   "crate::rebalance_pricing::impl SellPriceCurve": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 150,
-    "line_end": 176,
+    "line_start": 159,
+    "line_end": 185,
     "kind": "impl SellPriceCurve",
     "visibility": "private"
   },
   "crate::rebalance_pricing::narrow_cr": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 83,
-    "line_end": 86,
+    "line_start": 92,
+    "line_end": 95,
     "kind": "function",
     "visibility": "private"
   },
   "crate::rebalance_pricing::narrow_price": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 92,
-    "line_end": 96,
+    "line_start": 101,
+    "line_end": 105,
     "kind": "function",
     "visibility": "private"
   },
   "crate::rebalance_pricing::scale_ci": {
     "file": "hylo-core/src/rebalance_pricing.rs",
-    "line_start": 102,
-    "line_end": 105,
+    "line_start": 111,
+    "line_end": 114,
     "kind": "function",
     "visibility": "private"
+  },
+  "crate::router::ID": {
+    "file": "hylo-idl/src/lib.rs",
+    "line_start": 1,
+    "line_end": 1,
+    "kind": "const",
+    "visibility": "pub"
   },
   "crate::router::super::codegen::hylo_router::*": {
     "file": "hylo-idl/src/lib.rs",
@@ -2575,6 +2456,90 @@
     "kind": "use",
     "visibility": "pub"
   },
+  "crate::router_client::InstructionBuilder": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 25,
+    "line_end": 34,
+    "kind": "trait",
+    "visibility": "pub"
+  },
+  "crate::router_client::InstructionBuilderExt": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 36,
+    "line_end": 54,
+    "kind": "trait",
+    "visibility": "pub"
+  },
+  "crate::router_client::RouterArgs": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 19,
+    "line_end": 23,
+    "kind": "struct",
+    "visibility": "pub"
+  },
+  "crate::router_client::RouterClient": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 81,
+    "line_end": 84,
+    "kind": "struct",
+    "visibility": "pub"
+  },
+  "crate::router_client::impl InstructionBuilderExt for X": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 56,
+    "line_end": 76,
+    "kind": "impl InstructionBuilderExt for X",
+    "visibility": "private"
+  },
+  "crate::router_client::impl ProgramClient for RouterClient": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 86,
+    "line_end": 103,
+    "kind": "impl ProgramClient for RouterClient",
+    "visibility": "private"
+  },
+  "crate::router_client::impl TransactionSyntax for RouterClient": {
+    "file": "hylo-clients/src/router_client/mod.rs",
+    "line_start": 106,
+    "line_end": 106,
+    "kind": "impl TransactionSyntax for RouterClient",
+    "visibility": "private"
+  },
+  "crate::router_client::instructions::BASE_LOOKUP_TABLES": {
+    "file": "hylo-clients/src/router_client/instructions.rs",
+    "line_start": 23,
+    "line_end": 23,
+    "kind": "const",
+    "visibility": "private"
+  },
+  "crate::router_client::instructions::LST_LOOKUP_TABLES": {
+    "file": "hylo-clients/src/router_client/instructions.rs",
+    "line_start": 24,
+    "line_end": 25,
+    "kind": "const",
+    "visibility": "private"
+  },
+  "crate::router_client::instructions::route_instruction": {
+    "file": "hylo-clients/src/router_client/instructions.rs",
+    "line_start": 27,
+    "line_end": 41,
+    "kind": "function",
+    "visibility": "private"
+  },
+  "crate::router_client::instructions::router_instruction": {
+    "file": "hylo-clients/src/router_client/instructions.rs",
+    "line_start": 43,
+    "line_end": 69,
+    "kind": "macro",
+    "visibility": "private"
+  },
+  "crate::router_client::transaction_data::router_transaction_data": {
+    "file": "hylo-clients/src/router_client/transaction_data.rs",
+    "line_start": 12,
+    "line_end": 33,
+    "kind": "macro",
+    "visibility": "private"
+  },
   "crate::runtime_quote_strategy::RuntimeQuoteStrategy": {
     "file": "hylo-quotes/src/lib.rs",
     "line_start": 121,
@@ -2584,8 +2549,8 @@
   },
   "crate::runtime_quote_strategy::runtime_quote_strategies": {
     "file": "hylo-quotes/src/runtime_quote_strategy.rs",
-    "line_start": 11,
-    "line_end": 57,
+    "line_start": 13,
+    "line_end": 59,
     "kind": "macro",
     "visibility": "private"
   },
@@ -2610,53 +2575,137 @@
     "kind": "trait",
     "visibility": "pub"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , L > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < CBBTC , HYUSD > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 44,
-    "line_end": 63,
-    "kind": "impl SimulatedOperation < HYUSD , L > for ExchangeClient",
+    "line_start": 251,
+    "line_end": 275,
+    "kind": "impl SimulatedOperation < CBBTC , HYUSD > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < CBBTC , USDC > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 111,
-    "line_end": 130,
-    "kind": "impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient",
+    "line_start": 431,
+    "line_end": 455,
+    "kind": "impl SimulatedOperation < CBBTC , USDC > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < L , HYUSD > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < CBBTC , XBTC > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 21,
-    "line_end": 41,
-    "kind": "impl SimulatedOperation < L , HYUSD > for ExchangeClient",
+    "line_start": 306,
+    "line_end": 330,
+    "kind": "impl SimulatedOperation < CBBTC , XBTC > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < L , XSOL > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , CBBTC > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 66,
-    "line_end": 86,
-    "kind": "impl SimulatedOperation < L , XSOL > for ExchangeClient",
+    "line_start": 278,
+    "line_end": 303,
+    "kind": "impl SimulatedOperation < HYUSD , CBBTC > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < L1 , L2 > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , L > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 155,
-    "line_end": 173,
-    "kind": "impl SimulatedOperation < L1 , L2 > for ExchangeClient",
+    "line_start": 50,
+    "line_end": 71,
+    "kind": "impl SimulatedOperation < HYUSD , L > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , USDC > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 133,
-    "line_end": 152,
-    "kind": "impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient",
+    "line_start": 227,
+    "line_end": 248,
+    "kind": "impl SimulatedOperation < HYUSD , USDC > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::exchange::impl SimulatedOperation < XSOL , L > for ExchangeClient": {
+  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , XBTC > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/exchange.rs",
-    "line_start": 89,
-    "line_end": 108,
-    "kind": "impl SimulatedOperation < XSOL , L > for ExchangeClient",
+    "line_start": 361,
+    "line_end": 382,
+    "kind": "impl SimulatedOperation < HYUSD , XBTC > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < HYUSD , XSOL > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 123,
+    "line_end": 144,
+    "kind": "impl SimulatedOperation < HYUSD , XSOL > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < L , HYUSD > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 25,
+    "line_end": 47,
+    "kind": "impl SimulatedOperation < L , HYUSD > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < L , USDC > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 385,
+    "line_end": 405,
+    "kind": "impl SimulatedOperation < L , USDC > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < L , XSOL > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 74,
+    "line_end": 96,
+    "kind": "impl SimulatedOperation < L , XSOL > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < L1 , L2 > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 171,
+    "line_end": 191,
+    "kind": "impl SimulatedOperation < L1 , L2 > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < USDC , CBBTC > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 458,
+    "line_end": 482,
+    "kind": "impl SimulatedOperation < USDC , CBBTC > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < USDC , HYUSD > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 197,
+    "line_end": 220,
+    "kind": "impl SimulatedOperation < USDC , HYUSD > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < USDC , L > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 408,
+    "line_end": 428,
+    "kind": "impl SimulatedOperation < USDC , L > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < XBTC , CBBTC > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 333,
+    "line_end": 358,
+    "kind": "impl SimulatedOperation < XBTC , CBBTC > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < XBTC , HYUSD > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 485,
+    "line_end": 506,
+    "kind": "impl SimulatedOperation < XBTC , HYUSD > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < XSOL , HYUSD > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 147,
+    "line_end": 168,
+    "kind": "impl SimulatedOperation < XSOL , HYUSD > for RouterClient",
+    "visibility": "private"
+  },
+  "crate::simulated_operation::exchange::impl SimulatedOperation < XSOL , L > for RouterClient": {
+    "file": "hylo-quotes/src/simulated_operation/exchange.rs",
+    "line_start": 99,
+    "line_end": 120,
+    "kind": "impl SimulatedOperation < XSOL , L > for RouterClient",
     "visibility": "private"
   },
   "crate::simulated_operation::impl ComputeUnitInfo": {
@@ -2680,151 +2729,67 @@
     "kind": "impl SimulatedOperationExt for X",
     "visibility": "private"
   },
-  "crate::simulated_operation::stability_pool::impl SimulatedOperation < HYUSD , SHYUSD > for StabilityPoolClient": {
+  "crate::simulated_operation::stability_pool::impl SimulatedOperation < HYUSD , SHYUSD > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/stability_pool.rs",
     "line_start": 13,
     "line_end": 28,
-    "kind": "impl SimulatedOperation < HYUSD , SHYUSD > for StabilityPoolClient",
+    "kind": "impl SimulatedOperation < HYUSD , SHYUSD > for RouterClient",
     "visibility": "private"
   },
-  "crate::simulated_operation::stability_pool::impl SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient": {
+  "crate::simulated_operation::stability_pool::impl SimulatedOperation < SHYUSD , HYUSD > for RouterClient": {
     "file": "hylo-quotes/src/simulated_operation/stability_pool.rs",
     "line_start": 31,
     "line_end": 53,
-    "kind": "impl SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient",
+    "kind": "impl SimulatedOperation < SHYUSD , HYUSD > for RouterClient",
     "visibility": "private"
   },
   "crate::simulation_strategy::SimulationStrategy": {
     "file": "hylo-quotes/src/simulation_strategy/mod.rs",
-    "line_start": 16,
-    "line_end": 19,
+    "line_start": 15,
+    "line_end": 17,
     "kind": "struct",
     "visibility": "pub"
   },
-  "crate::simulation_strategy::exchange::LstSwapQuote": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 20,
-    "line_end": 20,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::MintQuote": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 17,
-    "line_end": 17,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::RedeemQuote": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 18,
-    "line_end": 18,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::SwapQuote": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 19,
-    "line_end": 19,
-    "kind": "type_alias",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < HYUSD , L , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 80,
-    "line_end": 126,
-    "kind": "impl QuoteStrategy < HYUSD , L , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < HYUSD , XSOL , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 239,
-    "line_end": 284,
-    "kind": "impl QuoteStrategy < HYUSD , XSOL , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < L , HYUSD , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 27,
-    "line_end": 73,
-    "kind": "impl QuoteStrategy < L , HYUSD , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < L , XSOL , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 133,
-    "line_end": 179,
-    "kind": "impl QuoteStrategy < L , XSOL , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < L1 , L2 , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 343,
-    "line_end": 393,
-    "kind": "impl QuoteStrategy < L1 , L2 , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < XSOL , HYUSD , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 291,
-    "line_end": 336,
-    "kind": "impl QuoteStrategy < XSOL , HYUSD , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::exchange::impl QuoteStrategy < XSOL , L , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/exchange.rs",
-    "line_start": 186,
-    "line_end": 232,
-    "kind": "impl QuoteStrategy < XSOL , L , C > for SimulationStrategy",
-    "visibility": "private"
-  },
   "crate::simulation_strategy::impl RuntimeQuoteStrategy < Clock > for SimulationStrategy": {
     "file": "hylo-quotes/src/simulation_strategy/mod.rs",
-    "line_start": 35,
-    "line_end": 35,
+    "line_start": 27,
+    "line_end": 27,
     "kind": "impl RuntimeQuoteStrategy < Clock > for SimulationStrategy",
     "visibility": "private"
   },
   "crate::simulation_strategy::impl SimulationStrategy": {
     "file": "hylo-quotes/src/simulation_strategy/mod.rs",
-    "line_start": 21,
-    "line_end": 32,
+    "line_start": 19,
+    "line_end": 24,
     "kind": "impl SimulationStrategy",
     "visibility": "private"
   },
   "crate::simulation_strategy::impl TransactionSyntax for SimulationStrategy": {
     "file": "hylo-quotes/src/simulation_strategy/mod.rs",
-    "line_start": 38,
-    "line_end": 38,
+    "line_start": 30,
+    "line_end": 30,
     "kind": "impl TransactionSyntax for SimulationStrategy",
     "visibility": "private"
   },
-  "crate::simulation_strategy::stability_pool::DepositQuote": {
-    "file": "hylo-quotes/src/simulation_strategy/stability_pool.rs",
-    "line_start": 15,
-    "line_end": 15,
-    "kind": "type_alias",
+  "crate::simulation_strategy::router::quote_args": {
+    "file": "hylo-quotes/src/simulation_strategy/router.rs",
+    "line_start": 29,
+    "line_end": 43,
+    "kind": "function",
     "visibility": "private"
   },
-  "crate::simulation_strategy::stability_pool::WithdrawQuote": {
-    "file": "hylo-quotes/src/simulation_strategy/stability_pool.rs",
-    "line_start": 16,
-    "line_end": 16,
-    "kind": "type_alias",
+  "crate::simulation_strategy::router::sim_args": {
+    "file": "hylo-quotes/src/simulation_strategy/router.rs",
+    "line_start": 21,
+    "line_end": 27,
+    "kind": "function",
     "visibility": "private"
   },
-  "crate::simulation_strategy::stability_pool::impl QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/stability_pool.rs",
-    "line_start": 23,
-    "line_end": 57,
-    "kind": "impl QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrategy",
-    "visibility": "private"
-  },
-  "crate::simulation_strategy::stability_pool::impl QuoteStrategy < SHYUSD , HYUSD , C > for SimulationStrategy": {
-    "file": "hylo-quotes/src/simulation_strategy/stability_pool.rs",
-    "line_start": 64,
-    "line_end": 98,
-    "kind": "impl QuoteStrategy < SHYUSD , HYUSD , C > for SimulationStrategy",
+  "crate::simulation_strategy::router::simulation_quote": {
+    "file": "hylo-quotes/src/simulation_strategy/router.rs",
+    "line_start": 45,
+    "line_end": 79,
+    "kind": "macro",
     "visibility": "private"
   },
   "crate::slippage_config::SlippageConfig": {
@@ -2932,6 +2897,13 @@
     "kind": "impl StabilityController",
     "visibility": "private"
   },
+  "crate::stability_pool::ID": {
+    "file": "hylo-idl/src/lib.rs",
+    "line_start": 1,
+    "line_end": 1,
+    "kind": "const",
+    "visibility": "pub"
+  },
   "crate::stability_pool::super::account_builders::account_builders": {
     "file": "hylo-idl/src/lib.rs",
     "line_start": 1,
@@ -2955,44 +2927,23 @@
   },
   "crate::stability_pool_client::StabilityPoolClient": {
     "file": "hylo-clients/src/stability_pool_client.rs",
-    "line_start": 57,
-    "line_end": 60,
+    "line_start": 17,
+    "line_end": 20,
     "kind": "struct",
     "visibility": "pub"
   },
-  "crate::stability_pool_client::impl BuildTransactionData < HYUSD , SHYUSD > for StabilityPoolClient": {
-    "file": "hylo-clients/src/stability_pool_client.rs",
-    "line_start": 164,
-    "line_end": 177,
-    "kind": "impl BuildTransactionData < HYUSD , SHYUSD > for StabilityPoolClient",
-    "visibility": "private"
-  },
-  "crate::stability_pool_client::impl BuildTransactionData < SHYUSD , HYUSD > for StabilityPoolClient": {
-    "file": "hylo-clients/src/stability_pool_client.rs",
-    "line_start": 180,
-    "line_end": 193,
-    "kind": "impl BuildTransactionData < SHYUSD , HYUSD > for StabilityPoolClient",
-    "visibility": "private"
-  },
   "crate::stability_pool_client::impl ProgramClient for StabilityPoolClient": {
     "file": "hylo-clients/src/stability_pool_client.rs",
-    "line_start": 62,
-    "line_end": 79,
+    "line_start": 22,
+    "line_end": 39,
     "kind": "impl ProgramClient for StabilityPoolClient",
     "visibility": "private"
   },
   "crate::stability_pool_client::impl StabilityPoolClient": {
     "file": "hylo-clients/src/stability_pool_client.rs",
-    "line_start": 81,
-    "line_end": 161,
+    "line_start": 41,
+    "line_end": 115,
     "kind": "impl StabilityPoolClient",
-    "visibility": "private"
-  },
-  "crate::stability_pool_client::impl TransactionSyntax for StabilityPoolClient": {
-    "file": "hylo-clients/src/stability_pool_client.rs",
-    "line_start": 196,
-    "line_end": 196,
-    "kind": "impl TransactionSyntax for StabilityPoolClient",
     "visibility": "private"
   },
   "crate::stability_pool_math::amount_lever_to_swap": {
@@ -3029,20 +2980,6 @@
     "line_end": 74,
     "kind": "function",
     "visibility": "pub"
-  },
-  "crate::syntax_helpers::InstructionBuilderExt": {
-    "file": "hylo-clients/src/syntax_helpers.rs",
-    "line_start": 23,
-    "line_end": 41,
-    "kind": "trait",
-    "visibility": "pub"
-  },
-  "crate::syntax_helpers::impl InstructionBuilderExt for X": {
-    "file": "hylo-clients/src/syntax_helpers.rs",
-    "line_start": 43,
-    "line_end": 63,
-    "kind": "impl InstructionBuilderExt for X",
-    "visibility": "private"
   },
   "crate::token_operation::LstSwapOperationOutput": {
     "file": "hylo-quotes/src/token_operation/mod.rs",
@@ -3093,52 +3030,150 @@
     "kind": "trait",
     "visibility": "pub"
   },
+  "crate::token_operation::exchange::impl TokenOperation < CBBTC , HYUSD > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 337,
+    "line_end": 369,
+    "kind": "impl TokenOperation < CBBTC , HYUSD > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < CBBTC , USDC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 641,
+    "line_end": 664,
+    "kind": "impl TokenOperation < CBBTC , USDC > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < CBBTC , XBTC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 402,
+    "line_end": 433,
+    "kind": "impl TokenOperation < CBBTC , XBTC > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < HYLOSOL , USDC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 558,
+    "line_end": 582,
+    "kind": "impl TokenOperation < HYLOSOL , USDC > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < HYUSD , CBBTC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 372,
+    "line_end": 399,
+    "kind": "impl TokenOperation < HYUSD , CBBTC > for ProtocolState < C >",
+    "visibility": "private"
+  },
   "crate::token_operation::exchange::impl TokenOperation < HYUSD , L > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 60,
-    "line_end": 90,
+    "line_start": 62,
+    "line_end": 92,
     "kind": "impl TokenOperation < HYUSD , L > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < HYUSD , USDC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 308,
+    "line_end": 334,
+    "kind": "impl TokenOperation < HYUSD , USDC > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < HYUSD , XBTC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 470,
+    "line_end": 496,
+    "kind": "impl TokenOperation < HYUSD , XBTC > for ProtocolState < C >",
     "visibility": "private"
   },
   "crate::token_operation::exchange::impl TokenOperation < HYUSD , XSOL > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 167,
-    "line_end": 196,
+    "line_start": 169,
+    "line_end": 198,
     "kind": "impl TokenOperation < HYUSD , XSOL > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < JITOSOL , USDC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 531,
+    "line_end": 555,
+    "kind": "impl TokenOperation < JITOSOL , USDC > for ProtocolState < C >",
     "visibility": "private"
   },
   "crate::token_operation::exchange::impl TokenOperation < L , HYUSD > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 20,
-    "line_end": 57,
+    "line_start": 22,
+    "line_end": 59,
     "kind": "impl TokenOperation < L , HYUSD > for ProtocolState < C >",
     "visibility": "private"
   },
   "crate::token_operation::exchange::impl TokenOperation < L , XSOL > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 93,
-    "line_end": 127,
+    "line_start": 95,
+    "line_end": 129,
     "kind": "impl TokenOperation < L , XSOL > for ProtocolState < C >",
     "visibility": "private"
   },
   "crate::token_operation::exchange::impl TokenOperation < L1 , L2 > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 237,
-    "line_end": 268,
+    "line_start": 239,
+    "line_end": 270,
     "kind": "impl TokenOperation < L1 , L2 > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < USDC , CBBTC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 667,
+    "line_end": 692,
+    "kind": "impl TokenOperation < USDC , CBBTC > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < USDC , HYLOSOL > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 613,
+    "line_end": 638,
+    "kind": "impl TokenOperation < USDC , HYLOSOL > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < USDC , HYUSD > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 276,
+    "line_end": 302,
+    "kind": "impl TokenOperation < USDC , HYUSD > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < USDC , JITOSOL > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 585,
+    "line_end": 610,
+    "kind": "impl TokenOperation < USDC , JITOSOL > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < XBTC , CBBTC > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 436,
+    "line_end": 467,
+    "kind": "impl TokenOperation < XBTC , CBBTC > for ProtocolState < C >",
+    "visibility": "private"
+  },
+  "crate::token_operation::exchange::impl TokenOperation < XBTC , HYUSD > for ProtocolState < C >": {
+    "file": "hylo-quotes/src/token_operation/exchange.rs",
+    "line_start": 499,
+    "line_end": 528,
+    "kind": "impl TokenOperation < XBTC , HYUSD > for ProtocolState < C >",
     "visibility": "private"
   },
   "crate::token_operation::exchange::impl TokenOperation < XSOL , HYUSD > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 199,
-    "line_end": 234,
+    "line_start": 201,
+    "line_end": 236,
     "kind": "impl TokenOperation < XSOL , HYUSD > for ProtocolState < C >",
     "visibility": "private"
   },
   "crate::token_operation::exchange::impl TokenOperation < XSOL , L > for ProtocolState < C >": {
     "file": "hylo-quotes/src/token_operation/exchange.rs",
-    "line_start": 130,
-    "line_end": 164,
+    "line_start": 132,
+    "line_end": 166,
     "kind": "impl TokenOperation < XSOL , L > for ProtocolState < C >",
     "visibility": "private"
   },
@@ -3165,204 +3200,169 @@
   },
   "crate::tokens::CBBTC": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 67,
-    "line_end": 67,
+    "line_start": 70,
+    "line_end": 70,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::HYLOSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 48,
-    "line_end": 48,
+    "line_start": 51,
+    "line_end": 51,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::HYUSD": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 15,
-    "line_end": 15,
+    "line_start": 17,
+    "line_end": 17,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::JITOSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 36,
-    "line_end": 36,
+    "line_start": 39,
+    "line_end": 39,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::SHYUSD": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 22,
-    "line_end": 22,
+    "line_start": 24,
+    "line_end": 24,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::StakePool": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 11,
-    "line_end": 13,
+    "line_start": 13,
+    "line_end": 15,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::tokens::TokenMint": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 6,
-    "line_end": 9,
+    "line_start": 8,
+    "line_end": 11,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::tokens::USDC": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 60,
-    "line_end": 60,
+    "line_start": 63,
+    "line_end": 63,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::XBTC": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 74,
-    "line_end": 74,
+    "line_start": 77,
+    "line_end": 77,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::XSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 29,
-    "line_end": 29,
+    "line_start": 32,
+    "line_end": 32,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::tokens::impl StakePool for HYLOSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 55,
-    "line_end": 58,
+    "line_start": 58,
+    "line_end": 61,
     "kind": "impl StakePool for HYLOSOL",
     "visibility": "private"
   },
   "crate::tokens::impl StakePool for JITOSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 43,
-    "line_end": 46,
+    "line_start": 46,
+    "line_end": 49,
     "kind": "impl StakePool for JITOSOL",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for CBBTC": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 69,
-    "line_end": 72,
+    "line_start": 72,
+    "line_end": 75,
     "kind": "impl TokenMint for CBBTC",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for HYLOSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 50,
-    "line_end": 53,
+    "line_start": 53,
+    "line_end": 56,
     "kind": "impl TokenMint for HYLOSOL",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for HYUSD": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 17,
-    "line_end": 20,
+    "line_start": 19,
+    "line_end": 22,
     "kind": "impl TokenMint for HYUSD",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for JITOSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 38,
-    "line_end": 41,
+    "line_start": 41,
+    "line_end": 44,
     "kind": "impl TokenMint for JITOSOL",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for SHYUSD": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 24,
-    "line_end": 27,
+    "line_start": 26,
+    "line_end": 30,
     "kind": "impl TokenMint for SHYUSD",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for USDC": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 62,
-    "line_end": 65,
+    "line_start": 65,
+    "line_end": 68,
     "kind": "impl TokenMint for USDC",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for XBTC": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 76,
-    "line_end": 79,
+    "line_start": 79,
+    "line_end": 82,
     "kind": "impl TokenMint for XBTC",
     "visibility": "private"
   },
   "crate::tokens::impl TokenMint for XSOL": {
     "file": "hylo-idl/src/tokens.rs",
-    "line_start": 31,
-    "line_end": 34,
+    "line_start": 34,
+    "line_end": 37,
     "kind": "impl TokenMint for XSOL",
     "visibility": "private"
   },
   "crate::total_sol_cache::TotalSolCache": {
     "file": "hylo-core/src/total_sol_cache.rs",
-    "line_start": 10,
-    "line_end": 13,
+    "line_start": 19,
+    "line_end": 22,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::total_sol_cache::impl TotalSolCache": {
     "file": "hylo-core/src/total_sol_cache.rs",
-    "line_start": 15,
-    "line_end": 80,
+    "line_start": 24,
+    "line_end": 89,
     "kind": "impl TotalSolCache",
     "visibility": "private"
   },
   "crate::transaction::BuildTransactionData": {
     "file": "hylo-clients/src/transaction.rs",
-    "line_start": 58,
-    "line_end": 66,
+    "line_start": 12,
+    "line_end": 21,
     "kind": "trait",
-    "visibility": "pub"
-  },
-  "crate::transaction::LstSwapArgs": {
-    "file": "hylo-clients/src/transaction.rs",
-    "line_start": 34,
-    "line_end": 40,
-    "kind": "struct",
-    "visibility": "pub"
-  },
-  "crate::transaction::MintArgs": {
-    "file": "hylo-clients/src/transaction.rs",
-    "line_start": 13,
-    "line_end": 17,
-    "kind": "struct",
-    "visibility": "pub"
-  },
-  "crate::transaction::RedeemArgs": {
-    "file": "hylo-clients/src/transaction.rs",
-    "line_start": 20,
-    "line_end": 24,
-    "kind": "struct",
-    "visibility": "pub"
-  },
-  "crate::transaction::StabilityPoolArgs": {
-    "file": "hylo-clients/src/transaction.rs",
-    "line_start": 43,
-    "line_end": 46,
-    "kind": "struct",
-    "visibility": "pub"
-  },
-  "crate::transaction::SwapArgs": {
-    "file": "hylo-clients/src/transaction.rs",
-    "line_start": 27,
-    "line_end": 31,
-    "kind": "struct",
     "visibility": "pub"
   },
   "crate::transaction::TransactionSyntax": {
     "file": "hylo-clients/src/transaction.rs",
-    "line_start": 70,
-    "line_end": 124,
+    "line_start": 25,
+    "line_end": 80,
     "kind": "trait",
     "visibility": "pub"
   },
@@ -3371,6 +3371,20 @@
     "line_start": 48,
     "line_end": 55,
     "kind": "impl From < UFixValue64 > for crate :: exchange :: types :: UFixValue64",
+    "visibility": "private"
+  },
+  "crate::type_bridge::impl From < UFixValue64 > for crate :: router :: types :: UFixValue64": {
+    "file": "hylo-idl/src/type_bridge.rs",
+    "line_start": 57,
+    "line_end": 64,
+    "kind": "impl From < UFixValue64 > for crate :: router :: types :: UFixValue64",
+    "visibility": "private"
+  },
+  "crate::type_bridge::impl From < crate :: exchange :: types :: SlippageConfig > for crate :: router :: types :: SlippageConfig": {
+    "file": "hylo-idl/src/type_bridge.rs",
+    "line_start": 66,
+    "line_end": 77,
+    "kind": "impl From < crate :: exchange :: types :: SlippageConfig > for crate :: router :: types :: SlippageConfig",
     "visibility": "private"
   },
   "crate::type_bridge::impl From < crate :: exchange :: types :: UFixValue64 > for UFixValue64": {
@@ -3401,38 +3415,31 @@
     "kind": "impl TryFrom < crate :: stability_pool :: types :: UFixValue64 > for UFix64 < Exp >",
     "visibility": "private"
   },
-  "crate::util::EXCHANGE_LOOKUP_TABLE": {
+  "crate::util::HYLO_LOOKUP_TABLE": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 33,
-    "line_end": 34,
+    "line_start": 43,
+    "line_end": 44,
     "kind": "const",
     "visibility": "pub"
   },
   "crate::util::LST": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 29,
-    "line_end": 29,
+    "line_start": 35,
+    "line_end": 35,
     "kind": "trait",
     "visibility": "pub"
   },
   "crate::util::LST_REGISTRY_LOOKUP_TABLE": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 39,
-    "line_end": 40,
+    "line_start": 50,
+    "line_end": 51,
     "kind": "const",
     "visibility": "pub"
   },
   "crate::util::REFERENCE_WALLET": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 44,
-    "line_end": 45,
-    "kind": "const",
-    "visibility": "pub"
-  },
-  "crate::util::STABILITY_POOL_LOOKUP_TABLE": {
-    "file": "hylo-clients/src/util.rs",
-    "line_start": 36,
-    "line_end": 37,
+    "line_start": 59,
+    "line_end": 60,
     "kind": "const",
     "visibility": "pub"
   },
@@ -3445,36 +3452,43 @@
   },
   "crate::util::build_lst_registry": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 110,
-    "line_end": 134,
+    "line_start": 158,
+    "line_end": 182,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::util::build_test_exchange_client": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 151,
-    "line_end": 158,
+    "line_start": 199,
+    "line_end": 206,
+    "kind": "function",
+    "visibility": "pub"
+  },
+  "crate::util::build_test_router_client": {
+    "file": "hylo-clients/src/util.rs",
+    "line_start": 227,
+    "line_end": 233,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::util::build_test_stability_pool_client": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 165,
-    "line_end": 172,
+    "line_start": 213,
+    "line_end": 220,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::util::build_v0_transaction": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 78,
-    "line_end": 102,
+    "line_start": 126,
+    "line_end": 150,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::util::cluster_from_env": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 140,
-    "line_end": 144,
+    "line_start": 188,
+    "line_end": 192,
     "kind": "function",
     "visibility": "pub"
   },
@@ -3487,8 +3501,8 @@
   },
   "crate::util::deserialize_lookup_table": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 62,
-    "line_end": 71,
+    "line_start": 110,
+    "line_end": 119,
     "kind": "function",
     "visibility": "pub"
   },
@@ -3508,15 +3522,15 @@
   },
   "crate::util::impl LST for HYLOSOL": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 31,
-    "line_end": 31,
+    "line_start": 37,
+    "line_end": 37,
     "kind": "impl LST for HYLOSOL",
     "visibility": "private"
   },
   "crate::util::impl LST for JITOSOL": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 30,
-    "line_end": 30,
+    "line_start": 36,
+    "line_end": 36,
     "kind": "impl LST for JITOSOL",
     "visibility": "private"
   },
@@ -3548,6 +3562,13 @@
     "kind": "function",
     "visibility": "pub"
   },
+  "crate::util::parse_event": {
+    "file": "hylo-clients/src/util.rs",
+    "line_start": 80,
+    "line_end": 104,
+    "kind": "function",
+    "visibility": "pub"
+  },
   "crate::util::quote": {
     "file": "hylo-jupiter/src/util.rs",
     "line_start": 64,
@@ -3557,15 +3578,15 @@
   },
   "crate::util::simulation_config": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 49,
-    "line_end": 56,
+    "line_start": 64,
+    "line_end": 72,
     "kind": "function",
     "visibility": "pub"
   },
   "crate::util::user_ata_instruction": {
     "file": "hylo-clients/src/util.rs",
-    "line_start": 176,
-    "line_end": 178,
+    "line_start": 237,
+    "line_end": 239,
     "kind": "function",
     "visibility": "pub"
   },
@@ -3578,57 +3599,57 @@
   },
   "crate::virtual_stablecoin::VirtualStablecoin": {
     "file": "hylo-core/src/virtual_stablecoin.rs",
-    "line_start": 8,
-    "line_end": 10,
+    "line_start": 18,
+    "line_end": 20,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::virtual_stablecoin::impl Default for VirtualStablecoin": {
     "file": "hylo-core/src/virtual_stablecoin.rs",
-    "line_start": 12,
-    "line_end": 16,
+    "line_start": 22,
+    "line_end": 26,
     "kind": "impl Default for VirtualStablecoin",
     "visibility": "private"
   },
   "crate::virtual_stablecoin::impl VirtualStablecoin": {
     "file": "hylo-core/src/virtual_stablecoin.rs",
-    "line_start": 18,
-    "line_end": 58,
+    "line_start": 28,
+    "line_end": 68,
     "kind": "impl VirtualStablecoin",
     "visibility": "private"
   },
   "crate::yields::HarvestCache": {
     "file": "hylo-core/src/yields.rs",
-    "line_start": 74,
-    "line_end": 78,
+    "line_start": 90,
+    "line_end": 94,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::yields::MAX_FEE": {
     "file": "hylo-core/src/yields.rs",
-    "line_start": 10,
-    "line_end": 10,
+    "line_start": 11,
+    "line_end": 11,
     "kind": "const",
     "visibility": "private"
   },
   "crate::yields::YieldHarvestConfig": {
     "file": "hylo-core/src/yields.rs",
-    "line_start": 16,
-    "line_end": 19,
+    "line_start": 24,
+    "line_end": 27,
     "kind": "struct",
     "visibility": "pub"
   },
   "crate::yields::impl HarvestCache": {
     "file": "hylo-core/src/yields.rs",
-    "line_start": 80,
-    "line_end": 105,
+    "line_start": 96,
+    "line_end": 121,
     "kind": "impl HarvestCache",
     "visibility": "private"
   },
   "crate::yields::impl YieldHarvestConfig": {
     "file": "hylo-core/src/yields.rs",
-    "line_start": 21,
-    "line_end": 70,
+    "line_start": 29,
+    "line_end": 78,
     "kind": "impl YieldHarvestConfig",
     "visibility": "private"
   }

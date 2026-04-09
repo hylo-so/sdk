@@ -10,59 +10,9 @@
 
 ## Types
 
-/// Client for interacting with the Hylo Exchange program.
-/// 
-/// Provides functionality for minting/redeem/swap between hyUSD and xSOL and
-/// LST collateral. Supports transaction execution and price simulation for
-/// offchain quoting.
-/// 
-/// # Examples
-/// 
-/// ## Setup
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-/// 
-/// # fn setup_client() -> Result<ExchangeClient> {
-/// let client = ExchangeClient::new_random_keypair(
-///   Cluster::Mainnet,
-///   CommitmentConfig::confirmed(),
-/// )?;
-/// # Ok(client)
-/// # }
-/// ```
-/// 
-/// ## Transaction Execution
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-/// 
-/// # async fn execute_transaction(client: ExchangeClient) -> Result<Signature> {
-/// // Mint JITOSOL → hyUSD
-/// let user = Pubkey::new_unique();
-/// let signature = client.run_transaction::<JITOSOL, HYUSD>(MintArgs {
-///   amount: UFix64::one(),
-///   user,
-///   slippage_config: None,
-/// }).await?;
-/// # Ok(signature)
-/// # }
-/// ```
-/// 
-/// ## Transaction Building
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-/// 
-/// # async fn build_transaction(client: ExchangeClient) -> Result<()> {
-/// let user = Pubkey::new_unique();
-/// 
-/// // Build transaction data without executing
-/// let tx_data = client.build_transaction_data::<JITOSOL, HYUSD>(MintArgs {
-///   amount: UFix64::new(50),
-///   user,
-///   slippage_config: None,
-/// }).await?;
-/// # Ok(())
-/// # }
-/// ```
+/// Admin client for the Hylo exchange program. Manages LST
+/// registration, oracle configuration, fee updates, and protocol
+/// stats. User-facing operations go through [`RouterClient`].
 // NOTE: Anchor-based RPC client for the Hylo Exchange program, supporting mint/redeem/swap and admin operations.
 pub struct ExchangeClient {
     program: Program < Arc < Keypair > >,
@@ -92,203 +42,36 @@ impl ExchangeClient {
     pub fn register_lst(& self, lst_registry : Pubkey, lst_mint : Pubkey, lst_stake_pool_state : Pubkey, sanctum_calculator_program : Pubkey, sanctum_calculator_state : Pubkey, stake_pool_program : Pubkey, stake_pool_program_data : Pubkey, rebalance_fee : UFixValue64) -> Result < VersionedTransactionData >;
     pub async fn update_lst_prices(& self) -> Result < VersionedTransactionData >;
     pub async fn harvest_yield(& self) -> Result < VersionedTransactionData >;
-    pub async fn get_stats(& self) -> Result < ExchangeStats >;
     pub fn update_oracle_conf_tolerance(& self, args : & args :: UpdateOracleConfTolerance) -> Result < VersionedTransactionData >;
     pub fn update_sol_usd_oracle(& self, args : & args :: UpdateSolUsdOracle) -> Result < VersionedTransactionData >;
     pub fn update_stability_pool(& self, args : & args :: UpdateStabilityPool) -> Result < VersionedTransactionData >;
     pub fn update_lst_swap_fee(& self, args : & args :: UpdateLstSwapFee) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < HYUSD , OUT > for ExchangeClient
-
-// NOTE: Builds redeem stablecoin transactions for any LST output type.
-impl < OUT : LST >BuildTransactionData < HYUSD , OUT > for ExchangeClient {
-    type Inputs = RedeemArgs;
-    async fn build(& self, inputs : RedeemArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < XSOL , OUT > for ExchangeClient
-
-// NOTE: Builds redeem levercoin transactions for any LST output type.
-impl < OUT : TokenMint + LST >BuildTransactionData < XSOL , OUT > for ExchangeClient {
-    type Inputs = RedeemArgs;
-    async fn build(& self, inputs : RedeemArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < IN , HYUSD > for ExchangeClient
-
-// NOTE: Builds mint stablecoin transactions from any LST input type.
-impl < IN : LST >BuildTransactionData < IN , HYUSD > for ExchangeClient {
-    type Inputs = MintArgs;
-    async fn build(& self, inputs : MintArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < IN , XSOL > for ExchangeClient
-
-// NOTE: Builds mint levercoin transactions from any LST input type.
-impl < IN : LST >BuildTransactionData < IN , XSOL > for ExchangeClient {
-    type Inputs = MintArgs;
-    async fn build(& self, inputs : MintArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < HYUSD , XSOL > for ExchangeClient
-
-// NOTE: Builds swap hyUSD-to-xSOL transaction data.
-impl BuildTransactionData < HYUSD , XSOL > for ExchangeClient {
-    type Inputs = SwapArgs;
-    async fn build(& self, inputs : SwapArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < XSOL , HYUSD > for ExchangeClient
-
-// NOTE: Builds swap xSOL-to-hyUSD transaction data.
-impl BuildTransactionData < XSOL , HYUSD > for ExchangeClient {
-    type Inputs = SwapArgs;
-    async fn build(& self, inputs : SwapArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < L1 , L2 > for ExchangeClient
-
-// NOTE: Builds LST-to-LST swap transaction data.
-impl < L1 : LST , L2 : LST >BuildTransactionData < L1 , L2 > for ExchangeClient {
-    type Inputs = LstSwapArgs;
-    async fn build(& self, inputs : LstSwapArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl TransactionSyntax for ExchangeClient
-
-// NOTE: Provides high-level run_transaction and simulate_event methods on ExchangeClient.
-impl TransactionSyntax for ExchangeClient {
-
-}
-
-
----
-
-# crate::instructions
-<!-- file: hylo-clients/src/instructions.rs -->
-
-## Types
-
-/// Instruction builder implementation for exchange operations.
-// NOTE: Zero-sized type implementing InstructionBuilder for all exchange token pair routes.
-pub struct ExchangeInstructionBuilder;
-
-/// Instruction builder implementation for stability pool operations.
-// NOTE: Zero-sized type implementing InstructionBuilder for stability pool deposit and withdrawal.
-pub struct StabilityPoolInstructionBuilder;
-
-
-## Traits
-
-/// Statically type-safe instruction builder for token pair operations.
-/// 
-/// # Type Parameters
-/// - `IN`: Input token type
-/// - `OUT`: Output token type
-// NOTE: Trait for statically type-safe instruction building: given token pair types, produces instructions and lookup tables.
-pub trait InstructionBuilder< IN : TokenMint , OUT : TokenMint > {
-    type Inputs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(inputs : Self :: Inputs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < L , HYUSD > for ExchangeInstructionBuilder
-
-// NOTE: Builds mint stablecoin instructions for any LST -> hyUSD.
-impl < L : LST >InstructionBuilder < L , HYUSD > for ExchangeInstructionBuilder {
-    type Inputs = MintArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(MintArgs { amount , user , slippage_config , } : MintArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < HYUSD , L > for ExchangeInstructionBuilder
-
-// NOTE: Builds redeem stablecoin instructions for hyUSD -> any LST.
-impl < L : LST >InstructionBuilder < HYUSD , L > for ExchangeInstructionBuilder {
-    type Inputs = RedeemArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(RedeemArgs { amount , user , slippage_config , } : RedeemArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < L , XSOL > for ExchangeInstructionBuilder
-
-// NOTE: Builds mint levercoin instructions for any LST -> xSOL.
-impl < L : LST >InstructionBuilder < L , XSOL > for ExchangeInstructionBuilder {
-    type Inputs = MintArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(MintArgs { amount , user , slippage_config , } : MintArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < XSOL , L > for ExchangeInstructionBuilder
-
-// NOTE: Builds redeem levercoin instructions for xSOL -> any LST.
-impl < L : LST >InstructionBuilder < XSOL , L > for ExchangeInstructionBuilder {
-    type Inputs = RedeemArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(RedeemArgs { amount , user , slippage_config , } : RedeemArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < HYUSD , XSOL > for ExchangeInstructionBuilder
-
-// NOTE: Builds swap instructions for hyUSD -> xSOL.
-impl InstructionBuilder < HYUSD , XSOL > for ExchangeInstructionBuilder {
-    type Inputs = SwapArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(SwapArgs { amount , user , slippage_config , } : SwapArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < XSOL , HYUSD > for ExchangeInstructionBuilder
-
-// NOTE: Builds swap instructions for xSOL -> hyUSD.
-impl InstructionBuilder < XSOL , HYUSD > for ExchangeInstructionBuilder {
-    type Inputs = SwapArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(SwapArgs { amount , user , slippage_config , } : SwapArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < HYUSD , SHYUSD > for StabilityPoolInstructionBuilder
-
-// NOTE: Builds deposit instructions for hyUSD -> sHYUSD.
-impl InstructionBuilder < HYUSD , SHYUSD > for StabilityPoolInstructionBuilder {
-    type Inputs = StabilityPoolArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(StabilityPoolArgs { amount , user } : StabilityPoolArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < SHYUSD , HYUSD > for StabilityPoolInstructionBuilder
-
-// NOTE: Builds withdrawal instructions for sHYUSD -> hyUSD.
-impl InstructionBuilder < SHYUSD , HYUSD > for StabilityPoolInstructionBuilder {
-    type Inputs = StabilityPoolArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(StabilityPoolArgs { amount , user } : StabilityPoolArgs) -> Result < Vec < Instruction > >;
-}
-
-
-## Impl InstructionBuilder < L1 , L2 > for ExchangeInstructionBuilder
-
-// NOTE: Builds LST-to-LST swap instructions.
-impl < L1 : LST , L2 : LST >InstructionBuilder < L1 , L2 > for ExchangeInstructionBuilder {
-    type Inputs = LstSwapArgs;
-    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
-    fn build(LstSwapArgs { amount_lst_a , lst_a_mint , lst_b_mint , user , slippage_config , } : LstSwapArgs) -> Result < Vec < Instruction > >;
+    pub fn update_levercoin_fees(& self, args : & args :: UpdateLevercoinFees) -> Result < VersionedTransactionData >;
+    pub fn update_oracle_interval(& self, args : & args :: UpdateOracleInterval) -> Result < VersionedTransactionData >;
+    pub fn update_stability_thresholds(& self, args : & args :: UpdateStabilityThresholds) -> Result < VersionedTransactionData >;
+    pub fn update_paused(& self, args : & args :: UpdatePaused) -> Result < VersionedTransactionData >;
+    pub fn update_lst_buy_curve_config(& self, args : & args :: UpdateLstBuyCurveConfig) -> Result < VersionedTransactionData >;
+    pub fn update_lst_sell_curve_config(& self, args : & args :: UpdateLstSellCurveConfig) -> Result < VersionedTransactionData >;
+    pub fn update_treasury(& self, args : & args :: UpdateTreasury) -> Result < VersionedTransactionData >;
+    pub fn update_yield_harvest_config(& self, args : & args :: UpdateYieldHarvestConfig) -> Result < VersionedTransactionData >;
+    pub fn update_usdc_oracle_conf_tolerance(& self, args : & args :: UpdateUsdcOracleConfTolerance) -> Result < VersionedTransactionData >;
+    pub fn update_usdc_oracle_interval(& self, args : & args :: UpdateUsdcOracleInterval) -> Result < VersionedTransactionData >;
+    pub fn update_usdc_swap_fee(& self, args : & args :: UpdateUsdcSwapFee) -> Result < VersionedTransactionData >;
+    pub fn update_admin(& self, upgrade_authority : Pubkey, args : & args :: UpdateAdmin) -> Result < VersionedTransactionData >;
+    pub fn update_lst_rebalance_fee(& self, lst_mint : Pubkey, args : & args :: UpdateLstRebalanceFee) -> Result < VersionedTransactionData >;
+    pub fn update_exo_funding_rate(& self, collateral_mint : Pubkey, args : & args :: UpdateExoFundingRate) -> Result < VersionedTransactionData >;
+    pub fn update_exo_oracle(& self, collateral_mint : Pubkey, args : & args :: UpdateExoOracle) -> Result < VersionedTransactionData >;
+    pub fn update_exo_oracle_conf_tolerance(& self, collateral_mint : Pubkey, args : & args :: UpdateExoOracleConfTolerance) -> Result < VersionedTransactionData >;
+    pub fn update_exo_oracle_interval(& self, collateral_mint : Pubkey, args : & args :: UpdateExoOracleInterval) -> Result < VersionedTransactionData >;
+    pub fn update_exo_stability_threshold(& self, collateral_mint : Pubkey, args : & args :: UpdateExoStabilityThreshold) -> Result < VersionedTransactionData >;
+    pub fn update_exo_buy_curve(& self, collateral_mint : Pubkey, args : & args :: UpdateExoBuyCurve) -> Result < VersionedTransactionData >;
+    pub fn update_exo_sell_curve(& self, collateral_mint : Pubkey, args : & args :: UpdateExoSellCurve) -> Result < VersionedTransactionData >;
+    pub fn update_exo_levercoin_fees(& self, collateral_mint : Pubkey, args : & args :: UpdateExoLevercoinFees) -> Result < VersionedTransactionData >;
+    pub fn initialize_usdc(& self, usdc_usd_pyth_feed : Pubkey, args : & args :: InitializeUsdc) -> Result < VersionedTransactionData >;
+    pub fn initialize_lst_virtual_stablecoin(& self) -> Result < VersionedTransactionData >;
+    pub fn register_exo(& self, collateral_mint : Pubkey, exo_usd_pyth_feed : Pubkey, args : & args :: RegisterExo) -> Result < VersionedTransactionData >;
+    pub fn withdraw_fees(& self, treasury : Pubkey, fee_token_mint : Pubkey) -> Result < VersionedTransactionData >;
+    pub fn harvest_funding_rate(& self, collateral_mint : Pubkey, collateral_usd_pyth_feed : Pubkey) -> Result < VersionedTransactionData >;
 }
 
 
@@ -323,20 +106,16 @@ pub use hylo_core :: idl :: tokens :: { HYUSD , JITOSOL , SHYUSD , XSOL };
 // NOTE: Re-export of ExchangeClient for convenient imports.
 pub use crate :: exchange_client :: ExchangeClient;
 
-// NOTE: Re-export of instruction builder types and trait.
-pub use crate :: instructions :: { ExchangeInstructionBuilder , InstructionBuilder , StabilityPoolInstructionBuilder , };
-
 // NOTE: Re-export of ProgramClient trait and VersionedTransactionData.
 pub use crate :: program_client :: { ProgramClient , VersionedTransactionData };
+
+pub use crate :: router_client :: { InstructionBuilder , InstructionBuilderExt , RouterArgs , RouterClient , };
 
 // NOTE: Re-export of StabilityPoolClient for convenient imports.
 pub use crate :: stability_pool_client :: StabilityPoolClient;
 
-// NOTE: Re-export of the turbofish syntax extension trait.
-pub use crate :: syntax_helpers :: InstructionBuilderExt;
-
 // NOTE: Re-export of transaction argument types and traits.
-pub use crate :: transaction :: { BuildTransactionData , MintArgs , RedeemArgs , StabilityPoolArgs , SwapArgs , TransactionSyntax , };
+pub use crate :: transaction :: { BuildTransactionData , TransactionSyntax };
 
 
 ---
@@ -373,6 +152,8 @@ pub trait ProgramClient: Sized {
     async fn load_multiple_lookup_tables(& self, pubkeys : & [Pubkey]) -> Result < Vec < AddressLookupTableAccount > >;
     async fn simulate_transaction_return< R : AnchorDeserialize >(& self, tx : & VersionedTransaction) -> Result < R >;
     async fn simulate_transaction_return_with_cus< R : AnchorDeserialize >(& self, tx : & VersionedTransaction) -> Result < (R , Option < u64 >) >;
+    async fn simulate_transaction_event< E : AnchorDeserialize + Discriminator >(& self, tx : & VersionedTransaction) -> Result < E >;
+    async fn simulate_transaction_event_with_cus< E : AnchorDeserialize + Discriminator , >(& self, tx : & VersionedTransaction) -> Result < (E , Option < u64 >) >;
 }
 
 
@@ -387,46 +168,108 @@ impl VersionedTransactionData {
 
 ---
 
+# crate::router_client
+<!-- file: hylo-clients/src/router_client/mod.rs -->
+
+## Types
+
+/// Arguments for all router-based token operations.
+pub struct RouterArgs {
+    pub amount: u64,
+    pub user: Pubkey,
+    pub slippage_config: Option < SlippageConfig >,
+}
+
+/// Builds and executes transactions through the Hylo router program.
+/// Handles all user-facing token operations: mint, redeem, swap, and
+/// stability pool deposit/withdraw.
+pub struct RouterClient {
+    program: Program < Arc < Keypair > >,
+    keypair: Arc < Keypair >,
+}
+
+
+## Traits
+
+pub trait InstructionBuilder< IN : TokenMint , OUT : TokenMint > {
+    type Inputs;
+    const REQUIRED_LOOKUP_TABLES: & 'static [Pubkey];
+    fn build(inputs : Self :: Inputs) -> Result < Vec < Instruction > >;
+}
+
+pub trait InstructionBuilderExt {
+    fn build_instructions< IN , OUT >(inputs : < Self as InstructionBuilder < IN , OUT > > :: Inputs) -> Result < Vec < Instruction > >;
+    fn lookup_tables< IN , OUT >() -> & 'static [Pubkey];
+}
+
+
+## Impl InstructionBuilderExt for X
+
+impl < X >InstructionBuilderExt for X {
+    fn build_instructions< IN , OUT >(inputs : < Self as InstructionBuilder < IN , OUT > > :: Inputs) -> Result < Vec < Instruction > >;
+    fn lookup_tables< IN , OUT >() -> & 'static [Pubkey];
+}
+
+
+## Impl ProgramClient for RouterClient
+
+impl ProgramClient for RouterClient {
+    const PROGRAM_ID: Pubkey;
+    fn build_client(program : Program < Arc < Keypair > >, keypair : Arc < Keypair >) -> RouterClient;
+    fn program(& self) -> & Program < Arc < Keypair > >;
+    fn keypair(& self) -> Arc < Keypair >;
+}
+
+
+## Impl TransactionSyntax for RouterClient
+
+impl TransactionSyntax for RouterClient {
+
+}
+
+
+---
+
+# crate::router_client::instructions
+<!-- file: hylo-clients/src/router_client/instructions.rs -->
+
+## Functions
+
+fn route_instruction< A : ToAccountMetas >(token_a : Pubkey, token_b : Pubkey, amount : u64, slippage_config : Option < SlippageConfig >, inner_accounts : & A) -> Instruction;
+
+
+## Constants
+
+const BASE_LOOKUP_TABLES: & [Pubkey];
+
+const LST_LOOKUP_TABLES: & [Pubkey];
+
+
+## Macros
+
+macro_rules! router_instruction { ... }
+
+
+---
+
+# crate::router_client::transaction_data
+<!-- file: hylo-clients/src/router_client/transaction_data.rs -->
+
+## Macros
+
+macro_rules! router_transaction_data { ... }
+
+
+---
+
 # crate::stability_pool_client
 <!-- file: hylo-clients/src/stability_pool_client.rs -->
 
 ## Types
 
-/// Client for interacting with the Hylo Stability Pool program.
-/// 
-/// Provides functionality for depositing and withdrawing sHYUSD from the
-/// stability pool. Supports transaction execution and price simulation for
-/// offchain quoting.
-/// 
-/// # Examples
-/// 
-/// ## Setup
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-/// 
-/// # fn setup_client() -> Result<StabilityPoolClient> {
-/// let client = StabilityPoolClient::new_random_keypair(
-///   Cluster::Mainnet,
-///   CommitmentConfig::confirmed(),
-/// )?;
-/// # Ok(client)
-/// # }
-/// ```
-/// 
-/// ## Transaction Execution
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-/// 
-/// # async fn execute_transaction(client: StabilityPoolClient) -> Result<Signature> {
-/// // Deposit HYUSD → sHYUSD
-/// let user = Pubkey::new_unique();
-/// let signature = client.run_transaction::<HYUSD, SHYUSD>(StabilityPoolArgs {
-///   amount: UFix64::new(100),
-///   user,
-/// }).await?;
-/// # Ok(signature)
-/// # }
-/// ```
+/// Admin client for the Hylo stability pool program. Manages pool
+/// initialization, rebalancing, fee configuration, and stats.
+/// User-facing deposit/withdraw goes through [`RouterClient`].
 // NOTE: Anchor-based RPC client for the Hylo Stability Pool program, supporting deposit, withdraw, and rebalance.
 pub struct StabilityPoolClient {
     program: Program < Arc < Keypair > >,
@@ -450,72 +293,10 @@ impl ProgramClient for StabilityPoolClient {
 // NOTE: Anchor-based RPC client for the Hylo Stability Pool program, supporting deposit, withdraw, and rebalance.
 impl StabilityPoolClient {
     pub async fn rebalance_lever_to_stable(& self) -> Result < Signature >;
-    pub async fn get_stats(& self) -> Result < StabilityPoolStats >;
     pub fn initialize_stability_pool(& self, upgrade_authority : Pubkey) -> Result < VersionedTransactionData >;
     pub fn initialize_lp_token_mint(& self, lp_token_metadata : TokenMetadata) -> Result < VersionedTransactionData >;
     pub fn update_withdrawal_fee(& self, args : & args :: UpdateWithdrawalFee) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < HYUSD , SHYUSD > for StabilityPoolClient
-
-// NOTE: Builds deposit transaction data for hyUSD -> sHYUSD.
-impl BuildTransactionData < HYUSD , SHYUSD > for StabilityPoolClient {
-    type Inputs = StabilityPoolArgs;
-    async fn build(& self, inputs : StabilityPoolArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl BuildTransactionData < SHYUSD , HYUSD > for StabilityPoolClient
-
-// NOTE: Builds withdrawal transaction data for sHYUSD -> hyUSD.
-impl BuildTransactionData < SHYUSD , HYUSD > for StabilityPoolClient {
-    type Inputs = StabilityPoolArgs;
-    async fn build(& self, inputs : StabilityPoolArgs) -> Result < VersionedTransactionData >;
-}
-
-
-## Impl TransactionSyntax for StabilityPoolClient
-
-// NOTE: Provides high-level run_transaction and simulate_event methods on StabilityPoolClient.
-impl TransactionSyntax for StabilityPoolClient {
-
-}
-
-
----
-
-# crate::syntax_helpers
-<!-- file: hylo-clients/src/syntax_helpers.rs -->
-
-## Traits
-
-/// Turbofish syntax for [`InstructionBuilder`].
-/// 
-/// ```rust,no_run
-/// use hylo_clients::prelude::*;
-/// 
-/// # fn example() -> Result<()> {
-/// let user = Pubkey::new_unique();
-/// let args = MintArgs { amount: UFix64::one(), user, slippage_config: None };
-/// let instructions = ExchangeInstructionBuilder::build_instructions::<JITOSOL, HYUSD>(args)?;
-/// let luts = ExchangeInstructionBuilder::lookup_tables::<JITOSOL, HYUSD>();
-/// # Ok(())
-/// # }
-/// ```
-// NOTE: Extension trait enabling turbofish syntax: Builder::build_instructions::<IN, OUT>(args).
-pub trait InstructionBuilderExt {
-    fn build_instructions< IN , OUT >(inputs : < Self as InstructionBuilder < IN , OUT > > :: Inputs) -> Result < Vec < Instruction > >;
-    fn lookup_tables< IN , OUT >() -> & 'static [Pubkey];
-}
-
-
-## Impl InstructionBuilderExt for X
-
-// NOTE: Blanket impl delegating to InstructionBuilder for any type that implements it.
-impl < X >InstructionBuilderExt for X {
-    fn build_instructions< IN , OUT >(inputs : < Self as InstructionBuilder < IN , OUT > > :: Inputs) -> Result < Vec < Instruction > >;
-    fn lookup_tables< IN , OUT >() -> & 'static [Pubkey];
+    pub fn update_admin(& self, upgrade_authority : Pubkey, args : & args :: UpdateAdmin) -> Result < VersionedTransactionData >;
 }
 
 
@@ -524,61 +305,9 @@ impl < X >InstructionBuilderExt for X {
 # crate::transaction
 <!-- file: hylo-clients/src/transaction.rs -->
 
-## Types
-
-/// Arguments for minting operations that deposit LST to mint hyUSD or xSOL.
-// NOTE: Arguments for mint operations: LST amount (N9), user Pubkey, and optional slippage config.
-pub struct MintArgs {
-    pub amount: UFix64 < N9 >,
-    pub user: Pubkey,
-    pub slippage_config: Option < SlippageConfig >,
-}
-
-/// Arguments for redemption operations that burn hyUSD or xSOL to withdraw LST.
-// NOTE: Arguments for redeem operations: token amount (N6), user Pubkey, and optional slippage config.
-pub struct RedeemArgs {
-    pub amount: UFix64 < N6 >,
-    pub user: Pubkey,
-    pub slippage_config: Option < SlippageConfig >,
-}
-
-/// Arguments for swap operations between hyUSD and xSOL.
-// NOTE: Arguments for swap operations: token amount (N6), user Pubkey, and optional slippage config.
-pub struct SwapArgs {
-    pub amount: UFix64 < N6 >,
-    pub user: Pubkey,
-    pub slippage_config: Option < SlippageConfig >,
-}
-
-/// Arguments for swap operations between LSTs held in exchange.
-// NOTE: Arguments for LST-to-LST swap: amounts, both mint Pubkeys, user, and optional slippage.
-pub struct LstSwapArgs {
-    pub amount_lst_a: UFix64 < N9 >,
-    pub lst_a_mint: Pubkey,
-    pub lst_b_mint: Pubkey,
-    pub user: Pubkey,
-    pub slippage_config: Option < SlippageConfig >,
-}
-
-/// Arguments for stability pool operations (deposit/withdraw sHYUSD).
-// NOTE: Arguments for stability pool operations: token amount (N6) and user Pubkey.
-pub struct StabilityPoolArgs {
-    pub amount: UFix64 < N6 >,
-    pub user: Pubkey,
-}
-
-
 ## Traits
 
-/// Builds transaction data (instructions and lookup tables) for operations.
-/// 
-/// # Type Parameters
-/// - `I`: Input token
-/// - `O`: Output token
-/// 
-/// # Associated Types
-/// - `Inputs`: Parameter type for building transactions (e.g., `MintArgs`,
-///   `SwapArgs`)
+/// Builds transaction data for a token pair operation.
 // NOTE: Async trait for building VersionedTransactionData from typed inputs for a token pair.
 pub trait BuildTransactionData< I , O > {
     type Inputs: Send + Sync + 'static;
@@ -613,6 +342,14 @@ pub trait LST: StakePool {
 /// Default configuration to use in simulated transactions.
 // NOTE: Returns default RpcSimulateTransactionConfig for transaction simulations.
 pub fn simulation_config() -> RpcSimulateTransactionConfig;
+
+/// Parses a typed event from simulation inner instructions.
+/// 
+/// # Errors
+/// - Simulation failed
+/// - No inner instructions returned
+/// - Event not found or deserialization fails
+pub fn parse_event< E >(result : & Response < RpcSimulateTransactionResult >) -> Result < E > where E : AnchorDeserialize + Discriminator ,;
 
 /// Deserializes an account into an address lookup table.
 /// 
@@ -661,6 +398,13 @@ pub fn build_test_exchange_client() -> Result < ExchangeClient >;
 // NOTE: Creates a StabilityPoolClient with random keypair from env vars, for integration tests.
 pub fn build_test_stability_pool_client() -> Result < StabilityPoolClient >;
 
+/// Builds test router client with random keypair.
+/// 
+/// # Errors
+/// - Environment variable access
+/// - Client initialization
+pub fn build_test_router_client() -> Result < RouterClient >;
+
 /// Builds ATA creation instruction for a user and mint.
 // NOTE: Creates a create-associated-token-account instruction for a user and mint.
 pub fn user_ata_instruction(user : & Pubkey, mint : & Pubkey) -> Instruction;
@@ -684,17 +428,21 @@ impl LST for HYLOSOL {
 
 ## Constants
 
-// NOTE: Pubkey of the address lookup table for exchange program instructions.
-pub const EXCHANGE_LOOKUP_TABLE: Pubkey;
+pub const HYLO_LOOKUP_TABLE: Pubkey;
 
-// NOTE: Pubkey of the address lookup table for stability pool program instructions.
-pub const STABILITY_POOL_LOOKUP_TABLE: Pubkey;
+pub const HYLO_LOOKUP_TABLE: Pubkey;
+
+// NOTE: Pubkey of the address lookup table for LST registry accounts.
+pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey;
 
 // NOTE: Pubkey of the address lookup table for LST registry accounts.
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey;
 
 /// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and
 /// sHYUSD. Useful for simulations of mint and redemption.
+// NOTE: Wallet holding reference token balances, used for simulating transactions.
+pub const REFERENCE_WALLET: Pubkey;
+
 // NOTE: Wallet holding reference token balances, used for simulating transactions.
 pub const REFERENCE_WALLET: Pubkey;
 
@@ -1183,8 +931,8 @@ pub fn depeg_stablecoin_nav(total_collateral : UFix64 < N9 >, usd_collateral_pri
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
 // NOTE: A mint/redeem fee pair stored as raw UFixValue64 values in basis points.
 pub struct FeePair {
-    mint: UFixValue64,
-    redeem: UFixValue64,
+    pub mint: UFixValue64,
+    pub redeem: UFixValue64,
 }
 
 /// Combines fee multiplication for a token amount with the remaining token
@@ -1198,15 +946,15 @@ pub struct FeeExtract< Exp > {
 /// **Deprecated** — retained only for `Hylo` account deserialization.
 // NOTE: Fee table for stablecoin operations with two tiers (normal, mode_1).
 pub struct StablecoinFees {
-    normal: FeePair,
-    mode_1: FeePair,
+    pub normal: FeePair,
+    pub mode_1: FeePair,
 }
 
 // NOTE: Fee table for levercoin operations with three tiers (normal, mode_1, mode_2) plus swap fees.
 pub struct LevercoinFees {
-    normal: FeePair,
-    mode_1: FeePair,
-    mode_2: FeePair,
+    pub normal: FeePair,
+    pub mode_1: FeePair,
+    pub mode_2: FeePair,
 }
 
 
@@ -1312,8 +1060,8 @@ macro_rules! generate_curve { ... }
 /// Per-epoch funding rate for exogenous collateral without native yield.
 // NOTE: Per-epoch funding rate for exogenous collateral, capped at ~10% annualized.
 pub struct FundingRateConfig {
-    rate: UFixValue64,
-    fee: UFixValue64,
+    pub rate: UFixValue64,
+    pub fee: UFixValue64,
 }
 
 
@@ -1408,6 +1156,13 @@ impl From < hylo_idl :: exchange :: types :: VirtualStablecoin > for VirtualStab
 }
 
 
+## Impl From < hylo_idl :: exchange :: types :: FundingRateConfig > for FundingRateConfig
+
+impl From < hylo_idl :: exchange :: types :: FundingRateConfig > for FundingRateConfig {
+    fn from(idl : hylo_idl :: exchange :: types :: FundingRateConfig) -> FundingRateConfig;
+}
+
+
 ## Impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for RebalanceCurveConfig
 
 impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for RebalanceCurveConfig {
@@ -1420,6 +1175,55 @@ impl From < hylo_idl :: exchange :: types :: RebalanceCurveConfig > for Rebalanc
 // NOTE: Converts core SlippageConfig into the IDL representation for instruction building.
 impl From < SlippageConfig > for hylo_idl :: exchange :: types :: SlippageConfig {
     fn from(val : SlippageConfig) -> Self;
+}
+
+
+## Impl From < SlippageConfig > for hylo_idl :: router :: types :: SlippageConfig
+
+impl From < SlippageConfig > for hylo_idl :: router :: types :: SlippageConfig {
+    fn from(val : SlippageConfig) -> Self;
+}
+
+
+## Impl From < FeePair > for hylo_idl :: exchange :: types :: FeePair
+
+impl From < FeePair > for hylo_idl :: exchange :: types :: FeePair {
+    fn from(val : FeePair) -> Self;
+}
+
+
+## Impl From < StablecoinFees > for hylo_idl :: exchange :: types :: StablecoinFees
+
+impl From < StablecoinFees > for hylo_idl :: exchange :: types :: StablecoinFees {
+    fn from(val : StablecoinFees) -> Self;
+}
+
+
+## Impl From < LevercoinFees > for hylo_idl :: exchange :: types :: LevercoinFees
+
+impl From < LevercoinFees > for hylo_idl :: exchange :: types :: LevercoinFees {
+    fn from(val : LevercoinFees) -> Self;
+}
+
+
+## Impl From < YieldHarvestConfig > for hylo_idl :: exchange :: types :: YieldHarvestConfig
+
+impl From < YieldHarvestConfig > for hylo_idl :: exchange :: types :: YieldHarvestConfig {
+    fn from(val : YieldHarvestConfig) -> Self;
+}
+
+
+## Impl From < RebalanceCurveConfig > for hylo_idl :: exchange :: types :: RebalanceCurveConfig
+
+impl From < RebalanceCurveConfig > for hylo_idl :: exchange :: types :: RebalanceCurveConfig {
+    fn from(val : RebalanceCurveConfig) -> Self;
+}
+
+
+## Impl From < FundingRateConfig > for hylo_idl :: exchange :: types :: FundingRateConfig
+
+impl From < FundingRateConfig > for hylo_idl :: exchange :: types :: FundingRateConfig {
+    fn from(val : FundingRateConfig) -> Self;
 }
 
 
@@ -1736,8 +1540,8 @@ pub fn max_buyable_collateral(target_cr : UFix64 < N9 >, virtual_stablecoin : UF
 
 /// Confidence interval multipliers for rebalance price curve construction.
 pub struct RebalanceCurveConfig {
-    floor_mult: UFixValue64,
-    ceil_mult: UFixValue64,
+    pub floor_mult: UFixValue64,
+    pub ceil_mult: UFixValue64,
 }
 
 /// Sell side rebalance pricing curve.
@@ -2098,7 +1902,7 @@ macro_rules! eq_tolerance { ... }
 /// Simple counter representing the supply of a "virtual" stablecoin.
 // NOTE: Counter tracking virtual stablecoin supply for exo pairs that don't have a real SPL mint.
 pub struct VirtualStablecoin {
-    pub(crate) supply: UFixValue64,
+    pub supply: UFixValue64,
 }
 
 
@@ -2473,6 +2277,11 @@ pub fn update_admin(payer : Pubkey, upgrade_authority : Pubkey, args : & args ::
 # crate::exchange
 <!-- file: hylo-idl/src/lib.rs -->
 
+## Constants
+
+pub const ID: Pubkey;
+
+
 ## Re-exports
 
 // NOTE: Re-export of exchange account builders into the exchange module namespace.
@@ -2489,6 +2298,11 @@ pub use super :: instruction_builders :: exchange as instruction_builders;
 
 # crate::stability_pool
 <!-- file: hylo-idl/src/lib.rs -->
+
+## Constants
+
+pub const ID: Pubkey;
+
 
 ## Re-exports
 
@@ -2507,6 +2321,11 @@ pub use super :: instruction_builders :: stability_pool as instruction_builders;
 # crate::router
 <!-- file: hylo-idl/src/lib.rs -->
 
+## Constants
+
+pub const ID: Pubkey;
+
+
 ## Re-exports
 
 pub use super :: codegen :: hylo_router :: *;
@@ -2521,113 +2340,116 @@ pub use super :: instruction_builders :: router as instruction_builders;
 
 ## Functions
 
+pub const fn mint< const N : usize >(program_id : Pubkey, seed : [u8 ; N]) -> Pubkey;
+
+// NOTE: Macro for deriving Associated Token Account addresses.
+pub const fn ata(auth : Pubkey, mint : Pubkey) -> Pubkey;
+
+pub const fn progdata(program_id : Pubkey) -> Pubkey;
+
 // NOTE: Derives the Metaplex token metadata PDA for a given mint.
-pub fn metadata(mint : Pubkey) -> Pubkey;
+pub const fn metadata(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the hyUSD Associated Token Account for a given authority.
-pub fn hyusd_ata(auth : Pubkey) -> Pubkey;
+pub const fn hyusd_ata(auth : Pubkey) -> Pubkey;
 
 // NOTE: Derives the xSOL Associated Token Account for a given authority.
-pub fn xsol_ata(auth : Pubkey) -> Pubkey;
+pub const fn xsol_ata(auth : Pubkey) -> Pubkey;
 
 // NOTE: Derives the sHYUSD Associated Token Account for a given authority.
-pub fn shyusd_ata(auth : Pubkey) -> Pubkey;
+pub const fn shyusd_ata(auth : Pubkey) -> Pubkey;
 
-pub fn usdc_ata(auth : Pubkey) -> Pubkey;
+pub const fn usdc_ata(auth : Pubkey) -> Pubkey;
 
-pub fn lst_vault(mint : Pubkey) -> Pubkey;
+pub const fn lst_vault(mint : Pubkey) -> Pubkey;
 
-pub fn exo_vault(mint : Pubkey) -> Pubkey;
+pub const fn exo_vault(mint : Pubkey) -> Pubkey;
 
-pub fn usdc_vault(mint : Pubkey) -> Pubkey;
+pub const fn usdc_vault(mint : Pubkey) -> Pubkey;
 
-pub fn lst_vault_auth(mint : Pubkey) -> Pubkey;
+pub const fn lst_vault_auth(mint : Pubkey) -> Pubkey;
 
-pub fn exo_vault_auth(mint : Pubkey) -> Pubkey;
+pub const fn exo_vault_auth(mint : Pubkey) -> Pubkey;
 
-pub fn usdc_vault_auth(mint : Pubkey) -> Pubkey;
+pub const fn usdc_vault_auth(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for an LST registry keyed by creation slot.
-pub fn new_lst_registry(slot : u64) -> Pubkey;
+pub const fn new_lst_registry(slot : u64) -> Pubkey;
 
 // NOTE: Derives the PDA for an LST's header account in the registry.
-pub fn lst_header(mint : Pubkey) -> Pubkey;
+pub const fn lst_header(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for a token's fee vault account.
-pub fn fee_vault(mint : Pubkey) -> Pubkey;
+pub const fn fee_vault(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for a token's fee authority.
-pub fn fee_auth(mint : Pubkey) -> Pubkey;
+pub const fn fee_auth(mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for a token's mint authority.
-pub fn mint_auth(mint : Pubkey) -> Pubkey;
+pub const fn mint_auth(mint : Pubkey) -> Pubkey;
 
-pub fn event_auth(program_id : Pubkey) -> Pubkey;
+pub const fn event_auth(program_id : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for an exogenous collateral pair's state account.
-pub fn exo_pair(collateral_mint : Pubkey) -> Pubkey;
+pub const fn exo_pair(collateral_mint : Pubkey) -> Pubkey;
 
 // NOTE: Derives the PDA for an exogenous pair's levercoin mint given its collateral mint.
-pub fn exo_levercoin_mint(collateral_mint : Pubkey) -> Pubkey;
+pub const fn exo_levercoin_mint(collateral_mint : Pubkey) -> Pubkey;
 
 
 ## Constants
 
 // NOTE: Lazily-derived PDA for the main Hylo protocol state account.
-pub static HYLO: LazyLock < Pubkey >;
+pub const HYLO: Pubkey;
 
 // NOTE: Lazily-derived PDA for the hyUSD mint authority.
-pub static HYUSD_AUTH: LazyLock < Pubkey >;
+pub const HYUSD_AUTH: Pubkey;
 
 // NOTE: Lazily-derived PDA for the xSOL mint authority.
-pub static XSOL_AUTH: LazyLock < Pubkey >;
+pub const XSOL_AUTH: Pubkey;
 
 // NOTE: Lazily-derived PDA for the LST registry authority.
-pub static LST_REGISTRY_AUTH: LazyLock < Pubkey >;
+pub const LST_REGISTRY_AUTH: Pubkey;
 
 // NOTE: Lazily-derived PDA for the stability pool configuration account.
-pub static POOL_CONFIG: LazyLock < Pubkey >;
+pub const POOL_CONFIG: Pubkey;
 
 // NOTE: Lazily-derived PDA for the sHYUSD mint authority.
-pub static SHYUSD_AUTH: LazyLock < Pubkey >;
+pub const SHYUSD_AUTH: Pubkey;
 
 // NOTE: Lazily-derived PDA for the stability pool authority.
-pub static POOL_AUTH: LazyLock < Pubkey >;
+pub const POOL_AUTH: Pubkey;
 
 // NOTE: Lazily-derived PDA for the hyUSD token account in the stability pool.
-pub static HYUSD_POOL: LazyLock < Pubkey >;
+pub const HYUSD_POOL: Pubkey;
 
 // NOTE: Lazily-derived PDA for the xSOL token account in the stability pool.
-pub static XSOL_POOL: LazyLock < Pubkey >;
+pub const XSOL_POOL: Pubkey;
 
 // NOTE: Lazily-derived PDA for the stability pool program's data account.
-pub static STABILITY_POOL_PROGRAM_DATA: LazyLock < Pubkey >;
+pub const STABILITY_POOL_PROGRAM_DATA: Pubkey;
 
 // NOTE: Lazily-derived PDA for the exchange program's data account.
-pub static EXCHANGE_PROGRAM_DATA: LazyLock < Pubkey >;
+pub const EXCHANGE_PROGRAM_DATA: Pubkey;
 
 // NOTE: Hard-coded Pubkey of the Pyth SOL/USD price feed account.
 pub const SOL_USD_PYTH_FEED: Pubkey;
 
 pub const USDC_USD_PYTH_FEED: Pubkey;
 
-pub static EXCHANGE_EVENT_AUTHORITY: LazyLock < Pubkey >;
+pub const BTC_USD_PYTH_FEED: Pubkey;
 
-pub static STABILITY_POOL_EVENT_AUTHORITY: LazyLock < Pubkey >;
+pub const EXCHANGE_EVENT_AUTHORITY: Pubkey;
 
-pub static USDC_PAIR: LazyLock < Pubkey >;
+pub const STABILITY_POOL_EVENT_AUTHORITY: Pubkey;
+
+pub const USDC_PAIR: Pubkey;
 
 
 ## Macros
 
-// NOTE: Macro for lazily computing and caching PDAs using LazyLock.
-macro_rules! lazy { ... }
-
 // NOTE: Macro for deriving program-derived addresses with seeds.
 macro_rules! pda { ... }
-
-// NOTE: Macro for deriving Associated Token Account addresses.
-macro_rules! ata { ... }
 
 
 ---
@@ -2802,6 +2624,37 @@ impl From < UFixValue64 > for crate :: exchange :: types :: UFixValue64 {
 }
 
 
+## Impl From < UFixValue64 > for crate :: router :: types :: UFixValue64
+
+impl From < UFixValue64 > for crate :: router :: types :: UFixValue64 {
+    fn from(val : UFixValue64) -> Self;
+}
+
+
+## Impl From < crate :: exchange :: types :: SlippageConfig > for crate :: router :: types :: SlippageConfig
+
+impl From < crate :: exchange :: types :: SlippageConfig > for crate :: router :: types :: SlippageConfig {
+    fn from(val : crate :: exchange :: types :: SlippageConfig) -> Self;
+}
+
+
+---
+
+# Crate: lut-accounts (bin)
+
+# crate
+<!-- file: hylo-idl/src/bin/lut_accounts.rs -->
+
+## Functions
+
+fn main();
+
+
+## Constants
+
+const LUT_ACCOUNTS: & [Pubkey];
+
+
 ---
 
 # Crate: hylo_jupiter (lib)
@@ -2822,43 +2675,33 @@ pub use jupiter :: { HyloJupiterPair , PairConfig };
 
 ## Functions
 
-/// Creates account metas for minting stablecoin (LST -> hyUSD).
+fn route_account_metas< A : ToAccountMetas >(in_token : Pubkey, out_token : Pubkey, inner_accounts : & A) -> SwapAndAccountMetas;
+
+/// Mint hyUSD from LST.
 pub fn mint_stablecoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for minting levercoin (LST -> xSOL).
+/// Mint xSOL from LST.
 pub fn mint_levercoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for redeeming stablecoin (hyUSD -> LST).
+/// Redeem hyUSD for LST.
 pub fn redeem_stablecoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for redeeming levercoin (xSOL -> LST).
+/// Redeem xSOL for LST.
 pub fn redeem_levercoin_lst(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for converting stablecoin to levercoin
-/// (hyUSD -> xSOL).
+/// Convert hyUSD to xSOL.
 pub fn convert_stable_to_lever_lst(user : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for converting levercoin to stablecoin
-/// (xSOL -> hyUSD).
+/// Convert xSOL to hyUSD.
 pub fn convert_lever_to_stable_lst(user : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for depositing into stability pool (hyUSD -> shyUSD).
+/// Deposit hyUSD to stability pool.
 // NOTE: Creates Jupiter-compatible SwapAndAccountMetas for depositing hyUSD into the stability pool.
 pub fn stability_pool_deposit(user : Pubkey) -> SwapAndAccountMetas;
 
-/// Creates account metas for withdrawing from stability pool (shyUSD -> hyUSD).
+/// Withdraw hyUSD from stability pool.
 // NOTE: Creates Jupiter-compatible SwapAndAccountMetas for withdrawing sHYUSD from the stability pool.
 pub fn stability_pool_withdraw(user : Pubkey) -> SwapAndAccountMetas;
-
-/// Creates account metas for stability pool withdrawal and redemption with only
-/// stablecoin in pool (shyUSD -> hyUSD -> LST).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for withdrawing and redeeming stablecoin from the stability pool to LST.
-pub fn stability_pool_liquidate(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
-
-/// Creates account metas for fully liquidating withdrawal from stability pool
-/// (shyUSD -> LST via hyUSD and xSOL).
-// NOTE: Creates Jupiter-compatible SwapAndAccountMetas for fully liquidating a stability pool position to LST via both hyUSD and xSOL.
-pub fn stability_pool_liquidate_levercoin(user : Pubkey, lst_mint : Pubkey) -> SwapAndAccountMetas;
 
 
 ---
@@ -3061,12 +2904,12 @@ pub fn validate_swap_params< 'a >(params : & 'a SwapParams < 'a , 'a >) -> Resul
 
 /// Typed executable quote with amounts, instructions, and compute units.
 // NOTE: Typed quote containing amounts, fees, instructions, and compute units ready for transaction execution.
-pub struct ExecutableQuote< InExp : Integer , OutExp : Integer , FeeExp : Integer > {
-    pub amount_in: UFix64 < InExp >,
-    pub amount_out: UFix64 < OutExp >,
+pub struct ExecutableQuote< In : Integer , Out : Integer , Fee : Integer > {
+    pub amount_in: UFix64 < In >,
+    pub amount_out: UFix64 < Out >,
     pub compute_units: u64,
     pub compute_unit_strategy: ComputeUnitStrategy,
-    pub fee_amount: UFix64 < FeeExp >,
+    pub fee_amount: UFix64 < Fee >,
     pub fee_mint: Pubkey,
     pub instructions: Vec < Instruction >,
     pub address_lookup_tables: Vec < Pubkey >,
@@ -3106,11 +2949,10 @@ pub(crate) trait Local {
 }
 
 
-## Impl From < ExecutableQuote < InExp , OutExp , FeeExp > > for ExecutableQuoteValue
+## Impl From < ExecutableQuote < In , Out , Fee > > for ExecutableQuoteValue
 
-// NOTE: Erases compile-time exponent types from ExecutableQuote into runtime UFixValue64 values.
-impl < InExp : Integer , OutExp : Integer , FeeExp : Integer >From < ExecutableQuote < InExp , OutExp , FeeExp > > for ExecutableQuoteValue {
-    fn from(quote : ExecutableQuote < InExp , OutExp , FeeExp >) -> ExecutableQuoteValue;
+impl < In : Integer , Out : Integer , Fee : Integer >From < ExecutableQuote < In , Out , Fee > > for ExecutableQuoteValue {
+    fn from(quote : ExecutableQuote < In , Out , Fee >) -> ExecutableQuoteValue;
 }
 
 
@@ -3195,7 +3037,7 @@ pub use anyhow :: Result;
 pub use fix :: prelude :: *;
 
 // NOTE: Re-export of token types and TokenMint trait from hylo-idl.
-pub use hylo_idl :: tokens :: { TokenMint , HYLOSOL , HYUSD , JITOSOL , SHYUSD , XSOL };
+pub use hylo_idl :: tokens :: { TokenMint , CBBTC , HYLOSOL , HYUSD , JITOSOL , SHYUSD , USDC , XBTC , XSOL , };
 
 // NOTE: Re-export of protocol state types (ProtocolAccounts, ProtocolState, providers).
 pub use crate :: protocol_state :: { ProtocolAccounts , ProtocolState , RpcStateProvider , StateProvider , };
@@ -3235,8 +3077,7 @@ pub use accounts :: ProtocolAccounts;
 // NOTE: Re-exports of RpcStateProvider and StateProvider.
 pub use provider :: { RpcStateProvider , StateProvider };
 
-// NOTE: Complete snapshot of Hylo protocol state including exchange context, mints, pools, and LST headers.
-pub use state :: ProtocolState;
+pub use state :: { ProtocolState , UsdcExchangeState };
 
 
 ---
@@ -3260,6 +3101,14 @@ pub struct ProtocolAccounts {
     pub xsol_pool: Account,
     pub sol_usd_pyth: Account,
     pub clock: Account,
+    pub cbbtc_exo_pair: Account,
+    pub cbbtc_vault: Account,
+    pub xbtc_mint: Account,
+    pub btc_usd_pyth: Account,
+    pub usdc_pair: Account,
+    pub usdc_usd_pyth: Account,
+    pub jitosol_pool_state: Account,
+    pub hylosol_pool_state: Account,
 }
 
 
@@ -3342,6 +3191,12 @@ impl StateProvider < Clock > for RpcStateProvider {
 
 ## Types
 
+/// USDC exchange state for stablecoin mint/redeem.
+pub struct UsdcExchangeState {
+    pub usdc_usd_price: hylo_core :: pyth :: PriceRange < N9 >,
+    pub swap_fee: UFix64 < N9 >,
+}
+
 /// Complete snapshot of Hylo protocol state
 // NOTE: Complete snapshot of Hylo protocol state including exchange context, mints, pools, and LST headers.
 pub struct ProtocolState< C : SolanaClock > {
@@ -3356,6 +3211,33 @@ pub struct ProtocolState< C : SolanaClock > {
     pub xsol_pool: TokenAccount,
     pub fetched_at: UnixTimestamp,
     pub lst_swap_config: AssetSwapConfig,
+    pub cbbtc_exchange_context: Arc < ExoExchangeContext < C > >,
+    pub usdc_exchange_state: UsdcExchangeState,
+    pub jitosol_stake_pool: SplStakePool,
+    pub hylosol_stake_pool: SplStakePool,
+}
+
+
+## Functions
+
+/// Builds the cbBTC `ExoExchangeContext` from protocol accounts.
+/// 
+/// # Errors
+/// * Deserialization or context-load failure
+fn build_cbbtc_exchange_context(clock : Clock, accounts : & ProtocolAccounts) -> Result < ExoExchangeContext < Clock > >;
+
+/// Builds USDC exchange state from protocol accounts.
+/// 
+/// # Errors
+/// * Deserialization or oracle failure
+fn build_usdc_exchange_state(clock : & Clock, accounts : & ProtocolAccounts) -> Result < UsdcExchangeState >;
+
+
+## Impl UsdcExchangeState
+
+impl UsdcExchangeState {
+    pub fn conversion(& self) -> UsdcStablecoinConversion;
+    pub fn apply_fee< Exp >(& self, amount : UFix64 < Exp >) -> Result < FeeExtract < Exp > >;
 }
 
 
@@ -3363,8 +3245,11 @@ pub struct ProtocolState< C : SolanaClock > {
 
 // NOTE: Builder and accessor methods for constructing ProtocolState and querying LST headers.
 impl < C : SolanaClock >ProtocolState < C > {
-    pub fn build(clock : C, hylo : & Hylo, jitosol_header : LstHeader, hylosol_header : LstHeader, hyusd_mint : Mint, xsol_mint : Mint, shyusd_mint : Mint, pool_config : PoolConfig, hyusd_pool : TokenAccount, xsol_pool : TokenAccount, sol_usd : & PriceUpdateV2) -> Result < Self >;
+    pub fn build(clock : C, hylo : & Hylo, jitosol_header : LstHeader, hylosol_header : LstHeader, hyusd_mint : Mint, xsol_mint : Mint, shyusd_mint : Mint, pool_config : PoolConfig, hyusd_pool : TokenAccount, xsol_pool : TokenAccount, sol_usd : & PriceUpdateV2, cbbtc_exchange_context : Arc < ExoExchangeContext < C > >, usdc_exchange_state : UsdcExchangeState, jitosol_stake_pool : SplStakePool, hylosol_stake_pool : SplStakePool) -> Result < Self >;
     pub fn lst_header< L : LST >(& self) -> Result < & LstHeader >;
+    pub fn stake_pool< L : LST >(& self) -> Result < & SplStakePool >;
+    pub fn cbbtc_exchange_context(& self) -> & ExoExchangeContext < C >;
+    pub fn usdc_exchange_state(& self) -> & UsdcExchangeState;
 }
 
 
@@ -3408,117 +3293,12 @@ impl < S : StateProvider < C > + Sync , C : SolanaClock >RuntimeQuoteStrategy < 
 
 ---
 
-# crate::protocol_state_strategy::exchange
-<!-- file: hylo-quotes/src/protocol_state_strategy/exchange.rs -->
+# crate::protocol_state_strategy::router
+<!-- file: hylo-quotes/src/protocol_state_strategy/router.rs -->
 
-## Types
+## Macros
 
-// NOTE: Type alias for ExecutableQuote<N9, N6, N9> used in LST->token mint quotes.
-type MintQuote = ExecutableQuote < N9 , N6 , N9 >;
-
-// NOTE: Type alias for ExecutableQuote<N6, N9, N9> used in token->LST redeem quotes.
-type RedeemQuote = ExecutableQuote < N6 , N9 , N9 >;
-
-// NOTE: Type alias for ExecutableQuote<N6, N6, N6> used in hyUSD<->xSOL swap quotes.
-type SwapQuote = ExecutableQuote < N6 , N6 , N6 >;
-
-// NOTE: Type alias for ExecutableQuote<N9, N9, N9> used in LST-to-LST swap quotes.
-type LstSwapQuote = ExecutableQuote < N9 , N9 , N9 >;
-
-
-## Impl QuoteStrategy < L , HYUSD , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes stablecoin mint quotes (LST -> hyUSD) from cached state.
-impl < L : LST + Local , S : StateProvider < C > , C : SolanaClock >QuoteStrategy < L , HYUSD , C > for ProtocolStateStrategy < S > where ProtocolState < C > : TokenOperation < L , HYUSD , FeeExp = N9 > , {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < MintQuote >;
-}
-
-
-## Impl QuoteStrategy < HYUSD , L , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes stablecoin redemption quotes (hyUSD -> LST) from cached state.
-impl < L : LST + Local , S : StateProvider < C > , C : SolanaClock >QuoteStrategy < HYUSD , L , C > for ProtocolStateStrategy < S > where ProtocolState < C > : TokenOperation < HYUSD , L , FeeExp = N9 > , {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < RedeemQuote >;
-}
-
-
-## Impl QuoteStrategy < L , XSOL , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes levercoin mint quotes (LST -> xSOL) from cached state.
-impl < L : LST + Local , S : StateProvider < C > , C : SolanaClock >QuoteStrategy < L , XSOL , C > for ProtocolStateStrategy < S > where ProtocolState < C > : TokenOperation < L , XSOL , FeeExp = N9 > , {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < MintQuote >;
-}
-
-
-## Impl QuoteStrategy < XSOL , L , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes levercoin redemption quotes (xSOL -> LST) from cached state.
-impl < L : LST + Local , S : StateProvider < C > , C : SolanaClock >QuoteStrategy < XSOL , L , C > for ProtocolStateStrategy < S > where ProtocolState < C > : TokenOperation < XSOL , L , FeeExp = N9 > , {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < RedeemQuote >;
-}
-
-
-## Impl QuoteStrategy < HYUSD , XSOL , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes hyUSD-to-xSOL swap quotes from cached state.
-impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < HYUSD , XSOL , C > for ProtocolStateStrategy < S > {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < SwapQuote >;
-}
-
-
-## Impl QuoteStrategy < XSOL , HYUSD , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes xSOL-to-hyUSD swap quotes from cached state.
-impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < XSOL , HYUSD , C > for ProtocolStateStrategy < S > {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < SwapQuote >;
-}
-
-
-## Impl QuoteStrategy < L1 , L2 , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes LST-to-LST swap quotes from cached state.
-impl < L1 : LST + Local , L2 : LST + Local , S : StateProvider < C > , C : SolanaClock >QuoteStrategy < L1 , L2 , C > for ProtocolStateStrategy < S > where ProtocolState < C > : TokenOperation < L1 , L2 , FeeExp = N9 > , {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < LstSwapQuote >;
-}
-
-
----
-
-# crate::protocol_state_strategy::stability_pool
-<!-- file: hylo-quotes/src/protocol_state_strategy/stability_pool.rs -->
-
-## Types
-
-// NOTE: Type alias for ExecutableQuote<N6, N6, N6> used in stability pool deposit quotes.
-type DepositQuote = ExecutableQuote < N6 , N6 , N6 >;
-
-// NOTE: Type alias for ExecutableQuote<N6, N6, N6> used in stability pool withdrawal quotes.
-type WithdrawQuote = ExecutableQuote < N6 , N6 , N6 >;
-
-
-## Impl QuoteStrategy < HYUSD , SHYUSD , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes stability pool deposit quotes (hyUSD -> sHYUSD) from cached state.
-impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < HYUSD , SHYUSD , C > for ProtocolStateStrategy < S > {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < DepositQuote >;
-}
-
-
-## Impl QuoteStrategy < SHYUSD , HYUSD , C > for ProtocolStateStrategy < S >
-
-// NOTE: Computes stability pool withdrawal quotes (sHYUSD -> hyUSD) from cached state.
-impl < S : StateProvider < C > , C : SolanaClock >QuoteStrategy < SHYUSD , HYUSD , C > for ProtocolStateStrategy < S > {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < WithdrawQuote >;
-}
+macro_rules! state_quote { ... }
 
 
 ---
@@ -3540,6 +3320,18 @@ pub enum Operation {
     SwapLstToLst,
     DepositToStabilityPool,
     WithdrawFromStabilityPool,
+    MintStablecoinUsdc,
+    RedeemStablecoinUsdc,
+    MintStablecoinExo,
+    RedeemStablecoinExo,
+    MintLevercoinExo,
+    RedeemLevercoinExo,
+    ConvertStableToLeverExo,
+    ConvertLeverToStableExo,
+    SwapLstToUsdc,
+    SwapUsdcToLst,
+    SwapExoToUsdc,
+    SwapUsdcToExo,
 }
 
 /// Metadata for a quote route.
@@ -3674,80 +3466,200 @@ impl < X >SimulatedOperationExt for X {
 # crate::simulated_operation::exchange
 <!-- file: hylo-quotes/src/simulated_operation/exchange.rs -->
 
-## Impl SimulatedOperation < L , HYUSD > for ExchangeClient
+## Impl SimulatedOperation < L , HYUSD > for RouterClient
 
 /// Mint stablecoin from LST.
-// NOTE: Extracts mint stablecoin output from MintStablecoinEventV2 simulation logs.
-impl < L : LST + Local >SimulatedOperation < L , HYUSD > for ExchangeClient {
+impl < L : LST + Local >SimulatedOperation < L , HYUSD > for RouterClient {
     type FeeExp = N9;
     type Event = MintStablecoinLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < MintOperationOutput >;
+    fn extract_output(event : & MintStablecoinLstEvent) -> Result < MintOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < HYUSD , L > for ExchangeClient
+## Impl SimulatedOperation < HYUSD , L > for RouterClient
 
 /// Redeem stablecoin for LST.
-// NOTE: Extracts redeem stablecoin output from RedeemStablecoinEventV2 simulation logs.
-impl < L : LST + Local >SimulatedOperation < HYUSD , L > for ExchangeClient {
+impl < L : LST + Local >SimulatedOperation < HYUSD , L > for RouterClient {
     type FeeExp = N9;
     type Event = RedeemStablecoinLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < RedeemOperationOutput >;
+    fn extract_output(event : & RedeemStablecoinLstEvent) -> Result < RedeemOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < L , XSOL > for ExchangeClient
+## Impl SimulatedOperation < L , XSOL > for RouterClient
 
 /// Mint levercoin from LST.
-// NOTE: Extracts mint levercoin output from MintLevercoinEventV2 simulation logs.
-impl < L : LST + Local >SimulatedOperation < L , XSOL > for ExchangeClient {
+impl < L : LST + Local >SimulatedOperation < L , XSOL > for RouterClient {
     type FeeExp = N9;
     type Event = MintLevercoinLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < MintOperationOutput >;
+    fn extract_output(event : & MintLevercoinLstEvent) -> Result < MintOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < XSOL , L > for ExchangeClient
+## Impl SimulatedOperation < XSOL , L > for RouterClient
 
 /// Redeem levercoin for LST.
-// NOTE: Extracts redeem levercoin output from RedeemLevercoinEventV2 simulation logs.
-impl < L : LST + Local >SimulatedOperation < XSOL , L > for ExchangeClient {
+impl < L : LST + Local >SimulatedOperation < XSOL , L > for RouterClient {
     type FeeExp = N9;
     type Event = RedeemLevercoinLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < RedeemOperationOutput >;
+    fn extract_output(event : & RedeemLevercoinLstEvent) -> Result < RedeemOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient
+## Impl SimulatedOperation < HYUSD , XSOL > for RouterClient
 
 /// Convert stablecoin to levercoin.
-// NOTE: Extracts hyUSD-to-xSOL swap output from SwapStableToLeverEventV1 simulation logs.
-impl SimulatedOperation < HYUSD , XSOL > for ExchangeClient {
+impl SimulatedOperation < HYUSD , XSOL > for RouterClient {
     type FeeExp = N6;
     type Event = ConvertStableToLeverLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
+    fn extract_output(event : & ConvertStableToLeverLstEvent) -> Result < SwapOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient
+## Impl SimulatedOperation < XSOL , HYUSD > for RouterClient
 
 /// Convert levercoin to stablecoin.
-// NOTE: Extracts xSOL-to-hyUSD swap output from SwapLeverToStableEventV1 simulation logs.
-impl SimulatedOperation < XSOL , HYUSD > for ExchangeClient {
+impl SimulatedOperation < XSOL , HYUSD > for RouterClient {
     type FeeExp = N6;
     type Event = ConvertLeverToStableLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
+    fn extract_output(event : & ConvertLeverToStableLstEvent) -> Result < SwapOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < L1 , L2 > for ExchangeClient
+## Impl SimulatedOperation < L1 , L2 > for RouterClient
 
 /// Swap between LSTs.
-// NOTE: Extracts LST-to-LST swap output from SwapLstEventV0 simulation logs.
-impl < L1 : LST + Local , L2 : LST + Local >SimulatedOperation < L1 , L2 > for ExchangeClient {
+impl < L1 : LST + Local , L2 : LST + Local >SimulatedOperation < L1 , L2 > for RouterClient {
     type FeeExp = N9;
     type Event = SwapLstToLstEvent;
-    fn extract_output(event : & Self :: Event) -> Result < LstSwapOperationOutput >;
+    fn extract_output(event : & SwapLstToLstEvent) -> Result < LstSwapOperationOutput >;
+}
+
+
+## Impl SimulatedOperation < USDC , HYUSD > for RouterClient
+
+/// Mint stablecoin from USDC.
+/// 
+/// On-chain: USDC is normalized to N9 before fee extraction, so
+/// event amounts `usdc_deposited` and `usdc_fees` are N9.
+impl SimulatedOperation < USDC , HYUSD > for RouterClient {
+    type FeeExp = N9;
+    type Event = MintStablecoinUsdcEvent;
+    fn extract_output(event : & MintStablecoinUsdcEvent) -> Result < OperationOutput < N6 , N6 , N9 > >;
+}
+
+
+## Impl SimulatedOperation < HYUSD , USDC > for RouterClient
+
+/// Redeem stablecoin to USDC.
+/// 
+/// On-chain: fee is applied to HYUSD input before conversion.
+/// `fee_base` is the total HYUSD input (`stablecoin_burned +
+/// stablecoin_fees`) and `fee_mint` is HYUSD.
+impl SimulatedOperation < HYUSD , USDC > for RouterClient {
+    type FeeExp = N6;
+    type Event = RedeemStablecoinUsdcEvent;
+    fn extract_output(event : & RedeemStablecoinUsdcEvent) -> Result < SwapOperationOutput >;
+}
+
+
+## Impl SimulatedOperation < CBBTC , HYUSD > for RouterClient
+
+/// Mint stablecoin from exo collateral (cbBTC -> HYUSD).
+impl SimulatedOperation < CBBTC , HYUSD > for RouterClient {
+    type FeeExp = N9;
+    type Event = MintStablecoinExoEvent;
+    fn extract_output(event : & MintStablecoinExoEvent) -> Result < OperationOutput < N8 , N6 , N9 > >;
+}
+
+
+## Impl SimulatedOperation < HYUSD , CBBTC > for RouterClient
+
+/// Redeem stablecoin for exo collateral (HYUSD -> cbBTC).
+impl SimulatedOperation < HYUSD , CBBTC > for RouterClient {
+    type FeeExp = N9;
+    type Event = RedeemStablecoinExoEvent;
+    fn extract_output(event : & RedeemStablecoinExoEvent) -> Result < OperationOutput < N6 , N8 , N9 > >;
+}
+
+
+## Impl SimulatedOperation < CBBTC , XBTC > for RouterClient
+
+/// Mint levercoin from exo collateral (cbBTC -> xBTC).
+impl SimulatedOperation < CBBTC , XBTC > for RouterClient {
+    type FeeExp = N9;
+    type Event = MintLevercoinExoEvent;
+    fn extract_output(event : & MintLevercoinExoEvent) -> Result < OperationOutput < N8 , N6 , N9 > >;
+}
+
+
+## Impl SimulatedOperation < XBTC , CBBTC > for RouterClient
+
+/// Redeem levercoin for exo collateral (xBTC -> cbBTC).
+impl SimulatedOperation < XBTC , CBBTC > for RouterClient {
+    type FeeExp = N9;
+    type Event = RedeemLevercoinExoEvent;
+    fn extract_output(event : & RedeemLevercoinExoEvent) -> Result < OperationOutput < N6 , N8 , N9 > >;
+}
+
+
+## Impl SimulatedOperation < HYUSD , XBTC > for RouterClient
+
+/// Convert stablecoin to exo levercoin (HYUSD -> xBTC).
+impl SimulatedOperation < HYUSD , XBTC > for RouterClient {
+    type FeeExp = N6;
+    type Event = ConvertStableToLeverExoEvent;
+    fn extract_output(event : & ConvertStableToLeverExoEvent) -> Result < SwapOperationOutput >;
+}
+
+
+## Impl SimulatedOperation < L , USDC > for RouterClient
+
+/// Swap LST for USDC.
+impl < L : LST + Local >SimulatedOperation < L , USDC > for RouterClient {
+    type FeeExp = N9;
+    type Event = SwapLstToUsdcEvent;
+    fn extract_output(event : & SwapLstToUsdcEvent) -> Result < OperationOutput < N9 , N6 , N9 > >;
+}
+
+
+## Impl SimulatedOperation < USDC , L > for RouterClient
+
+/// Swap USDC for LST.
+impl < L : LST + Local >SimulatedOperation < USDC , L > for RouterClient {
+    type FeeExp = N6;
+    type Event = SwapUsdcToLstEvent;
+    fn extract_output(event : & SwapUsdcToLstEvent) -> Result < OperationOutput < N6 , N9 , N6 > >;
+}
+
+
+## Impl SimulatedOperation < CBBTC , USDC > for RouterClient
+
+/// Swap cbBTC for USDC.
+impl SimulatedOperation < CBBTC , USDC > for RouterClient {
+    type FeeExp = N8;
+    type Event = SwapExoToUsdcEvent;
+    fn extract_output(event : & SwapExoToUsdcEvent) -> Result < OperationOutput < N8 , N6 , N8 > >;
+}
+
+
+## Impl SimulatedOperation < USDC , CBBTC > for RouterClient
+
+/// Swap USDC for cbBTC.
+impl SimulatedOperation < USDC , CBBTC > for RouterClient {
+    type FeeExp = N6;
+    type Event = SwapUsdcToExoEvent;
+    fn extract_output(event : & SwapUsdcToExoEvent) -> Result < OperationOutput < N6 , N8 , N6 > >;
+}
+
+
+## Impl SimulatedOperation < XBTC , HYUSD > for RouterClient
+
+/// Convert xBTC to hyUSD.
+impl SimulatedOperation < XBTC , HYUSD > for RouterClient {
+    type FeeExp = N6;
+    type Event = ConvertLeverToStableExoEvent;
+    fn extract_output(event : & ConvertLeverToStableExoEvent) -> Result < SwapOperationOutput >;
 }
 
 
@@ -3756,25 +3668,23 @@ impl < L1 : LST + Local , L2 : LST + Local >SimulatedOperation < L1 , L2 > for E
 # crate::simulated_operation::stability_pool
 <!-- file: hylo-quotes/src/simulated_operation/stability_pool.rs -->
 
-## Impl SimulatedOperation < HYUSD , SHYUSD > for StabilityPoolClient
+## Impl SimulatedOperation < HYUSD , SHYUSD > for RouterClient
 
 /// Deposit stablecoin.
-// NOTE: Extracts stability pool deposit output from UserDepositEvent simulation logs.
-impl SimulatedOperation < HYUSD , SHYUSD > for StabilityPoolClient {
+impl SimulatedOperation < HYUSD , SHYUSD > for RouterClient {
     type FeeExp = N6;
     type Event = UserDepositEvent;
-    fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
+    fn extract_output(event : & UserDepositEvent) -> Result < SwapOperationOutput >;
 }
 
 
-## Impl SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient
+## Impl SimulatedOperation < SHYUSD , HYUSD > for RouterClient
 
 /// Withdraw stablecoin.
-// NOTE: Extracts stability pool withdrawal output from UserWithdrawEventV1 simulation logs.
-impl SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient {
+impl SimulatedOperation < SHYUSD , HYUSD > for RouterClient {
     type FeeExp = N6;
     type Event = UserWithdrawEvent;
-    fn extract_output(event : & Self :: Event) -> Result < SwapOperationOutput >;
+    fn extract_output(event : & UserWithdrawEvent) -> Result < SwapOperationOutput >;
 }
 
 
@@ -3787,8 +3697,7 @@ impl SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient {
 
 // NOTE: Quote strategy that validates quotes via RPC transaction simulation, holding both program clients.
 pub struct SimulationStrategy {
-    pub exchange_client: ExchangeClient,
-    pub stability_pool_client: StabilityPoolClient,
+    pub router_client: RouterClient,
 }
 
 
@@ -3796,7 +3705,7 @@ pub struct SimulationStrategy {
 
 // NOTE: Quote strategy that validates quotes via RPC transaction simulation, holding both program clients.
 impl SimulationStrategy {
-    pub fn new(exchange_client : ExchangeClient, stability_pool_client : StabilityPoolClient) -> Self;
+    pub fn new(router_client : RouterClient) -> SimulationStrategy;
 }
 
 
@@ -3818,117 +3727,19 @@ impl TransactionSyntax for SimulationStrategy {
 
 ---
 
-# crate::simulation_strategy::exchange
-<!-- file: hylo-quotes/src/simulation_strategy/exchange.rs -->
+# crate::simulation_strategy::router
+<!-- file: hylo-quotes/src/simulation_strategy/router.rs -->
 
-## Types
+## Functions
 
-// NOTE: Type alias for ExecutableQuote<N9, N6, N9> in simulation-based mint quotes.
-type MintQuote = ExecutableQuote < N9 , N6 , N9 >;
+fn sim_args(amount_in : u64, user : Pubkey) -> RouterArgs;
 
-// NOTE: Type alias for ExecutableQuote<N6, N9, N9> in simulation-based redeem quotes.
-type RedeemQuote = ExecutableQuote < N6 , N9 , N9 >;
-
-// NOTE: Type alias for ExecutableQuote<N6, N6, N6> in simulation-based swap quotes.
-type SwapQuote = ExecutableQuote < N6 , N6 , N6 >;
-
-// NOTE: Type alias for ExecutableQuote<N9, N9, N9> in simulation-based LST swap quotes.
-type LstSwapQuote = ExecutableQuote < N9 , N9 , N9 >;
+fn quote_args< E : Integer >(amount_in : u64, user : Pubkey, out_amount : UFix64 < E >, slippage_tolerance : u64) -> RouterArgs;
 
 
-## Impl QuoteStrategy < L , HYUSD , C > for SimulationStrategy
+## Macros
 
-// NOTE: Computes stablecoin mint quotes via transaction simulation.
-impl < L : LST + Local , C : SolanaClock >QuoteStrategy < L , HYUSD , C > for SimulationStrategy {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < MintQuote >;
-}
-
-
-## Impl QuoteStrategy < HYUSD , L , C > for SimulationStrategy
-
-// NOTE: Computes stablecoin redemption quotes via transaction simulation.
-impl < L : LST + Local , C : SolanaClock >QuoteStrategy < HYUSD , L , C > for SimulationStrategy {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < RedeemQuote >;
-}
-
-
-## Impl QuoteStrategy < L , XSOL , C > for SimulationStrategy
-
-// NOTE: Computes levercoin mint quotes via transaction simulation.
-impl < L : LST + Local , C : SolanaClock >QuoteStrategy < L , XSOL , C > for SimulationStrategy {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < MintQuote >;
-}
-
-
-## Impl QuoteStrategy < XSOL , L , C > for SimulationStrategy
-
-// NOTE: Computes levercoin redemption quotes via transaction simulation.
-impl < L : LST + Local , C : SolanaClock >QuoteStrategy < XSOL , L , C > for SimulationStrategy {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < RedeemQuote >;
-}
-
-
-## Impl QuoteStrategy < HYUSD , XSOL , C > for SimulationStrategy
-
-// NOTE: Computes hyUSD-to-xSOL swap quotes via transaction simulation.
-impl < C : SolanaClock >QuoteStrategy < HYUSD , XSOL , C > for SimulationStrategy {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < SwapQuote >;
-}
-
-
-## Impl QuoteStrategy < XSOL , HYUSD , C > for SimulationStrategy
-
-// NOTE: Computes xSOL-to-hyUSD swap quotes via transaction simulation.
-impl < C : SolanaClock >QuoteStrategy < XSOL , HYUSD , C > for SimulationStrategy {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < SwapQuote >;
-}
-
-
-## Impl QuoteStrategy < L1 , L2 , C > for SimulationStrategy
-
-// NOTE: Computes LST-to-LST swap quotes via transaction simulation.
-impl < C : SolanaClock , L1 : LST + Local , L2 : LST + Local >QuoteStrategy < L1 , L2 , C > for SimulationStrategy {
-    type FeeExp = N9;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, slippage_tolerance : u64) -> Result < LstSwapQuote >;
-}
-
-
----
-
-# crate::simulation_strategy::stability_pool
-<!-- file: hylo-quotes/src/simulation_strategy/stability_pool.rs -->
-
-## Types
-
-// NOTE: Type alias for ExecutableQuote<N6, N6, N6> in simulation-based deposit quotes.
-type DepositQuote = ExecutableQuote < N6 , N6 , N6 >;
-
-// NOTE: Type alias for ExecutableQuote<N6, N6, N6> in simulation-based withdrawal quotes.
-type WithdrawQuote = ExecutableQuote < N6 , N6 , N6 >;
-
-
-## Impl QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrategy
-
-// NOTE: Computes stability pool deposit quotes via transaction simulation.
-impl < C : SolanaClock >QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrategy {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < DepositQuote >;
-}
-
-
-## Impl QuoteStrategy < SHYUSD , HYUSD , C > for SimulationStrategy
-
-// NOTE: Computes stability pool withdrawal quotes via transaction simulation.
-impl < C : SolanaClock >QuoteStrategy < SHYUSD , HYUSD , C > for SimulationStrategy {
-    type FeeExp = N6;
-    async fn get_quote(& self, amount_in : u64, user : Pubkey, _slippage_tolerance : u64) -> Result < WithdrawQuote >;
-}
+macro_rules! simulation_quote { ... }
 
 
 ---
@@ -4055,6 +3866,138 @@ impl < C : SolanaClock >TokenOperation < XSOL , HYUSD > for ProtocolState < C > 
 impl < L1 : LST + Local , L2 : LST + Local , C : SolanaClock >TokenOperation < L1 , L2 > for ProtocolState < C > {
     type FeeExp = N9;
     fn compute_output(& self, in_amount : UFix64 < N9 >) -> Result < LstSwapOperationOutput >;
+}
+
+
+## Impl TokenOperation < USDC , HYUSD > for ProtocolState < C >
+
+/// Mint stablecoin (HYUSD) from USDC.
+/// 
+/// On-chain flow: normalize USDC to N9, apply fee at N9, then convert
+/// to stablecoin. Fee is denominated in USDC (at N9 precision).
+impl < C : SolanaClock >TokenOperation < USDC , HYUSD > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N6 , N9 > >;
+}
+
+
+## Impl TokenOperation < HYUSD , USDC > for ProtocolState < C >
+
+/// Redeem stablecoin (HYUSD) for USDC.
+/// 
+/// On-chain flow: apply fee to HYUSD input first, then convert
+/// remaining HYUSD to USDC. Fee is denominated in HYUSD.
+impl < C : SolanaClock >TokenOperation < HYUSD , USDC > for ProtocolState < C > {
+    type FeeExp = N6;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N6 , N6 > >;
+}
+
+
+## Impl TokenOperation < CBBTC , HYUSD > for ProtocolState < C >
+
+/// Mint stablecoin (HYUSD) from cbBTC.
+impl < C : SolanaClock >TokenOperation < CBBTC , HYUSD > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N8 >) -> Result < OperationOutput < N8 , N6 , N9 > >;
+}
+
+
+## Impl TokenOperation < HYUSD , CBBTC > for ProtocolState < C >
+
+/// Redeem stablecoin (HYUSD) for cbBTC.
+impl < C : SolanaClock >TokenOperation < HYUSD , CBBTC > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N8 , N9 > >;
+}
+
+
+## Impl TokenOperation < CBBTC , XBTC > for ProtocolState < C >
+
+/// Mint levercoin (xBTC) from cbBTC.
+impl < C : SolanaClock >TokenOperation < CBBTC , XBTC > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N8 >) -> Result < OperationOutput < N8 , N6 , N9 > >;
+}
+
+
+## Impl TokenOperation < XBTC , CBBTC > for ProtocolState < C >
+
+/// Redeem levercoin (xBTC) for cbBTC.
+impl < C : SolanaClock >TokenOperation < XBTC , CBBTC > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N8 , N9 > >;
+}
+
+
+## Impl TokenOperation < HYUSD , XBTC > for ProtocolState < C >
+
+/// Swap stablecoin (HYUSD) to exo levercoin (xBTC).
+impl < C : SolanaClock >TokenOperation < HYUSD , XBTC > for ProtocolState < C > {
+    type FeeExp = N6;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N6 , N6 > >;
+}
+
+
+## Impl TokenOperation < XBTC , HYUSD > for ProtocolState < C >
+
+/// Swap exo levercoin (xBTC) to stablecoin (HYUSD).
+impl < C : SolanaClock >TokenOperation < XBTC , HYUSD > for ProtocolState < C > {
+    type FeeExp = N6;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N6 , N6 > >;
+}
+
+
+## Impl TokenOperation < JITOSOL , USDC > for ProtocolState < C >
+
+/// Swap `JitoSOL` for USDC.
+impl < C : SolanaClock >TokenOperation < JITOSOL , USDC > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N9 >) -> Result < OperationOutput < N9 , N6 , N9 > >;
+}
+
+
+## Impl TokenOperation < HYLOSOL , USDC > for ProtocolState < C >
+
+/// Swap `hyloSOL` for USDC.
+impl < C : SolanaClock >TokenOperation < HYLOSOL , USDC > for ProtocolState < C > {
+    type FeeExp = N9;
+    fn compute_output(& self, in_amount : UFix64 < N9 >) -> Result < OperationOutput < N9 , N6 , N9 > >;
+}
+
+
+## Impl TokenOperation < USDC , JITOSOL > for ProtocolState < C >
+
+/// Swap USDC for `JitoSOL`.
+impl < C : SolanaClock >TokenOperation < USDC , JITOSOL > for ProtocolState < C > {
+    type FeeExp = N6;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N9 , N6 > >;
+}
+
+
+## Impl TokenOperation < USDC , HYLOSOL > for ProtocolState < C >
+
+/// Swap USDC for `hyloSOL`.
+impl < C : SolanaClock >TokenOperation < USDC , HYLOSOL > for ProtocolState < C > {
+    type FeeExp = N6;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N9 , N6 > >;
+}
+
+
+## Impl TokenOperation < CBBTC , USDC > for ProtocolState < C >
+
+/// Swap cbBTC for USDC.
+impl < C : SolanaClock >TokenOperation < CBBTC , USDC > for ProtocolState < C > {
+    type FeeExp = N8;
+    fn compute_output(& self, in_amount : UFix64 < N8 >) -> Result < OperationOutput < N8 , N6 , N8 > >;
+}
+
+
+## Impl TokenOperation < USDC , CBBTC > for ProtocolState < C >
+
+/// Swap USDC for cbBTC.
+impl < C : SolanaClock >TokenOperation < USDC , CBBTC > for ProtocolState < C > {
+    type FeeExp = N6;
+    fn compute_output(& self, in_amount : UFix64 < N6 >) -> Result < OperationOutput < N6 , N8 , N6 > >;
 }
 
 
