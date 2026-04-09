@@ -71,6 +71,16 @@ impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
   }
 }
 
+impl From<hylo_idl::exchange::types::FundingRateConfig>
+  for FundingRateConfig
+{
+  fn from(
+    idl: hylo_idl::exchange::types::FundingRateConfig,
+  ) -> FundingRateConfig {
+    FundingRateConfig::new(idl.rate.into(), idl.fee.into())
+  }
+}
+
 impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
   for RebalanceCurveConfig
 {
