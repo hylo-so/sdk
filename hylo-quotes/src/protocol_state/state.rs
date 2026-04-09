@@ -94,7 +94,7 @@ pub struct ProtocolState<C: SolanaClock> {
   pub lst_swap_config: AssetSwapConfig,
 
   /// cbBTC exo exchange context
-  pub cbbtc_exo_context: Arc<ExoExchangeContext<C>>,
+  pub cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
 
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
@@ -124,7 +124,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     hyusd_pool: TokenAccount,
     xsol_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
-    cbbtc_exo_context: Arc<ExoExchangeContext<C>>,
+    cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
@@ -161,7 +161,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       xsol_pool,
       fetched_at,
       lst_swap_config,
-      cbbtc_exo_context,
+      cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -193,8 +193,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 
   #[must_use]
-  pub fn cbbtc_exo_context(&self) -> &ExoExchangeContext<C> {
-    &self.cbbtc_exo_context
+  pub fn cbbtc_exchange_context(&self) -> &ExoExchangeContext<C> {
+    &self.cbbtc_exchange_context
   }
 
   #[must_use]
@@ -207,7 +207,7 @@ impl<C: SolanaClock> ProtocolState<C> {
 ///
 /// # Errors
 /// * Deserialization or context-load failure
-fn build_cbbtc_exo_context(
+fn build_cbbtc_exchange_context(
   clock: Clock,
   accounts: &ProtocolAccounts,
 ) -> Result<ExoExchangeContext<Clock>> {
@@ -317,8 +317,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_exo_context =
-      Arc::new(build_cbbtc_exo_context(clock.clone(), accounts)?);
+    let cbbtc_exchange_context =
+      Arc::new(build_cbbtc_exchange_context(clock.clone(), accounts)?);
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =
@@ -338,7 +338,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       hyusd_pool,
       xsol_pool,
       &sol_usd,
-      cbbtc_exo_context,
+      cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,

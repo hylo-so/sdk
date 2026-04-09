@@ -417,7 +417,7 @@ where
     let total_collateral = UFix64::<N8>::new(cbbtc_vault.amount)
       .checked_convert()
       .context("cbBTC vault N8->N9 overflow")?;
-    let cbbtc_exo_context = Arc::new(
+    let cbbtc_exchange_context = Arc::new(
       ExoExchangeContext::load(
         self.clock.clone(),
         total_collateral,
@@ -469,7 +469,7 @@ where
       hyusd_pool,
       xsol_pool,
       &sol_usd,
-      cbbtc_exo_context,
+      cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
