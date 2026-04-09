@@ -444,13 +444,11 @@ where
     let jitosol_pool = account_map
       .get(&JITOSOL::POOL_STATE)
       .context("JitoSOL pool state not found")?;
-    let jitosol_true_price =
-      SplStakePool::from_bytes(&jitosol_pool.data)?.true_price()?;
+    let jitosol_stake_pool = SplStakePool::from_bytes(&jitosol_pool.data)?;
     let hylosol_pool = account_map
       .get(&HYLOSOL::POOL_STATE)
       .context("hyloSOL pool state not found")?;
-    let hylosol_true_price =
-      SplStakePool::from_bytes(&hylosol_pool.data)?.true_price()?;
+    let hylosol_stake_pool = SplStakePool::from_bytes(&hylosol_pool.data)?;
 
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
@@ -466,8 +464,8 @@ where
       &sol_usd,
       cbbtc_exo_context,
       usdc_exchange_state,
-      jitosol_true_price,
-      hylosol_true_price,
+      jitosol_stake_pool,
+      hylosol_stake_pool,
     )?);
     Ok(())
   }

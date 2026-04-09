@@ -16,7 +16,7 @@ const LAST_UPDATE_EPOCH_OFFSET: usize = POOL_TOKEN_SUPPLY_OFFSET + U64_SIZE;
 const U64_SIZE: usize = size_of::<u64>();
 
 /// Minimal view of stake pool PDA used in all SPL LST programs.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct SplStakePool {
   pub total_lamports: UFix64<N9>,
   pub pool_token_supply: UFix64<N9>,

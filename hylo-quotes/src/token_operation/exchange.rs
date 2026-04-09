@@ -536,7 +536,7 @@ impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
     in_amount: UFix64<N9>,
   ) -> Result<OperationOutput<N9, N6, N9>> {
     let header = self.lst_header::<JITOSOL>()?;
-    let true_price = self.true_price::<JITOSOL>()?;
+    let true_price = self.stake_pool::<JITOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
@@ -563,7 +563,7 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
     in_amount: UFix64<N9>,
   ) -> Result<OperationOutput<N9, N6, N9>> {
     let header = self.lst_header::<HYLOSOL>()?;
-    let true_price = self.true_price::<HYLOSOL>()?;
+    let true_price = self.stake_pool::<HYLOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
@@ -592,7 +592,7 @@ impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
     let normalized: UFix64<N9> =
       in_amount.checked_convert().context("usdc N6->N9")?;
     let header = self.lst_header::<JITOSOL>()?;
-    let true_price = self.true_price::<JITOSOL>()?;
+    let true_price = self.stake_pool::<JITOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
@@ -620,7 +620,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
     let normalized: UFix64<N9> =
       in_amount.checked_convert().context("usdc N6->N9")?;
     let header = self.lst_header::<HYLOSOL>()?;
-    let true_price = self.true_price::<HYLOSOL>()?;
+    let true_price = self.stake_pool::<HYLOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
