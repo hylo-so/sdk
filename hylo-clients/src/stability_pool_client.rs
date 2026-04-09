@@ -95,4 +95,21 @@ impl StabilityPoolClient {
       instruction_builders::update_withdrawal_fee(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
+
+  /// Updates the stability pool admin.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_admin(
+    &self,
+    upgrade_authority: Pubkey,
+    args: &args::UpdateAdmin,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_admin(
+      self.program.payer(),
+      upgrade_authority,
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
 }
