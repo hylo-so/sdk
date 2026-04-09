@@ -1,4 +1,5 @@
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
+use crate::funding_rate::FundingRateConfig;
 use crate::lst_sol_price::LstSolPrice;
 use crate::rebalance_pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
@@ -93,5 +94,64 @@ impl From<SlippageConfig> for hylo_idl::router::types::SlippageConfig {
   fn from(val: SlippageConfig) -> Self {
     let exchange_sc: hylo_idl::exchange::types::SlippageConfig = val.into();
     exchange_sc.into()
+  }
+}
+
+impl From<FeePair> for hylo_idl::exchange::types::FeePair {
+  fn from(val: FeePair) -> Self {
+    hylo_idl::exchange::types::FeePair {
+      mint: val.mint.into(),
+      redeem: val.redeem.into(),
+    }
+  }
+}
+
+impl From<StablecoinFees> for hylo_idl::exchange::types::StablecoinFees {
+  fn from(val: StablecoinFees) -> Self {
+    hylo_idl::exchange::types::StablecoinFees {
+      normal: val.normal.into(),
+      mode_1: val.mode_1.into(),
+    }
+  }
+}
+
+impl From<LevercoinFees> for hylo_idl::exchange::types::LevercoinFees {
+  fn from(val: LevercoinFees) -> Self {
+    hylo_idl::exchange::types::LevercoinFees {
+      normal: val.normal.into(),
+      mode_1: val.mode_1.into(),
+      mode_2: val.mode_2.into(),
+    }
+  }
+}
+
+impl From<YieldHarvestConfig>
+  for hylo_idl::exchange::types::YieldHarvestConfig
+{
+  fn from(val: YieldHarvestConfig) -> Self {
+    hylo_idl::exchange::types::YieldHarvestConfig {
+      allocation: val.allocation.into(),
+      fee: val.fee.into(),
+    }
+  }
+}
+
+impl From<RebalanceCurveConfig>
+  for hylo_idl::exchange::types::RebalanceCurveConfig
+{
+  fn from(val: RebalanceCurveConfig) -> Self {
+    hylo_idl::exchange::types::RebalanceCurveConfig {
+      floor_mult: val.floor_mult.into(),
+      ceil_mult: val.ceil_mult.into(),
+    }
+  }
+}
+
+impl From<FundingRateConfig> for hylo_idl::exchange::types::FundingRateConfig {
+  fn from(val: FundingRateConfig) -> Self {
+    hylo_idl::exchange::types::FundingRateConfig {
+      rate: val.rate.into(),
+      fee: val.fee.into(),
+    }
   }
 }

@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
@@ -14,11 +15,18 @@ const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
 #[derive(
-  Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Copy,
+  Clone,
+  PartialEq,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct FeePair {
-  mint: UFixValue64,
-  redeem: UFixValue64,
+  pub mint: UFixValue64,
+  pub redeem: UFixValue64,
 }
 
 impl FeePair {
@@ -82,10 +90,18 @@ impl<Exp> FeeExtract<Exp> {
 }
 
 /// **Deprecated** — retained only for `Hylo` account deserialization.
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
+)]
 pub struct StablecoinFees {
-  normal: FeePair,
-  mode_1: FeePair,
+  pub normal: FeePair,
+  pub mode_1: FeePair,
 }
 
 impl StablecoinFees {
@@ -96,12 +112,19 @@ impl StablecoinFees {
 }
 
 #[derive(
-  Copy, Clone, PartialEq, InitSpace, AnchorDeserialize, AnchorSerialize,
+  Copy,
+  Clone,
+  PartialEq,
+  InitSpace,
+  AnchorDeserialize,
+  AnchorSerialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct LevercoinFees {
-  normal: FeePair,
-  mode_1: FeePair,
-  mode_2: FeePair,
+  pub normal: FeePair,
+  pub mode_1: FeePair,
+  pub mode_2: FeePair,
 }
 
 impl FeeController for LevercoinFees {
