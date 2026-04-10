@@ -1,33 +1,25 @@
 //! Quote strategy using transaction simulation.
 //!
-//! Builds instructions and simulates transactions to extract output amounts
-//! and compute units from emitted events.
+//! Builds instructions and simulates transactions to extract output
+//! amounts and compute units from return data.
 
-mod exchange;
-mod stability_pool;
+mod router;
 
 use anchor_lang::prelude::Clock;
 use async_trait::async_trait;
-use hylo_clients::prelude::{ExchangeClient, StabilityPoolClient};
+use hylo_clients::router_client::RouterClient;
 use hylo_clients::transaction::TransactionSyntax;
 
 use crate::runtime_quote_strategy::RuntimeQuoteStrategy;
 
 pub struct SimulationStrategy {
-  pub exchange_client: ExchangeClient,
-  pub stability_pool_client: StabilityPoolClient,
+  pub router_client: RouterClient,
 }
 
 impl SimulationStrategy {
   #[must_use]
-  pub fn new(
-    exchange_client: ExchangeClient,
-    stability_pool_client: StabilityPoolClient,
-  ) -> Self {
-    Self {
-      exchange_client,
-      stability_pool_client,
-    }
+  pub fn new(router_client: RouterClient) -> SimulationStrategy {
+    SimulationStrategy { router_client }
   }
 }
 

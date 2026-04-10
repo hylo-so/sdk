@@ -2,7 +2,9 @@ use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_idl::tokens::{
+  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+};
 
 use crate::quote_metadata::{Operation, QuoteMetadata};
 use crate::quote_strategy::QuoteStrategy;
@@ -69,6 +71,20 @@ runtime_quote_strategies! {
   (XSOL, HYUSD, Operation::ConvertLeverToStableLst, "Convert xSOL to hyUSD"),
   (JITOSOL, HYLOSOL, Operation::SwapLstToLst, "Swap JitoSOL to hyloSOL"),
   (HYLOSOL, JITOSOL, Operation::SwapLstToLst, "Swap hyloSOL to JitoSOL"),
+  (JITOSOL, USDC, Operation::SwapLstToUsdc, "Swap JitoSOL for USDC"),
+  (HYLOSOL, USDC, Operation::SwapLstToUsdc, "Swap hyloSOL for USDC"),
+  (USDC, JITOSOL, Operation::SwapUsdcToLst, "Swap USDC for JitoSOL"),
+  (USDC, HYLOSOL, Operation::SwapUsdcToLst, "Swap USDC for hyloSOL"),
+  (CBBTC, USDC, Operation::SwapExoToUsdc, "Swap cbBTC for USDC"),
+  (USDC, CBBTC, Operation::SwapUsdcToExo, "Swap USDC for cbBTC"),
   (HYUSD, SHYUSD, Operation::DepositToStabilityPool, "Deposit hyUSD to Stability Pool"),
   (SHYUSD, HYUSD, Operation::WithdrawFromStabilityPool, "Withdraw hyUSD from Stability Pool"),
+  (USDC, HYUSD, Operation::MintStablecoinUsdc, "Mint hyUSD with USDC"),
+  (HYUSD, USDC, Operation::RedeemStablecoinUsdc, "Redeem hyUSD for USDC"),
+  (CBBTC, HYUSD, Operation::MintStablecoinExo, "Mint hyUSD with cbBTC"),
+  (HYUSD, CBBTC, Operation::RedeemStablecoinExo, "Redeem hyUSD for cbBTC"),
+  (CBBTC, XBTC, Operation::MintLevercoinExo, "Mint xBTC with cbBTC"),
+  (XBTC, CBBTC, Operation::RedeemLevercoinExo, "Redeem xBTC for cbBTC"),
+  (HYUSD, XBTC, Operation::ConvertStableToLeverExo, "Convert hyUSD to xBTC"),
+  (XBTC, HYUSD, Operation::ConvertLeverToStableExo, "Convert xBTC to hyUSD"),
 }

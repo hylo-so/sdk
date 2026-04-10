@@ -26,8 +26,8 @@
     text = "nix develop --command cargo build";
   };
 
-  test = writeShellApplication {
-    name = "test";
+  test-cargo = writeShellApplication {
+    name = "test-cargo";
     text = ''
       nix develop --command bash -c "
         set -euo pipefail

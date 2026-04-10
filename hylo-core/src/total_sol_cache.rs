@@ -1,12 +1,21 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{
   TotalSolCacheDecrement, TotalSolCacheIncrement, TotalSolCacheOutdated,
   TotalSolCacheOverflow, TotalSolCacheUnderflow,
 };
 
-#[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Copy)]
+#[derive(
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Clone,
+  Copy,
+  Serialize,
+  Deserialize,
+)]
 pub struct TotalSolCache {
   pub current_update_epoch: u64,
   pub total_sol: UFixValue64,

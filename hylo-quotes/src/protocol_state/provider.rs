@@ -32,10 +32,6 @@ impl<T: StateProvider<C>, C: SolanaClock> StateProvider<C>
   }
 }
 
-// ============================================================================
-// RPC STATE PROVIDER
-// ============================================================================
-
 /// State provider that fetches protocol state via Solana RPC
 pub struct RpcStateProvider {
   rpc_client: Arc<RpcClient>,

@@ -7,7 +7,9 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_idl::pda;
-use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
+use hylo_idl::tokens::{
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+};
 use serde::{Deserialize, Serialize};
 
 /// Type-safe collection of protocol state accounts
@@ -45,6 +47,30 @@ pub struct ProtocolAccounts {
 
   /// Solana clock sysvar
   pub clock: Account,
+
+  /// cbBTC `ExoPair` PDA
+  pub cbbtc_exo_pair: Account,
+
+  /// cbBTC collateral vault token account
+  pub cbbtc_vault: Account,
+
+  /// xBTC levercoin mint
+  pub xbtc_mint: Account,
+
+  /// Pyth BTC/USD price feed
+  pub btc_usd_pyth: Account,
+
+  /// `UsdcPair` PDA
+  pub usdc_pair: Account,
+
+  /// Pyth USDC/USD price feed
+  pub usdc_usd_pyth: Account,
+
+  /// `JitoSOL` SPL stake pool state
+  pub jitosol_pool_state: Account,
+
+  /// `hyloSOL` SPL stake pool state
+  pub hylosol_pool_state: Account,
 }
 
 impl ProtocolAccounts {
@@ -65,20 +91,29 @@ impl ProtocolAccounts {
       pda::XSOL_POOL,
       hylo_core::pyth::SOL_USD.address,
       sysvar::clock::ID,
+      // exo accounts (may be missing on some deployments)
+      pda::exo_pair(CBBTC::MINT),
+      pda::exo_vault(CBBTC::MINT),
+      pda::exo_levercoin_mint(CBBTC::MINT),
+      pda::BTC_USD_PYTH_FEED,
+      pda::USDC_PAIR,
+      pda::USDC_USD_PYTH_FEED,
+      JITOSOL::POOL_STATE,
+      HYLOSOL::POOL_STATE,
     ]
   }
 
   /// Expected number of protocol accounts
   #[must_use]
   pub const fn expected_count() -> usize {
-    11
+    19
   }
 
   /// Validate that pubkeys and accounts match expected protocol accounts
   ///
   /// Validates:
   /// - Pubkeys and accounts have matching lengths
-  /// - We have the expected number of accounts (11)
+  /// - We have the expected number of accounts (17)
   /// - Each pubkey matches the expected protocol account in order
   ///
   /// # Errors
@@ -184,6 +219,36 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
       clock: accounts[10]
         .as_ref()
         .context("Clock sysvar not found")?
+        .clone(),
+
+      cbbtc_exo_pair: accounts[11]
+        .as_ref()
+        .context("cbBTC ExoPair not found")?
+        .clone(),
+      cbbtc_vault: accounts[12]
+        .as_ref()
+        .context("cbBTC vault not found")?
+        .clone(),
+      xbtc_mint: accounts[13]
+        .as_ref()
+        .context("xBTC mint not found")?
+        .clone(),
+      btc_usd_pyth: accounts[14]
+        .as_ref()
+        .context("BTC/USD Pyth feed not found")?
+        .clone(),
+      usdc_pair: accounts[15].as_ref().context("UsdcPair not found")?.clone(),
+      usdc_usd_pyth: accounts[16]
+        .as_ref()
+        .context("USDC/USD Pyth feed not found")?
+        .clone(),
+      jitosol_pool_state: accounts[17]
+        .as_ref()
+        .context("JitoSOL pool state not found")?
+        .clone(),
+      hylosol_pool_state: accounts[18]
+        .as_ref()
+        .context("hyloSOL pool state not found")?
         .clone(),
     })
   }

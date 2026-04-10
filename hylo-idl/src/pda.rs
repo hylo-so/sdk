@@ -136,12 +136,35 @@ pub const fn fee_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::FEE_AUTH, mint)
 }
 
-pub const HYLO: Pubkey = pda!(exchange::ID, exchange::constants::HYLO);
-
 #[must_use]
 pub const fn mint_auth(mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::MINT_AUTH, mint)
 }
+
+#[must_use]
+pub const fn event_auth(program_id: Pubkey) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
+    &[b"__event_authority"],
+    program_id.as_array(),
+  );
+  Pubkey::new_from_array(key)
+}
+
+#[must_use]
+pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
+  pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
+}
+
+#[must_use]
+pub const fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
+  pda!(
+    exchange::ID,
+    exchange::constants::EXO_LEVERCOIN,
+    collateral_mint
+  )
+}
+
+pub const HYLO: Pubkey = pda!(exchange::ID, exchange::constants::HYLO);
 
 pub const HYUSD_AUTH: Pubkey = mint_auth(HYUSD::MINT);
 
@@ -176,14 +199,8 @@ pub const SOL_USD_PYTH_FEED: Pubkey =
 pub const USDC_USD_PYTH_FEED: Pubkey =
   pubkey!("Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX");
 
-#[must_use]
-pub const fn event_auth(program_id: Pubkey) -> Pubkey {
-  let (key, _bump) = ed25519::derive_program_address(
-    &[b"__event_authority"],
-    program_id.as_array(),
-  );
-  Pubkey::new_from_array(key)
-}
+pub const BTC_USD_PYTH_FEED: Pubkey =
+  pubkey!("4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo");
 
 pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 
@@ -192,17 +209,3 @@ pub const STABILITY_POOL_EVENT_AUTHORITY: Pubkey =
 
 pub const USDC_PAIR: Pubkey =
   pda!(exchange::ID, exchange::constants::USDC_PAIR);
-
-#[must_use]
-pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
-  pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
-}
-
-#[must_use]
-pub const fn exo_levercoin_mint(collateral_mint: Pubkey) -> Pubkey {
-  pda!(
-    exchange::ID,
-    exchange::constants::EXO_LEVERCOIN,
-    collateral_mint
-  )
-}

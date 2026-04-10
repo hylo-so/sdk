@@ -9,6 +9,7 @@
 
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
 use crate::interp::{FixInterp, Point};
@@ -28,11 +29,19 @@ const CR_1_75: IFix64<N9> = IFix64::constant(1_750_000_000);
 
 /// Confidence interval multipliers for rebalance price curve construction.
 #[derive(
-  Copy, Clone, Debug, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Copy,
+  Clone,
+  Debug,
+  PartialEq,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct RebalanceCurveConfig {
-  floor_mult: UFixValue64,
-  ceil_mult: UFixValue64,
+  pub floor_mult: UFixValue64,
+  pub ceil_mult: UFixValue64,
 }
 
 impl RebalanceCurveConfig {
@@ -105,7 +114,8 @@ fn scale_ci(ci: UFix64<N9>, mult: UFix64<N2>) -> Result<UFix64<N9>> {
 }
 
 /// Interpolated rebalance price controller.
-/// Implementors define boundary behavior via [`price_inner`].
+/// Implementors define boundary behavior via
+/// [`RebalancePriceController::price_inner`].
 pub trait RebalancePriceController {
   /// Reference to the underlying interpolator.
   fn curve(&self) -> &FixInterp<2, N9>;

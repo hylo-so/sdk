@@ -1,22 +1,23 @@
 # Crate: hylo_clients (lib)
 Edition: 2021
-Version: 0.5.0
-External deps: anchor-client, anchor-lang, anchor-spl, anyhow, async-trait, base64, bincode, futures, hylo-core, hylo-fix, hylo-idl, itertools, mpl-token-metadata, pyth-solana-receiver-sdk, serde_json, solana-address-lookup-table-interface, solana-rpc-client-api, tokio
+Version: 1.0.0
+External deps: anchor-client, anchor-lang, anchor-spl, anyhow, async-trait, base64, bincode, futures, hylo-core, hylo-fix, hylo-idl, itertools, mpl-token-metadata, pyth-solana-receiver-sdk, serde_json, solana-address-lookup-table-interface, solana-rpc-client-api, solana-transaction-status-client-types, tokio
 
 ## Module Tree
 - crate — # Hylo Clients
   - exchange_client — RPC client for executing exchange program transactions including mint, redeem, swap, and admin operations.
-  - instructions — Statically type-safe instruction building without requiring client
   - prelude — Convenience re-exports of commonly used types, traits, and token definitions.
   - program_client — Base trait for Anchor program clients with transaction building, simulation, and RPC helpers.
+  - router_client
+    - instructions — [`InstructionBuilder`] impls for [`RouterClient`](super::RouterClient).
+    - transaction_data — [`BuildTransactionData`] impls for [`RouterClient`].
   - stability_pool_client — RPC client for executing stability pool transactions including deposit, withdraw, and rebalance.
-  - syntax_helpers — Extension traits for cleaner static dispatch syntax.
-  - transaction — Transaction argument types and traits for building and executing versioned transactions.
+  - transaction — Transaction building traits.
   - util — Shared utilities: lookup table helpers, test client builders, LST marker trait, and assertion macros.
 
 # Crate: hylo_core (lib)
 Edition: 2021
-Version: 0.5.0
+Version: 1.0.0
 External deps: anchor-lang, anchor-spl, hylo-fix, hylo-idl, hylo-jupiter-amm-interface, itertools, pyth-solana-receiver-sdk, serde
 
 ## Module Tree
@@ -50,8 +51,8 @@ External deps: anchor-lang, anchor-spl, hylo-fix, hylo-idl, hylo-jupiter-amm-int
 
 # Crate: hylo_idl (lib)
 Edition: 2021
-Version: 0.5.0
-External deps: anchor-lang, anchor-spl, anyhow, hylo-fix, mpl-token-metadata, solana-address-lookup-table-interface, solana-loader-v3-interface
+Version: 1.0.0
+External deps: anchor-lang, anchor-spl, anyhow, const-crypto, hylo-fix, mpl-token-metadata, solana-address-lookup-table-interface, solana-loader-v3-interface
 
 ## Module Tree
 - crate — Root module for each crate in the Hylo Protocol SDK workspace.
@@ -70,20 +71,28 @@ External deps: anchor-lang, anchor-spl, anyhow, hylo-fix, mpl-token-metadata, so
   - tokens — Type-safe token definitions (HYUSD, XSOL, SHYUSD, JITOSOL, HYLOSOL) with mint addresses and decimal precision.
   - type_bridge — Conversions between IDL-generated UFixValue64 and hylo-fix's UFix64 across both programs.
 
+# Crate: lut-accounts (bin)
+Edition: 2021
+Version: 1.0.0
+External deps: anchor-lang, anchor-spl, anyhow, const-crypto, hylo-fix, mpl-token-metadata, solana-address-lookup-table-interface, solana-loader-v3-interface
+
+## Module Tree
+- crate — Prints every non-user protocol account for address lookup table
+
 # Crate: hylo_jupiter (lib)
 Edition: 2021
-Version: 0.5.0
+Version: 1.0.0
 External deps: anchor-client, anchor-lang, anchor-spl, anyhow, bincode, hylo-clients, hylo-core, hylo-fix, hylo-idl, hylo-jupiter-amm-interface, hylo-quotes, pyth-solana-receiver-sdk, rust_decimal, solana-rpc-client, tokio
 
 ## Module Tree
 - crate — Root module for each crate in the Hylo Protocol SDK workspace.
-  - account_metas — Creates Jupiter-compatible SwapAndAccountMetas for each Hylo operation type.
+  - account_metas — Account meta builders for Jupiter AMM swap instructions.
   - jupiter — Jupiter AMM trait implementation allowing Hylo pairs to be routed through Jupiter aggregator.
   - util — Shared utilities: lookup table helpers, test client builders, LST marker trait, and assertion macros.
 
 # Crate: hylo_quotes (lib)
 Edition: 2021
-Version: 0.5.0
+Version: 1.0.0
 External deps: anchor-client, anchor-lang, anchor-spl, anyhow, async-trait, bincode, hylo-clients, hylo-core, hylo-fix, hylo-idl, pyth-solana-receiver-sdk, serde, solana-rpc-client, tokio
 
 ## Module Tree
@@ -94,8 +103,7 @@ External deps: anchor-client, anchor-lang, anchor-spl, anyhow, async-trait, binc
     - provider — State provider trait and implementations
     - state — Protocol state types and deserialization
   - protocol_state_strategy — Quote strategy using protocol state.
-    - exchange — `QuoteStrategy` implementations for exchange pairs using `TokenOperation`.
-    - stability_pool — `QuoteStrategy` implementations for stability pool pairs using
+    - router — `QuoteStrategy` state-based impls routed through [`RouterClient`].
   - quote_metadata — Quote metadata types
   - quote_strategy — Core trait for computing executable quotes for any typed token pair operation.
   - runtime_quote_strategy — Macro-generated trait that dispatches runtime Pubkey pairs to compile-time typed QuoteStrategy impls.
@@ -103,8 +111,7 @@ External deps: anchor-client, anchor-lang, anchor-spl, anyhow, async-trait, binc
     - exchange — `SimulatedOperation` implementations for exchange pairs.
     - stability_pool — `SimulatedOperation` implementations for stability pool pairs.
   - simulation_strategy — Quote strategy using transaction simulation.
-    - exchange — Exchange pair QuoteStrategy impls for SimulationStrategy using on-chain simulation.
-    - stability_pool — Stability pool QuoteStrategy impls for SimulationStrategy using on-chain simulation.
+    - router — `QuoteStrategy` simulation impls routed through [`RouterClient`].
   - token_operation — Token operation trait for pure protocol math.
     - exchange — `TokenOperation` implementations for exchange pairs.
     - stability_pool — `TokenOperation` implementations for stability pool pairs.

@@ -7,23 +7,29 @@ use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::hash::Hash;
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::message::{v0, VersionedMessage};
-use anchor_client::solana_sdk::pubkey;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
+use anchor_client::solana_sdk::{bs58, pubkey};
 use anchor_client::Cluster;
 use anchor_lang::prelude::AccountMeta;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
 use anchor_spl::token;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use hylo_core::idl::tokens::{StakePool, HYLOSOL, JITOSOL};
 use itertools::Itertools;
 use solana_rpc_client_api::config::RpcSimulateTransactionConfig;
+use solana_rpc_client_api::response::{Response, RpcSimulateTransactionResult};
+use solana_transaction_status_client_types::{
+  UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
+};
 
 use crate::exchange_client::ExchangeClient;
 use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
+use crate::router_client::RouterClient;
 use crate::stability_pool_client::StabilityPoolClient;
 
 pub trait LST: StakePool {}
@@ -60,7 +66,40 @@ pub fn simulation_config() -> RpcSimulateTransactionConfig {
     sig_verify: false,
     replace_recent_blockhash: true,
     commitment: Some(CommitmentConfig::confirmed()),
+    inner_instructions: true,
     ..Default::default()
+  }
+}
+
+/// Parses a typed event from simulation inner instructions.
+///
+/// # Errors
+/// - Simulation failed
+/// - No inner instructions returned
+/// - Event not found or deserialization fails
+pub fn parse_event<E>(
+  result: &Response<RpcSimulateTransactionResult>,
+) -> Result<E>
+where
+  E: AnchorDeserialize + Discriminator,
+{
+  if let Some(err) = &result.value.err {
+    bail!("Simulation failed: {err:?}")
+  } else if let Some(ixs) = &result.value.inner_instructions {
+    ixs
+      .iter()
+      .flat_map(|ix| &ix.instructions)
+      .find_map(|ix| match ix {
+        UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
+          UiPartiallyDecodedInstruction { data, .. },
+        )) => bs58::decode(data).into_vec().ok(),
+        _ => None,
+      })
+      .filter(|bytes| bytes.len() >= 16 && &bytes[8..16] == E::DISCRIMINATOR)
+      .context("Could not parse event from result")
+      .and_then(|bytes| Ok(E::try_from_slice(&bytes[16..])?))
+  } else {
+    bail!("Simulation succeeded but no inner instructions returned")
   }
 }
 
@@ -178,6 +217,19 @@ pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
     CommitmentConfig::confirmed(),
   )?;
   Ok(client)
+}
+
+/// Builds test router client with random keypair.
+///
+/// # Errors
+/// - Environment variable access
+/// - Client initialization
+pub fn build_test_router_client() -> Result<RouterClient> {
+  RouterClient::new_from_keypair(
+    cluster_from_env()?,
+    Keypair::new(),
+    CommitmentConfig::confirmed(),
+  )
 }
 
 /// Builds ATA creation instruction for a user and mint.

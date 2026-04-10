@@ -1,12 +1,22 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{BurnUnderflow, MintOverflow};
 
 /// Simple counter representing the supply of a "virtual" stablecoin.
-#[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
+#[derive(
+  Debug,
+  Clone,
+  Copy,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Serialize,
+  Deserialize,
+)]
 pub struct VirtualStablecoin {
-  pub(crate) supply: UFixValue64,
+  pub supply: UFixValue64,
 }
 
 impl Default for VirtualStablecoin {
