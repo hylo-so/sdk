@@ -13,7 +13,8 @@ use crate::util::HYLO_LOOKUP_TABLE;
 
 /// Admin client for the Hylo stability pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
-/// User-facing deposit/withdraw goes through [`RouterClient`].
+/// User-facing deposit/withdraw goes through
+/// [`crate::router_client::RouterClient`].
 pub struct StabilityPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

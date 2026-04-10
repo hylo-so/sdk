@@ -114,7 +114,8 @@ fn scale_ci(ci: UFix64<N9>, mult: UFix64<N2>) -> Result<UFix64<N9>> {
 }
 
 /// Interpolated rebalance price controller.
-/// Implementors define boundary behavior via [`price_inner`].
+/// Implementors define boundary behavior via
+/// [`RebalancePriceController::price_inner`].
 pub trait RebalancePriceController {
   /// Reference to the underlying interpolator.
   fn curve(&self) -> &FixInterp<2, N9>;

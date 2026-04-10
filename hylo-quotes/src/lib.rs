@@ -52,16 +52,12 @@
 //! use hylo_quotes::prelude::*;
 //!
 //! # async fn example() -> anyhow::Result<()> {
-//! let exchange_client = ExchangeClient::new_random_keypair(
-//!   Cluster::Mainnet,
-//!   CommitmentConfig::confirmed(),
-//! )?;
-//! let stability_pool_client = StabilityPoolClient::new_random_keypair(
+//! let router_client = RouterClient::new_random_keypair(
 //!   Cluster::Mainnet,
 //!   CommitmentConfig::confirmed(),
 //! )?;
 //!
-//! let strategy = SimulationStrategy::new(exchange_client, stability_pool_client);
+//! let strategy = SimulationStrategy::new(router_client);
 //!
 //! let user = Pubkey::new_unique();
 //! let amount_in = 1_000_000_000; // 1 JitoSOL (9 decimals)
