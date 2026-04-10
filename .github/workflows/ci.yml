@@ -42,7 +42,7 @@ jobs:
     - uses: mozilla-actions/sccache-action@v0.0.9
     - run: nix run .#lint
     - run: nix run .#build
-    - run: nix run .#test
+    - run: nix run .#test-cargo
 
   publish:
     needs: build
