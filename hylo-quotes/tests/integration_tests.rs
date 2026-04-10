@@ -8,9 +8,7 @@ use std::sync::Arc;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::Cluster;
 use anyhow::{Context, Result};
-use hylo_clients::prelude::{
-  ExchangeClient, ProgramClient, StabilityPoolClient,
-};
+use hylo_clients::prelude::{ProgramClient, RouterClient};
 use hylo_clients::util::REFERENCE_WALLET;
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
@@ -55,18 +53,10 @@ impl QuoteStrategyTestContext {
     let cluster =
       Cluster::from_str(&rpc_url).context("Failed to parse RPC_URL")?;
 
-    let exchange_client = ExchangeClient::new_random_keypair(
-      cluster.clone(),
-      CommitmentConfig::confirmed(),
-    )?;
+    let router_client =
+      RouterClient::new_random_keypair(cluster, CommitmentConfig::confirmed())?;
 
-    let stability_pool_client = StabilityPoolClient::new_random_keypair(
-      cluster,
-      CommitmentConfig::confirmed(),
-    )?;
-
-    let simulation_strategy =
-      SimulationStrategy::new(exchange_client, stability_pool_client);
+    let simulation_strategy = SimulationStrategy::new(router_client);
 
     Ok(Self {
       protocol_state_strategy,
