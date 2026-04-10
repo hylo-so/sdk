@@ -1,64 +1,19 @@
-#![allow(clippy::upper_case_acronyms)]
+//! Transaction building traits.
 
 use anchor_client::solana_sdk::signature::Signature;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::AnchorDeserialize;
 use anyhow::Result;
-use fix::prelude::*;
-use hylo_core::slippage_config::SlippageConfig;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 
-/// Arguments for minting operations that deposit LST to mint hyUSD or xSOL.
-pub struct MintArgs {
-  pub amount: UFix64<N9>,
-  pub user: Pubkey,
-  pub slippage_config: Option<SlippageConfig>,
-}
-
-/// Arguments for redemption operations that burn hyUSD or xSOL to withdraw LST.
-pub struct RedeemArgs {
-  pub amount: UFix64<N6>,
-  pub user: Pubkey,
-  pub slippage_config: Option<SlippageConfig>,
-}
-
-/// Arguments for swap operations between hyUSD and xSOL.
-pub struct SwapArgs {
-  pub amount: UFix64<N6>,
-  pub user: Pubkey,
-  pub slippage_config: Option<SlippageConfig>,
-}
-
-/// Arguments for swap operations between LSTs held in exchange.
-pub struct LstSwapArgs {
-  pub amount_lst_a: UFix64<N9>,
-  pub lst_a_mint: Pubkey,
-  pub lst_b_mint: Pubkey,
-  pub user: Pubkey,
-  pub slippage_config: Option<SlippageConfig>,
-}
-
-/// Arguments for stability pool operations (deposit/withdraw sHYUSD).
-pub struct StabilityPoolArgs {
-  pub amount: UFix64<N6>,
-  pub user: Pubkey,
-}
-
-/// Builds transaction data (instructions and lookup tables) for operations.
-///
-/// # Type Parameters
-/// - `I`: Input token
-/// - `O`: Output token
-///
-/// # Associated Types
-/// - `Inputs`: Parameter type for building transactions (e.g., `MintArgs`,
-///   `SwapArgs`)
+/// Builds transaction data for a token pair operation.
 #[async_trait::async_trait]
 pub trait BuildTransactionData<I, O> {
   type Inputs: Send + Sync + 'static;
 
-  /// Builds versioned transaction data for the token pair operation.
+  /// # Errors
+  /// Returns error if transaction building fails.
   async fn build(
     &self,
     inputs: Self::Inputs,
@@ -92,7 +47,7 @@ pub trait TransactionSyntax {
     self.build(inputs).await
   }
 
-  /// Simulates transaction and returns parsed event.
+  /// Simulates transaction and returns parsed return data.
   async fn simulate_event<I, O, E>(
     &self,
     user: Pubkey,
@@ -107,7 +62,8 @@ pub trait TransactionSyntax {
     self.simulate_transaction_return::<E>(&tx).await
   }
 
-  /// Simulates transaction and returns parsed event with compute units.
+  /// Simulates transaction and returns parsed return data with
+  /// compute units.
   async fn simulate_event_with_cus<I, O, E>(
     &self,
     user: Pubkey,

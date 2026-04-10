@@ -4,6 +4,7 @@
 
 [modules.crate]
 note = "Root module for each crate in the Hylo Protocol SDK workspace."
+stale = true
 
 [modules."crate::account_builders"]
 note = "Parent module for Anchor account context builders used by exchange and stability pool instructions."
@@ -94,6 +95,7 @@ stale = true
 [modules."crate::instructions"]
 note = "Type-safe instruction builder trait and implementations dispatching by token pair to the correct operation."
 stale = true
+removed = true
 
 [modules."crate::interp"]
 note = "Piecewise linear interpolation over fixed-point coordinates for fee curve evaluation."
@@ -121,12 +123,15 @@ stale = true
 
 [modules."crate::prelude"]
 note = "Convenience re-exports of commonly used types, traits, and token definitions."
+stale = true
 
 [modules."crate::program_client"]
 note = "Base trait for Anchor program clients with transaction building, simulation, and RPC helpers."
+stale = true
 
 [modules."crate::protocol_state"]
 note = "Aggregates on-chain protocol state from multiple accounts into a single typed snapshot."
+stale = true
 
 [modules."crate::protocol_state::accounts"]
 note = "Defines the set of protocol accounts and validates them when fetched from RPC."
@@ -134,6 +139,7 @@ stale = true
 
 [modules."crate::protocol_state::provider"]
 note = "Trait and RPC implementation for fetching a full ProtocolState snapshot from Solana."
+stale = true
 
 [modules."crate::protocol_state::state"]
 note = "Deserializes raw accounts into a typed ProtocolState containing exchange context, mints, and pools."
@@ -141,13 +147,19 @@ stale = true
 
 [modules."crate::protocol_state_strategy"]
 note = "QuoteStrategy implementation that computes quotes from cached ProtocolState without RPC simulation."
+stale = true
 
 [modules."crate::protocol_state_strategy::exchange"]
 note = "Exchange pair QuoteStrategy impls for ProtocolStateStrategy covering all mint/redeem/swap routes."
+removed = true
+
+[modules."crate::protocol_state_strategy::router"]
+note = ""
 
 [modules."crate::protocol_state_strategy::stability_pool"]
 note = "Stability pool QuoteStrategy impls for ProtocolStateStrategy covering deposit, withdraw, and withdraw-redeem."
 stale = true
+removed = true
 
 [modules."crate::pyth"]
 note = "Pyth oracle integration with price validation, confidence checks, and staleness guards."
@@ -170,6 +182,16 @@ stale = true
 
 [modules."crate::router"]
 note = ""
+stale = true
+
+[modules."crate::router_client"]
+note = ""
+
+[modules."crate::router_client::instructions"]
+note = ""
+
+[modules."crate::router_client::transaction_data"]
+note = ""
 
 [modules."crate::runtime_quote_strategy"]
 note = "Macro-generated trait that dispatches runtime Pubkey pairs to compile-time typed QuoteStrategy impls."
@@ -188,13 +210,19 @@ stale = true
 
 [modules."crate::simulation_strategy"]
 note = "QuoteStrategy implementation that validates quotes via RPC transaction simulation."
+stale = true
 
 [modules."crate::simulation_strategy::exchange"]
 note = "Exchange pair QuoteStrategy impls for SimulationStrategy using on-chain simulation."
+removed = true
+
+[modules."crate::simulation_strategy::router"]
+note = ""
 
 [modules."crate::simulation_strategy::stability_pool"]
 note = "Stability pool QuoteStrategy impls for SimulationStrategy using on-chain simulation."
 stale = true
+removed = true
 
 [modules."crate::slippage_config"]
 note = "Client-specified slippage tolerance paired with expected output amount for transaction validation."
@@ -206,6 +234,7 @@ stale = true
 
 [modules."crate::spl_stake_pool"]
 note = ""
+stale = true
 
 [modules."crate::stability_mode"]
 note = "Defines protocol stability modes (Normal, Mode1, Mode2, Depeg) based on collateral ratio thresholds."
@@ -225,12 +254,14 @@ stale = true
 
 [modules."crate::syntax_helpers"]
 note = "Extension trait enabling turbofish syntax on InstructionBuilder for cleaner static dispatch."
+removed = true
 
 [modules."crate::token_operation"]
 note = "Trait for pure protocol math computing token outputs from inputs without any RPC calls."
 
 [modules."crate::token_operation::exchange"]
 note = "TokenOperation impls on ProtocolState for all exchange pair routes (mint, redeem, swap, LST swap)."
+stale = true
 
 [modules."crate::token_operation::stability_pool"]
 note = "TokenOperation impls on ProtocolState for stability pool deposit, withdraw, and withdraw-redeem."
@@ -242,12 +273,15 @@ stale = true
 
 [modules."crate::total_sol_cache"]
 note = "Epoch-validated cache of total SOL collateral held by the exchange, updated on deposits and withdrawals."
+stale = true
 
 [modules."crate::transaction"]
 note = "Transaction argument types and traits for building and executing versioned transactions."
+stale = true
 
 [modules."crate::type_bridge"]
 note = "Conversions between IDL-generated UFixValue64 and hylo-fix's UFix64 across both programs."
+stale = true
 
 [modules."crate::util"]
 note = "Shared utilities: lookup table helpers, test client builders, LST marker trait, and assertion macros."
@@ -271,12 +305,20 @@ note = "Triple-sized compute unit budget for multi-instruction operations like w
 
 [items."crate::ExecutableQuote"]
 note = "Typed quote containing amounts, fees, instructions, and compute units ready for transaction execution."
+stale = true
 
 [items."crate::ExecutableQuoteValue"]
 note = "Type-erased version of ExecutableQuote using runtime UFixValue64 for dynamic dispatch across token pairs."
 
+[items."crate::From < ExecutableQuote < In , Out , Fee > > for ExecutableQuoteValue"]
+note = ""
+
 [items."crate::From < ExecutableQuote < InExp , OutExp , FeeExp > > for ExecutableQuoteValue"]
 note = "Erases compile-time exponent types from ExecutableQuote into runtime UFixValue64 values."
+removed = true
+
+[items."crate::LUT_ACCOUNTS"]
+note = ""
 
 [items."crate::Local"]
 note = "Orphan-rule workaround marker trait allowing hylo-quotes to impl traits bounded on LST from hylo-clients."
@@ -289,15 +331,19 @@ note = "Marks JITOSOL as a local type for trait impl coherence in hylo-quotes."
 
 [items."crate::account_builders::exchange::convert_lever_to_stable_exo"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::convert_lever_to_stable_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::convert_stable_to_lever_exo"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::convert_stable_to_lever_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::harvest_funding_rate"]
 note = ""
@@ -318,6 +364,7 @@ stale = true
 
 [items."crate::account_builders::exchange::mint_levercoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::mint_stablecoin"]
 note = "Builds the Anchor account context for minting stablecoin (hyUSD) from LST collateral."
@@ -330,9 +377,11 @@ stale = true
 
 [items."crate::account_builders::exchange::mint_stablecoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::mint_stablecoin_usdc"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::redeem_levercoin"]
 note = "Builds the Anchor account context for redeeming levercoin (xSOL) back to LST."
@@ -345,6 +394,7 @@ stale = true
 
 [items."crate::account_builders::exchange::redeem_levercoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::redeem_stablecoin"]
 note = "Builds the Anchor account context for redeeming stablecoin (hyUSD) back to LST."
@@ -357,9 +407,11 @@ stale = true
 
 [items."crate::account_builders::exchange::redeem_stablecoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::redeem_stablecoin_usdc"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::register_exo"]
 note = "Builds the Anchor account context for registering a new exogenous collateral pair."
@@ -367,6 +419,7 @@ stale = true
 
 [items."crate::account_builders::exchange::swap_exo_to_usdc"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::swap_exo_usdc"]
 note = ""
@@ -389,9 +442,11 @@ removed = true
 
 [items."crate::account_builders::exchange::swap_lst_to_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::swap_lst_to_usdc"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::swap_lst_usdc"]
 note = ""
@@ -421,9 +476,11 @@ removed = true
 
 [items."crate::account_builders::exchange::swap_usdc_to_exo"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::swap_usdc_to_lst"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::swap_usdc_to_stablecoin"]
 note = ""
@@ -431,6 +488,7 @@ removed = true
 
 [items."crate::account_builders::exchange::update_lst_rebalance_fee"]
 note = ""
+stale = true
 
 [items."crate::account_builders::exchange::withdraw_fees"]
 note = ""
@@ -446,9 +504,11 @@ stale = true
 
 [items."crate::account_metas::convert_lever_to_stable_lst"]
 note = ""
+stale = true
 
 [items."crate::account_metas::convert_stable_to_lever_lst"]
 note = ""
+stale = true
 
 [items."crate::account_metas::mint_levercoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for minting levercoin from LST."
@@ -456,6 +516,7 @@ removed = true
 
 [items."crate::account_metas::mint_levercoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_metas::mint_stablecoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for minting stablecoin from LST."
@@ -463,6 +524,7 @@ removed = true
 
 [items."crate::account_metas::mint_stablecoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_metas::redeem_levercoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for redeeming levercoin to LST."
@@ -470,6 +532,7 @@ removed = true
 
 [items."crate::account_metas::redeem_levercoin_lst"]
 note = ""
+stale = true
 
 [items."crate::account_metas::redeem_stablecoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for redeeming stablecoin to LST."
@@ -477,20 +540,28 @@ removed = true
 
 [items."crate::account_metas::redeem_stablecoin_lst"]
 note = ""
+stale = true
+
+[items."crate::account_metas::route_account_metas"]
+note = ""
 
 [items."crate::account_metas::stability_pool_deposit"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for depositing hyUSD into the stability pool."
+stale = true
 
 [items."crate::account_metas::stability_pool_liquidate"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for withdrawing and redeeming stablecoin from the stability pool to LST."
 stale = true
+removed = true
 
 [items."crate::account_metas::stability_pool_liquidate_levercoin"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for fully liquidating a stability pool position to LST via both hyUSD and xSOL."
 stale = true
+removed = true
 
 [items."crate::account_metas::stability_pool_withdraw"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for withdrawing sHYUSD from the stability pool."
+stale = true
 
 [items."crate::account_metas::swap_lever_to_stable"]
 note = "Creates Jupiter-compatible SwapAndAccountMetas for swapping xSOL to hyUSD."
@@ -533,6 +604,9 @@ note = ""
 note = "Comprehensive error enum covering all protocol math, oracle validation, fee, and arithmetic failures."
 stale = true
 
+[items."crate::exchange::ID"]
+note = ""
+
 [items."crate::exchange::super::account_builders::account_builders"]
 note = "Re-export of exchange account builders into the exchange module namespace."
 
@@ -544,24 +618,31 @@ note = "Re-export of exchange instruction builders into the exchange module name
 
 [items."crate::exchange_client::BuildTransactionData < HYUSD , OUT > for ExchangeClient"]
 note = "Builds redeem stablecoin transactions for any LST output type."
+removed = true
 
 [items."crate::exchange_client::BuildTransactionData < HYUSD , XSOL > for ExchangeClient"]
 note = "Builds swap hyUSD-to-xSOL transaction data."
+removed = true
 
 [items."crate::exchange_client::BuildTransactionData < IN , HYUSD > for ExchangeClient"]
 note = "Builds mint stablecoin transactions from any LST input type."
+removed = true
 
 [items."crate::exchange_client::BuildTransactionData < IN , XSOL > for ExchangeClient"]
 note = "Builds mint levercoin transactions from any LST input type."
+removed = true
 
 [items."crate::exchange_client::BuildTransactionData < L1 , L2 > for ExchangeClient"]
 note = "Builds LST-to-LST swap transaction data."
+removed = true
 
 [items."crate::exchange_client::BuildTransactionData < XSOL , HYUSD > for ExchangeClient"]
 note = "Builds swap xSOL-to-hyUSD transaction data."
+removed = true
 
 [items."crate::exchange_client::BuildTransactionData < XSOL , OUT > for ExchangeClient"]
 note = "Builds redeem levercoin transactions for any LST output type."
+removed = true
 
 [items."crate::exchange_client::ExchangeClient"]
 note = "Anchor-based RPC client for the Hylo Exchange program, supporting mint/redeem/swap and admin operations."
@@ -572,6 +653,7 @@ note = "Implements ProgramClient providing the exchange program ID and client co
 
 [items."crate::exchange_client::TransactionSyntax for ExchangeClient"]
 note = "Provides high-level run_transaction and simulate_event methods on ExchangeClient."
+removed = true
 
 [items."crate::exchange_context::ExchangeContext"]
 note = "Trait providing shared exchange state: collateral ratio, NAVs, fees, and mint/swap capacity."
@@ -695,11 +777,35 @@ note = "Marker trait for liquid staking tokens with N9 decimal precision."
 [items."crate::idl"]
 note = "Re-export of hylo_idl as the idl module in hylo-core."
 
+[items."crate::idl_type_bridge::From < FeePair > for hylo_idl :: exchange :: types :: FeePair"]
+note = ""
+
+[items."crate::idl_type_bridge::From < FundingRateConfig > for hylo_idl :: exchange :: types :: FundingRateConfig"]
+note = ""
+
+[items."crate::idl_type_bridge::From < LevercoinFees > for hylo_idl :: exchange :: types :: LevercoinFees"]
+note = ""
+
+[items."crate::idl_type_bridge::From < RebalanceCurveConfig > for hylo_idl :: exchange :: types :: RebalanceCurveConfig"]
+note = ""
+
 [items."crate::idl_type_bridge::From < SlippageConfig > for hylo_idl :: exchange :: types :: SlippageConfig"]
 note = "Converts core SlippageConfig into the IDL representation for instruction building."
 
+[items."crate::idl_type_bridge::From < SlippageConfig > for hylo_idl :: router :: types :: SlippageConfig"]
+note = ""
+
+[items."crate::idl_type_bridge::From < StablecoinFees > for hylo_idl :: exchange :: types :: StablecoinFees"]
+note = ""
+
+[items."crate::idl_type_bridge::From < YieldHarvestConfig > for hylo_idl :: exchange :: types :: YieldHarvestConfig"]
+note = ""
+
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: FeePair > for FeePair"]
 note = "Converts IDL FeePair into the core domain type."
+
+[items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: FundingRateConfig > for FundingRateConfig"]
+note = ""
 
 [items."crate::idl_type_bridge::From < hylo_idl :: exchange :: types :: HarvestCache > for HarvestCache"]
 note = "Converts IDL HarvestCache into the core domain type."
@@ -740,6 +846,7 @@ note = ""
 
 [items."crate::instruction_builders::exchange::get_stats"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::harvest_funding_rate"]
 note = ""
@@ -751,9 +858,11 @@ stale = true
 
 [items."crate::instruction_builders::exchange::initialize_lst_registry"]
 note = "Builds the instruction to create a new LST registry account for tracking supported LSTs."
+stale = true
 
 [items."crate::instruction_builders::exchange::initialize_lst_registry_calculators"]
 note = "Builds the instruction to initialize Sanctum calculator references in the LST registry."
+stale = true
 
 [items."crate::instruction_builders::exchange::initialize_lst_virtual_stablecoin"]
 note = ""
@@ -765,6 +874,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::initialize_protocol"]
 note = "Builds the instruction to initialize the Hylo exchange program with admin settings."
+stale = true
 
 [items."crate::instruction_builders::exchange::initialize_usdc"]
 note = ""
@@ -888,6 +998,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::update_exo_buy_curve"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_exo_funding_rate"]
 note = ""
@@ -895,6 +1006,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::update_exo_levercoin_fees"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_exo_oracle"]
 note = ""
@@ -910,6 +1022,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::update_exo_sell_curve"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_exo_stability_threshold"]
 note = ""
@@ -921,6 +1034,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::update_lst_buy_curve_config"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_lst_prices"]
 note = "Builds the instruction to refresh all LST-SOL prices from the Sanctum calculators."
@@ -931,6 +1045,7 @@ note = ""
 
 [items."crate::instruction_builders::exchange::update_lst_sell_curve_config"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_lst_swap_fee"]
 note = "Builds the admin instruction to update the fee for LST-to-LST swaps."
@@ -946,6 +1061,7 @@ stale = true
 
 [items."crate::instruction_builders::exchange::update_paused"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_sol_usd_oracle"]
 note = "Builds the admin instruction to update the SOL/USD oracle configuration."
@@ -969,12 +1085,15 @@ stale = true
 
 [items."crate::instruction_builders::exchange::update_usdc_oracle_conf_tolerance"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_usdc_oracle_interval"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_usdc_swap_fee"]
 note = ""
+stale = true
 
 [items."crate::instruction_builders::exchange::update_yield_harvest_config"]
 note = ""
@@ -996,6 +1115,7 @@ stale = true
 
 [items."crate::instruction_builders::stability_pool::initialize_stability_pool"]
 note = "Builds the instruction to initialize the stability pool program."
+stale = true
 
 [items."crate::instruction_builders::stability_pool::rebalance_lever_to_stable"]
 note = "Builds the instruction to rebalance pool by swapping levercoin for stablecoin."
@@ -1021,47 +1141,59 @@ note = "Builds the instruction for a user to withdraw sHYUSD from the stability 
 
 [items."crate::instructions::ExchangeInstructionBuilder"]
 note = "Zero-sized type implementing InstructionBuilder for all exchange token pair routes."
+removed = true
 
 [items."crate::instructions::InstructionBuilder"]
 note = "Trait for statically type-safe instruction building: given token pair types, produces instructions and lookup tables."
+removed = true
 
 [items."crate::instructions::InstructionBuilder < HYUSD , L > for ExchangeInstructionBuilder"]
 note = "Builds redeem stablecoin instructions for hyUSD -> any LST."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < HYUSD , SHYUSD > for StabilityPoolInstructionBuilder"]
 note = "Builds deposit instructions for hyUSD -> sHYUSD."
+removed = true
 
 [items."crate::instructions::InstructionBuilder < HYUSD , XSOL > for ExchangeInstructionBuilder"]
 note = "Builds swap instructions for hyUSD -> xSOL."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < L , HYUSD > for ExchangeInstructionBuilder"]
 note = "Builds mint stablecoin instructions for any LST -> hyUSD."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < L , XSOL > for ExchangeInstructionBuilder"]
 note = "Builds mint levercoin instructions for any LST -> xSOL."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < L1 , L2 > for ExchangeInstructionBuilder"]
 note = "Builds LST-to-LST swap instructions."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < SHYUSD , HYUSD > for StabilityPoolInstructionBuilder"]
 note = "Builds withdrawal instructions for sHYUSD -> hyUSD."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < XSOL , HYUSD > for ExchangeInstructionBuilder"]
 note = "Builds swap instructions for xSOL -> hyUSD."
 stale = true
+removed = true
 
 [items."crate::instructions::InstructionBuilder < XSOL , L > for ExchangeInstructionBuilder"]
 note = "Builds redeem levercoin instructions for xSOL -> any LST."
 stale = true
+removed = true
 
 [items."crate::instructions::StabilityPoolInstructionBuilder"]
 note = "Zero-sized type implementing InstructionBuilder for stability pool deposit and withdrawal."
+removed = true
 
 [items."crate::interp::FixInterp"]
 note = "Piecewise linear interpolator over a compile-time-sized array of fixed-point points."
@@ -1133,6 +1265,7 @@ stale = true
 
 [items."crate::jupiter::PairConfig < HYUSD , SHYUSD > for HyloJupiterPair < HYUSD , SHYUSD >"]
 note = "Jupiter pair config for hyUSD/sHYUSD stability pool deposit and withdrawal."
+stale = true
 
 [items."crate::jupiter::PairConfig < HYUSD , XSOL > for HyloJupiterPair < HYUSD , XSOL >"]
 note = "Jupiter pair config for hyUSD/xSOL swap routes."
@@ -1157,116 +1290,163 @@ stale = true
 note = "Configuration for LST-to-LST swaps including the fee rate and fee application logic."
 removed = true
 
+[items."crate::main"]
+note = ""
+
+[items."crate::pda::BTC_USD_PYTH_FEED"]
+note = ""
+
 [items."crate::pda::EXCHANGE_EVENT_AUTHORITY"]
 note = ""
+stale = true
 
 [items."crate::pda::EXCHANGE_PROGRAM_DATA"]
 note = "Lazily-derived PDA for the exchange program's data account."
+stale = true
 
 [items."crate::pda::HYLO"]
 note = "Lazily-derived PDA for the main Hylo protocol state account."
+stale = true
 
 [items."crate::pda::HYUSD_AUTH"]
 note = "Lazily-derived PDA for the hyUSD mint authority."
+stale = true
 
 [items."crate::pda::HYUSD_POOL"]
 note = "Lazily-derived PDA for the hyUSD token account in the stability pool."
+stale = true
 
 [items."crate::pda::LST_REGISTRY_AUTH"]
 note = "Lazily-derived PDA for the LST registry authority."
+stale = true
 
 [items."crate::pda::POOL_AUTH"]
 note = "Lazily-derived PDA for the stability pool authority."
+stale = true
 
 [items."crate::pda::POOL_CONFIG"]
 note = "Lazily-derived PDA for the stability pool configuration account."
+stale = true
 
 [items."crate::pda::SHYUSD_AUTH"]
 note = "Lazily-derived PDA for the sHYUSD mint authority."
+stale = true
 
 [items."crate::pda::SOL_USD_PYTH_FEED"]
 note = "Hard-coded Pubkey of the Pyth SOL/USD price feed account."
 
 [items."crate::pda::STABILITY_POOL_EVENT_AUTHORITY"]
 note = ""
+stale = true
 
 [items."crate::pda::STABILITY_POOL_PROGRAM_DATA"]
 note = "Lazily-derived PDA for the stability pool program's data account."
+stale = true
 
 [items."crate::pda::USDC_PAIR"]
 note = ""
+stale = true
 
 [items."crate::pda::USDC_USD_PYTH_FEED"]
 note = ""
 
 [items."crate::pda::XSOL_AUTH"]
 note = "Lazily-derived PDA for the xSOL mint authority."
+stale = true
 
 [items."crate::pda::XSOL_POOL"]
 note = "Lazily-derived PDA for the xSOL token account in the stability pool."
+stale = true
 
 [items."crate::pda::ata"]
 note = "Macro for deriving Associated Token Account addresses."
+stale = true
 
 [items."crate::pda::event_auth"]
 note = ""
+stale = true
 
 [items."crate::pda::exo_levercoin_mint"]
 note = "Derives the PDA for an exogenous pair's levercoin mint given its collateral mint."
+stale = true
 
 [items."crate::pda::exo_pair"]
 note = "Derives the PDA for an exogenous collateral pair's state account."
+stale = true
 
 [items."crate::pda::exo_vault"]
 note = ""
+stale = true
 
 [items."crate::pda::exo_vault_auth"]
 note = ""
+stale = true
 
 [items."crate::pda::fee_auth"]
 note = "Derives the PDA for a token's fee authority."
+stale = true
 
 [items."crate::pda::fee_vault"]
 note = "Derives the PDA for a token's fee vault account."
+stale = true
 
 [items."crate::pda::hyusd_ata"]
 note = "Derives the hyUSD Associated Token Account for a given authority."
+stale = true
 
 [items."crate::pda::lazy"]
 note = "Macro for lazily computing and caching PDAs using LazyLock."
+removed = true
 
 [items."crate::pda::lst_header"]
 note = "Derives the PDA for an LST's header account in the registry."
+stale = true
 
 [items."crate::pda::lst_vault"]
 note = ""
+stale = true
 
 [items."crate::pda::lst_vault_auth"]
 note = ""
+stale = true
 
 [items."crate::pda::metadata"]
 note = "Derives the Metaplex token metadata PDA for a given mint."
+stale = true
+
+[items."crate::pda::mint"]
+note = ""
 
 [items."crate::pda::mint_auth"]
 note = "Derives the PDA for a token's mint authority."
+stale = true
 
 [items."crate::pda::new_lst_registry"]
 note = "Derives the PDA for an LST registry keyed by creation slot."
+stale = true
 
 [items."crate::pda::pda"]
 note = "Macro for deriving program-derived addresses with seeds."
+stale = true
+
+[items."crate::pda::progdata"]
+note = ""
 
 [items."crate::pda::shyusd_ata"]
 note = "Derives the sHYUSD Associated Token Account for a given authority."
+stale = true
 
 [items."crate::pda::usdc_ata"]
 note = ""
+stale = true
 
 [items."crate::pda::usdc_vault"]
 note = ""
+stale = true
 
 [items."crate::pda::usdc_vault_auth"]
 note = ""
+stale = true
 
 [items."crate::pda::vault"]
 note = "Derives the PDA for a token's vault account."
@@ -1278,6 +1458,7 @@ removed = true
 
 [items."crate::pda::xsol_ata"]
 note = "Derives the xSOL Associated Token Account for a given authority."
+stale = true
 
 [items."crate::prelude::anchor_client::Cluster"]
 note = "Re-export of Solana cluster configuration (Mainnet, Devnet, custom)."
@@ -1308,12 +1489,16 @@ note = "Re-export of ExchangeClient for convenient imports."
 
 [items."crate::prelude::crate::instructions::{...}"]
 note = "Re-export of instruction builder types and trait."
+removed = true
 
 [items."crate::prelude::crate::program_client::{...}"]
 note = "Re-export of ProgramClient trait and VersionedTransactionData."
 
 [items."crate::prelude::crate::protocol_state::{...}"]
 note = "Re-export of protocol state types (ProtocolAccounts, ProtocolState, providers)."
+
+[items."crate::prelude::crate::router_client::{...}"]
+note = ""
 
 [items."crate::prelude::crate::simulated_operation::{...}"]
 note = "Re-export of SimulatedOperation trait and extension."
@@ -1323,12 +1508,14 @@ note = "Re-export of StabilityPoolClient for convenient imports."
 
 [items."crate::prelude::crate::syntax_helpers::InstructionBuilderExt"]
 note = "Re-export of the turbofish syntax extension trait."
+removed = true
 
 [items."crate::prelude::crate::token_operation::{...}"]
 note = "Re-export of TokenOperation trait, extension, and output types."
 
 [items."crate::prelude::crate::transaction::{...}"]
 note = "Re-export of transaction argument types and traits."
+stale = true
 
 [items."crate::prelude::crate::{...}"]
 note = "Re-export of top-level quote types, compute unit types, and constants."
@@ -1341,9 +1528,11 @@ note = "Re-export of token type definitions from hylo-core's IDL."
 
 [items."crate::prelude::hylo_idl::tokens::{...}"]
 note = "Re-export of token types and TokenMint trait from hylo-idl."
+stale = true
 
 [items."crate::program_client::ProgramClient"]
 note = "Base trait abstracting Anchor program client construction, transaction building, simulation, and RPC operations."
+stale = true
 
 [items."crate::program_client::VersionedTransactionData"]
 note = "Instructions and lookup tables from which a VersionedTransaction can be assembled."
@@ -1354,6 +1543,7 @@ stale = true
 
 [items."crate::protocol_state::accounts::TryFrom < (& [Pubkey] , & [Option < Account >]) > for ProtocolAccounts"]
 note = "Validates and converts RPC multi-account response into typed ProtocolAccounts."
+stale = true
 
 [items."crate::protocol_state::provider::RpcStateProvider"]
 note = "StateProvider implementation that fetches protocol state via Solana RPC getMultipleAccounts."
@@ -1380,6 +1570,19 @@ stale = true
 
 [items."crate::protocol_state::state::TryFrom < & ProtocolAccounts > for ProtocolState < Clock >"]
 note = "Deserializes raw ProtocolAccounts into a fully-constructed ProtocolState<Clock>."
+stale = true
+
+[items."crate::protocol_state::state::UsdcExchangeState"]
+note = ""
+
+[items."crate::protocol_state::state::build_cbbtc_exchange_context"]
+note = ""
+
+[items."crate::protocol_state::state::build_usdc_exchange_state"]
+note = ""
+
+[items."crate::protocol_state::state::{...}"]
+note = ""
 
 [items."crate::protocol_state_strategy::ProtocolStateStrategy"]
 note = "Quote strategy that computes quotes from cached ProtocolState using pure math, without RPC simulation."
@@ -1392,45 +1595,62 @@ note = "Implements runtime dispatch from Pubkey pairs to typed QuoteStrategy imp
 
 [items."crate::protocol_state_strategy::exchange::LstSwapQuote"]
 note = "Type alias for ExecutableQuote<N9, N9, N9> used in LST-to-LST swap quotes."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::MintQuote"]
 note = "Type alias for ExecutableQuote<N9, N6, N9> used in LST->token mint quotes."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < HYUSD , L , C > for ProtocolStateStrategy < S >"]
 note = "Computes stablecoin redemption quotes (hyUSD -> LST) from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < HYUSD , XSOL , C > for ProtocolStateStrategy < S >"]
 note = "Computes hyUSD-to-xSOL swap quotes from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < L , HYUSD , C > for ProtocolStateStrategy < S >"]
 note = "Computes stablecoin mint quotes (LST -> hyUSD) from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < L , XSOL , C > for ProtocolStateStrategy < S >"]
 note = "Computes levercoin mint quotes (LST -> xSOL) from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < L1 , L2 , C > for ProtocolStateStrategy < S >"]
 note = "Computes LST-to-LST swap quotes from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < XSOL , HYUSD , C > for ProtocolStateStrategy < S >"]
 note = "Computes xSOL-to-hyUSD swap quotes from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::QuoteStrategy < XSOL , L , C > for ProtocolStateStrategy < S >"]
 note = "Computes levercoin redemption quotes (xSOL -> LST) from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::RedeemQuote"]
 note = "Type alias for ExecutableQuote<N6, N9, N9> used in token->LST redeem quotes."
+removed = true
 
 [items."crate::protocol_state_strategy::exchange::SwapQuote"]
 note = "Type alias for ExecutableQuote<N6, N6, N6> used in hyUSD<->xSOL swap quotes."
+removed = true
+
+[items."crate::protocol_state_strategy::router::state_quote"]
+note = ""
 
 [items."crate::protocol_state_strategy::stability_pool::DepositQuote"]
 note = "Type alias for ExecutableQuote<N6, N6, N6> used in stability pool deposit quotes."
+removed = true
 
 [items."crate::protocol_state_strategy::stability_pool::QuoteStrategy < HYUSD , SHYUSD , C > for ProtocolStateStrategy < S >"]
 note = "Computes stability pool deposit quotes (hyUSD -> sHYUSD) from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::stability_pool::QuoteStrategy < SHYUSD , HYUSD , C > for ProtocolStateStrategy < S >"]
 note = "Computes stability pool withdrawal quotes (sHYUSD -> hyUSD) from cached state."
+removed = true
 
 [items."crate::protocol_state_strategy::stability_pool::QuoteStrategy < SHYUSD , L , C > for ProtocolStateStrategy < S >"]
 note = "Computes withdraw-and-redeem quotes (sHYUSD -> LST) from cached state."
@@ -1438,6 +1658,7 @@ removed = true
 
 [items."crate::protocol_state_strategy::stability_pool::WithdrawQuote"]
 note = "Type alias for ExecutableQuote<N6, N6, N6> used in stability pool withdrawal quotes."
+removed = true
 
 [items."crate::protocol_state_strategy::stability_pool::WithdrawRedeemQuote"]
 note = "Type alias for ExecutableQuote<N6, N9, N9> used in withdraw-and-redeem quotes."
@@ -1595,10 +1816,49 @@ stale = true
 note = ""
 stale = true
 
+[items."crate::router::ID"]
+note = ""
+
 [items."crate::router::super::codegen::hylo_router::*"]
 note = ""
 
 [items."crate::router::super::instruction_builders::instruction_builders"]
+note = ""
+
+[items."crate::router_client::InstructionBuilder"]
+note = ""
+
+[items."crate::router_client::InstructionBuilderExt"]
+note = ""
+
+[items."crate::router_client::InstructionBuilderExt for X"]
+note = ""
+
+[items."crate::router_client::ProgramClient for RouterClient"]
+note = ""
+
+[items."crate::router_client::RouterArgs"]
+note = ""
+
+[items."crate::router_client::RouterClient"]
+note = ""
+
+[items."crate::router_client::TransactionSyntax for RouterClient"]
+note = ""
+
+[items."crate::router_client::instructions::BASE_LOOKUP_TABLES"]
+note = ""
+
+[items."crate::router_client::instructions::LST_LOOKUP_TABLES"]
+note = ""
+
+[items."crate::router_client::instructions::route_instruction"]
+note = ""
+
+[items."crate::router_client::instructions::router_instruction"]
+note = ""
+
+[items."crate::router_client::transaction_data::router_transaction_data"]
 note = ""
 
 [items."crate::runtime_quote_strategy::RuntimeQuoteStrategy"]
@@ -1622,82 +1882,175 @@ note = "Turbofish helper trait combining simulation execution with output extrac
 [items."crate::simulated_operation::SimulatedOperationExt for X"]
 note = "Blanket impl providing simulate_output which builds, simulates, and extracts results."
 
+[items."crate::simulated_operation::exchange::SimulatedOperation < CBBTC , HYUSD > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < CBBTC , USDC > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < CBBTC , XBTC > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , CBBTC > for RouterClient"]
+note = ""
+
 [items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , L > for ExchangeClient"]
 note = "Extracts redeem stablecoin output from RedeemStablecoinEventV2 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , L > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , USDC > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , XBTC > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , XSOL > for ExchangeClient"]
 note = "Extracts hyUSD-to-xSOL swap output from SwapStableToLeverEventV1 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < HYUSD , XSOL > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::exchange::SimulatedOperation < L , HYUSD > for ExchangeClient"]
 note = "Extracts mint stablecoin output from MintStablecoinEventV2 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < L , HYUSD > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < L , USDC > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::exchange::SimulatedOperation < L , XSOL > for ExchangeClient"]
 note = "Extracts mint levercoin output from MintLevercoinEventV2 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < L , XSOL > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::exchange::SimulatedOperation < L1 , L2 > for ExchangeClient"]
 note = "Extracts LST-to-LST swap output from SwapLstEventV0 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < L1 , L2 > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < USDC , CBBTC > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < USDC , HYUSD > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < USDC , L > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < XBTC , CBBTC > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < XBTC , HYUSD > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::exchange::SimulatedOperation < XSOL , HYUSD > for ExchangeClient"]
 note = "Extracts xSOL-to-hyUSD swap output from SwapLeverToStableEventV1 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < XSOL , HYUSD > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::exchange::SimulatedOperation < XSOL , L > for ExchangeClient"]
 note = "Extracts redeem levercoin output from RedeemLevercoinEventV2 simulation logs."
 stale = true
+removed = true
+
+[items."crate::simulated_operation::exchange::SimulatedOperation < XSOL , L > for RouterClient"]
+note = ""
+
+[items."crate::simulated_operation::stability_pool::SimulatedOperation < HYUSD , SHYUSD > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::stability_pool::SimulatedOperation < HYUSD , SHYUSD > for StabilityPoolClient"]
 note = "Extracts stability pool deposit output from UserDepositEvent simulation logs."
+removed = true
+
+[items."crate::simulated_operation::stability_pool::SimulatedOperation < SHYUSD , HYUSD > for RouterClient"]
+note = ""
 
 [items."crate::simulated_operation::stability_pool::SimulatedOperation < SHYUSD , HYUSD > for StabilityPoolClient"]
 note = "Extracts stability pool withdrawal output from UserWithdrawEventV1 simulation logs."
 stale = true
+removed = true
 
 [items."crate::simulation_strategy::RuntimeQuoteStrategy < Clock > for SimulationStrategy"]
 note = "Implements runtime dispatch from Pubkey pairs to typed QuoteStrategy impls on SimulationStrategy."
 
 [items."crate::simulation_strategy::SimulationStrategy"]
 note = "Quote strategy that validates quotes via RPC transaction simulation, holding both program clients."
+stale = true
 
 [items."crate::simulation_strategy::TransactionSyntax for SimulationStrategy"]
 note = "Delegates transaction execution to the appropriate underlying program client."
 
 [items."crate::simulation_strategy::exchange::LstSwapQuote"]
 note = "Type alias for ExecutableQuote<N9, N9, N9> in simulation-based LST swap quotes."
+removed = true
 
 [items."crate::simulation_strategy::exchange::MintQuote"]
 note = "Type alias for ExecutableQuote<N9, N6, N9> in simulation-based mint quotes."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < HYUSD , L , C > for SimulationStrategy"]
 note = "Computes stablecoin redemption quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < HYUSD , XSOL , C > for SimulationStrategy"]
 note = "Computes hyUSD-to-xSOL swap quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < L , HYUSD , C > for SimulationStrategy"]
 note = "Computes stablecoin mint quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < L , XSOL , C > for SimulationStrategy"]
 note = "Computes levercoin mint quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < L1 , L2 , C > for SimulationStrategy"]
 note = "Computes LST-to-LST swap quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < XSOL , HYUSD , C > for SimulationStrategy"]
 note = "Computes xSOL-to-hyUSD swap quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::QuoteStrategy < XSOL , L , C > for SimulationStrategy"]
 note = "Computes levercoin redemption quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::exchange::RedeemQuote"]
 note = "Type alias for ExecutableQuote<N6, N9, N9> in simulation-based redeem quotes."
+removed = true
 
 [items."crate::simulation_strategy::exchange::SwapQuote"]
 note = "Type alias for ExecutableQuote<N6, N6, N6> in simulation-based swap quotes."
+removed = true
+
+[items."crate::simulation_strategy::router::quote_args"]
+note = ""
+
+[items."crate::simulation_strategy::router::sim_args"]
+note = ""
+
+[items."crate::simulation_strategy::router::simulation_quote"]
+note = ""
 
 [items."crate::simulation_strategy::stability_pool::BuildTransactionData < SHYUSD , L > for SimulationStrategy"]
 note = "Builds combined withdraw-and-redeem transaction data for stability pool to LST."
@@ -1705,12 +2058,15 @@ removed = true
 
 [items."crate::simulation_strategy::stability_pool::DepositQuote"]
 note = "Type alias for ExecutableQuote<N6, N6, N6> in simulation-based deposit quotes."
+removed = true
 
 [items."crate::simulation_strategy::stability_pool::QuoteStrategy < HYUSD , SHYUSD , C > for SimulationStrategy"]
 note = "Computes stability pool deposit quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::stability_pool::QuoteStrategy < SHYUSD , HYUSD , C > for SimulationStrategy"]
 note = "Computes stability pool withdrawal quotes via transaction simulation."
+removed = true
 
 [items."crate::simulation_strategy::stability_pool::QuoteStrategy < SHYUSD , L , C > for SimulationStrategy"]
 note = "Computes withdraw-and-redeem quotes via transaction simulation."
@@ -1718,6 +2074,7 @@ removed = true
 
 [items."crate::simulation_strategy::stability_pool::WithdrawQuote"]
 note = "Type alias for ExecutableQuote<N6, N6, N6> in simulation-based withdrawal quotes."
+removed = true
 
 [items."crate::simulation_strategy::stability_pool::WithdrawRedeemQuote"]
 note = "Type alias for ExecutableQuote<N6, N9, N9> in simulation-based withdraw-and-redeem quotes."
@@ -1762,6 +2119,9 @@ stale = true
 [items."crate::stability_mode::StabilityMode"]
 note = "Protocol operating mode (Normal, Mode1, Mode2, Depeg) determined by collateral ratio vs thresholds."
 
+[items."crate::stability_pool::ID"]
+note = ""
+
 [items."crate::stability_pool::super::account_builders::account_builders"]
 note = "Re-export of stability pool account builders into the stability_pool module namespace."
 
@@ -1773,9 +2133,11 @@ note = "Re-export of stability pool instruction builders into the stability_pool
 
 [items."crate::stability_pool_client::BuildTransactionData < HYUSD , SHYUSD > for StabilityPoolClient"]
 note = "Builds deposit transaction data for hyUSD -> sHYUSD."
+removed = true
 
 [items."crate::stability_pool_client::BuildTransactionData < SHYUSD , HYUSD > for StabilityPoolClient"]
 note = "Builds withdrawal transaction data for sHYUSD -> hyUSD."
+removed = true
 
 [items."crate::stability_pool_client::BuildTransactionData < SHYUSD , OUT > for StabilityPoolClient"]
 note = "Builds combined withdraw-and-redeem transaction data requiring both stability pool and exchange clients."
@@ -1790,6 +2152,7 @@ stale = true
 
 [items."crate::stability_pool_client::TransactionSyntax for StabilityPoolClient"]
 note = "Provides high-level run_transaction and simulate_event methods on StabilityPoolClient."
+removed = true
 
 [items."crate::stability_pool_math::amount_lever_to_swap"]
 note = "Computes stablecoin amount to swap from levercoin in pool, capped by max_swappable."
@@ -1818,9 +2181,11 @@ stale = true
 
 [items."crate::syntax_helpers::InstructionBuilderExt"]
 note = "Extension trait enabling turbofish syntax: Builder::build_instructions::<IN, OUT>(args)."
+removed = true
 
 [items."crate::syntax_helpers::InstructionBuilderExt for X"]
 note = "Blanket impl delegating to InstructionBuilder for any type that implements it."
+removed = true
 
 [items."crate::token_operation::LstSwapOperationOutput"]
 note = "Type alias for OperationOutput<N9, N9, N9> from LST-to-LST swaps."
@@ -1846,11 +2211,35 @@ note = "Turbofish helper: state.output::<IN, OUT>(amount) instead of TokenOperat
 [items."crate::token_operation::TokenOperationExt for X"]
 note = "Blanket impl delegating to TokenOperation for any type that implements it."
 
+[items."crate::token_operation::exchange::TokenOperation < CBBTC , HYUSD > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < CBBTC , USDC > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < CBBTC , XBTC > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < HYLOSOL , USDC > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < HYUSD , CBBTC > for ProtocolState < C >"]
+note = ""
+
 [items."crate::token_operation::exchange::TokenOperation < HYUSD , L > for ProtocolState < C >"]
 note = "Computes stablecoin redemption: burns hyUSD, applies fees, converts to LST output."
 
+[items."crate::token_operation::exchange::TokenOperation < HYUSD , USDC > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < HYUSD , XBTC > for ProtocolState < C >"]
+note = ""
+
 [items."crate::token_operation::exchange::TokenOperation < HYUSD , XSOL > for ProtocolState < C >"]
 note = "Computes hyUSD-to-xSOL swap using swap conversion and levercoin fees."
+
+[items."crate::token_operation::exchange::TokenOperation < JITOSOL , USDC > for ProtocolState < C >"]
+note = ""
 
 [items."crate::token_operation::exchange::TokenOperation < L , HYUSD > for ProtocolState < C >"]
 note = "Computes stablecoin mint: deposits LST, applies fees, converts to hyUSD output."
@@ -1860,6 +2249,24 @@ note = "Computes levercoin mint: deposits LST, applies fees, converts to xSOL ou
 
 [items."crate::token_operation::exchange::TokenOperation < L1 , L2 > for ProtocolState < C >"]
 note = "Computes LST-to-LST swap using both LST headers' SOL prices and the swap fee."
+
+[items."crate::token_operation::exchange::TokenOperation < USDC , CBBTC > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < USDC , HYLOSOL > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < USDC , HYUSD > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < USDC , JITOSOL > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < XBTC , CBBTC > for ProtocolState < C >"]
+note = ""
+
+[items."crate::token_operation::exchange::TokenOperation < XBTC , HYUSD > for ProtocolState < C >"]
+note = ""
 
 [items."crate::token_operation::exchange::TokenOperation < XSOL , HYUSD > for ProtocolState < C >"]
 note = "Computes xSOL-to-hyUSD swap using swap conversion and levercoin fees."
@@ -1913,21 +2320,25 @@ note = "Associates HYLOSOL with its mint address and N9 exponent."
 
 [items."crate::tokens::TokenMint for HYUSD"]
 note = "Associates HYUSD with its mint address and N6 exponent."
+stale = true
 
 [items."crate::tokens::TokenMint for JITOSOL"]
 note = "Associates JITOSOL with its mint address and N9 exponent."
 
 [items."crate::tokens::TokenMint for SHYUSD"]
 note = "Associates SHYUSD with its mint address and N6 exponent."
+stale = true
 
 [items."crate::tokens::TokenMint for USDC"]
 note = ""
 
 [items."crate::tokens::TokenMint for XBTC"]
 note = ""
+stale = true
 
 [items."crate::tokens::TokenMint for XSOL"]
 note = "Associates XSOL with its mint address and N6 exponent."
+stale = true
 
 [items."crate::tokens::USDC"]
 note = ""
@@ -1943,27 +2354,40 @@ note = "Epoch-validated running total of SOL collateral, updated on each deposit
 
 [items."crate::transaction::BuildTransactionData"]
 note = "Async trait for building VersionedTransactionData from typed inputs for a token pair."
+stale = true
 
 [items."crate::transaction::LstSwapArgs"]
 note = "Arguments for LST-to-LST swap: amounts, both mint Pubkeys, user, and optional slippage."
+removed = true
 
 [items."crate::transaction::MintArgs"]
 note = "Arguments for mint operations: LST amount (N9), user Pubkey, and optional slippage config."
+removed = true
 
 [items."crate::transaction::RedeemArgs"]
 note = "Arguments for redeem operations: token amount (N6), user Pubkey, and optional slippage config."
+removed = true
 
 [items."crate::transaction::StabilityPoolArgs"]
 note = "Arguments for stability pool operations: token amount (N6) and user Pubkey."
+removed = true
 
 [items."crate::transaction::SwapArgs"]
 note = "Arguments for swap operations: token amount (N6), user Pubkey, and optional slippage config."
+removed = true
 
 [items."crate::transaction::TransactionSyntax"]
 note = "High-level trait providing run_transaction, build_transaction_data, and simulate_event methods."
+stale = true
 
 [items."crate::type_bridge::From < UFixValue64 > for crate :: exchange :: types :: UFixValue64"]
 note = "Converts hylo-fix UFixValue64 into the exchange program's IDL UFixValue64."
+
+[items."crate::type_bridge::From < UFixValue64 > for crate :: router :: types :: UFixValue64"]
+note = ""
+
+[items."crate::type_bridge::From < crate :: exchange :: types :: SlippageConfig > for crate :: router :: types :: SlippageConfig"]
+note = ""
 
 [items."crate::type_bridge::From < crate :: exchange :: types :: UFixValue64 > for UFixValue64"]
 note = "Converts exchange IDL UFixValue64 into hylo-fix UFixValue64."
@@ -1979,6 +2403,10 @@ note = "Fallibly converts stability pool IDL UFixValue64 into a typed UFix64 wit
 
 [items."crate::util::EXCHANGE_LOOKUP_TABLE"]
 note = "Pubkey of the address lookup table for exchange program instructions."
+removed = true
+
+[items."crate::util::HYLO_LOOKUP_TABLE"]
+note = ""
 
 [items."crate::util::LST"]
 note = "Marker trait for liquid staking tokens, requiring N9 decimal precision."
@@ -1992,12 +2420,15 @@ note = "Marks JITOSOL as a valid LST collateral type."
 
 [items."crate::util::LST_REGISTRY_LOOKUP_TABLE"]
 note = "Pubkey of the address lookup table for LST registry accounts."
+stale = true
 
 [items."crate::util::REFERENCE_WALLET"]
 note = "Wallet holding reference token balances, used for simulating transactions."
+stale = true
 
 [items."crate::util::STABILITY_POOL_LOOKUP_TABLE"]
 note = "Pubkey of the address lookup table for stability pool program instructions."
+removed = true
 
 [items."crate::util::account_map_get"]
 note = "Finds and deserializes a Solana account from Jupiter's AccountMap by Pubkey."
@@ -2007,6 +2438,9 @@ note = "Constructs remaining_accounts and lookup table from the LST registry for
 
 [items."crate::util::build_test_exchange_client"]
 note = "Creates an ExchangeClient with random keypair from env vars, for integration tests."
+
+[items."crate::util::build_test_router_client"]
+note = ""
 
 [items."crate::util::build_test_stability_pool_client"]
 note = "Creates a StabilityPoolClient with random keypair from env vars, for integration tests."
@@ -2043,11 +2477,15 @@ stale = true
 [items."crate::util::operation_to_quote"]
 note = "Converts a typed OperationOutput into a Jupiter Quote with fee percentages."
 
+[items."crate::util::parse_event"]
+note = ""
+
 [items."crate::util::quote"]
 note = "Generic Jupiter quote function for any token pair implementing TokenOperation."
 
 [items."crate::util::simulation_config"]
 note = "Returns default RpcSimulateTransactionConfig for transaction simulations."
+stale = true
 
 [items."crate::util::user_ata_instruction"]
 note = "Creates a create-associated-token-account instruction for a user and mint."

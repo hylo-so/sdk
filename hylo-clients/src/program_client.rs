@@ -9,14 +9,14 @@ use anchor_client::solana_sdk::signature::{Keypair, Signature};
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
 use anchor_lang::prelude::AccountMeta;
-use anchor_lang::AnchorDeserialize;
+use anchor_lang::{AnchorDeserialize, Discriminator};
 use anyhow::{anyhow, Result};
 use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
 
 use crate::util::{
   build_lst_registry, build_v0_transaction, deserialize_lookup_table,
-  simulation_config, LST_REGISTRY_LOOKUP_TABLE,
+  parse_event, simulation_config, LST_REGISTRY_LOOKUP_TABLE,
 };
 
 /// Components from which a [`VersionedTransaction`] can be built.
@@ -245,5 +245,43 @@ pub trait ProgramClient: Sized {
     let ret = R::try_from_slice(&bytes)?;
     let compute_units = result.value.units_consumed;
     Ok((ret, compute_units))
+  }
+
+  /// Simulates transaction and extracts event from CPI instructions.
+  ///
+  /// # Errors
+  /// * Transaction simulation fails
+  /// * Event parsing from CPI instructions fails
+  /// * Event deserialization fails
+  async fn simulate_transaction_event<E: AnchorDeserialize + Discriminator>(
+    &self,
+    tx: &VersionedTransaction,
+  ) -> Result<E> {
+    self
+      .simulate_transaction_event_with_cus(tx)
+      .await
+      .map(|(event, _)| event)
+  }
+
+  /// Simulates transaction and extracts event and compute units from CPI
+  /// instructions.
+  ///
+  /// # Errors
+  /// * Transaction simulation fails
+  /// * Event parsing from CPI instructions fails
+  /// * Event deserialization fails
+  async fn simulate_transaction_event_with_cus<
+    E: AnchorDeserialize + Discriminator,
+  >(
+    &self,
+    tx: &VersionedTransaction,
+  ) -> Result<(E, Option<u64>)> {
+    let rpc = self.program().rpc();
+    let result = rpc
+      .simulate_transaction_with_config(tx, simulation_config())
+      .await?;
+    let event = parse_event(&result)?;
+    let compute_units = result.value.units_consumed;
+    Ok((event, compute_units))
   }
 }

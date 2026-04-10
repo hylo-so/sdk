@@ -1,16 +1,25 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{FundingRateApply, FundingRateValidation};
 use crate::fee_controller::FeeExtract;
 
 /// Per-epoch funding rate for exogenous collateral without native yield.
 #[derive(
-  Copy, Clone, Debug, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Copy,
+  Clone,
+  Debug,
+  PartialEq,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct FundingRateConfig {
-  rate: UFixValue64,
-  fee: UFixValue64,
+  pub rate: UFixValue64,
+  pub fee: UFixValue64,
 }
 
 /// Maximum per-epoch rate (~10% annualized at 182 epochs/year)

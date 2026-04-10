@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{
   YieldHarvestAllocation, YieldHarvestConfigValidation,
@@ -11,7 +12,14 @@ const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 
 /// Captures yield harvest configuration as two basis point values:
 #[derive(
-  Copy, Clone, PartialEq, InitSpace, AnchorSerialize, AnchorDeserialize,
+  Copy,
+  Clone,
+  PartialEq,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
 )]
 pub struct YieldHarvestConfig {
   pub allocation: UFixValue64,
@@ -70,7 +78,15 @@ impl YieldHarvestConfig {
 }
 
 /// Records epoch harvest information for off-chain consumers.
-#[derive(Copy, Clone, InitSpace, AnchorSerialize, AnchorDeserialize)]
+#[derive(
+  Copy,
+  Clone,
+  InitSpace,
+  AnchorSerialize,
+  AnchorDeserialize,
+  Serialize,
+  Deserialize,
+)]
 pub struct HarvestCache {
   pub epoch: u64,
   pub stability_pool_cap: UFixValue64,
