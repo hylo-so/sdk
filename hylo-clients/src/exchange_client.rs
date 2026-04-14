@@ -152,9 +152,10 @@ impl ExchangeClient {
       .request()
       .instruction(instruction)
       .instructions()?;
-    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
-    let lookup_tables = vec![registry_lut, exchange_lut];
-    Ok(VersionedTransactionData::new(instructions, lookup_tables))
+    Ok(VersionedTransactionData::new(
+      instructions,
+      vec![registry_lut],
+    ))
   }
 
   /// Builds transaction data for harvesting yield from LST vaults to stability
