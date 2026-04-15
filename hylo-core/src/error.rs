@@ -162,6 +162,10 @@ pub enum CoreError {
   RebalanceOutOfDomain,
   #[msg("Rebalance amount projects CR outside the pricing curve domain.")]
   RebalanceAmountExceeded,
+  #[msg("Rebalance price exceeds deviation tolerance from oracle spot.")]
+  RebalanceDeviationExceeded,
+  #[msg("Arithmetic error computing deviation tolerance band.")]
+  RebalanceDeviationArithmetic,
   // `rebalance_math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,

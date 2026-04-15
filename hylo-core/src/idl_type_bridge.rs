@@ -1,3 +1,5 @@
+use fix::prelude::UFixValue64;
+
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::funding_rate::FundingRateConfig;
 use crate::lst_sol_price::LstSolPrice;
@@ -85,7 +87,16 @@ impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
   fn from(
     idl: hylo_idl::exchange::types::RebalanceCurveConfig,
   ) -> RebalanceCurveConfig {
-    RebalanceCurveConfig::new(idl.floor_mult.into(), idl.ceil_mult.into())
+    RebalanceCurveConfig::new(
+      idl.floor_mult.into(),
+      idl.ceil_mult.into(),
+      // On-chain type lacks this field; default to max (15%) to
+      // disable the check until the program is updated.
+      UFixValue64 {
+        bits: 150_000_000,
+        exp: -9,
+      },
+    )
   }
 }
 
