@@ -3245,7 +3245,7 @@
             "type": {
               "array": [
                 "u8",
-                32
+                14
               ]
             }
           }
@@ -3451,6 +3451,14 @@
           },
           {
             "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "deviation_tolerance",
             "type": {
               "defined": {
                 "name": "UFixValue64"

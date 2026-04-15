@@ -174,4 +174,9 @@ pub enum CoreError {
   // `spl_stake_pool`
   #[msg("Division by zero computing SPL stake pool price.")]
   StakePoolDivByZero,
+  // `oracle_config`
+  #[msg("Oracle interval not in valid range.")]
+  OracleIntervalSecsInvalid,
+  #[msg("Oracle confidence tolerance not in valid range.")]
+  OracleConfToleranceInvalid,
 }

@@ -6,11 +6,17 @@ use pyth_solana_receiver_sdk::price_update::{
 };
 
 use crate::error::CoreError::{
-  PythOracleConfidence, PythOracleExponent, PythOracleNegativePrice,
-  PythOracleNegativeTime, PythOracleOutdated, PythOraclePriceRange,
-  PythOracleSlotInvalid, PythOracleVerificationLevel,
+  OracleConfToleranceInvalid, OracleIntervalSecsInvalid, PythOracleConfidence,
+  PythOracleExponent, PythOracleNegativePrice, PythOracleNegativeTime,
+  PythOracleOutdated, PythOraclePriceRange, PythOracleSlotInvalid,
+  PythOracleVerificationLevel,
 };
 use crate::solana_clock::SolanaClock;
+
+const MIN_INTERVAL_SECS: u64 = 1;
+const MAX_INTERVAL_SECS: u64 = 60;
+const MIN_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(0);
+const MAX_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(50_000_000);
 
 pub struct PythFeed {
   pub feed_id: FeedId,
@@ -54,6 +60,25 @@ impl OracleConfig {
       interval_secs,
       conf_tolerance,
     }
+  }
+}
+
+/// Oracle interval must be in `[MIN, MAX]`.
+pub fn validate_interval_secs(secs: u64) -> Result<u64> {
+  if (MIN_INTERVAL_SECS..=MAX_INTERVAL_SECS).contains(&secs) {
+    Ok(secs)
+  } else {
+    Err(OracleIntervalSecsInvalid.into())
+  }
+}
+
+/// Confidence tolerance must be in `(MIN, MAX]`.
+pub fn validate_conf_tolerance(tolerance: UFixValue64) -> Result<UFixValue64> {
+  let pct: UFix64<N9> = tolerance.try_into()?;
+  if pct > MIN_CONF_TOLERANCE && pct <= MAX_CONF_TOLERANCE {
+    Ok(tolerance)
+  } else {
+    Err(OracleConfToleranceInvalid.into())
   }
 }
 
