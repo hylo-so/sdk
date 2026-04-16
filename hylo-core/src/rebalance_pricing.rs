@@ -14,18 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::CoreError;
 use crate::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
-
-/// Sell curve upper boundary
-pub const UCR_1_35: UFix64<N9> = UFix64::constant(1_350_000_000);
-
-/// Buy curve lower boundary
-pub const UCR_1_65: UFix64<N9> = UFix64::constant(1_650_000_000);
-
-// CR domain boundaries
-const CR_1_20: IFix64<N9> = IFix64::constant(1_200_000_000);
-const CR_1_35: IFix64<N9> = IFix64::constant(1_350_000_000);
-const CR_1_65: IFix64<N9> = IFix64::constant(1_650_000_000);
-const CR_1_75: IFix64<N9> = IFix64::constant(1_750_000_000);
+use crate::rebalance_mode::RebalanceMode;
 
 // Confidence multiplier boundaries
 const MIN_CONF_MULT: UFix64<N2> = UFix64::constant(0);
@@ -215,11 +204,11 @@ impl SellPriceCurve {
     check_deviation(spot, ceil, tolerance)?;
     let curve = FixInterp::from_points([
       Point {
-        x: CR_1_20,
+        x: RebalanceMode::SellZone2.threshold_signed(),
         y: narrow_price(floor)?,
       },
       Point {
-        x: CR_1_35,
+        x: RebalanceMode::SellZone1.threshold_signed(),
         y: narrow_price(ceil)?,
       },
     ])?;
@@ -233,7 +222,7 @@ impl RebalancePriceController for SellPriceCurve {
   }
 
   fn is_active(&self, ucr: UFix64<N9>) -> bool {
-    ucr <= UCR_1_35
+    ucr < RebalanceMode::SellZone1.threshold()
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {
@@ -281,11 +270,11 @@ impl BuyPriceCurve {
     check_deviation(spot, ceil, tolerance)?;
     let curve = FixInterp::from_points([
       Point {
-        x: CR_1_65,
+        x: RebalanceMode::BuyZone1.threshold_signed(),
         y: narrow_price(floor)?,
       },
       Point {
-        x: CR_1_75,
+        x: RebalanceMode::BuyZone2.threshold_signed(),
         y: narrow_price(ceil)?,
       },
     ])?;
@@ -299,7 +288,7 @@ impl RebalancePriceController for BuyPriceCurve {
   }
 
   fn is_active(&self, ucr: UFix64<N9>) -> bool {
-    ucr >= UCR_1_65
+    ucr > RebalanceMode::BuyZone1.threshold()
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {
