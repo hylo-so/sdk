@@ -3,7 +3,7 @@ use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use super::{validate_stability_thresholds, ExchangeContext};
+use super::ExchangeContext;
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
@@ -16,11 +16,11 @@ use crate::interpolated_fees::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
+use crate::rebalance_mode::RebalanceMode;
 use crate::rebalance_pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
 use crate::solana_clock::SolanaClock;
-use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::virtual_stablecoin::VirtualStablecoin;
 
 /// Exchange context for exogenous collateral pairs.
@@ -32,8 +32,8 @@ pub struct ExoExchangeContext<C> {
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
-  stability_mode: StabilityMode,
-  pub stability_controller: StabilityController,
+  normal_mode_threshold: UFix64<N9>,
+  rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
@@ -54,6 +54,10 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.collateral_oracle
   }
 
+  fn normal_mode_threshold(&self) -> UFix64<N9> {
+    self.normal_mode_threshold
+  }
+
   fn sell_curve_config(&self) -> &RebalanceCurveConfig {
     &self.sell_curve_config
   }
@@ -70,12 +74,8 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.levercoin_supply.ok_or(LevercoinNav.into())
   }
 
-  fn stability_controller(&self) -> &StabilityController {
-    &self.stability_controller
-  }
-
-  fn stability_mode(&self) -> StabilityMode {
-    self.stability_mode
+  fn rebalance_mode(&self) -> RebalanceMode {
+    self.rebalance_mode
   }
 
   fn collateral_ratio(&self) -> UFix64<N9> {
@@ -96,7 +96,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn load(
     clock: C,
     total_collateral: UFix64<N9>,
-    stability_threshold_1: UFix64<N2>,
+    normal_mode_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
     collateral_usd_pyth_feed: &PriceUpdateV2,
@@ -111,13 +111,6 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =
       InterpolatedRedeemFees::new(redeem_fee_curve()?);
-    let stability_threshold_2 = stablecoin_redeem_fees.cr_floor()?;
-    validate_stability_thresholds(
-      stability_threshold_1,
-      stability_threshold_2,
-    )?;
-    let stability_controller =
-      StabilityController::new(stability_threshold_1, stability_threshold_2)?;
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let stablecoin_supply = virtual_stablecoin.supply()?;
     let collateral_ratio = collateral_ratio(
@@ -125,8 +118,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_usd_price.lower,
       stablecoin_supply,
     )?;
-    let stability_mode =
-      stability_controller.stability_mode(collateral_ratio)?;
+    let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
     Ok(ExoExchangeContext {
       clock,
       total_collateral,
@@ -135,8 +127,8 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
-      stability_mode,
-      stability_controller,
+      normal_mode_threshold,
+      rebalance_mode,
       levercoin_fees,
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
@@ -215,8 +207,8 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .checked_add(&collateral_amount)
       .ok_or(DestinationCollateral)?;
     let projected = self
-      .projected_stability_mode(new_total, self.virtual_stablecoin_supply()?)?;
-    let mode = self.select_stability_mode_for_fees(projected);
+      .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
     let fee = self.levercoin_fees.mint_fee(mode)?;
     FeeExtract::new(fee, collateral_amount)
   }
@@ -234,8 +226,8 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .checked_sub(&collateral_amount)
       .ok_or(DestinationCollateral)?;
     let projected = self
-      .projected_stability_mode(new_total, self.virtual_stablecoin_supply()?)?;
-    let mode = self.select_stability_mode_for_fees(projected);
+      .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
     let fee = self.levercoin_fees.redeem_fee(mode)?;
     FeeExtract::new(fee, collateral_amount)
   }

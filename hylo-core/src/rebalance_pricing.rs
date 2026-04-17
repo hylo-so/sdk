@@ -202,13 +202,14 @@ impl SellPriceCurve {
     let tolerance = config.deviation_tolerance()?;
     check_deviation(spot, floor, tolerance)?;
     check_deviation(spot, ceil, tolerance)?;
+    let sell_zone_1 = RebalanceMode::SellZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
-        x: RebalanceMode::SellZone2.threshold_signed(),
+        x: narrow_cr(sell_zone_1.start)?,
         y: narrow_price(floor)?,
       },
       Point {
-        x: RebalanceMode::SellZone1.threshold_signed(),
+        x: narrow_cr(sell_zone_1.end)?,
         y: narrow_price(ceil)?,
       },
     ])?;
@@ -222,7 +223,7 @@ impl RebalancePriceController for SellPriceCurve {
   }
 
   fn is_active(&self, ucr: UFix64<N9>) -> bool {
-    ucr < RebalanceMode::SellZone1.threshold()
+    RebalanceMode::from_cr(ucr) < RebalanceMode::Neutral
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {
@@ -268,13 +269,14 @@ impl BuyPriceCurve {
     let tolerance = config.deviation_tolerance()?;
     check_deviation(spot, floor, tolerance)?;
     check_deviation(spot, ceil, tolerance)?;
+    let buy_zone_1 = RebalanceMode::BuyZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
-        x: RebalanceMode::BuyZone1.threshold_signed(),
+        x: narrow_cr(buy_zone_1.start)?,
         y: narrow_price(floor)?,
       },
       Point {
-        x: RebalanceMode::BuyZone2.threshold_signed(),
+        x: narrow_cr(buy_zone_1.end)?,
         y: narrow_price(ceil)?,
       },
     ])?;
@@ -288,7 +290,7 @@ impl RebalancePriceController for BuyPriceCurve {
   }
 
   fn is_active(&self, ucr: UFix64<N9>) -> bool {
-    ucr > RebalanceMode::BuyZone1.threshold()
+    RebalanceMode::from_cr(ucr) > RebalanceMode::Neutral
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {

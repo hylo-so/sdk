@@ -5,8 +5,8 @@ use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::lst_sol_price::LstSolPrice;
+use hylo_core::rebalance_mode::RebalanceMode;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::stability_mode::StabilityMode;
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, USDC, XBTC, XSOL,
 };
@@ -29,8 +29,8 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode() <= StabilityMode::Mode1,
-      "Mint operations disabled in current stability mode"
+      self.exchange_context.mint_enabled(),
+      "LST stablecoin mint disabled"
     );
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -102,8 +102,8 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode() != StabilityMode::Depeg,
-      "Levercoin mint disabled in current stability mode"
+      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
+      "Levercoin mint disabled in current rebalance mode"
     );
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -139,7 +139,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
   ) -> Result<RedeemOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode() != StabilityMode::Depeg,
+      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
       "Levercoin redemption disabled in current stability mode"
     );
     let lst_header = self.lst_header::<L>()?;
@@ -174,7 +174,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
   ) -> Result<SwapOperationOutput> {
     ensure!(
-      self.exchange_context.stability_mode() != StabilityMode::Depeg,
+      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
       "Swaps are disabled in current stability mode"
     );
     let FeeExtract {
@@ -206,11 +206,8 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
   ) -> Result<SwapOperationOutput> {
     ensure!(
-      matches!(
-        self.exchange_context.stability_mode(),
-        StabilityMode::Normal | StabilityMode::Mode1
-      ),
-      "Swaps are disabled in current stability mode"
+      self.exchange_context.rebalance_mode() >= RebalanceMode::SellZone1,
+      "Swaps are disabled in current rebalance mode"
     );
     let converted = self
       .exchange_context
@@ -342,10 +339,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
     in_amount: UFix64<N8>,
   ) -> Result<OperationOutput<N8, N6, N9>> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(
-      exo.stability_mode() <= StabilityMode::Mode1,
-      "Exo stablecoin mint disabled in current stability mode"
-    );
+    ensure!(exo.mint_enabled(), "Exo stablecoin mint disabled");
     let collateral_n9: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or_else(|| anyhow!("cbBTC N8->N9 overflow"))?;
@@ -408,7 +402,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N8, N6, N9>> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
-      exo.stability_mode() != StabilityMode::Depeg,
+      exo.rebalance_mode() > RebalanceMode::Depeg,
       "Exo levercoin mint disabled in current stability mode"
     );
     let collateral_n9: UFix64<N9> = in_amount
@@ -442,7 +436,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N8, N9>> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
-      exo.stability_mode() != StabilityMode::Depeg,
+      exo.rebalance_mode() > RebalanceMode::Depeg,
       "Exo levercoin redemption disabled in current stability mode"
     );
     let levercoin_nav = exo.levercoin_redeem_nav()?;
@@ -476,7 +470,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N6, N6>> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
-      exo.stability_mode() != StabilityMode::Depeg,
+      exo.rebalance_mode() > RebalanceMode::Depeg,
       "Exo swaps disabled in current stability mode"
     );
     let FeeExtract {
@@ -505,10 +499,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N6, N6>> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
-      matches!(
-        exo.stability_mode(),
-        StabilityMode::Normal | StabilityMode::Mode1
-      ),
+      exo.rebalance_mode() >= RebalanceMode::SellZone1,
       "Exo swaps disabled in current stability mode"
     );
     let converted = exo.swap_conversion()?.lever_to_stable(in_amount)?;

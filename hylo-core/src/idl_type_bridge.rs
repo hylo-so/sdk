@@ -131,8 +131,8 @@ impl From<LevercoinFees> for hylo_idl::exchange::types::LevercoinFees {
   fn from(val: LevercoinFees) -> Self {
     hylo_idl::exchange::types::LevercoinFees {
       normal: val.normal.into(),
-      mode_1: val.mode_1.into(),
-      mode_2: val.mode_2.into(),
+      mode_1: val.sell_zone_1.into(),
+      mode_2: val.sell_zone_2.into(),
     }
   }
 }

@@ -1,125 +1,149 @@
+use std::ops::{Bound, RangeBounds};
+
 use fix::prelude::*;
-
-const U_BUY_ZONE_2: UFix64<N9> = UFix64::constant(1_750_000_000);
-const U_BUY_ZONE_1: UFix64<N9> = UFix64::constant(1_650_000_000);
-const U_NEUTRAL: UFix64<N9> = UFix64::constant(1_500_000_000);
-const U_SELL_ZONE_1: UFix64<N9> = UFix64::constant(1_350_000_000);
-const U_SELL_ZONE_2: UFix64<N9> = UFix64::constant(1_200_000_000);
-const U_DEPEG: UFix64<N9> = UFix64::constant(1_000_000_000);
-
-const I_BUY_ZONE_2: IFix64<N9> = IFix64::constant(1_750_000_000);
-const I_BUY_ZONE_1: IFix64<N9> = IFix64::constant(1_650_000_000);
-const I_NEUTRAL: IFix64<N9> = IFix64::constant(1_500_000_000);
-const I_SELL_ZONE_1: IFix64<N9> = IFix64::constant(1_350_000_000);
-const I_SELL_ZONE_2: IFix64<N9> = IFix64::constant(1_200_000_000);
-const I_DEPEG: IFix64<N9> = IFix64::constant(1_000_000_000);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RebalanceMode {
-  BuyZone2,
-  BuyZone1,
-  Neutral,
-  SellZone1,
-  SellZone2,
   Depeg,
+  SellZone2,
+  SellZone1,
+  Neutral,
+  BuyZone1,
+  BuyZone2,
+}
+
+/// Half-open `[start, end)` CR range. `BuyZone2`'s end is `UFix64::MAX`.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct CrRange {
+  pub start: UFix64<N9>,
+  pub end: UFix64<N9>,
+}
+
+impl CrRange {
+  #[must_use]
+  pub const fn new(start: UFix64<N9>, end: UFix64<N9>) -> CrRange {
+    CrRange { start, end }
+  }
+}
+
+impl RangeBounds<UFix64<N9>> for CrRange {
+  fn start_bound(&self) -> Bound<&UFix64<N9>> {
+    Bound::Included(&self.start)
+  }
+
+  fn end_bound(&self) -> Bound<&UFix64<N9>> {
+    Bound::Excluded(&self.end)
+  }
 }
 
 impl RebalanceMode {
   #[must_use]
+  pub const fn active_range(&self) -> CrRange {
+    match self {
+      RebalanceMode::Depeg => {
+        CrRange::new(UFix64::constant(0), UFix64::constant(1_000_000_000))
+      }
+      RebalanceMode::SellZone2 => CrRange::new(
+        UFix64::constant(1_000_000_000),
+        UFix64::constant(1_200_000_000),
+      ),
+      RebalanceMode::SellZone1 => CrRange::new(
+        UFix64::constant(1_200_000_000),
+        UFix64::constant(1_350_000_000),
+      ),
+      RebalanceMode::Neutral => CrRange::new(
+        UFix64::constant(1_350_000_000),
+        UFix64::constant(1_650_000_000),
+      ),
+      RebalanceMode::BuyZone1 => CrRange::new(
+        UFix64::constant(1_650_000_000),
+        UFix64::constant(1_750_000_000),
+      ),
+      RebalanceMode::BuyZone2 => CrRange::new(
+        UFix64::constant(1_750_000_000),
+        UFix64::constant(u64::MAX),
+      ),
+    }
+  }
+
+  #[must_use]
   pub fn from_cr(cr: UFix64<N9>) -> RebalanceMode {
-    if (UFix64::zero()..U_DEPEG).contains(&cr) {
-      RebalanceMode::Depeg
-    } else if (U_DEPEG..U_SELL_ZONE_2).contains(&cr) {
-      RebalanceMode::SellZone2
-    } else if (U_SELL_ZONE_2..U_SELL_ZONE_1).contains(&cr) {
-      RebalanceMode::SellZone1
-    } else if (U_SELL_ZONE_1..U_BUY_ZONE_1).contains(&cr) {
-      RebalanceMode::Neutral
-    } else if (U_BUY_ZONE_1..U_BUY_ZONE_2).contains(&cr) {
-      RebalanceMode::BuyZone1
-    } else {
-      RebalanceMode::BuyZone2
-    }
-  }
-
-  #[must_use]
-  pub const fn threshold(&self) -> UFix64<N9> {
-    match self {
-      RebalanceMode::BuyZone2 => U_BUY_ZONE_2,
-      RebalanceMode::BuyZone1 => U_BUY_ZONE_1,
-      RebalanceMode::Neutral => U_NEUTRAL,
-      RebalanceMode::SellZone1 => U_SELL_ZONE_1,
-      RebalanceMode::SellZone2 => U_SELL_ZONE_2,
-      RebalanceMode::Depeg => U_DEPEG,
-    }
-  }
-
-  #[must_use]
-  pub const fn threshold_signed(&self) -> IFix64<N9> {
-    match self {
-      RebalanceMode::BuyZone2 => I_BUY_ZONE_2,
-      RebalanceMode::BuyZone1 => I_BUY_ZONE_1,
-      RebalanceMode::Neutral => I_NEUTRAL,
-      RebalanceMode::SellZone1 => I_SELL_ZONE_1,
-      RebalanceMode::SellZone2 => I_SELL_ZONE_2,
-      RebalanceMode::Depeg => I_DEPEG,
-    }
-  }
-
-  #[must_use]
-  pub fn mint_enabled(cr: UFix64<N9>) -> bool {
-    cr >= RebalanceMode::Neutral.threshold()
+    [
+      RebalanceMode::Depeg,
+      RebalanceMode::SellZone2,
+      RebalanceMode::SellZone1,
+      RebalanceMode::Neutral,
+      RebalanceMode::BuyZone1,
+    ]
+    .into_iter()
+    .find(|mode| mode.active_range().contains(&cr))
+    .unwrap_or(RebalanceMode::BuyZone2)
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use RebalanceMode::*;
+
+  use super::*;
+
+  const ALL: [RebalanceMode; 6] =
+    [Depeg, SellZone2, SellZone1, Neutral, BuyZone1, BuyZone2];
 
   #[test]
   fn mode_ordering() {
-    assert!(BuyZone2 < BuyZone1);
-    assert!(BuyZone1 < Neutral);
-    assert!(Neutral < SellZone1);
-    assert!(SellZone1 < SellZone2);
-    assert!(SellZone2 < Depeg);
+    assert!(Depeg < SellZone2);
+    assert!(SellZone2 < SellZone1);
+    assert!(SellZone1 < Neutral);
+    assert!(Neutral < BuyZone1);
+    assert!(BuyZone1 < BuyZone2);
   }
 
   #[test]
-  fn from_cr_exact_boundaries() {
-    assert_eq!(RebalanceMode::from_cr(U_DEPEG), SellZone2);
-    assert_eq!(RebalanceMode::from_cr(U_SELL_ZONE_2), SellZone1);
-    assert_eq!(RebalanceMode::from_cr(U_SELL_ZONE_1), Neutral);
-    assert_eq!(RebalanceMode::from_cr(U_BUY_ZONE_1), BuyZone1);
-    assert_eq!(RebalanceMode::from_cr(U_BUY_ZONE_2), BuyZone2);
+  fn ranges_are_contiguous() {
+    ALL
+      .iter()
+      .zip(ALL.iter().skip(1))
+      .for_each(|(lower, upper)| {
+        assert_eq!(
+          lower.active_range().end,
+          upper.active_range().start,
+          "{lower:?} -> {upper:?}",
+        );
+      });
+    assert_eq!(Depeg.active_range().start, UFix64::zero());
+    assert_eq!(BuyZone2.active_range().end, UFix64::new(u64::MAX));
   }
 
   #[test]
-  fn from_cr_just_below_boundaries() {
-    assert_eq!(RebalanceMode::from_cr(UFix64::new(999_999_999)), Depeg);
-    assert_eq!(
-      RebalanceMode::from_cr(UFix64::new(1_199_999_999)),
-      SellZone2
-    );
-    assert_eq!(
-      RebalanceMode::from_cr(UFix64::new(1_349_999_999)),
-      SellZone1
-    );
-    assert_eq!(RebalanceMode::from_cr(UFix64::new(1_649_999_999)), Neutral);
-    assert_eq!(RebalanceMode::from_cr(UFix64::new(1_749_999_999)), BuyZone1);
+  fn from_cr_at_zone_start() {
+    ALL.iter().for_each(|mode| {
+      assert_eq!(RebalanceMode::from_cr(mode.active_range().start), *mode);
+    });
+  }
+
+  #[test]
+  fn from_cr_just_below_end() {
+    ALL.iter().for_each(|mode| {
+      let end = mode.active_range().end;
+      let just_below = UFix64::new(end.bits - 1);
+      assert_eq!(RebalanceMode::from_cr(just_below), *mode);
+    });
   }
 
   #[test]
   fn from_cr_extremes() {
     assert_eq!(RebalanceMode::from_cr(UFix64::zero()), Depeg);
-    assert_eq!(RebalanceMode::from_cr(UFix64::new(5_000_000_000)), BuyZone2);
+    assert_eq!(RebalanceMode::from_cr(UFix64::new(u64::MAX)), BuyZone2);
   }
 
   #[test]
-  fn mint_enabled_check() {
-    assert!(!RebalanceMode::mint_enabled(UFix64::new(1_499_999_999)));
-    assert!(RebalanceMode::mint_enabled(UFix64::new(1_500_000_000)));
-    assert!(RebalanceMode::mint_enabled(UFix64::new(2_000_000_000)));
+  fn active_range_is_half_open() {
+    let r = SellZone1.active_range();
+    assert_eq!(r.start, UFix64::constant(1_200_000_000));
+    assert_eq!(r.end, UFix64::constant(1_350_000_000));
+    assert!(r.contains(&UFix64::constant(1_200_000_000)));
+    assert!(r.contains(&UFix64::constant(1_349_999_999)));
+    assert!(!r.contains(&UFix64::constant(1_350_000_000)));
   }
 }

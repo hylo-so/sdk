@@ -14,9 +14,9 @@ pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError::{
-  DestinationStablecoin, LevercoinNav, RebalanceBuySideTarget,
-  RebalanceSellSideLiquidity, RequestedStablecoinOverMaxMintable,
-  StabilityValidation,
+  DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
+  RebalanceBuySideTarget, RebalanceSellSideLiquidity,
+  RequestedStablecoinOverMaxMintable,
 };
 use crate::exchange_math::{
   collateral_ratio, depeg_stablecoin_nav, max_mintable_stablecoin,
@@ -30,20 +30,6 @@ use crate::rebalance_mode::RebalanceMode;
 use crate::rebalance_pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
-use crate::stability_mode::{StabilityController, StabilityMode};
-
-/// Ensures ST1 is strictly above ST2 (derived from the redeem fee curve).
-///
-/// # Errors
-/// * Thresholds fail validation
-pub fn validate_stability_thresholds(
-  stability_threshold_1: UFix64<N2>,
-  stability_threshold_2: UFix64<N2>,
-) -> Result<()> {
-  (stability_threshold_1 > stability_threshold_2)
-    .then_some(())
-    .ok_or(StabilityValidation.into())
-}
 
 /// Shared interface for exchange context implementations.
 pub trait ExchangeContext {
@@ -61,6 +47,14 @@ pub trait ExchangeContext {
 
   /// Buy-side rebalance curve configuration.
   fn buy_curve_config(&self) -> &RebalanceCurveConfig;
+
+  /// Collateral ratio defining target leverage and stablecoin mint ability.
+  fn normal_mode_threshold(&self) -> UFix64<N9>;
+
+  /// Confirm stablecoin mint capability based on configured normal mode CR.
+  fn mint_enabled(&self) -> bool {
+    self.collateral_ratio() >= self.normal_mode_threshold()
+  }
 
   /// Sell-side rebalance price curve from oracle confidence.
   ///
@@ -100,7 +94,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>> {
-    let target_cr = RebalanceMode::BuyZone1.threshold();
+    let target_cr = RebalanceMode::Neutral.active_range().start;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -118,7 +112,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>> {
-    let target_cr = RebalanceMode::BuyZone1.threshold();
+    let target_cr = RebalanceMode::BuyZone1.active_range().start;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -137,11 +131,8 @@ pub trait ExchangeContext {
   /// Current levercoin supply.
   fn levercoin_supply(&self) -> Result<UFix64<N6>>;
 
-  /// Stability controller configuration.
-  fn stability_controller(&self) -> &StabilityController;
-
-  /// Cached stability mode, computed at construction.
-  fn stability_mode(&self) -> StabilityMode;
+  /// Current rebalance mode, computed at construction.
+  fn rebalance_mode(&self) -> RebalanceMode;
 
   /// Cached collateral ratio, computed at construction.
   fn collateral_ratio(&self) -> UFix64<N9>;
@@ -165,8 +156,8 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic failure in depeg path
   fn stablecoin_nav(&self) -> Result<UFix64<N9>> {
-    match self.stability_mode() {
-      StabilityMode::Depeg => depeg_stablecoin_nav(
+    match self.rebalance_mode() {
+      RebalanceMode::Depeg => depeg_stablecoin_nav(
         self.total_collateral(),
         self.collateral_usd_price().lower,
         self.virtual_stablecoin_supply()?,
@@ -205,33 +196,33 @@ pub trait ExchangeContext {
     .ok_or(LevercoinNav.into())
   }
 
-  /// Projects stability mode after changing collateral and stablecoin
+  /// Projects rebalance mode after changing collateral and stablecoin
   /// totals.
   ///
   /// # Errors
   /// * Collateral ratio computation failure
-  fn projected_stability_mode(
+  fn projected_rebalance_mode(
     &self,
     new_total: UFix64<N9>,
     new_stablecoin: UFix64<N6>,
-  ) -> Result<StabilityMode> {
+  ) -> Result<RebalanceMode> {
     let projected_cr = collateral_ratio(
       new_total,
       self.collateral_usd_price().lower,
       new_stablecoin,
     )?;
-    self.stability_controller().stability_mode(projected_cr)
+    Ok(RebalanceMode::from_cr(projected_cr))
   }
 
   /// Returns the worse of current vs projected mode for fee
-  /// purposes. Transactions that improve stability only pay fees at
+  /// purposes. Transactions that improve CR only pay fees at
   /// the current mode.
-  fn select_stability_mode_for_fees(
+  fn select_rebalance_mode_for_fees(
     &self,
-    projected: StabilityMode,
-  ) -> StabilityMode {
-    if projected < self.stability_mode() {
-      self.stability_mode()
+    projected: RebalanceMode,
+  ) -> RebalanceMode {
+    if projected < self.rebalance_mode() {
+      self.rebalance_mode()
     } else {
       projected
     }
@@ -253,8 +244,13 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic overflow
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>> {
+    let target = RebalanceMode::SellZone1
+      .active_range()
+      .end
+      .checked_convert()
+      .ok_or(MaxMintable)?;
     max_mintable_stablecoin(
-      self.stability_controller().min_stability_threshold(),
+      target,
       self.total_collateral(),
       self.collateral_usd_price().upper,
       self.virtual_stablecoin_supply()?,
@@ -267,8 +263,13 @@ pub trait ExchangeContext {
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>> {
+    let target = RebalanceMode::SellZone1
+      .active_range()
+      .end
+      .checked_convert()
+      .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(
-      self.stability_controller().min_stability_threshold(),
+      target,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
     )
@@ -319,9 +320,9 @@ pub trait ExchangeContext {
       .checked_add(&amount_stablecoin)
       .ok_or(DestinationStablecoin)?;
     let projected =
-      self.projected_stability_mode(self.total_collateral(), new_stablecoin)?;
-    let mode = self.select_stability_mode_for_fees(projected);
-    let fee = self.levercoin_fees().swap_to_stablecoin_fee(mode)?;
+      self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self.levercoin_fees().convert_to_stablecoin_fee(mode)?;
     FeeExtract::new(fee, amount_stablecoin)
   }
 
@@ -338,9 +339,9 @@ pub trait ExchangeContext {
       .checked_sub(&amount_stablecoin)
       .ok_or(DestinationStablecoin)?;
     let projected =
-      self.projected_stability_mode(self.total_collateral(), new_stablecoin)?;
-    let mode = self.select_stability_mode_for_fees(projected);
-    let fee = self.levercoin_fees().swap_from_stablecoin_fee(mode)?;
+      self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self.levercoin_fees().convert_from_stablecoin_fee(mode)?;
     FeeExtract::new(fee, amount_stablecoin)
   }
 }
