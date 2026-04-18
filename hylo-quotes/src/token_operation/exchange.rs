@@ -140,7 +140,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
   ) -> Result<RedeemOperationOutput> {
     ensure!(
       self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
-      "Levercoin redemption disabled in current stability mode"
+      "Levercoin redemption disabled in current rebalance mode"
     );
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -175,7 +175,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
   ) -> Result<SwapOperationOutput> {
     ensure!(
       self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
-      "Swaps are disabled in current stability mode"
+      "Swaps are disabled in current rebalance mode"
     );
     let FeeExtract {
       fees_extracted,
@@ -403,7 +403,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
       exo.rebalance_mode() > RebalanceMode::Depeg,
-      "Exo levercoin mint disabled in current stability mode"
+      "Exo levercoin mint disabled in current rebalance mode"
     );
     let collateral_n9: UFix64<N9> = in_amount
       .checked_convert()
@@ -437,7 +437,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
       exo.rebalance_mode() > RebalanceMode::Depeg,
-      "Exo levercoin redemption disabled in current stability mode"
+      "Exo levercoin redemption disabled in current rebalance mode"
     );
     let levercoin_nav = exo.levercoin_redeem_nav()?;
     let collateral_n9 = exo
@@ -471,7 +471,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
       exo.rebalance_mode() > RebalanceMode::Depeg,
-      "Exo swaps disabled in current stability mode"
+      "Exo swaps disabled in current rebalance mode"
     );
     let FeeExtract {
       fees_extracted,
@@ -500,7 +500,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
       exo.rebalance_mode() >= RebalanceMode::SellZone1,
-      "Exo swaps disabled in current stability mode"
+      "Exo swaps disabled in current rebalance mode"
     );
     let converted = exo.swap_conversion()?.lever_to_stable(in_amount)?;
     let hyusd_total = exo.validate_stablecoin_swap_amount(converted)?;

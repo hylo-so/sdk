@@ -10,7 +10,6 @@ use crate::rebalance_mode::RebalanceMode::{
   self, BuyZone1, BuyZone2, Depeg, Neutral, SellZone1, SellZone2,
 };
 
-const MIN_FEE: UFix64<N4> = UFix64::constant(0);
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 
 /// Represents the spread of fees between mint and redeem for protocol tokens.
@@ -46,11 +45,9 @@ impl FeePair {
   }
 
   pub fn validate(&self) -> Result<()> {
-    let valid_range = MIN_FEE..MAX_FEE;
-    (valid_range.contains(&self.mint()?)
-      && valid_range.contains(&self.redeem()?))
-    .then_some(())
-    .ok_or(InvalidFees.into())
+    (self.mint()? <= MAX_FEE && self.redeem()? <= MAX_FEE)
+      .then_some(())
+      .ok_or(InvalidFees.into())
   }
 }
 

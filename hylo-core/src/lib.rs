@@ -21,7 +21,6 @@ pub mod rebalance_pricing;
 pub mod slippage_config;
 pub mod solana_clock;
 pub mod spl_stake_pool;
-pub mod stability_mode;
 pub mod stability_pool_math;
 pub mod total_sol_cache;
 pub mod util;

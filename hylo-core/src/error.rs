@@ -61,9 +61,6 @@ pub enum CoreError {
   SlippageArithmetic,
   #[msg("Token output amount exceeds provided slippage configuration.")]
   SlippageExceeded,
-  // `stability_mode`
-  #[msg("Stability modes failed validation.")]
-  StabilityValidation,
   // `conversion`
   #[msg("Arithmetic error in conversion from levercoin to stablecoin.")]
   LeverToStable,
@@ -76,13 +73,13 @@ pub enum CoreError {
   // `fee_controller`
   #[msg("Over/underflow while computing fee extraction for transaction.")]
   FeeExtraction,
-  #[msg("No valid mint fee for levercoin. Projected stability mode is Depeg.")]
+  #[msg("No valid mint fee for levercoin. Projected rebalance mode is Depeg.")]
   NoValidLevercoinMintFee,
   #[msg("No valid redeem fee for levercoin due to Depeg.")]
   NoValidLevercoinRedeemFee,
-  #[msg("No valid mint fee for stablecoin due to Mode2 or Depeg.")]
+  #[msg("No valid mint fee for stablecoin due to SellZone2 or Depeg.")]
   NoValidStablecoinMintFee,
-  #[msg("No valid fee for swap due to Mode2 or Depeg.")]
+  #[msg("No valid fee for swap due to SellZone2 or Depeg.")]
   NoValidSwapFee,
   #[msg("Fees cannot exceed configured maximum.")]
   InvalidFees,
@@ -93,8 +90,6 @@ pub enum CoreError {
   DestinationCollateral,
   #[msg("Over/underflow projecting total stablecoin.")]
   DestinationStablecoin,
-  #[msg("There is no next stability threshold; current mode is Depeg.")]
-  NoNextStabilityThreshold,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
   RequestedStablecoinOverMaxMintable,
   // `stability_pool_math`

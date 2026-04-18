@@ -1,7 +1,7 @@
 //! Exchange context trait and implementations.
 //!
 //! [`ExchangeContext`] abstracts over collateral source and provides
-//! default implementations for NAVs, stability modes, swap fees, and
+//! default implementations for NAVs, rebalance modes, swap fees, and
 //! validations.
 
 mod exo;
@@ -49,11 +49,11 @@ pub trait ExchangeContext {
   fn buy_curve_config(&self) -> &RebalanceCurveConfig;
 
   /// Collateral ratio defining target leverage and stablecoin mint ability.
-  fn normal_mode_threshold(&self) -> UFix64<N9>;
+  fn mint_threshold(&self) -> UFix64<N9>;
 
   /// Confirm stablecoin mint capability based on configured normal mode CR.
   fn mint_enabled(&self) -> bool {
-    self.collateral_ratio() >= self.normal_mode_threshold()
+    self.collateral_ratio() >= self.mint_threshold()
   }
 
   /// Sell-side rebalance price curve from oracle confidence.

@@ -179,7 +179,7 @@ mod tests {
         if target > UFix64::one() {
           let total_sol = state.total_sol().expect("total_sol");
           let max = max_mintable_stablecoin(
-            target,
+            target.convert::<N2>(),
             total_sol,
             state.usd_sol_price,
             state.stablecoin_amount,
@@ -361,7 +361,7 @@ mod tests {
   }
 
   #[test]
-  fn max_swappable_stablecoin_mode1() -> Result<()> {
+  fn max_swappable_stablecoin_sell_zone_1() -> Result<()> {
     let tvl = UFix64::<N9>::new(7_894_510_000_000);
     let target_cr = UFix64::<N2>::new(130);
     let stablecoin = UFix64::<N6>::new(5_343_990_000);
@@ -372,7 +372,7 @@ mod tests {
   }
 
   #[test]
-  fn max_swappable_stablecoin_mode2() -> Result<()> {
+  fn max_swappable_stablecoin_sell_zone_2() -> Result<()> {
     let tvl = UFix64::<N9>::new(1_000_335_000_000_000);
     let target_cr = UFix64::<N2>::new(100);
     let stablecoin = UFix64::<N6>::new(1_000_000_000_000);

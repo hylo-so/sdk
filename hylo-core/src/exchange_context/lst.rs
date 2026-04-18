@@ -35,7 +35,7 @@ pub struct LstExchangeContext<C> {
   virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
-  normal_mode_threshold: UFix64<N9>,
+  mint_threshold: UFix64<N9>,
   rebalance_mode: RebalanceMode,
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
@@ -57,8 +57,8 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.sol_usd_oracle
   }
 
-  fn normal_mode_threshold(&self) -> UFix64<N9> {
-    self.normal_mode_threshold
+  fn mint_threshold(&self) -> UFix64<N9> {
+    self.mint_threshold
   }
 
   fn sell_curve_config(&self) -> &RebalanceCurveConfig {
@@ -99,7 +99,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn load(
     clock: C,
     total_sol_cache: &TotalSolCache,
-    normal_mode_threshold: UFix64<N9>,
+    mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
     sol_usd_pyth_feed: &PriceUpdateV2,
@@ -128,7 +128,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
-      normal_mode_threshold,
+      mint_threshold,
       rebalance_mode,
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
@@ -200,7 +200,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .apply_fee(projected_cr, amount_lst)
   }
 
-  /// Levercoin mint fee based on projected stability mode.
+  /// Levercoin mint fee based on projected rebalance mode.
   ///
   /// # Errors
   /// * Projection overflow or fee lookup

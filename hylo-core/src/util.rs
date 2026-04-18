@@ -56,7 +56,6 @@ macro_rules! eq_tolerance {
 #[cfg(test)]
 pub mod proptest {
   use fix::prelude::*;
-  use fix::typenum::{N2, N6, N9};
   use proptest::prelude::*;
 
   use crate::exchange_math::collateral_ratio;
@@ -98,10 +97,10 @@ pub mod proptest {
     }
 
     #[must_use]
-    pub fn next_target_collateral_ratio(&self) -> Option<UFix64<N2>> {
-      let current = self.collateral_ratio()?.convert::<N2>();
-      let one = UFix64::<N2>::new(100);
-      let next = current.mul_div_ceil(UFix64::new(90), one)?;
+    pub fn next_target_collateral_ratio(&self) -> Option<UFix64<N9>> {
+      let current = self.collateral_ratio()?;
+      let one = UFix64::<N9>::one();
+      let next = current.mul_div_ceil(UFix64::new(900_000_000), one)?;
       if next < one {
         None
       } else {
