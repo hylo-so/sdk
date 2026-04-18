@@ -86,11 +86,11 @@ impl RebalanceMode {
 
 /// Checks that the given mint threshold is within the Neutral rebalance zone.
 pub fn validate_mint_threshold(
-  mint_threshold: UFix64<N9>,
-) -> Result<UFix64<N9>> {
+  mint_threshold: UFixValue64,
+) -> Result<UFixValue64> {
   RebalanceMode::Neutral
     .active_range()
-    .contains(&mint_threshold)
+    .contains(&mint_threshold.try_into()?)
     .then_some(mint_threshold)
     .ok_or(MintThresholdInvalid.into())
 }
