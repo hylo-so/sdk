@@ -52,8 +52,13 @@ pub trait ExchangeContext {
   fn mint_threshold(&self) -> UFix64<N9>;
 
   /// Confirm stablecoin mint capability based on configured normal mode CR.
-  fn mint_enabled(&self) -> bool {
+  fn stablecoin_mint_enabled(&self) -> bool {
     self.collateral_ratio() >= self.mint_threshold()
+  }
+
+  /// Confirm levercoin mint capability; disabled only during Depeg.
+  fn levercoin_mint_enabled(&self) -> bool {
+    self.rebalance_mode() != RebalanceMode::Depeg
   }
 
   /// Sell-side rebalance price curve from oracle confidence.

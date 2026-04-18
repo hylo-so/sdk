@@ -29,7 +29,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
-      self.exchange_context.mint_enabled(),
+      self.exchange_context.stablecoin_mint_enabled(),
       "LST stablecoin mint disabled"
     );
     let lst_header = self.lst_header::<L>()?;
@@ -102,7 +102,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput> {
     ensure!(
-      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
+      self.exchange_context.levercoin_mint_enabled(),
       "Levercoin mint disabled in current rebalance mode"
     );
     let lst_header = self.lst_header::<L>()?;
@@ -339,7 +339,10 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
     in_amount: UFix64<N8>,
   ) -> Result<OperationOutput<N8, N6, N9>> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(exo.mint_enabled(), "Exo stablecoin mint disabled");
+    ensure!(
+      exo.stablecoin_mint_enabled(),
+      "Exo stablecoin mint disabled"
+    );
     let collateral_n9: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or_else(|| anyhow!("cbBTC N8->N9 overflow"))?;
@@ -402,7 +405,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N8, N6, N9>> {
     let exo = self.cbbtc_exchange_context();
     ensure!(
-      exo.rebalance_mode() > RebalanceMode::Depeg,
+      exo.levercoin_mint_enabled(),
       "Exo levercoin mint disabled in current rebalance mode"
     );
     let collateral_n9: UFix64<N9> = in_amount
