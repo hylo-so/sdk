@@ -1,6 +1,9 @@
 use std::ops::{Bound, RangeBounds};
 
+use anchor_lang::prelude::Result;
 use fix::prelude::*;
+
+use crate::error::CoreError::MintThresholdInvalid;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RebalanceMode {
@@ -79,6 +82,17 @@ impl RebalanceMode {
     .find(|mode| mode.active_range().contains(&cr))
     .unwrap_or(RebalanceMode::BuyZone2)
   }
+}
+
+/// Checks that the given mint threshold is within the Neutral rebalance zone.
+pub fn validate_mint_threshold(
+  mint_threshold: UFix64<N9>,
+) -> Result<UFix64<N9>> {
+  RebalanceMode::Neutral
+    .active_range()
+    .contains(&mint_threshold)
+    .then_some(mint_threshold)
+    .ok_or(MintThresholdInvalid.into())
 }
 
 #[cfg(test)]

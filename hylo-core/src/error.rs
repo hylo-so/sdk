@@ -174,4 +174,7 @@ pub enum CoreError {
   OracleIntervalSecsInvalid,
   #[msg("Oracle confidence tolerance not in valid range.")]
   OracleConfToleranceInvalid,
+  // `rebalance_mode`
+  #[msg("Mint threshold did not fall within Neutral rebalance range.")]
+  MintThresholdInvalid,
 }
