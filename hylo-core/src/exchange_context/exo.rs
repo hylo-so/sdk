@@ -32,7 +32,7 @@ pub struct ExoExchangeContext<C> {
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
-  mint_threshold: UFix64<N9>,
+  stablecoin_mint_threshold: UFix64<N9>,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
   stablecoin_mint_fees: InterpolatedMintFees,
@@ -54,8 +54,8 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.collateral_oracle
   }
 
-  fn mint_threshold(&self) -> UFix64<N9> {
-    self.mint_threshold
+  fn stablecoin_mint_threshold(&self) -> UFix64<N9> {
+    self.stablecoin_mint_threshold
   }
 
   fn sell_curve_config(&self) -> &RebalanceCurveConfig {
@@ -96,7 +96,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn load(
     clock: C,
     total_collateral: UFix64<N9>,
-    mint_threshold: UFix64<N9>,
+    stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
     collateral_usd_pyth_feed: &PriceUpdateV2,
@@ -127,7 +127,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
-      mint_threshold,
+      stablecoin_mint_threshold,
       rebalance_mode,
       levercoin_fees,
       stablecoin_mint_fees,

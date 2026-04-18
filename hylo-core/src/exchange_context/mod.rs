@@ -49,11 +49,11 @@ pub trait ExchangeContext {
   fn buy_curve_config(&self) -> &RebalanceCurveConfig;
 
   /// Collateral ratio defining target leverage and stablecoin mint ability.
-  fn mint_threshold(&self) -> UFix64<N9>;
+  fn stablecoin_mint_threshold(&self) -> UFix64<N9>;
 
   /// Confirm stablecoin mint capability based on configured normal mode CR.
   fn stablecoin_mint_enabled(&self) -> bool {
-    self.collateral_ratio() >= self.mint_threshold()
+    self.collateral_ratio() >= self.stablecoin_mint_threshold()
   }
 
   /// Confirm levercoin mint capability; disabled only during Depeg.

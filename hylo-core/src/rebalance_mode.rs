@@ -3,7 +3,7 @@ use std::ops::{Bound, RangeBounds};
 use anchor_lang::prelude::Result;
 use fix::prelude::*;
 
-use crate::error::CoreError::MintThresholdInvalid;
+use crate::error::CoreError::StablecoinMintThresholdInvalid;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RebalanceMode {
@@ -84,15 +84,16 @@ impl RebalanceMode {
   }
 }
 
-/// Checks that the given mint threshold is within the Neutral rebalance zone.
-pub fn validate_mint_threshold(
-  mint_threshold: UFixValue64,
+/// Checks that the given stablecoin mint threshold is within the Neutral
+/// rebalance zone.
+pub fn validate_stablecoin_mint_threshold(
+  stablecoin_mint_threshold: UFixValue64,
 ) -> Result<UFixValue64> {
   RebalanceMode::Neutral
     .active_range()
-    .contains(&mint_threshold.try_into()?)
-    .then_some(mint_threshold)
-    .ok_or(MintThresholdInvalid.into())
+    .contains(&stablecoin_mint_threshold.try_into()?)
+    .then_some(stablecoin_mint_threshold)
+    .ok_or(StablecoinMintThresholdInvalid.into())
 }
 
 #[cfg(test)]

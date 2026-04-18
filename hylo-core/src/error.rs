@@ -175,6 +175,8 @@ pub enum CoreError {
   #[msg("Oracle confidence tolerance not in valid range.")]
   OracleConfToleranceInvalid,
   // `rebalance_mode`
-  #[msg("Mint threshold did not fall within Neutral rebalance range.")]
-  MintThresholdInvalid,
+  #[msg(
+    "Stablecoin mint threshold did not fall within Neutral rebalance range."
+  )]
+  StablecoinMintThresholdInvalid,
 }
