@@ -99,7 +99,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>> {
-    let target_cr = RebalanceMode::Neutral.active_range().start;
+    let target_cr = RebalanceMode::Neutral.active_range().start()?;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -117,7 +117,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>> {
-    let target_cr = RebalanceMode::BuyZone1.active_range().start;
+    let target_cr = RebalanceMode::BuyZone1.active_range().start()?;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -251,7 +251,7 @@ pub trait ExchangeContext {
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>> {
     let target = RebalanceMode::SellZone1
       .active_range()
-      .end
+      .end()?
       .checked_convert()
       .ok_or(MaxMintable)?;
     max_mintable_stablecoin(
@@ -270,7 +270,7 @@ pub trait ExchangeContext {
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>> {
     let target = RebalanceMode::SellZone1
       .active_range()
-      .end
+      .end()?
       .checked_convert()
       .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(

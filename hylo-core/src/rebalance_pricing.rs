@@ -205,11 +205,11 @@ impl SellPriceCurve {
     let sell_zone_1 = RebalanceMode::SellZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
-        x: narrow_cr(sell_zone_1.start)?,
+        x: narrow_cr(sell_zone_1.start()?)?,
         y: narrow_price(floor)?,
       },
       Point {
-        x: narrow_cr(sell_zone_1.end)?,
+        x: narrow_cr(sell_zone_1.end()?)?,
         y: narrow_price(ceil)?,
       },
     ])?;
@@ -272,11 +272,11 @@ impl BuyPriceCurve {
     let buy_zone_1 = RebalanceMode::BuyZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
-        x: narrow_cr(buy_zone_1.start)?,
+        x: narrow_cr(buy_zone_1.start()?)?,
         y: narrow_price(floor)?,
       },
       Point {
-        x: narrow_cr(buy_zone_1.end)?,
+        x: narrow_cr(buy_zone_1.end()?)?,
         y: narrow_price(ceil)?,
       },
     ])?;
