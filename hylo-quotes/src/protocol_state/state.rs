@@ -140,7 +140,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let exchange_context = LstExchangeContext::load(
       clock,
       &total_sol_cache,
-      hylo.stability_threshold_1.try_into()?,
+      hylo.stablecoin_mint_threshold.try_into()?,
       oracle_config,
       xsol_fees,
       sol_usd,
@@ -235,7 +235,7 @@ fn build_cbbtc_exchange_context(
   ExoExchangeContext::load(
     clock,
     total_collateral,
-    exo_pair.stability_threshold_1.try_into()?,
+    exo_pair.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     levercoin_fees,
     &btc_usd,

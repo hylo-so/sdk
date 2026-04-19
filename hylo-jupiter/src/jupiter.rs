@@ -421,7 +421,7 @@ where
       ExoExchangeContext::load(
         self.clock.clone(),
         total_collateral,
-        exo_pair.stability_threshold_1.try_into()?,
+        exo_pair.stablecoin_mint_threshold.try_into()?,
         exo_oracle_config,
         exo_pair.levercoin_fees.into(),
         &btc_usd,

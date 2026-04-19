@@ -3015,15 +3015,7 @@
           "type": "u64"
         },
         {
-          "name": "stability_threshold_1",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        },
-        {
-          "name": "stability_threshold_2",
+          "name": "stablecoin_mint_threshold",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -8129,7 +8121,7 @@
           }
         },
         {
-          "name": "stability_threshold_1",
+          "name": "stablecoin_mint_threshold",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -11739,16 +11731,16 @@
       }
     },
     {
-      "name": "update_exo_stability_threshold",
+      "name": "update_exo_stablecoin_mint_threshold",
       "discriminator": [
-        155,
-        207,
-        124,
-        93,
-        245,
-        75,
-        49,
-        190
+        87,
+        78,
+        92,
+        99,
+        233,
+        87,
+        163,
+        180
       ],
       "accounts": [
         {
@@ -11840,7 +11832,7 @@
       ],
       "args": [
         {
-          "name": "new_stability_threshold_1",
+          "name": "new_stablecoin_mint_threshold",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -11850,7 +11842,7 @@
       ],
       "returns": {
         "defined": {
-          "name": "UpdateExoStabilityThresholdEvent"
+          "name": "UpdateStablecoinMintThresholdEvent"
         }
       }
     },
@@ -12310,6 +12302,92 @@
       "returns": {
         "defined": {
           "name": "UpdateRebalanceCurveConfigEvent"
+        }
+      }
+    },
+    {
+      "name": "update_lst_stablecoin_mint_threshold",
+      "discriminator": [
+        24,
+        139,
+        177,
+        147,
+        245,
+        31,
+        222,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_stablecoin_mint_threshold",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateStablecoinMintThresholdEvent"
         }
       }
     },
@@ -12810,100 +12888,6 @@
       "returns": {
         "defined": {
           "name": "UpdateStabilityPoolEvent"
-        }
-      }
-    },
-    {
-      "name": "update_stability_thresholds",
-      "discriminator": [
-        250,
-        58,
-        160,
-        105,
-        52,
-        84,
-        93,
-        167
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_stability_threshold_1",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        },
-        {
-          "name": "new_stability_threshold_2",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateStabilityThresholdsEvent"
         }
       }
     },
@@ -14126,19 +14110,6 @@
       ]
     },
     {
-      "name": "UpdateExoStabilityThresholdEvent",
-      "discriminator": [
-        166,
-        199,
-        136,
-        71,
-        165,
-        67,
-        97,
-        178
-      ]
-    },
-    {
       "name": "UpdateLevercoinFeesEvent",
       "discriminator": [
         84,
@@ -14256,16 +14227,16 @@
       ]
     },
     {
-      "name": "UpdateStabilityThresholdsEvent",
+      "name": "UpdateStablecoinMintThresholdEvent",
       "discriminator": [
-        36,
-        117,
-        167,
-        25,
-        25,
-        39,
-        46,
-        189
+        81,
+        104,
+        35,
+        118,
+        8,
+        9,
+        211,
+        62
       ]
     },
     {
@@ -14325,17 +14296,17 @@
     {
       "code": 6000,
       "name": "LevercoinRedeemDisabled",
-      "msg": "Cannot redeem levercoin due to stability mode. NAV would be 0 or lower."
+      "msg": "Cannot redeem levercoin due to Depeg. NAV would be 0 or lower."
     },
     {
       "code": 6001,
       "name": "LeverToStableDisabled",
-      "msg": "Levercoin to stablecoin swap disabled due to stability mode."
+      "msg": "Levercoin to stablecoin swap disabled due to rebalance mode."
     },
     {
       "code": 6002,
       "name": "StableToLeverDisabled",
-      "msg": "Stablecoin to levercoin swap disabled due to stability mode."
+      "msg": "Stablecoin to levercoin swap disabled due to rebalance mode."
     },
     {
       "code": 6003,
@@ -14410,12 +14381,12 @@
     {
       "code": 6017,
       "name": "StablecoinMintDisabled",
-      "msg": "Stablecoin mint disabled. Protocol is in Mode2 or Depeg."
+      "msg": "Stablecoin mint disabled. Collateral ratio is below minting threshold."
     },
     {
       "code": 6018,
       "name": "LevercoinMintDisabled",
-      "msg": "Levercoin mint disabled. Protocol is in Depeg."
+      "msg": "Levercoin mint disabled Due to depeg."
     },
     {
       "code": 6019,
@@ -14515,17 +14486,12 @@
     {
       "code": 6038,
       "name": "RebalanceSellInactive",
-      "msg": "Sell-side rebalancing is inactive at this CR."
+      "msg": "Sell-side rebalancing is inactive at current collateral ratio."
     },
     {
       "code": 6039,
       "name": "RebalanceBuyInactive",
-      "msg": "Buy-side rebalancing is inactive at this CR."
-    },
-    {
-      "code": 6040,
-      "name": "OracleIntervalSecsInvalid",
-      "msg": "Oracle interval secs not in valid range."
+      "msg": "Buy-side rebalancing is inactive at current collateral ratio."
     }
   ],
   "types": [
@@ -14821,10 +14787,10 @@
             }
           },
           {
-            "name": "stability_mode",
+            "name": "rebalance_mode",
             "type": {
               "defined": {
-                "name": "StabilityMode"
+                "name": "RebalanceMode"
               }
             }
           },
@@ -14890,7 +14856,7 @@
             }
           },
           {
-            "name": "stability_threshold_1",
+            "name": "stablecoin_mint_threshold",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -15197,7 +15163,7 @@
             }
           },
           {
-            "name": "stability_threshold_1",
+            "name": "stablecoin_mint_threshold",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -15205,7 +15171,7 @@
             }
           },
           {
-            "name": "stability_threshold_2",
+            "name": "legacy_stability_threshold_2",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -15338,7 +15304,7 @@
             }
           },
           {
-            "name": "mode_1",
+            "name": "sell_zone_1",
             "type": {
               "defined": {
                 "name": "FeePair"
@@ -15346,7 +15312,7 @@
             }
           },
           {
-            "name": "mode_2",
+            "name": "sell_zone_2",
             "type": {
               "defined": {
                 "name": "FeePair"
@@ -15934,6 +15900,32 @@
       }
     },
     {
+      "name": "RebalanceMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Depeg"
+          },
+          {
+            "name": "SellZone2"
+          },
+          {
+            "name": "SellZone1"
+          },
+          {
+            "name": "Neutral"
+          },
+          {
+            "name": "BuyZone1"
+          },
+          {
+            "name": "BuyZone2"
+          }
+        ]
+      }
+    },
+    {
       "name": "RedeemLevercoinExoEvent",
       "type": {
         "kind": "struct",
@@ -16339,30 +16331,6 @@
       }
     },
     {
-      "name": "StabilityMode",
-      "docs": [
-        "Mode of operation based on the protocol's current collateral ratio.",
-        "See whitepaper for more."
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Normal"
-          },
-          {
-            "name": "Mode1"
-          },
-          {
-            "name": "Mode2"
-          },
-          {
-            "name": "Depeg"
-          }
-        ]
-      }
-    },
-    {
       "name": "StablecoinFees",
       "docs": [
         "**Deprecated** — retained only for `Hylo` account deserialization."
@@ -16705,30 +16673,6 @@
       }
     },
     {
-      "name": "UpdateExoStabilityThresholdEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_stability_threshold_1",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "new_stability_threshold_1",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdateLevercoinFeesEvent",
       "type": {
         "kind": "struct",
@@ -16915,12 +16859,12 @@
       }
     },
     {
-      "name": "UpdateStabilityThresholdsEvent",
+      "name": "UpdateStablecoinMintThresholdEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "old_stability_threshold_1",
+            "name": "old_stablecoin_mint_threshold",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -16928,23 +16872,7 @@
             }
           },
           {
-            "name": "old_stability_threshold_2",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "new_stability_threshold_1",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "new_stability_threshold_2",
+            "name": "new_stablecoin_mint_threshold",
             "type": {
               "defined": {
                 "name": "UFixValue64"
