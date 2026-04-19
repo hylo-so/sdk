@@ -131,17 +131,18 @@ mod tests {
   }
 
   #[test]
-  fn from_cr_at_zone_start() {
+  fn from_cr_start_inclusive() {
     ALL.iter().for_each(|mode| {
       assert_eq!(RebalanceMode::from_cr(mode.active_range().start), *mode);
     });
   }
 
   #[test]
-  fn from_cr_just_below_end() {
+  fn from_cr_end_exclusive() {
     ALL.iter().for_each(|mode| {
       let end = mode.active_range().end;
       let just_below = UFix64::new(end.bits - 1);
+      assert_ne!(RebalanceMode::from_cr(end), *mode);
       assert_eq!(RebalanceMode::from_cr(just_below), *mode);
     });
   }
