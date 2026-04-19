@@ -14,20 +14,6 @@ use hylo_idl::tokens::{
 };
 use hylo_idl::{exchange, pda, stability_pool};
 
-// Program IDs
-// Token mints
-// Global PDAs
-// Mint authorities
-// Event authorities
-// Program data
-// Stability pool token accounts
-// Oracle feeds
-// JITOSOL accounts
-// HYLOSOL accounts
-// hyUSD fee accounts
-// USDC accounts
-// CBBTC/EXO accounts
-// Standard programs
 const LUT_ACCOUNTS: &[Pubkey] = &[
   // Program IDs
   exchange::ID,
