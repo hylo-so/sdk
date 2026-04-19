@@ -97,7 +97,6 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   mpl_token_metadata::ID,
 ];
 
-#[allow(clippy::needless_for_each)]
 fn main() {
   LUT_ACCOUNTS.iter().for_each(|key| println!("{key}"));
 }

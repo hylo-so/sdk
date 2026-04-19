@@ -32,3 +32,6 @@ solana-rpc-client.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+
+[lints]
+workspace = true

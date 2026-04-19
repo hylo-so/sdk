@@ -191,7 +191,6 @@ pub fn initialize_lst_registry_calculators(
 }
 
 #[must_use]
-#[allow(clippy::too_many_arguments)]
 pub fn register_lst(
   lst_mint: Pubkey,
   lst_stake_pool_state: Pubkey,

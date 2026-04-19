@@ -68,7 +68,6 @@ pub trait SimulatedOperation<IN: TokenMint, OUT: TokenMint> {
 pub trait SimulatedOperationExt {
   /// # Errors
   /// * Event parsing or validation.
-  #[allow(clippy::type_complexity)]
   fn extract_output<IN: TokenMint, OUT: TokenMint>(
     event: &<Self as SimulatedOperation<IN, OUT>>::Event,
   ) -> Result<
@@ -86,7 +85,6 @@ pub trait SimulatedOperationExt {
   /// # Errors
   /// * RPC simulation failure.
   /// * Event parsing or validation.
-  #[allow(clippy::type_complexity)]
   async fn simulate_output<IN: TokenMint, OUT: TokenMint>(
     &self,
     user: Pubkey,
