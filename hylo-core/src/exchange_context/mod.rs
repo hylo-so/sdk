@@ -221,16 +221,13 @@ pub trait ExchangeContext {
 
   /// Returns the worse of current vs projected mode for fee
   /// purposes. Transactions that improve CR only pay fees at
-  /// the current mode.
+  /// the current mode; transactions that worsen CR pay at the
+  /// projected mode.
   fn select_rebalance_mode_for_fees(
     &self,
     projected: RebalanceMode,
   ) -> RebalanceMode {
-    if projected < self.rebalance_mode() {
-      self.rebalance_mode()
-    } else {
-      projected
-    }
+    projected.min(self.rebalance_mode())
   }
 
   /// Swap conversion between stablecoin and levercoin NAVs.
