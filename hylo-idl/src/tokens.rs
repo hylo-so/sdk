@@ -88,11 +88,11 @@ impl TokenMint for SPYX {
   const MINT: Pubkey = pubkey!("XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W");
 }
 
-pub struct STRCX;
+pub struct ZEC;
 
-impl TokenMint for STRCX {
+impl TokenMint for ZEC {
   type Exp = N8;
-  const MINT: Pubkey = pubkey!("Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH");
+  const MINT: Pubkey = pubkey!("A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS");
 }
 
 pub struct XAUT0;
