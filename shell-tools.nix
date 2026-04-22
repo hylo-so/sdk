@@ -5,7 +5,7 @@
       nix develop .#nightly --command bash -c "
         set -euo pipefail
         cargo-fmt --check
-        cargo-clippy --check -- --deny clippy::pedantic
+        cargo-clippy --check
       "
     '';
   };
@@ -16,7 +16,7 @@
       nix develop .#nightly --command bash -c "
         set -euo pipefail
         cargo-fmt
-        cargo-clippy --fix -- --deny clippy::pedantic
+        cargo-clippy --fix
       "
     '';
   };

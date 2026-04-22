@@ -3,13 +3,13 @@ use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use super::{validate_stability_thresholds, ExchangeContext};
+use super::ExchangeContext;
 use crate::conversion::{Conversion, LstRebalanceConversion};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
-  NoNextStabilityThreshold, RebalanceAmountExceeded,
+  RebalanceAmountExceeded,
 };
-use crate::exchange_math::{collateral_ratio, max_swappable_stablecoin};
+use crate::exchange_math::collateral_ratio;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
 use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
 use crate::interpolated_fees::{
@@ -17,11 +17,11 @@ use crate::interpolated_fees::{
 };
 use crate::lst_sol_price::LstSolPrice;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
+use crate::rebalance_mode::RebalanceMode;
 use crate::rebalance_pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
 use crate::solana_clock::SolanaClock;
-use crate::stability_mode::{StabilityController, StabilityMode};
 use crate::total_sol_cache::TotalSolCache;
 use crate::virtual_stablecoin::VirtualStablecoin;
 
@@ -35,8 +35,8 @@ pub struct LstExchangeContext<C> {
   virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: UFix64<N9>,
-  pub stability_controller: StabilityController,
-  stability_mode: StabilityMode,
+  stablecoin_mint_threshold: UFix64<N9>,
+  rebalance_mode: RebalanceMode,
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
   levercoin_fees: LevercoinFees,
@@ -57,6 +57,10 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.sol_usd_oracle
   }
 
+  fn stablecoin_mint_threshold(&self) -> UFix64<N9> {
+    self.stablecoin_mint_threshold
+  }
+
   fn sell_curve_config(&self) -> &RebalanceCurveConfig {
     &self.sell_curve_config
   }
@@ -73,12 +77,8 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.levercoin_supply.ok_or(LevercoinNav.into())
   }
 
-  fn stability_controller(&self) -> &StabilityController {
-    &self.stability_controller
-  }
-
-  fn stability_mode(&self) -> StabilityMode {
-    self.stability_mode
+  fn rebalance_mode(&self) -> RebalanceMode {
+    self.rebalance_mode
   }
 
   fn collateral_ratio(&self) -> UFix64<N9> {
@@ -99,7 +99,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn load(
     clock: C,
     total_sol_cache: &TotalSolCache,
-    stability_threshold_1: UFix64<N2>,
+    stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
     sol_usd_pyth_feed: &PriceUpdateV2,
@@ -115,19 +115,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =
       InterpolatedRedeemFees::new(redeem_fee_curve()?);
-    let stability_threshold_2 = stablecoin_redeem_fees.cr_floor()?;
-    validate_stability_thresholds(
-      stability_threshold_1,
-      stability_threshold_2,
-    )?;
-    let stability_controller =
-      StabilityController::new(stability_threshold_1, stability_threshold_2)?;
     let stablecoin_supply = virtual_stablecoin.supply()?;
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
       collateral_ratio(total_sol, sol_usd_price.lower, stablecoin_supply)?;
-    let stability_mode =
-      stability_controller.stability_mode(collateral_ratio)?;
+    let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
     Ok(LstExchangeContext {
       clock,
       total_sol,
@@ -136,8 +128,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
-      stability_controller,
-      stability_mode,
+      stablecoin_mint_threshold,
+      rebalance_mode,
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
       levercoin_fees,
@@ -208,7 +200,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .apply_fee(projected_cr, amount_lst)
   }
 
-  /// Levercoin mint fee based on projected stability mode.
+  /// Levercoin mint fee based on projected rebalance mode.
   ///
   /// # Errors
   /// * Projection overflow or fee lookup
@@ -224,21 +216,21 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .checked_add(&new_sol)
       .ok_or(DestinationCollateral)?;
 
-    let stability_mode_for_fees = {
-      let projected = self.projected_stability_mode(
+    let rebalance_mode_for_fees = {
+      let projected = self.projected_rebalance_mode(
         new_total_sol,
         self.virtual_stablecoin_supply()?,
       )?;
-      self.select_stability_mode_for_fees(projected)
+      self.select_rebalance_mode_for_fees(projected)
     };
 
     self
       .levercoin_fees
-      .mint_fee(stability_mode_for_fees)
+      .mint_fee(rebalance_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_lst))
   }
 
-  /// Levercoin redeem fee based on projected stability mode.
+  /// Levercoin redeem fee based on projected rebalance mode.
   ///
   /// # Errors
   /// * Projection underflow or fee lookup
@@ -254,17 +246,17 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .checked_sub(&sol_rm)
       .ok_or(DestinationCollateral)?;
 
-    let stability_mode_for_fees = {
-      let projected = self.projected_stability_mode(
+    let rebalance_mode_for_fees = {
+      let projected = self.projected_rebalance_mode(
         new_total_sol,
         self.virtual_stablecoin_supply()?,
       )?;
-      self.select_stability_mode_for_fees(projected)
+      self.select_rebalance_mode_for_fees(projected)
     };
 
     self
       .levercoin_fees
-      .redeem_fee(stability_mode_for_fees)
+      .redeem_fee(rebalance_mode_for_fees)
       .and_then(|fee| FeeExtract::new(fee, amount_lst))
   }
 
@@ -380,25 +372,5 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       sol_usd_price,
       usdc_usd_price,
     ))
-  }
-
-  /// Maximum stablecoin swappable from levercoin using the next
-  /// lowest CR threshold as the limit.
-  ///
-  /// # Errors
-  /// * No next stability threshold or arithmetic failure
-  pub fn max_swappable_stablecoin_to_next_threshold(
-    &self,
-  ) -> Result<UFix64<N6>> {
-    let total_value_locked = self.total_value_locked()?;
-    let next_stability_threshold = self
-      .stability_controller
-      .next_stability_threshold(self.stability_mode)
-      .ok_or(NoNextStabilityThreshold)?;
-    max_swappable_stablecoin(
-      next_stability_threshold,
-      total_value_locked,
-      self.virtual_stablecoin_supply()?,
-    )
   }
 }

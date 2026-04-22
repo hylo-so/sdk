@@ -47,3 +47,8 @@ solana-loader-v3-interface = "5.0.0"
 solana-transaction-status-client-types = "=2.3.13"
 tokio = "1.36.0"
 tokio-test = "0.4"
+
+[workspace.lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+needless_for_each = "allow"
+type_complexity = "allow"

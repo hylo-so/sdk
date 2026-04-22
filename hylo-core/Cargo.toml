@@ -25,3 +25,6 @@ serde.workspace = true
 anyhow.workspace = true
 more-asserts.workspace = true
 proptest.workspace = true
+
+[lints]
+workspace = true

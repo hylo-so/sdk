@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anchor_client::solana_sdk::signature::{Keypair, Signature};
+use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;
@@ -9,7 +9,6 @@ use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::stability_pool::types::TokenMetadata;
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::util::HYLO_LOOKUP_TABLE;
 
 /// Admin client for the Hylo stability pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
@@ -40,20 +39,6 @@ impl ProgramClient for StabilityPoolClient {
 }
 
 impl StabilityPoolClient {
-  /// Rebalances levercoin from the stability pool back to stablecoin.
-  ///
-  /// # Errors
-  /// - Transaction failure
-  pub async fn rebalance_lever_to_stable(&self) -> Result<Signature> {
-    let instruction =
-      instruction_builders::rebalance_lever_to_stable(self.program.payer());
-    let instructions = vec![instruction];
-    let lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
-    let tx_args = VersionedTransactionData::new(instructions, vec![lut]);
-    let sig = self.send_v0_transaction(&tx_args).await?;
-    Ok(sig)
-  }
-
   /// Initializes the stability pool.
   ///
   /// # Errors

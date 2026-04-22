@@ -21,7 +21,11 @@ impl From<hylo_idl::exchange::types::StablecoinFees> for StablecoinFees {
 
 impl From<hylo_idl::exchange::types::LevercoinFees> for LevercoinFees {
   fn from(idl: hylo_idl::exchange::types::LevercoinFees) -> Self {
-    LevercoinFees::new(idl.normal.into(), idl.mode_1.into(), idl.mode_2.into())
+    LevercoinFees::new(
+      idl.normal.into(),
+      idl.sell_zone_1.into(),
+      idl.sell_zone_2.into(),
+    )
   }
 }
 
@@ -85,7 +89,11 @@ impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
   fn from(
     idl: hylo_idl::exchange::types::RebalanceCurveConfig,
   ) -> RebalanceCurveConfig {
-    RebalanceCurveConfig::new(idl.floor_mult.into(), idl.ceil_mult.into())
+    RebalanceCurveConfig::new(
+      idl.floor_mult.into(),
+      idl.ceil_mult.into(),
+      idl.deviation_tolerance.into(),
+    )
   }
 }
 
@@ -127,8 +135,8 @@ impl From<LevercoinFees> for hylo_idl::exchange::types::LevercoinFees {
   fn from(val: LevercoinFees) -> Self {
     hylo_idl::exchange::types::LevercoinFees {
       normal: val.normal.into(),
-      mode_1: val.mode_1.into(),
-      mode_2: val.mode_2.into(),
+      sell_zone_1: val.sell_zone_1.into(),
+      sell_zone_2: val.sell_zone_2.into(),
     }
   }
 }
@@ -151,6 +159,7 @@ impl From<RebalanceCurveConfig>
     hylo_idl::exchange::types::RebalanceCurveConfig {
       floor_mult: val.floor_mult.into(),
       ceil_mult: val.ceil_mult.into(),
+      deviation_tolerance: val.deviation_tolerance.into(),
     }
   }
 }

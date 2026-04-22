@@ -80,3 +80,45 @@ impl TokenMint for XBTC {
   type Exp = N6;
   const MINT: Pubkey = pda::exo_levercoin_mint(CBBTC::MINT);
 }
+
+pub struct SPYX;
+
+impl TokenMint for SPYX {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W");
+}
+
+pub struct STRCX;
+
+impl TokenMint for STRCX {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("Xs78JED6PFZxWc2wCEPspZW9kL3Se5J7L5TChKgsidH");
+}
+
+pub struct XAUT0;
+
+impl TokenMint for XAUT0 {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P");
+}
+
+pub struct ONYC;
+
+impl TokenMint for ONYC {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5");
+}
+
+pub struct JLP;
+
+impl TokenMint for JLP {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4");
+}
+
+pub struct HYPE;
+
+impl TokenMint for HYPE {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
+}

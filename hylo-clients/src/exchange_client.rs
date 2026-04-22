@@ -259,18 +259,19 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the stability thresholds.
+  /// Updates the LST stablecoin mint threshold.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn update_stability_thresholds(
+  pub fn update_lst_stablecoin_mint_threshold(
     &self,
-    args: &args::UpdateStabilityThresholds,
+    args: &args::UpdateLstStablecoinMintThreshold,
   ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_stability_thresholds(
-      self.program.payer(),
-      args,
-    );
+    let instruction =
+      instruction_builders::update_lst_stablecoin_mint_threshold(
+        self.program.payer(),
+        args,
+      );
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -490,20 +491,21 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the stability threshold for an exo collateral.
+  /// Updates the stablecoin mint threshold for an exo collateral.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn update_exo_stability_threshold(
+  pub fn update_exo_stablecoin_mint_threshold(
     &self,
     collateral_mint: Pubkey,
-    args: &args::UpdateExoStabilityThreshold,
+    args: &args::UpdateExoStablecoinMintThreshold,
   ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_exo_stability_threshold(
-      self.program.payer(),
-      collateral_mint,
-      args,
-    );
+    let instruction =
+      instruction_builders::update_exo_stablecoin_mint_threshold(
+        self.program.payer(),
+        collateral_mint,
+        args,
+      );
     Ok(VersionedTransactionData::one(instruction))
   }
 

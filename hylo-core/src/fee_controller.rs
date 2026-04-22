@@ -6,9 +6,10 @@ use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
   NoValidLevercoinRedeemFee, NoValidSwapFee,
 };
-use crate::stability_mode::StabilityMode::{self, Depeg, Mode1, Mode2, Normal};
+use crate::rebalance_mode::RebalanceMode::{
+  self, BuyZone1, BuyZone2, Depeg, Neutral, SellZone1, SellZone2,
+};
 
-/// 1000 bps (10%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 
 /// Represents the spread of fees between mint and redeem for protocol tokens.
@@ -44,18 +45,16 @@ impl FeePair {
   }
 
   pub fn validate(&self) -> Result<()> {
-    if self.mint()? <= MAX_FEE && self.redeem()? <= MAX_FEE {
-      Ok(())
-    } else {
-      Err(InvalidFees.into())
-    }
+    (self.mint()? <= MAX_FEE && self.redeem()? <= MAX_FEE)
+      .then_some(())
+      .ok_or(InvalidFees.into())
   }
 }
 
-/// Fee configuration table reacts to different stability modes.
+/// Fee configuration table reacts to different rebalance modes.
 pub trait FeeController: Sized {
-  fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
-  fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>>;
+  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>>;
+  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>>;
   fn validate(self) -> Result<Self>;
 }
 
@@ -123,29 +122,27 @@ impl StablecoinFees {
 )]
 pub struct LevercoinFees {
   pub normal: FeePair,
-  pub mode_1: FeePair,
-  pub mode_2: FeePair,
+  pub sell_zone_1: FeePair,
+  pub sell_zone_2: FeePair,
 }
 
 impl FeeController for LevercoinFees {
-  /// Determines fee to charge when minting `xSOL`.
-  /// Fees should become cheaper or zero as protocol goes into stability modes.
-  fn mint_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>> {
+  /// Determines minting fee based on
+  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>> {
     match mode {
-      Normal => self.normal.mint.try_into(),
-      Mode1 => self.mode_1.mint.try_into(),
-      Mode2 => self.mode_2.mint.try_into(),
+      Neutral | BuyZone1 | BuyZone2 => self.normal.mint(),
+      SellZone1 => self.sell_zone_1.mint(),
+      SellZone2 => self.sell_zone_2.mint(),
       Depeg => Err(NoValidLevercoinMintFee.into()),
     }
   }
 
   /// Determines fee to charge when redeeming `xSOL`.
-  /// Fees get increasingly more expensive in stability modes.
-  fn redeem_fee(&self, mode: StabilityMode) -> Result<UFix64<N4>> {
+  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>> {
     match mode {
-      Normal => self.normal.redeem.try_into(),
-      Mode1 => self.mode_1.redeem.try_into(),
-      Mode2 => self.mode_2.redeem.try_into(),
+      Neutral | BuyZone1 | BuyZone2 => self.normal.redeem(),
+      SellZone1 => self.sell_zone_1.redeem(),
+      SellZone2 => self.sell_zone_2.redeem(),
       Depeg => Err(NoValidLevercoinRedeemFee.into()),
     }
   }
@@ -153,8 +150,8 @@ impl FeeController for LevercoinFees {
   /// Run validations
   fn validate(self) -> Result<LevercoinFees> {
     self.normal.validate()?;
-    self.mode_1.validate()?;
-    self.mode_2.validate()?;
+    self.sell_zone_1.validate()?;
+    self.sell_zone_2.validate()?;
     Ok(self)
   }
 }
@@ -163,37 +160,37 @@ impl LevercoinFees {
   #[must_use]
   pub fn new(
     normal: FeePair,
-    mode_1: FeePair,
-    mode_2: FeePair,
+    sell_zone_1: FeePair,
+    sell_zone_2: FeePair,
   ) -> LevercoinFees {
     LevercoinFees {
       normal,
-      mode_1,
-      mode_2,
+      sell_zone_1,
+      sell_zone_2,
     }
   }
 
-  /// Fees to charge in the levercoin to stablecoin swap.
-  pub fn swap_to_stablecoin_fee(
+  /// Fees to charge in the levercoin to stablecoin conversion.
+  pub fn convert_to_stablecoin_fee(
     &self,
-    mode: StabilityMode,
+    mode: RebalanceMode,
   ) -> Result<UFix64<N4>> {
     match mode {
-      Normal => self.normal.redeem.try_into(),
-      Mode1 => self.mode_1.redeem.try_into(),
-      Mode2 | Depeg => Err(NoValidSwapFee.into()),
+      Neutral | BuyZone1 | BuyZone2 => self.normal.redeem.try_into(),
+      SellZone1 => self.sell_zone_1.redeem.try_into(),
+      SellZone2 | Depeg => Err(NoValidSwapFee.into()),
     }
   }
 
-  /// Fees to charge in the stablecoin to levercoin swap.
-  pub fn swap_from_stablecoin_fee(
+  /// Fees to charge in the stablecoin to levercoin conversion.
+  pub fn convert_from_stablecoin_fee(
     &self,
-    mode: StabilityMode,
+    mode: RebalanceMode,
   ) -> Result<UFix64<N4>> {
     match mode {
-      Normal => self.normal.mint(),
-      Mode1 => self.mode_1.mint(),
-      Mode2 => self.mode_2.mint(),
+      Neutral | BuyZone1 | BuyZone2 => self.normal.mint(),
+      SellZone1 => self.sell_zone_1.mint(),
+      SellZone2 => self.sell_zone_2.mint(),
       Depeg => Err(NoValidSwapFee.into()),
     }
   }

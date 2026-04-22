@@ -191,7 +191,6 @@ pub fn initialize_lst_registry_calculators(
 }
 
 #[must_use]
-#[allow(clippy::too_many_arguments)]
 pub fn register_lst(
   lst_mint: Pubkey,
   lst_stake_pool_state: Pubkey,
@@ -570,11 +569,11 @@ pub fn update_oracle_interval(
 }
 
 #[must_use]
-pub fn update_stability_thresholds(
+pub fn update_lst_stablecoin_mint_threshold(
   admin: Pubkey,
-  args: &args::UpdateStabilityThresholds,
+  args: &args::UpdateLstStablecoinMintThreshold,
 ) -> Instruction {
-  let accounts = accounts::UpdateStabilityThresholds {
+  let accounts = accounts::UpdateLstStablecoinMintThreshold {
     admin,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -759,12 +758,12 @@ pub fn update_exo_oracle_interval(
 }
 
 #[must_use]
-pub fn update_exo_stability_threshold(
+pub fn update_exo_stablecoin_mint_threshold(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::UpdateExoStabilityThreshold,
+  args: &args::UpdateExoStablecoinMintThreshold,
 ) -> Instruction {
-  let accounts = accounts::UpdateExoStabilityThreshold {
+  let accounts = accounts::UpdateExoStablecoinMintThreshold {
     admin,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),

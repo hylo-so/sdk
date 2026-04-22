@@ -23,3 +23,6 @@ hylo-fix.workspace = true
 mpl-token-metadata.workspace = true
 solana-address-lookup-table-interface.workspace = true
 solana-loader-v3-interface.workspace = true
+
+[lints]
+workspace = true

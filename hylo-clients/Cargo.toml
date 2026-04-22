@@ -31,3 +31,6 @@ solana-transaction-status-client-types.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+
+[lints]
+workspace = true

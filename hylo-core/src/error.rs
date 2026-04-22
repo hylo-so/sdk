@@ -61,9 +61,6 @@ pub enum CoreError {
   SlippageArithmetic,
   #[msg("Token output amount exceeds provided slippage configuration.")]
   SlippageExceeded,
-  // `stability_mode`
-  #[msg("Stability modes failed validation.")]
-  StabilityValidation,
   // `conversion`
   #[msg("Arithmetic error in conversion from levercoin to stablecoin.")]
   LeverToStable,
@@ -76,13 +73,13 @@ pub enum CoreError {
   // `fee_controller`
   #[msg("Over/underflow while computing fee extraction for transaction.")]
   FeeExtraction,
-  #[msg("No valid mint fee for levercoin. Projected stability mode is Depeg.")]
+  #[msg("No valid mint fee for levercoin. Projected rebalance mode is Depeg.")]
   NoValidLevercoinMintFee,
   #[msg("No valid redeem fee for levercoin due to Depeg.")]
   NoValidLevercoinRedeemFee,
-  #[msg("No valid mint fee for stablecoin due to Mode2 or Depeg.")]
+  #[msg("No valid mint fee for stablecoin due to SellZone2 or Depeg.")]
   NoValidStablecoinMintFee,
-  #[msg("No valid fee for swap due to Mode2 or Depeg.")]
+  #[msg("No valid fee for swap due to SellZone2 or Depeg.")]
   NoValidSwapFee,
   #[msg("Fees cannot exceed configured maximum.")]
   InvalidFees,
@@ -93,8 +90,6 @@ pub enum CoreError {
   DestinationCollateral,
   #[msg("Over/underflow projecting total stablecoin.")]
   DestinationStablecoin,
-  #[msg("There is no next stability threshold; current mode is Depeg.")]
-  NoNextStabilityThreshold,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
   RequestedStablecoinOverMaxMintable,
   // `stability_pool_math`
@@ -162,6 +157,10 @@ pub enum CoreError {
   RebalanceOutOfDomain,
   #[msg("Rebalance amount projects CR outside the pricing curve domain.")]
   RebalanceAmountExceeded,
+  #[msg("Rebalance price exceeds deviation tolerance from oracle spot.")]
+  RebalanceDeviationExceeded,
+  #[msg("Arithmetic error computing deviation tolerance band.")]
+  RebalanceDeviationArithmetic,
   // `rebalance_math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,
@@ -170,4 +169,16 @@ pub enum CoreError {
   // `spl_stake_pool`
   #[msg("Division by zero computing SPL stake pool price.")]
   StakePoolDivByZero,
+  // `oracle_config`
+  #[msg("Oracle interval not in valid range.")]
+  OracleIntervalSecsInvalid,
+  #[msg("Oracle confidence tolerance not in valid range.")]
+  OracleConfToleranceInvalid,
+  // `rebalance_mode`
+  #[msg("Range boundary did not match the expected bound variant.")]
+  RangeUnexpectedBound,
+  #[msg(
+    "Stablecoin mint threshold did not fall within Neutral rebalance range."
+  )]
+  StablecoinMintThresholdInvalid,
 }

@@ -14,20 +14,6 @@ use hylo_idl::tokens::{
 };
 use hylo_idl::{exchange, pda, stability_pool};
 
-// Program IDs
-// Token mints
-// Global PDAs
-// Mint authorities
-// Event authorities
-// Program data
-// Stability pool token accounts
-// Oracle feeds
-// JITOSOL accounts
-// HYLOSOL accounts
-// hyUSD fee accounts
-// USDC accounts
-// CBBTC/EXO accounts
-// Standard programs
 const LUT_ACCOUNTS: &[Pubkey] = &[
   // Program IDs
   exchange::ID,
@@ -97,7 +83,6 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   mpl_token_metadata::ID,
 ];
 
-#[allow(clippy::needless_for_each)]
 fn main() {
   LUT_ACCOUNTS.iter().for_each(|key| println!("{key}"));
 }

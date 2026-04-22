@@ -37,7 +37,6 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
 }
 
 /// Turbofish helper for [`TokenOperation`].
-#[allow(clippy::type_complexity)]
 pub trait TokenOperationExt {
   /// # Errors
   /// * Arithmetic or mode restrictions.
