@@ -72,10 +72,10 @@ pub fn validate_interval_secs(secs: u64) -> Result<u64> {
   }
 }
 
-/// Confidence tolerance must be in `(MIN, MAX]`.
+/// Confidence tolerance must be in `[MIN, MAX]`.
 pub fn validate_conf_tolerance(tolerance: UFixValue64) -> Result<UFixValue64> {
   let pct: UFix64<N9> = tolerance.try_into()?;
-  if pct > MIN_CONF_TOLERANCE && pct <= MAX_CONF_TOLERANCE {
+  if (MIN_CONF_TOLERANCE..=MAX_CONF_TOLERANCE).contains(&pct) {
     Ok(tolerance)
   } else {
     Err(OracleConfToleranceInvalid.into())
