@@ -366,7 +366,7 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "hylo"
           ]
         },
         {
@@ -391,6 +391,59 @@
                 ]
               }
             ]
+          }
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
           }
         },
         {
@@ -491,7 +544,10 @@
         {
           "name": "admin",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
         },
         {
           "name": "upgrade_authority",
@@ -519,6 +575,59 @@
                 ]
               }
             ]
+          }
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
           }
         },
         {
@@ -852,104 +961,6 @@
       "args": []
     },
     {
-      "name": "update_admin",
-      "discriminator": [
-        161,
-        176,
-        40,
-        213,
-        60,
-        184,
-        179,
-        228
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "upgrade_authority",
-          "signer": true
-        },
-        {
-          "name": "pool_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program_data"
-        },
-        {
-          "name": "hylo_stability_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_admin",
-          "type": "pubkey"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateAdminEvent"
-        }
-      }
-    },
-    {
       "name": "update_withdrawal_fee",
       "discriminator": [
         165,
@@ -964,10 +975,9 @@
       "accounts": [
         {
           "name": "admin",
-          "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "hylo"
           ]
         },
         {
@@ -992,6 +1002,59 @@
                 ]
               }
             ]
+          }
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
           }
         },
         {
@@ -2111,19 +2174,6 @@
       ]
     },
     {
-      "name": "UpdateAdminEvent",
-      "discriminator": [
-        225,
-        152,
-        171,
-        87,
-        246,
-        63,
-        66,
-        234
-      ]
-    },
-    {
       "name": "UpdateWithdrawalFeeEvent",
       "discriminator": [
         204,
@@ -2462,7 +2512,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "admin",
+            "name": "_dead_admin",
             "type": "pubkey"
           },
           {
@@ -2770,22 +2820,6 @@
           {
             "name": "exp",
             "type": "i8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "UpdateAdminEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_admin",
-            "type": "pubkey"
           }
         ]
       }

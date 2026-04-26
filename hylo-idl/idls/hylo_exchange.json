@@ -14870,10 +14870,6 @@
           {
             "name": "approved",
             "type": "bool"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
           }
         ]
       }

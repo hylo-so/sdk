@@ -8,7 +8,9 @@ use hylo_idl::stability_pool::client::args;
 use hylo_idl::stability_pool::instruction_builders;
 use hylo_idl::stability_pool::types::TokenMetadata;
 
+use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::squads::SquadsContext;
 
 /// Admin client for the Hylo stability pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
@@ -73,29 +75,16 @@ impl StabilityPoolClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
+  /// - Failed to wrap inner instruction for Squads
   pub fn update_withdrawal_fee(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateWithdrawalFee,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      instruction_builders::update_withdrawal_fee(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
-  /// Updates the stability pool admin.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_admin(
-    &self,
-    upgrade_authority: Pubkey,
-    args: &args::UpdateAdmin,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_admin(
-      self.program.payer(),
-      upgrade_authority,
-      args,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::update_withdrawal_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_withdrawal_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.wrap(&inner, self.program.payer(), memo)
   }
 }
