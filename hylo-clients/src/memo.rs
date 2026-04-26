@@ -18,9 +18,10 @@ fn account_meta_bytes(
     is_writable,
   }: &AccountMeta,
 ) -> [u8; size_of::<AccountMeta>()] {
-  let mut bytes = [0; 34];
-  bytes[..32].copy_from_slice(pubkey.as_array());
-  bytes[32..].copy_from_slice(&[is_signer.into(), is_writable.into()]);
+  let pubkey_len = size_of::<Pubkey>();
+  let mut bytes = [0; size_of::<AccountMeta>()];
+  bytes[..pubkey_len].copy_from_slice(pubkey.as_array());
+  bytes[pubkey_len..].copy_from_slice(&[is_signer.into(), is_writable.into()]);
   bytes
 }
 
@@ -95,7 +96,7 @@ mod tests {
   fn memo_changes_with_args() {
     let paused = args::UpdatePaused { new_paused: true };
     let unpaused = args::UpdatePaused { new_paused: false };
-    let ix_paused = instruction_builders::update_paused(pk(1), &paused);
+    let ix_paused = instruction_builders::update_paused(pk(0), &paused);
     let ix_unpaused = instruction_builders::update_paused(pk(1), &unpaused);
     assert_ne!(
       build_memo("update_paused", &ix_paused),
