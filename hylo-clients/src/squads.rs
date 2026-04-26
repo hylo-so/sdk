@@ -99,7 +99,7 @@ impl SquadsContext {
     proposal_create(accounts, args, None)
   }
 
-/// Wraps `inner` instructions into vault execution and proposal transaction.
+  /// Wraps `inner` instructions into vault execution and proposal transaction.
   /// Inner instructions must use [`Self::vault_pda`] as the admin signer.
   ///
   /// # Errors
