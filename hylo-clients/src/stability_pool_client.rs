@@ -71,11 +71,10 @@ impl StabilityPoolClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the withdrawal fee for the stability pool.
+  /// Updates the withdrawal fee.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_withdrawal_fee(
     &self,
     squads: &SquadsContext,

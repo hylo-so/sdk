@@ -112,7 +112,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   #[allow(clippy::too_many_arguments)]
   pub fn register_lst(
     &self,
@@ -189,7 +188,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_oracle_conf_tolerance(
     &self,
     squads: &SquadsContext,
@@ -204,8 +202,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::update_oracle_conf_tolerance`] signed by
-  /// the client's payer.
+  /// Direct variant of [`Self::update_oracle_conf_tolerance`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -224,7 +221,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_sol_usd_oracle(
     &self,
     squads: &SquadsContext,
@@ -241,7 +237,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_lst_swap_fee(
     &self,
     squads: &SquadsContext,
@@ -258,7 +253,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_levercoin_fees(
     &self,
     squads: &SquadsContext,
@@ -275,7 +269,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_oracle_interval(
     &self,
     squads: &SquadsContext,
@@ -292,7 +285,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_lst_stablecoin_mint_threshold(
     &self,
     squads: &SquadsContext,
@@ -308,11 +300,10 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the protocol paused state. Signed by the pause authority.
+  /// Updates the protocol paused state.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_paused(
     &self,
     squads: &SquadsContext,
@@ -325,8 +316,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::update_paused`] signed by an explicit
-  /// pause authority pubkey.
+  /// Direct variant of [`Self::update_paused`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -344,7 +334,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_lst_buy_curve_config(
     &self,
     squads: &SquadsContext,
@@ -359,8 +348,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::update_lst_buy_curve_config`] signed by
-  /// the client's payer.
+  /// Direct variant of [`Self::update_lst_buy_curve_config`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -379,7 +367,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_lst_sell_curve_config(
     &self,
     squads: &SquadsContext,
@@ -394,8 +381,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::update_lst_sell_curve_config`] signed by
-  /// the client's payer.
+  /// Direct variant of [`Self::update_lst_sell_curve_config`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -414,7 +400,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_yield_harvest_config(
     &self,
     squads: &SquadsContext,
@@ -433,7 +418,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_usdc_oracle_conf_tolerance(
     &self,
     squads: &SquadsContext,
@@ -452,7 +436,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_usdc_oracle_interval(
     &self,
     squads: &SquadsContext,
@@ -471,7 +454,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_usdc_swap_fee(
     &self,
     squads: &SquadsContext,
@@ -488,7 +470,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_lst_rebalance_fee(
     &self,
     squads: &SquadsContext,
@@ -509,7 +490,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_funding_rate(
     &self,
     squads: &SquadsContext,
@@ -530,7 +510,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_oracle(
     &self,
     squads: &SquadsContext,
@@ -551,7 +530,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_oracle_conf_tolerance(
     &self,
     squads: &SquadsContext,
@@ -572,7 +550,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_oracle_interval(
     &self,
     squads: &SquadsContext,
@@ -593,7 +570,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_stablecoin_mint_threshold(
     &self,
     squads: &SquadsContext,
@@ -615,7 +591,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_buy_curve(
     &self,
     squads: &SquadsContext,
@@ -636,7 +611,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_sell_curve(
     &self,
     squads: &SquadsContext,
@@ -657,7 +631,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn update_exo_levercoin_fees(
     &self,
     squads: &SquadsContext,
@@ -708,7 +681,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn register_exo(
     &self,
     squads: &SquadsContext,
@@ -731,7 +703,6 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn withdraw_fees(
     &self,
     squads: &SquadsContext,
@@ -764,12 +735,10 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Proposes an update to a privileged protocol address. Signed by
-  /// the current admin.
+  /// Proposes an update to a privileged protocol address.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn propose_address_update(
     &self,
     squads: &SquadsContext,
@@ -788,8 +757,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::propose_address_update`] signed by the
-  /// client's payer.
+  /// Direct variant of [`Self::propose_address_update`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -808,12 +776,10 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Approves an outstanding address update proposal. Signed by the
-  /// program upgrade authority.
+  /// Approves an outstanding address update proposal.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn approve_address_update(
     &self,
     squads: &SquadsContext,
@@ -828,8 +794,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::approve_address_update`] signed by the
-  /// client's payer.
+  /// Direct variant of [`Self::approve_address_update`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -844,13 +809,11 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Accepts an approved address update proposal. Signed by the
-  /// incoming address; rent on the proposal account refunds to the
-  /// current admin.
+  /// Accepts an approved address update proposal. Rent on the proposal
+  /// account refunds to the current admin.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn accept_address_update(
     &self,
     squads: &SquadsContext,
@@ -867,8 +830,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::accept_address_update`] signed by the
-  /// client's payer.
+  /// Direct variant of [`Self::accept_address_update`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
@@ -885,12 +847,10 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Cancels an outstanding address update proposal. Signed by the
-  /// current admin.
+  /// Cancels an outstanding address update proposal.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  /// - Failed to wrap inner instruction for Squads
   pub fn cancel_address_update(
     &self,
     squads: &SquadsContext,
@@ -905,8 +865,7 @@ impl ExchangeClient {
     squads.wrap(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::cancel_address_update`] signed by the
-  /// client's payer.
+  /// Direct variant of [`Self::cancel_address_update`].
   ///
   /// # Errors
   /// - Failed to build transaction instructions
