@@ -2277,7 +2277,7 @@
             "type": "pubkey"
           },
           {
-            "name": "stability_pool",
+            "name": "pause_authority",
             "type": "pubkey"
           },
           {

@@ -8,6 +8,378 @@
   },
   "instructions": [
     {
+      "name": "accept_address_update",
+      "discriminator": [
+        56,
+        65,
+        20,
+        139,
+        208,
+        230,
+        213,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "new_address",
+          "signer": true,
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "AcceptAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "approve_address_update",
+      "discriminator": [
+        35,
+        60,
+        186,
+        56,
+        181,
+        237,
+        165,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "upgrade_authority",
+          "signer": true
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "hylo_exchange",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ApproveAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "cancel_address_update",
+      "discriminator": [
+        181,
+        122,
+        207,
+        111,
+        131,
+        188,
+        184,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "CancelAddressUpdateEvent"
+        }
+      }
+    },
+    {
       "name": "convert_lever_to_stable_exo",
       "discriminator": [
         75,
@@ -3011,6 +3383,10 @@
       ],
       "args": [
         {
+          "name": "pause_authority",
+          "type": "pubkey"
+        },
+        {
           "name": "oracle_interval_secs",
           "type": "u64"
         },
@@ -3019,14 +3395,6 @@
           "type": {
             "defined": {
               "name": "UFixValue64"
-            }
-          }
-        },
-        {
-          "name": "stablecoin_fees",
-          "type": {
-            "defined": {
-              "name": "StablecoinFees"
             }
           }
         },
@@ -5600,6 +5968,148 @@
       "returns": {
         "defined": {
           "name": "MintStablecoinUsdcEvent"
+        }
+      }
+    },
+    {
+      "name": "propose_address_update",
+      "discriminator": [
+        183,
+        253,
+        18,
+        185,
+        155,
+        67,
+        166,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        },
+        {
+          "name": "new_address",
+          "type": "pubkey"
+        },
+        {
+          "name": "ttl_secs",
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ProposeAddressUpdateEvent"
         }
       }
     },
@@ -10836,97 +11346,6 @@
       }
     },
     {
-      "name": "update_admin",
-      "discriminator": [
-        161,
-        176,
-        40,
-        213,
-        60,
-        184,
-        179,
-        228
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "upgrade_authority",
-          "signer": true
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program_data"
-        },
-        {
-          "name": "hylo_exchange",
-          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_admin",
-          "type": "pubkey"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateAdminEvent"
-        }
-      }
-    },
-    {
       "name": "update_exo_buy_curve",
       "discriminator": [
         121,
@@ -12659,7 +13078,7 @@
       ],
       "accounts": [
         {
-          "name": "admin",
+          "name": "pause_authority",
           "signer": true,
           "relations": [
             "hylo"
@@ -12806,170 +13225,6 @@
       "returns": {
         "defined": {
           "name": "UpdateOracleAddressEvent"
-        }
-      }
-    },
-    {
-      "name": "update_stability_pool",
-      "discriminator": [
-        241,
-        157,
-        233,
-        64,
-        49,
-        184,
-        93,
-        137
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_stability_pool",
-          "type": "pubkey"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateStabilityPoolEvent"
-        }
-      }
-    },
-    {
-      "name": "update_treasury",
-      "discriminator": [
-        60,
-        16,
-        243,
-        66,
-        96,
-        59,
-        254,
-        131
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_treasury",
-          "type": "pubkey"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateTreasuryEvent"
         }
       }
     },
@@ -13679,6 +13934,19 @@
   ],
   "accounts": [
     {
+      "name": "AddressUpdateProposal",
+      "discriminator": [
+        12,
+        31,
+        250,
+        50,
+        46,
+        210,
+        94,
+        182
+      ]
+    },
+    {
       "name": "ExoPair",
       "discriminator": [
         251,
@@ -13745,6 +14013,45 @@
     }
   ],
   "events": [
+    {
+      "name": "AcceptAddressUpdateEvent",
+      "discriminator": [
+        63,
+        130,
+        1,
+        235,
+        255,
+        47,
+        229,
+        210
+      ]
+    },
+    {
+      "name": "ApproveAddressUpdateEvent",
+      "discriminator": [
+        98,
+        91,
+        95,
+        138,
+        125,
+        114,
+        11,
+        245
+      ]
+    },
+    {
+      "name": "CancelAddressUpdateEvent",
+      "discriminator": [
+        240,
+        141,
+        179,
+        211,
+        245,
+        181,
+        23,
+        212
+      ]
+    },
     {
       "name": "ConvertLeverToStableExoEvent",
       "discriminator": [
@@ -13928,6 +14235,19 @@
       ]
     },
     {
+      "name": "ProposeAddressUpdateEvent",
+      "discriminator": [
+        46,
+        255,
+        33,
+        127,
+        122,
+        204,
+        96,
+        63
+      ]
+    },
+    {
       "name": "RedeemLevercoinExoEvent",
       "discriminator": [
         211,
@@ -14084,19 +14404,6 @@
       ]
     },
     {
-      "name": "UpdateAdminEvent",
-      "discriminator": [
-        225,
-        152,
-        171,
-        87,
-        246,
-        63,
-        66,
-        234
-      ]
-    },
-    {
       "name": "UpdateExoFundingRateEvent",
       "discriminator": [
         189,
@@ -14214,19 +14521,6 @@
       ]
     },
     {
-      "name": "UpdateStabilityPoolEvent",
-      "discriminator": [
-        220,
-        82,
-        162,
-        130,
-        152,
-        212,
-        135,
-        63
-      ]
-    },
-    {
       "name": "UpdateStablecoinMintThresholdEvent",
       "discriminator": [
         81,
@@ -14250,19 +14544,6 @@
         64,
         135,
         59
-      ]
-    },
-    {
-      "name": "UpdateTreasuryEvent",
-      "discriminator": [
-        104,
-        210,
-        213,
-        227,
-        230,
-        150,
-        146,
-        19
       ]
     },
     {
@@ -14497,9 +14778,146 @@
       "code": 6040,
       "name": "ExoMintNotInAllowlist",
       "msg": "Mint is not in the exogenous collateral allowlist."
+    },
+    {
+      "code": 6041,
+      "name": "AddressChangeExpired",
+      "msg": "Address change proposal has expired."
+    },
+    {
+      "code": 6042,
+      "name": "AddressChangeTtlInvalid",
+      "msg": "Address change proposal's TTL not in configured range."
+    },
+    {
+      "code": 6043,
+      "name": "AddressChangeNotApproved",
+      "msg": "Address change proposal has not been approved."
+    },
+    {
+      "code": 6044,
+      "name": "AddressChangeAlreadyApproved",
+      "msg": "Address change proposal has already been approved."
     }
   ],
   "types": [
+    {
+      "name": "AcceptAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "old_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressField",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Admin"
+          },
+          {
+            "name": "Treasury"
+          },
+          {
+            "name": "PauseAuthority"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressUpdateProposal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal_time",
+            "type": "i64"
+          },
+          {
+            "name": "ttl_secs",
+            "type": "u64"
+          },
+          {
+            "name": "approved",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApproveAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CancelAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "ConvertLeverToStableExoEvent",
       "type": {
@@ -15096,7 +15514,7 @@
             "type": "pubkey"
           },
           {
-            "name": "stability_pool",
+            "name": "pause_authority",
             "type": "pubkey"
           },
           {
@@ -15864,6 +16282,38 @@
           },
           {
             "name": "posted_slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProposeAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "current_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal_time",
+            "type": "i64"
+          },
+          {
+            "name": "ttl_secs",
             "type": "u64"
           }
         ]
@@ -16638,22 +17088,6 @@
       }
     },
     {
-      "name": "UpdateAdminEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_admin",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdateExoFundingRateEvent",
       "type": {
         "kind": "struct",
@@ -16848,22 +17282,6 @@
       }
     },
     {
-      "name": "UpdateStabilityPoolEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_stability_pool",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_stability_pool",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdateStablecoinMintThresholdEvent",
       "type": {
         "kind": "struct",
@@ -16907,22 +17325,6 @@
                 "name": "UFixValue64"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "UpdateTreasuryEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_treasury",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_treasury",
-            "type": "pubkey"
           }
         ]
       }
@@ -17100,6 +17502,16 @@
     }
   ],
   "constants": [
+    {
+      "name": "ADDRESS_UPDATE_PROPOSAL",
+      "type": {
+        "array": [
+          "u8",
+          23
+        ]
+      },
+      "value": "[97, 100, 100, 114, 101, 115, 115, 95, 117, 112, 100, 97, 116, 101, 95, 112, 114, 111, 112, 111, 115, 97, 108]"
+    },
     {
       "name": "EXO_LEVERCOIN",
       "type": {

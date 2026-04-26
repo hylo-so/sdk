@@ -7,7 +7,7 @@ use anyhow::Result;
 use hylo_core::idl::exchange;
 use hylo_idl::exchange::client::args;
 use hylo_idl::exchange::instruction_builders;
-use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
+use hylo_idl::exchange::types::{AddressField, TokenMetadata, UFixValue64};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
@@ -207,19 +207,6 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the stability pool address.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_stability_pool(
-    &self,
-    args: &args::UpdateStabilityPool,
-  ) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::update_stability_pool(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
   /// Updates the LST swap fee.
   ///
   /// # Errors
@@ -275,16 +262,17 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the protocol paused state.
+  /// Updates the protocol paused state. Signed by the pause authority.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
   pub fn update_paused(
     &self,
+    pause_authority: Pubkey,
     args: &args::UpdatePaused,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      instruction_builders::update_paused(self.program.payer(), args);
+      instruction_builders::update_paused(pause_authority, args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -315,19 +303,6 @@ impl ExchangeClient {
       self.program.payer(),
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
-  /// Updates the treasury address.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_treasury(
-    &self,
-    args: &args::UpdateTreasury,
-  ) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::update_treasury(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -386,23 +361,6 @@ impl ExchangeClient {
   ) -> Result<VersionedTransactionData> {
     let instruction =
       instruction_builders::update_usdc_swap_fee(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
-  /// Updates the protocol admin.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_admin(
-    &self,
-    upgrade_authority: Pubkey,
-    args: &args::UpdateAdmin,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_admin(
-      self.program.payer(),
-      upgrade_authority,
-      args,
-    );
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -638,6 +596,77 @@ impl ExchangeClient {
     let instruction = instruction_builders::harvest_funding_rate(
       collateral_mint,
       collateral_usd_pyth_feed,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Proposes an update to a privileged protocol address. Signed by the
+  /// current admin.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn propose_address_update(
+    &self,
+    address_field: AddressField,
+    new_address: Pubkey,
+    ttl_secs: u64,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::propose_address_update(
+      self.program.payer(),
+      address_field,
+      new_address,
+      ttl_secs,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Approves an outstanding address update proposal. Signed by the
+  /// program upgrade authority.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn approve_address_update(
+    &self,
+    address_field: AddressField,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::approve_address_update(
+      self.program.payer(),
+      address_field,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Accepts an approved address update proposal. Signed by the
+  /// incoming address; rent on the proposal account refunds to the
+  /// current admin.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn accept_address_update(
+    &self,
+    admin: Pubkey,
+    address_field: AddressField,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::accept_address_update(
+      self.program.payer(),
+      admin,
+      address_field,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Cancels an outstanding address update proposal. Signed by the
+  /// current admin.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn cancel_address_update(
+    &self,
+    address_field: AddressField,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::cancel_address_update(
+      self.program.payer(),
+      address_field,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

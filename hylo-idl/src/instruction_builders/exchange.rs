@@ -2,14 +2,14 @@
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
-use anchor_lang::solana_program::sysvar::rent;
+use anchor_lang::solana_program::sysvar::{clock, rent};
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::account_builders;
 use crate::exchange::client::{accounts, args};
-use crate::exchange::types::{TokenMetadata, UFixValue64};
+use crate::exchange::types::{AddressField, TokenMetadata, UFixValue64};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{exchange, stability_pool};
@@ -271,24 +271,6 @@ pub fn update_sol_usd_oracle(
   args: &args::UpdateSolUsdOracle,
 ) -> Instruction {
   let accounts = accounts::UpdateSolUsdOracle {
-    admin,
-    hylo: pda::HYLO,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn update_stability_pool(
-  admin: Pubkey,
-  args: &args::UpdateStabilityPool,
-) -> Instruction {
-  let accounts = accounts::UpdateStabilityPool {
     admin,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -587,9 +569,12 @@ pub fn update_lst_stablecoin_mint_threshold(
 }
 
 #[must_use]
-pub fn update_paused(admin: Pubkey, args: &args::UpdatePaused) -> Instruction {
+pub fn update_paused(
+  pause_authority: Pubkey,
+  args: &args::UpdatePaused,
+) -> Instruction {
   let accounts = accounts::UpdatePaused {
-    admin,
+    pause_authority,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -625,24 +610,6 @@ pub fn update_lst_sell_curve_config(
   args: &args::UpdateLstSellCurveConfig,
 ) -> Instruction {
   let accounts = accounts::UpdateLstSellCurveConfig {
-    admin,
-    hylo: pda::HYLO,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn update_treasury(
-  admin: Pubkey,
-  args: &args::UpdateTreasury,
-) -> Instruction {
-  let accounts = accounts::UpdateTreasury {
     admin,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -831,28 +798,6 @@ pub fn update_exo_levercoin_fees(
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     collateral_mint,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn update_admin(
-  payer: Pubkey,
-  upgrade_authority: Pubkey,
-  args: &args::UpdateAdmin,
-) -> Instruction {
-  let accounts = accounts::UpdateAdmin {
-    payer,
-    upgrade_authority,
-    hylo: pda::HYLO,
-    program_data: pda::EXCHANGE_PROGRAM_DATA,
-    hylo_exchange: exchange::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   };
@@ -1073,5 +1018,103 @@ pub fn withdraw_fees(
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
     data: args::WithdrawFees {}.data(),
+  }
+}
+
+/// Proposes an update to one of the protocol's privileged addresses
+/// (admin, treasury, or pause authority). The admin signs.
+#[must_use]
+pub fn propose_address_update(
+  admin: Pubkey,
+  address_field: AddressField,
+  new_address: Pubkey,
+  ttl_secs: u64,
+) -> Instruction {
+  let accounts = accounts::ProposeAddressUpdate {
+    admin,
+    hylo: pda::HYLO,
+    proposal: pda::address_update_proposal(address_field),
+    clock: clock::ID,
+    system_program: system_program::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::ProposeAddressUpdate {
+    address_field,
+    new_address,
+    ttl_secs,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+/// Approves an outstanding address update proposal. The program upgrade
+/// authority signs.
+#[must_use]
+pub fn approve_address_update(
+  upgrade_authority: Pubkey,
+  address_field: AddressField,
+) -> Instruction {
+  let accounts = accounts::ApproveAddressUpdate {
+    upgrade_authority,
+    proposal: pda::address_update_proposal(address_field),
+    program_data: pda::EXCHANGE_PROGRAM_DATA,
+    hylo_exchange: exchange::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::ApproveAddressUpdate { address_field };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+/// Accepts an approved address update proposal. The new address signs;
+/// rent on the proposal account refunds to the current admin.
+#[must_use]
+pub fn accept_address_update(
+  new_address: Pubkey,
+  admin: Pubkey,
+  address_field: AddressField,
+) -> Instruction {
+  let accounts = accounts::AcceptAddressUpdate {
+    new_address,
+    admin,
+    hylo: pda::HYLO,
+    proposal: pda::address_update_proposal(address_field),
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::AcceptAddressUpdate { address_field };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+/// Cancels an outstanding address update proposal. The admin signs.
+#[must_use]
+pub fn cancel_address_update(
+  admin: Pubkey,
+  address_field: AddressField,
+) -> Instruction {
+  let accounts = accounts::CancelAddressUpdate {
+    admin,
+    hylo: pda::HYLO,
+    proposal: pda::address_update_proposal(address_field),
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::CancelAddressUpdate { address_field };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
   }
 }
