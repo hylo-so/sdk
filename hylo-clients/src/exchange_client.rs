@@ -312,7 +312,25 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
+  /// - Failed to wrap inner instruction for Squads
   pub fn update_paused(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdatePaused,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_paused(squads.vault_pda(), args);
+    let memo = build_memo("update_paused", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.wrap(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::update_paused`] signed by an explicit
+  /// pause authority pubkey.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_paused_direct(
     &self,
     pause_authority: Pubkey,
     args: &args::UpdatePaused,
