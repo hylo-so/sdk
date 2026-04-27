@@ -14798,6 +14798,11 @@
       "code": 6044,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
+    },
+    {
+      "code": 6045,
+      "name": "AddressChangeUpgradeAuthority",
+      "msg": "Address change approver must be upgrade authority."
     }
   ],
   "types": [
