@@ -26,6 +26,11 @@ pub struct SquadsContext {
   pub transaction_index: u64,
 }
 
+pub struct SquadsTransactionData {
+  pub transaction: VersionedTransactionData,
+  pub memo: String,
+}
+
 impl SquadsContext {
   /// Constructs a context targeting the next free `transaction_index`
   /// on the given multisig.
@@ -109,17 +114,16 @@ impl SquadsContext {
     inner: &VersionedTransactionData,
     creator: Pubkey,
     memo: String,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let message = TransactionMessage::try_compile(
       &self.vault_pda(),
       &inner.instructions,
       &inner.lookup_tables,
     )?;
-    let vault_ix = self.create_vault(creator, &message, memo);
+    let vault_ix = self.create_vault(creator, &message, memo.clone());
     let proposal_ix = self.create_proposal(creator);
-    Ok(VersionedTransactionData::new(
-      vec![vault_ix, proposal_ix],
-      vec![],
-    ))
+    let transaction =
+      VersionedTransactionData::new(vec![vault_ix, proposal_ix], vec![]);
+    Ok(SquadsTransactionData { transaction, memo })
   }
 }

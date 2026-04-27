@@ -10,7 +10,7 @@ use hylo_idl::stability_pool::types::TokenMetadata;
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::squads::SquadsContext;
+use crate::squads::{SquadsContext, SquadsTransactionData};
 
 /// Admin client for the Hylo stability pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
@@ -79,7 +79,7 @@ impl StabilityPoolClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateWithdrawalFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_withdrawal_fee(squads.vault_pda(), args);
     let memo = build_memo("update_withdrawal_fee", &instruction);

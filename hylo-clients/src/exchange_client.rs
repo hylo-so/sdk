@@ -11,7 +11,7 @@ use hylo_idl::exchange::types::{AddressField, TokenMetadata, UFixValue64};
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::squads::SquadsContext;
+use crate::squads::{SquadsContext, SquadsTransactionData};
 use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
 /// Admin client for the Hylo exchange program. Manages LST
@@ -124,7 +124,7 @@ impl ExchangeClient {
     stake_pool_program: Pubkey,
     stake_pool_program_data: Pubkey,
     rebalance_fee: UFixValue64,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::register_lst(
       lst_mint,
       lst_stake_pool_state,
@@ -192,7 +192,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateOracleConfTolerance,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_oracle_conf_tolerance(
       squads.vault_pda(),
       args,
@@ -225,7 +225,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateSolUsdOracle,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_sol_usd_oracle(squads.vault_pda(), args);
     let memo = build_memo("update_sol_usd_oracle", &instruction);
@@ -241,7 +241,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateLstSwapFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_lst_swap_fee(squads.vault_pda(), args);
     let memo = build_memo("update_lst_swap_fee", &instruction);
@@ -257,7 +257,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateLevercoinFees,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_levercoin_fees(squads.vault_pda(), args);
     let memo = build_memo("update_levercoin_fees", &instruction);
@@ -273,7 +273,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateOracleInterval,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_oracle_interval(squads.vault_pda(), args);
     let memo = build_memo("update_oracle_interval", &instruction);
@@ -289,7 +289,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateLstStablecoinMintThreshold,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_lst_stablecoin_mint_threshold(
         squads.vault_pda(),
@@ -308,7 +308,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdatePaused,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_paused(squads.vault_pda(), args);
     let memo = build_memo("update_paused", &instruction);
@@ -338,7 +338,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateLstBuyCurveConfig,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_lst_buy_curve_config(
       squads.vault_pda(),
       args,
@@ -371,7 +371,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateLstSellCurveConfig,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_lst_sell_curve_config(
       squads.vault_pda(),
       args,
@@ -404,7 +404,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateYieldHarvestConfig,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_yield_harvest_config(
       squads.vault_pda(),
       args,
@@ -422,7 +422,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateUsdcOracleConfTolerance,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_usdc_oracle_conf_tolerance(
       squads.vault_pda(),
       args,
@@ -440,7 +440,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateUsdcOracleInterval,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_usdc_oracle_interval(
       squads.vault_pda(),
       args,
@@ -458,7 +458,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     args: &args::UpdateUsdcSwapFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_usdc_swap_fee(squads.vault_pda(), args);
     let memo = build_memo("update_usdc_swap_fee", &instruction);
@@ -475,7 +475,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     lst_mint: Pubkey,
     args: &args::UpdateLstRebalanceFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_lst_rebalance_fee(
       squads.vault_pda(),
       lst_mint,
@@ -495,7 +495,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoFundingRate,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_funding_rate(
       squads.vault_pda(),
       collateral_mint,
@@ -515,7 +515,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracle,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_oracle(
       squads.vault_pda(),
       collateral_mint,
@@ -535,7 +535,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracleConfTolerance,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_oracle_conf_tolerance(
       squads.vault_pda(),
       collateral_mint,
@@ -555,7 +555,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracleInterval,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_oracle_interval(
       squads.vault_pda(),
       collateral_mint,
@@ -575,7 +575,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoStablecoinMintThreshold,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_exo_stablecoin_mint_threshold(
         squads.vault_pda(),
@@ -596,7 +596,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoBuyCurve,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_buy_curve(
       squads.vault_pda(),
       collateral_mint,
@@ -616,7 +616,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoSellCurve,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_sell_curve(
       squads.vault_pda(),
       collateral_mint,
@@ -636,7 +636,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoLevercoinFees,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_levercoin_fees(
       squads.vault_pda(),
       collateral_mint,
@@ -687,7 +687,7 @@ impl ExchangeClient {
     collateral_mint: Pubkey,
     exo_usd_pyth_feed: Pubkey,
     args: &args::RegisterExo,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::register_exo(
       squads.vault_pda(),
       collateral_mint,
@@ -708,7 +708,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     treasury: Pubkey,
     fee_token_mint: Pubkey,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::withdraw_fees(
       squads.vault_pda(),
       treasury,
@@ -745,7 +745,7 @@ impl ExchangeClient {
     address_field: AddressField,
     new_address: Pubkey,
     ttl_secs: u64,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::propose_address_update(
       squads.vault_pda(),
       address_field,
@@ -784,7 +784,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     address_field: AddressField,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::approve_address_update(
       squads.vault_pda(),
       address_field,
@@ -819,7 +819,7 @@ impl ExchangeClient {
     squads: &SquadsContext,
     admin: Pubkey,
     address_field: AddressField,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::accept_address_update(
       squads.vault_pda(),
       admin,
@@ -855,7 +855,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     address_field: AddressField,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::cancel_address_update(
       squads.vault_pda(),
       address_field,
