@@ -74,9 +74,9 @@ pub fn simulation_config() -> RpcSimulateTransactionConfig {
 /// Parses a typed event from simulation inner instructions.
 ///
 /// # Errors
-/// - Simulation failed
-/// - No inner instructions returned
-/// - Event not found or deserialization fails
+/// * Simulation failed
+/// * No inner instructions returned
+/// * Event not found or deserialization fails
 pub fn parse_event<E>(
   result: &Response<RpcSimulateTransactionResult>,
 ) -> Result<E>
@@ -106,7 +106,7 @@ where
 /// Deserializes an account into an address lookup table.
 ///
 /// # Errors
-/// - Account data cannot be deserialized
+/// * Account data cannot be deserialized
 pub fn deserialize_lookup_table(
   key: &Pubkey,
   account: &Account,
@@ -121,8 +121,8 @@ pub fn deserialize_lookup_table(
 /// Builds a signed versioned transaction.
 ///
 /// # Errors
-/// - Failed to compile message
-/// - Failed to create transaction
+/// * Failed to compile message
+/// * Failed to create transaction
 pub fn build_v0_transaction(
   VersionedTransactionData {
     instructions,
@@ -153,8 +153,8 @@ pub fn build_v0_transaction(
 /// headers writable.
 ///
 /// # Errors
-/// - Lookup table account doesn't exist
-/// - Malformed structure (preamble cannot be split at 16)
+/// * Lookup table account doesn't exist
+/// * Malformed structure (preamble cannot be split at 16)
 pub fn build_lst_registry(
   table: AddressLookupTableAccount,
 ) -> Result<(Vec<AccountMeta>, AddressLookupTableAccount)> {
@@ -184,7 +184,7 @@ pub fn build_lst_registry(
 /// Gets cluster from environment variables.
 ///
 /// # Errors
-/// - Missing `RPC_URL` or `RPC_WS_URL` environment variables
+/// * Missing `RPC_URL` or `RPC_WS_URL` environment variables
 pub fn cluster_from_env() -> Result<Cluster> {
   let url = std::env::var("RPC_URL")?;
   let ws_url = std::env::var("RPC_WS_URL")?;
@@ -194,8 +194,8 @@ pub fn cluster_from_env() -> Result<Cluster> {
 /// Builds test exchange client with random keypair.
 ///
 /// # Errors
-/// - Environment variable access
-/// - Client initialization
+/// * Environment variable access
+/// * Client initialization
 pub fn build_test_exchange_client() -> Result<ExchangeClient> {
   let client = ExchangeClient::new_from_keypair(
     cluster_from_env()?,
@@ -208,8 +208,8 @@ pub fn build_test_exchange_client() -> Result<ExchangeClient> {
 /// Builds test stability pool client with random keypair.
 ///
 /// # Errors
-/// - Environment variable access
-/// - Client initialization
+/// * Environment variable access
+/// * Client initialization
 pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
   let client = StabilityPoolClient::new_from_keypair(
     cluster_from_env()?,
@@ -222,8 +222,8 @@ pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
 /// Builds test router client with random keypair.
 ///
 /// # Errors
-/// - Environment variable access
-/// - Client initialization
+/// * Environment variable access
+/// * Client initialization
 pub fn build_test_router_client() -> Result<RouterClient> {
   RouterClient::new_from_keypair(
     cluster_from_env()?,
