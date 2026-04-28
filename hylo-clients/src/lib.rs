@@ -33,9 +33,11 @@
 //!   stability pool program
 
 pub mod exchange_client;
+pub mod memo;
 pub mod prelude;
 pub mod program_client;
 pub mod router_client;
+pub mod squads;
 pub mod stability_pool_client;
 pub mod transaction;
 pub mod util;

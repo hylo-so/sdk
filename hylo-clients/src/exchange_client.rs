@@ -7,9 +7,11 @@ use anyhow::Result;
 use hylo_core::idl::exchange;
 use hylo_idl::exchange::client::args;
 use hylo_idl::exchange::instruction_builders;
-use hylo_idl::exchange::types::{TokenMetadata, UFixValue64};
+use hylo_idl::exchange::types::{AddressField, TokenMetadata, UFixValue64};
 
+use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::squads::{SquadsContext, SquadsTransactionData};
 use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
 
 /// Admin client for the Hylo exchange program. Manages LST
@@ -113,6 +115,7 @@ impl ExchangeClient {
   #[allow(clippy::too_many_arguments)]
   pub fn register_lst(
     &self,
+    squads: &SquadsContext,
     lst_registry: Pubkey,
     lst_mint: Pubkey,
     lst_stake_pool_state: Pubkey,
@@ -121,7 +124,7 @@ impl ExchangeClient {
     stake_pool_program: Pubkey,
     stake_pool_program_data: Pubkey,
     rebalance_fee: UFixValue64,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::register_lst(
       lst_mint,
       lst_stake_pool_state,
@@ -130,10 +133,12 @@ impl ExchangeClient {
       stake_pool_program,
       stake_pool_program_data,
       lst_registry,
-      self.program.payer(),
+      squads.vault_pda(),
       rebalance_fee,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("register_lst", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Builds transaction data for LST price oracle crank.
@@ -185,6 +190,24 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_oracle_conf_tolerance(
     &self,
+    squads: &SquadsContext,
+    args: &args::UpdateOracleConfTolerance,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::update_oracle_conf_tolerance(
+      squads.vault_pda(),
+      args,
+    );
+    let memo = build_memo("update_oracle_conf_tolerance", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::update_oracle_conf_tolerance`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_oracle_conf_tolerance_direct(
+    &self,
     args: &args::UpdateOracleConfTolerance,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::update_oracle_conf_tolerance(
@@ -200,24 +223,14 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_sol_usd_oracle(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateSolUsdOracle,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_sol_usd_oracle(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
-  /// Updates the stability pool address.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_stability_pool(
-    &self,
-    args: &args::UpdateStabilityPool,
-  ) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::update_stability_pool(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::update_sol_usd_oracle(squads.vault_pda(), args);
+    let memo = build_memo("update_sol_usd_oracle", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the LST swap fee.
@@ -226,11 +239,14 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_lst_swap_fee(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateLstSwapFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_lst_swap_fee(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::update_lst_swap_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_lst_swap_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the levercoin fee configuration.
@@ -239,11 +255,14 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_levercoin_fees(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateLevercoinFees,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_levercoin_fees(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::update_levercoin_fees(squads.vault_pda(), args);
+    let memo = build_memo("update_levercoin_fees", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle staleness interval.
@@ -252,11 +271,14 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_oracle_interval(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateOracleInterval,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_oracle_interval(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::update_oracle_interval(squads.vault_pda(), args);
+    let memo = build_memo("update_oracle_interval", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the LST stablecoin mint threshold.
@@ -265,14 +287,17 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_lst_stablecoin_mint_threshold(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateLstStablecoinMintThreshold,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_lst_stablecoin_mint_threshold(
-        self.program.payer(),
+        squads.vault_pda(),
         args,
       );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_lst_stablecoin_mint_threshold", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the protocol paused state.
@@ -281,10 +306,27 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_paused(
     &self,
+    squads: &SquadsContext,
+    args: &args::UpdatePaused,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_paused(squads.vault_pda(), args);
+    let memo = build_memo("update_paused", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::update_paused`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_paused_direct(
+    &self,
+    pause_authority: Pubkey,
     args: &args::UpdatePaused,
   ) -> Result<VersionedTransactionData> {
     let instruction =
-      instruction_builders::update_paused(self.program.payer(), args);
+      instruction_builders::update_paused(pause_authority, args);
     Ok(VersionedTransactionData::one(instruction))
   }
 
@@ -293,6 +335,24 @@ impl ExchangeClient {
   /// # Errors
   /// - Failed to build transaction instructions
   pub fn update_lst_buy_curve_config(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateLstBuyCurveConfig,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::update_lst_buy_curve_config(
+      squads.vault_pda(),
+      args,
+    );
+    let memo = build_memo("update_lst_buy_curve_config", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::update_lst_buy_curve_config`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_lst_buy_curve_config_direct(
     &self,
     args: &args::UpdateLstBuyCurveConfig,
   ) -> Result<VersionedTransactionData> {
@@ -309,6 +369,24 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_lst_sell_curve_config(
     &self,
+    squads: &SquadsContext,
+    args: &args::UpdateLstSellCurveConfig,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::update_lst_sell_curve_config(
+      squads.vault_pda(),
+      args,
+    );
+    let memo = build_memo("update_lst_sell_curve_config", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::update_lst_sell_curve_config`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_lst_sell_curve_config_direct(
+    &self,
     args: &args::UpdateLstSellCurveConfig,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::update_lst_sell_curve_config(
@@ -318,32 +396,22 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the treasury address.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_treasury(
-    &self,
-    args: &args::UpdateTreasury,
-  ) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::update_treasury(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
   /// Updates the yield harvest configuration.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
   pub fn update_yield_harvest_config(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateYieldHarvestConfig,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_yield_harvest_config(
-      self.program.payer(),
+      squads.vault_pda(),
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_yield_harvest_config", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the USDC oracle confidence tolerance.
@@ -352,13 +420,16 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_usdc_oracle_conf_tolerance(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateUsdcOracleConfTolerance,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_usdc_oracle_conf_tolerance(
-      self.program.payer(),
+      squads.vault_pda(),
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_usdc_oracle_conf_tolerance", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the USDC oracle staleness interval.
@@ -367,13 +438,16 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_usdc_oracle_interval(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateUsdcOracleInterval,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_usdc_oracle_interval(
-      self.program.payer(),
+      squads.vault_pda(),
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_usdc_oracle_interval", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the USDC swap fee.
@@ -382,28 +456,14 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_usdc_swap_fee(
     &self,
+    squads: &SquadsContext,
     args: &args::UpdateUsdcSwapFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_usdc_swap_fee(self.program.payer(), args);
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
-  /// Updates the protocol admin.
-  ///
-  /// # Errors
-  /// - Failed to build transaction instructions
-  pub fn update_admin(
-    &self,
-    upgrade_authority: Pubkey,
-    args: &args::UpdateAdmin,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_admin(
-      self.program.payer(),
-      upgrade_authority,
-      args,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::update_usdc_swap_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_usdc_swap_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the rebalance fee for an LST.
@@ -412,15 +472,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_lst_rebalance_fee(
     &self,
+    squads: &SquadsContext,
     lst_mint: Pubkey,
     args: &args::UpdateLstRebalanceFee,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_lst_rebalance_fee(
-      self.program.payer(),
+      squads.vault_pda(),
       lst_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_lst_rebalance_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the funding rate for an exo collateral.
@@ -429,15 +492,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_funding_rate(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoFundingRate,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_funding_rate(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_funding_rate", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle for an exo collateral.
@@ -446,15 +512,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_oracle(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracle,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_oracle(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_oracle", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle confidence tolerance for an exo collateral.
@@ -463,15 +532,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_oracle_conf_tolerance(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracleConfTolerance,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_oracle_conf_tolerance(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_oracle_conf_tolerance", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle staleness interval for an exo collateral.
@@ -480,15 +552,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_oracle_interval(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracleInterval,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_oracle_interval(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_oracle_interval", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the stablecoin mint threshold for an exo collateral.
@@ -497,16 +572,19 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_stablecoin_mint_threshold(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoStablecoinMintThreshold,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction =
       instruction_builders::update_exo_stablecoin_mint_threshold(
-        self.program.payer(),
+        squads.vault_pda(),
         collateral_mint,
         args,
       );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_stablecoin_mint_threshold", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the buy curve for an exo collateral.
@@ -515,15 +593,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_buy_curve(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoBuyCurve,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_buy_curve(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_buy_curve", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the sell curve for an exo collateral.
@@ -532,15 +613,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_sell_curve(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoSellCurve,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_sell_curve(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_sell_curve", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the levercoin fees for an exo collateral.
@@ -549,15 +633,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn update_exo_levercoin_fees(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoLevercoinFees,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::update_exo_levercoin_fees(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("update_exo_levercoin_fees", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Initializes USDC support.
@@ -596,17 +683,20 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn register_exo(
     &self,
+    squads: &SquadsContext,
     collateral_mint: Pubkey,
     exo_usd_pyth_feed: Pubkey,
     args: &args::RegisterExo,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::register_exo(
-      self.program.payer(),
+      squads.vault_pda(),
       collateral_mint,
       exo_usd_pyth_feed,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("register_exo", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Withdraws accumulated fees to the treasury.
@@ -615,15 +705,18 @@ impl ExchangeClient {
   /// - Failed to build transaction instructions
   pub fn withdraw_fees(
     &self,
+    squads: &SquadsContext,
     treasury: Pubkey,
     fee_token_mint: Pubkey,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::withdraw_fees(
-      self.program.payer(),
+      squads.vault_pda(),
       treasury,
       fee_token_mint,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("withdraw_fees", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Harvests the funding rate for an exo collateral.
@@ -638,6 +731,151 @@ impl ExchangeClient {
     let instruction = instruction_builders::harvest_funding_rate(
       collateral_mint,
       collateral_usd_pyth_feed,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Proposes an update to a privileged protocol address.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn propose_address_update(
+    &self,
+    squads: &SquadsContext,
+    address_field: AddressField,
+    new_address: Pubkey,
+    ttl_secs: u64,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::propose_address_update(
+      squads.vault_pda(),
+      address_field,
+      new_address,
+      ttl_secs,
+    );
+    let memo = build_memo("propose_address_update", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::propose_address_update`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn propose_address_update_direct(
+    &self,
+    address_field: AddressField,
+    new_address: Pubkey,
+    ttl_secs: u64,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::propose_address_update(
+      self.program.payer(),
+      address_field,
+      new_address,
+      ttl_secs,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Approves an outstanding address update proposal.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn approve_address_update(
+    &self,
+    squads: &SquadsContext,
+    address_field: AddressField,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::approve_address_update(
+      squads.vault_pda(),
+      address_field,
+    );
+    let memo = build_memo("approve_address_update", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::approve_address_update`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn approve_address_update_direct(
+    &self,
+    address_field: AddressField,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::approve_address_update(
+      self.program.payer(),
+      address_field,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Accepts an approved address update proposal. Rent on the proposal
+  /// account refunds to the current admin.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn accept_address_update(
+    &self,
+    squads: &SquadsContext,
+    admin: Pubkey,
+    address_field: AddressField,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::accept_address_update(
+      squads.vault_pda(),
+      admin,
+      address_field,
+    );
+    let memo = build_memo("accept_address_update", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::accept_address_update`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn accept_address_update_direct(
+    &self,
+    admin: Pubkey,
+    address_field: AddressField,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::accept_address_update(
+      self.program.payer(),
+      admin,
+      address_field,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Cancels an outstanding address update proposal.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn cancel_address_update(
+    &self,
+    squads: &SquadsContext,
+    address_field: AddressField,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::cancel_address_update(
+      squads.vault_pda(),
+      address_field,
+    );
+    let memo = build_memo("cancel_address_update", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::cancel_address_update`].
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn cancel_address_update_direct(
+    &self,
+    address_field: AddressField,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::cancel_address_update(
+      self.program.payer(),
+      address_field,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

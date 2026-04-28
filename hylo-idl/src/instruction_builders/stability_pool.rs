@@ -61,6 +61,7 @@ pub fn initialize_stability_pool(
     admin,
     upgrade_authority,
     pool_config: pda::POOL_CONFIG,
+    hylo: pda::HYLO,
     pool_auth: pda::POOL_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
     levercoin_pool: pda::XSOL_POOL,
@@ -88,6 +89,7 @@ pub fn initialize_lp_token_mint(
   let accounts = accounts::InitializeLpTokenMint {
     admin,
     pool_config: pda::POOL_CONFIG,
+    hylo: pda::HYLO,
     lp_token_auth: pda::SHYUSD_AUTH,
     lp_token_mint: SHYUSD::MINT,
     lp_token_metadata: pda::metadata(SHYUSD::MINT),
@@ -112,28 +114,7 @@ pub fn update_withdrawal_fee(
   let accounts = accounts::UpdateWithdrawalFee {
     admin,
     pool_config: pda::POOL_CONFIG,
-    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
-    program: stability_pool::ID,
-  };
-  Instruction {
-    program_id: stability_pool::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn update_admin(
-  payer: Pubkey,
-  upgrade_authority: Pubkey,
-  args: &args::UpdateAdmin,
-) -> Instruction {
-  let accounts = accounts::UpdateAdmin {
-    payer,
-    upgrade_authority,
-    pool_config: pda::POOL_CONFIG,
-    program_data: pda::STABILITY_POOL_PROGRAM_DATA,
-    hylo_stability_pool: stability_pool::ID,
+    hylo: pda::HYLO,
     event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
     program: stability_pool::ID,
   };

@@ -4,6 +4,7 @@ use anchor_spl::token;
 use const_crypto::ed25519;
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
+use crate::exchange::types::AddressField;
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use crate::{exchange, stability_pool};
 
@@ -153,6 +154,18 @@ pub const fn event_auth(program_id: Pubkey) -> Pubkey {
 #[must_use]
 pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
+}
+
+#[must_use]
+pub fn address_update_proposal(field: AddressField) -> Pubkey {
+  let (key, _bump) = ed25519::derive_program_address(
+    &[
+      exchange::constants::ADDRESS_UPDATE_PROPOSAL.as_slice(),
+      &[field as u8],
+    ],
+    exchange::ID.as_array(),
+  );
+  Pubkey::new_from_array(key)
 }
 
 #[must_use]
