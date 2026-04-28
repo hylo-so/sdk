@@ -109,7 +109,7 @@ impl SquadsContext {
   ///
   /// # Errors
   /// * Failed to compile the inner message
-  pub fn wrap(
+  pub fn build_proposal(
     &self,
     inner: &VersionedTransactionData,
     creator: Pubkey,

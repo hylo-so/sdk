@@ -138,7 +138,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("register_lst", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Builds transaction data for LST price oracle crank.
@@ -199,7 +199,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_oracle_conf_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::update_oracle_conf_tolerance`].
@@ -230,7 +230,7 @@ impl ExchangeClient {
       instruction_builders::update_sol_usd_oracle(squads.vault_pda(), args);
     let memo = build_memo("update_sol_usd_oracle", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the LST swap fee.
@@ -246,7 +246,7 @@ impl ExchangeClient {
       instruction_builders::update_lst_swap_fee(squads.vault_pda(), args);
     let memo = build_memo("update_lst_swap_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the levercoin fee configuration.
@@ -262,7 +262,7 @@ impl ExchangeClient {
       instruction_builders::update_levercoin_fees(squads.vault_pda(), args);
     let memo = build_memo("update_levercoin_fees", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle staleness interval.
@@ -278,7 +278,7 @@ impl ExchangeClient {
       instruction_builders::update_oracle_interval(squads.vault_pda(), args);
     let memo = build_memo("update_oracle_interval", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the LST stablecoin mint threshold.
@@ -297,7 +297,7 @@ impl ExchangeClient {
       );
     let memo = build_memo("update_lst_stablecoin_mint_threshold", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the protocol paused state.
@@ -313,7 +313,7 @@ impl ExchangeClient {
       instruction_builders::update_paused(squads.vault_pda(), args);
     let memo = build_memo("update_paused", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::update_paused`].
@@ -345,7 +345,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_lst_buy_curve_config", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::update_lst_buy_curve_config`].
@@ -378,7 +378,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_lst_sell_curve_config", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::update_lst_sell_curve_config`].
@@ -411,7 +411,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_yield_harvest_config", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the USDC oracle confidence tolerance.
@@ -429,7 +429,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_usdc_oracle_conf_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the USDC oracle staleness interval.
@@ -447,7 +447,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_usdc_oracle_interval", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the USDC swap fee.
@@ -463,7 +463,7 @@ impl ExchangeClient {
       instruction_builders::update_usdc_swap_fee(squads.vault_pda(), args);
     let memo = build_memo("update_usdc_swap_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the rebalance fee for an LST.
@@ -483,7 +483,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_lst_rebalance_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the funding rate for an exo collateral.
@@ -503,7 +503,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_funding_rate", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle for an exo collateral.
@@ -523,7 +523,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_oracle", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle confidence tolerance for an exo collateral.
@@ -543,7 +543,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_oracle_conf_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the oracle staleness interval for an exo collateral.
@@ -563,7 +563,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_oracle_interval", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the stablecoin mint threshold for an exo collateral.
@@ -584,7 +584,7 @@ impl ExchangeClient {
       );
     let memo = build_memo("update_exo_stablecoin_mint_threshold", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the buy curve for an exo collateral.
@@ -604,7 +604,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_buy_curve", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the sell curve for an exo collateral.
@@ -624,7 +624,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_sell_curve", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Updates the levercoin fees for an exo collateral.
@@ -644,7 +644,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("update_exo_levercoin_fees", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Initializes USDC support.
@@ -696,7 +696,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("register_exo", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Withdraws accumulated fees to the treasury.
@@ -716,7 +716,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("withdraw_fees", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Harvests the funding rate for an exo collateral.
@@ -754,7 +754,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("propose_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::propose_address_update`].
@@ -791,7 +791,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("approve_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::approve_address_update`].
@@ -827,7 +827,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("accept_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::accept_address_update`].
@@ -862,7 +862,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("cancel_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Direct variant of [`Self::cancel_address_update`].

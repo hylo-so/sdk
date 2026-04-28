@@ -84,6 +84,6 @@ impl StabilityPoolClient {
       instruction_builders::update_withdrawal_fee(squads.vault_pda(), args);
     let memo = build_memo("update_withdrawal_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.wrap(&inner, self.program.payer(), memo)
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 }
