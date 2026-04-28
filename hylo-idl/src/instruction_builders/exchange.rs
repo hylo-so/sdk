@@ -2,7 +2,7 @@
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
-use anchor_lang::solana_program::sysvar::{clock, rent};
+use anchor_lang::solana_program::sysvar::rent;
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
@@ -1034,7 +1034,6 @@ pub fn propose_address_update(
     admin,
     hylo: pda::HYLO,
     proposal: pda::address_update_proposal(address_field),
-    clock: clock::ID,
     system_program: system_program::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
