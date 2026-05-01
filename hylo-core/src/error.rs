@@ -145,6 +145,8 @@ pub enum CoreError {
   #[msg("Arithmetic error converting USDC to LST via SOL.")]
   UsdcToLst,
   // `rebalance_pricing`
+  #[msg("Rebalancing deviation tolerance not within valid range.")]
+  RebalanceDeviationValidation,
   #[msg(
     "Rebalance curve config multiplier is zero or has incorrect precision."
   )]

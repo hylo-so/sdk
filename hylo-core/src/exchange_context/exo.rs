@@ -37,6 +37,7 @@ pub struct ExoExchangeContext<C> {
   levercoin_fees: LevercoinFees,
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
+  rebalance_deviation_tolerance: UFix64<N9>,
   sell_curve_config: RebalanceCurveConfig,
   buy_curve_config: RebalanceCurveConfig,
 }
@@ -85,6 +86,10 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
   fn levercoin_fees(&self) -> &LevercoinFees {
     &self.levercoin_fees
   }
+
+  fn rebalance_deviation_tolerance(&self) -> UFix64<N9> {
+    self.rebalance_deviation_tolerance
+  }
 }
 
 impl<C: SolanaClock> ExoExchangeContext<C> {
@@ -102,6 +107,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     collateral_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
+    rebalance_deviation_tolerance: UFix64<N9>,
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
   ) -> Result<ExoExchangeContext<C>> {
@@ -132,6 +138,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       levercoin_fees,
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
+      rebalance_deviation_tolerance,
       sell_curve_config,
       buy_curve_config,
     })

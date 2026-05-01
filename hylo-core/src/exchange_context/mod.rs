@@ -51,6 +51,9 @@ pub trait ExchangeContext {
   /// Collateral ratio defining target leverage and stablecoin mint ability.
   fn stablecoin_mint_threshold(&self) -> UFix64<N9>;
 
+  /// Highest percent deviation (from spot price) tolerated in rebalance curves.
+  fn rebalance_deviation_tolerance(&self) -> UFix64<N9>;
+
   /// Confirm stablecoin mint capability based on configured normal mode CR.
   fn stablecoin_mint_enabled(&self) -> bool {
     self.collateral_ratio() >= self.stablecoin_mint_threshold()
@@ -69,6 +72,7 @@ pub trait ExchangeContext {
     SellPriceCurve::new(
       self.collateral_oracle_price(),
       self.sell_curve_config(),
+      self.rebalance_deviation_tolerance(),
     )
   }
 
@@ -77,7 +81,11 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Curve construction failure
   fn rebalance_buy_curve(&self) -> Result<BuyPriceCurve> {
-    BuyPriceCurve::new(self.collateral_oracle_price(), self.buy_curve_config())
+    BuyPriceCurve::new(
+      self.collateral_oracle_price(),
+      self.buy_curve_config(),
+      self.rebalance_deviation_tolerance(),
+    )
   }
 
   /// Returns true if sell-side rebalancing is active at the current CR.

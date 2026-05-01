@@ -24,6 +24,14 @@ const MAX_CONF_MULT: UFix64<N2> = UFix64::constant(200);
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(0);
 const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(150_000_000);
 
+// Checks deviation tolerance against boundaries.
+pub fn validate_deviation_tolerance(dev: UFixValue64) -> Result<UFixValue64> {
+  let deviation: UFix64<N9> = dev.try_into()?;
+  (deviation > MIN_DEVIATION_PCT && deviation <= MAX_DEVIATION_PCT)
+    .then_some(dev)
+    .ok_or(CoreError::RebalanceDeviationValidation.into())
+}
+
 /// Confidence interval multipliers for rebalance price curve construction.
 #[derive(
   Copy,
@@ -39,7 +47,6 @@ const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(150_000_000);
 pub struct RebalanceCurveConfig {
   pub floor_mult: UFixValue64,
   pub ceil_mult: UFixValue64,
-  pub deviation_tolerance: UFixValue64,
 }
 
 impl RebalanceCurveConfig {
@@ -47,12 +54,10 @@ impl RebalanceCurveConfig {
   pub fn new(
     floor_mult: UFixValue64,
     ceil_mult: UFixValue64,
-    deviation_tolerance: UFixValue64,
   ) -> RebalanceCurveConfig {
     RebalanceCurveConfig {
       floor_mult,
       ceil_mult,
-      deviation_tolerance,
     }
   }
 
@@ -72,24 +77,13 @@ impl RebalanceCurveConfig {
     self.ceil_mult.try_into()
   }
 
-  /// Converts maximum deviation percentage to `UFix64`.
-  ///
-  /// # Errors
-  /// * Conversion fails
-  pub fn deviation_tolerance(&self) -> Result<UFix64<N9>> {
-    self.deviation_tolerance.try_into()
-  }
-
-  /// Checks validity of multipliers and deviation tolerance.
+  /// Checks validity of CI multipliers.
   ///
   /// # Errors
   /// * Incorrect precision or failed validation
   pub fn validate(self) -> Result<Self> {
     let check = |mult| mult > MIN_CONF_MULT && mult <= MAX_CONF_MULT;
-    let check_dev = |dev| dev > MIN_DEVIATION_PCT && dev <= MAX_DEVIATION_PCT;
-    let valid = check(self.floor_mult()?)
-      && check(self.ceil_mult()?)
-      && check_dev(self.deviation_tolerance()?);
+    let valid = check(self.floor_mult()?) && check(self.ceil_mult()?);
     valid
       .then_some(self)
       .ok_or(CoreError::RebalanceCurveConfigValidation.into())
@@ -194,14 +188,14 @@ impl SellPriceCurve {
   pub fn new(
     OraclePrice { spot, conf }: OraclePrice,
     config: &RebalanceCurveConfig,
+    deviation_tolerance: UFix64<N9>,
   ) -> Result<SellPriceCurve> {
     let (floor, ceil) = spot
       .checked_sub(&scale_ci(conf, config.floor_mult()?)?)
       .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult()?)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
-    let tolerance = config.deviation_tolerance()?;
-    check_deviation(spot, floor, tolerance)?;
-    check_deviation(spot, ceil, tolerance)?;
+    check_deviation(spot, floor, deviation_tolerance)?;
+    check_deviation(spot, ceil, deviation_tolerance)?;
     let sell_zone_1 = RebalanceMode::SellZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
@@ -261,14 +255,14 @@ impl BuyPriceCurve {
   pub fn new(
     OraclePrice { spot, conf }: OraclePrice,
     config: &RebalanceCurveConfig,
+    deviation_tolerance: UFix64<N9>,
   ) -> Result<BuyPriceCurve> {
     let (floor, ceil) = spot
       .checked_sub(&scale_ci(conf, config.floor_mult()?)?)
       .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult()?)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
-    let tolerance = config.deviation_tolerance()?;
-    check_deviation(spot, floor, tolerance)?;
-    check_deviation(spot, ceil, tolerance)?;
+    check_deviation(spot, floor, deviation_tolerance)?;
+    check_deviation(spot, ceil, deviation_tolerance)?;
     let buy_zone_1 = RebalanceMode::BuyZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
@@ -326,21 +320,16 @@ mod tests {
     conf: UFix64::constant(94_635_820),
   };
 
-  const DEVIATION_5_PCT: UFixValue64 = UFixValue64 {
-    bits: 50_000_000,
-    exp: -9,
-  };
+  const DEVIATION_5_PCT: UFix64<N9> = UFix64::constant(50_000_000);
 
   const SELL_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
     floor_mult: UFixValue64 { bits: 200, exp: -2 },
     ceil_mult: UFixValue64 { bits: 100, exp: -2 },
-    deviation_tolerance: DEVIATION_5_PCT,
   };
 
   const BUY_CONFIG: RebalanceCurveConfig = RebalanceCurveConfig {
     floor_mult: UFixValue64 { bits: 100, exp: -2 },
     ceil_mult: UFixValue64 { bits: 100, exp: -2 },
-    deviation_tolerance: DEVIATION_5_PCT,
   };
 
   const UCR_1_00: UFix64<N9> = UFix64::constant(1_000_000_000);
@@ -356,13 +345,13 @@ mod tests {
 
   #[test]
   fn sell_constructs() -> Result<()> {
-    SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
+    SellPriceCurve::new(ORACLE, &SELL_CONFIG, DEVIATION_5_PCT)?;
     Ok(())
   }
 
   #[test]
   fn buy_constructs() -> Result<()> {
-    BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
+    BuyPriceCurve::new(ORACLE, &BUY_CONFIG, DEVIATION_5_PCT)?;
     Ok(())
   }
 
@@ -372,7 +361,7 @@ mod tests {
       conf: UFix64::constant(14_000_000_000),
       ..ORACLE
     };
-    let res = SellPriceCurve::new(wide_ci, &SELL_CONFIG);
+    let res = SellPriceCurve::new(wide_ci, &SELL_CONFIG, DEVIATION_5_PCT);
     assert_eq!(
       res.err(),
       Some(CoreError::RebalanceDeviationExceeded.into())
@@ -385,7 +374,7 @@ mod tests {
       conf: UFix64::constant(14_000_000_000),
       ..ORACLE
     };
-    let res = BuyPriceCurve::new(wide_ci, &BUY_CONFIG);
+    let res = BuyPriceCurve::new(wide_ci, &BUY_CONFIG, DEVIATION_5_PCT);
     assert_eq!(
       res.err(),
       Some(CoreError::RebalanceDeviationExceeded.into())
@@ -394,14 +383,14 @@ mod tests {
 
   #[test]
   fn sell_flat_below_domain() -> Result<()> {
-    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG, DEVIATION_5_PCT)?;
     assert_eq!(curve.price(UCR_1_00)?, curve.price(UCR_1_15)?);
     Ok(())
   }
 
   #[test]
   fn sell_inactive_above_domain() -> Result<()> {
-    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG, DEVIATION_5_PCT)?;
     assert_eq!(
       curve.price(UCR_1_40).err(),
       Some(CoreError::RebalanceOutOfDomain.into())
@@ -411,7 +400,7 @@ mod tests {
 
   #[test]
   fn sell_endpoints() -> Result<()> {
-    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG, DEVIATION_5_PCT)?;
     let at_floor = curve.price(UCR_1_20)?;
     let at_ceil = curve.price(UCR_1_35)?;
     assert_lt!(at_floor, at_ceil);
@@ -421,7 +410,7 @@ mod tests {
 
   #[test]
   fn buy_inactive_below_domain() -> Result<()> {
-    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, DEVIATION_5_PCT)?;
     assert_eq!(
       curve.price(UCR_1_60).err(),
       Some(CoreError::RebalanceOutOfDomain.into())
@@ -431,14 +420,14 @@ mod tests {
 
   #[test]
   fn buy_flat_above_domain() -> Result<()> {
-    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, DEVIATION_5_PCT)?;
     assert_eq!(curve.price(UCR_1_80)?, curve.price(UCR_2_50)?);
     Ok(())
   }
 
   #[test]
   fn buy_endpoints() -> Result<()> {
-    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, DEVIATION_5_PCT)?;
     let at_floor = curve.price(UCR_1_65)?;
     let at_ceil = curve.price(UCR_1_75)?;
     assert_lt!(at_floor, at_ceil);
@@ -476,7 +465,7 @@ mod tests {
       conf in oracle_ci(),
     ) {
       let oracle = OraclePrice { spot, conf };
-      if let Ok(curve) = SellPriceCurve::new(oracle, &SELL_CONFIG) {
+      if let Ok(curve) = SellPriceCurve::new(oracle, &SELL_CONFIG, DEVIATION_5_PCT) {
         let price = curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
@@ -498,7 +487,7 @@ mod tests {
       conf in oracle_ci(),
     ) {
       let oracle = OraclePrice { spot, conf };
-      if let Ok(curve) = BuyPriceCurve::new(oracle, &BUY_CONFIG) {
+      if let Ok(curve) = BuyPriceCurve::new(oracle, &BUY_CONFIG, DEVIATION_5_PCT) {
         let price = curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
