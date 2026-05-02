@@ -93,14 +93,12 @@ mod tests {
   }
 
   #[test]
-  fn memo_changes_with_args() {
-    let paused = args::UpdatePaused { new_paused: true };
-    let unpaused = args::UpdatePaused { new_paused: false };
-    let ix_paused = instruction_builders::update_paused(pk(0), &paused);
-    let ix_unpaused = instruction_builders::update_paused(pk(1), &unpaused);
+  fn memo_changes_with_authority() {
+    let ix_a = instruction_builders::pause_exchange(pk(0));
+    let ix_b = instruction_builders::pause_exchange(pk(1));
     assert_ne!(
-      build_memo("update_paused", &ix_paused),
-      build_memo("update_paused", &ix_unpaused),
+      build_memo("pause_exchange", &ix_a),
+      build_memo("pause_exchange", &ix_b),
     );
   }
 }

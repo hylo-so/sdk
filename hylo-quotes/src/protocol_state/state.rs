@@ -146,7 +146,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       sol_usd,
       hylo.virtual_stablecoin.into(),
       Some(&xsol_mint),
-      UFix64::one(), // TODO: TEMPORARY UNTIL IDL REGEN
+      hylo.rebalance_deviation_tolerance.try_into()?,
       hylo.lst_sell_curve_config.into(),
       hylo.lst_buy_curve_config.into(),
     )?;
@@ -242,7 +242,7 @@ fn build_cbbtc_exchange_context(
     &btc_usd,
     virtual_stablecoin,
     Some(&xbtc_mint),
-    UFix64::one(), // TODO: TEMPORARY UNTIL IDL REGEN
+    exo_pair.rebalance_deviation_tolerance.try_into()?,
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
   )

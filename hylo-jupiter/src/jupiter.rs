@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
-use fix::prelude::{FixExt, UFix64, N8};
+use fix::prelude::{UFix64, N8};
 use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::stability_pool::accounts::PoolConfig;
@@ -427,7 +427,7 @@ where
         &btc_usd,
         exo_pair.virtual_stablecoin.into(),
         Some(&xbtc_mint),
-        UFix64::one(), // TODO: TEMPORARY UNTIL IDL REGEN
+        exo_pair.rebalance_deviation_tolerance.try_into()?,
         exo_pair.sell_curve_config.into(),
         exo_pair.buy_curve_config.into(),
       )

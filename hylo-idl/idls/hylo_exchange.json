@@ -5972,6 +5972,267 @@
       }
     },
     {
+      "name": "pause_exchange",
+      "discriminator": [
+        92,
+        51,
+        107,
+        8,
+        202,
+        117,
+        228,
+        187
+      ],
+      "accounts": [
+        {
+          "name": "pause_authority",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "PauseExchangeEvent"
+        }
+      }
+    },
+    {
+      "name": "pause_exo_pair",
+      "discriminator": [
+        32,
+        154,
+        250,
+        122,
+        162,
+        64,
+        211,
+        180
+      ],
+      "accounts": [
+        {
+          "name": "pause_authority",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "PauseExoPairEvent"
+        }
+      }
+    },
+    {
+      "name": "pause_lst_pair",
+      "discriminator": [
+        64,
+        52,
+        201,
+        255,
+        25,
+        34,
+        220,
+        137
+      ],
+      "accounts": [
+        {
+          "name": "pause_authority",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "PauseLstPairEvent"
+        }
+      }
+    },
+    {
       "name": "propose_address_update",
       "discriminator": [
         183,
@@ -8651,6 +8912,14 @@
           }
         },
         {
+          "name": "rebalance_deviation_tolerance",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
           "name": "sell_curve_config",
           "type": {
             "defined": {
@@ -8673,6 +8942,10 @@
               "name": "TokenMetadata"
             }
           }
+        },
+        {
+          "name": "paused",
+          "type": "bool"
         }
       ],
       "returns": {
@@ -11342,6 +11615,267 @@
       }
     },
     {
+      "name": "unpause_exchange",
+      "discriminator": [
+        64,
+        15,
+        66,
+        250,
+        37,
+        120,
+        189,
+        56
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "UnpauseExchangeEvent"
+        }
+      }
+    },
+    {
+      "name": "unpause_exo_pair",
+      "discriminator": [
+        119,
+        240,
+        216,
+        140,
+        26,
+        148,
+        153,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "UnpauseExoPairEvent"
+        }
+      }
+    },
+    {
+      "name": "unpause_lst_pair",
+      "discriminator": [
+        72,
+        155,
+        211,
+        21,
+        37,
+        217,
+        197,
+        7
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "UnpauseLstPairEvent"
+        }
+      }
+    },
+    {
       "name": "update_exo_buy_curve",
       "discriminator": [
         121,
@@ -12030,6 +12564,122 @@
       }
     },
     {
+      "name": "update_exo_rebalance_deviation_tolerance",
+      "discriminator": [
+        89,
+        150,
+        159,
+        99,
+        163,
+        197,
+        187,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_tolerance",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateRebalanceDeviationToleranceEvent"
+        }
+      }
+    },
+    {
       "name": "update_exo_sell_curve",
       "discriminator": [
         252,
@@ -12516,6 +13166,92 @@
       "returns": {
         "defined": {
           "name": "UpdateLstPricesEvent"
+        }
+      }
+    },
+    {
+      "name": "update_lst_rebalance_deviation_tolerance",
+      "discriminator": [
+        11,
+        96,
+        200,
+        144,
+        180,
+        69,
+        19,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_tolerance",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateRebalanceDeviationToleranceEvent"
         }
       }
     },
@@ -13057,88 +13793,6 @@
       "returns": {
         "defined": {
           "name": "UpdateOracleIntervalEvent"
-        }
-      }
-    },
-    {
-      "name": "update_paused",
-      "discriminator": [
-        78,
-        236,
-        85,
-        104,
-        169,
-        231,
-        205,
-        89
-      ],
-      "accounts": [
-        {
-          "name": "pause_authority",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_paused",
-          "type": "bool"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdatePausedEvent"
         }
       }
     },
@@ -14231,6 +14885,45 @@
       ]
     },
     {
+      "name": "PauseExchangeEvent",
+      "discriminator": [
+        37,
+        119,
+        132,
+        164,
+        106,
+        10,
+        206,
+        192
+      ]
+    },
+    {
+      "name": "PauseExoPairEvent",
+      "discriminator": [
+        110,
+        54,
+        197,
+        177,
+        242,
+        223,
+        31,
+        158
+      ]
+    },
+    {
+      "name": "PauseLstPairEvent",
+      "discriminator": [
+        58,
+        101,
+        32,
+        0,
+        229,
+        201,
+        26,
+        4
+      ]
+    },
+    {
       "name": "ProposeAddressUpdateEvent",
       "discriminator": [
         46,
@@ -14400,6 +15093,45 @@
       ]
     },
     {
+      "name": "UnpauseExchangeEvent",
+      "discriminator": [
+        162,
+        29,
+        144,
+        111,
+        206,
+        82,
+        74,
+        61
+      ]
+    },
+    {
+      "name": "UnpauseExoPairEvent",
+      "discriminator": [
+        213,
+        8,
+        216,
+        222,
+        176,
+        123,
+        193,
+        231
+      ]
+    },
+    {
+      "name": "UnpauseLstPairEvent",
+      "discriminator": [
+        194,
+        189,
+        189,
+        45,
+        164,
+        230,
+        216,
+        13
+      ]
+    },
+    {
       "name": "UpdateExoFundingRateEvent",
       "discriminator": [
         189,
@@ -14491,19 +15223,6 @@
       ]
     },
     {
-      "name": "UpdatePausedEvent",
-      "discriminator": [
-        28,
-        75,
-        20,
-        52,
-        60,
-        91,
-        191,
-        82
-      ]
-    },
-    {
       "name": "UpdateRebalanceCurveConfigEvent",
       "discriminator": [
         91,
@@ -14514,6 +15233,19 @@
         240,
         86,
         48
+      ]
+    },
+    {
+      "name": "UpdateRebalanceDeviationToleranceEvent",
+      "discriminator": [
+        187,
+        153,
+        210,
+        7,
+        139,
+        219,
+        216,
+        255
       ]
     },
     {
@@ -14757,46 +15489,56 @@
     },
     {
       "code": 6037,
-      "name": "ProtocolPaused",
-      "msg": "Protocol operations are paused by admin."
+      "name": "ExchangePaused",
+      "msg": "Exchange operations have been paused by admin."
     },
     {
       "code": 6038,
+      "name": "LstPairPaused",
+      "msg": "Trading for the LST pair has been paused by admin."
+    },
+    {
+      "code": 6039,
+      "name": "ExoPairPaused",
+      "msg": "Trading for this exo pair has been paused by admin."
+    },
+    {
+      "code": 6040,
       "name": "RebalanceSellInactive",
       "msg": "Sell-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6039,
+      "code": 6041,
       "name": "RebalanceBuyInactive",
       "msg": "Buy-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6040,
+      "code": 6042,
       "name": "ExoMintNotInAllowlist",
       "msg": "Mint is not in the exogenous collateral allowlist."
     },
     {
-      "code": 6041,
+      "code": 6043,
       "name": "AddressChangeExpired",
       "msg": "Address change proposal has expired."
     },
     {
-      "code": 6042,
+      "code": 6044,
       "name": "AddressChangeTtlInvalid",
       "msg": "Address change proposal's TTL not in configured range."
     },
     {
-      "code": 6043,
+      "code": 6045,
       "name": "AddressChangeNotApproved",
       "msg": "Address change proposal has not been approved."
     },
     {
-      "code": 6044,
+      "code": 6046,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
     },
     {
-      "code": 6045,
+      "code": 6047,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
     }
@@ -15332,11 +16074,23 @@
             }
           },
           {
+            "name": "rebalance_deviation_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                128
+                118
               ]
             }
           }
@@ -15643,15 +16397,27 @@
             }
           },
           {
-            "name": "paused",
+            "name": "exchange_paused",
             "type": "bool"
+          },
+          {
+            "name": "lst_pair_paused",
+            "type": "bool"
+          },
+          {
+            "name": "rebalance_deviation_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           },
           {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                14
+                22
               ]
             }
           }
@@ -16177,6 +16943,24 @@
       }
     },
     {
+      "name": "PauseExchangeEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
+      "name": "PauseExoPairEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
+      "name": "PauseLstPairEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
       "name": "PriceFeedMessage",
       "repr": {
         "kind": "c"
@@ -16334,14 +17118,6 @@
           },
           {
             "name": "ceil_mult",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "deviation_tolerance",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -17085,6 +17861,24 @@
       }
     },
     {
+      "name": "UnpauseExchangeEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
+      "name": "UnpauseExoPairEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
+      "name": "UnpauseLstPairEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
       "name": "UpdateExoFundingRateEvent",
       "type": {
         "kind": "struct",
@@ -17239,22 +18033,6 @@
       }
     },
     {
-      "name": "UpdatePausedEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_paused",
-            "type": "bool"
-          },
-          {
-            "name": "new_paused",
-            "type": "bool"
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdateRebalanceCurveConfigEvent",
       "type": {
         "kind": "struct",
@@ -17272,6 +18050,30 @@
             "type": {
               "defined": {
                 "name": "RebalanceCurveConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateRebalanceDeviationToleranceEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
               }
             }
           }

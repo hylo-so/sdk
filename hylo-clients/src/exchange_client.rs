@@ -300,34 +300,235 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the protocol paused state.
+  /// Pauses the exchange.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn update_paused(
+  pub fn pause_exchange(
     &self,
     squads: &SquadsContext,
-    args: &args::UpdatePaused,
   ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::update_paused(squads.vault_pda(), args);
-    let memo = build_memo("update_paused", &instruction);
+    let instruction = instruction_builders::pause_exchange(squads.vault_pda());
+    let memo = build_memo("pause_exchange", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::update_paused`].
+  /// Direct variant of [`Self::pause_exchange`].
+  #[must_use]
+  pub fn pause_exchange_direct(
+    &self,
+    pause_authority: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction = instruction_builders::pause_exchange(pause_authority);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Unpauses the exchange.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn update_paused_direct(
+  pub fn unpause_exchange(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::unpause_exchange(squads.vault_pda());
+    let memo = build_memo("unpause_exchange", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::unpause_exchange`].
+  #[must_use]
+  pub fn unpause_exchange_direct(
+    &self,
+    admin: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction = instruction_builders::unpause_exchange(admin);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Pauses the LST pair (LST↔HYUSD/XSOL).
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn pause_lst_pair(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::pause_lst_pair(squads.vault_pda());
+    let memo = build_memo("pause_lst_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::pause_lst_pair`].
+  #[must_use]
+  pub fn pause_lst_pair_direct(
     &self,
     pause_authority: Pubkey,
-    args: &args::UpdatePaused,
-  ) -> Result<VersionedTransactionData> {
+  ) -> VersionedTransactionData {
+    let instruction = instruction_builders::pause_lst_pair(pause_authority);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Unpauses the LST pair.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn unpause_lst_pair(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_paused(pause_authority, args);
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::unpause_lst_pair(squads.vault_pda());
+    let memo = build_memo("unpause_lst_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::unpause_lst_pair`].
+  #[must_use]
+  pub fn unpause_lst_pair_direct(
+    &self,
+    admin: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction = instruction_builders::unpause_lst_pair(admin);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Pauses an EXO pair for the given collateral mint.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn pause_exo_pair(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::pause_exo_pair(squads.vault_pda(), collateral_mint);
+    let memo = build_memo("pause_exo_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::pause_exo_pair`].
+  #[must_use]
+  pub fn pause_exo_pair_direct(
+    &self,
+    pause_authority: Pubkey,
+    collateral_mint: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction =
+      instruction_builders::pause_exo_pair(pause_authority, collateral_mint);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Unpauses an EXO pair for the given collateral mint.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn unpause_exo_pair(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::unpause_exo_pair(
+      squads.vault_pda(),
+      collateral_mint,
+    );
+    let memo = build_memo("unpause_exo_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::unpause_exo_pair`].
+  #[must_use]
+  pub fn unpause_exo_pair_direct(
+    &self,
+    admin: Pubkey,
+    collateral_mint: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction =
+      instruction_builders::unpause_exo_pair(admin, collateral_mint);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Updates the LST rebalance deviation tolerance.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_lst_rebalance_deviation_tolerance(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateLstRebalanceDeviationTolerance,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_lst_rebalance_deviation_tolerance(
+        squads.vault_pda(),
+        args,
+      );
+    let memo =
+      build_memo("update_lst_rebalance_deviation_tolerance", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of
+  /// [`Self::update_lst_rebalance_deviation_tolerance`].
+  #[must_use]
+  pub fn update_lst_rebalance_deviation_tolerance_direct(
+    &self,
+    args: &args::UpdateLstRebalanceDeviationTolerance,
+  ) -> VersionedTransactionData {
+    let instruction =
+      instruction_builders::update_lst_rebalance_deviation_tolerance(
+        self.program.payer(),
+        args,
+      );
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Updates the EXO rebalance deviation tolerance for the given
+  /// collateral mint.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_exo_rebalance_deviation_tolerance(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+    args: &args::UpdateExoRebalanceDeviationTolerance,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_exo_rebalance_deviation_tolerance(
+        squads.vault_pda(),
+        collateral_mint,
+        args,
+      );
+    let memo =
+      build_memo("update_exo_rebalance_deviation_tolerance", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of
+  /// [`Self::update_exo_rebalance_deviation_tolerance`].
+  #[must_use]
+  pub fn update_exo_rebalance_deviation_tolerance_direct(
+    &self,
+    collateral_mint: Pubkey,
+    args: &args::UpdateExoRebalanceDeviationTolerance,
+  ) -> VersionedTransactionData {
+    let instruction =
+      instruction_builders::update_exo_rebalance_deviation_tolerance(
+        self.program.payer(),
+        collateral_mint,
+        args,
+      );
+    VersionedTransactionData::one(instruction)
   }
 
   /// Updates the LST buy curve configuration.

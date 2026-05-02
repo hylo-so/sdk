@@ -155,7 +155,6 @@ impl From<RebalanceCurveConfig>
     hylo_idl::exchange::types::RebalanceCurveConfig {
       floor_mult: val.floor_mult.into(),
       ceil_mult: val.ceil_mult.into(),
-      deviation_tolerance: val.ceil_mult.into(), // TODO: TEMPORARY, REMOVE
     }
   }
 }

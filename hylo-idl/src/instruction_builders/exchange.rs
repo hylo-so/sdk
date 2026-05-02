@@ -569,12 +569,130 @@ pub fn update_lst_stablecoin_mint_threshold(
 }
 
 #[must_use]
-pub fn update_paused(
-  pause_authority: Pubkey,
-  args: &args::UpdatePaused,
-) -> Instruction {
-  let accounts = accounts::UpdatePaused {
+pub fn pause_exchange(pause_authority: Pubkey) -> Instruction {
+  let accounts = accounts::PauseExchange {
     pause_authority,
+    hylo: pda::HYLO,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::PauseExchange {}.data(),
+  }
+}
+
+#[must_use]
+pub fn unpause_exchange(admin: Pubkey) -> Instruction {
+  let accounts = accounts::UnpauseExchange {
+    admin,
+    hylo: pda::HYLO,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::UnpauseExchange {}.data(),
+  }
+}
+
+#[must_use]
+pub fn pause_lst_pair(pause_authority: Pubkey) -> Instruction {
+  let accounts = accounts::PauseLstPair {
+    pause_authority,
+    hylo: pda::HYLO,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::PauseLstPair {}.data(),
+  }
+}
+
+#[must_use]
+pub fn unpause_lst_pair(admin: Pubkey) -> Instruction {
+  let accounts = accounts::UnpauseLstPair {
+    admin,
+    hylo: pda::HYLO,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::UnpauseLstPair {}.data(),
+  }
+}
+
+#[must_use]
+pub fn pause_exo_pair(
+  pause_authority: Pubkey,
+  collateral_mint: Pubkey,
+) -> Instruction {
+  let accounts = accounts::PauseExoPair {
+    pause_authority,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::PauseExoPair {}.data(),
+  }
+}
+
+#[must_use]
+pub fn unpause_exo_pair(admin: Pubkey, collateral_mint: Pubkey) -> Instruction {
+  let accounts = accounts::UnpauseExoPair {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::UnpauseExoPair {}.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_rebalance_deviation_tolerance(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoRebalanceDeviationTolerance,
+) -> Instruction {
+  let accounts = accounts::UpdateExoRebalanceDeviationTolerance {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_lst_rebalance_deviation_tolerance(
+  admin: Pubkey,
+  args: &args::UpdateLstRebalanceDeviationTolerance,
+) -> Instruction {
+  let accounts = accounts::UpdateLstRebalanceDeviationTolerance {
+    admin,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
