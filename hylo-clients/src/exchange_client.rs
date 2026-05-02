@@ -531,6 +531,78 @@ impl ExchangeClient {
     VersionedTransactionData::one(instruction)
   }
 
+  /// Reallocates the USDC pair account to its current size.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn extend_usdc_pair(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::extend_usdc_pair(squads.vault_pda());
+    let memo = build_memo("extend_usdc_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::extend_usdc_pair`].
+  #[must_use]
+  pub fn extend_usdc_pair_direct(&self) -> VersionedTransactionData {
+    let instruction =
+      instruction_builders::extend_usdc_pair(self.program.payer());
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Pauses the USDC pair.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn pause_usdc_pair(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::pause_usdc_pair(squads.vault_pda());
+    let memo = build_memo("pause_usdc_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::pause_usdc_pair`].
+  #[must_use]
+  pub fn pause_usdc_pair_direct(
+    &self,
+    pause_authority: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction = instruction_builders::pause_usdc_pair(pause_authority);
+    VersionedTransactionData::one(instruction)
+  }
+
+  /// Unpauses the USDC pair.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn unpause_usdc_pair(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::unpause_usdc_pair(squads.vault_pda());
+    let memo = build_memo("unpause_usdc_pair", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::unpause_usdc_pair`].
+  #[must_use]
+  pub fn unpause_usdc_pair_direct(
+    &self,
+    admin: Pubkey,
+  ) -> VersionedTransactionData {
+    let instruction = instruction_builders::unpause_usdc_pair(admin);
+    VersionedTransactionData::one(instruction)
+  }
+
   /// Updates the LST buy curve configuration.
   ///
   /// # Errors

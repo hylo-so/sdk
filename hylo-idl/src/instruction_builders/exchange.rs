@@ -705,6 +705,53 @@ pub fn update_lst_rebalance_deviation_tolerance(
 }
 
 #[must_use]
+pub fn extend_usdc_pair(admin: Pubkey) -> Instruction {
+  let accounts = accounts::ExtendUsdcPair {
+    admin,
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    system_program: system_program::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::ExtendUsdcPair {}.data(),
+  }
+}
+
+#[must_use]
+pub fn pause_usdc_pair(pause_authority: Pubkey) -> Instruction {
+  let accounts = accounts::PauseUsdcPair {
+    pause_authority,
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::PauseUsdcPair {}.data(),
+  }
+}
+
+#[must_use]
+pub fn unpause_usdc_pair(admin: Pubkey) -> Instruction {
+  let accounts = accounts::UnpauseUsdcPair {
+    admin,
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::UnpauseUsdcPair {}.data(),
+  }
+}
+
+#[must_use]
 pub fn update_lst_buy_curve_config(
   admin: Pubkey,
   args: &args::UpdateLstBuyCurveConfig,

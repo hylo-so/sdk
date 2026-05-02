@@ -1938,6 +1938,72 @@
       }
     },
     {
+      "name": "extend_usdc_pair",
+      "discriminator": [
+        254,
+        198,
+        220,
+        0,
+        179,
+        56,
+        233,
+        201
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "get_stats",
       "discriminator": [
         241,
@@ -6044,7 +6110,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "PauseExchangeEvent"
+          "name": "PauseEvent"
         }
       }
     },
@@ -6151,7 +6217,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "PauseExoPairEvent"
+          "name": "PauseEvent"
         }
       }
     },
@@ -6228,7 +6294,105 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "PauseLstPairEvent"
+          "name": "PauseEvent"
+        }
+      }
+    },
+    {
+      "name": "pause_usdc_pair",
+      "discriminator": [
+        247,
+        209,
+        82,
+        95,
+        96,
+        170,
+        13,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "pause_authority",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "PauseEvent"
         }
       }
     },
@@ -11687,7 +11851,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "UnpauseExchangeEvent"
+          "name": "UnpauseEvent"
         }
       }
     },
@@ -11794,7 +11958,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "UnpauseExoPairEvent"
+          "name": "UnpauseEvent"
         }
       }
     },
@@ -11871,7 +12035,105 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "UnpauseLstPairEvent"
+          "name": "UnpauseEvent"
+        }
+      }
+    },
+    {
+      "name": "unpause_usdc_pair",
+      "discriminator": [
+        72,
+        217,
+        160,
+        247,
+        221,
+        121,
+        210,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "UnpauseEvent"
         }
       }
     },
@@ -14885,42 +15147,16 @@
       ]
     },
     {
-      "name": "PauseExchangeEvent",
+      "name": "PauseEvent",
       "discriminator": [
-        37,
-        119,
-        132,
-        164,
-        106,
-        10,
-        206,
-        192
-      ]
-    },
-    {
-      "name": "PauseExoPairEvent",
-      "discriminator": [
-        110,
-        54,
-        197,
-        177,
-        242,
-        223,
-        31,
-        158
-      ]
-    },
-    {
-      "name": "PauseLstPairEvent",
-      "discriminator": [
-        58,
-        101,
         32,
-        0,
-        229,
-        201,
-        26,
-        4
+        51,
+        61,
+        169,
+        156,
+        104,
+        130,
+        43
       ]
     },
     {
@@ -15093,42 +15329,16 @@
       ]
     },
     {
-      "name": "UnpauseExchangeEvent",
+      "name": "UnpauseEvent",
       "discriminator": [
-        162,
-        29,
-        144,
-        111,
-        206,
-        82,
-        74,
-        61
-      ]
-    },
-    {
-      "name": "UnpauseExoPairEvent",
-      "discriminator": [
-        213,
+        134,
+        156,
         8,
-        216,
-        222,
-        176,
-        123,
-        193,
-        231
-      ]
-    },
-    {
-      "name": "UnpauseLstPairEvent",
-      "discriminator": [
-        194,
-        189,
-        189,
-        45,
-        164,
-        230,
-        216,
-        13
+        215,
+        185,
+        128,
+        192,
+        217
       ]
     },
     {
@@ -15504,41 +15714,46 @@
     },
     {
       "code": 6040,
+      "name": "UsdcPairPaused",
+      "msg": "Trading with USDC has been paused by admin."
+    },
+    {
+      "code": 6041,
       "name": "RebalanceSellInactive",
       "msg": "Sell-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6041,
+      "code": 6042,
       "name": "RebalanceBuyInactive",
       "msg": "Buy-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6042,
+      "code": 6043,
       "name": "ExoMintNotInAllowlist",
       "msg": "Mint is not in the exogenous collateral allowlist."
     },
     {
-      "code": 6043,
+      "code": 6044,
       "name": "AddressChangeExpired",
       "msg": "Address change proposal has expired."
     },
     {
-      "code": 6044,
+      "code": 6045,
       "name": "AddressChangeTtlInvalid",
       "msg": "Address change proposal's TTL not in configured range."
     },
     {
-      "code": 6045,
+      "code": 6046,
       "name": "AddressChangeNotApproved",
       "msg": "Address change proposal has not been approved."
     },
     {
-      "code": 6046,
+      "code": 6047,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
     },
     {
-      "code": 6047,
+      "code": 6048,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
     }
@@ -16943,19 +17158,7 @@
       }
     },
     {
-      "name": "PauseExchangeEvent",
-      "type": {
-        "kind": "struct"
-      }
-    },
-    {
-      "name": "PauseExoPairEvent",
-      "type": {
-        "kind": "struct"
-      }
-    },
-    {
-      "name": "PauseLstPairEvent",
+      "name": "PauseEvent",
       "type": {
         "kind": "struct"
       }
@@ -17861,19 +18064,7 @@
       }
     },
     {
-      "name": "UnpauseExchangeEvent",
-      "type": {
-        "kind": "struct"
-      }
-    },
-    {
-      "name": "UnpauseExoPairEvent",
-      "type": {
-        "kind": "struct"
-      }
-    },
-    {
-      "name": "UnpauseLstPairEvent",
+      "name": "UnpauseEvent",
       "type": {
         "kind": "struct"
       }
@@ -18191,6 +18382,19 @@
               "defined": {
                 "name": "VirtualStablecoin"
               }
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                127
+              ]
             }
           }
         ]
