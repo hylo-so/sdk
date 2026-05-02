@@ -314,16 +314,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::pause_exchange`].
-  #[must_use]
-  pub fn pause_exchange_direct(
-    &self,
-    pause_authority: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction = instruction_builders::pause_exchange(pause_authority);
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Unpauses the exchange.
   ///
   /// # Errors
@@ -337,16 +327,6 @@ impl ExchangeClient {
     let memo = build_memo("unpause_exchange", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::unpause_exchange`].
-  #[must_use]
-  pub fn unpause_exchange_direct(
-    &self,
-    admin: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction = instruction_builders::unpause_exchange(admin);
-    VersionedTransactionData::one(instruction)
   }
 
   /// Pauses the LST pair (LST↔HYUSD/XSOL).
@@ -363,16 +343,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::pause_lst_pair`].
-  #[must_use]
-  pub fn pause_lst_pair_direct(
-    &self,
-    pause_authority: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction = instruction_builders::pause_lst_pair(pause_authority);
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Unpauses the LST pair.
   ///
   /// # Errors
@@ -386,16 +356,6 @@ impl ExchangeClient {
     let memo = build_memo("unpause_lst_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::unpause_lst_pair`].
-  #[must_use]
-  pub fn unpause_lst_pair_direct(
-    &self,
-    admin: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction = instruction_builders::unpause_lst_pair(admin);
-    VersionedTransactionData::one(instruction)
   }
 
   /// Pauses an EXO pair for the given collateral mint.
@@ -414,18 +374,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::pause_exo_pair`].
-  #[must_use]
-  pub fn pause_exo_pair_direct(
-    &self,
-    pause_authority: Pubkey,
-    collateral_mint: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction =
-      instruction_builders::pause_exo_pair(pause_authority, collateral_mint);
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Unpauses an EXO pair for the given collateral mint.
   ///
   /// # Errors
@@ -442,18 +390,6 @@ impl ExchangeClient {
     let memo = build_memo("unpause_exo_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::unpause_exo_pair`].
-  #[must_use]
-  pub fn unpause_exo_pair_direct(
-    &self,
-    admin: Pubkey,
-    collateral_mint: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction =
-      instruction_builders::unpause_exo_pair(admin, collateral_mint);
-    VersionedTransactionData::one(instruction)
   }
 
   /// Updates the LST rebalance deviation tolerance.
@@ -568,16 +504,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::pause_usdc_pair`].
-  #[must_use]
-  pub fn pause_usdc_pair_direct(
-    &self,
-    pause_authority: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction = instruction_builders::pause_usdc_pair(pause_authority);
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Unpauses the USDC pair.
   ///
   /// # Errors
@@ -591,16 +517,6 @@ impl ExchangeClient {
     let memo = build_memo("unpause_usdc_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::unpause_usdc_pair`].
-  #[must_use]
-  pub fn unpause_usdc_pair_direct(
-    &self,
-    admin: Pubkey,
-  ) -> VersionedTransactionData {
-    let instruction = instruction_builders::unpause_usdc_pair(admin);
-    VersionedTransactionData::one(instruction)
   }
 
   /// Updates the LST buy curve configuration.
