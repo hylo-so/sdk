@@ -64,7 +64,7 @@ pub trait ProgramClient: Sized {
   /// ID.
   ///
   /// # Errors
-  /// - Underlying Anchor program creation
+  /// * Underlying Anchor program creation
   fn new_from_keypair(
     cluster: Cluster,
     keypair: Keypair,
@@ -79,7 +79,7 @@ pub trait ProgramClient: Sized {
   /// Constructs the program client with a random keypair.
   ///
   /// # Errors
-  /// - Underlying Anchor program creation
+  /// * Underlying Anchor program creation
   fn new_random_keypair(
     cluster: Cluster,
     config: CommitmentConfig,
@@ -91,9 +91,9 @@ pub trait ProgramClient: Sized {
   /// Builds a versioned transaction from instructions and lookup tables.
   ///
   /// # Errors
-  /// - Failed to get latest blockhash
-  /// - Failed to compile message
-  /// - Failed to create transaction
+  /// * Failed to get latest blockhash
+  /// * Failed to compile message
+  /// * Failed to create transaction
   async fn build_v0_transaction(
     &self,
     vtd: &VersionedTransactionData,
@@ -105,9 +105,9 @@ pub trait ProgramClient: Sized {
   /// Builds versioned transaction with dummy signatures for simulation.
   ///
   /// # Errors
-  /// - Failed to get latest blockhash
-  /// - Failed to compile message
-  /// - Failed to create transaction
+  /// * Failed to get latest blockhash
+  /// * Failed to compile message
+  /// * Failed to create transaction
   async fn build_simulation_transaction(
     &self,
     for_user: &Pubkey,
@@ -135,8 +135,8 @@ pub trait ProgramClient: Sized {
   /// Sends a versioned transaction from instructions and lookup tables.
   ///
   /// # Errors
-  /// - Failed to build transaction
-  /// - Failed to send and confirm transaction
+  /// * Failed to build transaction
+  /// * Failed to send and confirm transaction
   async fn send_v0_transaction(
     &self,
     args: &VersionedTransactionData,
@@ -153,7 +153,7 @@ pub trait ProgramClient: Sized {
   /// Loads LST registry lookup table and parses it into `remaining_accounts`.
   ///
   /// # Errors
-  /// - Lookup table account doesn't exist
+  /// * Lookup table account doesn't exist
   async fn load_lst_registry(
     &self,
   ) -> Result<(Vec<AccountMeta>, AddressLookupTableAccount)> {
@@ -164,8 +164,8 @@ pub trait ProgramClient: Sized {
   /// Loads an address lookup table by public key.
   ///
   /// # Errors
-  /// - Failed to fetch the account
-  /// - Failed to deserialize account data
+  /// * Failed to fetch the account
+  /// * Failed to deserialize account data
   async fn load_lookup_table(
     &self,
     key: &Pubkey,
@@ -176,8 +176,8 @@ pub trait ProgramClient: Sized {
 
   /// Loads address lookup tables at given addresses.
   /// # Errors
-  /// - Failed to fetch lookup table account
-  /// - Failed to deserialize
+  /// * Failed to fetch lookup table account
+  /// * Failed to deserialize
   async fn load_multiple_lookup_tables(
     &self,
     pubkeys: &[Pubkey],

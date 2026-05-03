@@ -46,7 +46,7 @@ impl ExchangeClient {
   /// Initializes the Hylo exchange protocol.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_protocol(
     &self,
     upgrade_authority: Pubkey,
@@ -65,7 +65,7 @@ impl ExchangeClient {
   /// Initializes hyUSD and xSOL token mints.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_mints(
     &self,
     stablecoin_metadata: TokenMetadata,
@@ -82,8 +82,8 @@ impl ExchangeClient {
   /// Initializes the LST registry lookup table.
   ///
   /// # Errors
-  /// - Failed to get current slot
-  /// - Failed to build transaction instructions
+  /// * Failed to get current slot
+  /// * Failed to build transaction instructions
   pub fn initialize_lst_registry(
     &self,
     slot: u64,
@@ -96,7 +96,7 @@ impl ExchangeClient {
   /// Initializes LST price calculators in registry.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_lst_registry_calculators(
     &self,
     lst_registry: Pubkey,
@@ -111,7 +111,7 @@ impl ExchangeClient {
   /// Registers a new LST for mint/redeem.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   #[allow(clippy::too_many_arguments)]
   pub fn register_lst(
     &self,
@@ -144,7 +144,7 @@ impl ExchangeClient {
   /// Builds transaction data for LST price oracle crank.
   ///
   /// # Errors
-  /// - Failed to build transaction data
+  /// * Failed to build transaction data
   pub async fn update_lst_prices(&self) -> Result<VersionedTransactionData> {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instruction = instruction_builders::update_lst_prices(
@@ -167,7 +167,7 @@ impl ExchangeClient {
   /// pool.
   ///
   /// # Errors
-  /// - Failed to build transaction data
+  /// * Failed to build transaction data
   pub async fn harvest_yield(&self) -> Result<VersionedTransactionData> {
     let (remaining_accounts, registry_lut) = self.load_lst_registry().await?;
     let instruction = instruction_builders::harvest_yield(
@@ -187,7 +187,7 @@ impl ExchangeClient {
   /// Updates the oracle confidence tolerance.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_oracle_conf_tolerance(
     &self,
     squads: &SquadsContext,
@@ -205,7 +205,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::update_oracle_conf_tolerance`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_oracle_conf_tolerance_direct(
     &self,
     args: &args::UpdateOracleConfTolerance,
@@ -220,7 +220,7 @@ impl ExchangeClient {
   /// Updates the SOL/USD oracle address.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_sol_usd_oracle(
     &self,
     squads: &SquadsContext,
@@ -236,7 +236,7 @@ impl ExchangeClient {
   /// Updates the LST swap fee.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_swap_fee(
     &self,
     squads: &SquadsContext,
@@ -252,7 +252,7 @@ impl ExchangeClient {
   /// Updates the levercoin fee configuration.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_levercoin_fees(
     &self,
     squads: &SquadsContext,
@@ -268,7 +268,7 @@ impl ExchangeClient {
   /// Updates the oracle staleness interval.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_oracle_interval(
     &self,
     squads: &SquadsContext,
@@ -284,7 +284,7 @@ impl ExchangeClient {
   /// Updates the LST stablecoin mint threshold.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_stablecoin_mint_threshold(
     &self,
     squads: &SquadsContext,
@@ -303,7 +303,7 @@ impl ExchangeClient {
   /// Pauses the protocol.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn pause_protocol(
     &self,
     squads: &SquadsContext,
@@ -317,7 +317,7 @@ impl ExchangeClient {
   /// Unpauses the protocol.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn unpause_protocol(
     &self,
     squads: &SquadsContext,
@@ -329,10 +329,10 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Pauses the LST pair (LST↔HYUSD/XSOL).
+  /// Pauses the LST pair.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn pause_lst_pair(
     &self,
     squads: &SquadsContext,
@@ -346,7 +346,7 @@ impl ExchangeClient {
   /// Unpauses the LST pair.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn unpause_lst_pair(
     &self,
     squads: &SquadsContext,
@@ -361,7 +361,7 @@ impl ExchangeClient {
   /// Pauses an EXO pair for the given collateral mint.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn pause_exo_pair(
     &self,
     squads: &SquadsContext,
@@ -377,7 +377,7 @@ impl ExchangeClient {
   /// Unpauses an EXO pair for the given collateral mint.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn unpause_exo_pair(
     &self,
     squads: &SquadsContext,
@@ -395,7 +395,7 @@ impl ExchangeClient {
   /// Updates the LST rebalance deviation tolerance.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_rebalance_deviation_tolerance(
     &self,
     squads: &SquadsContext,
@@ -412,26 +412,11 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of
-  /// [`Self::update_lst_rebalance_deviation_tolerance`].
-  #[must_use]
-  pub fn update_lst_rebalance_deviation_tolerance_direct(
-    &self,
-    args: &args::UpdateLstRebalanceDeviationTolerance,
-  ) -> VersionedTransactionData {
-    let instruction =
-      instruction_builders::update_lst_rebalance_deviation_tolerance(
-        self.program.payer(),
-        args,
-      );
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Updates the EXO rebalance deviation tolerance for the given
   /// collateral mint.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_rebalance_deviation_tolerance(
     &self,
     squads: &SquadsContext,
@@ -450,27 +435,10 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of
-  /// [`Self::update_exo_rebalance_deviation_tolerance`].
-  #[must_use]
-  pub fn update_exo_rebalance_deviation_tolerance_direct(
-    &self,
-    collateral_mint: Pubkey,
-    args: &args::UpdateExoRebalanceDeviationTolerance,
-  ) -> VersionedTransactionData {
-    let instruction =
-      instruction_builders::update_exo_rebalance_deviation_tolerance(
-        self.program.payer(),
-        collateral_mint,
-        args,
-      );
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Reallocates the USDC pair account to its current size.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn extend_usdc_pair(
     &self,
     squads: &SquadsContext,
@@ -482,18 +450,10 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Direct variant of [`Self::extend_usdc_pair`].
-  #[must_use]
-  pub fn extend_usdc_pair_direct(&self) -> VersionedTransactionData {
-    let instruction =
-      instruction_builders::extend_usdc_pair(self.program.payer());
-    VersionedTransactionData::one(instruction)
-  }
-
   /// Pauses the USDC pair.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn pause_usdc_pair(
     &self,
     squads: &SquadsContext,
@@ -507,7 +467,7 @@ impl ExchangeClient {
   /// Unpauses the USDC pair.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn unpause_usdc_pair(
     &self,
     squads: &SquadsContext,
@@ -522,7 +482,7 @@ impl ExchangeClient {
   /// Updates the LST buy curve configuration.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_buy_curve_config(
     &self,
     squads: &SquadsContext,
@@ -540,7 +500,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::update_lst_buy_curve_config`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_buy_curve_config_direct(
     &self,
     args: &args::UpdateLstBuyCurveConfig,
@@ -555,7 +515,7 @@ impl ExchangeClient {
   /// Updates the LST sell curve configuration.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_sell_curve_config(
     &self,
     squads: &SquadsContext,
@@ -573,7 +533,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::update_lst_sell_curve_config`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_sell_curve_config_direct(
     &self,
     args: &args::UpdateLstSellCurveConfig,
@@ -588,7 +548,7 @@ impl ExchangeClient {
   /// Updates the yield harvest configuration.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_yield_harvest_config(
     &self,
     squads: &SquadsContext,
@@ -606,7 +566,7 @@ impl ExchangeClient {
   /// Updates the USDC oracle confidence tolerance.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_usdc_oracle_conf_tolerance(
     &self,
     squads: &SquadsContext,
@@ -624,7 +584,7 @@ impl ExchangeClient {
   /// Updates the USDC oracle staleness interval.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_usdc_oracle_interval(
     &self,
     squads: &SquadsContext,
@@ -642,7 +602,7 @@ impl ExchangeClient {
   /// Updates the USDC swap fee.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_usdc_swap_fee(
     &self,
     squads: &SquadsContext,
@@ -658,7 +618,7 @@ impl ExchangeClient {
   /// Updates the rebalance fee for an LST.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_lst_rebalance_fee(
     &self,
     squads: &SquadsContext,
@@ -678,7 +638,7 @@ impl ExchangeClient {
   /// Updates the funding rate for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_funding_rate(
     &self,
     squads: &SquadsContext,
@@ -698,7 +658,7 @@ impl ExchangeClient {
   /// Updates the oracle for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_oracle(
     &self,
     squads: &SquadsContext,
@@ -718,7 +678,7 @@ impl ExchangeClient {
   /// Updates the oracle confidence tolerance for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_oracle_conf_tolerance(
     &self,
     squads: &SquadsContext,
@@ -738,7 +698,7 @@ impl ExchangeClient {
   /// Updates the oracle staleness interval for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_oracle_interval(
     &self,
     squads: &SquadsContext,
@@ -758,7 +718,7 @@ impl ExchangeClient {
   /// Updates the stablecoin mint threshold for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_stablecoin_mint_threshold(
     &self,
     squads: &SquadsContext,
@@ -779,7 +739,7 @@ impl ExchangeClient {
   /// Updates the buy curve for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_buy_curve(
     &self,
     squads: &SquadsContext,
@@ -799,7 +759,7 @@ impl ExchangeClient {
   /// Updates the sell curve for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_sell_curve(
     &self,
     squads: &SquadsContext,
@@ -819,7 +779,7 @@ impl ExchangeClient {
   /// Updates the levercoin fees for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_exo_levercoin_fees(
     &self,
     squads: &SquadsContext,
@@ -839,7 +799,7 @@ impl ExchangeClient {
   /// Initializes USDC support.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_usdc(
     &self,
     usdc_usd_pyth_feed: Pubkey,
@@ -856,7 +816,7 @@ impl ExchangeClient {
   /// Initializes the LST virtual stablecoin.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_lst_virtual_stablecoin(
     &self,
   ) -> Result<VersionedTransactionData> {
@@ -869,7 +829,7 @@ impl ExchangeClient {
   /// Registers an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn register_exo(
     &self,
     squads: &SquadsContext,
@@ -891,7 +851,7 @@ impl ExchangeClient {
   /// Withdraws accumulated fees to the treasury.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn withdraw_fees(
     &self,
     squads: &SquadsContext,
@@ -911,7 +871,7 @@ impl ExchangeClient {
   /// Harvests the funding rate for an exo collateral.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn harvest_funding_rate(
     &self,
     collateral_mint: Pubkey,
@@ -927,7 +887,7 @@ impl ExchangeClient {
   /// Proposes an update to a privileged protocol address.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn propose_address_update(
     &self,
     squads: &SquadsContext,
@@ -949,7 +909,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::propose_address_update`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn propose_address_update_direct(
     &self,
     address_field: AddressField,
@@ -968,7 +928,7 @@ impl ExchangeClient {
   /// Approves an outstanding address update proposal.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn approve_address_update(
     &self,
     squads: &SquadsContext,
@@ -986,7 +946,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::approve_address_update`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn approve_address_update_direct(
     &self,
     address_field: AddressField,
@@ -1002,7 +962,7 @@ impl ExchangeClient {
   /// account refunds to the current admin.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn accept_address_update(
     &self,
     squads: &SquadsContext,
@@ -1022,7 +982,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::accept_address_update`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn accept_address_update_direct(
     &self,
     admin: Pubkey,
@@ -1039,7 +999,7 @@ impl ExchangeClient {
   /// Cancels an outstanding address update proposal.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn cancel_address_update(
     &self,
     squads: &SquadsContext,
@@ -1057,7 +1017,7 @@ impl ExchangeClient {
   /// Direct variant of [`Self::cancel_address_update`].
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn cancel_address_update_direct(
     &self,
     address_field: AddressField,

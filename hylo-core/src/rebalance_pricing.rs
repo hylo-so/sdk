@@ -27,7 +27,8 @@ const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(150_000_000);
 // Checks deviation tolerance against boundaries.
 pub fn validate_deviation_tolerance(dev: UFixValue64) -> Result<UFixValue64> {
   let deviation: UFix64<N9> = dev.try_into()?;
-  (deviation > MIN_DEVIATION_PCT && deviation <= MAX_DEVIATION_PCT)
+  (MIN_DEVIATION_PCT..=MAX_DEVIATION_PCT)
+    .contains(&deviation)
     .then_some(dev)
     .ok_or(CoreError::RebalanceDeviationValidation.into())
 }
@@ -82,8 +83,9 @@ impl RebalanceCurveConfig {
   /// # Errors
   /// * Incorrect precision or failed validation
   pub fn validate(self) -> Result<Self> {
-    let check = |mult| mult > MIN_CONF_MULT && mult <= MAX_CONF_MULT;
-    let valid = check(self.floor_mult()?) && check(self.ceil_mult()?);
+    let range = MIN_CONF_MULT..=MAX_CONF_MULT;
+    let valid =
+      range.contains(&self.floor_mult()?) && range.contains(&self.ceil_mult()?);
     valid
       .then_some(self)
       .ok_or(CoreError::RebalanceCurveConfigValidation.into())
