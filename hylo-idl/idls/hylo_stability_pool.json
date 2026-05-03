@@ -2236,8 +2236,8 @@
     },
     {
       "code": 6004,
-      "name": "ExchangePaused",
-      "msg": "Exchange operations have been paused by admin."
+      "name": "ProtocolPaused",
+      "msg": "Protocol operations have been paused by admin."
     },
     {
       "code": 6005,

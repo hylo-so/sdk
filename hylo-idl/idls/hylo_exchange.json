@@ -15699,8 +15699,8 @@
     },
     {
       "code": 6037,
-      "name": "ExchangePaused",
-      "msg": "Exchange operations have been paused by admin."
+      "name": "ProtocolPaused",
+      "msg": "Protocol operations have been paused by admin."
     },
     {
       "code": 6038,
