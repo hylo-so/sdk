@@ -94,11 +94,11 @@ mod tests {
 
   #[test]
   fn memo_changes_with_authority() {
-    let ix_a = instruction_builders::pause_exchange(pk(0));
-    let ix_b = instruction_builders::pause_exchange(pk(1));
+    let ix_a = instruction_builders::pause_protocol(pk(0));
+    let ix_b = instruction_builders::pause_protocol(pk(1));
     assert_ne!(
-      build_memo("pause_exchange", &ix_a),
-      build_memo("pause_exchange", &ix_b),
+      build_memo("pause_protocol", &ix_a),
+      build_memo("pause_protocol", &ix_b),
     );
   }
 }

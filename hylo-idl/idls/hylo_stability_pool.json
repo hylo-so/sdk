@@ -2464,7 +2464,7 @@
             }
           },
           {
-            "name": "exchange_paused",
+            "name": "protocol_paused",
             "type": "bool"
           },
           {

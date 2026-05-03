@@ -569,8 +569,8 @@ pub fn update_lst_stablecoin_mint_threshold(
 }
 
 #[must_use]
-pub fn pause_exchange(pause_authority: Pubkey) -> Instruction {
-  let accounts = accounts::PauseExchange {
+pub fn pause_protocol(pause_authority: Pubkey) -> Instruction {
+  let accounts = accounts::PauseProtocol {
     pause_authority,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -579,13 +579,13 @@ pub fn pause_exchange(pause_authority: Pubkey) -> Instruction {
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: args::PauseExchange {}.data(),
+    data: args::PauseProtocol {}.data(),
   }
 }
 
 #[must_use]
-pub fn unpause_exchange(admin: Pubkey) -> Instruction {
-  let accounts = accounts::UnpauseExchange {
+pub fn unpause_protocol(admin: Pubkey) -> Instruction {
+  let accounts = accounts::UnpauseProtocol {
     admin,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -594,7 +594,7 @@ pub fn unpause_exchange(admin: Pubkey) -> Instruction {
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
-    data: args::UnpauseExchange {}.data(),
+    data: args::UnpauseProtocol {}.data(),
   }
 }
 

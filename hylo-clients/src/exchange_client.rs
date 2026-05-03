@@ -300,31 +300,31 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Pauses the exchange.
+  /// Pauses the protocol.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn pause_exchange(
+  pub fn pause_protocol(
     &self,
     squads: &SquadsContext,
   ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::pause_exchange(squads.vault_pda());
-    let memo = build_memo("pause_exchange", &instruction);
+    let instruction = instruction_builders::pause_protocol(squads.vault_pda());
+    let memo = build_memo("pause_protocol", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Unpauses the exchange.
+  /// Unpauses the protocol.
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn unpause_exchange(
+  pub fn unpause_protocol(
     &self,
     squads: &SquadsContext,
   ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::unpause_exchange(squads.vault_pda());
-    let memo = build_memo("unpause_exchange", &instruction);
+      instruction_builders::unpause_protocol(squads.vault_pda());
+    let memo = build_memo("unpause_protocol", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
