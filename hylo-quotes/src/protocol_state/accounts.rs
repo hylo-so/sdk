@@ -112,9 +112,9 @@ impl ProtocolAccounts {
   /// Validate that pubkeys and accounts match expected protocol accounts
   ///
   /// Validates:
-  /// - Pubkeys and accounts have matching lengths
-  /// - We have the expected number of accounts (17)
-  /// - Each pubkey matches the expected protocol account in order
+  /// * Pubkeys and accounts have matching lengths
+  /// * We have the expected number of accounts (17)
+  /// * Each pubkey matches the expected protocol account in order
   ///
   /// # Errors
   /// Returns error if any validation fails
@@ -158,9 +158,9 @@ impl ProtocolAccounts {
 /// Convert from RPC response (pubkeys and accounts) to `ProtocolAccounts`
 ///
 /// Validates that:
-/// - The number of pubkeys matches the number of accounts
-/// - The pubkeys match the expected protocol accounts in order
-/// - All accounts are present (not None)
+/// * The number of pubkeys matches the number of accounts
+/// * The pubkeys match the expected protocol accounts in order
+/// * All accounts are present (not None)
 impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
   type Error = anyhow::Error;
 

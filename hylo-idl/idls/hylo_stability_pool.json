@@ -2236,8 +2236,13 @@
     },
     {
       "code": 6004,
-      "name": "ProtocolPaused",
-      "msg": "Protocol operations are paused by admin."
+      "name": "ExchangePaused",
+      "msg": "Exchange operations have been paused by admin."
+    },
+    {
+      "code": 6005,
+      "name": "LstPairPaused",
+      "msg": "Trading for the LST pair has been paused by admin."
     }
   ],
   "types": [
@@ -2459,15 +2464,27 @@
             }
           },
           {
-            "name": "paused",
+            "name": "protocol_paused",
             "type": "bool"
+          },
+          {
+            "name": "lst_pair_paused",
+            "type": "bool"
+          },
+          {
+            "name": "rebalance_deviation_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           },
           {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                14
+                22
               ]
             }
           }
@@ -2673,14 +2690,6 @@
           },
           {
             "name": "ceil_mult",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "deviation_tolerance",
             "type": {
               "defined": {
                 "name": "UFixValue64"

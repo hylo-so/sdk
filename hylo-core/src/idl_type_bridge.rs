@@ -89,11 +89,7 @@ impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
   fn from(
     idl: hylo_idl::exchange::types::RebalanceCurveConfig,
   ) -> RebalanceCurveConfig {
-    RebalanceCurveConfig::new(
-      idl.floor_mult.into(),
-      idl.ceil_mult.into(),
-      idl.deviation_tolerance.into(),
-    )
+    RebalanceCurveConfig::new(idl.floor_mult.into(), idl.ceil_mult.into())
   }
 }
 
@@ -159,7 +155,6 @@ impl From<RebalanceCurveConfig>
     hylo_idl::exchange::types::RebalanceCurveConfig {
       floor_mult: val.floor_mult.into(),
       ceil_mult: val.ceil_mult.into(),
-      deviation_tolerance: val.deviation_tolerance.into(),
     }
   }
 }

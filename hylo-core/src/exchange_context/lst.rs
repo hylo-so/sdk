@@ -40,6 +40,7 @@ pub struct LstExchangeContext<C> {
   stablecoin_mint_fees: InterpolatedMintFees,
   stablecoin_redeem_fees: InterpolatedRedeemFees,
   levercoin_fees: LevercoinFees,
+  rebalance_deviation_tolerance: UFix64<N9>,
   sell_curve_config: RebalanceCurveConfig,
   buy_curve_config: RebalanceCurveConfig,
 }
@@ -88,6 +89,10 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
   fn levercoin_fees(&self) -> &LevercoinFees {
     &self.levercoin_fees
   }
+
+  fn rebalance_deviation_tolerance(&self) -> UFix64<N9> {
+    self.rebalance_deviation_tolerance
+  }
 }
 
 impl<C: SolanaClock> LstExchangeContext<C> {
@@ -105,6 +110,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     sol_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
+    rebalance_deviation_tolerance: UFix64<N9>,
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
   ) -> Result<LstExchangeContext<C>> {
@@ -133,6 +139,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       stablecoin_mint_fees,
       stablecoin_redeem_fees,
       levercoin_fees,
+      rebalance_deviation_tolerance,
       sell_curve_config,
       buy_curve_config,
     })

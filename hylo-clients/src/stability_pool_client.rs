@@ -44,7 +44,7 @@ impl StabilityPoolClient {
   /// Initializes the stability pool.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_stability_pool(
     &self,
     upgrade_authority: Pubkey,
@@ -59,7 +59,7 @@ impl StabilityPoolClient {
   /// Initializes the LP token mint for the stability pool.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn initialize_lp_token_mint(
     &self,
     lp_token_metadata: TokenMetadata,
@@ -74,7 +74,7 @@ impl StabilityPoolClient {
   /// Updates the withdrawal fee.
   ///
   /// # Errors
-  /// - Failed to build transaction instructions
+  /// * Failed to build transaction instructions
   pub fn update_withdrawal_fee(
     &self,
     squads: &SquadsContext,

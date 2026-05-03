@@ -427,6 +427,7 @@ where
         &btc_usd,
         exo_pair.virtual_stablecoin.into(),
         Some(&xbtc_mint),
+        exo_pair.rebalance_deviation_tolerance.try_into()?,
         exo_pair.sell_curve_config.into(),
         exo_pair.buy_curve_config.into(),
       )
