@@ -34,6 +34,19 @@ pub struct LevercoinMarketCapLimiter {
 }
 
 impl LevercoinMarketCapLimiter {
+  #[must_use]
+  pub fn new(
+    market_cap_limit: UFix64<N9>,
+    levercoin_nav: UFix64<N9>,
+    levercoin_supply: UFix64<N6>,
+  ) -> LevercoinMarketCapLimiter {
+    LevercoinMarketCapLimiter {
+      market_cap_limit,
+      levercoin_nav,
+      levercoin_supply,
+    }
+  }
+
   /// Projected market cap (USD) after minting `levercoin_to_mint`.
   ///
   /// Rounds up so the limit check rejects on the cusp.
@@ -104,30 +117,30 @@ mod tests {
 
   // $10M limit, $1 NAV, 5M xSOL outstanding, $5M of room
   fn limiter() -> LevercoinMarketCapLimiter {
-    LevercoinMarketCapLimiter {
-      market_cap_limit: UFix64::new(10_000_000_000_000_000),
-      levercoin_nav: UFix64::new(1_000_000_000),
-      levercoin_supply: UFix64::new(5_000_000_000_000),
-    }
+    LevercoinMarketCapLimiter::new(
+      UFix64::new(10_000_000_000_000_000),
+      UFix64::new(1_000_000_000),
+      UFix64::new(5_000_000_000_000),
+    )
   }
 
   #[test]
   fn accept_mint_under_limit() -> Result<()> {
-    let to_mint = UFix64::<N6>::new(1_000_000_000_000);
+    let to_mint = UFix64::new(1_000_000_000_000);
     assert_eq!(limiter().validate_token_out(to_mint)?, to_mint);
     Ok(())
   }
 
   #[test]
   fn accept_mint_at_limit() -> Result<()> {
-    let to_mint = UFix64::<N6>::new(5_000_000_000_000);
+    let to_mint = UFix64::new(5_000_000_000_000);
     assert_eq!(limiter().validate_token_out(to_mint)?, to_mint);
     Ok(())
   }
 
   #[test]
   fn reject_mint_one_unit_over_limit() {
-    let to_mint = UFix64::<N6>::new(5_000_000_000_001);
+    let to_mint = UFix64::new(5_000_000_000_001);
     assert_eq!(
       limiter().validate_token_out(to_mint).err(),
       Some(LevercoinMarketCapLimitReached.into())
@@ -136,7 +149,7 @@ mod tests {
 
   #[test]
   fn reject_mint_on_supply_overflow() {
-    let to_mint = UFix64::<N6>::new(u64::MAX);
+    let to_mint = UFix64::new(u64::MAX);
     assert_eq!(
       limiter().validate_token_out(to_mint).err(),
       Some(LevercoinMarketCapArithmetic.into())

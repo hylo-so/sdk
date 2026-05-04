@@ -245,6 +245,7 @@ fn build_cbbtc_exchange_context(
     exo_pair.rebalance_deviation_tolerance.try_into()?,
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
+    UFix64::one(), // TODO: Loopy
   )
   .context("ExoExchangeContext::load")
 }

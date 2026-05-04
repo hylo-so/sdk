@@ -188,4 +188,6 @@ pub enum CoreError {
   LevercoinMarketCapLimitReached,
   #[msg("Arithmetic error while computing levercoin market cap limit.")]
   LevercoinMarketCapArithmetic,
+  #[msg("Expected levercoin market cap limit to be set.")]
+  LevercoinMarketCapLimitNotSet,
 }

@@ -6,10 +6,11 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use super::ExchangeContext;
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
-  DestinationCollateral, DestinationStablecoin, LevercoinNav,
-  RebalanceAmountExceeded,
+  DestinationCollateral, DestinationStablecoin, LevercoinMarketCapLimitNotSet,
+  LevercoinNav, RebalanceAmountExceeded,
 };
 use crate::exchange_math::collateral_ratio;
+use crate::exo_pair_risk::LevercoinMarketCapLimiter;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
 use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
 use crate::interpolated_fees::{
@@ -40,6 +41,7 @@ pub struct ExoExchangeContext<C> {
   rebalance_deviation_tolerance: UFix64<N9>,
   sell_curve_config: RebalanceCurveConfig,
   buy_curve_config: RebalanceCurveConfig,
+  levercoin_market_cap_limit: UFix64<N9>,
 }
 
 impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
@@ -110,6 +112,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     rebalance_deviation_tolerance: UFix64<N9>,
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
+    levercoin_market_cap_limit: UFix64<N9>,
   ) -> Result<ExoExchangeContext<C>> {
     let collateral_oracle =
       query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
@@ -141,6 +144,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       rebalance_deviation_tolerance,
       sell_curve_config,
       buy_curve_config,
+      levercoin_market_cap_limit,
     })
   }
 
@@ -303,6 +307,24 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     Ok(ExoRebalanceConversion::new(
       collateral_usd_price,
       usdc_usd_price,
+    ))
+  }
+
+  /// Builds the levercoin market cap limiter from exchange inputs.
+  ///
+  /// # Errors
+  /// * Levercoin supply not set
+  /// * Levercoin mint NAV fails
+  pub fn levercoin_market_cap_limiter(
+    &self,
+  ) -> Result<LevercoinMarketCapLimiter> {
+    let levercoin_supply =
+      self.levercoin_supply.ok_or(LevercoinMarketCapLimitNotSet)?;
+    let levercoin_nav = self.levercoin_mint_nav()?;
+    Ok(LevercoinMarketCapLimiter::new(
+      self.levercoin_market_cap_limit,
+      levercoin_nav,
+      levercoin_supply,
     ))
   }
 }
