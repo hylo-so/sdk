@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::error::CoreError::{
-  CollateralRatio, MaxMintable, MaxSwappable, StablecoinNav,
-  TargetCollateralRatioTooLow, TotalValueLocked,
+  CollateralRatio, LevercoinMarketCapArithmetic, MaxMintable, MaxSwappable,
+  StablecoinNav, TargetCollateralRatioTooLow, TotalValueLocked,
 };
 use crate::pyth::PriceRange;
 
@@ -36,6 +36,18 @@ pub fn total_value_locked(
   total_collateral
     .mul_div_floor(usd_collateral_price, UFix64::one())
     .ok_or(TotalValueLocked.into())
+}
+
+/// Multiplies levercoin supply by NAV to get its market cap in USD.
+///   `cap = supply * nav`
+pub fn levercoin_market_cap(
+  levercoin_supply: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
+) -> Result<UFix64<N9>> {
+  levercoin_supply
+    .checked_convert::<N9>()
+    .and_then(|supply| supply.mul_div_ceil(levercoin_nav, UFix64::one()))
+    .ok_or(LevercoinMarketCapArithmetic.into())
 }
 
 /// Given the next collateral ratio threshold below the current, determines the
@@ -259,6 +271,25 @@ mod tests {
     let cr = collateral_ratio(total_sol, usd_sol_price, amount_stablecoin)?;
     assert_eq!(UFix64::new(983_691_772), cr);
     Ok(())
+  }
+
+  #[test]
+  fn levercoin_market_cap_basic() -> Result<()> {
+    let supply = UFix64::<N6>::new(5_137_259_000_000);
+    let nav = UFix64::<N9>::new(2_500_000_000);
+    let cap = levercoin_market_cap(supply, nav)?;
+    assert_eq!(UFix64::new(12_843_147_500_000_000), cap);
+    Ok(())
+  }
+
+  #[test]
+  fn levercoin_market_cap_overflow() {
+    let supply = UFix64::<N6>::new(u64::MAX);
+    let nav = UFix64::<N9>::new(1_000_000_000);
+    assert_eq!(
+      levercoin_market_cap(supply, nav).err(),
+      Some(LevercoinMarketCapArithmetic.into())
+    );
   }
 
   #[test]

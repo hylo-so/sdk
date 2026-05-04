@@ -1,7 +1,11 @@
 use anchor_lang::prelude::Result;
 use fix::prelude::*;
 
-use crate::error::CoreError;
+use crate::error::CoreError::{
+  LevercoinMarketCapArithmetic, LevercoinMarketCapLimitInvalid,
+  LevercoinMarketCapLimitReached,
+};
+use crate::exchange_math::levercoin_market_cap;
 
 // Admissible levercoin market cap limit range, $1M to $100M.
 const MIN_MARKET_CAP_LIMIT: UFix64<N9> =
@@ -23,7 +27,7 @@ pub fn validate_levercoin_market_cap_limit(
   (MIN_MARKET_CAP_LIMIT..=MAX_MARKET_CAP_LIMIT)
     .contains(&limit)
     .then_some(limit_raw)
-    .ok_or(CoreError::LevercoinMarketCapLimitInvalid.into())
+    .ok_or(LevercoinMarketCapLimitInvalid.into())
 }
 
 /// Enforces the levercoin market cap limit at mint time.
@@ -48,17 +52,15 @@ impl LevercoinMarketCapLimiter {
   }
 
   /// Projected market cap (USD) after minting `levercoin_to_mint`.
-  ///
-  /// Rounds up so the limit check rejects on the cusp.
   fn target_market_cap(
     &self,
     levercoin_to_mint: UFix64<N6>,
-  ) -> Option<UFix64<N9>> {
+  ) -> Result<UFix64<N9>> {
     let target_supply = self
       .levercoin_supply
-      .checked_add(&levercoin_to_mint)?
-      .checked_convert()?;
-    target_supply.mul_div_ceil(self.levercoin_nav, UFix64::one())
+      .checked_add(&levercoin_to_mint)
+      .ok_or(LevercoinMarketCapArithmetic)?;
+    levercoin_market_cap(target_supply, self.levercoin_nav)
   }
 
   /// Rejects mints that would push market cap above the configured limit.
@@ -71,13 +73,11 @@ impl LevercoinMarketCapLimiter {
     &self,
     levercoin_to_mint: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
-    let target_market_cap = self
-      .target_market_cap(levercoin_to_mint)
-      .ok_or(CoreError::LevercoinMarketCapArithmetic)?;
+    let target_market_cap = self.target_market_cap(levercoin_to_mint)?;
     if target_market_cap <= self.market_cap_limit {
       Ok(levercoin_to_mint)
     } else {
-      Err(CoreError::LevercoinMarketCapLimitReached.into())
+      Err(LevercoinMarketCapLimitReached.into())
     }
   }
 }

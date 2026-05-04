@@ -10,12 +10,12 @@ use crate::error::CoreError::{
   LevercoinNav, RebalanceAmountExceeded,
 };
 use crate::exchange_math::collateral_ratio;
-use crate::exo_pair_risk::LevercoinMarketCapLimiter;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
 use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
 use crate::interpolated_fees::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
+use crate::levercoin_limiter::LevercoinMarketCapLimiter;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance_mode::RebalanceMode;
 use crate::rebalance_pricing::{
