@@ -179,8 +179,9 @@ pub enum CoreError {
   // `rebalance_mode`
   #[msg("Range boundary did not match the expected bound variant.")]
   RangeUnexpectedBound,
-  #[msg(
-    "Stablecoin mint threshold did not fall within Neutral rebalance range."
-  )]
+  #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]
   StablecoinMintThresholdInvalid,
+  // `levercoin_risk`
+  #[msg("Levercoin market cap limit not in valid configuration range.")]
+  LevercoinMarketCapLimitInvalid,
 }
