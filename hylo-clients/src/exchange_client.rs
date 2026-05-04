@@ -435,21 +435,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Reallocates the USDC pair account to its current size.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn extend_usdc_pair(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::extend_usdc_pair(squads.vault_pda());
-    let memo = build_memo("extend_usdc_pair", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
   /// Pauses the USDC pair.
   ///
   /// # Errors

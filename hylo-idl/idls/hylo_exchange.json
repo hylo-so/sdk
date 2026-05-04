@@ -1938,151 +1938,6 @@
       }
     },
     {
-      "name": "extend_usdc_pair",
-      "discriminator": [
-        254,
-        198,
-        220,
-        0,
-        179,
-        56,
-        233,
-        201
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "usdc_pair",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  117,
-                  115,
-                  100,
-                  99,
-                  95,
-                  112,
-                  97,
-                  105,
-                  114
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "get_stats",
-      "discriminator": [
-        241,
-        65,
-        112,
-        185,
-        230,
-        140,
-        139,
-        177
-      ],
-      "accounts": [
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "stablecoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ]
-          },
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "levercoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  120,
-                  83,
-                  79,
-                  76
-                ]
-              }
-            ]
-          },
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "sol_usd_pyth_feed"
-        }
-      ],
-      "args": [],
-      "returns": {
-        "defined": {
-          "name": "ExchangeStats"
-        }
-      }
-    },
-    {
       "name": "harvest_funding_rate",
       "discriminator": [
         113,
@@ -9110,6 +8965,14 @@
         {
           "name": "paused",
           "type": "bool"
+        },
+        {
+          "name": "levercoin_market_cap_limit",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
         }
       ],
       "returns": {
@@ -16301,11 +16164,19 @@
             "type": "bool"
           },
           {
+            "name": "levercoin_market_cap_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                118
+                109
               ]
             }
           }
