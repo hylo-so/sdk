@@ -163,24 +163,20 @@ pub fn register_exo(
   collateral_mint: Pubkey,
   exo_usd_pyth_feed: Pubkey,
 ) -> RegisterExo {
-  let exo_pair = pda::exo_pair(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-  let levercoin_auth = pda::mint_auth(levercoin_mint);
   let vault_auth = pda::exo_vault_auth(collateral_mint);
-  let collateral_vault = pda::ata(vault_auth, collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
-  let fee_vault = pda::ata(fee_auth, collateral_mint);
   RegisterExo {
     admin,
     hylo: pda::HYLO,
     collateral_mint,
-    exo_pair,
-    levercoin_auth,
+    exo_pair: pda::exo_pair(collateral_mint),
+    levercoin_auth: pda::mint_auth(levercoin_mint),
     levercoin_mint,
     vault_auth,
-    collateral_vault,
+    collateral_vault: pda::ata(vault_auth, collateral_mint),
     fee_auth,
-    fee_vault,
+    fee_vault: pda::ata(fee_auth, collateral_mint),
     levercoin_metadata: pda::metadata(levercoin_mint),
     exo_usd_pyth_feed,
     metadata_program: mpl_token_metadata::ID,

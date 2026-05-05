@@ -14,12 +14,6 @@ const MAX_MARKET_CAP_LIMIT: UFix64<N9> =
   UFix64::constant(100_000_000_000_000_000);
 
 /// Checks an admin-supplied market cap limit lies within `[MIN, MAX]`.
-///
-/// Returns the raw value unchanged so the caller can persist it on-chain
-/// verbatim.
-///
-/// # Errors
-/// `LevercoinMarketCapLimitInvalid` if outside the admissible range.
 pub fn validate_levercoin_market_cap_limit(
   limit_raw: UFixValue64,
 ) -> Result<UFixValue64> {
@@ -30,7 +24,6 @@ pub fn validate_levercoin_market_cap_limit(
     .ok_or(LevercoinMarketCapLimitInvalid.into())
 }
 
-/// Enforces the levercoin market cap limit at mint time.
 pub struct LevercoinMarketCapLimiter {
   pub market_cap_limit: UFix64<N9>,
   pub levercoin_nav: UFix64<N9>,
@@ -51,7 +44,6 @@ impl LevercoinMarketCapLimiter {
     }
   }
 
-  /// Projected market cap (USD) after minting `levercoin_to_mint`.
   fn target_market_cap(
     &self,
     levercoin_to_mint: UFix64<N6>,
@@ -63,12 +55,7 @@ impl LevercoinMarketCapLimiter {
     levercoin_market_cap(target_supply, self.levercoin_nav)
   }
 
-  /// Rejects mints that would push market cap above the configured limit.
-  ///
-  /// # Errors
-  /// `LevercoinMarketCapArithmetic` on overflow,
-  /// `LevercoinMarketCapLimitReached` if the projected cap exceeds the
-  /// limit.
+  /// Errors if minting `levercoin_to_mint` would breach the cap.
   pub fn validate_token_out(
     &self,
     levercoin_to_mint: UFix64<N6>,
