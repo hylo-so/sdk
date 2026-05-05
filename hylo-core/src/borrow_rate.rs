@@ -54,7 +54,7 @@ impl BorrowRateConfig {
   ///
   /// # Errors
   /// * Arithmetic overflow
-  pub fn apply_borrow_rate(&self, amount: UFix64<N6>) -> Result<UFix64<N6>> {
+  pub fn apply_borrow_rate(&self, amount: UFix64<N9>) -> Result<UFix64<N9>> {
     let rate = self.rate()?;
     amount
       .mul_div_floor(rate, UFix64::one())
@@ -101,9 +101,9 @@ mod tests {
   #[test]
   fn apply_funding_rate_7_percent_annual() -> Result<()> {
     let config = test_config();
-    let collateral = UFix64::<N6>::new(1_000_000_000_000);
+    let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
     let funding = config.apply_borrow_rate(collateral)?;
-    assert_eq!(funding, UFix64::new(384_620_000));
+    assert_eq!(funding, UFix64::new(384_620_000_000));
     Ok(())
   }
 
