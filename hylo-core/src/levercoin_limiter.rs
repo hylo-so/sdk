@@ -16,7 +16,7 @@ const MAX_MARKET_CAP_LIMIT: UFix64<N9> =
 /// Validates levercoin market cap limit against bounds.
 ///
 /// # Errors
-/// * Limit outside the admissible $1M–$100M range
+/// * Limit outside the admissible range
 pub fn validate_levercoin_market_cap_limit(
   limit_raw: UFixValue64,
 ) -> Result<UFixValue64> {
