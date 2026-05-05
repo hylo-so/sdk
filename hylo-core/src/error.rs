@@ -84,8 +84,10 @@ pub enum CoreError {
   #[msg("Fees cannot exceed configured maximum.")]
   InvalidFees,
   // `exchange_context`
-  #[msg("Arithmetic error or missing data while computing levercoin NAV.")]
+  #[msg("Arithmetic error while computing levercoin NAV.")]
   LevercoinNav,
+  #[msg("Levercoin supply not set on exchange context.")]
+  LevercoinSupplyNotSet,
   #[msg("Over/underflow projecting total collateral.")]
   DestinationCollateral,
   #[msg("Over/underflow projecting total stablecoin.")]
@@ -188,6 +190,4 @@ pub enum CoreError {
   LevercoinMarketCapLimitReached,
   #[msg("Arithmetic error while computing levercoin market cap limit.")]
   LevercoinMarketCapArithmetic,
-  #[msg("Expected levercoin market cap limit to be set.")]
-  LevercoinMarketCapLimitNotSet,
 }

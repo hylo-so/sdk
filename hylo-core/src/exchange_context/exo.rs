@@ -6,8 +6,8 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use super::ExchangeContext;
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
-  DestinationCollateral, DestinationStablecoin, LevercoinMarketCapLimitNotSet,
-  LevercoinNav, RebalanceAmountExceeded,
+  DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
+  RebalanceAmountExceeded,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
@@ -74,7 +74,7 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
   }
 
   fn levercoin_supply(&self) -> Result<UFix64<N6>> {
-    self.levercoin_supply.ok_or(LevercoinNav.into())
+    self.levercoin_supply.ok_or(LevercoinSupplyNotSet.into())
   }
 
   fn rebalance_mode(&self) -> RebalanceMode {
@@ -318,8 +318,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn levercoin_market_cap_limiter(
     &self,
   ) -> Result<LevercoinMarketCapLimiter> {
-    let levercoin_supply =
-      self.levercoin_supply.ok_or(LevercoinMarketCapLimitNotSet)?;
+    let levercoin_supply = self.levercoin_supply()?;
     let levercoin_nav = self.levercoin_mint_nav()?;
     Ok(LevercoinMarketCapLimiter::new(
       self.levercoin_market_cap_limit,

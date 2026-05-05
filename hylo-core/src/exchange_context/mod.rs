@@ -19,9 +19,9 @@ use crate::error::CoreError::{
   RequestedStablecoinOverMaxMintable,
 };
 use crate::exchange_math::{
-  collateral_ratio, depeg_stablecoin_nav, max_mintable_stablecoin,
-  max_swappable_stablecoin, next_levercoin_mint_nav, next_levercoin_redeem_nav,
-  total_value_locked,
+  collateral_ratio, depeg_stablecoin_nav, levercoin_market_cap,
+  max_mintable_stablecoin, max_swappable_stablecoin, next_levercoin_mint_nav,
+  next_levercoin_redeem_nav, total_value_locked,
 };
 use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
@@ -162,6 +162,14 @@ pub trait ExchangeContext {
       self.total_collateral(),
       self.collateral_usd_price().lower,
     )
+  }
+
+  /// Current levercoin market cap in USD.
+  ///
+  /// # Errors
+  /// * Missing supply, NAV failure, or arithmetic overflow
+  fn levercoin_market_cap(&self) -> Result<UFix64<N9>> {
+    levercoin_market_cap(self.levercoin_supply()?, self.levercoin_mint_nav()?)
   }
 
   /// Stablecoin NAV — $1 in all modes except Depeg.
