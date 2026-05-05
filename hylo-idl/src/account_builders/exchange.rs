@@ -5,11 +5,11 @@ use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
   ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
-  ConvertStableToLeverLst, HarvestFundingRate, InitializeUsdc,
-  MintLevercoinExo, MintLevercoinLst, MintStablecoinExo, MintStablecoinLst,
-  MintStablecoinUsdc, RedeemLevercoinExo, RedeemLevercoinLst,
-  RedeemStablecoinExo, RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
-  SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
+  ConvertStableToLeverLst, HarvestBorrowRate, InitializeUsdc, MintLevercoinExo,
+  MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
+  RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
+  RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo, SwapExoToUsdc,
+  SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
   UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
@@ -163,24 +163,20 @@ pub fn register_exo(
   collateral_mint: Pubkey,
   exo_usd_pyth_feed: Pubkey,
 ) -> RegisterExo {
-  let exo_pair = pda::exo_pair(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-  let levercoin_auth = pda::mint_auth(levercoin_mint);
   let vault_auth = pda::exo_vault_auth(collateral_mint);
-  let collateral_vault = pda::ata(vault_auth, collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
-  let fee_vault = pda::ata(fee_auth, collateral_mint);
   RegisterExo {
     admin,
     hylo: pda::HYLO,
     collateral_mint,
-    exo_pair,
-    levercoin_auth,
+    exo_pair: pda::exo_pair(collateral_mint),
+    levercoin_auth: pda::mint_auth(levercoin_mint),
     levercoin_mint,
     vault_auth,
-    collateral_vault,
+    collateral_vault: pda::ata(vault_auth, collateral_mint),
     fee_auth,
-    fee_vault,
+    fee_vault: pda::ata(fee_auth, collateral_mint),
     levercoin_metadata: pda::metadata(levercoin_mint),
     exo_usd_pyth_feed,
     metadata_program: mpl_token_metadata::ID,
@@ -309,16 +305,17 @@ pub fn redeem_stablecoin_exo(
   }
 }
 
-/// Builds account context for harvesting exo funding rate.
 #[must_use]
-pub fn harvest_funding_rate(
+pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> HarvestFundingRate {
+) -> HarvestBorrowRate {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
-  HarvestFundingRate {
+  let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+  HarvestBorrowRate {
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
+    levercoin_auth: pda::mint_auth(levercoin_mint),
     stablecoin_auth: pda::HYUSD_AUTH,
     vault_auth,
     stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
@@ -326,8 +323,9 @@ pub fn harvest_funding_rate(
     collateral_vault: pda::ata(vault_auth, collateral_mint),
     stablecoin_pool: pda::HYUSD_POOL,
     stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
-    stablecoin_mint: HYUSD::MINT,
     collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    levercoin_mint,
     collateral_usd_pyth_feed,
     hylo_stability_pool: stability_pool::ID,
     token_program: token::ID,

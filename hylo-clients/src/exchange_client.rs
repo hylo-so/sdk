@@ -435,21 +435,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Reallocates the USDC pair account to its current size.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn extend_usdc_pair(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::extend_usdc_pair(squads.vault_pda());
-    let memo = build_memo("extend_usdc_pair", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
   /// Pauses the USDC pair.
   ///
   /// # Errors
@@ -635,22 +620,22 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the funding rate for an exo collateral.
+  /// Updates the borrow rate for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_funding_rate(
+  pub fn update_exo_borrow_rate(
     &self,
     squads: &SquadsContext,
     collateral_mint: Pubkey,
-    args: &args::UpdateExoFundingRate,
+    args: &args::UpdateExoBorrowRate,
   ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_exo_funding_rate(
+    let instruction = instruction_builders::update_exo_borrow_rate(
       squads.vault_pda(),
       collateral_mint,
       args,
     );
-    let memo = build_memo("update_exo_funding_rate", &instruction);
+    let memo = build_memo("update_exo_borrow_rate", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
@@ -868,16 +853,16 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Harvests the funding rate for an exo collateral.
+  /// Harvests the borrow rate for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn harvest_funding_rate(
+  pub fn harvest_borrow_rate(
     &self,
     collateral_mint: Pubkey,
     collateral_usd_pyth_feed: Pubkey,
   ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::harvest_funding_rate(
+    let instruction = instruction_builders::harvest_borrow_rate(
       collateral_mint,
       collateral_usd_pyth_feed,
     );

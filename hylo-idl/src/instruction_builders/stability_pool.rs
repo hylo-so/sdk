@@ -33,26 +33,6 @@ pub fn user_withdraw(user: Pubkey, args: &args::UserWithdraw) -> Instruction {
 }
 
 #[must_use]
-pub fn get_stats() -> Instruction {
-  let accounts = accounts::GetStats {
-    pool_config: pda::POOL_CONFIG,
-    hylo: pda::HYLO,
-    stablecoin_mint: HYUSD::MINT,
-    levercoin_mint: XSOL::MINT,
-    pool_auth: pda::POOL_AUTH,
-    stablecoin_pool: pda::HYUSD_POOL,
-    lp_token_mint: SHYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-  };
-  let instruction_args = args::GetStats {};
-  Instruction {
-    program_id: stability_pool::ID,
-    accounts: accounts.to_account_metas(None),
-    data: instruction_args.data(),
-  }
-}
-
-#[must_use]
 pub fn initialize_stability_pool(
   admin: Pubkey,
   upgrade_authority: Pubkey,

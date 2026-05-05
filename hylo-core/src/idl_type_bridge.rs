@@ -1,5 +1,5 @@
+use crate::borrow_rate::BorrowRateConfig;
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
-use crate::funding_rate::FundingRateConfig;
 use crate::lst_sol_price::LstSolPrice;
 use crate::rebalance_pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
@@ -75,11 +75,11 @@ impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
   }
 }
 
-impl From<hylo_idl::exchange::types::FundingRateConfig> for FundingRateConfig {
+impl From<hylo_idl::exchange::types::BorrowRateConfig> for BorrowRateConfig {
   fn from(
-    idl: hylo_idl::exchange::types::FundingRateConfig,
-  ) -> FundingRateConfig {
-    FundingRateConfig::new(idl.rate.into(), idl.fee.into())
+    idl: hylo_idl::exchange::types::BorrowRateConfig,
+  ) -> BorrowRateConfig {
+    BorrowRateConfig::new(idl.rate.into(), idl.fee.into())
   }
 }
 
@@ -159,9 +159,9 @@ impl From<RebalanceCurveConfig>
   }
 }
 
-impl From<FundingRateConfig> for hylo_idl::exchange::types::FundingRateConfig {
-  fn from(val: FundingRateConfig) -> Self {
-    hylo_idl::exchange::types::FundingRateConfig {
+impl From<BorrowRateConfig> for hylo_idl::exchange::types::BorrowRateConfig {
+  fn from(val: BorrowRateConfig) -> Self {
+    hylo_idl::exchange::types::BorrowRateConfig {
       rate: val.rate.into(),
       fee: val.fee.into(),
     }

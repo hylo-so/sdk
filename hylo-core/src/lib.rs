@@ -2,17 +2,18 @@
 #![allow(clippy::wildcard_imports)]
 
 pub mod asset_swap_config;
+pub mod borrow_rate;
 pub mod conversion;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;
 pub mod fee_controller;
 pub mod fee_curves;
-pub mod funding_rate;
 #[cfg(feature = "offchain")]
 pub mod idl_type_bridge;
 pub mod interp;
 pub mod interpolated_fees;
+pub mod levercoin_limiter;
 pub mod lst_sol_price;
 pub mod pyth;
 pub mod rebalance_math;

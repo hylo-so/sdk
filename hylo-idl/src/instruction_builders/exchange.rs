@@ -442,15 +442,15 @@ pub fn redeem_stablecoin_exo(
 }
 
 #[must_use]
-pub fn harvest_funding_rate(
+pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> Instruction {
-  let accounts = account_builders::harvest_funding_rate(
+  let accounts = account_builders::harvest_borrow_rate(
     collateral_mint,
     collateral_usd_pyth_feed,
   );
-  let args = args::HarvestFundingRate {};
+  let args = args::HarvestBorrowRate {};
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -705,21 +705,6 @@ pub fn update_lst_rebalance_deviation_tolerance(
 }
 
 #[must_use]
-pub fn extend_usdc_pair(admin: Pubkey) -> Instruction {
-  let accounts = accounts::ExtendUsdcPair {
-    admin,
-    hylo: pda::HYLO,
-    usdc_pair: pda::USDC_PAIR,
-    system_program: system_program::ID,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args::ExtendUsdcPair {}.data(),
-  }
-}
-
-#[must_use]
 pub fn pause_usdc_pair(pause_authority: Pubkey) -> Instruction {
   let accounts = accounts::PauseUsdcPair {
     pause_authority,
@@ -806,12 +791,12 @@ pub fn update_yield_harvest_config(
 }
 
 #[must_use]
-pub fn update_exo_funding_rate(
+pub fn update_exo_borrow_rate(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::UpdateExoFundingRate,
+  args: &args::UpdateExoBorrowRate,
 ) -> Instruction {
-  let accounts = accounts::UpdateExoFundingRate {
+  let accounts = accounts::UpdateExoBorrowRate {
     admin,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -1148,22 +1133,6 @@ pub fn swap_usdc_to_lst(
   args: &args::SwapUsdcToLst,
 ) -> Instruction {
   let accounts = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn get_stats() -> Instruction {
-  let accounts = accounts::GetStats {
-    hylo: pda::HYLO,
-    stablecoin_mint: HYUSD::MINT,
-    levercoin_mint: XSOL::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-  };
-  let args = args::GetStats {};
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

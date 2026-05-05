@@ -4,3 +4,4 @@ target/
 .git/
 .direnv/
 .claude/settings.local.json
+.rsmap/

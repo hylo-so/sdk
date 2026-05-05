@@ -84,8 +84,10 @@ pub enum CoreError {
   #[msg("Fees cannot exceed configured maximum.")]
   InvalidFees,
   // `exchange_context`
-  #[msg("Arithmetic error or missing data while computing levercoin NAV.")]
+  #[msg("Arithmetic error while computing levercoin NAV.")]
   LevercoinNav,
+  #[msg("Levercoin supply not set on exchange context.")]
+  LevercoinSupplyNotSet,
   #[msg("Over/underflow projecting total collateral.")]
   DestinationCollateral,
   #[msg("Over/underflow projecting total stablecoin.")]
@@ -123,11 +125,11 @@ pub enum CoreError {
   CollateralRatioConversion,
   #[msg("Failed to convert interpolated fee from i64 to u64.")]
   InterpFeeConversion,
-  // `funding_rate`
-  #[msg("Funding rate configuration failed validation.")]
-  FundingRateValidation,
-  #[msg("Arithmetic error while applying funding rate.")]
-  FundingRateApply,
+  // `borrow_rate`
+  #[msg("Borrow rate configuration failed validation.")]
+  BorrowRateValidation,
+  #[msg("Arithmetic error while applying borrow rate.")]
+  BorrowRateApply,
   // `exo_exchange_context`
   #[msg("Arithmetic error converting exo collateral to protocol token.")]
   ExoToToken,
@@ -179,8 +181,13 @@ pub enum CoreError {
   // `rebalance_mode`
   #[msg("Range boundary did not match the expected bound variant.")]
   RangeUnexpectedBound,
-  #[msg(
-    "Stablecoin mint threshold did not fall within Neutral rebalance range."
-  )]
+  #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]
   StablecoinMintThresholdInvalid,
+  // `levercoin_limiter`
+  #[msg("Levercoin market cap limit not in valid configuration range.")]
+  LevercoinMarketCapLimitInvalid,
+  #[msg("Cannot mint new levercoin as market cap limit has been reached.")]
+  LevercoinMarketCapLimitReached,
+  #[msg("Arithmetic error while computing levercoin market cap limit.")]
+  LevercoinMarketCapArithmetic,
 }
