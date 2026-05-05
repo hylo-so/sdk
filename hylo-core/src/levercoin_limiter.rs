@@ -1,12 +1,3 @@
-//! Supply-side guardrail capping levercoin (xSOL / xAsset) issuance by
-//! USD market cap.
-//!
-//! Bounds protocol risk in dollar terms rather than token units, so NAV
-//! swings cannot expand exposure beyond the configured ceiling. Admin
-//! instructions set the limit via [`validate_levercoin_market_cap_limit`];
-//! mint instructions enforce it via
-//! [`LevercoinMarketCapLimiter::validate_token_out`].
-
 use anchor_lang::prelude::Result;
 use fix::prelude::*;
 
@@ -16,19 +7,16 @@ use crate::error::CoreError::{
 };
 use crate::exchange_math::levercoin_market_cap;
 
-// Admissible levercoin market cap limit range, $1M to $100M.
+// Admissible levercoin market bounds, $1M to $100M.
 const MIN_MARKET_CAP_LIMIT: UFix64<N9> =
   UFix64::constant(1_000_000_000_000_000);
 const MAX_MARKET_CAP_LIMIT: UFix64<N9> =
   UFix64::constant(100_000_000_000_000_000);
 
-/// Bounds an admin-supplied market cap to the protocol-approved range
-/// (`$1M..=$100M`) before it is persisted on-chain.
+/// Validates levercoin market cap limit against bounds.
 ///
-/// Prevents a misconfigured admin from effectively disabling the
-/// guardrail (cap set too high) or stalling mints (cap set absurdly
-/// low). Returns the raw value unchanged so callers can serialize it
-/// directly without re-encoding.
+/// # Errors
+/// * Limit outside the admissible $1M–$100M range
 pub fn validate_levercoin_market_cap_limit(
   limit_raw: UFixValue64,
 ) -> Result<UFixValue64> {
@@ -39,9 +27,7 @@ pub fn validate_levercoin_market_cap_limit(
     .ok_or(LevercoinMarketCapLimitInvalid.into())
 }
 
-/// Snapshot of the inputs needed to evaluate the cap at a single point
-/// in time: the configured USD ceiling, the current levercoin NAV, and
-/// outstanding supply. Built fresh per mint instruction.
+/// Market cap limiter for levercoin mints.
 pub struct LevercoinMarketCapLimiter {
   pub market_cap_limit: UFix64<N9>,
   pub levercoin_nav: UFix64<N9>,
@@ -73,11 +59,11 @@ impl LevercoinMarketCapLimiter {
     levercoin_market_cap(target_supply, self.levercoin_nav)
   }
 
-  /// Mint-time gate: projects market cap after the mint and admits the
-  /// issuance only if the result stays at or below the configured limit.
+  /// Checks given mint amount against configured market cap limit.
   ///
-  /// Returns the requested amount unchanged on success so the call site
-  /// can chain validation into the mint pipeline without rebinding.
+  /// # Errors
+  /// * Supply overflow
+  /// * Projected market cap exceeds the limit
   pub fn validate_token_out(
     &self,
     levercoin_to_mint: UFix64<N6>,
