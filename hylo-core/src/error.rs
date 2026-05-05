@@ -125,11 +125,11 @@ pub enum CoreError {
   CollateralRatioConversion,
   #[msg("Failed to convert interpolated fee from i64 to u64.")]
   InterpFeeConversion,
-  // `funding_rate`
-  #[msg("Funding rate configuration failed validation.")]
-  FundingRateValidation,
-  #[msg("Arithmetic error while applying funding rate.")]
-  FundingRateApply,
+  // `borrow_rate`
+  #[msg("Borrow rate configuration failed validation.")]
+  BorrowRateValidation,
+  #[msg("Arithmetic error while applying borrow rate.")]
+  BorrowRateApply,
   // `exo_exchange_context`
   #[msg("Arithmetic error converting exo collateral to protocol token.")]
   ExoToToken,
