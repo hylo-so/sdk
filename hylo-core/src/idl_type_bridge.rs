@@ -75,9 +75,9 @@ impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
   }
 }
 
-impl From<hylo_idl::exchange::types::FundingRateConfig> for BorrowRateConfig {
+impl From<hylo_idl::exchange::types::BorrowRateConfig> for BorrowRateConfig {
   fn from(
-    idl: hylo_idl::exchange::types::FundingRateConfig,
+    idl: hylo_idl::exchange::types::BorrowRateConfig,
   ) -> BorrowRateConfig {
     BorrowRateConfig::new(idl.rate.into(), idl.fee.into())
   }
@@ -159,9 +159,9 @@ impl From<RebalanceCurveConfig>
   }
 }
 
-impl From<BorrowRateConfig> for hylo_idl::exchange::types::FundingRateConfig {
+impl From<BorrowRateConfig> for hylo_idl::exchange::types::BorrowRateConfig {
   fn from(val: BorrowRateConfig) -> Self {
-    hylo_idl::exchange::types::FundingRateConfig {
+    hylo_idl::exchange::types::BorrowRateConfig {
       rate: val.rate.into(),
       fee: val.fee.into(),
     }

@@ -25,7 +25,7 @@ pub struct BorrowRateConfig {
 /// Maximum per-epoch rate (~10% annualized at 182 epochs/year)
 const MAX_RATE: UFix64<N9> = UFix64::constant(600_000);
 
-/// Maximum fee exacted against funding rate
+/// Maximum fee exacted against borrow rate
 const MAX_FEE: UFix64<N4> = UFix64::constant(10_000);
 
 impl BorrowRateConfig {
@@ -99,11 +99,11 @@ mod tests {
   }
 
   #[test]
-  fn apply_funding_rate_7_percent_annual() -> Result<()> {
+  fn apply_borrow_rate_7_percent_annual() -> Result<()> {
     let config = test_config();
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
-    let funding = config.apply_borrow_rate(collateral)?;
-    assert_eq!(funding, UFix64::new(384_620_000_000));
+    let borrow = config.apply_borrow_rate(collateral)?;
+    assert_eq!(borrow, UFix64::new(384_620_000_000));
     Ok(())
   }
 

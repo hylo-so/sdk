@@ -1938,16 +1938,16 @@
       }
     },
     {
-      "name": "harvest_funding_rate",
+      "name": "harvest_borrow_rate",
       "discriminator": [
-        113,
-        185,
-        31,
-        223,
-        157,
-        46,
-        95,
-        210
+        164,
+        102,
+        122,
+        69,
+        68,
+        217,
+        66,
+        111
       ],
       "accounts": [
         {
@@ -1987,6 +1987,31 @@
               {
                 "kind": "account",
                 "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "levercoin_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
               }
             ]
           }
@@ -2365,6 +2390,12 @@
           }
         },
         {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
           "name": "stablecoin_mint",
           "writable": true,
           "pda": {
@@ -2386,10 +2417,33 @@
           ]
         },
         {
-          "name": "collateral_mint",
-          "relations": [
-            "exo_pair"
-          ]
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
         },
         {
           "name": "collateral_usd_pyth_feed"
@@ -2438,7 +2492,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "HarvestFundingRateEvent"
+          "name": "HarvestBorrowRateEvent"
         }
       }
     },
@@ -8915,10 +8969,10 @@
           }
         },
         {
-          "name": "funding_rate_config",
+          "name": "borrow_rate_config",
           "type": {
             "defined": {
-              "name": "FundingRateConfig"
+              "name": "BorrowRateConfig"
             }
           }
         },
@@ -12001,6 +12055,122 @@
       }
     },
     {
+      "name": "update_exo_borrow_rate",
+      "discriminator": [
+        59,
+        37,
+        124,
+        162,
+        243,
+        215,
+        191,
+        193
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_borrow_rate_config",
+          "type": {
+            "defined": {
+              "name": "BorrowRateConfig"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateExoBorrowRateEvent"
+        }
+      }
+    },
+    {
       "name": "update_exo_buy_curve",
       "discriminator": [
         121,
@@ -12113,122 +12283,6 @@
       "returns": {
         "defined": {
           "name": "UpdateRebalanceCurveConfigEvent"
-        }
-      }
-    },
-    {
-      "name": "update_exo_funding_rate",
-      "discriminator": [
-        196,
-        231,
-        149,
-        5,
-        235,
-        0,
-        13,
-        69
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "exo_pair",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  120,
-                  111,
-                  95,
-                  112,
-                  97,
-                  105,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "collateral_mint",
-          "relations": [
-            "exo_pair"
-          ]
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_funding_rate_config",
-          "type": {
-            "defined": {
-              "name": "FundingRateConfig"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateExoFundingRateEvent"
         }
       }
     },
@@ -14893,16 +14947,16 @@
       ]
     },
     {
-      "name": "HarvestFundingRateEvent",
+      "name": "HarvestBorrowRateEvent",
       "discriminator": [
-        169,
-        133,
-        237,
-        152,
-        80,
-        31,
-        64,
-        29
+        93,
+        52,
+        145,
+        219,
+        106,
+        174,
+        45,
+        135
       ]
     },
     {
@@ -15205,16 +15259,16 @@
       ]
     },
     {
-      "name": "UpdateExoFundingRateEvent",
+      "name": "UpdateExoBorrowRateEvent",
       "discriminator": [
-        189,
-        191,
-        198,
-        174,
-        97,
-        27,
-        184,
-        116
+        95,
+        179,
+        60,
+        3,
+        30,
+        213,
+        78,
+        250
       ]
     },
     {
@@ -15532,13 +15586,13 @@
     },
     {
       "code": 6031,
-      "name": "FundingRateHarvestHasNotRun",
-      "msg": "Funding rate harvest has not yet occurred during this epoch."
+      "name": "BorrowRateHarvestHasNotRun",
+      "msg": "Borrow rate harvest has not yet occurred during this epoch."
     },
     {
       "code": 6032,
-      "name": "FundingRateHarvestAlreadyRun",
-      "msg": "Funding rate harvest has already occurred during this epoch."
+      "name": "BorrowRateHarvestAlreadyRun",
+      "msg": "Borrow rate harvest has already occurred during this epoch."
     },
     {
       "code": 6033,
@@ -15619,6 +15673,11 @@
       "code": 6048,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
+    },
+    {
+      "code": 6049,
+      "name": "TokenAmountPrecisionError",
+      "msg": "Failed while converting precision for a token amount."
     }
   ],
   "types": [
@@ -15711,6 +15770,33 @@
           {
             "name": "new_address",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BorrowRateConfig",
+      "docs": [
+        "Per-epoch borrow rate for exogenous collateral without native yield."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           }
         ]
       }
@@ -16112,15 +16198,15 @@
             }
           },
           {
-            "name": "funding_rate_config",
+            "name": "borrow_rate_config",
             "type": {
               "defined": {
-                "name": "FundingRateConfig"
+                "name": "BorrowRateConfig"
               }
             }
           },
           {
-            "name": "funding_rate_harvest_cache",
+            "name": "borrow_rate_harvest_cache",
             "type": {
               "defined": {
                 "name": "HarvestCache"
@@ -16213,15 +16299,16 @@
       }
     },
     {
-      "name": "FundingRateConfig",
-      "docs": [
-        "Per-epoch funding rate for exogenous collateral without native yield."
-      ],
+      "name": "HarvestBorrowRateEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "rate",
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_market_cap",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -16229,10 +16316,34 @@
             }
           },
           {
-            "name": "fee",
+            "name": "total_stablecoin_harvested",
             "type": {
               "defined": {
                 "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fees_extracted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_to_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "collateral_usd_price",
+            "type": {
+              "defined": {
+                "name": "OraclePriceEvent"
               }
             }
           }
@@ -16266,18 +16377,6 @@
                 "name": "UFixValue64"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "HarvestFundingRateEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "collateral_mint",
-            "type": "pubkey"
           }
         ]
       }
@@ -17560,7 +17659,7 @@
             }
           },
           {
-            "name": "funding_rate",
+            "name": "borrow_rate",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -17568,7 +17667,7 @@
             }
           },
           {
-            "name": "funding_rate_fee",
+            "name": "borrow_rate_fee",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -17941,23 +18040,23 @@
       }
     },
     {
-      "name": "UpdateExoFundingRateEvent",
+      "name": "UpdateExoBorrowRateEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "old_funding_rate_config",
+            "name": "old_borrow_rate_config",
             "type": {
               "defined": {
-                "name": "FundingRateConfig"
+                "name": "BorrowRateConfig"
               }
             }
           },
           {
-            "name": "new_funding_rate_config",
+            "name": "new_borrow_rate_config",
             "type": {
               "defined": {
-                "name": "FundingRateConfig"
+                "name": "BorrowRateConfig"
               }
             }
           }
