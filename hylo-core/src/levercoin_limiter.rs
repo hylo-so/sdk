@@ -55,7 +55,6 @@ impl LevercoinMarketCapLimiter {
     levercoin_market_cap(target_supply, self.levercoin_nav)
   }
 
-  /// Errors if minting `levercoin_to_mint` would breach the cap.
   pub fn validate_token_out(
     &self,
     levercoin_to_mint: UFix64<N6>,
