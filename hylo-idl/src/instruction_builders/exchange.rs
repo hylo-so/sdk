@@ -12,7 +12,7 @@ use crate::exchange::client::{accounts, args};
 use crate::exchange::types::{AddressField, TokenMetadata, UFixValue64};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
-use crate::{exchange, stability_pool};
+use crate::{earn_pool, exchange};
 
 #[must_use]
 pub fn mint_stablecoin_lst(
@@ -297,7 +297,7 @@ pub fn harvest_yield(
     stablecoin_pool: pda::HYUSD_POOL,
     pool_auth: pda::POOL_AUTH,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    hylo_stability_pool: stability_pool::ID,
+    hylo_earn_pool: earn_pool::ID,
     lst_registry,
     lut_program: address_lookup_table::ID,
     token_program: token::ID,

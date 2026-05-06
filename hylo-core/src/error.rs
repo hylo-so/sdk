@@ -94,7 +94,7 @@ pub enum CoreError {
   DestinationStablecoin,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
   RequestedStablecoinOverMaxMintable,
-  // `stability_pool_math`
+  // `earn_pool_math`
   #[msg("Arithmetic error while computing LP token NAV.")]
   LpTokenNav,
   #[msg("Arithmetic error while computing LP token amount to give to user.")]

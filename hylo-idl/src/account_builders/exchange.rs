@@ -13,7 +13,7 @@ use crate::exchange::client::accounts::{
   UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
-use crate::{exchange, pda, stability_pool};
+use crate::{earn_pool, exchange, pda};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
 #[must_use]
@@ -327,7 +327,7 @@ pub fn harvest_borrow_rate(
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint,
     collateral_usd_pyth_feed,
-    hylo_stability_pool: stability_pool::ID,
+    hylo_earn_pool: earn_pool::ID,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,

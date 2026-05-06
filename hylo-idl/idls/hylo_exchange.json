@@ -2116,7 +2116,7 @@
             ],
             "program": {
               "kind": "account",
-              "path": "hylo_stability_pool"
+              "path": "hylo_earn_pool"
             }
           }
         },
@@ -2449,7 +2449,7 @@
           "name": "collateral_usd_pyth_feed"
         },
         {
-          "name": "hylo_stability_pool",
+          "name": "hylo_earn_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
@@ -2797,7 +2797,7 @@
             ],
             "program": {
               "kind": "account",
-              "path": "hylo_stability_pool"
+              "path": "hylo_earn_pool"
             }
           }
         },
@@ -2805,7 +2805,7 @@
           "name": "sol_usd_pyth_feed"
         },
         {
-          "name": "hylo_stability_pool",
+          "name": "hylo_earn_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
@@ -16530,7 +16530,7 @@
             }
           },
           {
-            "name": "legacy_stability_threshold_2",
+            "name": "_legacy_stability_threshold_2",
             "type": {
               "defined": {
                 "name": "UFixValue64"

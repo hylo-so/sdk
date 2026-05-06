@@ -6,12 +6,12 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::{UFix64, N8};
 use hylo_core::exchange_context::ExoExchangeContext;
+use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
-use hylo_core::idl::stability_pool::accounts::PoolConfig;
 use hylo_core::idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
-use hylo_core::idl::{exchange, pda, stability_pool};
+use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
 use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_jupiter_amm_interface::{
@@ -281,7 +281,7 @@ impl PairConfig<HYUSD, XSOL> for HyloJupiterPair<HYUSD, XSOL> {
 
 impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
   fn program_id() -> Pubkey {
-    stability_pool::ID
+    earn_pool::ID
   }
   fn label() -> &'static str {
     "Hylo HYUSD<->SHYUSD"
@@ -309,11 +309,9 @@ impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
     output_mint: Pubkey,
   ) -> Result<SwapAndAccountMetas> {
     match (input_mint, output_mint) {
-      (HYUSD::MINT, SHYUSD::MINT) => {
-        Ok(account_metas::stability_pool_deposit(user))
-      }
+      (HYUSD::MINT, SHYUSD::MINT) => Ok(account_metas::earn_pool_deposit(user)),
       (SHYUSD::MINT, HYUSD::MINT) => {
-        Ok(account_metas::stability_pool_withdraw(user))
+        Ok(account_metas::earn_pool_withdraw(user))
       }
       _ => Err(anyhow!("Invalid mint pair")),
     }
@@ -389,7 +387,7 @@ where
     let sol_usd: PriceUpdateV2 =
       account_map_get(account_map, &SOL_USD.address)?;
 
-    // Stability pool
+    // Earn pool
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -521,13 +519,13 @@ mod tests {
   };
   use hylo_clients::program_client::ProgramClient;
   use hylo_clients::util::build_test_router_client;
+  use hylo_core::idl::earn_pool::events::{
+    UserDepositEvent, UserWithdrawEvent,
+  };
   use hylo_core::idl::exchange::events::{
     ConvertLeverToStableLstEvent, ConvertStableToLeverLstEvent,
     MintLevercoinLstEvent, MintStablecoinLstEvent, RedeemLevercoinLstEvent,
     RedeemStablecoinLstEvent,
-  };
-  use hylo_core::idl::stability_pool::events::{
-    UserDepositEvent, UserWithdrawEvent,
   };
   use hylo_jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;

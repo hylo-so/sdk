@@ -1,203 +1,23 @@
 {
   "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ",
   "metadata": {
-    "name": "hylo_stability_pool",
+    "name": "hylo_earn_pool",
     "version": "1.0.0",
     "spec": "0.1.0",
-    "description": "Hylo Stability Pool Program"
+    "description": "Hylo Earn Pool Program"
   },
   "instructions": [
     {
-      "name": "initialize_lp_token_mint",
+      "name": "initialize_earn_pool",
       "discriminator": [
-        188,
-        32,
-        168,
-        40,
-        166,
-        152,
-        159,
-        156
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "pool_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                187,
-                72,
-                160,
-                4,
-                116,
-                48,
-                134,
-                197,
-                164,
-                152,
-                189,
-                233,
-                219,
-                27,
-                124,
-                201,
-                65,
-                103,
-                243,
-                58,
-                82,
-                140,
-                90,
-                13,
-                150,
-                83,
-                40,
-                223,
-                158,
-                124,
-                33
-              ]
-            }
-          }
-        },
-        {
-          "name": "lp_token_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "lp_token_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "lp_token_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  116,
-                  97,
-                  107,
-                  101,
-                  100,
-                  95,
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "lp_token_metadata",
-          "writable": true
-        },
-        {
-          "name": "metadata_program",
-          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "lp_token_metadata",
-          "type": {
-            "defined": {
-              "name": "TokenMetadata"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "initialize_stability_pool",
-      "discriminator": [
-        220,
-        103,
+        238,
+        212,
+        54,
+        107,
+        73,
         253,
-        62,
-        133,
-        245,
-        74,
-        222
+        213,
+        167
       ],
       "accounts": [
         {
@@ -613,11 +433,191 @@
           "name": "program_data"
         },
         {
-          "name": "hylo_stability_pool",
+          "name": "hylo_earn_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         }
       ],
       "args": []
+    },
+    {
+      "name": "initialize_lp_token_mint",
+      "discriminator": [
+        188,
+        32,
+        168,
+        40,
+        166,
+        152,
+        159,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "pool_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "lp_token_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "lp_token_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lp_token_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  100,
+                  95,
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "lp_token_metadata",
+          "writable": true
+        },
+        {
+          "name": "metadata_program",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lp_token_metadata",
+          "type": {
+            "defined": {
+              "name": "TokenMetadata"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "update_withdrawal_fee",
@@ -1820,16 +1820,16 @@
   ],
   "events": [
     {
-      "name": "StabilityPoolStats",
+      "name": "EarnPoolStats",
       "discriminator": [
-        146,
-        92,
-        252,
-        198,
-        221,
-        148,
-        242,
-        182
+        73,
+        230,
+        151,
+        142,
+        98,
+        95,
+        15,
+        45
       ]
     },
     {
@@ -1905,6 +1905,54 @@
     }
   ],
   "types": [
+    {
+      "name": "EarnPoolStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lp_token_nav",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "lp_token_supply",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "earn_pool_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_in_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_nav",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "FeePair",
       "docs": [
@@ -2071,7 +2119,7 @@
             }
           },
           {
-            "name": "legacy_stability_threshold_2",
+            "name": "_legacy_stability_threshold_2",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -2349,54 +2397,6 @@
           },
           {
             "name": "ceil_mult",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "StabilityPoolStats",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "lp_token_nav",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "lp_token_supply",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "stability_pool_cap",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "stablecoin_in_pool",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "stablecoin_nav",
             "type": {
               "defined": {
                 "name": "UFixValue64"

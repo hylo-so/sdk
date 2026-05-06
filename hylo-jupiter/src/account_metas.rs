@@ -1,12 +1,12 @@
 //! Account meta builders for Jupiter AMM swap instructions.
 //!
 //! Each function builds account metas for a router `Route`
-//! instruction wrapping the appropriate exchange or stability pool
+//! instruction wrapping the appropriate exchange or earn pool
 //! accounts.
 
 use anchor_lang::prelude::{Pubkey, ToAccountMetas};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
-use hylo_idl::{exchange, stability_pool};
+use hylo_idl::{earn_pool, exchange};
 use hylo_jupiter_amm_interface::{Swap, SwapAndAccountMetas};
 
 fn route_account_metas<A: ToAccountMetas>(
@@ -81,16 +81,16 @@ pub fn convert_lever_to_stable_lst(user: Pubkey) -> SwapAndAccountMetas {
   route_account_metas(XSOL::MINT, HYUSD::MINT, &accounts)
 }
 
-/// Deposit hyUSD to stability pool.
+/// Deposit hyUSD to earn pool.
 #[must_use]
-pub fn stability_pool_deposit(user: Pubkey) -> SwapAndAccountMetas {
-  let accounts = stability_pool::account_builders::deposit(user);
+pub fn earn_pool_deposit(user: Pubkey) -> SwapAndAccountMetas {
+  let accounts = earn_pool::account_builders::deposit(user);
   route_account_metas(HYUSD::MINT, SHYUSD::MINT, &accounts)
 }
 
-/// Withdraw hyUSD from stability pool.
+/// Withdraw hyUSD from earn pool.
 #[must_use]
-pub fn stability_pool_withdraw(user: Pubkey) -> SwapAndAccountMetas {
-  let accounts = stability_pool::account_builders::withdraw(user);
+pub fn earn_pool_withdraw(user: Pubkey) -> SwapAndAccountMetas {
+  let accounts = earn_pool::account_builders::withdraw(user);
   route_account_metas(SHYUSD::MINT, HYUSD::MINT, &accounts)
 }

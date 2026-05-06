@@ -1,7 +1,7 @@
 //! Extract quote data from simulation events.
 
+mod earn_pool;
 mod exchange;
-mod stability_pool;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::AnchorDeserialize;

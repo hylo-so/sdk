@@ -1,9 +1,9 @@
-//! `SimulatedOperation` implementations for stability pool pairs.
+//! `SimulatedOperation` implementations for earn pool pairs.
 
 use anyhow::{bail, Context, Result};
 use fix::prelude::*;
 use hylo_clients::router_client::RouterClient;
-use hylo_idl::stability_pool::events::{UserDepositEvent, UserWithdrawEvent};
+use hylo_idl::earn_pool::events::{UserDepositEvent, UserWithdrawEvent};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulated_operation::SimulatedOperation;

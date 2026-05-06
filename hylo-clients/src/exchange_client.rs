@@ -163,7 +163,7 @@ impl ExchangeClient {
     ))
   }
 
-  /// Builds transaction data for harvesting yield from LST vaults to stability
+  /// Builds transaction data for harvesting yield from LST vaults to earn
   /// pool.
   ///
   /// # Errors

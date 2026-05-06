@@ -26,11 +26,11 @@ use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
 };
 
+use crate::earn_pool_client::EarnPoolClient;
 use crate::exchange_client::ExchangeClient;
 use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
 use crate::router_client::RouterClient;
-use crate::stability_pool_client::StabilityPoolClient;
 
 pub trait LST: StakePool {}
 impl LST for JITOSOL {}
@@ -205,13 +205,13 @@ pub fn build_test_exchange_client() -> Result<ExchangeClient> {
   Ok(client)
 }
 
-/// Builds test stability pool client with random keypair.
+/// Builds test earn pool client with random keypair.
 ///
 /// # Errors
 /// * Environment variable access
 /// * Client initialization
-pub fn build_test_stability_pool_client() -> Result<StabilityPoolClient> {
-  let client = StabilityPoolClient::new_from_keypair(
+pub fn build_test_earn_pool_client() -> Result<EarnPoolClient> {
+  let client = EarnPoolClient::new_from_keypair(
     cluster_from_env()?,
     Keypair::new(),
     CommitmentConfig::confirmed(),

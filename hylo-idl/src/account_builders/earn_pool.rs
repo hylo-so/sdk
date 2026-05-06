@@ -1,11 +1,11 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token;
 
-use crate::stability_pool::client::accounts::{UserDeposit, UserWithdraw};
+use crate::earn_pool::client::accounts::{UserDeposit, UserWithdraw};
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
-use crate::{pda, stability_pool};
+use crate::{earn_pool, pda};
 
-/// Builds account context for stability pool deposit (hyUSD -> sHYUSD).
+/// Builds account context for earn pool deposit (hyUSD -> sHYUSD).
 #[must_use]
 pub fn deposit(user: Pubkey) -> UserDeposit {
   UserDeposit {
@@ -21,12 +21,12 @@ pub fn deposit(user: Pubkey) -> UserDeposit {
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
-    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
-    program: stability_pool::ID,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
   }
 }
 
-/// Builds account context for stability pool withdrawal (sHYUSD -> hyUSD).
+/// Builds account context for earn pool withdrawal (sHYUSD -> hyUSD).
 #[must_use]
 pub fn withdraw(user: Pubkey) -> UserWithdraw {
   UserWithdraw {
@@ -46,7 +46,7 @@ pub fn withdraw(user: Pubkey) -> UserWithdraw {
     lp_token_mint: SHYUSD::MINT,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
-    event_authority: pda::STABILITY_POOL_EVENT_AUTHORITY,
-    program: stability_pool::ID,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
   }
 }

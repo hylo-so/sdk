@@ -4,6 +4,7 @@
 pub mod asset_swap_config;
 pub mod borrow_rate;
 pub mod conversion;
+pub mod earn_pool_math;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;
@@ -22,7 +23,6 @@ pub mod rebalance_pricing;
 pub mod slippage_config;
 pub mod solana_clock;
 pub mod spl_stake_pool;
-pub mod stability_pool_math;
 pub mod total_sol_cache;
 pub mod util;
 pub mod virtual_stablecoin;

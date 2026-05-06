@@ -5,11 +5,11 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::ToAccountMetas;
 use anyhow::Result;
 use hylo_core::slippage_config::SlippageConfig;
+use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
 use hylo_idl::pda;
 use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route;
-use hylo_idl::stability_pool::account_builders as sp_account_builders;
 use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC,
   XSOL,
@@ -226,10 +226,10 @@ router_instruction!(USDC, CBBTC, BASE_LOOKUP_TABLES, CBBTC::MINT, |user| {
 
 // `user_deposit`
 router_instruction!(HYUSD, SHYUSD, BASE_LOOKUP_TABLES, SHYUSD::MINT, |user| {
-  sp_account_builders::deposit(user)
+  ep_account_builders::deposit(user)
 });
 
 // `user_withdraw`
 router_instruction!(SHYUSD, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
-  sp_account_builders::withdraw(user)
+  ep_account_builders::withdraw(user)
 });

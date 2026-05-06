@@ -6,7 +6,7 @@ use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::types::AddressField;
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
-use crate::{exchange, stability_pool};
+use crate::{earn_pool, exchange};
 
 macro_rules! pda {
   ($program_id:expr, $base:expr) => {{
@@ -187,22 +187,19 @@ pub const LST_REGISTRY_AUTH: Pubkey =
   pda!(exchange::ID, exchange::constants::LST_REGISTRY_AUTH);
 
 pub const POOL_CONFIG: Pubkey =
-  pda!(stability_pool::ID, stability_pool::constants::POOL_CONFIG);
+  pda!(earn_pool::ID, earn_pool::constants::POOL_CONFIG);
 
-pub const SHYUSD_AUTH: Pubkey = pda!(
-  stability_pool::ID,
-  exchange::constants::MINT_AUTH,
-  SHYUSD::MINT
-);
+pub const SHYUSD_AUTH: Pubkey =
+  pda!(earn_pool::ID, exchange::constants::MINT_AUTH, SHYUSD::MINT);
 
 pub const POOL_AUTH: Pubkey =
-  pda!(stability_pool::ID, stability_pool::constants::POOL_AUTH);
+  pda!(earn_pool::ID, earn_pool::constants::POOL_AUTH);
 
 pub const HYUSD_POOL: Pubkey = ata(POOL_AUTH, HYUSD::MINT);
 
 pub const XSOL_POOL: Pubkey = ata(POOL_AUTH, XSOL::MINT);
 
-pub const STABILITY_POOL_PROGRAM_DATA: Pubkey = progdata(stability_pool::ID);
+pub const EARN_POOL_PROGRAM_DATA: Pubkey = progdata(earn_pool::ID);
 
 pub const EXCHANGE_PROGRAM_DATA: Pubkey = progdata(exchange::ID);
 
@@ -217,8 +214,7 @@ pub const BTC_USD_PYTH_FEED: Pubkey =
 
 pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 
-pub const STABILITY_POOL_EVENT_AUTHORITY: Pubkey =
-  event_auth(stability_pool::ID);
+pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);
 
 pub const USDC_PAIR: Pubkey =
   pda!(exchange::ID, exchange::constants::USDC_PAIR);

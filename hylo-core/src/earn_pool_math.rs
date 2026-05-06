@@ -6,7 +6,7 @@ use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
 use crate::fee_controller::FeeExtract;
 use crate::pyth::PriceRange;
 
-/// Computes NAV for the stability pool's LP token.
+/// Computes NAV for the earn pool's LP token.
 ///
 /// ```txt
 ///                  stablecoin_in_pool
@@ -101,7 +101,7 @@ mod tests {
 
   #[allow(dead_code)]
   #[derive(Debug)]
-  struct StabilityPoolState {
+  struct EarnPoolState {
     pub stablecoin_in_pool: UFix64<N6>,
     pub lp_token_supply: UFix64<N6>,
   }
@@ -111,16 +111,16 @@ mod tests {
   }
 
   prop_compose! {
-    pub fn make_stability_pool_state(protocol_state: ProtocolState)(
+    pub fn make_earn_pool_state(protocol_state: ProtocolState)(
       lp_token_supply in 0..protocol_state.stablecoin_amount.bits,
       stablecoin_staked in pct_staked(UFix64::new(30), UFix64::new(99)),
-    ) -> StabilityPoolState {
+    ) -> EarnPoolState {
       let stablecoin_in_pool =
         protocol_state
         .stablecoin_amount
         .mul_div_floor(stablecoin_staked, UFix64::one())
         .expect("stablecoin_in_pool");
-      StabilityPoolState {
+      EarnPoolState {
         stablecoin_in_pool,
         lp_token_supply: UFix64::new(lp_token_supply),
       }
@@ -175,10 +175,10 @@ mod tests {
   proptest! {
     #[test]
     fn lp_token_nav_ok(
-      StabilityPoolState {
+      EarnPoolState {
         stablecoin_in_pool,
         lp_token_supply,
-      } in protocol_state(()).prop_flat_map(make_stability_pool_state),
+      } in protocol_state(()).prop_flat_map(make_earn_pool_state),
     ) {
       let nav = lp_token_nav(
         stablecoin_in_pool,
@@ -189,10 +189,10 @@ mod tests {
 
     #[test]
     fn lp_token_nav_proportional(
-      StabilityPoolState {
+      EarnPoolState {
         stablecoin_in_pool,
         lp_token_supply,
-      } in protocol_state(()).prop_flat_map(make_stability_pool_state),
+      } in protocol_state(()).prop_flat_map(make_earn_pool_state),
     ) {
       let two: UFix64<N6> = UFix64::new(2_000_000);
       let double_stable = stablecoin_in_pool

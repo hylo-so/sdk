@@ -33,13 +33,13 @@ pub struct ProtocolAccounts {
   /// XSOL mint account
   pub xsol_mint: Account,
 
-  /// Stability pool configuration
+  /// Earn pool configuration
   pub pool_config: Account,
 
-  /// HYUSD stability pool token account
+  /// HYUSD earn pool token account
   pub hyusd_pool: Account,
 
-  /// XSOL stability pool token account
+  /// XSOL earn pool token account
   pub xsol_pool: Account,
 
   /// Pyth SOL/USD price feed
