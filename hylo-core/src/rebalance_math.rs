@@ -55,39 +55,41 @@ pub enum RebalancePnl {
   Loss(UFix64<N9>),
 }
 
-/// Determines `PnL` during sell-side rebalancing.
-#[must_use]
-pub fn sell_side_pnl(
-  spot_price: UFix64<N9>,
-  rebalance_price: UFix64<N9>,
-  collateral_amount: UFix64<N9>,
-) -> Option<RebalancePnl> {
-  if rebalance_price < spot_price {
-    let delta = spot_price.checked_sub(&rebalance_price)?;
-    let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
-    Some(RebalancePnl::Loss(loss))
-  } else {
-    let delta = rebalance_price.checked_sub(&spot_price)?;
-    let profit = delta.mul_div_floor(collateral_amount, UFix64::one())?;
-    Some(RebalancePnl::Profit(profit))
+impl RebalancePnl {
+  /// Determines `PnL` during sell-side rebalancing.
+  #[must_use]
+  pub fn sell_side(
+    spot_price: UFix64<N9>,
+    rebalance_price: UFix64<N9>,
+    collateral_amount: UFix64<N9>,
+  ) -> Option<RebalancePnl> {
+    if rebalance_price < spot_price {
+      let delta = spot_price.checked_sub(&rebalance_price)?;
+      let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
+      Some(RebalancePnl::Loss(loss))
+    } else {
+      let delta = rebalance_price.checked_sub(&spot_price)?;
+      let profit = delta.mul_div_floor(collateral_amount, UFix64::one())?;
+      Some(RebalancePnl::Profit(profit))
+    }
   }
-}
 
-/// Determines `PnL` during buy-side rebalancing.
-#[must_use]
-pub fn buy_side_pnl(
-  spot_price: UFix64<N9>,
-  rebalance_price: UFix64<N9>,
-  collateral_amount: UFix64<N9>,
-) -> Option<RebalancePnl> {
-  if rebalance_price > spot_price {
-    let delta = rebalance_price.checked_sub(&spot_price)?;
-    let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
-    Some(RebalancePnl::Loss(loss))
-  } else {
-    let delta = spot_price.checked_sub(&rebalance_price)?;
-    let profit = delta.mul_div_floor(collateral_amount, UFix64::one())?;
-    Some(RebalancePnl::Profit(profit))
+  /// Determines `PnL` during buy-side rebalancing.
+  #[must_use]
+  pub fn buy_side(
+    spot_price: UFix64<N9>,
+    rebalance_price: UFix64<N9>,
+    collateral_amount: UFix64<N9>,
+  ) -> Option<RebalancePnl> {
+    if rebalance_price > spot_price {
+      let delta = rebalance_price.checked_sub(&spot_price)?;
+      let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
+      Some(RebalancePnl::Loss(loss))
+    } else {
+      let delta = spot_price.checked_sub(&rebalance_price)?;
+      let profit = delta.mul_div_floor(collateral_amount, UFix64::one())?;
+      Some(RebalancePnl::Profit(profit))
+    }
   }
 }
 
