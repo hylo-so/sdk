@@ -87,6 +87,26 @@ pub fn initialize_lp_token_mint(
 }
 
 #[must_use]
+pub fn absorb_rebalance_loss(args: &args::AbsorbRebalanceLoss) -> Instruction {
+  let accounts = accounts::AbsorbRebalanceLoss {
+    rebalance_auth: pda::REBALANCE_AUTH,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    stablecoin_pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    token_program: token::ID,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
+  };
+  Instruction {
+    program_id: earn_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_withdrawal_fee(
   admin: Pubkey,
   args: &args::UpdateWithdrawalFee,
