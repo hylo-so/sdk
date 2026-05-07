@@ -23,7 +23,7 @@ use crate::exchange_math::{
   max_mintable_stablecoin, max_swappable_stablecoin, next_levercoin_mint_nav,
   next_levercoin_redeem_nav, total_value_locked,
 };
-use crate::fee_controller::{FeeExtract, LevercoinFees};
+use crate::fees::controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance::math::{max_buyable_collateral, max_sellable_collateral};
 use crate::rebalance::mode::RebalanceMode;

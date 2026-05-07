@@ -1,9 +1,9 @@
 use anchor_lang::*;
 use fix::prelude::*;
 
+use super::controller::FeeExtract;
+use super::interp::FixInterp;
 use crate::error::CoreError;
-use crate::fee_controller::FeeExtract;
-use crate::interp::FixInterp;
 
 /// Downconvert CR from `N9` unsigned to `N5` signed for curve lookup.
 ///
@@ -121,7 +121,7 @@ mod tests {
 
   use super::*;
   use crate::error::CoreError;
-  use crate::fee_curves::{MINT_FEE_INV, REDEEM_FEE_LN};
+  use crate::fees::curves::{MINT_FEE_INV, REDEEM_FEE_LN};
   use crate::util::proptest::*;
 
   fn collateral_ratio() -> BoxedStrategy<UFix64<N9>> {

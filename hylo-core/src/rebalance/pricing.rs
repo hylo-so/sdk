@@ -12,7 +12,7 @@ use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
-use crate::interp::{FixInterp, Point};
+use crate::fees::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
 use crate::rebalance::mode::RebalanceMode;
 

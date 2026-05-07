@@ -5,7 +5,7 @@ use fix::prelude::*;
 use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
 };
-use hylo_core::fee_controller::FeeExtract;
+use hylo_core::fees::controller::FeeExtract;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 

@@ -3,7 +3,7 @@ use fix::prelude::*;
 
 use crate::conversion::SwapConversion;
 use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
-use crate::fee_controller::FeeExtract;
+use crate::fees::controller::FeeExtract;
 use crate::pyth::PriceRange;
 
 /// Computes NAV for the earn pool's LP token.

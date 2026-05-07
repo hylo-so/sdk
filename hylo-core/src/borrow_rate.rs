@@ -3,7 +3,7 @@ use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{BorrowRateApply, BorrowRateValidation};
-use crate::fee_controller::FeeExtract;
+use crate::fees::controller::FeeExtract;
 
 /// Per-epoch borrow rate for exogenous collateral without native yield.
 #[derive(

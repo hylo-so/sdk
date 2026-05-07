@@ -2,7 +2,7 @@ use anchor_lang::prelude::error_code;
 
 #[error_code]
 pub enum CoreError {
-  // `total_sol_cache`
+  // `lst::total_sol_cache`
   #[msg("Cannot decrement TotalSolCache due to outdated epoch.")]
   TotalSolCacheDecrement = 7000,
   #[msg("Cannot increment TotalSolCache due to outdated epoch.")]
@@ -13,7 +13,7 @@ pub enum CoreError {
   TotalSolCacheUnderflow,
   #[msg("TotalSolCache is not valid for the current epoch.")]
   TotalSolCacheOutdated,
-  // `lst_sol_price`
+  // `lst::sol_price`
   #[msg("Underflow in delta between current and previous LST prices.")]
   LstSolPriceDelta,
   #[msg("LstSolPrice delta failed due to non-adjacent epochs.")]
@@ -70,7 +70,7 @@ pub enum CoreError {
   LstToToken,
   #[msg("Arithmetic error in conversion from protocol token to LST.")]
   TokenToLst,
-  // `fee_controller`
+  // `fees::controller`
   #[msg("Over/underflow while computing fee extraction for transaction.")]
   FeeExtraction,
   #[msg("No valid mint fee for levercoin. Projected rebalance mode is Depeg.")]
@@ -120,7 +120,7 @@ pub enum CoreError {
   InterpOutOfDomain,
   #[msg("Arithmetic overflow during interpolation calculation.")]
   InterpArithmetic,
-  // `interpolated_fees`
+  // `fees::curve_controller`
   #[msg("Failed to convert collateral ratio from u64 to i64.")]
   CollateralRatioConversion,
   #[msg("Failed to convert interpolated fee from i64 to u64.")]
@@ -170,7 +170,7 @@ pub enum CoreError {
   RebalanceSellSideLiquidity,
   #[msg("Arithmetic error while computing buy side target.")]
   RebalanceBuySideTarget,
-  // `spl_stake_pool`
+  // `lst::stake_pool`
   #[msg("Division by zero computing SPL stake pool price.")]
   StakePoolDivByZero,
   // `oracle_config`

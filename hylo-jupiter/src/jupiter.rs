@@ -12,8 +12,8 @@ use hylo_core::idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
 };
 use hylo_core::idl::{earn_pool, exchange, pda};
+use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
-use hylo_core::spl_stake_pool::SplStakePool;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,

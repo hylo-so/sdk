@@ -1,7 +1,7 @@
 use anchor_lang::Result;
 use fix::prelude::*;
 
-use crate::interp::{FixInterp, Point};
+use super::interp::{FixInterp, Point};
 
 macro_rules! generate_curve {
     ($name:ident, $res:expr, $prec:ty, $(($x:expr, $y:expr)),* $(,)?) => {
