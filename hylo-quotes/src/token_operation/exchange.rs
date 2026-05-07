@@ -5,7 +5,7 @@ use fix::prelude::*;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fee_controller::FeeExtract;
 use hylo_core::lst_sol_price::LstSolPrice;
-use hylo_core::rebalance_mode::RebalanceMode;
+use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, USDC, XBTC, XSOL,

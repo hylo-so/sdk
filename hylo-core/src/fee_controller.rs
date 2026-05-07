@@ -6,7 +6,7 @@ use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
   NoValidLevercoinRedeemFee, NoValidSwapFee,
 };
-use crate::rebalance_mode::RebalanceMode::{
+use crate::rebalance::mode::RebalanceMode::{
   self, BuyZone1, BuyZone2, Depeg, Neutral, SellZone1, SellZone2,
 };
 

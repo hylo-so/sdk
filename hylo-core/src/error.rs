@@ -146,7 +146,7 @@ pub enum CoreError {
   LstToUsdc,
   #[msg("Arithmetic error converting USDC to LST via SOL.")]
   UsdcToLst,
-  // `rebalance_pricing`
+  // `rebalance::pricing`
   #[msg("Rebalancing deviation tolerance not within valid range.")]
   RebalanceDeviationValidation,
   #[msg(
@@ -165,7 +165,7 @@ pub enum CoreError {
   RebalanceDeviationExceeded,
   #[msg("Arithmetic error computing deviation tolerance band.")]
   RebalanceDeviationArithmetic,
-  // `rebalance_math`
+  // `rebalance::math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,
   #[msg("Arithmetic error while computing buy side target.")]
@@ -178,7 +178,7 @@ pub enum CoreError {
   OracleIntervalSecsInvalid,
   #[msg("Oracle confidence tolerance not in valid range.")]
   OracleConfToleranceInvalid,
-  // `rebalance_mode`
+  // `rebalance::mode`
   #[msg("Range boundary did not match the expected bound variant.")]
   RangeUnexpectedBound,
   #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]

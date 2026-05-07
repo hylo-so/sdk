@@ -25,9 +25,9 @@ use crate::exchange_math::{
 };
 use crate::fee_controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
-use crate::rebalance_math::{max_buyable_collateral, max_sellable_collateral};
-use crate::rebalance_mode::RebalanceMode;
-use crate::rebalance_pricing::{
+use crate::rebalance::math::{max_buyable_collateral, max_sellable_collateral};
+use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
 

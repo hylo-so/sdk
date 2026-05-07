@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::CoreError;
 use crate::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
-use crate::rebalance_mode::RebalanceMode;
+use crate::rebalance::mode::RebalanceMode;
 
 // Confidence multiplier boundaries
 const MIN_CONF_MULT: UFix64<N2> = UFix64::constant(0);

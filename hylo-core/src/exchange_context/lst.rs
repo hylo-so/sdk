@@ -17,8 +17,8 @@ use crate::interpolated_fees::{
 };
 use crate::lst_sol_price::LstSolPrice;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
-use crate::rebalance_mode::RebalanceMode;
-use crate::rebalance_pricing::{
+use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
 use crate::solana_clock::SolanaClock;

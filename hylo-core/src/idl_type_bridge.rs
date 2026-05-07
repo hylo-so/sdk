@@ -1,7 +1,7 @@
 use crate::borrow_rate::BorrowRateConfig;
 use crate::fee_controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst_sol_price::LstSolPrice;
-use crate::rebalance_pricing::RebalanceCurveConfig;
+use crate::rebalance::pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
 use crate::total_sol_cache::TotalSolCache;
 use crate::virtual_stablecoin::VirtualStablecoin;
