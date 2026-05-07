@@ -408,11 +408,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn rebalance_pnl_buy_side(
     &self,
     lst_sol_price: &LstSolPrice,
-    amount_lst: UFix64<N9>,
+    lst_in: UFix64<N9>,
     stablecoin_moved: UFix64<N6>,
   ) -> Result<RebalancePnl> {
     let stablecoin_value_in =
-      self.lst_to_stablecoin_spot(lst_sol_price, amount_lst)?;
+      self.lst_to_stablecoin_spot(lst_sol_price, lst_in)?;
     RebalancePnl::from_stablecoin(stablecoin_value_in, stablecoin_moved)
       .ok_or(RebalanceSwapPnl.into())
   }
@@ -425,11 +425,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn rebalance_pnl_sell_side(
     &self,
     lst_sol_price: &LstSolPrice,
-    amount_lst: UFix64<N9>,
+    lst_out: UFix64<N9>,
     stablecoin_moved: UFix64<N6>,
   ) -> Result<RebalancePnl> {
     let stablecoin_value_out =
-      self.lst_to_stablecoin_spot(lst_sol_price, amount_lst)?;
+      self.lst_to_stablecoin_spot(lst_sol_price, lst_out)?;
     RebalancePnl::from_stablecoin(stablecoin_moved, stablecoin_value_out)
       .ok_or(RebalanceSwapPnl.into())
   }
