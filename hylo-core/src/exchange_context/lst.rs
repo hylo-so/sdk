@@ -380,4 +380,22 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       usdc_usd_price,
     ))
   }
+
+  /// Converts LST amount to protocol stablecoin at SOL/USD spot price.
+  ///
+  /// # Errors
+  /// * LST price not updated
+  /// * NAV computation
+  /// * Conversion arithmetic
+  pub fn lst_to_stablecoin_spot(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    lst_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
+    let usd_sol_price = self.collateral_oracle_price().spot;
+    let stablecoin_nav = self.stablecoin_nav()?;
+    let conversion = Conversion::spot(usd_sol_price, lst_sol);
+    conversion.lst_to_token(lst_amount, stablecoin_nav)
+  }
 }

@@ -4,9 +4,7 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::error::CoreError::{
-  RebalancePnlCacheCombine, RebalancePnlCacheUpdate,
-};
+use crate::error::CoreError::{RebalancePnlCacheNet, RebalancePnlCacheUpdate};
 
 /// Profit or loss ensuing from a rebalancing trade.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +54,27 @@ impl RebalancePnl {
         let delta = rebalance_price.checked_sub(&spot_price)?;
         let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
         Some(RebalancePnl::Loss(loss))
+      }
+      Equal => Some(RebalancePnl::NoChange),
+    }
+  }
+
+  /// Computes `PnL` from protocol virtual stablecoin perspective.
+  #[must_use]
+  pub fn from_stablecoin(
+    stablecoin_value_in: UFix64<N6>,
+    stablecoin_value_out: UFix64<N6>,
+  ) -> Option<RebalancePnl> {
+    let input = stablecoin_value_in.checked_convert()?;
+    let output = stablecoin_value_out.checked_convert()?;
+    match input.cmp(&output) {
+      Less => {
+        let delta = output.checked_sub(&input)?;
+        Some(RebalancePnl::Loss(delta))
+      }
+      Greater => {
+        let delta = input.checked_sub(&output)?;
+        Some(RebalancePnl::Profit(delta))
       }
       Equal => Some(RebalancePnl::NoChange),
     }
@@ -131,13 +150,11 @@ impl RebalancePnlCache {
     let loss = self.loss()?;
     match profit.cmp(&loss) {
       Less => {
-        let delta =
-          loss.checked_sub(&profit).ok_or(RebalancePnlCacheCombine)?;
+        let delta = loss.checked_sub(&profit).ok_or(RebalancePnlCacheNet)?;
         Ok(RebalancePnl::Loss(delta))
       }
       Greater => {
-        let delta =
-          profit.checked_sub(&loss).ok_or(RebalancePnlCacheCombine)?;
+        let delta = profit.checked_sub(&loss).ok_or(RebalancePnlCacheNet)?;
         Ok(RebalancePnl::Profit(delta))
       }
       Equal => Ok(RebalancePnl::NoChange),
