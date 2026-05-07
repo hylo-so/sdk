@@ -7,7 +7,7 @@ use super::ExchangeContext;
 use crate::conversion::{Conversion, LstRebalanceConversion};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
-  RebalanceAmountExceeded,
+  RebalanceAmountExceeded, RebalanceSwapPnl,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
@@ -19,6 +19,7 @@ use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
@@ -397,5 +398,39 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let stablecoin_nav = self.stablecoin_nav()?;
     let conversion = Conversion::spot(usd_sol_price, lst_sol);
     conversion.lst_to_token(lst_amount, stablecoin_nav)
+  }
+
+  /// Computes rebalance `PnL` for a buy-side LST swap.
+  ///
+  /// # Errors
+  /// * Spot conversion arithmetic
+  /// * `PnL` arithmetic overflow
+  pub fn rebalance_pnl_buy_side(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst: UFix64<N9>,
+    stablecoin_moved: UFix64<N6>,
+  ) -> Result<RebalancePnl> {
+    let stablecoin_value_in =
+      self.lst_to_stablecoin_spot(lst_sol_price, amount_lst)?;
+    RebalancePnl::from_stablecoin(stablecoin_value_in, stablecoin_moved)
+      .ok_or(RebalanceSwapPnl.into())
+  }
+
+  /// Computes rebalance `PnL` for a sell-side LST swap.
+  ///
+  /// # Errors
+  /// * Spot conversion arithmetic
+  /// * `PnL` arithmetic overflow
+  pub fn rebalance_pnl_sell_side(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst: UFix64<N9>,
+    stablecoin_moved: UFix64<N6>,
+  ) -> Result<RebalancePnl> {
+    let stablecoin_value_out =
+      self.lst_to_stablecoin_spot(lst_sol_price, amount_lst)?;
+    RebalancePnl::from_stablecoin(stablecoin_moved, stablecoin_value_out)
+      .ok_or(RebalanceSwapPnl.into())
   }
 }

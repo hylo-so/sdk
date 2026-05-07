@@ -175,6 +175,8 @@ pub enum CoreError {
   RebalancePnlCacheUpdate,
   #[msg("Arithmetic error while computing new rebalance PnL.")]
   RebalancePnlCacheNet,
+  #[msg("Arithmetic error while computing rebalance swap PnL.")]
+  RebalanceSwapPnl,
   // `lst::stake_pool`
   #[msg("Division by zero computing SPL stake pool price.")]
   StakePoolDivByZero,
