@@ -5,3 +5,4 @@ target/
 .direnv/
 .claude/settings.local.json
 .rsmap/
+**/*.MD
