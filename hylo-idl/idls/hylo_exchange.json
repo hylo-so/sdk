@@ -3392,6 +3392,180 @@
       ]
     },
     {
+      "name": "initialize_rebalance_pnl_cache_exo",
+      "discriminator": [
+        59,
+        110,
+        206,
+        53,
+        41,
+        79,
+        75,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_rebalance_pnl_cache_lst",
+      "discriminator": [
+        19,
+        224,
+        83,
+        248,
+        222,
+        217,
+        108,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize_usdc",
       "discriminator": [
         78,
@@ -15678,6 +15852,16 @@
       "code": 6049,
       "name": "TokenAmountPrecisionError",
       "msg": "Failed while converting precision for a token amount."
+    },
+    {
+      "code": 6050,
+      "name": "RebalanceVirtualStablecoinUnderflow",
+      "msg": "Underflow while computing virtual stablecoin delta."
+    },
+    {
+      "code": 6051,
+      "name": "RebalanceVirtualStablecoinConversion",
+      "msg": "Underflow while converting TVL to stablecoin."
     }
   ],
   "types": [
@@ -16258,11 +16442,19 @@
             }
           },
           {
+            "name": "rebalance_pnl_cache",
+            "type": {
+              "defined": {
+                "name": "RebalancePnlCache"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                109
+                91
               ]
             }
           }
@@ -16598,11 +16790,19 @@
             }
           },
           {
+            "name": "rebalance_pnl_cache",
+            "type": {
+              "defined": {
+                "name": "RebalancePnlCache"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                22
+                4
               ]
             }
           }
@@ -17322,6 +17522,33 @@
           },
           {
             "name": "BuyZone2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalancePnlCache",
+      "docs": [
+        "Two register counter tracking rebalancing `PnL`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "profit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "loss",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           }
         ]
       }
@@ -18584,6 +18811,16 @@
         ]
       },
       "value": "[112, 111, 111, 108, 95, 97, 117, 116, 104]"
+    },
+    {
+      "name": "REBALANCE_AUTH",
+      "type": {
+        "array": [
+          "u8",
+          14
+        ]
+      },
+      "value": "[114, 101, 98, 97, 108, 97, 110, 99, 101, 95, 97, 117, 116, 104]"
     },
     {
       "name": "USDC_PAIR",
