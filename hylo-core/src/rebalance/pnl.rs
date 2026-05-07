@@ -1,6 +1,12 @@
 use std::cmp::Ordering::{Equal, Greater, Less};
 
+use anchor_lang::prelude::*;
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::error::CoreError::{
+  RebalancePnlCacheCombine, RebalancePnlCacheUpdate,
+};
 
 /// Profit or loss ensuing from a rebalancing trade.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,6 +59,93 @@ impl RebalancePnl {
       }
       Equal => Some(RebalancePnl::NoChange),
     }
+  }
+}
+
+/// Two register counter tracking rebalancing `PnL`.
+#[derive(
+  Debug,
+  Clone,
+  Copy,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Serialize,
+  Deserialize,
+)]
+pub struct RebalancePnlCache {
+  profit: UFixValue64,
+  loss: UFixValue64,
+}
+
+impl Default for RebalancePnlCache {
+  fn default() -> Self {
+    let zero = UFix64::<N9>::zero();
+    RebalancePnlCache {
+      profit: zero.into(),
+      loss: zero.into(),
+    }
+  }
+}
+
+impl RebalancePnlCache {
+  #[must_use]
+  pub fn new() -> RebalancePnlCache {
+    RebalancePnlCache::default()
+  }
+
+  pub fn profit(&self) -> Result<UFix64<N9>> {
+    self.profit.try_into()
+  }
+
+  pub fn loss(&self) -> Result<UFix64<N9>> {
+    self.loss.try_into()
+  }
+
+  fn apply_profit(&mut self, profit: UFix64<N9>) -> Result<()> {
+    let current = self.profit()?;
+    let updated = current
+      .checked_add(&profit)
+      .ok_or(RebalancePnlCacheUpdate)?;
+    self.profit = updated.into();
+    Ok(())
+  }
+
+  fn apply_loss(&mut self, loss: UFix64<N9>) -> Result<()> {
+    let current = self.loss()?;
+    let updated = current.checked_add(&loss).ok_or(RebalancePnlCacheUpdate)?;
+    self.loss = updated.into();
+    Ok(())
+  }
+
+  pub fn update_pnl(&mut self, rebalance_pnl: RebalancePnl) -> Result<()> {
+    match rebalance_pnl {
+      RebalancePnl::Profit(amount) => self.apply_profit(amount),
+      RebalancePnl::Loss(amount) => self.apply_loss(amount),
+      RebalancePnl::NoChange => Ok(()),
+    }
+  }
+
+  pub fn net_pnl(&self) -> Result<RebalancePnl> {
+    let profit = self.profit()?;
+    let loss = self.loss()?;
+    match profit.cmp(&loss) {
+      Less => {
+        let delta =
+          loss.checked_sub(&profit).ok_or(RebalancePnlCacheCombine)?;
+        Ok(RebalancePnl::Loss(delta))
+      }
+      Greater => {
+        let delta =
+          profit.checked_sub(&loss).ok_or(RebalancePnlCacheCombine)?;
+        Ok(RebalancePnl::Profit(delta))
+      }
+      Equal => Ok(RebalancePnl::NoChange),
+    }
+  }
+
+  pub fn clear(&mut self) {
+    *self = RebalancePnlCache::new();
   }
 }
 
@@ -120,5 +213,68 @@ mod tests {
       ),
       Some(RebalancePnl::NoChange),
     );
+  }
+
+  #[test]
+  fn accumulates_to_net_profit() -> Result<()> {
+    let mut cache = RebalancePnlCache::default();
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(137)))?;
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(241)))?;
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(89)))?;
+    cache.update_pnl(RebalancePnl::Loss(UFix64::new(76)))?;
+    assert_eq!(cache.net_pnl()?, RebalancePnl::Profit(UFix64::new(391)));
+    Ok(())
+  }
+
+  #[test]
+  fn accumulates_to_net_loss() -> Result<()> {
+    let mut cache = RebalancePnlCache::default();
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(53)))?;
+    cache.update_pnl(RebalancePnl::Loss(UFix64::new(137)))?;
+    cache.update_pnl(RebalancePnl::Loss(UFix64::new(89)))?;
+    assert_eq!(cache.net_pnl()?, RebalancePnl::Loss(UFix64::new(173)));
+    Ok(())
+  }
+
+  #[test]
+  fn equal_registers_net_to_no_change() -> Result<()> {
+    let mut cache = RebalancePnlCache::default();
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(137)))?;
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(89)))?;
+    cache.update_pnl(RebalancePnl::Loss(UFix64::new(226)))?;
+    assert_eq!(cache.net_pnl()?, RebalancePnl::NoChange);
+    Ok(())
+  }
+
+  #[test]
+  fn no_change_update_is_noop() -> Result<()> {
+    let mut cache = RebalancePnlCache::default();
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(241)))?;
+    cache.update_pnl(RebalancePnl::NoChange)?;
+    cache.update_pnl(RebalancePnl::Loss(UFix64::new(76)))?;
+    assert_eq!(cache.profit()?, UFix64::new(241));
+    assert_eq!(cache.loss()?, UFix64::new(76));
+    Ok(())
+  }
+
+  #[test]
+  fn clear_resets_after_updates() -> Result<()> {
+    let mut cache = RebalancePnlCache::default();
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(241)))?;
+    cache.update_pnl(RebalancePnl::Loss(UFix64::new(89)))?;
+    cache.clear();
+    assert_eq!(cache.profit()?, UFix64::zero());
+    assert_eq!(cache.loss()?, UFix64::zero());
+    assert_eq!(cache.net_pnl()?, RebalancePnl::NoChange);
+    Ok(())
+  }
+
+  #[test]
+  fn overflow_returns_err() -> Result<()> {
+    let mut cache = RebalancePnlCache::default();
+    cache.update_pnl(RebalancePnl::Profit(UFix64::new(u64::MAX)))?;
+    let result = cache.update_pnl(RebalancePnl::Profit(UFix64::new(1)));
+    assert_eq!(result.err(), Some(RebalancePnlCacheUpdate.into()));
+    Ok(())
   }
 }
