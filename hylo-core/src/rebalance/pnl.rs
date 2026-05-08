@@ -91,6 +91,7 @@ impl RebalancePnlCache {
     Ok(())
   }
 
+  /// Applies the current swap's `PnL` value to the cache.
   pub fn update_pnl(&mut self, rebalance_pnl: RebalancePnl) -> Result<()> {
     match rebalance_pnl {
       RebalancePnl::Profit(amount) => self.apply_profit(amount),
@@ -99,6 +100,7 @@ impl RebalancePnlCache {
     }
   }
 
+  /// Computes net of profit and loss, reflected as [`RebalancePnl`].
   pub fn net_pnl(&self) -> Result<RebalancePnl> {
     let profit = self.profit()?;
     let loss = self.loss()?;
@@ -115,8 +117,17 @@ impl RebalancePnlCache {
     }
   }
 
+  /// Resets `PnL` cache to zero.
   pub fn clear(&mut self) {
     *self = RebalancePnlCache::new();
+  }
+
+  /// Checks if cache shows an unchanged net `PnL`.
+  #[must_use]
+  pub fn is_settled(&self) -> bool {
+    self
+      .net_pnl()
+      .is_ok_and(|pnl| matches!(pnl, RebalancePnl::NoChange))
   }
 }
 
