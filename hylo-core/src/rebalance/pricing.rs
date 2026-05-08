@@ -219,7 +219,8 @@ impl RebalancePriceController for SellPriceCurve {
   }
 
   fn is_active(&self, ucr: UFix64<N9>) -> bool {
-    RebalanceMode::from_cr(ucr) < RebalanceMode::Neutral
+    (RebalanceMode::SellZone2..RebalanceMode::Neutral)
+      .contains(&RebalanceMode::from_cr(ucr))
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>> {
