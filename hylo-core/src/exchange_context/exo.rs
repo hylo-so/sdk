@@ -353,7 +353,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     stablecoin_moved: UFix64<N6>,
   ) -> Result<RebalancePnl> {
     let stablecoin_value_in = self.exo_to_stablecoin_spot(exo_in)?;
-    RebalancePnl::from_stablecoin(stablecoin_value_in, stablecoin_moved)
+    RebalancePnl::from_stablecoin_flow(stablecoin_value_in, stablecoin_moved)
       .ok_or(RebalanceSwapPnl.into())
   }
 
@@ -368,7 +368,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     stablecoin_moved: UFix64<N6>,
   ) -> Result<RebalancePnl> {
     let stablecoin_value_out = self.exo_to_stablecoin_spot(exo_out)?;
-    RebalancePnl::from_stablecoin(stablecoin_moved, stablecoin_value_out)
+    RebalancePnl::from_stablecoin_flow(stablecoin_moved, stablecoin_value_out)
       .ok_or(RebalanceSwapPnl.into())
   }
 }

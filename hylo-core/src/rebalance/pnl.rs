@@ -9,71 +9,25 @@ use crate::error::CoreError::{RebalancePnlCacheNet, RebalancePnlCacheUpdate};
 /// Profit or loss ensuing from a rebalancing trade.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RebalancePnl {
-  Profit(UFix64<N9>),
-  Loss(UFix64<N9>),
+  Profit(UFix64<N6>),
+  Loss(UFix64<N6>),
   NoChange,
 }
 
 impl RebalancePnl {
-  /// Determines `PnL` during sell-side rebalancing.
-  #[must_use]
-  pub fn sell_side(
-    spot_price: UFix64<N9>,
-    rebalance_price: UFix64<N9>,
-    collateral_amount: UFix64<N9>,
-  ) -> Option<RebalancePnl> {
-    match rebalance_price.cmp(&spot_price) {
-      Less => {
-        let delta = spot_price.checked_sub(&rebalance_price)?;
-        let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
-        Some(RebalancePnl::Loss(loss))
-      }
-      Greater => {
-        let delta = rebalance_price.checked_sub(&spot_price)?;
-        let profit = delta.mul_div_floor(collateral_amount, UFix64::one())?;
-        Some(RebalancePnl::Profit(profit))
-      }
-      Equal => Some(RebalancePnl::NoChange),
-    }
-  }
-
-  /// Determines `PnL` during buy-side rebalancing.
-  #[must_use]
-  pub fn buy_side(
-    spot_price: UFix64<N9>,
-    rebalance_price: UFix64<N9>,
-    collateral_amount: UFix64<N9>,
-  ) -> Option<RebalancePnl> {
-    match rebalance_price.cmp(&spot_price) {
-      Less => {
-        let delta = spot_price.checked_sub(&rebalance_price)?;
-        let profit = delta.mul_div_floor(collateral_amount, UFix64::one())?;
-        Some(RebalancePnl::Profit(profit))
-      }
-      Greater => {
-        let delta = rebalance_price.checked_sub(&spot_price)?;
-        let loss = delta.mul_div_ceil(collateral_amount, UFix64::one())?;
-        Some(RebalancePnl::Loss(loss))
-      }
-      Equal => Some(RebalancePnl::NoChange),
-    }
-  }
-
   /// Computes `PnL` from protocol virtual stablecoin perspective.
   #[must_use]
-  pub fn from_stablecoin(
+  pub fn from_stablecoin_flow(
     stablecoin_value_in: UFix64<N6>,
     stablecoin_value_out: UFix64<N6>,
   ) -> Option<RebalancePnl> {
-    let input = stablecoin_value_in.checked_convert()?;
-    let output = stablecoin_value_out.checked_convert()?;
-    match input.cmp(&output) {
+    match stablecoin_value_in.cmp(&stablecoin_value_out) {
       Less => {
-        let delta = output.checked_sub(&input)?;
+        let delta = stablecoin_value_out.checked_sub(&stablecoin_value_in)?;
         Some(RebalancePnl::Loss(delta))
       }
       Greater => {
-        let delta = input.checked_sub(&output)?;
+        let delta = stablecoin_value_in.checked_sub(&stablecoin_value_out)?;
         Some(RebalancePnl::Profit(delta))
       }
       Equal => Some(RebalancePnl::NoChange),
@@ -99,7 +53,7 @@ pub struct RebalancePnlCache {
 
 impl Default for RebalancePnlCache {
   fn default() -> Self {
-    let zero = UFix64::<N9>::zero();
+    let zero = UFix64::<N6>::zero();
     RebalancePnlCache {
       profit: zero.into(),
       loss: zero.into(),
@@ -113,15 +67,15 @@ impl RebalancePnlCache {
     RebalancePnlCache::default()
   }
 
-  pub fn profit(&self) -> Result<UFix64<N9>> {
+  pub fn profit(&self) -> Result<UFix64<N6>> {
     self.profit.try_into()
   }
 
-  pub fn loss(&self) -> Result<UFix64<N9>> {
+  pub fn loss(&self) -> Result<UFix64<N6>> {
     self.loss.try_into()
   }
 
-  fn apply_profit(&mut self, profit: UFix64<N9>) -> Result<()> {
+  fn apply_profit(&mut self, profit: UFix64<N6>) -> Result<()> {
     let current = self.profit()?;
     let updated = current
       .checked_add(&profit)
@@ -130,7 +84,7 @@ impl RebalancePnlCache {
     Ok(())
   }
 
-  fn apply_loss(&mut self, loss: UFix64<N9>) -> Result<()> {
+  fn apply_loss(&mut self, loss: UFix64<N6>) -> Result<()> {
     let current = self.loss()?;
     let updated = current.checked_add(&loss).ok_or(RebalancePnlCacheUpdate)?;
     self.loss = updated.into();
@@ -171,63 +125,25 @@ mod tests {
   use super::*;
 
   #[test]
-  fn pnl_sell_side_known_values() {
-    // Rebalance price one unit below spot. Loss of 2, rounded up from 1.5.
+  fn from_stablecoin_flow_profit() {
     assert_eq!(
-      RebalancePnl::sell_side(
-        UFix64::new(100_000_000_000),
-        UFix64::new(99_999_999_999),
-        UFix64::new(1_500_000_000),
-      ),
-      Some(RebalancePnl::Loss(UFix64::new(2))),
-    );
-    // Rebalance price one unit above spot. Profit of 1, rounded down from 1.5.
-    assert_eq!(
-      RebalancePnl::sell_side(
-        UFix64::new(100_000_000_000),
-        UFix64::new(100_000_000_001),
-        UFix64::new(1_500_000_000),
-      ),
-      Some(RebalancePnl::Profit(UFix64::new(1))),
-    );
-    // Rebalance price equals spot.
-    assert_eq!(
-      RebalancePnl::sell_side(
-        UFix64::new(100_000_000_000),
-        UFix64::new(100_000_000_000),
-        UFix64::new(1_500_000_000),
-      ),
-      Some(RebalancePnl::NoChange),
+      RebalancePnl::from_stablecoin_flow(UFix64::new(421), UFix64::new(158)),
+      Some(RebalancePnl::Profit(UFix64::new(263))),
     );
   }
 
   #[test]
-  fn pnl_buy_side_known_values() {
-    // Rebalance price one unit above spot. Loss of 2, rounded up from 1.5.
+  fn from_stablecoin_flow_loss() {
     assert_eq!(
-      RebalancePnl::buy_side(
-        UFix64::new(100_000_000_000),
-        UFix64::new(100_000_000_001),
-        UFix64::new(1_500_000_000),
-      ),
-      Some(RebalancePnl::Loss(UFix64::new(2))),
+      RebalancePnl::from_stablecoin_flow(UFix64::new(84), UFix64::new(237)),
+      Some(RebalancePnl::Loss(UFix64::new(153))),
     );
-    // Rebalance price one unit below spot. Profit of 1, rounded down from 1.5.
+  }
+
+  #[test]
+  fn from_stablecoin_flow_no_change() {
     assert_eq!(
-      RebalancePnl::buy_side(
-        UFix64::new(100_000_000_000),
-        UFix64::new(99_999_999_999),
-        UFix64::new(1_500_000_000),
-      ),
-      Some(RebalancePnl::Profit(UFix64::new(1))),
-    );
-    // Rebalance price equals spot.
-    assert_eq!(
-      RebalancePnl::buy_side(
-        UFix64::new(100_000_000_000),
-        UFix64::new(100_000_000_000),
-        UFix64::new(1_500_000_000),
-      ),
+      RebalancePnl::from_stablecoin_flow(UFix64::new(314), UFix64::new(314)),
       Some(RebalancePnl::NoChange),
     );
   }
