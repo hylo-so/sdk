@@ -21,7 +21,7 @@
       ],
       "accounts": [
         {
-          "name": "rebalance_auth",
+          "name": "settlement_auth",
           "signer": true,
           "pda": {
             "seeds": [
