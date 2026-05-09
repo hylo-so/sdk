@@ -195,8 +195,8 @@ pub const SHYUSD_AUTH: Pubkey =
 pub const POOL_AUTH: Pubkey =
   pda!(earn_pool::ID, earn_pool::constants::POOL_AUTH);
 
-pub const REBALANCE_AUTH: Pubkey =
-  pda!(exchange::ID, exchange::constants::REBALANCE_AUTH);
+pub const SETTLEMENT_AUTH: Pubkey =
+  pda!(exchange::ID, exchange::constants::SETTLEMENT_AUTH);
 
 pub const HYUSD_POOL: Pubkey = ata(POOL_AUTH, HYUSD::MINT);
 

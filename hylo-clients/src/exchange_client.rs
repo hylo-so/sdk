@@ -869,6 +869,37 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
+  /// Settles the LST virtual stablecoin against the rebalance `PnL`
+  /// cache. Crank.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_lst_direct(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::settle_virtual_stablecoin_lst(self.program.payer());
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Settles the EXO virtual stablecoin against the rebalance `PnL`
+  /// cache for the given collateral. Crank.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_exo_direct(
+    &self,
+    collateral_mint: Pubkey,
+    collateral_usd_pyth_feed: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::settle_virtual_stablecoin_exo(
+      self.program.payer(),
+      collateral_mint,
+      collateral_usd_pyth_feed,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
   /// Proposes an update to a privileged protocol address.
   ///
   /// # Errors

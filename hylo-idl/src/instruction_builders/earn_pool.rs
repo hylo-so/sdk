@@ -87,9 +87,9 @@ pub fn initialize_lp_token_mint(
 }
 
 #[must_use]
-pub fn absorb_rebalance_loss(args: &args::AbsorbRebalanceLoss) -> Instruction {
-  let accounts = accounts::AbsorbRebalanceLoss {
-    rebalance_auth: pda::REBALANCE_AUTH,
+pub fn absorb_loss(args: &args::AbsorbLoss) -> Instruction {
+  let accounts = accounts::AbsorbLoss {
+    rebalance_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
     stablecoin_pool_auth: pda::POOL_AUTH,

@@ -284,6 +284,66 @@ pub fn update_sol_usd_oracle(
 }
 
 #[must_use]
+pub fn settle_virtual_stablecoin_lst(payer: Pubkey) -> Instruction {
+  let accounts = accounts::SettleVirtualStablecoinLst {
+    payer,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::SettleVirtualStablecoinLst {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_exo(
+  payer: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> Instruction {
+  let accounts = accounts::SettleVirtualStablecoinExo {
+    payer,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    exo_pair: pda::exo_pair(collateral_mint),
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    vault_auth: pda::exo_vault_auth(collateral_mint),
+    collateral_vault: pda::exo_vault(collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::SettleVirtualStablecoinExo {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn harvest_yield(
   lst_registry: Pubkey,
   remaining_accounts: Vec<AccountMeta>,
