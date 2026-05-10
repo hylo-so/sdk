@@ -1,6 +1,6 @@
 //! `SimulatedOperation` implementations for earn pool pairs.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use fix::prelude::*;
 use hylo_clients::router_client::RouterClient;
 use hylo_idl::earn_pool::events::{UserDepositEvent, UserWithdrawEvent};
@@ -33,9 +33,6 @@ impl SimulatedOperation<SHYUSD, HYUSD> for RouterClient {
   type Event = UserWithdrawEvent;
 
   fn extract_output(event: &UserWithdrawEvent) -> Result<SwapOperationOutput> {
-    if event.levercoin_withdrawn.bits > 0 {
-      bail!("SHYUSD → HYUSD not possible: levercoin present in pool");
-    }
     let in_amount: UFix64<N6> = event.lp_token_burned.try_into()?;
     let out_amount: UFix64<N6> = event.stablecoin_withdrawn.try_into()?;
     let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;

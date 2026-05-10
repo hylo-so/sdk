@@ -107,6 +107,17 @@ pub fn absorb_loss(args: &args::AbsorbLoss) -> Instruction {
 }
 
 #[must_use]
+pub fn deprecate_levercoin_pool(admin: Pubkey) -> Instruction {
+  let accounts = account_builders::deprecate_levercoin_pool(admin);
+  let args = args::DeprecateLevercoinPool {};
+  Instruction {
+    program_id: earn_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_withdrawal_fee(
   admin: Pubkey,
   args: &args::UpdateWithdrawalFee,

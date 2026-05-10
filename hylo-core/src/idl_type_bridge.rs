@@ -2,6 +2,7 @@ use crate::borrow_rate::BorrowRateConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
+use crate::rebalance::pnl::RebalancePnlCache;
 use crate::rebalance::pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
 use crate::virtual_stablecoin::VirtualStablecoin;
@@ -90,6 +91,22 @@ impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
     idl: hylo_idl::exchange::types::RebalanceCurveConfig,
   ) -> RebalanceCurveConfig {
     RebalanceCurveConfig::new(idl.floor_mult.into(), idl.ceil_mult.into())
+  }
+}
+
+impl From<hylo_idl::exchange::types::RebalancePnlCache> for RebalancePnlCache {
+  fn from(
+    idl: hylo_idl::exchange::types::RebalancePnlCache,
+  ) -> RebalancePnlCache {
+    RebalancePnlCache::new(idl.profit.into(), idl.loss.into())
+  }
+}
+
+impl From<hylo_idl::earn_pool::types::RebalancePnlCache> for RebalancePnlCache {
+  fn from(
+    idl: hylo_idl::earn_pool::types::RebalancePnlCache,
+  ) -> RebalancePnlCache {
+    RebalancePnlCache::new(idl.profit.into(), idl.loss.into())
   }
 }
 

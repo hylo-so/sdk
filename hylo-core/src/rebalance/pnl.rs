@@ -63,8 +63,8 @@ impl Default for RebalancePnlCache {
 
 impl RebalancePnlCache {
   #[must_use]
-  pub fn new() -> RebalancePnlCache {
-    RebalancePnlCache::default()
+  pub fn new(profit: UFixValue64, loss: UFixValue64) -> RebalancePnlCache {
+    RebalancePnlCache { profit, loss }
   }
 
   pub fn profit(&self) -> Result<UFix64<N6>> {
@@ -119,7 +119,7 @@ impl RebalancePnlCache {
 
   /// Resets `PnL` cache to zero.
   pub fn clear(&mut self) {
-    *self = RebalancePnlCache::new();
+    *self = RebalancePnlCache::default();
   }
 
   /// Checks if cache shows an unchanged net `PnL`.
