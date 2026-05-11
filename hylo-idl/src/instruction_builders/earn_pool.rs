@@ -87,26 +87,6 @@ pub fn initialize_lp_token_mint(
 }
 
 #[must_use]
-pub fn absorb_loss(args: &args::AbsorbLoss) -> Instruction {
-  let accounts = accounts::AbsorbLoss {
-    settlement_auth: pda::SETTLEMENT_AUTH,
-    hylo: pda::HYLO,
-    pool_config: pda::POOL_CONFIG,
-    stablecoin_pool_auth: pda::POOL_AUTH,
-    stablecoin_pool: pda::HYUSD_POOL,
-    stablecoin_mint: HYUSD::MINT,
-    token_program: token::ID,
-    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
-    program: earn_pool::ID,
-  };
-  Instruction {
-    program_id: earn_pool::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
 pub fn deprecate_levercoin_pool(admin: Pubkey) -> Instruction {
   let accounts = account_builders::deprecate_levercoin_pool(admin);
   let args = args::DeprecateLevercoinPool {};
