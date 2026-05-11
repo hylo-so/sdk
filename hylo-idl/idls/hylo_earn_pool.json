@@ -162,7 +162,7 @@
           }
         },
         {
-          "name": "stablecoin_pool_auth",
+          "name": "pool_auth",
           "pda": {
             "seeds": [
               {
@@ -189,7 +189,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "stablecoin_pool_auth"
+                "path": "pool_auth"
               },
               {
                 "kind": "const",
