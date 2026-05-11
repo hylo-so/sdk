@@ -1,7 +1,7 @@
 //! Token operation trait for pure protocol math.
 
+mod earn_pool;
 mod exchange;
-mod stability_pool;
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::Result;

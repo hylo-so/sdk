@@ -12,12 +12,12 @@ use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC,
   XSOL,
 };
-use hylo_idl::{exchange, pda, stability_pool};
+use hylo_idl::{earn_pool, exchange, pda};
 
 const LUT_ACCOUNTS: &[Pubkey] = &[
   // Program IDs
   exchange::ID,
-  stability_pool::ID,
+  earn_pool::ID,
   // Token mints
   HYUSD::MINT,
   XSOL::MINT,
@@ -39,11 +39,11 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   pda::SHYUSD_AUTH,
   // Event authorities
   pda::EXCHANGE_EVENT_AUTHORITY,
-  pda::STABILITY_POOL_EVENT_AUTHORITY,
+  pda::EARN_POOL_EVENT_AUTHORITY,
   // Program data
   pda::EXCHANGE_PROGRAM_DATA,
-  pda::STABILITY_POOL_PROGRAM_DATA,
-  // Stability pool token accounts
+  pda::EARN_POOL_PROGRAM_DATA,
+  // Earn pool token accounts
   pda::HYUSD_POOL,
   pda::XSOL_POOL,
   // Oracle feeds

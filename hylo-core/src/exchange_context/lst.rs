@@ -7,22 +7,23 @@ use super::ExchangeContext;
 use crate::conversion::{Conversion, LstRebalanceConversion};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
-  RebalanceAmountExceeded,
+  RebalanceAmountExceeded, RebalanceSwapPnl,
 };
 use crate::exchange_math::collateral_ratio;
-use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
-use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
-use crate::interpolated_fees::{
+use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
+use crate::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
-use crate::lst_sol_price::LstSolPrice;
+use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
+use crate::lst::sol_price::LstSolPrice;
+use crate::lst::total_sol_cache::TotalSolCache;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
-use crate::rebalance_mode::RebalanceMode;
-use crate::rebalance_pricing::{
+use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::pnl::RebalancePnl;
+use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
 use crate::solana_clock::SolanaClock;
-use crate::total_sol_cache::TotalSolCache;
 use crate::virtual_stablecoin::VirtualStablecoin;
 
 /// Exchange context for SOL/LST collateral pairs.
@@ -379,5 +380,57 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       sol_usd_price,
       usdc_usd_price,
     ))
+  }
+
+  /// Converts LST amount to protocol stablecoin at SOL/USD spot price.
+  ///
+  /// # Errors
+  /// * LST price not updated
+  /// * NAV computation
+  /// * Conversion arithmetic
+  pub fn lst_to_stablecoin_spot(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    lst_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
+    let usd_sol_price = self.collateral_oracle_price().spot;
+    let stablecoin_nav = self.stablecoin_nav()?;
+    let conversion = Conversion::spot(usd_sol_price, lst_sol);
+    conversion.lst_to_token(lst_amount, stablecoin_nav)
+  }
+
+  /// Computes rebalance `PnL` for a buy-side LST swap.
+  ///
+  /// # Errors
+  /// * Spot conversion arithmetic
+  /// * `PnL` arithmetic overflow
+  pub fn rebalance_pnl_buy_side(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    lst_in: UFix64<N9>,
+    stablecoin_moved: UFix64<N6>,
+  ) -> Result<RebalancePnl> {
+    let stablecoin_value_in =
+      self.lst_to_stablecoin_spot(lst_sol_price, lst_in)?;
+    RebalancePnl::from_stablecoin_flow(stablecoin_value_in, stablecoin_moved)
+      .ok_or(RebalanceSwapPnl.into())
+  }
+
+  /// Computes rebalance `PnL` for a sell-side LST swap.
+  ///
+  /// # Errors
+  /// * Spot conversion arithmetic
+  /// * `PnL` arithmetic overflow
+  pub fn rebalance_pnl_sell_side(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    lst_out: UFix64<N9>,
+    stablecoin_moved: UFix64<N6>,
+  ) -> Result<RebalancePnl> {
+    let stablecoin_value_out =
+      self.lst_to_stablecoin_spot(lst_sol_price, lst_out)?;
+    RebalancePnl::from_stablecoin_flow(stablecoin_moved, stablecoin_value_out)
+      .ok_or(RebalanceSwapPnl.into())
   }
 }

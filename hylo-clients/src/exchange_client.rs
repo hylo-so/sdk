@@ -163,7 +163,7 @@ impl ExchangeClient {
     ))
   }
 
-  /// Builds transaction data for harvesting yield from LST vaults to stability
+  /// Builds transaction data for harvesting yield from LST vaults to earn
   /// pool.
   ///
   /// # Errors
@@ -811,6 +811,40 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
+  /// Allocates the LST rebalance `PnL` cache account.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_rebalance_pnl_cache_lst(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::initialize_rebalance_pnl_cache_lst(
+      squads.vault_pda(),
+    );
+    let memo = build_memo("initialize_rebalance_pnl_cache_lst", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Allocates the EXO rebalance `PnL` cache account for the given collateral.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_rebalance_pnl_cache_exo(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::initialize_rebalance_pnl_cache_exo(
+      squads.vault_pda(),
+      collateral_mint,
+    );
+    let memo = build_memo("initialize_rebalance_pnl_cache_exo", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
   /// Registers an exo collateral.
   ///
   /// # Errors
@@ -863,6 +897,35 @@ impl ExchangeClient {
     collateral_usd_pyth_feed: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::harvest_borrow_rate(
+      collateral_mint,
+      collateral_usd_pyth_feed,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Clears the LST virtual stablecoin against accumulated rebalance `PnL`.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_lst(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::settle_virtual_stablecoin_lst(self.program.payer());
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Clears the EXO virtual stablecoin against accumulated rebalance `PnL`.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_exo(
+    &self,
+    collateral_mint: Pubkey,
+    collateral_usd_pyth_feed: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::settle_virtual_stablecoin_exo(
+      self.program.payer(),
       collateral_mint,
       collateral_usd_pyth_feed,
     );

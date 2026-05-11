@@ -13,13 +13,13 @@ use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::conversion::UsdcStablecoinConversion;
 use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
-use hylo_core::fee_controller::{FeeExtract, LevercoinFees};
+use hylo_core::fees::controller::{FeeExtract, LevercoinFees};
+use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
-use hylo_core::idl::stability_pool::accounts::PoolConfig;
+use hylo_core::lst::stake_pool::SplStakePool;
+use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::spl_stake_pool::SplStakePool;
-use hylo_core::total_sol_cache::TotalSolCache;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -78,13 +78,13 @@ pub struct ProtocolState<C: SolanaClock> {
   /// SHYUSD mint account
   pub shyusd_mint: Mint,
 
-  /// Stability pool configuration
+  /// Earn pool configuration
   pub pool_config: PoolConfig,
 
-  /// HYUSD stability pool token account
+  /// HYUSD earn pool token account
   pub hyusd_pool: TokenAccount,
 
-  /// XSOL stability pool token account
+  /// XSOL earn pool token account
   pub xsol_pool: TokenAccount,
 
   /// Timestamp of when this state was fetched

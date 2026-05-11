@@ -5,7 +5,7 @@ use crate::error::CoreError::{
   LstLstPriceConversion, LstSolPriceConversion, LstSolPriceDelta,
   LstSolPriceEpochOrder, LstSolPriceOutdated, SolLstPriceConversion,
 };
-use crate::fee_controller::FeeExtract;
+use crate::fees::controller::FeeExtract;
 
 /// Captures the true LST price in SOL for the current epoch.
 #[derive(

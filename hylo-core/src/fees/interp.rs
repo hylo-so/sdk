@@ -127,7 +127,7 @@ mod tests {
 
   use super::*;
   use crate::error::CoreError;
-  use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
+  use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 
   #[test]
   fn from_points_insufficient_points() {

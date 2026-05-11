@@ -5,8 +5,8 @@ use std::mem::size_of;
 use anchor_lang::prelude::{ProgramError, Result};
 use fix::prelude::*;
 
+use super::sol_price::LstSolPrice;
 use crate::error::CoreError;
-use crate::lst_sol_price::LstSolPrice;
 
 /// Byte offsets in [`StakePool`].
 /// <https://docs.rs/spl-stake-pool/latest/spl_stake_pool/state/struct.StakePool.html>

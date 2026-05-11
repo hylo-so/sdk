@@ -17,6 +17,7 @@ use crate::error::CoreError::{
   Ord,
   AnchorSerialize,
   AnchorDeserialize,
+  InitSpace,
 )]
 pub enum RebalanceMode {
   Depeg,

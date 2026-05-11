@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::CoreError::{
   YieldHarvestAllocation, YieldHarvestConfigValidation,
 };
-use crate::fee_controller::FeeExtract;
+use crate::fees::controller::FeeExtract;
 
 /// 1000 bps (10%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);

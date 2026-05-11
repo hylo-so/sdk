@@ -12,7 +12,7 @@ use crate::exchange::client::{accounts, args};
 use crate::exchange::types::{AddressField, TokenMetadata, UFixValue64};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
-use crate::{exchange, stability_pool};
+use crate::{earn_pool, exchange};
 
 #[must_use]
 pub fn mint_stablecoin_lst(
@@ -284,6 +284,66 @@ pub fn update_sol_usd_oracle(
 }
 
 #[must_use]
+pub fn settle_virtual_stablecoin_lst(payer: Pubkey) -> Instruction {
+  let accounts = accounts::SettleVirtualStablecoinLst {
+    payer,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::SettleVirtualStablecoinLst {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_exo(
+  payer: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> Instruction {
+  let accounts = accounts::SettleVirtualStablecoinExo {
+    payer,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    exo_pair: pda::exo_pair(collateral_mint),
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    vault_auth: pda::exo_vault_auth(collateral_mint),
+    collateral_vault: pda::exo_vault(collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::SettleVirtualStablecoinExo {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn harvest_yield(
   lst_registry: Pubkey,
   remaining_accounts: Vec<AccountMeta>,
@@ -297,7 +357,7 @@ pub fn harvest_yield(
     stablecoin_pool: pda::HYUSD_POOL,
     pool_auth: pda::POOL_AUTH,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    hylo_stability_pool: stability_pool::ID,
+    hylo_earn_pool: earn_pool::ID,
     lst_registry,
     lut_program: address_lookup_table::ID,
     token_program: token::ID,
@@ -1065,6 +1125,43 @@ pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
     program: exchange::ID,
   };
   let args = args::InitializeLstVirtualStablecoin {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn initialize_rebalance_pnl_cache_lst(admin: Pubkey) -> Instruction {
+  let accounts = accounts::InitializeRebalancePnlCacheLst {
+    admin,
+    hylo: pda::HYLO,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::InitializeRebalancePnlCacheLst {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn initialize_rebalance_pnl_cache_exo(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> Instruction {
+  let accounts = accounts::InitializeRebalancePnlCacheExo {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  let args = args::InitializeRebalancePnlCacheExo {};
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

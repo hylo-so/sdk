@@ -2,7 +2,7 @@ use anchor_lang::Result;
 use fix::prelude::*;
 
 use crate::error::CoreError::InvalidFees;
-use crate::fee_controller::FeeExtract;
+use crate::fees::controller::FeeExtract;
 
 /// 100 bps (1%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(100);

@@ -1,12 +1,12 @@
-//! `TokenOperation` implementations for stability pool pairs.
+//! `TokenOperation` implementations for earn pool pairs.
 
 use anyhow::{ensure, Result};
 use fix::prelude::*;
-use hylo_core::fee_controller::FeeExtract;
-use hylo_core::solana_clock::SolanaClock;
-use hylo_core::stability_pool_math::{
+use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
 };
+use hylo_core::fees::controller::FeeExtract;
+use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
@@ -14,7 +14,7 @@ use crate::token_operation::{
   OperationOutput, SwapOperationOutput, TokenOperation,
 };
 
-/// Deposit stablecoin (HYUSD) into stability pool for LP token (SHYUSD).
+/// Deposit stablecoin (HYUSD) into earn pool for LP token (SHYUSD).
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -37,7 +37,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   }
 }
 
-/// Withdraw LP token (SHYUSD) from stability pool for stablecoin (HYUSD).
+/// Withdraw LP token (SHYUSD) from earn pool for stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 

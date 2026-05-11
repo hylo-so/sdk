@@ -7,18 +7,19 @@ use super::ExchangeContext;
 use crate::conversion::{ExoConversion, ExoRebalanceConversion};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
-  RebalanceAmountExceeded,
+  RebalanceAmountExceeded, RebalanceSwapPnl,
 };
 use crate::exchange_math::collateral_ratio;
-use crate::fee_controller::{FeeController, FeeExtract, LevercoinFees};
-use crate::fee_curves::{mint_fee_curve, redeem_fee_curve};
-use crate::interpolated_fees::{
+use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
+use crate::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
+use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::levercoin_limiter::LevercoinMarketCapLimiter;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
-use crate::rebalance_mode::RebalanceMode;
-use crate::rebalance_pricing::{
+use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::pnl::RebalancePnl;
+use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
 };
 use crate::solana_clock::SolanaClock;
@@ -325,5 +326,49 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       levercoin_nav,
       levercoin_supply,
     ))
+  }
+
+  /// Stablecoin value of collateral at oracle spot price.
+  ///
+  /// # Errors
+  /// * NAV computation
+  /// * Conversion arithmetic
+  pub fn exo_to_stablecoin_spot(
+    &self,
+    exo_amount: UFix64<N9>,
+  ) -> Result<UFix64<N6>> {
+    let spot = self.collateral_oracle_price().spot;
+    let stablecoin_nav = self.stablecoin_nav()?;
+    ExoConversion::spot(spot).exo_to_token(exo_amount, stablecoin_nav)
+  }
+
+  /// Computes rebalance `PnL` for a buy-side swap.
+  ///
+  /// # Errors
+  /// * Spot conversion arithmetic
+  /// * `PnL` arithmetic overflow
+  pub fn rebalance_pnl_buy_side(
+    &self,
+    exo_in: UFix64<N9>,
+    stablecoin_moved: UFix64<N6>,
+  ) -> Result<RebalancePnl> {
+    let stablecoin_value_in = self.exo_to_stablecoin_spot(exo_in)?;
+    RebalancePnl::from_stablecoin_flow(stablecoin_value_in, stablecoin_moved)
+      .ok_or(RebalanceSwapPnl.into())
+  }
+
+  /// Computes rebalance `PnL` for a sell-side swap.
+  ///
+  /// # Errors
+  /// * Spot conversion arithmetic
+  /// * `PnL` arithmetic overflow
+  pub fn rebalance_pnl_sell_side(
+    &self,
+    exo_out: UFix64<N9>,
+    stablecoin_moved: UFix64<N6>,
+  ) -> Result<RebalancePnl> {
+    let stablecoin_value_out = self.exo_to_stablecoin_spot(exo_out)?;
+    RebalancePnl::from_stablecoin_flow(stablecoin_moved, stablecoin_value_out)
+      .ok_or(RebalanceSwapPnl.into())
   }
 }

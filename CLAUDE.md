@@ -105,7 +105,7 @@ The `TokenMint` trait defines tokens with an associated `Exp` type for decimal p
 | `InstructionBuilder<IN, OUT>` | Build instructions for token pairs |
 | `BuildTransactionData<IN, OUT>` | Full transaction construction |
 | `SimulatePrice<IN, OUT>` | Quote via transaction simulation |
-| `ProgramClient` | Base trait for exchange/stability pool clients |
+| `ProgramClient` | Base trait for exchange/earn pool clients |
 | `RuntimeQuoteStrategy` | Unified quoting interface (runtime dispatch via Pubkeys) |
 
 ### Quoting Strategies

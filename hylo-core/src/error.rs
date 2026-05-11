@@ -2,7 +2,7 @@ use anchor_lang::prelude::error_code;
 
 #[error_code]
 pub enum CoreError {
-  // `total_sol_cache`
+  // `lst::total_sol_cache`
   #[msg("Cannot decrement TotalSolCache due to outdated epoch.")]
   TotalSolCacheDecrement = 7000,
   #[msg("Cannot increment TotalSolCache due to outdated epoch.")]
@@ -13,7 +13,7 @@ pub enum CoreError {
   TotalSolCacheUnderflow,
   #[msg("TotalSolCache is not valid for the current epoch.")]
   TotalSolCacheOutdated,
-  // `lst_sol_price`
+  // `lst::sol_price`
   #[msg("Underflow in delta between current and previous LST prices.")]
   LstSolPriceDelta,
   #[msg("LstSolPrice delta failed due to non-adjacent epochs.")]
@@ -70,7 +70,7 @@ pub enum CoreError {
   LstToToken,
   #[msg("Arithmetic error in conversion from protocol token to LST.")]
   TokenToLst,
-  // `fee_controller`
+  // `fees::controller`
   #[msg("Over/underflow while computing fee extraction for transaction.")]
   FeeExtraction,
   #[msg("No valid mint fee for levercoin. Projected rebalance mode is Depeg.")]
@@ -94,7 +94,7 @@ pub enum CoreError {
   DestinationStablecoin,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
   RequestedStablecoinOverMaxMintable,
-  // `stability_pool_math`
+  // `earn_pool_math`
   #[msg("Arithmetic error while computing LP token NAV.")]
   LpTokenNav,
   #[msg("Arithmetic error while computing LP token amount to give to user.")]
@@ -120,7 +120,7 @@ pub enum CoreError {
   InterpOutOfDomain,
   #[msg("Arithmetic overflow during interpolation calculation.")]
   InterpArithmetic,
-  // `interpolated_fees`
+  // `fees::curve_controller`
   #[msg("Failed to convert collateral ratio from u64 to i64.")]
   CollateralRatioConversion,
   #[msg("Failed to convert interpolated fee from i64 to u64.")]
@@ -146,7 +146,7 @@ pub enum CoreError {
   LstToUsdc,
   #[msg("Arithmetic error converting USDC to LST via SOL.")]
   UsdcToLst,
-  // `rebalance_pricing`
+  // `rebalance::pricing`
   #[msg("Rebalancing deviation tolerance not within valid range.")]
   RebalanceDeviationValidation,
   #[msg(
@@ -165,12 +165,19 @@ pub enum CoreError {
   RebalanceDeviationExceeded,
   #[msg("Arithmetic error computing deviation tolerance band.")]
   RebalanceDeviationArithmetic,
-  // `rebalance_math`
+  // `rebalance::math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,
   #[msg("Arithmetic error while computing buy side target.")]
   RebalanceBuySideTarget,
-  // `spl_stake_pool`
+  // `rebalance::pnl`
+  #[msg("Arithmetic error while updating rebalance PnL cache.")]
+  RebalancePnlCacheUpdate,
+  #[msg("Arithmetic error while computing new rebalance PnL.")]
+  RebalancePnlCacheNet,
+  #[msg("Arithmetic error while computing rebalance swap PnL.")]
+  RebalanceSwapPnl,
+  // `lst::stake_pool`
   #[msg("Division by zero computing SPL stake pool price.")]
   StakePoolDivByZero,
   // `oracle_config`
@@ -178,7 +185,7 @@ pub enum CoreError {
   OracleIntervalSecsInvalid,
   #[msg("Oracle confidence tolerance not in valid range.")]
   OracleConfToleranceInvalid,
-  // `rebalance_mode`
+  // `rebalance::mode`
   #[msg("Range boundary did not match the expected bound variant.")]
   RangeUnexpectedBound,
   #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]

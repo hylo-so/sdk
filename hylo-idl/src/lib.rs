@@ -3,9 +3,9 @@
 extern crate anchor_lang;
 
 mod codegen {
+  anchor_lang::declare_program!(hylo_earn_pool);
   anchor_lang::declare_program!(hylo_exchange);
   anchor_lang::declare_program!(hylo_router);
-  anchor_lang::declare_program!(hylo_stability_pool);
 }
 
 mod account_builders;
@@ -24,13 +24,13 @@ pub mod exchange {
     pubkey!("HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH");
 }
 
-pub mod stability_pool {
+pub mod earn_pool {
   #[cfg(feature = "shadow")]
   use anchor_lang::prelude::{pubkey, Pubkey};
 
-  pub use super::account_builders::stability_pool as account_builders;
-  pub use super::codegen::hylo_stability_pool::*;
-  pub use super::instruction_builders::stability_pool as instruction_builders;
+  pub use super::account_builders::earn_pool as account_builders;
+  pub use super::codegen::hylo_earn_pool::*;
+  pub use super::instruction_builders::earn_pool as instruction_builders;
 
   #[cfg(feature = "shadow")]
   pub const ID: Pubkey =
