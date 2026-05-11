@@ -21,7 +21,6 @@ pub fn deposit(user: Pubkey) -> UserDeposit {
     stablecoin_pool: pda::HYUSD_POOL,
     lp_token_auth: pda::SHYUSD_AUTH,
     lp_token_mint: SHYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
     event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
     program: earn_pool::ID,
