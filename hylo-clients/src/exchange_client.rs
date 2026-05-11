@@ -869,12 +869,11 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Settles the LST virtual stablecoin against the rebalance `PnL`
-  /// cache. Crank.
+  /// Clears the LST virtual stablecoin against accumulated rebalance `PnL`.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn settle_virtual_stablecoin_lst_direct(
+  pub fn settle_virtual_stablecoin_lst(
     &self,
   ) -> Result<VersionedTransactionData> {
     let instruction =
@@ -882,12 +881,11 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Settles the EXO virtual stablecoin against the rebalance `PnL`
-  /// cache for the given collateral. Crank.
+  /// Clears the EXO virtual stablecoin against accumulated rebalance `PnL`.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn settle_virtual_stablecoin_exo_direct(
+  pub fn settle_virtual_stablecoin_exo(
     &self,
     collateral_mint: Pubkey,
     collateral_usd_pyth_feed: Pubkey,
