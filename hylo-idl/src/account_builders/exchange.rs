@@ -8,7 +8,8 @@ use crate::exchange::client::accounts::{
   ConvertStableToLeverLst, HarvestBorrowRate, InitializeUsdc, MintLevercoinExo,
   MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
   RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
-  RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo, SwapExoToUsdc,
+  RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
+  SettleVirtualStablecoinExo, SettleVirtualStablecoinLst, SwapExoToUsdc,
   SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
   UpdateLstRebalanceFee, WithdrawFees,
 };
@@ -443,6 +444,56 @@ pub fn swap_lst_to_lst(
     fee_auth: pda::fee_auth(lst_a),
     fee_vault: pda::fee_vault(lst_a),
     token_program: token::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_lst(
+  payer: Pubkey,
+) -> SettleVirtualStablecoinLst {
+  SettleVirtualStablecoinLst {
+    payer,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_exo(
+  payer: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> SettleVirtualStablecoinExo {
+  SettleVirtualStablecoinExo {
+    payer,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    exo_pair: pda::exo_pair(collateral_mint),
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    vault_auth: pda::exo_vault_auth(collateral_mint),
+    collateral_vault: pda::exo_vault(collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }

@@ -16885,11 +16885,6 @@
     },
     {
       "code": 6052,
-      "name": "SettleVirtualStablecoinNoop",
-      "msg": "Virtual stablecoin settlement not necessary."
-    },
-    {
-      "code": 6053,
       "name": "RebalancePnlCacheNotSettled",
       "msg": "Rebalance PnL cache must be settled before this operation."
     }
