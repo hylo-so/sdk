@@ -1139,6 +1139,7 @@ pub fn initialize_rebalance_pnl_cache_exo(
   }
 }
 
+/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_exo_to_usdc(
   user: Pubkey,
@@ -1151,7 +1152,6 @@ pub fn swap_exo_to_usdc(
     collateral_mint,
     collateral_usd_pyth_feed,
   );
-  // Inline settle CPI reads its accounts from `remaining_accounts`.
   let settle = account_builders::settle_virtual_stablecoin_exo(
     user,
     collateral_mint,
@@ -1165,6 +1165,7 @@ pub fn swap_exo_to_usdc(
   }
 }
 
+/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_usdc_to_exo(
   user: Pubkey,
@@ -1190,6 +1191,7 @@ pub fn swap_usdc_to_exo(
   }
 }
 
+/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_lst_to_usdc(
   user: Pubkey,
@@ -1207,6 +1209,7 @@ pub fn swap_lst_to_usdc(
   }
 }
 
+/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_usdc_to_lst(
   user: Pubkey,
