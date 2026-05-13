@@ -284,8 +284,8 @@ pub fn update_sol_usd_oracle(
 }
 
 #[must_use]
-pub fn settle_virtual_stablecoin_lst(payer: Pubkey) -> Instruction {
-  let accounts = account_builders::settle_virtual_stablecoin_lst(payer);
+pub fn settle_virtual_stablecoin_lst() -> Instruction {
+  let accounts = account_builders::settle_virtual_stablecoin_lst();
   let args = args::SettleVirtualStablecoinLst {};
   Instruction {
     program_id: exchange::ID,
@@ -296,12 +296,10 @@ pub fn settle_virtual_stablecoin_lst(payer: Pubkey) -> Instruction {
 
 #[must_use]
 pub fn settle_virtual_stablecoin_exo(
-  payer: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> Instruction {
   let accounts = account_builders::settle_virtual_stablecoin_exo(
-    payer,
     collateral_mint,
     collateral_usd_pyth_feed,
   );

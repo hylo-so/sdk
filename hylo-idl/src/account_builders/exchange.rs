@@ -454,14 +454,11 @@ pub fn swap_lst_to_lst(
 }
 
 #[must_use]
-pub fn settle_virtual_stablecoin_lst(
-  payer: Pubkey,
-) -> SettleVirtualStablecoinLst {
+pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
   SettleVirtualStablecoinLst {
-    payer,
+    settlement_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
-    settlement_auth: pda::SETTLEMENT_AUTH,
     pool_auth: pda::POOL_AUTH,
     stablecoin_mint_auth: pda::HYUSD_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
@@ -477,16 +474,14 @@ pub fn settle_virtual_stablecoin_lst(
 
 #[must_use]
 pub fn settle_virtual_stablecoin_exo(
-  payer: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> SettleVirtualStablecoinExo {
   SettleVirtualStablecoinExo {
-    payer,
+    settlement_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
     exo_pair: pda::exo_pair(collateral_mint),
-    settlement_auth: pda::SETTLEMENT_AUTH,
     pool_auth: pda::POOL_AUTH,
     stablecoin_mint_auth: pda::HYUSD_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
@@ -534,7 +529,6 @@ pub fn swap_exo_to_usdc(
       program: exchange::ID,
     },
     settle: settle_virtual_stablecoin_exo(
-      user,
       collateral_mint,
       collateral_usd_pyth_feed,
     ),
@@ -572,7 +566,6 @@ pub fn swap_usdc_to_exo(
       program: exchange::ID,
     },
     settle: settle_virtual_stablecoin_exo(
-      user,
       collateral_mint,
       collateral_usd_pyth_feed,
     ),
@@ -608,7 +601,7 @@ pub fn swap_lst_to_usdc(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_virtual_stablecoin_lst(user),
+    settle: settle_virtual_stablecoin_lst(),
   }
 }
 
@@ -641,7 +634,7 @@ pub fn swap_usdc_to_lst(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_virtual_stablecoin_lst(user),
+    settle: settle_virtual_stablecoin_lst(),
   }
 }
 
