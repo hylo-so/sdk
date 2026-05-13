@@ -25,6 +25,16 @@ macro_rules! pda {
   }};
 }
 
+macro_rules! pda_with_bump {
+  ($program_id:expr, $base:expr) => {{
+    let (key, bump) = ed25519::derive_program_address(
+      &[$base.as_slice()],
+      $program_id.as_array(),
+    );
+    (Pubkey::new_from_array(key), bump)
+  }};
+}
+
 #[must_use]
 pub const fn mint<const N: usize>(program_id: Pubkey, seed: [u8; N]) -> Pubkey {
   let (key, _bump) =
@@ -195,8 +205,12 @@ pub const SHYUSD_AUTH: Pubkey =
 pub const POOL_AUTH: Pubkey =
   pda!(earn_pool::ID, earn_pool::constants::POOL_AUTH);
 
-pub const SETTLEMENT_AUTH: Pubkey =
-  pda!(exchange::ID, exchange::constants::SETTLEMENT_AUTH);
+const SETTLEMENT_AUTH_DERIVED: (Pubkey, u8) =
+  pda_with_bump!(exchange::ID, exchange::constants::SETTLEMENT_AUTH);
+
+pub const SETTLEMENT_AUTH: Pubkey = SETTLEMENT_AUTH_DERIVED.0;
+
+pub const SETTLEMENT_BUMP: u8 = SETTLEMENT_AUTH_DERIVED.1;
 
 pub const HYUSD_POOL: Pubkey = ata(POOL_AUTH, HYUSD::MINT);
 
