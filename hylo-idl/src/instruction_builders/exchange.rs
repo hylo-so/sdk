@@ -1101,43 +1101,6 @@ pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
 }
 
 #[must_use]
-pub fn initialize_rebalance_pnl_cache_lst(admin: Pubkey) -> Instruction {
-  let accounts = accounts::InitializeRebalancePnlCacheLst {
-    admin,
-    hylo: pda::HYLO,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  let args = args::InitializeRebalancePnlCacheLst {};
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn initialize_rebalance_pnl_cache_exo(
-  admin: Pubkey,
-  collateral_mint: Pubkey,
-) -> Instruction {
-  let accounts = accounts::InitializeRebalancePnlCacheExo {
-    admin,
-    hylo: pda::HYLO,
-    exo_pair: pda::exo_pair(collateral_mint),
-    collateral_mint,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  let args = args::InitializeRebalancePnlCacheExo {};
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
 pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
