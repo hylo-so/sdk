@@ -35,6 +35,47 @@ impl RebalancePnl {
   }
 }
 
+impl TryFrom<RebalancePnlValue> for RebalancePnl {
+  type Error = Error;
+
+  fn try_from(pnl: RebalancePnlValue) -> Result<RebalancePnl> {
+    match pnl {
+      RebalancePnlValue::Profit(profit) => {
+        Ok(RebalancePnl::Profit(profit.try_into()?))
+      }
+      RebalancePnlValue::Loss(loss) => Ok(RebalancePnl::Loss(loss.try_into()?)),
+      RebalancePnlValue::NoChange => Ok(RebalancePnl::NoChange),
+    }
+  }
+}
+
+/// Serializable version of [`RebalancePnl`].
+#[derive(
+  Debug,
+  Clone,
+  Copy,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Serialize,
+  Deserialize,
+)]
+pub enum RebalancePnlValue {
+  Profit(UFixValue64),
+  Loss(UFixValue64),
+  NoChange,
+}
+
+impl From<RebalancePnl> for RebalancePnlValue {
+  fn from(pnl: RebalancePnl) -> Self {
+    match pnl {
+      RebalancePnl::Profit(profit) => RebalancePnlValue::Profit(profit.into()),
+      RebalancePnl::Loss(loss) => RebalancePnlValue::Loss(loss.into()),
+      RebalancePnl::NoChange => RebalancePnlValue::NoChange,
+    }
+  }
+}
+
 /// Two register counter tracking rebalancing `PnL`.
 #[derive(
   Debug,
