@@ -3,6 +3,10 @@ use anchor_lang::solana_program::sysvar::rent;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
+use super::swap_settle_accounts::{
+  SwapExoToUsdcWithSettle, SwapLstToUsdcWithSettle, SwapUsdcToExoWithSettle,
+  SwapUsdcToLstWithSettle,
+};
 use crate::exchange::client::accounts::{
   ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
   ConvertStableToLeverLst, HarvestBorrowRate, InitializeUsdc, MintLevercoinExo,
@@ -499,125 +503,145 @@ pub fn settle_virtual_stablecoin_exo(
   }
 }
 
-/// Exo collateral to USDC swap.
+/// Exo collateral to USDC swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapExoToUsdc {
+) -> SwapExoToUsdcWithSettle {
   let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapExoToUsdc {
-    user,
-    hylo: pda::HYLO,
-    exo_pair: pda::exo_pair(collateral_mint),
-    usdc_pair: pda::USDC_PAIR,
-    collateral_vault_auth,
-    usdc_vault_auth,
-    collateral_vault: pda::ata(collateral_vault_auth, collateral_mint),
-    usdc_collateral_vault: pda::ata(usdc_vault_auth, USDC::MINT),
-    user_usdc_ta: pda::usdc_ata(user),
-    user_collateral_ta: pda::ata(user, collateral_mint),
-    usdc_mint: USDC::MINT,
-    collateral_mint,
-    levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
-    collateral_usd_pyth_feed,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
-    token_program: token::ID,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
+  SwapExoToUsdcWithSettle {
+    swap: SwapExoToUsdc {
+      user,
+      hylo: pda::HYLO,
+      exo_pair: pda::exo_pair(collateral_mint),
+      usdc_pair: pda::USDC_PAIR,
+      collateral_vault_auth,
+      usdc_vault_auth,
+      collateral_vault: pda::ata(collateral_vault_auth, collateral_mint),
+      usdc_collateral_vault: pda::ata(usdc_vault_auth, USDC::MINT),
+      user_usdc_ta: pda::usdc_ata(user),
+      user_collateral_ta: pda::ata(user, collateral_mint),
+      usdc_mint: USDC::MINT,
+      collateral_mint,
+      levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
+      collateral_usd_pyth_feed,
+      usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+      token_program: token::ID,
+      event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+      program: exchange::ID,
+    },
+    settle: settle_virtual_stablecoin_exo(
+      user,
+      collateral_mint,
+      collateral_usd_pyth_feed,
+    ),
   }
 }
 
-/// USDC to exo collateral swap.
+/// USDC to exo collateral swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapUsdcToExo {
+) -> SwapUsdcToExoWithSettle {
   let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapUsdcToExo {
-    user,
-    hylo: pda::HYLO,
-    exo_pair: pda::exo_pair(collateral_mint),
-    usdc_pair: pda::USDC_PAIR,
-    collateral_vault_auth,
-    usdc_vault_auth,
-    collateral_vault: pda::ata(collateral_vault_auth, collateral_mint),
-    usdc_collateral_vault: pda::ata(usdc_vault_auth, USDC::MINT),
-    user_usdc_ta: pda::usdc_ata(user),
-    user_collateral_ta: pda::ata(user, collateral_mint),
-    usdc_mint: USDC::MINT,
-    collateral_mint,
-    levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
-    collateral_usd_pyth_feed,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
-    token_program: token::ID,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
+  SwapUsdcToExoWithSettle {
+    swap: SwapUsdcToExo {
+      user,
+      hylo: pda::HYLO,
+      exo_pair: pda::exo_pair(collateral_mint),
+      usdc_pair: pda::USDC_PAIR,
+      collateral_vault_auth,
+      usdc_vault_auth,
+      collateral_vault: pda::ata(collateral_vault_auth, collateral_mint),
+      usdc_collateral_vault: pda::ata(usdc_vault_auth, USDC::MINT),
+      user_usdc_ta: pda::usdc_ata(user),
+      user_collateral_ta: pda::ata(user, collateral_mint),
+      usdc_mint: USDC::MINT,
+      collateral_mint,
+      levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
+      collateral_usd_pyth_feed,
+      usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+      token_program: token::ID,
+      event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+      program: exchange::ID,
+    },
+    settle: settle_virtual_stablecoin_exo(
+      user,
+      collateral_mint,
+      collateral_usd_pyth_feed,
+    ),
   }
 }
 
-/// LST to USDC swap.
+/// LST to USDC swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_lst_to_usdc(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
-) -> SwapLstToUsdc {
+) -> SwapLstToUsdcWithSettle {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapLstToUsdc {
-    user,
-    hylo: pda::HYLO,
-    lst_header: pda::lst_header(lst_mint),
-    pool_state,
-    usdc_pair: pda::USDC_PAIR,
-    lst_vault_auth: pda::lst_vault_auth(lst_mint),
-    usdc_vault_auth,
-    lst_vault: pda::lst_vault(lst_mint),
-    usdc_vault: pda::ata(usdc_vault_auth, USDC::MINT),
-    user_lst_ta: pda::ata(user, lst_mint),
-    user_usdc_ta: pda::usdc_ata(user),
-    lst_mint,
-    usdc_mint: USDC::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
-    token_program: token::ID,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
+  SwapLstToUsdcWithSettle {
+    swap: SwapLstToUsdc {
+      user,
+      hylo: pda::HYLO,
+      lst_header: pda::lst_header(lst_mint),
+      pool_state,
+      usdc_pair: pda::USDC_PAIR,
+      lst_vault_auth: pda::lst_vault_auth(lst_mint),
+      usdc_vault_auth,
+      lst_vault: pda::lst_vault(lst_mint),
+      usdc_vault: pda::ata(usdc_vault_auth, USDC::MINT),
+      user_lst_ta: pda::ata(user, lst_mint),
+      user_usdc_ta: pda::usdc_ata(user),
+      lst_mint,
+      usdc_mint: USDC::MINT,
+      sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+      usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+      token_program: token::ID,
+      event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+      program: exchange::ID,
+    },
+    settle: settle_virtual_stablecoin_lst(user),
   }
 }
 
-/// USDC to LST swap.
+/// USDC to LST swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
-) -> SwapUsdcToLst {
+) -> SwapUsdcToLstWithSettle {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapUsdcToLst {
-    user,
-    hylo: pda::HYLO,
-    lst_header: pda::lst_header(lst_mint),
-    pool_state,
-    usdc_pair: pda::USDC_PAIR,
-    lst_vault_auth: pda::lst_vault_auth(lst_mint),
-    usdc_vault_auth,
-    lst_vault: pda::lst_vault(lst_mint),
-    usdc_vault: pda::ata(usdc_vault_auth, USDC::MINT),
-    user_lst_ta: pda::ata(user, lst_mint),
-    user_usdc_ta: pda::usdc_ata(user),
-    lst_mint,
-    usdc_mint: USDC::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
-    token_program: token::ID,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
+  SwapUsdcToLstWithSettle {
+    swap: SwapUsdcToLst {
+      user,
+      hylo: pda::HYLO,
+      lst_header: pda::lst_header(lst_mint),
+      pool_state,
+      usdc_pair: pda::USDC_PAIR,
+      lst_vault_auth: pda::lst_vault_auth(lst_mint),
+      usdc_vault_auth,
+      lst_vault: pda::lst_vault(lst_mint),
+      usdc_vault: pda::ata(usdc_vault_auth, USDC::MINT),
+      user_lst_ta: pda::ata(user, lst_mint),
+      user_usdc_ta: pda::usdc_ata(user),
+      lst_mint,
+      usdc_mint: USDC::MINT,
+      sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+      usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+      token_program: token::ID,
+      event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+      program: exchange::ID,
+    },
+    settle: settle_virtual_stablecoin_lst(user),
   }
 }
 

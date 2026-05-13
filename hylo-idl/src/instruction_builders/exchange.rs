@@ -1139,7 +1139,6 @@ pub fn initialize_rebalance_pnl_cache_exo(
   }
 }
 
-/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_exo_to_usdc(
   user: Pubkey,
@@ -1147,25 +1146,18 @@ pub fn swap_exo_to_usdc(
   collateral_usd_pyth_feed: Pubkey,
   args: &args::SwapExoToUsdc,
 ) -> Instruction {
-  let swap = account_builders::swap_exo_to_usdc(
-    user,
-    collateral_mint,
-    collateral_usd_pyth_feed,
-  );
-  let settle = account_builders::settle_virtual_stablecoin_exo(
+  let accounts = account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
   );
   Instruction {
     program_id: exchange::ID,
-    accounts: [swap.to_account_metas(None), settle.to_account_metas(None)]
-      .concat(),
+    accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
 }
 
-/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_usdc_to_exo(
   user: Pubkey,
@@ -1173,25 +1165,18 @@ pub fn swap_usdc_to_exo(
   collateral_usd_pyth_feed: Pubkey,
   args: &args::SwapUsdcToExo,
 ) -> Instruction {
-  let swap = account_builders::swap_usdc_to_exo(
-    user,
-    collateral_mint,
-    collateral_usd_pyth_feed,
-  );
-  let settle = account_builders::settle_virtual_stablecoin_exo(
+  let accounts = account_builders::swap_usdc_to_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
   );
   Instruction {
     program_id: exchange::ID,
-    accounts: [swap.to_account_metas(None), settle.to_account_metas(None)]
-      .concat(),
+    accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
 }
 
-/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_lst_to_usdc(
   user: Pubkey,
@@ -1199,17 +1184,14 @@ pub fn swap_lst_to_usdc(
   pool_state: Pubkey,
   args: &args::SwapLstToUsdc,
 ) -> Instruction {
-  let swap = account_builders::swap_lst_to_usdc(user, lst_mint, pool_state);
-  let settle = account_builders::settle_virtual_stablecoin_lst(user);
+  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint, pool_state);
   Instruction {
     program_id: exchange::ID,
-    accounts: [swap.to_account_metas(None), settle.to_account_metas(None)]
-      .concat(),
+    accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
 }
 
-/// Appends virtual stablecoin settlement accounts.
 #[must_use]
 pub fn swap_usdc_to_lst(
   user: Pubkey,
@@ -1217,12 +1199,10 @@ pub fn swap_usdc_to_lst(
   pool_state: Pubkey,
   args: &args::SwapUsdcToLst,
 ) -> Instruction {
-  let swap = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
-  let settle = account_builders::settle_virtual_stablecoin_lst(user);
+  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
   Instruction {
     program_id: exchange::ID,
-    accounts: [swap.to_account_metas(None), settle.to_account_metas(None)]
-      .concat(),
+    accounts: accounts.to_account_metas(None),
     data: args.data(),
   }
 }
