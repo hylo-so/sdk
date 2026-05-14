@@ -16,7 +16,8 @@ use crate::conversion::SwapConversion;
 use crate::error::CoreError::{
   DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
   RebalanceBuySideTarget, RebalanceSellSideLiquidity,
-  RequestedStablecoinOverMaxMintable,
+  RequestedStablecoinOverMaxMintable, VirtualStablecoinOverhang,
+  VirtualStablecoinSurplus,
 };
 use crate::exchange_math::{
   collateral_ratio, depeg_stablecoin_nav, levercoin_market_cap,
@@ -215,6 +216,34 @@ pub trait ExchangeContext {
       self.levercoin_supply()?,
     )
     .ok_or(LevercoinNav.into())
+  }
+
+  /// Delta of current virtual stablecoin supply and TVL.
+  ///
+  /// # Errors
+  /// * Virtual stablecoin not depegged
+  /// * Underflow
+  fn virtual_stablecoin_overhang(&self) -> Result<UFix64<N6>> {
+    let tvl = self.total_value_locked()?;
+    let virtual_stablecoin = self.virtual_stablecoin_supply()?;
+    tvl
+      .checked_convert::<N6>()
+      .and_then(|tvl| virtual_stablecoin.checked_sub(&tvl))
+      .ok_or(VirtualStablecoinOverhang.into())
+  }
+
+  /// Delta of TVL and current virtual stablecoin supply.
+  ///
+  /// # Errors
+  /// * Virtual stablecoin in depeg
+  /// * Underflow
+  fn virtual_stablecoin_surplus(&self) -> Result<UFix64<N6>> {
+    let tvl = self.total_value_locked()?;
+    let virtual_stablecoin = self.virtual_stablecoin_supply()?;
+    tvl
+      .checked_convert::<N6>()
+      .and_then(|tvl| tvl.checked_sub(&virtual_stablecoin))
+      .ok_or(VirtualStablecoinSurplus.into())
   }
 
   /// Projects rebalance mode after changing collateral and stablecoin
