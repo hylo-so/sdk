@@ -57,7 +57,7 @@ impl PoolDrawdown {
 
   /// Checks that debt is entirely zeroed.
   #[must_use]
-  pub fn is_clear(&self) -> bool {
+  pub fn is_repaid(&self) -> bool {
     *self == PoolDrawdown::default()
   }
 }
