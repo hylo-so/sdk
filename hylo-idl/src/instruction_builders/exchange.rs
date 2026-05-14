@@ -9,7 +9,9 @@ use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::account_builders;
 use crate::exchange::client::{accounts, args};
-use crate::exchange::types::{AddressField, TokenMetadata, UFixValue64};
+use crate::exchange::types::{
+  AddressField, RebalancePnlValue, TokenMetadata, UFixValue64,
+};
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{earn_pool, exchange};
@@ -284,9 +286,9 @@ pub fn update_sol_usd_oracle(
 }
 
 #[must_use]
-pub fn settle_virtual_stablecoin_lst() -> Instruction {
-  let accounts = account_builders::settle_virtual_stablecoin_lst();
-  let args = args::SettleVirtualStablecoinLst {};
+pub fn settle_rebalance_pnl_lst(pnl: RebalancePnlValue) -> Instruction {
+  let accounts = account_builders::settle_rebalance_pnl_lst();
+  let args = args::SettleRebalancePnlLst { pnl };
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -295,15 +297,44 @@ pub fn settle_virtual_stablecoin_lst() -> Instruction {
 }
 
 #[must_use]
-pub fn settle_virtual_stablecoin_exo(
+pub fn settle_rebalance_pnl_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  pnl: RebalancePnlValue,
 ) -> Instruction {
-  let accounts = account_builders::settle_virtual_stablecoin_exo(
+  let accounts = account_builders::settle_rebalance_pnl_exo(
     collateral_mint,
     collateral_usd_pyth_feed,
   );
-  let args = args::SettleVirtualStablecoinExo {};
+  let args = args::SettleRebalancePnlExo { pnl };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn settle_stablecoin_overhang_lst() -> Instruction {
+  let accounts = account_builders::settle_stablecoin_overhang_lst();
+  let args = args::SettleStablecoinOverhangLst {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn settle_stablecoin_overhang_exo(
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> Instruction {
+  let accounts = account_builders::settle_stablecoin_overhang_exo(
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  let args = args::SettleStablecoinOverhangExo {};
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

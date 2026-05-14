@@ -2614,19 +2614,11 @@
             }
           },
           {
-            "name": "rebalance_pnl_cache",
-            "type": {
-              "defined": {
-                "name": "RebalancePnlCache"
-              }
-            }
-          },
-          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                4
+                22
               ]
             }
           }
@@ -2724,33 +2716,6 @@
           },
           {
             "name": "ceil_mult",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "RebalancePnlCache",
-      "docs": [
-        "Two register counter tracking rebalancing `PnL`."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "profit",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "loss",
             "type": {
               "defined": {
                 "name": "UFixValue64"

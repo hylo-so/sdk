@@ -13,9 +13,9 @@ use crate::exchange::client::accounts::{
   MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
   RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
   RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
-  SettleVirtualStablecoinExo, SettleVirtualStablecoinLst, SwapExoToUsdc,
-  SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
-  UpdateLstRebalanceFee, WithdrawFees,
+  SettleRebalancePnlExo, SettleRebalancePnlLst, SettleStablecoinOverhangExo,
+  SettleStablecoinOverhangLst, SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc,
+  SwapUsdcToExo, SwapUsdcToLst, UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{earn_pool, exchange, pda};
@@ -454,8 +454,8 @@ pub fn swap_lst_to_lst(
 }
 
 #[must_use]
-pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
-  SettleVirtualStablecoinLst {
+pub fn settle_rebalance_pnl_lst() -> SettleRebalancePnlLst {
+  SettleRebalancePnlLst {
     settlement_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
@@ -473,17 +473,60 @@ pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
 }
 
 #[must_use]
-pub fn settle_virtual_stablecoin_exo(
+pub fn settle_rebalance_pnl_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SettleVirtualStablecoinExo {
-  SettleVirtualStablecoinExo {
+) -> SettleRebalancePnlExo {
+  SettleRebalancePnlExo {
     settlement_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
     exo_pair: pda::exo_pair(collateral_mint),
     pool_auth: pda::POOL_AUTH,
     stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    vault_auth: pda::exo_vault_auth(collateral_mint),
+    collateral_vault: pda::exo_vault(collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_stablecoin_overhang_lst() -> SettleStablecoinOverhangLst {
+  SettleStablecoinOverhangLst {
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_stablecoin_overhang_exo(
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> SettleStablecoinOverhangExo {
+  SettleStablecoinOverhangExo {
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    exo_pair: pda::exo_pair(collateral_mint),
+    pool_auth: pda::POOL_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
     vault_auth: pda::exo_vault_auth(collateral_mint),
     collateral_vault: pda::exo_vault(collateral_mint),
@@ -528,10 +571,7 @@ pub fn swap_exo_to_usdc(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_virtual_stablecoin_exo(
-      collateral_mint,
-      collateral_usd_pyth_feed,
-    ),
+    settle: settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed),
   }
 }
 
@@ -565,10 +605,7 @@ pub fn swap_usdc_to_exo(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_virtual_stablecoin_exo(
-      collateral_mint,
-      collateral_usd_pyth_feed,
-    ),
+    settle: settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed),
   }
 }
 
@@ -601,7 +638,7 @@ pub fn swap_lst_to_usdc(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_virtual_stablecoin_lst(),
+    settle: settle_rebalance_pnl_lst(),
   }
 }
 
@@ -634,7 +671,7 @@ pub fn swap_usdc_to_lst(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_virtual_stablecoin_lst(),
+    settle: settle_rebalance_pnl_lst(),
   }
 }
 

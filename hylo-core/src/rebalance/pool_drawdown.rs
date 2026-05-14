@@ -1,11 +1,12 @@
-use crate::virtual_stablecoin::VirtualStablecoin;
-
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::virtual_stablecoin::VirtualStablecoin;
+
 /// Wraps [`VirtualStablecoin`] to represent the reverse direction.
-/// If a trading pair depegs its debt to be repaid to the earn pool is logged here.
+/// If a trading pair depegs its debt to be repaid to the earn pool is logged
+/// here.
 #[derive(
   Debug,
   Clone,

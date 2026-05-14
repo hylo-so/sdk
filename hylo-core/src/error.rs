@@ -175,10 +175,6 @@ pub enum CoreError {
   #[msg("Arithmetic error while computing buy side target.")]
   RebalanceBuySideTarget,
   // `rebalance::pnl`
-  #[msg("Arithmetic error while updating rebalance PnL cache.")]
-  RebalancePnlCacheUpdate,
-  #[msg("Arithmetic error while computing new rebalance PnL.")]
-  RebalancePnlCacheNet,
   #[msg("Arithmetic error while computing rebalance swap PnL.")]
   RebalanceSwapPnl,
   // `lst::stake_pool`

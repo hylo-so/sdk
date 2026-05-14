@@ -1,17 +1,17 @@
 //! Composite account types for USDC swap instructions which self-CPI into
-//! `settle_virtual_stablecoin_{lst,exo}`.
+//! `settle_rebalance_pnl_{lst,exo}`.
 
 use anchor_lang::prelude::AccountMeta;
 use anchor_lang::ToAccountMetas;
 
 use crate::exchange::client::accounts::{
-  SettleVirtualStablecoinExo, SettleVirtualStablecoinLst, SwapExoToUsdc,
-  SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
+  SettleRebalancePnlExo, SettleRebalancePnlLst, SwapExoToUsdc, SwapLstToUsdc,
+  SwapUsdcToExo, SwapUsdcToLst,
 };
 
 pub struct SwapLstToUsdcWithSettle {
   pub swap: SwapLstToUsdc,
-  pub settle: SettleVirtualStablecoinLst,
+  pub settle: SettleRebalancePnlLst,
 }
 
 impl ToAccountMetas for SwapLstToUsdcWithSettle {
@@ -26,7 +26,7 @@ impl ToAccountMetas for SwapLstToUsdcWithSettle {
 
 pub struct SwapUsdcToLstWithSettle {
   pub swap: SwapUsdcToLst,
-  pub settle: SettleVirtualStablecoinLst,
+  pub settle: SettleRebalancePnlLst,
 }
 
 impl ToAccountMetas for SwapUsdcToLstWithSettle {
@@ -41,7 +41,7 @@ impl ToAccountMetas for SwapUsdcToLstWithSettle {
 
 pub struct SwapExoToUsdcWithSettle {
   pub swap: SwapExoToUsdc,
-  pub settle: SettleVirtualStablecoinExo,
+  pub settle: SettleRebalancePnlExo,
 }
 
 impl ToAccountMetas for SwapExoToUsdcWithSettle {
@@ -56,7 +56,7 @@ impl ToAccountMetas for SwapExoToUsdcWithSettle {
 
 pub struct SwapUsdcToExoWithSettle {
   pub swap: SwapUsdcToExo,
-  pub settle: SettleVirtualStablecoinExo,
+  pub settle: SettleRebalancePnlExo,
 }
 
 impl ToAccountMetas for SwapUsdcToExoWithSettle {
