@@ -2614,11 +2614,19 @@
             }
           },
           {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                22
+                13
               ]
             }
           }
@@ -2693,6 +2701,27 @@
                 "u8",
                 55
               ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolDrawdown",
+      "docs": [
+        "Wraps [`VirtualStablecoin`] to represent the reverse direction.",
+        "If a trading pair depegs its debt to be repaid to the earn pool is logged",
+        "here."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
             }
           }
         ]

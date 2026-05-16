@@ -315,9 +315,9 @@ pub fn settle_rebalance_pnl_exo(
 }
 
 #[must_use]
-pub fn settle_stablecoin_overhang_lst() -> Instruction {
-  let accounts = account_builders::settle_stablecoin_overhang_lst();
-  let args = args::SettleStablecoinOverhangLst {};
+pub fn settle_virtual_stablecoin_lst() -> Instruction {
+  let accounts = account_builders::settle_virtual_stablecoin_lst();
+  let args = args::SettleVirtualStablecoinLst {};
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -326,15 +326,15 @@ pub fn settle_stablecoin_overhang_lst() -> Instruction {
 }
 
 #[must_use]
-pub fn settle_stablecoin_overhang_exo(
+pub fn settle_virtual_stablecoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
 ) -> Instruction {
-  let accounts = account_builders::settle_stablecoin_overhang_exo(
+  let accounts = account_builders::settle_virtual_stablecoin_exo(
     collateral_mint,
     collateral_usd_pyth_feed,
   );
-  let args = args::SettleStablecoinOverhangExo {};
+  let args = args::SettleVirtualStablecoinExo {};
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

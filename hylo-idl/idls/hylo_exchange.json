@@ -3303,6 +3303,180 @@
       ]
     },
     {
+      "name": "initialize_pool_drawdown_exo",
+      "discriminator": [
+        6,
+        152,
+        26,
+        242,
+        102,
+        212,
+        96,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_pool_drawdown_lst",
+      "discriminator": [
+        60,
+        100,
+        3,
+        198,
+        190,
+        66,
+        21,
+        158
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize_protocol",
       "discriminator": [
         188,
@@ -10468,45 +10642,18 @@
       }
     },
     {
-      "name": "settle_stablecoin_overhang_exo",
+      "name": "settle_virtual_stablecoin_exo",
       "discriminator": [
-        108,
-        69,
-        161,
-        2,
-        142,
-        217,
-        226,
-        244
+        92,
+        174,
+        253,
+        99,
+        154,
+        222,
+        222,
+        55
       ],
       "accounts": [
-        {
-          "name": "settlement_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  101,
-                  116,
-                  116,
-                  108,
-                  101,
-                  109,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ]
-          }
-        },
         {
           "name": "hylo",
           "pda": {
@@ -10519,6 +10666,31 @@
                   108,
                   111
                 ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
               }
             ]
           }
@@ -10584,26 +10756,53 @@
           }
         },
         {
-          "name": "exo_pair",
-          "writable": true,
+          "name": "settlement_auth",
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  115,
                   101,
-                  120,
-                  111,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
                   95,
-                  112,
                   97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_mint_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
                   105,
-                  114
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
                 ]
               },
               {
                 "kind": "account",
-                "path": "collateral_mint"
+                "path": "stablecoin_mint"
               }
             ]
           }
@@ -10664,6 +10863,36 @@
                 225
               ]
             }
+          }
+        },
+        {
+          "name": "vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
           }
         },
         {
@@ -10754,36 +10983,6 @@
                 89
               ]
             }
-          }
-        },
-        {
-          "name": "vault_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  120,
-                  111,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ]
           }
         },
         {
@@ -11012,50 +11211,23 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "SettleStablecoinOverhangExoEvent"
+          "name": "SettleVirtualStablecoinExoEvent"
         }
       }
     },
     {
-      "name": "settle_stablecoin_overhang_lst",
+      "name": "settle_virtual_stablecoin_lst",
       "discriminator": [
+        78,
+        145,
+        213,
         121,
-        191,
-        201,
-        127,
-        151,
-        75,
-        233,
-        53
+        130,
+        237,
+        100,
+        139
       ],
       "accounts": [
-        {
-          "name": "settlement_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  101,
-                  116,
-                  116,
-                  108,
-                  101,
-                  109,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ]
-          }
-        },
         {
           "name": "hylo",
           "writable": true,
@@ -11131,6 +11303,58 @@
                 225
               ]
             }
+          }
+        },
+        {
+          "name": "settlement_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_mint_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ]
           }
         },
         {
@@ -11412,7 +11636,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "SettleStablecoinOverhangLstEvent"
+          "name": "SettleVirtualStablecoinLstEvent"
         }
       }
     },
@@ -17162,29 +17386,29 @@
       ]
     },
     {
-      "name": "SettleStablecoinOverhangExoEvent",
+      "name": "SettleVirtualStablecoinExoEvent",
       "discriminator": [
-        34,
-        141,
-        5,
-        136,
-        173,
-        161,
-        87,
-        246
+        154,
+        111,
+        203,
+        192,
+        57,
+        52,
+        51,
+        136
       ]
     },
     {
-      "name": "SettleStablecoinOverhangLstEvent",
+      "name": "SettleVirtualStablecoinLstEvent",
       "discriminator": [
-        59,
-        207,
-        87,
-        12,
-        25,
-        134,
-        212,
-        96
+        79,
+        143,
+        203,
+        204,
+        148,
+        191,
+        4,
+        14
       ]
     },
     {
@@ -17698,18 +17922,18 @@
     },
     {
       "code": 6052,
-      "name": "SettleStablecoinOverhangDisabled",
-      "msg": "Stablecoin overhang settlement only applies during Depeg."
+      "name": "SettleVirtualStablecoinNoop",
+      "msg": "Virtual stablecoin settlement noop: nothing to drawdown or repay."
     },
     {
       "code": 6053,
-      "name": "SettleStablecoinOverhangPoolEmpty",
-      "msg": "Stablecoin overhang settlement requires a non-empty earn pool."
+      "name": "SettleRebalancePnlDisabled",
+      "msg": "Rebalance PnL settlement disabled in Depeg mode."
     },
     {
       "code": 6054,
-      "name": "SettleRebalancePnlDisabled",
-      "msg": "Rebalance PnL settlement disabled in Depeg mode."
+      "name": "DrawdownNotRepaid",
+      "msg": "Operation disabled until pool drawdown is repaid."
     }
   ],
   "types": [
@@ -18215,11 +18439,19 @@
             }
           },
           {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                109
+                100
               ]
             }
           }
@@ -18297,6 +18529,14 @@
             }
           },
           {
+            "name": "pool_drawdown_repaid",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "collateral_usd_price",
             "type": {
               "defined": {
@@ -18364,6 +18604,14 @@
           },
           {
             "name": "token_to_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown_repaid",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -18555,11 +18803,19 @@
             }
           },
           {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                22
+                13
               ]
             }
           }
@@ -19088,6 +19344,27 @@
       "name": "PauseEvent",
       "type": {
         "kind": "struct"
+      }
+    },
+    {
+      "name": "PoolDrawdown",
+      "docs": [
+        "Wraps [`VirtualStablecoin`] to represent the reverse direction.",
+        "If a trading pair depegs its debt to be repaid to the earn pool is logged",
+        "here."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -19738,7 +20015,7 @@
       }
     },
     {
-      "name": "SettleStablecoinOverhangExoEvent",
+      "name": "SettleVirtualStablecoinExoEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -19747,7 +20024,7 @@
             "type": "pubkey"
           },
           {
-            "name": "overhang",
+            "name": "stablecoin_burned",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19755,7 +20032,7 @@
             }
           },
           {
-            "name": "stablecoin_burned",
+            "name": "stablecoin_minted",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19771,7 +20048,15 @@
             }
           },
           {
-            "name": "remaining_pool_balance",
+            "name": "pool_drawdown_outstanding",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_balance",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19782,12 +20067,12 @@
       }
     },
     {
-      "name": "SettleStablecoinOverhangLstEvent",
+      "name": "SettleVirtualStablecoinLstEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "overhang",
+            "name": "stablecoin_burned",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19795,7 +20080,7 @@
             }
           },
           {
-            "name": "stablecoin_burned",
+            "name": "stablecoin_minted",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19811,7 +20096,15 @@
             }
           },
           {
-            "name": "remaining_pool_balance",
+            "name": "pool_drawdown_outstanding",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_balance",
             "type": {
               "defined": {
                 "name": "UFixValue64"

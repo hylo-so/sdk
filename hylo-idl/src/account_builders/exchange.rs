@@ -13,8 +13,8 @@ use crate::exchange::client::accounts::{
   MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
   RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
   RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
-  SettleRebalancePnlExo, SettleRebalancePnlLst, SettleStablecoinOverhangExo,
-  SettleStablecoinOverhangLst, SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc,
+  SettleRebalancePnlExo, SettleRebalancePnlLst, SettleVirtualStablecoinExo,
+  SettleVirtualStablecoinLst, SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc,
   SwapUsdcToExo, SwapUsdcToLst, UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
@@ -499,11 +499,12 @@ pub fn settle_rebalance_pnl_exo(
 }
 
 #[must_use]
-pub fn settle_stablecoin_overhang_lst() -> SettleStablecoinOverhangLst {
-  SettleStablecoinOverhangLst {
-    settlement_auth: pda::SETTLEMENT_AUTH,
+pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
+  SettleVirtualStablecoinLst {
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
     pool_auth: pda::POOL_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
     stablecoin_mint: HYUSD::MINT,
@@ -517,18 +518,19 @@ pub fn settle_stablecoin_overhang_lst() -> SettleStablecoinOverhangLst {
 }
 
 #[must_use]
-pub fn settle_stablecoin_overhang_exo(
+pub fn settle_virtual_stablecoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SettleStablecoinOverhangExo {
-  SettleStablecoinOverhangExo {
-    settlement_auth: pda::SETTLEMENT_AUTH,
+) -> SettleVirtualStablecoinExo {
+  SettleVirtualStablecoinExo {
     hylo: pda::HYLO,
-    pool_config: pda::POOL_CONFIG,
     exo_pair: pda::exo_pair(collateral_mint),
+    pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
     pool_auth: pda::POOL_AUTH,
-    stablecoin_pool: pda::HYUSD_POOL,
     vault_auth: pda::exo_vault_auth(collateral_mint),
+    stablecoin_pool: pda::HYUSD_POOL,
     collateral_vault: pda::exo_vault(collateral_mint),
     collateral_mint,
     stablecoin_mint: HYUSD::MINT,
