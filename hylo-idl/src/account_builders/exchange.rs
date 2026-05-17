@@ -466,9 +466,6 @@ pub fn settle_rebalance_pnl_lst() -> SettleRebalancePnlLst {
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
-    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
   }
 }
 
@@ -492,9 +489,6 @@ pub fn settle_rebalance_pnl_exo(
     collateral_usd_pyth_feed,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
-    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
   }
 }
 
@@ -511,7 +505,6 @@ pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
-    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -537,7 +530,6 @@ pub fn settle_virtual_stablecoin_exo(
     collateral_usd_pyth_feed,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
-    earn_pool_event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
