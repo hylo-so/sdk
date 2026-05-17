@@ -456,10 +456,10 @@ pub fn swap_lst_to_lst(
 #[must_use]
 pub fn settle_rebalance_pnl_lst() -> SettleRebalancePnlLst {
   SettleRebalancePnlLst {
-    settlement_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
     pool_auth: pda::POOL_AUTH,
+    settlement_auth: pda::SETTLEMENT_AUTH,
     stablecoin_mint_auth: pda::HYUSD_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
     stablecoin_mint: HYUSD::MINT,
@@ -478,11 +478,11 @@ pub fn settle_rebalance_pnl_exo(
   collateral_usd_pyth_feed: Pubkey,
 ) -> SettleRebalancePnlExo {
   SettleRebalancePnlExo {
-    settlement_auth: pda::SETTLEMENT_AUTH,
     hylo: pda::HYLO,
     pool_config: pda::POOL_CONFIG,
     exo_pair: pda::exo_pair(collateral_mint),
     pool_auth: pda::POOL_AUTH,
+    settlement_auth: pda::SETTLEMENT_AUTH,
     stablecoin_mint_auth: pda::HYUSD_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
     vault_auth: pda::exo_vault_auth(collateral_mint),
