@@ -3,10 +3,7 @@ use anchor_lang::solana_program::sysvar::rent;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
-use super::swap_settle_accounts::{
-  SwapExoToUsdcWithSettle, SwapLstToUsdcWithSettle, SwapUsdcToExoWithSettle,
-  SwapUsdcToLstWithSettle,
-};
+use super::concat::Concat;
 use crate::exchange::client::accounts::{
   ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
   ConvertStableToLeverLst, HarvestBorrowRate, InitializeUsdc, MintLevercoinExo,
@@ -541,11 +538,11 @@ pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapExoToUsdcWithSettle {
+) -> Concat<SwapExoToUsdc, SettleRebalancePnlExo> {
   let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapExoToUsdcWithSettle {
-    swap: SwapExoToUsdc {
+  Concat {
+    a: SwapExoToUsdc {
       user,
       hylo: pda::HYLO,
       exo_pair: pda::exo_pair(collateral_mint),
@@ -565,7 +562,7 @@ pub fn swap_exo_to_usdc(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed),
+    b: settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed),
   }
 }
 
@@ -575,11 +572,11 @@ pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapUsdcToExoWithSettle {
+) -> Concat<SwapUsdcToExo, SettleRebalancePnlExo> {
   let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapUsdcToExoWithSettle {
-    swap: SwapUsdcToExo {
+  Concat {
+    a: SwapUsdcToExo {
       user,
       hylo: pda::HYLO,
       exo_pair: pda::exo_pair(collateral_mint),
@@ -599,7 +596,7 @@ pub fn swap_usdc_to_exo(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed),
+    b: settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed),
   }
 }
 
@@ -609,10 +606,10 @@ pub fn swap_lst_to_usdc(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
-) -> SwapLstToUsdcWithSettle {
+) -> Concat<SwapLstToUsdc, SettleRebalancePnlLst> {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapLstToUsdcWithSettle {
-    swap: SwapLstToUsdc {
+  Concat {
+    a: SwapLstToUsdc {
       user,
       hylo: pda::HYLO,
       lst_header: pda::lst_header(lst_mint),
@@ -632,7 +629,7 @@ pub fn swap_lst_to_usdc(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_rebalance_pnl_lst(),
+    b: settle_rebalance_pnl_lst(),
   }
 }
 
@@ -642,10 +639,10 @@ pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
-) -> SwapUsdcToLstWithSettle {
+) -> Concat<SwapUsdcToLst, SettleRebalancePnlLst> {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapUsdcToLstWithSettle {
-    swap: SwapUsdcToLst {
+  Concat {
+    a: SwapUsdcToLst {
       user,
       hylo: pda::HYLO,
       lst_header: pda::lst_header(lst_mint),
@@ -665,7 +662,7 @@ pub fn swap_usdc_to_lst(
       event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
       program: exchange::ID,
     },
-    settle: settle_rebalance_pnl_lst(),
+    b: settle_rebalance_pnl_lst(),
   }
 }
 

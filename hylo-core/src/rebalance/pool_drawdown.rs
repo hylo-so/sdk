@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::virtual_stablecoin::VirtualStablecoin;
 
-/// Wraps [`VirtualStablecoin`] to represent the reverse direction.
-/// If a trading pair depegs its debt to be repaid to the earn pool is logged
-/// here.
+/// Outstanding hyUSD debt owed to the earn pool after a Depeg absorption.
 #[derive(
   Debug,
   Clone,
