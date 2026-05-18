@@ -29,6 +29,11 @@ impl Default for PoolDrawdown {
 }
 
 impl PoolDrawdown {
+  #[must_use]
+  pub fn new(ledger: VirtualStablecoin) -> PoolDrawdown {
+    PoolDrawdown { ledger }
+  }
+
   /// Remaining debt to be paid.
   ///
   /// # Errors

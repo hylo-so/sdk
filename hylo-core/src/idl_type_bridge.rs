@@ -3,6 +3,7 @@ use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
+use crate::rebalance::pool_drawdown::PoolDrawdown;
 use crate::rebalance::pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
 use crate::virtual_stablecoin::VirtualStablecoin;
@@ -73,6 +74,12 @@ impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
     VirtualStablecoin {
       supply: idl.supply.into(),
     }
+  }
+}
+
+impl From<hylo_idl::exchange::types::PoolDrawdown> for PoolDrawdown {
+  fn from(idl: hylo_idl::exchange::types::PoolDrawdown) -> PoolDrawdown {
+    PoolDrawdown::new(idl.ledger.into())
   }
 }
 
