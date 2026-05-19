@@ -869,6 +869,33 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
+  /// Settles the LST virtual stablecoin against the earn pool.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_lst(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::settle_virtual_stablecoin_lst();
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Settles the exo virtual stablecoin against the earn pool.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_exo(
+    &self,
+    collateral_mint: Pubkey,
+    collateral_usd_pyth_feed: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::settle_virtual_stablecoin_exo(
+      collateral_mint,
+      collateral_usd_pyth_feed,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
   /// Proposes an update to a privileged protocol address.
   ///
   /// # Errors
