@@ -120,21 +120,29 @@ fn scale_ci(ci: UFix64<N9>, mult: UFix64<N2>) -> Result<UFix64<N9>> {
     .ok_or(CoreError::RebalancePriceConstruction.into())
 }
 
-/// Checks `|projected_price - spot_price| / spot_price <= tolerance`.
+/// Clamps `projected_price` into `spot_price ± spot_price * tolerance`.
 ///
 /// # Errors
-/// * Deviation exceeded or arithmetic overflow.
-fn check_deviation(
+/// * Arithmetic overflow computing the tolerance band.
+fn clamp_to_tolerance(
   spot_price: UFix64<N9>,
   projected_price: UFix64<N9>,
   tolerance: UFix64<N9>,
-) -> Result<()> {
+) -> Result<UFix64<N9>> {
   let max_delta = spot_price
     .mul_div_ceil(tolerance, UFix64::<N9>::one())
     .ok_or(CoreError::RebalanceDeviationArithmetic)?;
-  (spot_price.abs_diff(&projected_price) <= max_delta)
-    .then_some(())
-    .ok_or(CoreError::RebalanceDeviationExceeded.into())
+  if spot_price.abs_diff(&projected_price) <= max_delta {
+    Ok(projected_price)
+  } else if projected_price < spot_price {
+    spot_price
+      .checked_sub(&max_delta)
+      .ok_or(CoreError::RebalanceDeviationArithmetic.into())
+  } else {
+    spot_price
+      .checked_add(&max_delta)
+      .ok_or(CoreError::RebalanceDeviationArithmetic.into())
+  }
 }
 
 /// Interpolated rebalance price controller.
@@ -192,12 +200,12 @@ impl SellPriceCurve {
     config: &RebalanceCurveConfig,
     deviation_tolerance: UFix64<N9>,
   ) -> Result<SellPriceCurve> {
-    let (floor, ceil) = spot
+    let (raw_floor, raw_ceil) = spot
       .checked_sub(&scale_ci(conf, config.floor_mult()?)?)
       .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult()?)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
-    check_deviation(spot, floor, deviation_tolerance)?;
-    check_deviation(spot, ceil, deviation_tolerance)?;
+    let floor = clamp_to_tolerance(spot, raw_floor, deviation_tolerance)?;
+    let ceil = clamp_to_tolerance(spot, raw_ceil, deviation_tolerance)?;
     let sell_zone_1 = RebalanceMode::SellZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
@@ -260,12 +268,12 @@ impl BuyPriceCurve {
     config: &RebalanceCurveConfig,
     deviation_tolerance: UFix64<N9>,
   ) -> Result<BuyPriceCurve> {
-    let (floor, ceil) = spot
+    let (raw_floor, raw_ceil) = spot
       .checked_sub(&scale_ci(conf, config.floor_mult()?)?)
       .zip(spot.checked_add(&scale_ci(conf, config.ceil_mult()?)?))
       .ok_or(CoreError::RebalancePriceConstruction)?;
-    check_deviation(spot, floor, deviation_tolerance)?;
-    check_deviation(spot, ceil, deviation_tolerance)?;
+    let floor = clamp_to_tolerance(spot, raw_floor, deviation_tolerance)?;
+    let ceil = clamp_to_tolerance(spot, raw_ceil, deviation_tolerance)?;
     let buy_zone_1 = RebalanceMode::BuyZone1.active_range();
     let curve = FixInterp::from_points([
       Point {
@@ -359,29 +367,59 @@ mod tests {
   }
 
   #[test]
-  fn sell_rejects_deviation_exceeded() {
+  fn sell_clamps_to_tolerance() -> Result<()> {
     let wide_ci = OraclePrice {
       conf: UFix64::constant(14_000_000_000),
       ..ORACLE
     };
-    let res = SellPriceCurve::new(wide_ci, &SELL_CONFIG, DEVIATION_5_PCT);
-    assert_eq!(
-      res.err(),
-      Some(CoreError::RebalanceDeviationExceeded.into())
-    );
+    let curve = SellPriceCurve::new(wide_ci, &SELL_CONFIG, DEVIATION_5_PCT)?;
+    let max_delta = ORACLE
+      .spot
+      .mul_div_ceil(DEVIATION_5_PCT, UFix64::<N9>::one())
+      .ok_or(CoreError::RebalanceDeviationArithmetic)?;
+    let expected_floor: IFix64<N9> = ORACLE
+      .spot
+      .checked_sub(&max_delta)
+      .ok_or(CoreError::RebalanceDeviationArithmetic)?
+      .narrow()
+      .ok_or(CoreError::RebalancePriceConversion)?;
+    let expected_ceil: IFix64<N9> = ORACLE
+      .spot
+      .checked_add(&max_delta)
+      .ok_or(CoreError::RebalanceDeviationArithmetic)?
+      .narrow()
+      .ok_or(CoreError::RebalancePriceConversion)?;
+    assert_eq!(curve.curve().y_min(), expected_floor);
+    assert_eq!(curve.curve().y_max(), expected_ceil);
+    Ok(())
   }
 
   #[test]
-  fn buy_rejects_deviation_exceeded() {
+  fn buy_clamps_to_tolerance() -> Result<()> {
     let wide_ci = OraclePrice {
       conf: UFix64::constant(14_000_000_000),
       ..ORACLE
     };
-    let res = BuyPriceCurve::new(wide_ci, &BUY_CONFIG, DEVIATION_5_PCT);
-    assert_eq!(
-      res.err(),
-      Some(CoreError::RebalanceDeviationExceeded.into())
-    );
+    let curve = BuyPriceCurve::new(wide_ci, &BUY_CONFIG, DEVIATION_5_PCT)?;
+    let max_delta = ORACLE
+      .spot
+      .mul_div_ceil(DEVIATION_5_PCT, UFix64::<N9>::one())
+      .ok_or(CoreError::RebalanceDeviationArithmetic)?;
+    let expected_floor: IFix64<N9> = ORACLE
+      .spot
+      .checked_sub(&max_delta)
+      .ok_or(CoreError::RebalanceDeviationArithmetic)?
+      .narrow()
+      .ok_or(CoreError::RebalancePriceConversion)?;
+    let expected_ceil: IFix64<N9> = ORACLE
+      .spot
+      .checked_add(&max_delta)
+      .ok_or(CoreError::RebalanceDeviationArithmetic)?
+      .narrow()
+      .ok_or(CoreError::RebalancePriceConversion)?;
+    assert_eq!(curve.curve().y_min(), expected_floor);
+    assert_eq!(curve.curve().y_max(), expected_ceil);
+    Ok(())
   }
 
   #[test]

@@ -86,4 +86,33 @@ impl EarnPoolClient {
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
+
+  /// Pauses the earn pool.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn pause_earn_pool(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::pause_earn_pool(squads.vault_pda());
+    let memo = build_memo("pause_earn_pool", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Unpauses the earn pool.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn unpause_earn_pool(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::unpause_earn_pool(squads.vault_pda());
+    let memo = build_memo("unpause_earn_pool", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
 }

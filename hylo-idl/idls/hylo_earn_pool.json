@@ -1192,6 +1192,280 @@
       ]
     },
     {
+      "name": "pause_earn_pool",
+      "discriminator": [
+        161,
+        14,
+        172,
+        155,
+        237,
+        13,
+        37,
+        10
+      ],
+      "accounts": [
+        {
+          "name": "pause_authority",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "pool_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "PauseEvent"
+        }
+      }
+    },
+    {
+      "name": "unpause_earn_pool",
+      "discriminator": [
+        114,
+        112,
+        75,
+        90,
+        222,
+        231,
+        255,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "pool_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "UnpauseEvent"
+        }
+      }
+    },
+    {
       "name": "update_withdrawal_fee",
       "discriminator": [
         165,
@@ -2239,6 +2513,32 @@
       ]
     },
     {
+      "name": "PauseEvent",
+      "discriminator": [
+        32,
+        51,
+        61,
+        169,
+        156,
+        104,
+        130,
+        43
+      ]
+    },
+    {
+      "name": "UnpauseEvent",
+      "discriminator": [
+        134,
+        156,
+        8,
+        215,
+        185,
+        128,
+        192,
+        217
+      ]
+    },
+    {
       "name": "UpdateWithdrawalFeeEvent",
       "discriminator": [
         204,
@@ -2313,6 +2613,11 @@
       "code": 6006,
       "name": "LevercoinPoolNonzero",
       "msg": "Unable to deprecate levercoin pool due to nonzero balance."
+    },
+    {
+      "code": 6007,
+      "name": "EarnPoolPaused",
+      "msg": "Earn pool operations have been paused."
     }
   ],
   "types": [
@@ -2634,6 +2939,12 @@
       }
     },
     {
+      "name": "PauseEvent",
+      "type": {
+        "kind": "struct"
+      }
+    },
+    {
       "name": "PoolConfig",
       "type": {
         "kind": "struct",
@@ -2663,11 +2974,15 @@
             }
           },
           {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                55
+                54
               ]
             }
           }
@@ -2804,6 +3119,12 @@
             "type": "i8"
           }
         ]
+      }
+    },
+    {
+      "name": "UnpauseEvent",
+      "type": {
+        "kind": "struct"
       }
     },
     {

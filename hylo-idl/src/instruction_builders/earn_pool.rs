@@ -115,3 +115,35 @@ pub fn update_withdrawal_fee(
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn pause_earn_pool(pause_authority: Pubkey) -> Instruction {
+  let accounts = accounts::PauseEarnPool {
+    pause_authority,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
+  };
+  Instruction {
+    program_id: earn_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::PauseEarnPool {}.data(),
+  }
+}
+
+#[must_use]
+pub fn unpause_earn_pool(admin: Pubkey) -> Instruction {
+  let accounts = accounts::UnpauseEarnPool {
+    admin,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
+  };
+  Instruction {
+    program_id: earn_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::UnpauseEarnPool {}.data(),
+  }
+}
