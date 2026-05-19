@@ -14,6 +14,8 @@ use crate::error::CoreError::{BurnUnderflow, MintOverflow};
   InitSpace,
   Serialize,
   Deserialize,
+  PartialEq,
+  Eq,
 )]
 pub struct VirtualStablecoin {
   pub supply: UFixValue64,

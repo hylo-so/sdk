@@ -162,7 +162,7 @@
           }
         },
         {
-          "name": "stablecoin_pool_auth",
+          "name": "pool_auth",
           "pda": {
             "seeds": [
               {
@@ -189,7 +189,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "stablecoin_pool_auth"
+                "path": "pool_auth"
               },
               {
                 "kind": "const",
@@ -330,38 +330,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
         }
       ],
       "args": [
@@ -2614,10 +2582,10 @@
             }
           },
           {
-            "name": "rebalance_pnl_cache",
+            "name": "pool_drawdown",
             "type": {
               "defined": {
-                "name": "RebalancePnlCache"
+                "name": "PoolDrawdown"
               }
             }
           },
@@ -2626,7 +2594,7 @@
             "type": {
               "array": [
                 "u8",
-                4
+                13
               ]
             }
           }
@@ -2707,6 +2675,25 @@
       }
     },
     {
+      "name": "PoolDrawdown",
+      "docs": [
+        "Outstanding hyUSD debt owed to the earn pool after a Depeg absorption."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "RebalanceCurveConfig",
       "docs": [
         "Confidence interval multipliers for rebalance price curve construction."
@@ -2724,33 +2711,6 @@
           },
           {
             "name": "ceil_mult",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "RebalancePnlCache",
-      "docs": [
-        "Two register counter tracking rebalancing `PnL`."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "profit",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "loss",
             "type": {
               "defined": {
                 "name": "UFixValue64"

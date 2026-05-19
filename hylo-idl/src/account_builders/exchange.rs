@@ -3,14 +3,16 @@ use anchor_lang::solana_program::sysvar::rent;
 use anchor_lang::system_program;
 use anchor_spl::{associated_token, token};
 
+use super::concat::Concat;
 use crate::exchange::client::accounts::{
   ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
   ConvertStableToLeverLst, HarvestBorrowRate, InitializeUsdc, MintLevercoinExo,
   MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
   RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
-  RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo, SwapExoToUsdc,
-  SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
-  UpdateLstRebalanceFee, WithdrawFees,
+  RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
+  SettleRebalancePnlExo, SettleRebalancePnlLst, SettleVirtualStablecoinExo,
+  SettleVirtualStablecoinLst, SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc,
+  SwapUsdcToExo, SwapUsdcToLst, UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{earn_pool, exchange, pda};
@@ -448,16 +450,98 @@ pub fn swap_lst_to_lst(
   }
 }
 
-/// Exo collateral to USDC swap.
+#[must_use]
+pub fn settle_rebalance_pnl_lst() -> SettleRebalancePnlLst {
+  SettleRebalancePnlLst {
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    pool_auth: pda::POOL_AUTH,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_rebalance_pnl_exo(
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> SettleRebalancePnlExo {
+  SettleRebalancePnlExo {
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    exo_pair: pda::exo_pair(collateral_mint),
+    pool_auth: pda::POOL_AUTH,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    vault_auth: pda::exo_vault_auth(collateral_mint),
+    collateral_vault: pda::exo_vault(collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
+  SettleVirtualStablecoinLst {
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_exo(
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> SettleVirtualStablecoinExo {
+  SettleVirtualStablecoinExo {
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    pool_config: pda::POOL_CONFIG,
+    settlement_auth: pda::SETTLEMENT_AUTH,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    vault_auth: pda::exo_vault_auth(collateral_mint),
+    stablecoin_pool: pda::HYUSD_POOL,
+    collateral_vault: pda::exo_vault(collateral_mint),
+    collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    earn_pool: earn_pool::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// Exo collateral to USDC swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapExoToUsdc {
+) -> Concat<SwapExoToUsdc, SettleRebalancePnlExo> {
   let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapExoToUsdc {
+  let swap = SwapExoToUsdc {
     user,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -476,19 +560,22 @@ pub fn swap_exo_to_usdc(
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
-  }
+  };
+  let settle =
+    settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed);
+  Concat::new(swap, settle)
 }
 
-/// USDC to exo collateral swap.
+/// USDC to exo collateral swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
-) -> SwapUsdcToExo {
+) -> Concat<SwapUsdcToExo, SettleRebalancePnlExo> {
   let collateral_vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapUsdcToExo {
+  let swap = SwapUsdcToExo {
     user,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
@@ -507,18 +594,21 @@ pub fn swap_usdc_to_exo(
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
-  }
+  };
+  let settle =
+    settle_rebalance_pnl_exo(collateral_mint, collateral_usd_pyth_feed);
+  Concat::new(swap, settle)
 }
 
-/// LST to USDC swap.
+/// LST to USDC swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_lst_to_usdc(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
-) -> SwapLstToUsdc {
+) -> Concat<SwapLstToUsdc, SettleRebalancePnlLst> {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapLstToUsdc {
+  let swap = SwapLstToUsdc {
     user,
     hylo: pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
@@ -537,18 +627,20 @@ pub fn swap_lst_to_usdc(
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
-  }
+  };
+  let settle = settle_rebalance_pnl_lst();
+  Concat::new(swap, settle)
 }
 
-/// USDC to LST swap.
+/// USDC to LST swap, with inlined settle accounts.
 #[must_use]
 pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
-) -> SwapUsdcToLst {
+) -> Concat<SwapUsdcToLst, SettleRebalancePnlLst> {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
-  SwapUsdcToLst {
+  let swap = SwapUsdcToLst {
     user,
     hylo: pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
@@ -567,7 +659,9 @@ pub fn swap_usdc_to_lst(
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
-  }
+  };
+  let settle = settle_rebalance_pnl_lst();
+  Concat::new(swap, settle)
 }
 
 /// Builds account context for initializing the USDC pair.

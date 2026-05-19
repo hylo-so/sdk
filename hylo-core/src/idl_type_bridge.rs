@@ -2,7 +2,8 @@ use crate::borrow_rate::BorrowRateConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
-use crate::rebalance::pnl::RebalancePnlCache;
+use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
+use crate::rebalance::pool_drawdown::PoolDrawdown;
 use crate::rebalance::pricing::RebalanceCurveConfig;
 use crate::slippage_config::SlippageConfig;
 use crate::virtual_stablecoin::VirtualStablecoin;
@@ -76,6 +77,12 @@ impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
   }
 }
 
+impl From<hylo_idl::exchange::types::PoolDrawdown> for PoolDrawdown {
+  fn from(idl: hylo_idl::exchange::types::PoolDrawdown) -> PoolDrawdown {
+    PoolDrawdown::new(idl.ledger.into())
+  }
+}
+
 impl From<hylo_idl::exchange::types::BorrowRateConfig> for BorrowRateConfig {
   fn from(
     idl: hylo_idl::exchange::types::BorrowRateConfig,
@@ -94,19 +101,43 @@ impl From<hylo_idl::exchange::types::RebalanceCurveConfig>
   }
 }
 
-impl From<hylo_idl::exchange::types::RebalancePnlCache> for RebalancePnlCache {
+impl From<hylo_idl::exchange::types::RebalancePnlValue> for RebalancePnlValue {
   fn from(
-    idl: hylo_idl::exchange::types::RebalancePnlCache,
-  ) -> RebalancePnlCache {
-    RebalancePnlCache::new(idl.profit.into(), idl.loss.into())
+    idl: hylo_idl::exchange::types::RebalancePnlValue,
+  ) -> RebalancePnlValue {
+    match idl {
+      hylo_idl::exchange::types::RebalancePnlValue::Profit(profit) => {
+        RebalancePnlValue::Profit(profit.into())
+      }
+      hylo_idl::exchange::types::RebalancePnlValue::Loss(loss) => {
+        RebalancePnlValue::Loss(loss.into())
+      }
+      hylo_idl::exchange::types::RebalancePnlValue::NoChange => {
+        RebalancePnlValue::NoChange
+      }
+    }
   }
 }
 
-impl From<hylo_idl::earn_pool::types::RebalancePnlCache> for RebalancePnlCache {
-  fn from(
-    idl: hylo_idl::earn_pool::types::RebalancePnlCache,
-  ) -> RebalancePnlCache {
-    RebalancePnlCache::new(idl.profit.into(), idl.loss.into())
+impl From<RebalancePnlValue> for hylo_idl::exchange::types::RebalancePnlValue {
+  fn from(val: RebalancePnlValue) -> Self {
+    match val {
+      RebalancePnlValue::Profit(profit) => {
+        hylo_idl::exchange::types::RebalancePnlValue::Profit(profit.into())
+      }
+      RebalancePnlValue::Loss(loss) => {
+        hylo_idl::exchange::types::RebalancePnlValue::Loss(loss.into())
+      }
+      RebalancePnlValue::NoChange => {
+        hylo_idl::exchange::types::RebalancePnlValue::NoChange
+      }
+    }
+  }
+}
+
+impl From<RebalancePnl> for hylo_idl::exchange::types::RebalancePnlValue {
+  fn from(pnl: RebalancePnl) -> Self {
+    RebalancePnlValue::from(pnl).into()
   }
 }
 
