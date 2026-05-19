@@ -1,11 +1,16 @@
-//! Concatenates two [`ToAccountMetas`] sets.
-
 use anchor_lang::prelude::AccountMeta;
 use anchor_lang::ToAccountMetas;
 
+/// Concatenates two [`ToAccountMetas`] sets.
 pub struct Concat<A, B> {
   pub a: A,
   pub b: B,
+}
+
+impl<A, B> Concat<A, B> {
+  pub fn new(a: A, b: B) -> Concat<A, B> {
+    Concat { a, b }
+  }
 }
 
 impl<A: ToAccountMetas, B: ToAccountMetas> ToAccountMetas for Concat<A, B> {
