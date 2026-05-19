@@ -9,7 +9,8 @@ use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::tokens::{
-  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC,
+  XSOL,
 };
 use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::lst::stake_pool::SplStakePool;
@@ -318,6 +319,370 @@ impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
   }
 }
 
+impl PairConfig<JITOSOL, HYLOSOL> for HyloJupiterPair<JITOSOL, HYLOSOL> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo JITOSOL<->HYLOSOL"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (JITOSOL::MINT, HYLOSOL::MINT) => {
+        quote::<JITOSOL, HYLOSOL>(state, amount)
+      }
+      (HYLOSOL::MINT, JITOSOL::MINT) => {
+        quote::<HYLOSOL, JITOSOL>(state, amount)
+      }
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (JITOSOL::MINT, HYLOSOL::MINT) => Ok(account_metas::swap_lst_to_lst(
+        user,
+        JITOSOL::MINT,
+        HYLOSOL::MINT,
+      )),
+      (HYLOSOL::MINT, JITOSOL::MINT) => Ok(account_metas::swap_lst_to_lst(
+        user,
+        HYLOSOL::MINT,
+        JITOSOL::MINT,
+      )),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<JITOSOL, USDC> for HyloJupiterPair<JITOSOL, USDC> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo JITOSOL<->USDC"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (JITOSOL::MINT, USDC::MINT) => quote::<JITOSOL, USDC>(state, amount),
+      (USDC::MINT, JITOSOL::MINT) => quote::<USDC, JITOSOL>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (JITOSOL::MINT, USDC::MINT) => Ok(account_metas::swap_lst_to_usdc(
+        user,
+        JITOSOL::MINT,
+        JITOSOL::POOL_STATE,
+      )),
+      (USDC::MINT, JITOSOL::MINT) => Ok(account_metas::swap_usdc_to_lst(
+        user,
+        JITOSOL::MINT,
+        JITOSOL::POOL_STATE,
+      )),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<HYLOSOL, USDC> for HyloJupiterPair<HYLOSOL, USDC> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo HYLOSOL<->USDC"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (HYLOSOL::MINT, USDC::MINT) => quote::<HYLOSOL, USDC>(state, amount),
+      (USDC::MINT, HYLOSOL::MINT) => quote::<USDC, HYLOSOL>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (HYLOSOL::MINT, USDC::MINT) => Ok(account_metas::swap_lst_to_usdc(
+        user,
+        HYLOSOL::MINT,
+        HYLOSOL::POOL_STATE,
+      )),
+      (USDC::MINT, HYLOSOL::MINT) => Ok(account_metas::swap_usdc_to_lst(
+        user,
+        HYLOSOL::MINT,
+        HYLOSOL::POOL_STATE,
+      )),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<USDC, HYUSD> for HyloJupiterPair<USDC, HYUSD> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo USDC<->HYUSD"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (USDC::MINT, HYUSD::MINT) => quote::<USDC, HYUSD>(state, amount),
+      (HYUSD::MINT, USDC::MINT) => quote::<HYUSD, USDC>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (USDC::MINT, HYUSD::MINT) => {
+        Ok(account_metas::mint_stablecoin_usdc(user))
+      }
+      (HYUSD::MINT, USDC::MINT) => {
+        Ok(account_metas::redeem_stablecoin_usdc(user))
+      }
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<CBBTC, USDC> for HyloJupiterPair<CBBTC, USDC> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo CBBTC<->USDC"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (CBBTC::MINT, USDC::MINT) => quote::<CBBTC, USDC>(state, amount),
+      (USDC::MINT, CBBTC::MINT) => quote::<USDC, CBBTC>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (CBBTC::MINT, USDC::MINT) => Ok(account_metas::swap_exo_to_usdc(
+        user,
+        CBBTC::MINT,
+        pda::BTC_USD_PYTH_FEED,
+      )),
+      (USDC::MINT, CBBTC::MINT) => Ok(account_metas::swap_usdc_to_exo(
+        user,
+        CBBTC::MINT,
+        pda::BTC_USD_PYTH_FEED,
+      )),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<CBBTC, HYUSD> for HyloJupiterPair<CBBTC, HYUSD> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo CBBTC<->HYUSD"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (CBBTC::MINT, HYUSD::MINT) => quote::<CBBTC, HYUSD>(state, amount),
+      (HYUSD::MINT, CBBTC::MINT) => quote::<HYUSD, CBBTC>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (CBBTC::MINT, HYUSD::MINT) => Ok(account_metas::mint_stablecoin_exo(
+        user,
+        CBBTC::MINT,
+        pda::BTC_USD_PYTH_FEED,
+      )),
+      (HYUSD::MINT, CBBTC::MINT) => Ok(account_metas::redeem_stablecoin_exo(
+        user,
+        CBBTC::MINT,
+        pda::BTC_USD_PYTH_FEED,
+      )),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<CBBTC, XBTC> for HyloJupiterPair<CBBTC, XBTC> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo CBBTC<->XBTC"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (CBBTC::MINT, XBTC::MINT) => quote::<CBBTC, XBTC>(state, amount),
+      (XBTC::MINT, CBBTC::MINT) => quote::<XBTC, CBBTC>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (CBBTC::MINT, XBTC::MINT) => Ok(account_metas::mint_levercoin_exo(
+        user,
+        CBBTC::MINT,
+        pda::BTC_USD_PYTH_FEED,
+      )),
+      (XBTC::MINT, CBBTC::MINT) => Ok(account_metas::redeem_levercoin_exo(
+        user,
+        CBBTC::MINT,
+        pda::BTC_USD_PYTH_FEED,
+      )),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
+impl PairConfig<HYUSD, XBTC> for HyloJupiterPair<HYUSD, XBTC> {
+  fn program_id() -> Pubkey {
+    exchange::ID
+  }
+  fn label() -> &'static str {
+    "Hylo HYUSD<->XBTC"
+  }
+  fn key() -> Pubkey {
+    pda::HYLO
+  }
+
+  fn quote(
+    state: &ProtocolState<ClockRef>,
+    amount: u64,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<Quote> {
+    match (input_mint, output_mint) {
+      (HYUSD::MINT, XBTC::MINT) => quote::<HYUSD, XBTC>(state, amount),
+      (XBTC::MINT, HYUSD::MINT) => quote::<XBTC, HYUSD>(state, amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+
+  fn build_account_metas(
+    user: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    match (input_mint, output_mint) {
+      (HYUSD::MINT, XBTC::MINT) => {
+        Ok(account_metas::convert_stable_to_lever_exo(
+          user,
+          CBBTC::MINT,
+          pda::BTC_USD_PYTH_FEED,
+        ))
+      }
+      (XBTC::MINT, HYUSD::MINT) => {
+        Ok(account_metas::convert_lever_to_stable_exo(
+          user,
+          CBBTC::MINT,
+          pda::BTC_USD_PYTH_FEED,
+        ))
+      }
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  }
+}
+
 impl<IN, OUT> Amm for HyloJupiterPair<IN, OUT>
 where
   IN: TokenMint + 'static,
@@ -361,6 +726,8 @@ where
       XSOL::MINT,
       pda::lst_header(JITOSOL::MINT),
       pda::lst_header(HYLOSOL::MINT),
+      JITOSOL::POOL_STATE,
+      HYLOSOL::POOL_STATE,
       SOL_USD.address,
       SHYUSD::MINT,
       pda::HYUSD_POOL,
@@ -515,7 +882,8 @@ mod tests {
   use anchor_lang::pubkey;
   use fix::prelude::*;
   use hylo_clients::prelude::{
-    RouterArgs, TransactionSyntax, HYUSD, JITOSOL, SHYUSD, XSOL,
+    RouterArgs, TransactionSyntax, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD,
+    USDC, XBTC, XSOL,
   };
   use hylo_clients::program_client::ProgramClient;
   use hylo_clients::util::build_test_router_client;
@@ -523,9 +891,14 @@ mod tests {
     UserDepositEvent, UserWithdrawEvent,
   };
   use hylo_core::idl::exchange::events::{
-    ConvertLeverToStableLstEvent, ConvertStableToLeverLstEvent,
-    MintLevercoinLstEvent, MintStablecoinLstEvent, RedeemLevercoinLstEvent,
-    RedeemStablecoinLstEvent,
+    ConvertLeverToStableExoEvent, ConvertLeverToStableLstEvent,
+    ConvertStableToLeverExoEvent, ConvertStableToLeverLstEvent,
+    MintLevercoinExoEvent, MintLevercoinLstEvent, MintStablecoinExoEvent,
+    MintStablecoinLstEvent, MintStablecoinUsdcEvent, RedeemLevercoinExoEvent,
+    RedeemLevercoinLstEvent, RedeemStablecoinExoEvent,
+    RedeemStablecoinLstEvent, RedeemStablecoinUsdcEvent, SwapExoToUsdcEvent,
+    SwapLstToLstEvent, SwapLstToUsdcEvent, SwapUsdcToExoEvent,
+    SwapUsdcToLstEvent,
   };
   use hylo_jupiter_amm_interface::{KeyedAccount, SwapMode};
   use rust_decimal::Decimal;
@@ -837,10 +1210,572 @@ mod tests {
     assert_eq!(sim.lp_token_minted.bits, quote.out_amount);
 
     // Fees extracted
-    assert_eq!(0, quote.fee_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
 
     // Fee percentage
     assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn jitosol_to_hylosol_swap_check() -> Result<()> {
+    let amount_in = UFix64::<N9>::one();
+    let quote_params = QuoteParams {
+      amount: amount_in.bits,
+      input_mint: JITOSOL::MINT,
+      output_mint: HYLOSOL::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<JITOSOL, HYLOSOL>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<JITOSOL, HYLOSOL>(RouterArgs {
+        amount: amount_in.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapLstToLstEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.lst_a_in.bits, quote.in_amount);
+    assert_eq!(sim.lst_b_out.bits, quote.out_amount);
+    assert_eq!(sim.lst_a_fees_extracted.bits, quote.fee_amount);
+    let fees: UFix64<N9> = sim.lst_a_fees_extracted.try_into()?;
+    let total_in: UFix64<N9> = sim.lst_a_in.try_into()?;
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn hylosol_to_jitosol_swap_check() -> Result<()> {
+    let amount_in = UFix64::<N9>::one();
+    let quote_params = QuoteParams {
+      amount: amount_in.bits,
+      input_mint: HYLOSOL::MINT,
+      output_mint: JITOSOL::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<JITOSOL, HYLOSOL>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<HYLOSOL, JITOSOL>(RouterArgs {
+        amount: amount_in.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapLstToLstEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.lst_a_in.bits, quote.in_amount);
+    assert_eq!(sim.lst_b_out.bits, quote.out_amount);
+    assert_eq!(sim.lst_a_fees_extracted.bits, quote.fee_amount);
+    let fees: UFix64<N9> = sim.lst_a_fees_extracted.try_into()?;
+    let total_in: UFix64<N9> = sim.lst_a_in.try_into()?;
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn jitosol_to_usdc_swap_check() -> Result<()> {
+    let amount_in = UFix64::<N9>::one();
+    let quote_params = QuoteParams {
+      amount: amount_in.bits,
+      input_mint: JITOSOL::MINT,
+      output_mint: USDC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<JITOSOL, USDC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<JITOSOL, USDC>(RouterArgs {
+        amount: amount_in.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapLstToUsdcEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.lst_deposited.bits, quote.in_amount);
+    let usdc_withdrawn: UFix64<N9> = sim.usdc_withdrawn.try_into()?;
+    let out: UFix64<N6> = usdc_withdrawn.checked_convert().context("N9->N6")?;
+    assert_eq!(out.bits, quote.out_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
+    assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn usdc_to_jitosol_swap_check() -> Result<()> {
+    let amount_in = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_in.bits,
+      input_mint: USDC::MINT,
+      output_mint: JITOSOL::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<JITOSOL, USDC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<USDC, JITOSOL>(RouterArgs {
+        amount: amount_in.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapUsdcToLstEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
+    let in_amt: UFix64<N6> =
+      usdc_deposited.checked_convert().context("N9->N6")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    assert_eq!(sim.lst_withdrawn.bits, quote.out_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
+    assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn hylosol_to_usdc_swap_check() -> Result<()> {
+    let amount_in = UFix64::<N9>::one();
+    let quote_params = QuoteParams {
+      amount: amount_in.bits,
+      input_mint: HYLOSOL::MINT,
+      output_mint: USDC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<HYLOSOL, USDC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<HYLOSOL, USDC>(RouterArgs {
+        amount: amount_in.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapLstToUsdcEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.lst_deposited.bits, quote.in_amount);
+    let usdc_withdrawn: UFix64<N9> = sim.usdc_withdrawn.try_into()?;
+    let out: UFix64<N6> = usdc_withdrawn.checked_convert().context("N9->N6")?;
+    assert_eq!(out.bits, quote.out_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
+    assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn usdc_to_hylosol_swap_check() -> Result<()> {
+    let amount_in = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_in.bits,
+      input_mint: USDC::MINT,
+      output_mint: HYLOSOL::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<HYLOSOL, USDC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<USDC, HYLOSOL>(RouterArgs {
+        amount: amount_in.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapUsdcToLstEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
+    let in_amt: UFix64<N6> =
+      usdc_deposited.checked_convert().context("N9->N6")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    assert_eq!(sim.lst_withdrawn.bits, quote.out_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
+    assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn usdc_to_hyusd_mint_check() -> Result<()> {
+    let amount_usdc = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_usdc.bits,
+      input_mint: USDC::MINT,
+      output_mint: HYUSD::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<USDC, HYUSD>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<USDC, HYUSD>(RouterArgs {
+        amount: amount_usdc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<MintStablecoinUsdcEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
+    let usdc_fees: UFix64<N9> = sim.usdc_fees.try_into()?;
+    let fee_base = usdc_deposited
+      .checked_add(&usdc_fees)
+      .ok_or(anyhow!("fee_base"))?;
+    let in_amt: UFix64<N6> = fee_base.checked_convert().context("N9->N6")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    assert_eq!(sim.stablecoin_minted.bits, quote.out_amount);
+    assert_eq!(sim.usdc_fees.bits, quote.fee_amount);
+    let fee_pct = fee_pct_decimal(usdc_fees, fee_base)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn hyusd_to_usdc_redeem_check() -> Result<()> {
+    let amount_hyusd = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_hyusd.bits,
+      input_mint: HYUSD::MINT,
+      output_mint: USDC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<USDC, HYUSD>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<HYUSD, USDC>(RouterArgs {
+        amount: amount_hyusd.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<RedeemStablecoinUsdcEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let burned: UFix64<N6> = sim.stablecoin_burned.try_into()?;
+    let fees: UFix64<N6> = sim.stablecoin_fees.try_into()?;
+    let fee_base = burned.checked_add(&fees).ok_or(anyhow!("fee_base"))?;
+    assert_eq!(fee_base.bits, quote.in_amount);
+    assert_eq!(sim.usdc_withdrawn.bits, quote.out_amount);
+    assert_eq!(sim.stablecoin_fees.bits, quote.fee_amount);
+    let fee_pct = fee_pct_decimal(fees, fee_base)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn cbbtc_to_usdc_swap_check() -> Result<()> {
+    let amount_cbbtc = UFix64::<N8>::one();
+    let quote_params = QuoteParams {
+      amount: amount_cbbtc.bits,
+      input_mint: CBBTC::MINT,
+      output_mint: USDC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<CBBTC, USDC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<CBBTC, USDC>(RouterArgs {
+        amount: amount_cbbtc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapExoToUsdcEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let collateral_deposited: UFix64<N9> =
+      sim.collateral_deposited.try_into()?;
+    let in_amt: UFix64<N8> =
+      collateral_deposited.checked_convert().context("N9->N8")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    let usdc_withdrawn: UFix64<N9> = sim.usdc_withdrawn.try_into()?;
+    let out: UFix64<N6> = usdc_withdrawn.checked_convert().context("N9->N6")?;
+    assert_eq!(out.bits, quote.out_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
+    assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn usdc_to_cbbtc_swap_check() -> Result<()> {
+    let amount_usdc = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_usdc.bits,
+      input_mint: USDC::MINT,
+      output_mint: CBBTC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<CBBTC, USDC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<USDC, CBBTC>(RouterArgs {
+        amount: amount_usdc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<SwapUsdcToExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
+    let in_amt: UFix64<N6> =
+      usdc_deposited.checked_convert().context("N9->N6")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    let collateral_withdrawn: UFix64<N9> =
+      sim.collateral_withdrawn.try_into()?;
+    let out: UFix64<N8> =
+      collateral_withdrawn.checked_convert().context("N9->N8")?;
+    assert_eq!(out.bits, quote.out_amount);
+    assert_eq!(u64::MIN, quote.fee_amount);
+    assert_eq!(Decimal::ZERO, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn cbbtc_to_hyusd_mint_check() -> Result<()> {
+    let amount_cbbtc = UFix64::<N8>::one();
+    let quote_params = QuoteParams {
+      amount: amount_cbbtc.bits,
+      input_mint: CBBTC::MINT,
+      output_mint: HYUSD::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<CBBTC, HYUSD>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<CBBTC, HYUSD>(RouterArgs {
+        amount: amount_cbbtc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<MintStablecoinExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let collateral_deposited: UFix64<N9> =
+      sim.collateral_deposited.try_into()?;
+    let fees: UFix64<N9> = sim.fees_deposited.try_into()?;
+    let fee_base = collateral_deposited
+      .checked_add(&fees)
+      .ok_or(anyhow!("fee_base"))?;
+    let in_amt: UFix64<N8> = fee_base.checked_convert().context("N9->N8")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    assert_eq!(sim.minted.bits, quote.out_amount);
+    assert_eq!(sim.fees_deposited.bits, quote.fee_amount);
+    let fee_pct = fee_pct_decimal(fees, fee_base)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn hyusd_to_cbbtc_redeem_check() -> Result<()> {
+    let amount_hyusd = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_hyusd.bits,
+      input_mint: HYUSD::MINT,
+      output_mint: CBBTC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<CBBTC, HYUSD>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<HYUSD, CBBTC>(RouterArgs {
+        amount: amount_hyusd.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<RedeemStablecoinExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.redeemed.bits, quote.in_amount);
+    let collateral_withdrawn: UFix64<N9> =
+      sim.collateral_withdrawn.try_into()?;
+    let out: UFix64<N8> =
+      collateral_withdrawn.checked_convert().context("N9->N8")?;
+    assert_eq!(out.bits, quote.out_amount);
+    assert_eq!(sim.fees_deposited.bits, quote.fee_amount);
+    let fees: UFix64<N9> = sim.fees_deposited.try_into()?;
+    let fee_base = collateral_withdrawn
+      .checked_add(&fees)
+      .ok_or(anyhow!("fee_base"))?;
+    let fee_pct = fee_pct_decimal(fees, fee_base)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn cbbtc_to_xbtc_mint_check() -> Result<()> {
+    let amount_cbbtc = UFix64::<N8>::one();
+    let quote_params = QuoteParams {
+      amount: amount_cbbtc.bits,
+      input_mint: CBBTC::MINT,
+      output_mint: XBTC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<CBBTC, XBTC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<CBBTC, XBTC>(RouterArgs {
+        amount: amount_cbbtc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<MintLevercoinExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let collateral_deposited: UFix64<N9> =
+      sim.collateral_deposited.try_into()?;
+    let fees: UFix64<N9> = sim.fees_deposited.try_into()?;
+    let fee_base = collateral_deposited
+      .checked_add(&fees)
+      .ok_or(anyhow!("fee_base"))?;
+    let in_amt: UFix64<N8> = fee_base.checked_convert().context("N9->N8")?;
+    assert_eq!(in_amt.bits, quote.in_amount);
+    assert_eq!(sim.minted.bits, quote.out_amount);
+    assert_eq!(sim.fees_deposited.bits, quote.fee_amount);
+    let fee_pct = fee_pct_decimal(fees, fee_base)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn xbtc_to_cbbtc_redeem_check() -> Result<()> {
+    let amount_xbtc = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_xbtc.bits,
+      input_mint: XBTC::MINT,
+      output_mint: CBBTC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<CBBTC, XBTC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<XBTC, CBBTC>(RouterArgs {
+        amount: amount_xbtc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<RedeemLevercoinExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.redeemed.bits, quote.in_amount);
+    let collateral_withdrawn: UFix64<N9> =
+      sim.collateral_withdrawn.try_into()?;
+    let out: UFix64<N8> =
+      collateral_withdrawn.checked_convert().context("N9->N8")?;
+    assert_eq!(out.bits, quote.out_amount);
+    assert_eq!(sim.fees_deposited.bits, quote.fee_amount);
+    let fees: UFix64<N9> = sim.fees_deposited.try_into()?;
+    let fee_base = collateral_withdrawn
+      .checked_add(&fees)
+      .ok_or(anyhow!("fee_base"))?;
+    let fee_pct = fee_pct_decimal(fees, fee_base)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn hyusd_to_xbtc_convert_check() -> Result<()> {
+    let amount_hyusd = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_hyusd.bits,
+      input_mint: HYUSD::MINT,
+      output_mint: XBTC::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<HYUSD, XBTC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<HYUSD, XBTC>(RouterArgs {
+        amount: amount_hyusd.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<ConvertStableToLeverExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    let fees: UFix64<N6> = sim.stablecoin_fees.try_into()?;
+    let burned: UFix64<N6> = sim.stablecoin_burned.try_into()?;
+    let total_in = fees.checked_add(&burned).ok_or(anyhow!("total_in"))?;
+    assert_eq!(total_in.bits, quote.in_amount);
+    assert_eq!(sim.levercoin_minted.bits, quote.out_amount);
+    assert_eq!(sim.stablecoin_fees.bits, quote.fee_amount);
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    assert_eq!(fee_pct, quote.fee_pct);
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn xbtc_to_hyusd_convert_check() -> Result<()> {
+    let amount_xbtc = UFix64::<N6>::one();
+    let quote_params = QuoteParams {
+      amount: amount_xbtc.bits,
+      input_mint: XBTC::MINT,
+      output_mint: HYUSD::MINT,
+      swap_mode: SwapMode::ExactIn,
+    };
+    let jup = build_jupiter_pair::<HYUSD, XBTC>().await?;
+    let hylo = build_test_router_client()?;
+    let args = hylo
+      .build_transaction_data::<XBTC, HYUSD>(RouterArgs {
+        amount: amount_xbtc.bits,
+        user: TESTER,
+        slippage_config: None,
+      })
+      .await?;
+    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
+    let sim = hylo
+      .simulate_transaction_return::<ConvertLeverToStableExoEvent>(&tx)
+      .await?;
+    let quote = jup.quote(&quote_params)?;
+    assert_eq!(sim.levercoin_burned.bits, quote.in_amount);
+    assert_eq!(sim.stablecoin_minted_user.bits, quote.out_amount);
+    assert_eq!(sim.stablecoin_minted_fees.bits, quote.fee_amount);
+    let fees: UFix64<N6> = sim.stablecoin_minted_fees.try_into()?;
+    let out: UFix64<N6> = sim.stablecoin_minted_user.try_into()?;
+    let total_in = fees.checked_add(&out).ok_or(anyhow!("total_in"))?;
+    let fee_pct = fee_pct_decimal(fees, total_in)?;
+    assert_eq!(fee_pct, quote.fee_pct);
     Ok(())
   }
 

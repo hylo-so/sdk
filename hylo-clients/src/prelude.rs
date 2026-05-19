@@ -4,7 +4,9 @@ pub use anchor_client::Cluster;
 pub use anchor_lang::prelude::Pubkey;
 pub use anyhow::Result;
 pub use fix::prelude::*;
-pub use hylo_core::idl::tokens::{HYUSD, JITOSOL, SHYUSD, XSOL};
+pub use hylo_core::idl::tokens::{
+  CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+};
 
 pub use crate::earn_pool_client::EarnPoolClient;
 pub use crate::exchange_client::ExchangeClient;
