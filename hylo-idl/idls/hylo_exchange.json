@@ -9623,827 +9623,6 @@
       }
     },
     {
-      "name": "settle_rebalance_pnl_exo",
-      "discriminator": [
-        134,
-        15,
-        152,
-        122,
-        194,
-        6,
-        102,
-        121
-      ],
-      "accounts": [
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                252,
-                76,
-                145,
-                200,
-                184,
-                154,
-                163,
-                121,
-                164,
-                148,
-                177,
-                58,
-                96,
-                128,
-                21,
-                37,
-                61,
-                78,
-                56,
-                24,
-                51,
-                154,
-                155,
-                244,
-                236,
-                32,
-                127,
-                136,
-                39,
-                150,
-                113,
-                225
-              ]
-            }
-          }
-        },
-        {
-          "name": "exo_pair",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  120,
-                  111,
-                  95,
-                  112,
-                  97,
-                  105,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                252,
-                76,
-                145,
-                200,
-                184,
-                154,
-                163,
-                121,
-                164,
-                148,
-                177,
-                58,
-                96,
-                128,
-                21,
-                37,
-                61,
-                78,
-                56,
-                24,
-                51,
-                154,
-                155,
-                244,
-                236,
-                32,
-                127,
-                136,
-                39,
-                150,
-                113,
-                225
-              ]
-            }
-          }
-        },
-        {
-          "name": "settlement_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  101,
-                  116,
-                  116,
-                  108,
-                  101,
-                  109,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "stablecoin_mint_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "stablecoin_pool",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "vault_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  120,
-                  111,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "collateral_vault",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "collateral_mint",
-          "relations": [
-            "exo_pair"
-          ]
-        },
-        {
-          "name": "stablecoin_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "collateral_usd_pyth_feed"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
-        }
-      ],
-      "args": [
-        {
-          "name": "pnl",
-          "type": {
-            "defined": {
-              "name": "RebalancePnlValue"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SettleRebalancePnlExoEvent"
-        }
-      }
-    },
-    {
-      "name": "settle_rebalance_pnl_lst",
-      "discriminator": [
-        152,
-        80,
-        20,
-        9,
-        148,
-        216,
-        115,
-        35
-      ],
-      "accounts": [
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                252,
-                76,
-                145,
-                200,
-                184,
-                154,
-                163,
-                121,
-                164,
-                148,
-                177,
-                58,
-                96,
-                128,
-                21,
-                37,
-                61,
-                78,
-                56,
-                24,
-                51,
-                154,
-                155,
-                244,
-                236,
-                32,
-                127,
-                136,
-                39,
-                150,
-                113,
-                225
-              ]
-            }
-          }
-        },
-        {
-          "name": "pool_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                252,
-                76,
-                145,
-                200,
-                184,
-                154,
-                163,
-                121,
-                164,
-                148,
-                177,
-                58,
-                96,
-                128,
-                21,
-                37,
-                61,
-                78,
-                56,
-                24,
-                51,
-                154,
-                155,
-                244,
-                236,
-                32,
-                127,
-                136,
-                39,
-                150,
-                113,
-                225
-              ]
-            }
-          }
-        },
-        {
-          "name": "settlement_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  101,
-                  116,
-                  116,
-                  108,
-                  101,
-                  109,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "stablecoin_mint_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "stablecoin_pool",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "stablecoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "stablecoin_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  85,
-                  83,
-                  68
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "sol_usd_pyth_feed"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
-        }
-      ],
-      "args": [
-        {
-          "name": "pnl",
-          "type": {
-            "defined": {
-              "name": "RebalancePnlValue"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SettleRebalancePnlLstEvent"
-        }
-      }
-    },
-    {
       "name": "settle_virtual_stablecoin_exo",
       "discriminator": [
         92,
@@ -11344,6 +10523,66 @@
           }
         },
         {
+          "name": "pool_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
           "name": "exo_pair",
           "writable": true,
           "pda": {
@@ -11391,7 +10630,32 @@
           }
         },
         {
-          "name": "collateral_vault_auth",
+          "name": "stablecoin_mint_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_auth",
           "pda": {
             "seeds": [
               {
@@ -11452,13 +10716,98 @@
           }
         },
         {
+          "name": "pool_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
+          "name": "settlement_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "collateral_vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "collateral_vault_auth"
+                "path": "vault_auth"
               },
               {
                 "kind": "const",
@@ -11665,22 +11014,130 @@
           }
         },
         {
-          "name": "user_usdc_ta",
-          "writable": true
+          "name": "stablecoin_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "user_collateral_ta",
           "writable": true
         },
         {
-          "name": "usdc_mint",
-          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          "name": "user_usdc_ta",
+          "writable": true
         },
         {
           "name": "collateral_mint",
           "relations": [
             "exo_pair"
           ]
+        },
+        {
+          "name": "usdc_mint",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "stablecoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "levercoin_mint",
@@ -11720,6 +11177,10 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "earn_pool",
+          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
           "name": "event_authority",
@@ -12316,6 +11777,66 @@
           }
         },
         {
+          "name": "pool_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
           "name": "lst_header",
           "pda": {
             "seeds": [
@@ -12365,6 +11886,31 @@
                   105,
                   114
                 ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_mint_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
               }
             ]
           }
@@ -12422,6 +11968,91 @@
               {
                 "kind": "account",
                 "path": "usdc_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
+          "name": "settlement_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
               }
             ]
           }
@@ -12607,6 +12238,96 @@
           }
         },
         {
+          "name": "stablecoin_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
           "name": "user_lst_ta",
           "writable": true
         },
@@ -12622,6 +12343,24 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
+          "name": "stablecoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "sol_usd_pyth_feed"
         },
         {
@@ -12630,6 +12369,10 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "earn_pool",
+          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
           "name": "event_authority",
@@ -12720,6 +12463,66 @@
           }
         },
         {
+          "name": "pool_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
           "name": "exo_pair",
           "writable": true,
           "pda": {
@@ -12767,7 +12570,32 @@
           }
         },
         {
-          "name": "collateral_vault_auth",
+          "name": "stablecoin_mint_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_auth",
           "pda": {
             "seeds": [
               {
@@ -12828,13 +12656,98 @@
           }
         },
         {
+          "name": "pool_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
+          "name": "settlement_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "collateral_vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "collateral_vault_auth"
+                "path": "vault_auth"
               },
               {
                 "kind": "const",
@@ -13041,22 +12954,130 @@
           }
         },
         {
-          "name": "user_usdc_ta",
-          "writable": true
+          "name": "stablecoin_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "user_collateral_ta",
           "writable": true
         },
         {
-          "name": "usdc_mint",
-          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          "name": "user_usdc_ta",
+          "writable": true
         },
         {
           "name": "collateral_mint",
           "relations": [
             "exo_pair"
           ]
+        },
+        {
+          "name": "usdc_mint",
+          "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        {
+          "name": "stablecoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "levercoin_mint",
@@ -13096,6 +13117,10 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "earn_pool",
+          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
           "name": "event_authority",
@@ -13187,6 +13212,66 @@
           }
         },
         {
+          "name": "pool_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
           "name": "lst_header",
           "pda": {
             "seeds": [
@@ -13236,6 +13321,31 @@
                   105,
                   114
                 ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_mint_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
               }
             ]
           }
@@ -13293,6 +13403,91 @@
               {
                 "kind": "account",
                 "path": "usdc_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                76,
+                145,
+                200,
+                184,
+                154,
+                163,
+                121,
+                164,
+                148,
+                177,
+                58,
+                96,
+                128,
+                21,
+                37,
+                61,
+                78,
+                56,
+                24,
+                51,
+                154,
+                155,
+                244,
+                236,
+                32,
+                127,
+                136,
+                39,
+                150,
+                113,
+                225
+              ]
+            }
+          }
+        },
+        {
+          "name": "settlement_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
               }
             ]
           }
@@ -13478,6 +13673,96 @@
           }
         },
         {
+          "name": "stablecoin_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
           "name": "user_lst_ta",
           "writable": true
         },
@@ -13493,6 +13778,24 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
+          "name": "stablecoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "sol_usd_pyth_feed"
         },
         {
@@ -13501,6 +13804,10 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "earn_pool",
+          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
           "name": "event_authority",
