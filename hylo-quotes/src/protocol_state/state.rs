@@ -32,8 +32,16 @@ use crate::LST;
 pub struct UsdcExchangeState {
   /// USDC/USD oracle price range
   pub usdc_usd_price: hylo_core::pyth::PriceRange<N9>,
-  /// Swap fee extracted on USDC operations
-  pub swap_fee: UFix64<N9>,
+  /// Swap fee extracted on USDC operations.
+  ///
+  /// Precision is `N4` (0.01 bps increments), matching the on-chain
+  /// contract in `hylo_exchange::state::UsdcPair::swap_fee` which is
+  /// validated via `AssetSwapConfig::validate_fee(_: UFix64<N4>)` on
+  /// initialize/update. Storing as `N9` would force a non-matching
+  /// `UFixValue64::try_into::<UFix64<N9>>()` at construction and fail
+  /// with `InvalidNumericConversion` (hylo-fix's `TryFrom` is
+  /// strict-equal on `exp`).
+  pub swap_fee: UFix64<N4>,
 }
 
 impl UsdcExchangeState {
@@ -51,7 +59,7 @@ impl UsdcExchangeState {
   /// * Arithmetic failure in fee extraction
   pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>>
   where
-    UFix64<N9>: FixExt,
+    UFix64<N4>: FixExt,
   {
     Ok(FeeExtract::new(self.swap_fee, amount)?)
   }
@@ -346,5 +354,34 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       jitosol_stake_pool,
       hylosol_stake_pool,
     )
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn usdc_swap_fee_accepts_n4_precision_and_applies_to_amounts() -> Result<()> {
+    let raw_fee = UFixValue64::new(10, -4);
+
+    let n4_fee: UFix64<N4> = raw_fee.try_into()?;
+    let n9_fee: Result<UFix64<N9>, _> = raw_fee.try_into();
+    assert!(n9_fee.is_err());
+
+    let state = UsdcExchangeState {
+      usdc_usd_price: hylo_core::pyth::PriceRange::one(UFix64::<N9>::one()),
+      swap_fee: n4_fee,
+    };
+
+    let n9_extract = state.apply_fee(UFix64::<N9>::new(1_000_000_000))?;
+    assert_eq!(n9_extract.fees_extracted.bits, 1_000_000);
+    assert_eq!(n9_extract.amount_remaining.bits, 999_000_000);
+
+    let n6_extract = state.apply_fee(UFix64::<N6>::new(1_000_000))?;
+    assert_eq!(n6_extract.fees_extracted.bits, 1_000);
+    assert_eq!(n6_extract.amount_remaining.bits, 999_000);
+
+    Ok(())
   }
 }
