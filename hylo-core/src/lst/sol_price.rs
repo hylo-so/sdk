@@ -119,11 +119,9 @@ fn try_sol_to_lst(
   amount_sol: UFix64<N9>,
   lst_sol_price: UFix64<N9>,
 ) -> Option<UFix64<N9>> {
-  if lst_sol_price == UFix64::zero() {
-    None
-  } else {
-    amount_sol.mul_div_floor(UFix64::one(), lst_sol_price)
-  }
+  (lst_sol_price != UFix64::zero())
+    .then_some(amount_sol)
+    .and_then(|amt| amt.mul_div_floor(UFix64::one(), lst_sol_price))
 }
 
 fn try_lst_amount_conversion(
@@ -131,11 +129,9 @@ fn try_lst_amount_conversion(
   in_price: UFix64<N9>,
   out_price: UFix64<N9>,
 ) -> Option<UFix64<N9>> {
-  if out_price == UFix64::zero() {
-    None
-  } else {
-    amount_lst.mul_div_floor(in_price, out_price)
-  }
+  (out_price != UFix64::zero())
+    .then_some(amount_lst)
+    .and_then(|amt| amt.mul_div_floor(in_price, out_price))
 }
 
 #[cfg(kani)]

@@ -109,13 +109,10 @@ fn try_stable_to_lever(
   stablecoin_nav: UFix64<N9>,
   levercoin_nav_upper: UFix64<N9>,
 ) -> Option<UFix64<N6>> {
-  if levercoin_nav_upper == UFix64::zero() {
-    None
-  } else {
-    amount_stable
-      .mul_div_floor(stablecoin_nav, UFix64::one())
-      .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
-  }
+  (levercoin_nav_upper != UFix64::zero())
+    .then_some(amount_stable)
+    .and_then(|amt| amt.mul_div_floor(stablecoin_nav, UFix64::one()))
+    .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
 }
 
 fn try_lever_to_stable(
@@ -123,13 +120,10 @@ fn try_lever_to_stable(
   levercoin_nav_lower: UFix64<N9>,
   stablecoin_nav: UFix64<N9>,
 ) -> Option<UFix64<N6>> {
-  if stablecoin_nav == UFix64::zero() {
-    None
-  } else {
-    amount_lever
-      .mul_div_floor(levercoin_nav_lower, UFix64::one())
-      .and_then(|usd| usd.mul_div_floor(UFix64::one(), stablecoin_nav))
-  }
+  (stablecoin_nav != UFix64::zero())
+    .then_some(amount_lever)
+    .and_then(|amt| amt.mul_div_floor(levercoin_nav_lower, UFix64::one()))
+    .and_then(|usd| usd.mul_div_floor(UFix64::one(), stablecoin_nav))
 }
 
 /// Conversions between an exogenous collateral and protocol tokens.
