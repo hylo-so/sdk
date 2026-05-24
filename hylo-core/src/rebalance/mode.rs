@@ -141,6 +141,23 @@ mod proofs {
     let mode = RebalanceMode::from_cr(cr);
     assert!(mode.active_range().contains(&cr));
   }
+
+  #[kani::proof]
+  fn mode_zones_disjoint() {
+    let cr: UFix64<N9> = any_ufix64();
+    let count = [
+      RebalanceMode::Depeg,
+      RebalanceMode::SellZone2,
+      RebalanceMode::SellZone1,
+      RebalanceMode::Neutral,
+      RebalanceMode::BuyZone1,
+      RebalanceMode::BuyZone2,
+    ]
+    .iter()
+    .filter(|m| m.active_range().contains(&cr))
+    .count();
+    assert_eq!(count, 1);
+  }
 }
 
 #[cfg(test)]
