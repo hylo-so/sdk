@@ -66,6 +66,22 @@ pub struct FeeExtract<Exp> {
 }
 
 impl<Exp> FeeExtract<Exp> {
+  fn split<FeeExp>(
+    fee: UFix64<FeeExp>,
+    amount_in: UFix64<Exp>,
+  ) -> Option<FeeExtract<Exp>>
+  where
+    UFix64<FeeExp>: FixExt,
+  {
+    let fees_extracted =
+      amount_in.mul_div_ceil(fee, UFix64::<FeeExp>::one())?;
+    let amount_remaining = amount_in.checked_sub(&fees_extracted)?;
+    Some(FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    })
+  }
+
   pub fn new<FeeExp>(
     fee: UFix64<FeeExp>,
     amount_in: UFix64<Exp>,
@@ -73,18 +89,7 @@ impl<Exp> FeeExtract<Exp> {
   where
     UFix64<FeeExp>: FixExt,
   {
-    let fees_extracted = amount_in
-      .mul_div_ceil(fee, UFix64::<FeeExp>::one())
-      .ok_or(FeeExtraction)?;
-
-    let amount_remaining = amount_in
-      .checked_sub(&fees_extracted)
-      .ok_or(FeeExtraction)?;
-
-    Ok(FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    })
+    FeeExtract::split(fee, amount_in).ok_or(FeeExtraction.into())
   }
 }
 
@@ -193,6 +198,21 @@ impl LevercoinFees {
       SellZone2 => self.sell_zone_2.mint(),
       Depeg => Err(NoValidSwapFee.into()),
     }
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::fees::controller::FeeExtract;
+  use crate::proofs::{token_amount, tolerance};
+
+  #[kani::proof]
+  fn fee_extract_succeeds_for_valid_fee() {
+    let fee = tolerance();
+    let amount: UFix64<N6> = token_amount();
+    assert!(FeeExtract::<N6>::split(fee, amount).is_some());
   }
 }
 

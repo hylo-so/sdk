@@ -49,6 +49,9 @@ squads-multisig = { git = "https://github.com/hylo-so/v4", branch = "main" }
 tokio = "1.36.0"
 tokio-test = "0.4"
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [workspace.lints.clippy]
 pedantic = { level = "deny", priority = -1 }
 needless_for_each = "allow"

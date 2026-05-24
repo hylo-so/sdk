@@ -62,14 +62,17 @@ impl YieldHarvestConfig {
     Ok(extract)
   }
 
+  fn is_valid(fee: UFix64<N4>, allocation: UFix64<N4>) -> bool {
+    let fee_valid = (UFix64::new(1)..=MAX_FEE).contains(&fee);
+    let allocation_valid =
+      (UFix64::new(1)..=UFix64::one()).contains(&allocation);
+    fee_valid && allocation_valid
+  }
+
   pub fn validate(&self) -> Result<Self> {
     let fee: UFix64<N4> = self.fee.try_into()?;
     let allocation: UFix64<N4> = self.allocation.try_into()?;
-    if fee > UFix64::zero()
-      && fee <= MAX_FEE
-      && allocation > UFix64::zero()
-      && allocation <= UFix64::one()
-    {
+    if YieldHarvestConfig::is_valid(fee, allocation) {
       Ok(*self)
     } else {
       Err(YieldHarvestConfigValidation.into())

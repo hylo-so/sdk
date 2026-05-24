@@ -36,6 +36,11 @@
             buildInputs = sharedBuildInputs;
           };
 
+          devShells.kani = mkShell {
+            packages = [ rustup cmake ];
+            buildInputs = sharedBuildInputs;
+          };
+
           packages = shellTools;
         };
     };

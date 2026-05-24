@@ -38,10 +38,14 @@ impl<Exp: Integer> LineSegment<'_, Exp> {
     let Point { x: x0, y: y0 } = self.0;
     let Point { x: x1, y: y1 } = self.1;
     let denom = x1.checked_sub(x0)?;
-    let div = y1
-      .checked_sub(y0)?
-      .mul_div_ceil(x.checked_sub(x0)?, denom)?;
-    y0.checked_add(&div)
+    if denom == IFix64::zero() {
+      None
+    } else {
+      let div = y1
+        .checked_sub(y0)?
+        .mul_div_ceil(x.checked_sub(x0)?, denom)?;
+      y0.checked_add(&div)
+    }
   }
 }
 
@@ -120,14 +124,74 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   }
 }
 
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::fees::interp::{LineSegment, Point};
+  use crate::proofs::bounded_ifix64;
+
+  #[kani::proof]
+  fn lerp_preserves_endpoints() {
+    let x0: IFix64<N5> = bounded_ifix64();
+    let y0: IFix64<N5> = bounded_ifix64();
+    let x1: IFix64<N5> = bounded_ifix64();
+    let y1: IFix64<N5> = bounded_ifix64();
+    kani::assume(x0 < x1);
+    let p0 = Point { x: x0, y: y0 };
+    let p1 = Point { x: x1, y: y1 };
+    let seg = LineSegment(&p0, &p1);
+    let pick: bool = kani::any();
+    let (x, expected) = if pick { (x0, y0) } else { (x1, y1) };
+    assert_eq!(seg.lerp(x), Some(expected));
+  }
+
+  #[kani::proof]
+  fn lerp_none_for_degenerate_segment() {
+    let x0: IFix64<N5> = bounded_ifix64();
+    let y0: IFix64<N5> = bounded_ifix64();
+    let y1: IFix64<N5> = bounded_ifix64();
+    let x: IFix64<N5> = bounded_ifix64();
+    let p0 = Point { x: x0, y: y0 };
+    let p1 = Point { x: x0, y: y1 };
+    let seg = LineSegment(&p0, &p1);
+    assert_eq!(seg.lerp(x), None);
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use std::fs::File;
   use std::io::Write;
 
+  use itertools::Itertools;
+
   use super::*;
   use crate::error::CoreError;
-  use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
+  use crate::fees::curves::{
+    mint_fee_curve, redeem_fee_curve, MINT_FEE_INV, REDEEM_FEE_LN,
+  };
+
+  fn assert_segments_preserve_endpoints(points: &[Point<N5>]) {
+    points
+      .iter()
+      .tuple_windows::<(_, _)>()
+      .for_each(|(p0, p1)| {
+        let seg = LineSegment(p0, p1);
+        assert_eq!(seg.lerp(p0.x), Some(p0.y));
+        assert_eq!(seg.lerp(p1.x), Some(p1.y));
+      });
+  }
+
+  #[test]
+  fn mint_curve_continuous_at_breakpoints() {
+    assert_segments_preserve_endpoints(MINT_FEE_INV);
+  }
+
+  #[test]
+  fn redeem_curve_continuous_at_breakpoints() {
+    assert_segments_preserve_endpoints(REDEEM_FEE_LN);
+  }
 
   #[test]
   fn from_points_insufficient_points() {

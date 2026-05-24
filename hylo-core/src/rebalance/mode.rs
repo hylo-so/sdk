@@ -126,6 +126,23 @@ pub fn validate_stablecoin_mint_threshold(
     .ok_or(StablecoinMintThresholdInvalid.into())
 }
 
+#[cfg(kani)]
+mod proofs {
+  use std::ops::RangeBounds;
+
+  use fix::prelude::*;
+
+  use crate::proofs::any_ufix64;
+  use crate::rebalance::mode::RebalanceMode;
+
+  #[kani::proof]
+  fn from_cr_mode_contains_input() {
+    let cr: UFix64<N9> = any_ufix64();
+    let mode = RebalanceMode::from_cr(cr);
+    assert!(mode.active_range().contains(&cr));
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use RebalanceMode::*;

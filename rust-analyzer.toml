@@ -1,0 +1,2 @@
+[cargo]
+cfgs = { kani = "", debug_assertions = "", miri = "" }

@@ -26,6 +26,14 @@
     text = "nix develop --command cargo build";
   };
 
+  verify = writeShellApplication {
+    name = "verify";
+    text = ''
+      jobs=$(getconf _NPROCESSORS_ONLN)
+      nix develop .#kani --command cargo kani --output-format terse --jobs "$jobs" "$@"
+    '';
+  };
+
   test-cargo = writeShellApplication {
     name = "test-cargo";
     text = ''

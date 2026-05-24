@@ -11,21 +11,29 @@ use crate::pyth::PriceRange;
 ///   `CR = total_sol_usd / stablecoin_cap`
 ///
 /// NB: If stablecoin supply is zero, returns `u64::MAX` to simulate infinity.
-pub fn collateral_ratio(
+fn compute_cr(
   total_collateral: UFix64<N9>,
   usd_collateral_price: UFix64<N9>,
   amount_stablecoin: UFix64<N6>,
-) -> Result<UFix64<N9>> {
+) -> Option<UFix64<N9>> {
   if amount_stablecoin == UFix64::zero() {
-    Ok(UFix64::new(u64::MAX))
+    Some(UFix64::new(u64::MAX))
   } else {
     amount_stablecoin
       .checked_convert::<N9>()
       .and_then(|stablecoin| {
         total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
       })
-      .ok_or(CollateralRatio.into())
   }
+}
+
+pub fn collateral_ratio(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+  amount_stablecoin: UFix64<N6>,
+) -> Result<UFix64<N9>> {
+  compute_cr(total_collateral, usd_collateral_price, amount_stablecoin)
+    .ok_or(CollateralRatio.into())
 }
 
 /// Multiples total SOL by the given spot price to get TVL.
@@ -40,13 +48,20 @@ pub fn total_value_locked(
 
 /// Multiplies levercoin supply by NAV to get its market cap in USD.
 ///   `cap = supply * nav`
+fn market_cap(
+  levercoin_supply: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
+) -> Option<UFix64<N9>> {
+  levercoin_supply
+    .checked_convert::<N9>()
+    .and_then(|supply| supply.mul_div_ceil(levercoin_nav, UFix64::one()))
+}
+
 pub fn levercoin_market_cap(
   levercoin_supply: UFix64<N6>,
   levercoin_nav: UFix64<N9>,
 ) -> Result<UFix64<N9>> {
-  levercoin_supply
-    .checked_convert::<N9>()
-    .and_then(|supply| supply.mul_div_ceil(levercoin_nav, UFix64::one()))
+  market_cap(levercoin_supply, levercoin_nav)
     .ok_or(LevercoinMarketCapArithmetic.into())
 }
 
@@ -90,16 +105,28 @@ pub fn max_mintable_stablecoin(
 /// max_swappable = -----------------------  - stablecoin_supply
 ///                 target_collateral_ratio
 /// ```
+fn swap_capacity(
+  target_collateral_ratio: UFix64<N2>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  total_value_locked
+    .checked_div(&target_collateral_ratio)
+    .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
+    .and_then(UFix64::checked_convert::<N6>)
+}
+
 pub fn max_swappable_stablecoin(
   target_collateral_ratio: UFix64<N2>,
   total_value_locked: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  total_value_locked
-    .checked_div(&target_collateral_ratio)
-    .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
-    .and_then(UFix64::checked_convert::<N6>)
-    .ok_or(MaxSwappable.into())
+  swap_capacity(
+    target_collateral_ratio,
+    total_value_locked,
+    stablecoin_supply,
+  )
+  .ok_or(MaxSwappable.into())
 }
 
 /// Computes upper bound of levercoin NAV for minting.
@@ -157,17 +184,111 @@ pub fn next_levercoin_redeem_nav(
 /// Computes stablecoin NAV during a depeg scenario.
 /// In all other modes, the price of the stablecoin is fixed to $1.
 ///   `NAV = total_sol * sol_usd_price / supply`
+fn depeg_nav(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Option<UFix64<N9>> {
+  if stablecoin_supply == UFix64::zero() {
+    None
+  } else {
+    stablecoin_supply
+      .checked_convert::<N9>()
+      .and_then(|supply| {
+        total_collateral.mul_div_floor(usd_collateral_price, supply)
+      })
+  }
+}
+
 pub fn depeg_stablecoin_nav(
   total_collateral: UFix64<N9>,
   usd_collateral_price: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
-  stablecoin_supply
-    .checked_convert::<N9>()
-    .and_then(|supply| {
-      total_collateral.mul_div_floor(usd_collateral_price, supply)
-    })
+  depeg_nav(total_collateral, usd_collateral_price, stablecoin_supply)
     .ok_or(StablecoinNav.into())
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::exchange_math::{
+    compute_cr, depeg_nav, market_cap, swap_capacity,
+  };
+  use crate::proofs::{any_ufix64, token_amount};
+
+  #[kani::proof]
+  fn tvl_no_overflow() {
+    let total: UFix64<N9> = token_amount();
+    let price: UFix64<N9> = token_amount();
+    assert!(total.mul_div_floor(price, UFix64::<N9>::one()).is_some());
+  }
+
+  #[kani::proof]
+  fn swap_capacity_none_for_zero_target_cr() {
+    let tvl: UFix64<N9> = token_amount();
+    let supply: UFix64<N6> = token_amount();
+    let target_cr = UFix64::<N2>::zero();
+    assert_eq!(swap_capacity(target_cr, tvl, supply), None);
+  }
+
+  #[kani::proof]
+  fn swap_capacity_none_when_undercollateralized() {
+    let tvl: UFix64<N9> = token_amount();
+    let supply: UFix64<N6> = token_amount();
+    let target_cr: UFix64<N2> = any_ufix64();
+    kani::assume(target_cr > UFix64::zero());
+    kani::assume(target_cr.bits < (1u64 << 16));
+    kani::assume(supply.bits * 10 > tvl.bits / target_cr.bits);
+    assert_eq!(swap_capacity(target_cr, tvl, supply), None);
+  }
+
+  #[kani::proof]
+  fn swap_capacity_some_when_healthy() {
+    let tvl: UFix64<N9> = token_amount();
+    let supply: UFix64<N6> = token_amount();
+    let target_cr: UFix64<N2> = any_ufix64();
+    kani::assume(target_cr > UFix64::zero());
+    kani::assume(target_cr.bits < (1u64 << 16));
+    kani::assume(supply.bits * 10 <= tvl.bits / target_cr.bits);
+    assert!(swap_capacity(target_cr, tvl, supply).is_some());
+  }
+
+  #[kani::proof]
+  fn market_cap_no_overflow() {
+    let supply: UFix64<N6> = token_amount();
+    let nav: UFix64<N9> = token_amount();
+    assert!(market_cap(supply, nav).is_some());
+  }
+
+  #[kani::proof]
+  fn cr_zero_supply_returns_sentinel() {
+    let total: UFix64<N9> = token_amount();
+    let price: UFix64<N9> = token_amount();
+    let supply = UFix64::<N6>::zero();
+    assert_eq!(
+      compute_cr(total, price, supply),
+      Some(UFix64::new(u64::MAX))
+    );
+  }
+
+  #[kani::proof]
+  fn depeg_nav_no_overflow_for_nontrivial_supply() {
+    let total: UFix64<N9> = token_amount();
+    let price: UFix64<N9> = token_amount();
+    let supply: UFix64<N6> = token_amount();
+    kani::assume(supply.bits >= (1u64 << 17));
+    assert!(depeg_nav(total, price, supply).is_some());
+  }
+
+  #[kani::proof]
+  fn depeg_nav_none_for_zero_supply() {
+    let total: UFix64<N9> = token_amount();
+    let price: UFix64<N9> = token_amount();
+    let supply = UFix64::<N6>::zero();
+    assert_eq!(depeg_nav(total, price, supply), None);
+  }
 }
 
 #[cfg(test)]

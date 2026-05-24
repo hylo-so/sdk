@@ -34,20 +34,33 @@ impl SlippageConfig {
     self.slippage_tolerance.try_into()
   }
 
+  fn tolerable_amount<Exp>(
+    expected: UFix64<Exp>,
+    tolerance: UFix64<N4>,
+  ) -> Option<UFix64<Exp>> {
+    UFix64::<N4>::one()
+      .checked_sub(&tolerance)
+      .and_then(|factor| expected.mul_div_floor(factor, UFix64::one()))
+  }
+
+  fn meets_tolerance<Exp>(
+    expected: UFix64<Exp>,
+    tolerance: UFix64<N4>,
+    token_out: UFix64<Exp>,
+  ) -> Option<bool> {
+    SlippageConfig::tolerable_amount(expected, tolerance)
+      .map(|t| token_out >= t)
+  }
+
   fn validate_inner<Exp>(
     expected: UFix64<Exp>,
     tolerance: UFix64<N4>,
     token_out: UFix64<Exp>,
   ) -> Result<()> {
-    // Invert slippage and multiply with expected amount
-    let tolerable_amount = UFix64::<N4>::one()
-      .checked_sub(&tolerance)
-      .and_then(|factor| expected.mul_div_floor(factor, UFix64::one()))
-      .ok_or(SlippageArithmetic)?;
-    if token_out >= tolerable_amount {
-      Ok(())
-    } else {
-      Err(SlippageExceeded.into())
+    match SlippageConfig::meets_tolerance(expected, tolerance, token_out) {
+      None => Err(SlippageArithmetic.into()),
+      Some(true) => Ok(()),
+      Some(false) => Err(SlippageExceeded.into()),
     }
   }
 
@@ -130,5 +143,42 @@ mod tests {
     // 100% tolerance accepts any output including zero
     let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::one());
     assert!(config.validate_token_out(UFix64::<N6>::zero()).is_ok());
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::proofs::{any_ufix64, token_amount, tolerance};
+  use crate::slippage_config::SlippageConfig;
+
+  #[kani::proof]
+  fn tolerable_amount_above_one_is_none() {
+    let expected: UFix64<N9> = any_ufix64();
+    let tolerance: UFix64<N4> = any_ufix64();
+    kani::assume(tolerance > UFix64::one());
+    assert_eq!(SlippageConfig::tolerable_amount(expected, tolerance), None);
+  }
+
+  #[kani::proof]
+  fn tolerable_amount_bounded_by_expected() {
+    let expected: UFix64<N9> = token_amount();
+    let tolerance = tolerance();
+    let tolerable = SlippageConfig::tolerable_amount(expected, tolerance);
+    assert!(tolerable.is_some());
+    assert!(tolerable.is_none_or(|t| t <= expected));
+  }
+
+  #[kani::proof]
+  fn favorable_execution_meets_tolerance() {
+    let expected: UFix64<N9> = token_amount();
+    let tolerance = tolerance();
+    let token_out: UFix64<N9> = token_amount();
+    kani::assume(token_out >= expected);
+    assert_eq!(
+      SlippageConfig::meets_tolerance(expected, tolerance, token_out),
+      Some(true)
+    );
   }
 }
