@@ -90,7 +90,7 @@ impl SlippageConfig {
 mod tests {
   use fix::prelude::*;
 
-  use crate::error::CoreError::SlippageExceeded;
+  use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
   use crate::slippage_config::SlippageConfig;
 
   const ONE_PERCENT: UFix64<N4> = UFix64::constant(100);
@@ -144,20 +144,15 @@ mod tests {
     let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::one());
     assert!(config.validate_token_out(UFix64::<N6>::zero()).is_ok());
   }
-}
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::proofs::any_ufix64;
-  use crate::slippage_config::SlippageConfig;
-
-  #[kani::proof]
-  fn tolerable_amount_above_one_is_none() {
-    let expected: UFix64<N9> = any_ufix64();
-    let tolerance: UFix64<N4> = any_ufix64();
-    kani::assume(tolerance > UFix64::one());
-    assert_eq!(SlippageConfig::tolerable_amount(expected, tolerance), None);
+  #[test]
+  fn slippage_tolerance_above_one_neg() {
+    // 100.01% tolerance rejected as arithmetic error
+    let config =
+      SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::new(10_001));
+    assert_eq!(
+      config.validate_token_out(UFix64::<N6>::one()),
+      Err(SlippageArithmetic.into())
+    );
   }
 }

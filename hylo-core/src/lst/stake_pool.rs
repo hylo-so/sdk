@@ -79,3 +79,24 @@ impl SplStakePool {
       .and_then(|tl| tl.mul_div_floor(UFix64::one(), pool_token_supply))
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use fix::prelude::*;
+
+  use crate::error::CoreError;
+  use crate::lst::stake_pool::SplStakePool;
+
+  #[test]
+  fn true_price_zero_supply_returns_div_by_zero() {
+    let pool = SplStakePool {
+      total_lamports: UFix64::<N9>::one(),
+      pool_token_supply: UFix64::<N9>::zero(),
+      last_update_epoch: 0,
+    };
+    assert_eq!(
+      pool.true_price().err(),
+      Some(CoreError::StakePoolDivByZero.into()),
+    );
+  }
+}
