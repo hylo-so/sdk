@@ -101,7 +101,7 @@ mod proofs {
   use crate::earn_pool_math::{
     amount_token_to_withdraw_inner, lp_token_out_inner,
   };
-  use crate::proofs::wide_ufix64;
+  use crate::kani_generators::wide_ufix64;
 
   /// `lp_token_out` rounds down: `tokens * nav <= amount * one`.
   #[kani::proof]

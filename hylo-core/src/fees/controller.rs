@@ -206,15 +206,13 @@ mod proofs {
   use fix::prelude::*;
 
   use crate::fees::controller::FeeExtract;
-  use crate::proofs::{tolerance, wide_ufix64};
+  use crate::kani_generators::{tolerance, wide_ufix64};
 
-  /// `fees_extracted + amount_remaining == amount_in` whenever extraction
-  /// computes (fee in [0, 1.0]).
+  /// `fees_extracted + amount_remaining == amount_in` (fee in [0, 1.0]).
   #[kani::proof]
   fn fee_extract_conservation() {
     let fee = tolerance();
     let amount_in: UFix64<N6> = wide_ufix64();
-
     let extract = FeeExtract::new(fee, amount_in).ok();
     assert!(extract.is_none_or(|e| {
       e.fees_extracted.checked_add(&e.amount_remaining) == Some(amount_in)

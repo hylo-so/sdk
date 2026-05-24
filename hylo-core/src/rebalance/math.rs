@@ -57,20 +57,18 @@ mod proofs {
   use fix::prelude::*;
 
   use crate::exchange_math::{collateral_ratio, total_value_locked_inner};
-  use crate::proofs::narrow_ufix64;
+  use crate::kani_generators::narrow_ufix64;
   use crate::rebalance::math::{
     max_buyable_collateral, max_sellable_collateral,
   };
 
-  /// `max_sellable_collateral` never returns more than the available
-  /// collateral.
+  /// `max_sellable_collateral(...) <= total_collateral`.
   #[kani::proof]
   fn max_sellable_bounded_by_total() {
     let target_cr: UFix64<N9> = narrow_ufix64();
     let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
     let collateral_usd_price: UFix64<N9> = narrow_ufix64();
     let total_collateral: UFix64<N9> = narrow_ufix64();
-
     max_sellable_collateral(
       target_cr,
       virtual_stablecoin,
@@ -80,15 +78,13 @@ mod proofs {
     .map(|s| assert!(s <= total_collateral));
   }
 
-  /// Selling `max_sellable` units (at oracle price) drives CR no higher
-  /// than `target_cr` when the post-sale state is computable.
+  /// Selling `max_sellable` drives CR to at most `target_cr`.
   #[kani::proof]
   fn max_sellable_does_not_overshoot_target() {
     let target_cr: UFix64<N9> = narrow_ufix64();
     let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
     let collateral_usd_price: UFix64<N9> = narrow_ufix64();
     let total_collateral: UFix64<N9> = narrow_ufix64();
-
     let post_sale_cr = max_sellable_collateral(
       target_cr,
       virtual_stablecoin,
@@ -114,15 +110,13 @@ mod proofs {
     assert!(post_sale_cr.is_none_or(|cr| cr <= target_cr));
   }
 
-  /// Buying `max_buyable` units drives CR no lower than `target_cr` when the
-  /// post-buy state is computable.
+  /// Buying `max_buyable` drives CR to at least `target_cr`.
   #[kani::proof]
   fn max_buyable_does_not_undershoot_target() {
     let target_cr: UFix64<N9> = narrow_ufix64();
     let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
     let collateral_usd_price: UFix64<N9> = narrow_ufix64();
     let total_collateral: UFix64<N9> = narrow_ufix64();
-
     let post_buy_cr = max_buyable_collateral(
       target_cr,
       virtual_stablecoin,

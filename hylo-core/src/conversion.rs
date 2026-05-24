@@ -340,10 +340,11 @@ mod proofs {
   use crate::conversion::{
     Conversion, ExoConversion, ExoRebalanceConversion, SwapConversion,
   };
-  use crate::proofs::{narrow_price_range, narrow_ufix64, usdc_price_range};
+  use crate::kani_generators::{
+    narrow_price_range, narrow_ufix64, usdc_price_range,
+  };
 
-  /// `token_to_lst(lst_to_token(x))` never exceeds `x` when the roundtrip
-  /// computes. Roundtrip loss accrues to the protocol.
+  /// `token_to_lst(lst_to_token(x)) <= x`.
   #[kani::proof]
   fn lst_conversion_roundtrip_favors_protocol() {
     let amount_lst: UFix64<N9> = narrow_ufix64();
@@ -351,7 +352,6 @@ mod proofs {
     let usd_sol_price = narrow_price_range::<N9>();
     let lst_sol_price: UFix64<N9> = narrow_ufix64();
     let conv = Conversion::new(usd_sol_price, lst_sol_price);
-
     let back = conv
       .lst_to_token(amount_lst, token_nav)
       .ok()
@@ -359,16 +359,13 @@ mod proofs {
     assert!(back.is_none_or(|b| b <= amount_lst));
   }
 
-  /// `token_to_exo(exo_to_token(x))` never exceeds `x` when the roundtrip
-  /// computes. `token_nav` cancels symmetrically across both directions, so
-  /// it's fixed to collapse the search space.
+  /// `token_to_exo(exo_to_token(x)) <= x`.
   #[kani::proof]
   fn exo_conversion_roundtrip_favors_protocol() {
     let amount: UFix64<N9> = narrow_ufix64();
     let token_nav = UFix64::<N9>::one();
     let collateral_usd_price = narrow_price_range::<N9>();
     let conv = ExoConversion::new(collateral_usd_price);
-
     let back = conv
       .exo_to_token(amount, token_nav)
       .ok()
@@ -376,18 +373,13 @@ mod proofs {
     assert!(back.is_none_or(|b| b <= amount));
   }
 
-  /// `lever_to_stable(stable_to_lever(x))` never exceeds `x` when the
-  /// roundtrip computes. Anti-flip-flop within a single collateral pool;
-  /// covers both directions via the symmetric `lower/upper` factor.
-  /// `stablecoin_nav` cancels symmetrically and is fixed to collapse the
-  /// search space.
+  /// `lever_to_stable(stable_to_lever(x)) <= x`.
   #[kani::proof]
   fn swap_conversion_stable_roundtrip_favors_protocol() {
     let amount_stable: UFix64<N6> = narrow_ufix64();
     let stablecoin_nav = UFix64::<N9>::one();
     let levercoin_nav = narrow_price_range::<N9>();
     let conv = SwapConversion::new(stablecoin_nav, levercoin_nav);
-
     let back = conv
       .stable_to_lever(amount_stable)
       .ok()
@@ -395,16 +387,11 @@ mod proofs {
     assert!(back.is_none_or(|b| b <= amount_stable));
   }
 
-  /// `usdc_to_collateral(collateral_to_usdc(x))` never exceeds `x` when the
-  /// roundtrip computes. `collateral_usd_price` cancels symmetrically; only
-  /// the `usdc_usd_price` spread carries the asymmetry. The structurally
-  /// equivalent LST variant is intractable for Kani (4-deep mul_div chain)
-  /// and is covered by a proptest instead.
+  /// `usdc_to_collateral(collateral_to_usdc(x)) <= x`.
   #[kani::proof]
   fn exo_rebalance_roundtrip_favors_protocol() {
     let amount: UFix64<N9> = narrow_ufix64();
     let collateral_usd_price = UFix64::<N9>::one();
-
     let back = usdc_price_range().and_then(|usdc_usd_price| {
       let conv =
         ExoRebalanceConversion::new(collateral_usd_price, usdc_usd_price);
@@ -569,8 +556,7 @@ mod tests {
       );
     }
 
-    /// Rebalance flip-flop guard: `usdc_to_lst(lst_to_usdc(x)) <= x`.
-    /// (Kani counterpart intractable on this 4-deep mul_div chain.)
+    /// `usdc_to_lst(lst_to_usdc(x)) <= x`.
     #[test]
     fn lst_rebalance_roundtrip_lossy(
       amount_lst in lst_amount(),

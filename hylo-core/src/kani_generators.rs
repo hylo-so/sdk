@@ -23,9 +23,8 @@ pub fn wide_ufix64<Exp: Integer>() -> UFix64<Exp> {
 
 /// Symbolic `UFix64<Exp>` bounded to 16 raw bits (`< 65536`).
 ///
-/// Magnitudes are unrealistic, but algebraic properties (rounding direction,
-/// monotonicity, conservation) hold independently of magnitude. Use when the
-/// arithmetic chain would otherwise be intractable at wider bit widths.
+/// Use when wider bit widths are intractable. Magnitude doesn't change
+/// algebraic properties.
 #[must_use]
 pub fn narrow_ufix64<Exp: Integer>() -> UFix64<Exp> {
   let v: UFix64<Exp> = any_ufix64();
@@ -42,7 +41,7 @@ pub fn narrow_price_range<Exp: Integer>() -> PriceRange<Exp> {
 }
 
 /// USDC modeled as pegged to $1 with a tight symbolic confidence interval
-/// (≤ 50 bps). Single axis of nondeterminism via `PriceRange::from_conf`.
+/// (<= 50 bps). Single axis of nondeterminism via `PriceRange::from_conf`.
 #[must_use]
 pub fn usdc_price_range() -> Option<PriceRange<N9>> {
   let conf: UFix64<N9> = UFix64::new(kani::any());
@@ -62,7 +61,6 @@ fn deployed_curve_bounds() -> (i64, i64, i64, i64) {
   )
 }
 
-/// Symbolic x in the union of both deployed fee curve domains.
 #[must_use]
 pub fn deployed_curve_x() -> IFix64<N5> {
   let (x_min, x_max, _, _) = deployed_curve_bounds();
@@ -71,7 +69,6 @@ pub fn deployed_curve_x() -> IFix64<N5> {
   IFix64::new(bits)
 }
 
-/// Symbolic y in the union of both deployed fee curve ranges.
 #[must_use]
 pub fn deployed_curve_y() -> IFix64<N5> {
   let (_, _, y_min, y_max) = deployed_curve_bounds();

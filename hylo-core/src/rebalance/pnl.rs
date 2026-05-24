@@ -78,7 +78,7 @@ impl From<RebalancePnl> for RebalancePnlValue {
 mod proofs {
   use fix::prelude::*;
 
-  use crate::proofs::any_ufix64;
+  use crate::kani_generators::any_ufix64;
   use crate::rebalance::pnl::RebalancePnl;
 
   /// `from_stablecoin_flow` never returns `None` for any `(in, out)` pair.

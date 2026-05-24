@@ -141,7 +141,7 @@ mod proofs {
 
   use fix::prelude::*;
 
-  use crate::proofs::any_ufix64;
+  use crate::kani_generators::any_ufix64;
   use crate::rebalance::mode::RebalanceMode;
 
   /// `from_cr(cr)` returns a mode whose `active_range` contains `cr`.

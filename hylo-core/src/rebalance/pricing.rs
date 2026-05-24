@@ -325,7 +325,7 @@ mod proofs {
   use fix::prelude::*;
 
   use super::{clamp_to_tolerance_inner, MAX_DEVIATION_PCT};
-  use crate::proofs::{narrow_ufix64, wide_ufix64};
+  use crate::kani_generators::{narrow_ufix64, wide_ufix64};
 
   fn tolerance_bps() -> UFix64<N9> {
     let t: UFix64<N9> = wide_ufix64();
@@ -333,14 +333,12 @@ mod proofs {
     t
   }
 
-  /// `clamp_to_tolerance` output lies in `[spot - spot*tol, spot + spot*tol]`
-  /// when both the clamp and the max-delta arithmetic compute.
+  /// `|spot - clamp_to_tolerance(spot, _, tol)| <= spot * tol`.
   #[kani::proof]
   fn clamp_band_membership() {
     let spot: UFix64<N9> = narrow_ufix64();
     let projected: UFix64<N9> = narrow_ufix64();
     let tol = tolerance_bps();
-
     let clamped = clamp_to_tolerance_inner(spot, projected, tol);
     let max_delta = spot.mul_div_ceil(tol, UFix64::<N9>::one());
     clamped

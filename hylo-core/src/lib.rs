@@ -11,10 +11,10 @@ pub mod exchange_math;
 pub mod fees;
 #[cfg(feature = "offchain")]
 pub mod idl_type_bridge;
+#[cfg(kani)]
+pub mod kani_generators;
 pub mod levercoin_limiter;
 pub mod lst;
-#[cfg(kani)]
-pub mod proofs;
 pub mod pyth;
 pub mod rebalance;
 pub mod slippage_config;

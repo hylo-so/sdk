@@ -59,6 +59,7 @@ pub mod proptest {
   use proptest::prelude::*;
 
   use crate::exchange_math::collateral_ratio;
+  use crate::pyth::PriceRange;
 
   /// Represents a possible state of the protocol, collateral, and tokens.
   /// Always holds the Hylo invariant: `ns * ps = nx * px + nh * ph`.
@@ -177,14 +178,10 @@ pub mod proptest {
 
   /// USDC modeled as $1 ± up to 50 bps confidence. Single-axis spread via
   /// `PriceRange::from_conf`.
-  pub fn usdc_price_range() -> BoxedStrategy<crate::pyth::PriceRange<N9>> {
+  pub fn usdc_price_range() -> BoxedStrategy<PriceRange<N9>> {
     (1u64..5_000_000u64)
       .prop_filter_map("from_conf within range", |conf| {
-        crate::pyth::PriceRange::from_conf(
-          UFix64::<N9>::one(),
-          UFix64::new(conf),
-        )
-        .ok()
+        PriceRange::from_conf(UFix64::<N9>::one(), UFix64::new(conf)).ok()
       })
       .boxed()
   }

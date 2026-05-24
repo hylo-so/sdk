@@ -38,14 +38,10 @@ impl<Exp: Integer> LineSegment<'_, Exp> {
     let Point { x: x0, y: y0 } = self.0;
     let Point { x: x1, y: y1 } = self.1;
     let denom = x1.checked_sub(x0)?;
-    if denom == IFix64::zero() {
-      None
-    } else {
-      let div = y1
-        .checked_sub(y0)?
-        .mul_div_ceil(x.checked_sub(x0)?, denom)?;
-      y0.checked_add(&div)
-    }
+    (denom != IFix64::zero())
+      .then_some(denom)
+      .and_then(|d| y1.checked_sub(y0)?.mul_div_ceil(x.checked_sub(x0)?, d))
+      .and_then(|div| y0.checked_add(&div))
   }
 }
 
@@ -129,14 +125,14 @@ mod proofs {
   use fix::prelude::*;
 
   use crate::fees::interp::{LineSegment, Point};
+  use crate::kani_generators::{deployed_curve_x, deployed_curve_y};
 
-  /// Symbolic positive `IFix64<N5>` bounded below the deployed curve range.
-  /// Used for both x and y in lerp endpoint preservation.
   fn curve_coord() -> IFix64<N5> {
     let bits = kani::any_where(|b: &i64| *b >= 0 && *b < (1i64 << 8));
     IFix64::new(bits)
   }
 
+  /// `lerp` at either endpoint returns that endpoint's `y`.
   #[kani::proof]
   fn lerp_preserves_endpoints() {
     let x0: IFix64<N5> = curve_coord();
@@ -152,12 +148,9 @@ mod proofs {
     assert_eq!(seg.lerp(x), Some(expected));
   }
 
-  /// Lerp never overflows on any segment whose endpoints lie within the
-  /// deployed mint/redeem curve domain.
+  /// `lerp` is total on segments within the deployed fee curve domain.
   #[kani::proof]
   fn lerp_safe_on_deployed_curve_domain() {
-    use crate::proofs::{deployed_curve_x, deployed_curve_y};
-
     let x0 = deployed_curve_x();
     let x1 = deployed_curve_x();
     kani::assume(x0 < x1);
@@ -165,7 +158,6 @@ mod proofs {
     let y1 = deployed_curve_y();
     let x = deployed_curve_x();
     kani::assume(x >= x0 && x <= x1);
-
     let p0 = Point::<N5> { x: x0, y: y0 };
     let p1 = Point::<N5> { x: x1, y: y1 };
     let seg = LineSegment(&p0, &p1);

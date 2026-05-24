@@ -212,15 +212,12 @@ fn depeg_stablecoin_nav_inner(
   usd_collateral_price: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Option<UFix64<N9>> {
-  if stablecoin_supply == UFix64::zero() {
-    None
-  } else {
-    stablecoin_supply
-      .checked_convert::<N9>()
-      .and_then(|supply| {
-        total_collateral.mul_div_floor(usd_collateral_price, supply)
-      })
-  }
+  (stablecoin_supply != UFix64::zero())
+    .then_some(stablecoin_supply)
+    .and_then(UFix64::checked_convert::<N9>)
+    .and_then(|supply| {
+      total_collateral.mul_div_floor(usd_collateral_price, supply)
+    })
 }
 
 #[cfg(kani)]
@@ -230,11 +227,9 @@ mod proofs {
   use crate::exchange_math::{
     next_levercoin_mint_nav, next_levercoin_redeem_nav,
   };
-  use crate::proofs::{narrow_price_range, narrow_ufix64};
+  use crate::kani_generators::{narrow_price_range, narrow_ufix64};
 
-  /// Anti-sandwich: mint NAV (upper price + ceil) is at least redeem NAV
-  /// (lower price + floor) for the same state. Asymmetry is purely
-  /// algebraic — fixed-`nav` and narrow input bounds suffice.
+  /// Mint NAV is at least redeem NAV for any shared state.
   #[kani::proof]
   fn mint_nav_ge_redeem_nav() {
     let total_collateral: UFix64<N9> = narrow_ufix64();
@@ -242,7 +237,6 @@ mod proofs {
     let stablecoin_supply: UFix64<N6> = narrow_ufix64();
     let stablecoin_nav = UFix64::<N9>::one();
     let levercoin_supply: UFix64<N6> = narrow_ufix64();
-
     let mint = next_levercoin_mint_nav(
       total_collateral,
       usd_collateral_price,
