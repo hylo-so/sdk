@@ -26,14 +26,35 @@ pub fn lp_token_nav(
   }
 }
 
+fn compute_lp_out(
+  amount_stablecoin_in: UFix64<N6>,
+  lp_token_nav: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  if lp_token_nav == UFix64::zero() {
+    None
+  } else {
+    amount_stablecoin_in.mul_div_floor(UFix64::one(), lp_token_nav)
+  }
+}
+
 /// Simply divides the amount of stablecoin being deposited by the LP token NAV.
 pub fn lp_token_out(
   amount_stablecoin_in: UFix64<N6>,
   lp_token_nav: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  amount_stablecoin_in
-    .mul_div_floor(UFix64::one(), lp_token_nav)
-    .ok_or(LpTokenOut.into())
+  compute_lp_out(amount_stablecoin_in, lp_token_nav).ok_or(LpTokenOut.into())
+}
+
+fn compute_withdrawal(
+  user_lp_token_amount: UFix64<N6>,
+  lp_token_supply: UFix64<N6>,
+  pool_amount: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  if lp_token_supply == UFix64::zero() {
+    None
+  } else {
+    user_lp_token_amount.mul_div_floor(pool_amount, lp_token_supply)
+  }
 }
 
 /// Computes amount of token to withdraw, given a user's LP equity in the pool.
@@ -42,8 +63,7 @@ pub fn amount_token_to_withdraw(
   lp_token_supply: UFix64<N6>,
   pool_amount: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  user_lp_token_amount
-    .mul_div_floor(pool_amount, lp_token_supply)
+  compute_withdrawal(user_lp_token_amount, lp_token_supply, pool_amount)
     .ok_or(TokenWithdraw.into())
 }
 
@@ -71,6 +91,29 @@ pub fn stablecoin_withdrawal_fee(
   withdrawal_fee: UFix64<N4>,
 ) -> Result<FeeExtract<N6>> {
   FeeExtract::new(withdrawal_fee, stablecoin_to_withdraw)
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::earn_pool_math::{compute_lp_out, compute_withdrawal};
+  use crate::proofs::token_amount;
+
+  #[kani::proof]
+  fn compute_lp_out_none_for_zero_nav() {
+    let amount: UFix64<N6> = token_amount();
+    let nav = UFix64::<N6>::zero();
+    assert_eq!(compute_lp_out(amount, nav), None);
+  }
+
+  #[kani::proof]
+  fn compute_withdrawal_none_for_zero_supply() {
+    let user_lp: UFix64<N6> = token_amount();
+    let pool: UFix64<N6> = token_amount();
+    let supply = UFix64::<N6>::zero();
+    assert_eq!(compute_withdrawal(user_lp, supply, pool), None);
+  }
 }
 
 #[cfg(test)]
