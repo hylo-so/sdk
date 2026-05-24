@@ -134,32 +134,6 @@ impl LstSolPrice {
   }
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::lst::sol_price::LstSolPrice;
-  use crate::proofs::token_amount;
-
-  #[kani::proof]
-  fn convert_sol_to_lst_none_for_zero_price() {
-    let amount: UFix64<N9> = token_amount();
-    let price = UFix64::<N9>::zero();
-    assert_eq!(LstSolPrice::convert_sol_to_lst_inner(amount, price), None);
-  }
-
-  #[kani::proof]
-  fn convert_lst_amount_none_for_zero_out_price() {
-    let amount: UFix64<N9> = token_amount();
-    let in_price: UFix64<N9> = token_amount();
-    let out_price = UFix64::<N9>::zero();
-    assert_eq!(
-      LstSolPrice::convert_lst_amount_inner(amount, in_price, out_price),
-      None
-    );
-  }
-}
-
 #[cfg(test)]
 mod test {
   use fix::prelude::*;

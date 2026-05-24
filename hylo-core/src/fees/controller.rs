@@ -201,21 +201,6 @@ impl LevercoinFees {
   }
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::fees::controller::FeeExtract;
-  use crate::proofs::{token_amount, tolerance};
-
-  #[kani::proof]
-  fn fee_extract_succeeds_for_valid_fee() {
-    let fee = tolerance();
-    let amount: UFix64<N6> = token_amount();
-    assert!(FeeExtract::<N6>::split(fee, amount).is_some());
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;

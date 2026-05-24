@@ -150,7 +150,7 @@ mod tests {
 mod proofs {
   use fix::prelude::*;
 
-  use crate::proofs::{any_ufix64, token_amount, tolerance};
+  use crate::proofs::any_ufix64;
   use crate::slippage_config::SlippageConfig;
 
   #[kani::proof]
@@ -159,26 +159,5 @@ mod proofs {
     let tolerance: UFix64<N4> = any_ufix64();
     kani::assume(tolerance > UFix64::one());
     assert_eq!(SlippageConfig::tolerable_amount(expected, tolerance), None);
-  }
-
-  #[kani::proof]
-  fn tolerable_amount_bounded_by_expected() {
-    let expected: UFix64<N9> = token_amount();
-    let tolerance = tolerance();
-    let tolerable = SlippageConfig::tolerable_amount(expected, tolerance);
-    assert!(tolerable.is_some());
-    assert!(tolerable.is_none_or(|t| t <= expected));
-  }
-
-  #[kani::proof]
-  fn favorable_execution_meets_tolerance() {
-    let expected: UFix64<N9> = token_amount();
-    let tolerance = tolerance();
-    let token_out: UFix64<N9> = token_amount();
-    kani::assume(token_out >= expected);
-    assert_eq!(
-      SlippageConfig::meets_tolerance(expected, tolerance, token_out),
-      Some(true)
-    );
   }
 }

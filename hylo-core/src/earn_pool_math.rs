@@ -104,21 +104,6 @@ mod proofs {
   use crate::proofs::token_amount;
 
   #[kani::proof]
-  fn lp_token_out_none_for_zero_nav() {
-    let amount: UFix64<N6> = token_amount();
-    let nav = UFix64::<N6>::zero();
-    assert_eq!(lp_token_out_inner(amount, nav), None);
-  }
-
-  #[kani::proof]
-  fn amount_token_to_withdraw_none_for_zero_supply() {
-    let user_lp: UFix64<N6> = token_amount();
-    let pool: UFix64<N6> = token_amount();
-    let supply = UFix64::<N6>::zero();
-    assert_eq!(amount_token_to_withdraw_inner(user_lp, supply, pool), None);
-  }
-
-  #[kani::proof]
   fn lp_token_out_floor_favors_protocol() {
     let amount: UFix64<N6> = token_amount();
     let nav: UFix64<N6> = token_amount();

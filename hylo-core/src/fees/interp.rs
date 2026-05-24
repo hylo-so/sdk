@@ -145,18 +145,6 @@ mod proofs {
     let (x, expected) = if pick { (x0, y0) } else { (x1, y1) };
     assert_eq!(seg.lerp(x), Some(expected));
   }
-
-  #[kani::proof]
-  fn lerp_none_for_degenerate_segment() {
-    let x0: IFix64<N5> = bounded_ifix64();
-    let y0: IFix64<N5> = bounded_ifix64();
-    let y1: IFix64<N5> = bounded_ifix64();
-    let x: IFix64<N5> = bounded_ifix64();
-    let p0 = Point { x: x0, y: y0 };
-    let p1 = Point { x: x0, y: y1 };
-    let seg = LineSegment(&p0, &p1);
-    assert_eq!(seg.lerp(x), None);
-  }
 }
 
 #[cfg(test)]

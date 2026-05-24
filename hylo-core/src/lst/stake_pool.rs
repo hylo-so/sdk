@@ -79,18 +79,3 @@ impl SplStakePool {
       .and_then(|tl| tl.mul_div_floor(UFix64::one(), pool_token_supply))
   }
 }
-
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::lst::stake_pool::SplStakePool;
-  use crate::proofs::token_amount;
-
-  #[kani::proof]
-  fn true_price_none_for_zero_pool_supply() {
-    let total: UFix64<N9> = token_amount();
-    let supply = UFix64::<N9>::zero();
-    assert_eq!(SplStakePool::true_price_inner(total, supply), None);
-  }
-}

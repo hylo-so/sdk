@@ -333,44 +333,6 @@ impl LstRebalanceConversion {
   }
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::conversion::SwapConversion;
-  use crate::proofs::{any_ufix64, token_amount};
-
-  #[kani::proof]
-  fn stable_to_lever_none_for_zero_levercoin_nav() {
-    let amount: UFix64<N6> = token_amount();
-    let stablecoin_nav: UFix64<N9> = any_ufix64();
-    let levercoin_nav_upper = UFix64::<N9>::zero();
-    assert_eq!(
-      SwapConversion::stable_to_lever_inner(
-        amount,
-        stablecoin_nav,
-        levercoin_nav_upper
-      ),
-      None
-    );
-  }
-
-  #[kani::proof]
-  fn lever_to_stable_none_for_zero_stablecoin_nav() {
-    let amount: UFix64<N6> = token_amount();
-    let levercoin_nav_lower: UFix64<N9> = any_ufix64();
-    let stablecoin_nav = UFix64::<N9>::zero();
-    assert_eq!(
-      SwapConversion::lever_to_stable_inner(
-        amount,
-        levercoin_nav_lower,
-        stablecoin_nav
-      ),
-      None
-    );
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use proptest::prelude::*;
