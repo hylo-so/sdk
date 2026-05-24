@@ -175,6 +175,20 @@ pub mod proptest {
       .boxed()
   }
 
+  /// USDC modeled as $1 ± up to 50 bps confidence. Single-axis spread via
+  /// `PriceRange::from_conf`.
+  pub fn usdc_price_range() -> BoxedStrategy<crate::pyth::PriceRange<N9>> {
+    (1u64..5_000_000u64)
+      .prop_filter_map("from_conf within range", |conf| {
+        crate::pyth::PriceRange::from_conf(
+          UFix64::<N9>::one(),
+          UFix64::new(conf),
+        )
+        .ok()
+      })
+      .boxed()
+  }
+
   /// Extreme LST/SOL price including depeg.
   pub fn lst_sol_price_extreme() -> BoxedStrategy<UFix64<N9>> {
     (1u64..u64::MAX / 2).prop_map(UFix64::new).boxed()

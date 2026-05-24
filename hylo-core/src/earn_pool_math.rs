@@ -101,13 +101,13 @@ mod proofs {
   use crate::earn_pool_math::{
     amount_token_to_withdraw_inner, lp_token_out_inner,
   };
-  use crate::proofs::token_amount;
+  use crate::proofs::wide_ufix64;
 
   /// `lp_token_out` rounds down: `tokens * nav <= amount * one`.
   #[kani::proof]
   fn lp_token_out_floor_favors_protocol() {
-    let amount: UFix64<N6> = token_amount();
-    let nav: UFix64<N6> = token_amount();
+    let amount: UFix64<N6> = wide_ufix64();
+    let nav: UFix64<N6> = wide_ufix64();
     kani::assume(nav != UFix64::zero());
     let result = lp_token_out_inner(amount, nav);
     assert!(result.is_some());
@@ -123,9 +123,9 @@ mod proofs {
   /// pool`.
   #[kani::proof]
   fn amount_token_to_withdraw_floor_favors_protocol() {
-    let user_lp: UFix64<N6> = token_amount();
-    let supply: UFix64<N6> = token_amount();
-    let pool: UFix64<N6> = token_amount();
+    let user_lp: UFix64<N6> = wide_ufix64();
+    let supply: UFix64<N6> = wide_ufix64();
+    let pool: UFix64<N6> = wide_ufix64();
     kani::assume(supply != UFix64::zero());
     let result = amount_token_to_withdraw_inner(user_lp, supply, pool);
     assert!(result.is_some());

@@ -75,31 +75,31 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
 
   /// Constructs interpolator with no validations.
   #[must_use]
-  pub fn from_points_unchecked(points: [Point<Exp>; RES]) -> Self {
+  pub const fn from_points_unchecked(points: [Point<Exp>; RES]) -> Self {
     FixInterp { points }
   }
 
   /// Returns the minimum x value in the domain.
   #[must_use]
-  pub fn x_min(&self) -> IFix64<Exp> {
+  pub const fn x_min(&self) -> IFix64<Exp> {
     self.points[0].x
   }
 
   /// Returns the maximum x value in the domain.
   #[must_use]
-  pub fn x_max(&self) -> IFix64<Exp> {
+  pub const fn x_max(&self) -> IFix64<Exp> {
     self.points[RES - 1].x
   }
 
   /// Returns the minimum y value in the range.
   #[must_use]
-  pub fn y_min(&self) -> IFix64<Exp> {
+  pub const fn y_min(&self) -> IFix64<Exp> {
     self.points[0].y
   }
 
   /// Returns the maximum y value in the range.
   #[must_use]
-  pub fn y_max(&self) -> IFix64<Exp> {
+  pub const fn y_max(&self) -> IFix64<Exp> {
     self.points[RES - 1].y
   }
 
@@ -150,6 +150,26 @@ mod proofs {
     let pick: bool = kani::any();
     let (x, expected) = if pick { (x0, y0) } else { (x1, y1) };
     assert_eq!(seg.lerp(x), Some(expected));
+  }
+
+  /// Lerp never overflows on any segment whose endpoints lie within the
+  /// deployed mint/redeem curve domain.
+  #[kani::proof]
+  fn lerp_safe_on_deployed_curve_domain() {
+    use crate::proofs::{deployed_curve_x, deployed_curve_y};
+
+    let x0 = deployed_curve_x();
+    let x1 = deployed_curve_x();
+    kani::assume(x0 < x1);
+    let y0 = deployed_curve_y();
+    let y1 = deployed_curve_y();
+    let x = deployed_curve_x();
+    kani::assume(x >= x0 && x <= x1);
+
+    let p0 = Point::<N5> { x: x0, y: y0 };
+    let p1 = Point::<N5> { x: x1, y: y1 };
+    let seg = LineSegment(&p0, &p1);
+    assert!(seg.lerp(x).is_some());
   }
 }
 

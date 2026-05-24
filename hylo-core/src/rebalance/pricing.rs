@@ -129,19 +129,22 @@ fn clamp_to_tolerance(
   projected_price: UFix64<N9>,
   tolerance: UFix64<N9>,
 ) -> Result<UFix64<N9>> {
-  let max_delta = spot_price
-    .mul_div_ceil(tolerance, UFix64::<N9>::one())
-    .ok_or(CoreError::RebalanceDeviationArithmetic)?;
+  clamp_to_tolerance_inner(spot_price, projected_price, tolerance)
+    .ok_or(CoreError::RebalanceDeviationArithmetic.into())
+}
+
+fn clamp_to_tolerance_inner(
+  spot_price: UFix64<N9>,
+  projected_price: UFix64<N9>,
+  tolerance: UFix64<N9>,
+) -> Option<UFix64<N9>> {
+  let max_delta = spot_price.mul_div_ceil(tolerance, UFix64::<N9>::one())?;
   if spot_price.abs_diff(&projected_price) <= max_delta {
-    Ok(projected_price)
+    Some(projected_price)
   } else if projected_price < spot_price {
-    spot_price
-      .checked_sub(&max_delta)
-      .ok_or(CoreError::RebalanceDeviationArithmetic.into())
+    spot_price.checked_sub(&max_delta)
   } else {
-    spot_price
-      .checked_add(&max_delta)
-      .ok_or(CoreError::RebalanceDeviationArithmetic.into())
+    spot_price.checked_add(&max_delta)
   }
 }
 
@@ -314,6 +317,35 @@ impl RebalancePriceController for BuyPriceCurve {
     (interp.y_min() > IFix64::zero() && interp.y_min() < interp.y_max())
       .then_some(self)
       .ok_or(CoreError::RebalancePriceConstruction.into())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use super::{clamp_to_tolerance_inner, MAX_DEVIATION_PCT};
+  use crate::proofs::{narrow_ufix64, wide_ufix64};
+
+  fn tolerance_bps() -> UFix64<N9> {
+    let t: UFix64<N9> = wide_ufix64();
+    kani::assume(t > UFix64::zero() && t <= MAX_DEVIATION_PCT);
+    t
+  }
+
+  /// `clamp_to_tolerance` output lies in `[spot - spot*tol, spot + spot*tol]`
+  /// when both the clamp and the max-delta arithmetic compute.
+  #[kani::proof]
+  fn clamp_band_membership() {
+    let spot: UFix64<N9> = narrow_ufix64();
+    let projected: UFix64<N9> = narrow_ufix64();
+    let tol = tolerance_bps();
+
+    let clamped = clamp_to_tolerance_inner(spot, projected, tol);
+    let max_delta = spot.mul_div_ceil(tol, UFix64::<N9>::one());
+    clamped
+      .zip(max_delta)
+      .map(|(c, delta)| assert!(spot.abs_diff(&c) <= delta));
   }
 }
 
@@ -540,6 +572,44 @@ mod tests {
         } else {
           Err(TestCaseError::fail("floor/ceil narrow"))?;
         }
+      }
+    }
+
+    /// Sell-side loss per unit traded never exceeds `spot * tolerance`.
+    #[test]
+    fn sell_curve_loss_bounded(
+      cr in sell_cr(),
+      spot in oracle_spot(),
+      conf in oracle_ci(),
+    ) {
+      let oracle = OraclePrice { spot, conf };
+      if let Ok(curve) = SellPriceCurve::new(oracle, &SELL_CONFIG, DEVIATION_5_PCT) {
+        let max_delta = spot
+          .mul_div_ceil(DEVIATION_5_PCT, UFix64::<N9>::one())
+          .ok_or(TestCaseError::fail("max_delta"))?;
+        let price = curve
+          .price(cr)
+          .map_err(|e| TestCaseError::fail(format!("{e}")))?;
+        prop_assert!(spot.abs_diff(&price) <= max_delta);
+      }
+    }
+
+    /// Buy-side overpayment per unit traded never exceeds `spot * deviation`.
+    #[test]
+    fn buy_curve_overpayment_bounded(
+      cr in buy_cr(),
+      spot in oracle_spot(),
+      conf in oracle_ci(),
+    ) {
+      let oracle = OraclePrice { spot, conf };
+      if let Ok(curve) = BuyPriceCurve::new(oracle, &BUY_CONFIG, DEVIATION_5_PCT) {
+        let max_delta = spot
+          .mul_div_ceil(DEVIATION_5_PCT, UFix64::<N9>::one())
+          .ok_or(TestCaseError::fail("max_delta"))?;
+        let price = curve
+          .price(cr)
+          .map_err(|e| TestCaseError::fail(format!("{e}")))?;
+        prop_assert!(spot.abs_diff(&price) <= max_delta);
       }
     }
   }
