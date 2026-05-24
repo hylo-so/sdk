@@ -103,31 +103,37 @@ mod proofs {
   };
   use crate::proofs::token_amount;
 
+  /// `lp_token_out` rounds down: `tokens * nav <= amount * one`.
   #[kani::proof]
   fn lp_token_out_floor_favors_protocol() {
     let amount: UFix64<N6> = token_amount();
     let nav: UFix64<N6> = token_amount();
-    let one_bits = u128::from(UFix64::<N6>::one().bits);
-    assert!(lp_token_out_inner(amount, nav).is_none_or(|r| {
-      let issued_against_nav = u128::from(r.bits) * u128::from(nav.bits);
-      let deposit_in_one_units = u128::from(amount.bits) * one_bits;
-      issued_against_nav <= deposit_in_one_units
+    kani::assume(nav != UFix64::zero());
+    let result = lp_token_out_inner(amount, nav);
+    assert!(result.is_some());
+    let one = u128::from(UFix64::<N6>::one().bits);
+    assert!(result.is_none_or(|tokens| {
+      let issued = u128::from(tokens.bits) * u128::from(nav.bits);
+      let owed = u128::from(amount.bits) * one;
+      issued <= owed
     }));
   }
 
+  /// `amount_token_to_withdraw` rounds down: `payout * supply <= user_lp *
+  /// pool`.
   #[kani::proof]
   fn amount_token_to_withdraw_floor_favors_protocol() {
     let user_lp: UFix64<N6> = token_amount();
     let supply: UFix64<N6> = token_amount();
     let pool: UFix64<N6> = token_amount();
-    assert!(
-      amount_token_to_withdraw_inner(user_lp, supply, pool).is_none_or(|r| {
-        let withdrawn_against_supply =
-          u128::from(r.bits) * u128::from(supply.bits);
-        let user_share = u128::from(user_lp.bits) * u128::from(pool.bits);
-        withdrawn_against_supply <= user_share
-      })
-    );
+    kani::assume(supply != UFix64::zero());
+    let result = amount_token_to_withdraw_inner(user_lp, supply, pool);
+    assert!(result.is_some());
+    assert!(result.is_none_or(|payout| {
+      let withdrawn = u128::from(payout.bits) * u128::from(supply.bits);
+      let share = u128::from(user_lp.bits) * u128::from(pool.bits);
+      withdrawn <= share
+    }));
   }
 }
 

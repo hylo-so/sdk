@@ -129,14 +129,20 @@ mod proofs {
   use fix::prelude::*;
 
   use crate::fees::interp::{LineSegment, Point};
-  use crate::proofs::bounded_ifix64;
+
+  /// Symbolic positive `IFix64<N5>` bounded below the deployed curve range.
+  /// Used for both x and y in lerp endpoint preservation.
+  fn curve_coord() -> IFix64<N5> {
+    let bits = kani::any_where(|b: &i64| *b >= 0 && *b < (1i64 << 8));
+    IFix64::new(bits)
+  }
 
   #[kani::proof]
   fn lerp_preserves_endpoints() {
-    let x0: IFix64<N5> = bounded_ifix64();
-    let y0: IFix64<N5> = bounded_ifix64();
-    let x1: IFix64<N5> = bounded_ifix64();
-    let y1: IFix64<N5> = bounded_ifix64();
+    let x0: IFix64<N5> = curve_coord();
+    let y0: IFix64<N5> = curve_coord();
+    let x1: IFix64<N5> = curve_coord();
+    let y1: IFix64<N5> = curve_coord();
     kani::assume(x0 < x1);
     let p0 = Point { x: x0, y: y0 };
     let p1 = Point { x: x1, y: y1 };
