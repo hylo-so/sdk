@@ -19,7 +19,9 @@ pub fn max_sellable_collateral(
   let num_2 =
     collateral_usd_price.mul_div_ceil(total_collateral, UFix64::one())?;
   let num = num_1.checked_sub(&num_2)?;
-  let denom_2 = target_cr.checked_sub(&UFix64::one())?;
+  let denom_2 = target_cr
+    .checked_sub(&UFix64::one())
+    .filter(|d| *d != UFix64::zero())?;
   let denom = collateral_usd_price.mul_div_ceil(denom_2, UFix64::one())?;
   num.mul_div_floor(UFix64::one(), denom)
 }
@@ -43,7 +45,9 @@ pub fn max_buyable_collateral(
     collateral_usd_price.mul_div_floor(total_collateral, UFix64::one())?;
   let num_2 = target_cr.mul_div_ceil(virtual_stablecoin, UFix64::one())?;
   let num = num_1.checked_sub(&num_2)?;
-  let denom_2 = target_cr.checked_sub(&UFix64::one())?;
+  let denom_2 = target_cr
+    .checked_sub(&UFix64::one())
+    .filter(|d| *d != UFix64::zero())?;
   let denom = collateral_usd_price.mul_div_ceil(denom_2, UFix64::one())?;
   num.mul_div_floor(UFix64::one(), denom)
 }

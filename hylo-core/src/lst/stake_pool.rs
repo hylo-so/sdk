@@ -62,10 +62,32 @@ impl SplStakePool {
   /// # Errors
   /// * `pool_token_supply` is zero
   pub fn true_price(&self) -> Result<LstSolPrice> {
-    let price = self
-      .total_lamports
-      .mul_div_floor(UFix64::one(), self.pool_token_supply)
+    let price = true_price_inner(self.total_lamports, self.pool_token_supply)
       .ok_or(CoreError::StakePoolDivByZero)?;
     Ok(LstSolPrice::new(price.into(), self.last_update_epoch))
+  }
+}
+
+fn true_price_inner(
+  total_lamports: UFix64<N9>,
+  pool_token_supply: UFix64<N9>,
+) -> Option<UFix64<N9>> {
+  (pool_token_supply != UFix64::zero())
+    .then_some(total_lamports)
+    .and_then(|tl| tl.mul_div_floor(UFix64::one(), pool_token_supply))
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::lst::stake_pool::true_price_inner;
+  use crate::proofs::token_amount;
+
+  #[kani::proof]
+  fn true_price_none_for_zero_pool_supply() {
+    let total: UFix64<N9> = token_amount();
+    let supply = UFix64::<N9>::zero();
+    assert_eq!(true_price_inner(total, supply), None);
   }
 }
