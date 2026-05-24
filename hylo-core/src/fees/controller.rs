@@ -66,6 +66,16 @@ pub struct FeeExtract<Exp> {
 }
 
 impl<Exp> FeeExtract<Exp> {
+  pub fn new<FeeExp>(
+    fee: UFix64<FeeExp>,
+    amount_in: UFix64<Exp>,
+  ) -> Result<FeeExtract<Exp>>
+  where
+    UFix64<FeeExp>: FixExt,
+  {
+    FeeExtract::split(fee, amount_in).ok_or(FeeExtraction.into())
+  }
+
   fn split<FeeExp>(
     fee: UFix64<FeeExp>,
     amount_in: UFix64<Exp>,
@@ -80,16 +90,6 @@ impl<Exp> FeeExtract<Exp> {
       fees_extracted,
       amount_remaining,
     })
-  }
-
-  pub fn new<FeeExp>(
-    fee: UFix64<FeeExp>,
-    amount_in: UFix64<Exp>,
-  ) -> Result<FeeExtract<Exp>>
-  where
-    UFix64<FeeExp>: FixExt,
-  {
-    FeeExtract::split(fee, amount_in).ok_or(FeeExtraction.into())
   }
 }
 

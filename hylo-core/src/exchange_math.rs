@@ -7,22 +7,6 @@ use crate::error::CoreError::{
 };
 use crate::pyth::PriceRange;
 
-fn collateral_ratio_inner(
-  total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N9>,
-  amount_stablecoin: UFix64<N6>,
-) -> Option<UFix64<N9>> {
-  if amount_stablecoin == UFix64::zero() {
-    Some(UFix64::new(u64::MAX))
-  } else {
-    amount_stablecoin
-      .checked_convert::<N9>()
-      .and_then(|stablecoin| {
-        total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
-      })
-  }
-}
-
 /// Computes the current collateral ratio (CR) of the protocol.
 ///   `CR = total_sol_usd / stablecoin_cap`
 ///
@@ -40,6 +24,22 @@ pub fn collateral_ratio(
   .ok_or(CollateralRatio.into())
 }
 
+fn collateral_ratio_inner(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+  amount_stablecoin: UFix64<N6>,
+) -> Option<UFix64<N9>> {
+  if amount_stablecoin == UFix64::zero() {
+    Some(UFix64::new(u64::MAX))
+  } else {
+    amount_stablecoin
+      .checked_convert::<N9>()
+      .and_then(|stablecoin| {
+        total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
+      })
+  }
+}
+
 /// Multiples total SOL by the given spot price to get TVL.
 pub fn total_value_locked(
   total_collateral: UFix64<N9>,
@@ -50,15 +50,6 @@ pub fn total_value_locked(
     .ok_or(TotalValueLocked.into())
 }
 
-fn levercoin_market_cap_inner(
-  levercoin_supply: UFix64<N6>,
-  levercoin_nav: UFix64<N9>,
-) -> Option<UFix64<N9>> {
-  levercoin_supply
-    .checked_convert::<N9>()
-    .and_then(|supply| supply.mul_div_ceil(levercoin_nav, UFix64::one()))
-}
-
 /// Multiplies levercoin supply by NAV to get its market cap in USD.
 ///   `cap = supply * nav`
 pub fn levercoin_market_cap(
@@ -67,6 +58,15 @@ pub fn levercoin_market_cap(
 ) -> Result<UFix64<N9>> {
   levercoin_market_cap_inner(levercoin_supply, levercoin_nav)
     .ok_or(LevercoinMarketCapArithmetic.into())
+}
+
+fn levercoin_market_cap_inner(
+  levercoin_supply: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
+) -> Option<UFix64<N9>> {
+  levercoin_supply
+    .checked_convert::<N9>()
+    .and_then(|supply| supply.mul_div_ceil(levercoin_nav, UFix64::one()))
 }
 
 /// Given the next collateral ratio threshold below the current, determines the
@@ -101,17 +101,6 @@ pub fn max_mintable_stablecoin(
   }
 }
 
-fn max_swappable_stablecoin_inner(
-  target_collateral_ratio: UFix64<N2>,
-  total_value_locked: UFix64<N9>,
-  stablecoin_supply: UFix64<N6>,
-) -> Option<UFix64<N6>> {
-  total_value_locked
-    .checked_div(&target_collateral_ratio)
-    .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
-    .and_then(UFix64::checked_convert::<N6>)
-}
-
 /// Without changing TVL, computes how much stablecoin can be swapped from
 /// levercoin.
 ///
@@ -131,6 +120,17 @@ pub fn max_swappable_stablecoin(
     stablecoin_supply,
   )
   .ok_or(MaxSwappable.into())
+}
+
+fn max_swappable_stablecoin_inner(
+  target_collateral_ratio: UFix64<N2>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  total_value_locked
+    .checked_div(&target_collateral_ratio)
+    .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
+    .and_then(UFix64::checked_convert::<N6>)
 }
 
 /// Computes upper bound of levercoin NAV for minting.
@@ -185,22 +185,6 @@ pub fn next_levercoin_redeem_nav(
   }
 }
 
-fn depeg_stablecoin_nav_inner(
-  total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N9>,
-  stablecoin_supply: UFix64<N6>,
-) -> Option<UFix64<N9>> {
-  if stablecoin_supply == UFix64::zero() {
-    None
-  } else {
-    stablecoin_supply
-      .checked_convert::<N9>()
-      .and_then(|supply| {
-        total_collateral.mul_div_floor(usd_collateral_price, supply)
-      })
-  }
-}
-
 /// Computes stablecoin NAV during a depeg scenario.
 /// In all other modes, the price of the stablecoin is fixed to $1.
 ///   `NAV = total_sol * sol_usd_price / supply`
@@ -215,6 +199,22 @@ pub fn depeg_stablecoin_nav(
     stablecoin_supply,
   )
   .ok_or(StablecoinNav.into())
+}
+
+fn depeg_stablecoin_nav_inner(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Option<UFix64<N9>> {
+  if stablecoin_supply == UFix64::zero() {
+    None
+  } else {
+    stablecoin_supply
+      .checked_convert::<N9>()
+      .and_then(|supply| {
+        total_collateral.mul_div_floor(usd_collateral_price, supply)
+      })
+  }
 }
 
 #[cfg(kani)]

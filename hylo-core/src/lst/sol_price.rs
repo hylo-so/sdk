@@ -93,8 +93,17 @@ impl LstSolPrice {
     current_epoch: u64,
   ) -> Result<UFix64<N9>> {
     let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
-    convert_sol_to_lst_inner(amount_sol, lst_sol_price)
+    LstSolPrice::convert_sol_to_lst_inner(amount_sol, lst_sol_price)
       .ok_or(SolLstPriceConversion.into())
+  }
+
+  fn convert_sol_to_lst_inner(
+    amount_sol: UFix64<N9>,
+    lst_sol_price: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (lst_sol_price != UFix64::zero())
+      .then_some(amount_sol)
+      .and_then(|amt| amt.mul_div_floor(UFix64::one(), lst_sol_price))
   }
 
   /// Converts an amount of this LST to another one using their prices.
@@ -110,44 +119,33 @@ impl LstSolPrice {
   ) -> Result<UFix64<N9>> {
     let in_price = self.get_epoch_price(current_epoch)?;
     let out_price = other.get_epoch_price(current_epoch)?;
-    convert_lst_amount_inner(amount_lst, in_price, out_price)
+    LstSolPrice::convert_lst_amount_inner(amount_lst, in_price, out_price)
       .ok_or(LstLstPriceConversion.into())
   }
-}
 
-fn convert_sol_to_lst_inner(
-  amount_sol: UFix64<N9>,
-  lst_sol_price: UFix64<N9>,
-) -> Option<UFix64<N9>> {
-  (lst_sol_price != UFix64::zero())
-    .then_some(amount_sol)
-    .and_then(|amt| amt.mul_div_floor(UFix64::one(), lst_sol_price))
-}
-
-fn convert_lst_amount_inner(
-  amount_lst: UFix64<N9>,
-  in_price: UFix64<N9>,
-  out_price: UFix64<N9>,
-) -> Option<UFix64<N9>> {
-  (out_price != UFix64::zero())
-    .then_some(amount_lst)
-    .and_then(|amt| amt.mul_div_floor(in_price, out_price))
+  fn convert_lst_amount_inner(
+    amount_lst: UFix64<N9>,
+    in_price: UFix64<N9>,
+    out_price: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (out_price != UFix64::zero())
+      .then_some(amount_lst)
+      .and_then(|amt| amt.mul_div_floor(in_price, out_price))
+  }
 }
 
 #[cfg(kani)]
 mod proofs {
   use fix::prelude::*;
 
-  use crate::lst::sol_price::{
-    convert_lst_amount_inner, convert_sol_to_lst_inner,
-  };
+  use crate::lst::sol_price::LstSolPrice;
   use crate::proofs::token_amount;
 
   #[kani::proof]
   fn convert_sol_to_lst_none_for_zero_price() {
     let amount: UFix64<N9> = token_amount();
     let price = UFix64::<N9>::zero();
-    assert_eq!(convert_sol_to_lst_inner(amount, price), None);
+    assert_eq!(LstSolPrice::convert_sol_to_lst_inner(amount, price), None);
   }
 
   #[kani::proof]
@@ -155,7 +153,10 @@ mod proofs {
     let amount: UFix64<N9> = token_amount();
     let in_price: UFix64<N9> = token_amount();
     let out_price = UFix64::<N9>::zero();
-    assert_eq!(convert_lst_amount_inner(amount, in_price, out_price), None);
+    assert_eq!(
+      LstSolPrice::convert_lst_amount_inner(amount, in_price, out_price),
+      None
+    );
   }
 }
 

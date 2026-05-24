@@ -26,15 +26,6 @@ pub fn lp_token_nav(
   }
 }
 
-fn lp_token_out_inner(
-  amount_stablecoin_in: UFix64<N6>,
-  lp_token_nav: UFix64<N6>,
-) -> Option<UFix64<N6>> {
-  (lp_token_nav != UFix64::zero())
-    .then_some(amount_stablecoin_in)
-    .and_then(|amt| amt.mul_div_floor(UFix64::one(), lp_token_nav))
-}
-
 /// Simply divides the amount of stablecoin being deposited by the LP token NAV.
 pub fn lp_token_out(
   amount_stablecoin_in: UFix64<N6>,
@@ -44,14 +35,13 @@ pub fn lp_token_out(
     .ok_or(LpTokenOut.into())
 }
 
-fn amount_token_to_withdraw_inner(
-  user_lp_token_amount: UFix64<N6>,
-  lp_token_supply: UFix64<N6>,
-  pool_amount: UFix64<N6>,
+fn lp_token_out_inner(
+  amount_stablecoin_in: UFix64<N6>,
+  lp_token_nav: UFix64<N6>,
 ) -> Option<UFix64<N6>> {
-  (lp_token_supply != UFix64::zero())
-    .then_some(user_lp_token_amount)
-    .and_then(|amt| amt.mul_div_floor(pool_amount, lp_token_supply))
+  (lp_token_nav != UFix64::zero())
+    .then_some(amount_stablecoin_in)
+    .and_then(|amt| amt.mul_div_floor(UFix64::one(), lp_token_nav))
 }
 
 /// Computes amount of token to withdraw, given a user's LP equity in the pool.
@@ -66,6 +56,16 @@ pub fn amount_token_to_withdraw(
     pool_amount,
   )
   .ok_or(TokenWithdraw.into())
+}
+
+fn amount_token_to_withdraw_inner(
+  user_lp_token_amount: UFix64<N6>,
+  lp_token_supply: UFix64<N6>,
+  pool_amount: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  (lp_token_supply != UFix64::zero())
+    .then_some(user_lp_token_amount)
+    .and_then(|amt| amt.mul_div_floor(pool_amount, lp_token_supply))
 }
 
 /// Computes a stablecoin target based on levercoin in pool.
