@@ -81,6 +81,7 @@ mod proofs {
   use crate::proofs::any_ufix64;
   use crate::rebalance::pnl::RebalancePnl;
 
+  /// `from_stablecoin_flow` never returns `None` for any `(in, out)` pair.
   #[kani::proof]
   fn from_stablecoin_flow_always_some() {
     let in_amount: UFix64<N6> = any_ufix64();
