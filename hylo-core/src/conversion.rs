@@ -81,22 +81,52 @@ impl SwapConversion {
     &self,
     amount_stable: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
-    amount_stable
-      .mul_div_floor(self.stablecoin_nav, UFix64::one())
-      .and_then(|usd| {
-        usd.mul_div_floor(UFix64::one(), self.levercoin_nav.upper)
-      })
-      .ok_or(StableToLever.into())
+    try_stable_to_lever(
+      amount_stable,
+      self.stablecoin_nav,
+      self.levercoin_nav.upper,
+    )
+    .ok_or(StableToLever.into())
   }
 
   pub fn lever_to_stable(
     &self,
     amount_lever: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
+    try_lever_to_stable(
+      amount_lever,
+      self.levercoin_nav.lower,
+      self.stablecoin_nav,
+    )
+    .ok_or(LeverToStable.into())
+  }
+}
+
+fn try_stable_to_lever(
+  amount_stable: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
+  levercoin_nav_upper: UFix64<N9>,
+) -> Option<UFix64<N6>> {
+  if levercoin_nav_upper == UFix64::zero() {
+    None
+  } else {
+    amount_stable
+      .mul_div_floor(stablecoin_nav, UFix64::one())
+      .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
+  }
+}
+
+fn try_lever_to_stable(
+  amount_lever: UFix64<N6>,
+  levercoin_nav_lower: UFix64<N9>,
+  stablecoin_nav: UFix64<N9>,
+) -> Option<UFix64<N6>> {
+  if stablecoin_nav == UFix64::zero() {
+    None
+  } else {
     amount_lever
-      .mul_div_floor(self.levercoin_nav.lower, UFix64::one())
-      .and_then(|usd| usd.mul_div_floor(UFix64::one(), self.stablecoin_nav))
-      .ok_or(LeverToStable.into())
+      .mul_div_floor(levercoin_nav_lower, UFix64::one())
+      .and_then(|usd| usd.mul_div_floor(UFix64::one(), stablecoin_nav))
   }
 }
 
@@ -291,6 +321,36 @@ impl LstRebalanceConversion {
       .mul_div_floor(self.usdc_usd.lower, self.sol_usd)
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
       .ok_or(UsdcToLst.into())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::conversion::{try_lever_to_stable, try_stable_to_lever};
+  use crate::proofs::{any_ufix64, token_amount};
+
+  #[kani::proof]
+  fn try_stable_to_lever_none_for_zero_levercoin_nav() {
+    let amount: UFix64<N6> = token_amount();
+    let stablecoin_nav: UFix64<N9> = any_ufix64();
+    let levercoin_nav_upper = UFix64::<N9>::zero();
+    assert_eq!(
+      try_stable_to_lever(amount, stablecoin_nav, levercoin_nav_upper),
+      None
+    );
+  }
+
+  #[kani::proof]
+  fn try_lever_to_stable_none_for_zero_stablecoin_nav() {
+    let amount: UFix64<N6> = token_amount();
+    let levercoin_nav_lower: UFix64<N9> = any_ufix64();
+    let stablecoin_nav = UFix64::<N9>::zero();
+    assert_eq!(
+      try_lever_to_stable(amount, levercoin_nav_lower, stablecoin_nav),
+      None
+    );
   }
 }
 
