@@ -26,7 +26,7 @@ pub fn lp_token_nav(
   }
 }
 
-fn compute_lp_out(
+fn lp_token_out_inner(
   amount_stablecoin_in: UFix64<N6>,
   lp_token_nav: UFix64<N6>,
 ) -> Option<UFix64<N6>> {
@@ -40,10 +40,11 @@ pub fn lp_token_out(
   amount_stablecoin_in: UFix64<N6>,
   lp_token_nav: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  compute_lp_out(amount_stablecoin_in, lp_token_nav).ok_or(LpTokenOut.into())
+  lp_token_out_inner(amount_stablecoin_in, lp_token_nav)
+    .ok_or(LpTokenOut.into())
 }
 
-fn compute_withdrawal(
+fn amount_token_to_withdraw_inner(
   user_lp_token_amount: UFix64<N6>,
   lp_token_supply: UFix64<N6>,
   pool_amount: UFix64<N6>,
@@ -59,8 +60,12 @@ pub fn amount_token_to_withdraw(
   lp_token_supply: UFix64<N6>,
   pool_amount: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  compute_withdrawal(user_lp_token_amount, lp_token_supply, pool_amount)
-    .ok_or(TokenWithdraw.into())
+  amount_token_to_withdraw_inner(
+    user_lp_token_amount,
+    lp_token_supply,
+    pool_amount,
+  )
+  .ok_or(TokenWithdraw.into())
 }
 
 /// Computes a stablecoin target based on levercoin in pool.
@@ -93,22 +98,24 @@ pub fn stablecoin_withdrawal_fee(
 mod proofs {
   use fix::prelude::*;
 
-  use crate::earn_pool_math::{compute_lp_out, compute_withdrawal};
+  use crate::earn_pool_math::{
+    amount_token_to_withdraw_inner, lp_token_out_inner,
+  };
   use crate::proofs::token_amount;
 
   #[kani::proof]
-  fn compute_lp_out_none_for_zero_nav() {
+  fn lp_token_out_none_for_zero_nav() {
     let amount: UFix64<N6> = token_amount();
     let nav = UFix64::<N6>::zero();
-    assert_eq!(compute_lp_out(amount, nav), None);
+    assert_eq!(lp_token_out_inner(amount, nav), None);
   }
 
   #[kani::proof]
-  fn compute_withdrawal_none_for_zero_supply() {
+  fn amount_token_to_withdraw_none_for_zero_supply() {
     let user_lp: UFix64<N6> = token_amount();
     let pool: UFix64<N6> = token_amount();
     let supply = UFix64::<N6>::zero();
-    assert_eq!(compute_withdrawal(user_lp, supply, pool), None);
+    assert_eq!(amount_token_to_withdraw_inner(user_lp, supply, pool), None);
   }
 }
 

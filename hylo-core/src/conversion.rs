@@ -83,7 +83,7 @@ impl SwapConversion {
     &self,
     amount_stable: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
-    try_stable_to_lever(
+    stable_to_lever_inner(
       amount_stable,
       self.stablecoin_nav,
       self.levercoin_nav.upper,
@@ -95,7 +95,7 @@ impl SwapConversion {
     &self,
     amount_lever: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
-    try_lever_to_stable(
+    lever_to_stable_inner(
       amount_lever,
       self.levercoin_nav.lower,
       self.stablecoin_nav,
@@ -104,7 +104,7 @@ impl SwapConversion {
   }
 }
 
-fn try_stable_to_lever(
+fn stable_to_lever_inner(
   amount_stable: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
   levercoin_nav_upper: UFix64<N9>,
@@ -115,7 +115,7 @@ fn try_stable_to_lever(
     .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
 }
 
-fn try_lever_to_stable(
+fn lever_to_stable_inner(
   amount_lever: UFix64<N6>,
   levercoin_nav_lower: UFix64<N9>,
   stablecoin_nav: UFix64<N9>,
@@ -337,27 +337,27 @@ impl LstRebalanceConversion {
 mod proofs {
   use fix::prelude::*;
 
-  use crate::conversion::{try_lever_to_stable, try_stable_to_lever};
+  use crate::conversion::{lever_to_stable_inner, stable_to_lever_inner};
   use crate::proofs::{any_ufix64, token_amount};
 
   #[kani::proof]
-  fn try_stable_to_lever_none_for_zero_levercoin_nav() {
+  fn stable_to_lever_none_for_zero_levercoin_nav() {
     let amount: UFix64<N6> = token_amount();
     let stablecoin_nav: UFix64<N9> = any_ufix64();
     let levercoin_nav_upper = UFix64::<N9>::zero();
     assert_eq!(
-      try_stable_to_lever(amount, stablecoin_nav, levercoin_nav_upper),
+      stable_to_lever_inner(amount, stablecoin_nav, levercoin_nav_upper),
       None
     );
   }
 
   #[kani::proof]
-  fn try_lever_to_stable_none_for_zero_stablecoin_nav() {
+  fn lever_to_stable_none_for_zero_stablecoin_nav() {
     let amount: UFix64<N6> = token_amount();
     let levercoin_nav_lower: UFix64<N9> = any_ufix64();
     let stablecoin_nav = UFix64::<N9>::zero();
     assert_eq!(
-      try_lever_to_stable(amount, levercoin_nav_lower, stablecoin_nav),
+      lever_to_stable_inner(amount, levercoin_nav_lower, stablecoin_nav),
       None
     );
   }

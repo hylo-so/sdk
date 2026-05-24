@@ -93,7 +93,7 @@ impl LstSolPrice {
     current_epoch: u64,
   ) -> Result<UFix64<N9>> {
     let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
-    try_sol_to_lst(amount_sol, lst_sol_price)
+    convert_sol_to_lst_inner(amount_sol, lst_sol_price)
       .ok_or(SolLstPriceConversion.into())
   }
 
@@ -110,12 +110,12 @@ impl LstSolPrice {
   ) -> Result<UFix64<N9>> {
     let in_price = self.get_epoch_price(current_epoch)?;
     let out_price = other.get_epoch_price(current_epoch)?;
-    try_lst_amount_conversion(amount_lst, in_price, out_price)
+    convert_lst_amount_inner(amount_lst, in_price, out_price)
       .ok_or(LstLstPriceConversion.into())
   }
 }
 
-fn try_sol_to_lst(
+fn convert_sol_to_lst_inner(
   amount_sol: UFix64<N9>,
   lst_sol_price: UFix64<N9>,
 ) -> Option<UFix64<N9>> {
@@ -124,7 +124,7 @@ fn try_sol_to_lst(
     .and_then(|amt| amt.mul_div_floor(UFix64::one(), lst_sol_price))
 }
 
-fn try_lst_amount_conversion(
+fn convert_lst_amount_inner(
   amount_lst: UFix64<N9>,
   in_price: UFix64<N9>,
   out_price: UFix64<N9>,
@@ -138,22 +138,24 @@ fn try_lst_amount_conversion(
 mod proofs {
   use fix::prelude::*;
 
-  use crate::lst::sol_price::{try_lst_amount_conversion, try_sol_to_lst};
+  use crate::lst::sol_price::{
+    convert_lst_amount_inner, convert_sol_to_lst_inner,
+  };
   use crate::proofs::token_amount;
 
   #[kani::proof]
-  fn try_sol_to_lst_none_for_zero_price() {
+  fn convert_sol_to_lst_none_for_zero_price() {
     let amount: UFix64<N9> = token_amount();
     let price = UFix64::<N9>::zero();
-    assert_eq!(try_sol_to_lst(amount, price), None);
+    assert_eq!(convert_sol_to_lst_inner(amount, price), None);
   }
 
   #[kani::proof]
-  fn try_lst_amount_conversion_none_for_zero_out_price() {
+  fn convert_lst_amount_none_for_zero_out_price() {
     let amount: UFix64<N9> = token_amount();
     let in_price: UFix64<N9> = token_amount();
     let out_price = UFix64::<N9>::zero();
-    assert_eq!(try_lst_amount_conversion(amount, in_price, out_price), None);
+    assert_eq!(convert_lst_amount_inner(amount, in_price, out_price), None);
   }
 }
 
