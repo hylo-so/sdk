@@ -37,8 +37,9 @@ impl Conversion {
     amount_lst: UFix64<N9>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N6>> {
-    amount_lst
-      .mul_div_floor(self.lst_sol_price, UFix64::one())
+    (token_nav != UFix64::zero())
+      .then_some(amount_lst)
+      .and_then(|amt| amt.mul_div_floor(self.lst_sol_price, UFix64::one()))
       .and_then(|sol| sol.mul_div_floor(self.usd_sol_price.lower, token_nav))
       .map(UFix64::convert)
       .ok_or(LstToToken.into())
@@ -51,11 +52,12 @@ impl Conversion {
     amount_token: UFix64<N6>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    amount_token
-      .convert::<N9>()
-      .mul_div_floor(token_nav, self.usd_sol_price.upper)
-      .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
-      .ok_or(TokenToLst.into())
+    (self.usd_sol_price.upper != UFix64::zero()
+      && self.lst_sol_price != UFix64::zero())
+    .then_some(amount_token.convert::<N9>())
+    .and_then(|amt| amt.mul_div_floor(token_nav, self.usd_sol_price.upper))
+    .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
+    .ok_or(TokenToLst.into())
   }
 }
 
@@ -157,8 +159,11 @@ impl ExoConversion {
     amount: UFix64<N9>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N6>> {
-    amount
-      .mul_div_floor(self.collateral_usd_price.lower, token_nav)
+    (token_nav != UFix64::zero())
+      .then_some(amount)
+      .and_then(|amt| {
+        amt.mul_div_floor(self.collateral_usd_price.lower, token_nav)
+      })
       .and_then(UFix64::checked_convert::<N6>)
       .ok_or(ExoToToken.into())
   }
@@ -172,8 +177,9 @@ impl ExoConversion {
     amount: UFix64<N6>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    amount
-      .checked_convert::<N9>()
+    (self.collateral_usd_price.upper != UFix64::zero())
+      .then_some(amount)
+      .and_then(UFix64::checked_convert::<N9>)
       .and_then(|a| a.mul_div_floor(token_nav, self.collateral_usd_price.upper))
       .ok_or(ExoFromToken.into())
   }
@@ -211,8 +217,9 @@ impl UsdcStablecoinConversion {
     &self,
     stablecoin_amount: UFix64<N6>,
   ) -> Result<UFix64<N9>> {
-    stablecoin_amount
-      .checked_convert::<N9>()
+    (self.usdc_usd_price.upper != UFix64::zero())
+      .then_some(stablecoin_amount)
+      .and_then(UFix64::checked_convert::<N9>)
       .and_then(|a| a.mul_div_floor(UFix64::one(), self.usdc_usd_price.upper))
       .ok_or(ExoFromToken.into())
   }
@@ -261,8 +268,11 @@ impl ExoRebalanceConversion {
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    collateral_amount
-      .mul_div_floor(self.collateral_usd_price, self.usdc_usd_price.upper)
+    (self.usdc_usd_price.upper != UFix64::zero())
+      .then_some(collateral_amount)
+      .and_then(|amt| {
+        amt.mul_div_floor(self.collateral_usd_price, self.usdc_usd_price.upper)
+      })
       .ok_or(ExoCollateralToUsdc.into())
   }
 
@@ -274,8 +284,11 @@ impl ExoRebalanceConversion {
     &self,
     usdc_amount: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    usdc_amount
-      .mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
+    (self.collateral_usd_price != UFix64::zero())
+      .then_some(usdc_amount)
+      .and_then(|amt| {
+        amt.mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
+      })
       .ok_or(ExoUsdcToCollateral.into())
   }
 }
@@ -306,8 +319,9 @@ impl LstRebalanceConversion {
   /// # Errors
   /// * Arithmetic failure
   pub fn lst_to_usdc(&self, lst_amount: UFix64<N9>) -> Result<UFix64<N9>> {
-    lst_amount
-      .mul_div_floor(self.lst_sol, UFix64::one())
+    (self.usdc_usd.upper != UFix64::zero())
+      .then_some(lst_amount)
+      .and_then(|amt| amt.mul_div_floor(self.lst_sol, UFix64::one()))
       .and_then(|sol| sol.mul_div_floor(self.sol_usd, self.usdc_usd.upper))
       .ok_or(LstToUsdc.into())
   }
@@ -317,8 +331,9 @@ impl LstRebalanceConversion {
   /// # Errors
   /// * Arithmetic failure
   pub fn usdc_to_lst(&self, usdc_amount: UFix64<N9>) -> Result<UFix64<N9>> {
-    usdc_amount
-      .mul_div_floor(self.usdc_usd.lower, self.sol_usd)
+    (self.sol_usd != UFix64::zero() && self.lst_sol != UFix64::zero())
+      .then_some(usdc_amount)
+      .and_then(|amt| amt.mul_div_floor(self.usdc_usd.lower, self.sol_usd))
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
       .ok_or(UsdcToLst.into())
   }
