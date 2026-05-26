@@ -33,21 +33,25 @@ pub fn narrow_ufix64<Exp: Integer>() -> UFix64<Exp> {
 }
 
 #[must_use]
-pub fn narrow_price_range<Exp: Integer>() -> PriceRange<Exp> {
-  let lower: UFix64<Exp> = narrow_ufix64();
-  let upper: UFix64<Exp> = narrow_ufix64();
-  kani::assume(lower < upper);
-  PriceRange::new(lower, upper)
+pub fn narrow_price_range<Exp: Integer>() -> Option<PriceRange<Exp>> {
+  let price: UFix64<Exp> = narrow_ufix64();
+  let conf: UFix64<Exp> = UFix64::new(kani::any());
+  kani::assume(conf.bits > 0 && conf.bits <= 100);
+  let lower = price.checked_sub(&conf)?;
+  let upper = price.checked_add(&conf)?;
+  Some(PriceRange::new(lower, upper))
 }
 
-/// USDC modeled as pegged to $1 with a tight symbolic confidence interval
-/// (<= 50 bps). Single axis of nondeterminism via `PriceRange::from_conf`.
+/// `PriceRange` centered at $1 with a tight symbolic confidence interval.
 #[must_use]
-pub fn usdc_price_range() -> Option<PriceRange<N9>> {
+pub fn dollar_centered_price_range() -> Option<PriceRange<N9>> {
   let conf: UFix64<N9> = UFix64::new(kani::any());
   kani::assume(conf > UFix64::zero());
   kani::assume(conf.bits <= 5_000_000);
-  PriceRange::from_conf(UFix64::one(), conf).ok()
+  let one = UFix64::<N9>::one();
+  let lower = one.checked_sub(&conf)?;
+  let upper = one.checked_add(&conf)?;
+  Some(PriceRange::new(lower, upper))
 }
 
 fn deployed_curve_bounds() -> (i64, i64, i64, i64) {

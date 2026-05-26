@@ -178,7 +178,7 @@ pub mod proptest {
 
   /// USDC modeled as $1 ± up to 50 bps confidence. Single-axis spread via
   /// `PriceRange::from_conf`.
-  pub fn usdc_price_range() -> BoxedStrategy<PriceRange<N9>> {
+  pub fn centered_price_range() -> BoxedStrategy<PriceRange<N9>> {
     (1u64..5_000_000u64)
       .prop_filter_map("from_conf within range", |conf| {
         PriceRange::from_conf(UFix64::<N9>::one(), UFix64::new(conf)).ok()

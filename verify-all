@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+HARNESSES=(
+  "exchange_math::proofs::mint_nav_ge_redeem_nav"
+  "conversion::proofs::lst_conversion_roundtrip_favors_protocol"
+  "conversion::proofs::exo_conversion_roundtrip_favors_protocol"
+  "conversion::proofs::exo_rebalance_roundtrip_favors_protocol"
+  "fees::controller::proofs::fee_extract_conservation"
+  "fees::interp::proofs::lerp_preserves_endpoints"
+  "fees::interp::proofs::lerp_safe_on_deployed_curve_domain"
+  "rebalance::math::proofs::max_sellable_bounded_by_total"
+  "rebalance::math::proofs::max_sellable_does_not_overshoot_target"
+  "rebalance::math::proofs::max_buyable_does_not_undershoot_target"
+  "rebalance::mode::proofs::from_cr_mode_contains_input"
+  "rebalance::mode::proofs::mode_zones_disjoint"
+  "rebalance::pnl::proofs::from_stablecoin_flow_always_some"
+  "rebalance::pricing::proofs::clamp_band_membership"
+)
+
+LOG_DIR="$(mktemp -d -t verify-all-XXXXXX)"
+total_start=$SECONDS
+passed=0
+failed=0
+
+for harness in "${HARNESSES[@]}"; do
+  log="$LOG_DIR/${harness//::/_}.log"
+  start=$SECONDS
+  printf "%-70s " "$harness"
+  if verify --harness "$harness" >"$log" 2>&1; then
+    elapsed=$((SECONDS - start))
+    printf "PASS  %4ds\n" "$elapsed"
+    passed=$((passed + 1))
+  else
+    elapsed=$((SECONDS - start))
+    printf "FAIL  %4ds  log: %s\n" "$elapsed" "$log"
+    failed=$((failed + 1))
+  fi
+done
+
+total=$((SECONDS - total_start))
+echo ""
+echo "$passed passed, $failed failed in ${total}s"
+echo "logs: $LOG_DIR"

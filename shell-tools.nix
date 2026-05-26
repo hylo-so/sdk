@@ -29,13 +29,7 @@
   verify = writeShellApplication {
     name = "verify";
     text = ''
-      jobs=$(getconf _NPROCESSORS_ONLN)
-      nix develop .#kani --command cargo kani \
-        --output-format terse \
-        --jobs "$jobs" \
-        --enable-unstable \
-        --extra-cbmc-options="--verbosity 1" \
-        "$@"
+      nix develop .#kani --command cargo kani "$@"
     '';
   };
 

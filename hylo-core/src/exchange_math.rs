@@ -24,7 +24,7 @@ pub fn collateral_ratio(
   .ok_or(CollateralRatio.into())
 }
 
-fn collateral_ratio_inner(
+pub(crate) fn collateral_ratio_inner(
   total_collateral: UFix64<N9>,
   usd_collateral_price: UFix64<N9>,
   amount_stablecoin: UFix64<N6>,
@@ -233,32 +233,33 @@ mod proofs {
   #[kani::proof]
   fn mint_nav_ge_redeem_nav() {
     let total_collateral: UFix64<N9> = narrow_ufix64();
-    let usd_collateral_price = narrow_price_range::<N9>();
     let stablecoin_supply: UFix64<N6> = narrow_ufix64();
     let stablecoin_nav = UFix64::<N9>::one();
     let levercoin_supply: UFix64<N6> = narrow_ufix64();
-    let mint = next_levercoin_mint_nav(
-      total_collateral,
-      usd_collateral_price,
-      stablecoin_supply,
-      stablecoin_nav,
-      levercoin_supply,
-    );
-    let redeem = next_levercoin_redeem_nav(
-      total_collateral,
-      usd_collateral_price,
-      stablecoin_supply,
-      stablecoin_nav,
-      levercoin_supply,
-    );
-    mint.zip(redeem).map(|(m, r)| assert!(m >= r));
+    narrow_price_range::<N9>().map(|usd_collateral_price| {
+      let mint = next_levercoin_mint_nav(
+        total_collateral,
+        usd_collateral_price,
+        stablecoin_supply,
+        stablecoin_nav,
+        levercoin_supply,
+      );
+      let redeem = next_levercoin_redeem_nav(
+        total_collateral,
+        usd_collateral_price,
+        stablecoin_supply,
+        stablecoin_nav,
+        levercoin_supply,
+      );
+      mint.zip(redeem).map(|(m, r)| assert!(m >= r));
+    });
   }
 }
 
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Result;
-  use fix::prelude::UFix64;
+  use fix::prelude::*;
   use proptest::prelude::*;
 
   use super::*;
@@ -271,9 +272,9 @@ mod tests {
     fn max_mintable_props(
       state in protocol_state(()),
     ) {
-      if let Some(target) = state.next_target_collateral_ratio() {
+      if let Some(target) = state.next_target_collateral_ratio().and_then(UFix64::checked_convert) {
         // Skip unless target CR is above 100%, not realistic otherwise
-        if target > UFix64::one() {
+        if target > UFix64::<N2>::one() {
           let total_sol = state.total_sol().expect("total_sol");
           let max = max_mintable_stablecoin(
             target.convert::<N2>(),

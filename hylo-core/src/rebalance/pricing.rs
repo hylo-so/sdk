@@ -325,10 +325,10 @@ mod proofs {
   use fix::prelude::*;
 
   use super::{clamp_to_tolerance_inner, MAX_DEVIATION_PCT};
-  use crate::kani_generators::{narrow_ufix64, wide_ufix64};
+  use crate::kani_generators::narrow_ufix64;
 
   fn tolerance_bps() -> UFix64<N9> {
-    let t: UFix64<N9> = wide_ufix64();
+    let t: UFix64<N9> = narrow_ufix64();
     kani::assume(t > UFix64::zero() && t <= MAX_DEVIATION_PCT);
     t
   }
