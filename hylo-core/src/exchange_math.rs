@@ -220,42 +220,6 @@ fn depeg_stablecoin_nav_inner(
     })
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::exchange_math::{
-    next_levercoin_mint_nav, next_levercoin_redeem_nav,
-  };
-  use crate::kani_generators::{narrow_price_range, narrow_ufix64};
-
-  /// Mint NAV is at least redeem NAV for any shared state.
-  #[kani::proof]
-  fn mint_nav_ge_redeem_nav() {
-    let total_collateral: UFix64<N9> = narrow_ufix64();
-    let stablecoin_supply: UFix64<N6> = narrow_ufix64();
-    let stablecoin_nav = UFix64::<N9>::one();
-    let levercoin_supply: UFix64<N6> = narrow_ufix64();
-    narrow_price_range::<N9>().map(|usd_collateral_price| {
-      let mint = next_levercoin_mint_nav(
-        total_collateral,
-        usd_collateral_price,
-        stablecoin_supply,
-        stablecoin_nav,
-        levercoin_supply,
-      );
-      let redeem = next_levercoin_redeem_nav(
-        total_collateral,
-        usd_collateral_price,
-        stablecoin_supply,
-        stablecoin_nav,
-        levercoin_supply,
-      );
-      mint.zip(redeem).map(|(m, r)| assert!(m >= r));
-    });
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Result;
@@ -497,5 +461,41 @@ mod tests {
     let got = max_swappable_stablecoin(target_cr, tvl, stablecoin)?;
     assert_eq!(expected, got);
     Ok(())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::exchange_math::{
+    next_levercoin_mint_nav, next_levercoin_redeem_nav,
+  };
+  use crate::kani_generators::{narrow_price_range, narrow_ufix64};
+
+  /// Mint NAV is at least redeem NAV for any shared state.
+  #[kani::proof]
+  fn mint_nav_ge_redeem_nav() {
+    let total_collateral: UFix64<N9> = narrow_ufix64();
+    let stablecoin_supply: UFix64<N6> = narrow_ufix64();
+    let stablecoin_nav = UFix64::<N9>::one();
+    let levercoin_supply: UFix64<N6> = narrow_ufix64();
+    narrow_price_range::<N9>().map(|usd_collateral_price| {
+      let mint = next_levercoin_mint_nav(
+        total_collateral,
+        usd_collateral_price,
+        stablecoin_supply,
+        stablecoin_nav,
+        levercoin_supply,
+      );
+      let redeem = next_levercoin_redeem_nav(
+        total_collateral,
+        usd_collateral_price,
+        stablecoin_supply,
+        stablecoin_nav,
+        levercoin_supply,
+      );
+      mint.zip(redeem).map(|(m, r)| assert!(m >= r));
+    });
   }
 }

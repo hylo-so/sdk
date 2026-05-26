@@ -52,95 +52,6 @@ pub fn max_buyable_collateral(
   num.mul_div_floor(UFix64::one(), denom)
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::exchange_math::{
-    collateral_ratio_inner, total_value_locked_inner,
-  };
-  use crate::kani_generators::narrow_ufix64;
-  use crate::rebalance::math::{
-    max_buyable_collateral, max_sellable_collateral,
-  };
-
-  /// `max_sellable_collateral(...) <= total_collateral`.
-  #[kani::proof]
-  fn max_sellable_bounded_by_total() {
-    let target_cr: UFix64<N9> = narrow_ufix64();
-    let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
-    let collateral_usd_price: UFix64<N9> = narrow_ufix64();
-    let total_collateral: UFix64<N9> = narrow_ufix64();
-    max_sellable_collateral(
-      target_cr,
-      virtual_stablecoin,
-      collateral_usd_price,
-      total_collateral,
-    )
-    .map(|s| assert!(s <= total_collateral));
-  }
-
-  /// Selling `max_sellable` drives CR to at most `target_cr`.
-  #[kani::proof]
-  fn max_sellable_does_not_overshoot_target() {
-    let target_cr: UFix64<N9> = narrow_ufix64();
-    let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
-    let collateral_usd_price: UFix64<N9> = narrow_ufix64();
-    let total_collateral: UFix64<N9> = narrow_ufix64();
-    let post_sale_cr = max_sellable_collateral(
-      target_cr,
-      virtual_stablecoin,
-      collateral_usd_price,
-      total_collateral,
-    )
-    .and_then(|sellable| {
-      let remaining_collateral = total_collateral.checked_sub(&sellable)?;
-      let usdc_proceeds: UFix64<N6> =
-        total_value_locked_inner(sellable, collateral_usd_price)
-          .and_then(UFix64::checked_convert)?;
-      let remaining_virtual_stablecoin =
-        virtual_stablecoin.checked_sub(&usdc_proceeds)?;
-      // Convergence is undefined if rebalance drains the pair
-      kani::assume(remaining_virtual_stablecoin != UFix64::zero());
-      collateral_ratio_inner(
-        remaining_collateral,
-        collateral_usd_price,
-        remaining_virtual_stablecoin,
-      )
-    });
-    assert!(post_sale_cr.is_none_or(|cr| cr <= target_cr));
-  }
-
-  /// Buying `max_buyable` drives CR to at least `target_cr`.
-  #[kani::proof]
-  fn max_buyable_does_not_undershoot_target() {
-    let target_cr: UFix64<N9> = narrow_ufix64();
-    let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
-    let collateral_usd_price: UFix64<N9> = narrow_ufix64();
-    let total_collateral: UFix64<N9> = narrow_ufix64();
-    let post_buy_cr = max_buyable_collateral(
-      target_cr,
-      virtual_stablecoin,
-      collateral_usd_price,
-      total_collateral,
-    )
-    .and_then(|buyable| {
-      let post_buy_collateral = total_collateral.checked_add(&buyable)?;
-      let usdc_cost: UFix64<N6> = buyable
-        .mul_div_ceil(collateral_usd_price, UFix64::one())
-        .and_then(UFix64::checked_convert)?;
-      let post_buy_virtual_stablecoin =
-        virtual_stablecoin.checked_add(&usdc_cost)?;
-      collateral_ratio_inner(
-        post_buy_collateral,
-        collateral_usd_price,
-        post_buy_virtual_stablecoin,
-      )
-    });
-    assert!(post_buy_cr.is_none_or(|cr| cr >= target_cr));
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use anyhow::{Context, Result};
@@ -261,5 +172,94 @@ mod tests {
     let fifty = UFix64::<N9>::new(50_000_000_000);
     assert_eq!(buyable, fifty);
     Ok(())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::exchange_math::{
+    collateral_ratio_inner, total_value_locked_inner,
+  };
+  use crate::kani_generators::narrow_ufix64;
+  use crate::rebalance::math::{
+    max_buyable_collateral, max_sellable_collateral,
+  };
+
+  /// `max_sellable_collateral(...) <= total_collateral`.
+  #[kani::proof]
+  fn max_sellable_bounded_by_total() {
+    let target_cr: UFix64<N9> = narrow_ufix64();
+    let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
+    let collateral_usd_price: UFix64<N9> = narrow_ufix64();
+    let total_collateral: UFix64<N9> = narrow_ufix64();
+    max_sellable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .map(|s| assert!(s <= total_collateral));
+  }
+
+  /// Selling `max_sellable` drives CR to at most `target_cr`.
+  #[kani::proof]
+  fn max_sellable_does_not_overshoot_target() {
+    let target_cr: UFix64<N9> = narrow_ufix64();
+    let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
+    let collateral_usd_price: UFix64<N9> = narrow_ufix64();
+    let total_collateral: UFix64<N9> = narrow_ufix64();
+    let post_sale_cr = max_sellable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .and_then(|sellable| {
+      let remaining_collateral = total_collateral.checked_sub(&sellable)?;
+      let usdc_proceeds: UFix64<N6> =
+        total_value_locked_inner(sellable, collateral_usd_price)
+          .and_then(UFix64::checked_convert)?;
+      let remaining_virtual_stablecoin =
+        virtual_stablecoin.checked_sub(&usdc_proceeds)?;
+      // Convergence is undefined if rebalance drains the pair
+      kani::assume(remaining_virtual_stablecoin != UFix64::zero());
+      collateral_ratio_inner(
+        remaining_collateral,
+        collateral_usd_price,
+        remaining_virtual_stablecoin,
+      )
+    });
+    assert!(post_sale_cr.is_none_or(|cr| cr <= target_cr));
+  }
+
+  /// Buying `max_buyable` drives CR to at least `target_cr`.
+  #[kani::proof]
+  fn max_buyable_does_not_undershoot_target() {
+    let target_cr: UFix64<N9> = narrow_ufix64();
+    let virtual_stablecoin: UFix64<N6> = narrow_ufix64();
+    let collateral_usd_price: UFix64<N9> = narrow_ufix64();
+    let total_collateral: UFix64<N9> = narrow_ufix64();
+    let post_buy_cr = max_buyable_collateral(
+      target_cr,
+      virtual_stablecoin,
+      collateral_usd_price,
+      total_collateral,
+    )
+    .and_then(|buyable| {
+      let post_buy_collateral = total_collateral.checked_add(&buyable)?;
+      let usdc_cost: UFix64<N6> = buyable
+        .mul_div_ceil(collateral_usd_price, UFix64::one())
+        .and_then(UFix64::checked_convert)?;
+      let post_buy_virtual_stablecoin =
+        virtual_stablecoin.checked_add(&usdc_cost)?;
+      collateral_ratio_inner(
+        post_buy_collateral,
+        collateral_usd_price,
+        post_buy_virtual_stablecoin,
+      )
+    });
+    assert!(post_buy_cr.is_none_or(|cr| cr >= target_cr));
   }
 }

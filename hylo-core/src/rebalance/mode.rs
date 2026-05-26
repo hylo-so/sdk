@@ -135,35 +135,6 @@ pub fn validate_stablecoin_mint_threshold(
     .ok_or(StablecoinMintThresholdInvalid.into())
 }
 
-#[cfg(kani)]
-mod proofs {
-  use std::ops::RangeBounds;
-
-  use fix::prelude::*;
-
-  use crate::kani_generators::any_ufix64;
-  use crate::rebalance::mode::RebalanceMode;
-
-  /// `from_cr(cr)` returns a mode whose `active_range` contains `cr`.
-  #[kani::proof]
-  fn from_cr_mode_contains_input() {
-    let cr: UFix64<N9> = any_ufix64();
-    let mode = RebalanceMode::from_cr(cr);
-    assert!(mode.active_range().contains(&cr));
-  }
-
-  /// Exactly one mode's `active_range` contains any given `cr` (partition).
-  #[kani::proof]
-  fn mode_zones_disjoint() {
-    let cr: UFix64<N9> = any_ufix64();
-    let count = RebalanceMode::ALL
-      .iter()
-      .filter(|m| m.active_range().contains(&cr))
-      .count();
-    assert_eq!(count, 1);
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use RebalanceMode::*;
@@ -233,5 +204,34 @@ mod tests {
     assert!(r.contains(&UFix64::constant(1_200_000_000)));
     assert!(r.contains(&UFix64::constant(1_349_999_999)));
     assert!(!r.contains(&UFix64::constant(1_350_000_000)));
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use std::ops::RangeBounds;
+
+  use fix::prelude::*;
+
+  use crate::kani_generators::any_ufix64;
+  use crate::rebalance::mode::RebalanceMode;
+
+  /// `from_cr(cr)` returns a mode whose `active_range` contains `cr`.
+  #[kani::proof]
+  fn from_cr_mode_contains_input() {
+    let cr: UFix64<N9> = any_ufix64();
+    let mode = RebalanceMode::from_cr(cr);
+    assert!(mode.active_range().contains(&cr));
+  }
+
+  /// Exactly one mode's `active_range` contains any given `cr` (partition).
+  #[kani::proof]
+  fn mode_zones_disjoint() {
+    let cr: UFix64<N9> = any_ufix64();
+    let count = RebalanceMode::ALL
+      .iter()
+      .filter(|m| m.active_range().contains(&cr))
+      .count();
+    assert_eq!(count, 1);
   }
 }

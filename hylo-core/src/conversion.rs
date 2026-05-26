@@ -385,60 +385,6 @@ impl LstRebalanceConversion {
   }
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use crate::conversion::{Conversion, ExoConversion, ExoRebalanceConversion};
-  use crate::kani_generators::{
-    dollar_centered_price_range, narrow_price_range, narrow_ufix64,
-  };
-
-  /// `token_to_lst(lst_to_token(x)) <= x`.
-  #[kani::proof]
-  fn lst_conversion_roundtrip_favors_protocol() {
-    let amount_lst: UFix64<N9> = narrow_ufix64();
-    let token_nav: UFix64<N9> = narrow_ufix64();
-    let lst_sol_price: UFix64<N9> = narrow_ufix64();
-    let back = narrow_price_range::<N9>().and_then(|usd_sol_price| {
-      let conv = Conversion::new(usd_sol_price, lst_sol_price);
-      conv
-        .lst_to_token_inner(amount_lst, token_nav)
-        .and_then(|t| conv.token_to_lst_inner(t, token_nav))
-    });
-    assert!(back.is_none_or(|b| b <= amount_lst));
-  }
-
-  /// `token_to_exo(exo_to_token(x)) <= x`.
-  #[kani::proof]
-  fn exo_conversion_roundtrip_favors_protocol() {
-    let amount: UFix64<N9> = narrow_ufix64();
-    let token_nav = UFix64::<N9>::one();
-    let back = narrow_price_range::<N9>().and_then(|collateral_usd_price| {
-      let conv = ExoConversion::new(collateral_usd_price);
-      conv
-        .exo_to_token_inner(amount, token_nav)
-        .and_then(|t| conv.token_to_exo_inner(t, token_nav))
-    });
-    assert!(back.is_none_or(|b| b <= amount));
-  }
-
-  /// `usdc_to_collateral(collateral_to_usdc(x)) <= x`.
-  #[kani::proof]
-  fn exo_rebalance_roundtrip_favors_protocol() {
-    let amount: UFix64<N9> = narrow_ufix64();
-    let collateral_usd_price = UFix64::<N9>::one();
-    let back = dollar_centered_price_range().and_then(|usdc_usd_price| {
-      let conv =
-        ExoRebalanceConversion::new(collateral_usd_price, usdc_usd_price);
-      conv
-        .collateral_to_usdc_inner(amount)
-        .and_then(|u| conv.usdc_to_collateral_inner(u))
-    });
-    assert!(back.is_none_or(|b| b <= amount));
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use proptest::prelude::*;
@@ -597,7 +543,7 @@ mod tests {
       amount_lst in lst_amount(),
       lst_sol in lst_sol_price(),
       sol_usd in usd_sol_price(),
-      usdc_usd in centered_price_range(),
+      usdc_usd in dollar_centered_price_range(),
     ) {
       let conv = LstRebalanceConversion::new(lst_sol, sol_usd, usdc_usd);
       let usdc = conv.lst_to_usdc(amount_lst)?;
@@ -610,7 +556,7 @@ mod tests {
     fn swap_conversion_stable_roundtrip_favors_protocol(
       amount_stable in token_amount(),
       stablecoin_nav in stablecoin_nav(),
-      levercoin_nav in centered_price_range(),
+      levercoin_nav in dollar_centered_price_range(),
     ) {
       let conv = SwapConversion::new(stablecoin_nav, levercoin_nav);
       let lever = conv.stable_to_lever(amount_stable)?;
@@ -659,5 +605,59 @@ mod tests {
     let lst = conv.usdc_to_lst(UFix64::new(200_000_000_000))?;
     assert_eq!(lst, UFix64::new(1_026_300_467));
     Ok(())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::conversion::{Conversion, ExoConversion, ExoRebalanceConversion};
+  use crate::kani_generators::{
+    dollar_centered_price_range, narrow_price_range, narrow_ufix64,
+  };
+
+  /// `token_to_lst(lst_to_token(x)) <= x`.
+  #[kani::proof]
+  fn lst_conversion_roundtrip_favors_protocol() {
+    let amount_lst: UFix64<N9> = narrow_ufix64();
+    let token_nav: UFix64<N9> = narrow_ufix64();
+    let lst_sol_price: UFix64<N9> = narrow_ufix64();
+    let back = narrow_price_range::<N9>().and_then(|usd_sol_price| {
+      let conv = Conversion::new(usd_sol_price, lst_sol_price);
+      conv
+        .lst_to_token_inner(amount_lst, token_nav)
+        .and_then(|t| conv.token_to_lst_inner(t, token_nav))
+    });
+    assert!(back.is_none_or(|b| b <= amount_lst));
+  }
+
+  /// `token_to_exo(exo_to_token(x)) <= x`.
+  #[kani::proof]
+  fn exo_conversion_roundtrip_favors_protocol() {
+    let amount: UFix64<N9> = narrow_ufix64();
+    let token_nav = UFix64::<N9>::one();
+    let back = narrow_price_range::<N9>().and_then(|collateral_usd_price| {
+      let conv = ExoConversion::new(collateral_usd_price);
+      conv
+        .exo_to_token_inner(amount, token_nav)
+        .and_then(|t| conv.token_to_exo_inner(t, token_nav))
+    });
+    assert!(back.is_none_or(|b| b <= amount));
+  }
+
+  /// `usdc_to_collateral(collateral_to_usdc(x)) <= x`.
+  #[kani::proof]
+  fn exo_rebalance_roundtrip_favors_protocol() {
+    let amount: UFix64<N9> = narrow_ufix64();
+    let collateral_usd_price = UFix64::<N9>::one();
+    let back = dollar_centered_price_range().and_then(|usdc_usd_price| {
+      let conv =
+        ExoRebalanceConversion::new(collateral_usd_price, usdc_usd_price);
+      conv
+        .collateral_to_usdc_inner(amount)
+        .and_then(|u| conv.usdc_to_collateral_inner(u))
+    });
+    assert!(back.is_none_or(|b| b <= amount));
   }
 }

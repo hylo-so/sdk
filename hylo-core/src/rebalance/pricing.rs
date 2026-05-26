@@ -320,33 +320,6 @@ impl RebalancePriceController for BuyPriceCurve {
   }
 }
 
-#[cfg(kani)]
-mod proofs {
-  use fix::prelude::*;
-
-  use super::{clamp_to_tolerance_inner, MAX_DEVIATION_PCT};
-  use crate::kani_generators::narrow_ufix64;
-
-  fn tolerance_bps() -> UFix64<N9> {
-    let t: UFix64<N9> = narrow_ufix64();
-    kani::assume(t > UFix64::zero() && t <= MAX_DEVIATION_PCT);
-    t
-  }
-
-  /// `|spot - clamp_to_tolerance(spot, _, tol)| <= spot * tol`.
-  #[kani::proof]
-  fn clamp_band_membership() {
-    let spot: UFix64<N9> = narrow_ufix64();
-    let projected: UFix64<N9> = narrow_ufix64();
-    let tol = tolerance_bps();
-    let clamped = clamp_to_tolerance_inner(spot, projected, tol);
-    let max_delta = spot.mul_div_ceil(tol, UFix64::<N9>::one());
-    clamped
-      .zip(max_delta)
-      .map(|(c, delta)| assert!(spot.abs_diff(&c) <= delta));
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use more_asserts::*;
@@ -610,5 +583,32 @@ mod tests {
         prop_assert!(spot.abs_diff(&price) <= max_delta);
       }
     }
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use super::{clamp_to_tolerance_inner, MAX_DEVIATION_PCT};
+  use crate::kani_generators::narrow_ufix64;
+
+  fn tolerance_bps() -> UFix64<N9> {
+    let t: UFix64<N9> = narrow_ufix64();
+    kani::assume(t > UFix64::zero() && t <= MAX_DEVIATION_PCT);
+    t
+  }
+
+  /// `|spot - clamp_to_tolerance(spot, _, tol)| <= spot * tol`.
+  #[kani::proof]
+  fn clamp_band_membership() {
+    let spot: UFix64<N9> = narrow_ufix64();
+    let projected: UFix64<N9> = narrow_ufix64();
+    let tol = tolerance_bps();
+    let clamped = clamp_to_tolerance_inner(spot, projected, tol);
+    let max_delta = spot.mul_div_ceil(tol, UFix64::<N9>::one());
+    clamped
+      .zip(max_delta)
+      .map(|(c, delta)| assert!(spot.abs_diff(&c) <= delta));
   }
 }
