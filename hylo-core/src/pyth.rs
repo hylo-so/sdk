@@ -112,9 +112,8 @@ impl<Exp: Integer> PriceRange<Exp> {
     Self::new(price, price)
   }
 
-  /// Raw construction of range from lower and upper bounds.
   #[must_use]
-  pub fn new(lower: UFix64<Exp>, upper: UFix64<Exp>) -> PriceRange<Exp> {
+  pub(crate) fn new(lower: UFix64<Exp>, upper: UFix64<Exp>) -> PriceRange<Exp> {
     PriceRange { lower, upper }
   }
 }

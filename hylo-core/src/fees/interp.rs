@@ -38,10 +38,10 @@ impl<Exp: Integer> LineSegment<'_, Exp> {
     let Point { x: x0, y: y0 } = self.0;
     let Point { x: x1, y: y1 } = self.1;
     let denom = x1.checked_sub(x0)?;
-    let div = y1
-      .checked_sub(y0)?
-      .mul_div_ceil(x.checked_sub(x0)?, denom)?;
-    y0.checked_add(&div)
+    (denom != IFix64::zero())
+      .then_some(denom)
+      .and_then(|d| y1.checked_sub(y0)?.mul_div_ceil(x.checked_sub(x0)?, d))
+      .and_then(|div| y0.checked_add(&div))
   }
 }
 
@@ -71,31 +71,31 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
 
   /// Constructs interpolator with no validations.
   #[must_use]
-  pub fn from_points_unchecked(points: [Point<Exp>; RES]) -> Self {
+  pub const fn from_points_unchecked(points: [Point<Exp>; RES]) -> Self {
     FixInterp { points }
   }
 
   /// Returns the minimum x value in the domain.
   #[must_use]
-  pub fn x_min(&self) -> IFix64<Exp> {
+  pub const fn x_min(&self) -> IFix64<Exp> {
     self.points[0].x
   }
 
   /// Returns the maximum x value in the domain.
   #[must_use]
-  pub fn x_max(&self) -> IFix64<Exp> {
+  pub const fn x_max(&self) -> IFix64<Exp> {
     self.points[RES - 1].x
   }
 
   /// Returns the minimum y value in the range.
   #[must_use]
-  pub fn y_min(&self) -> IFix64<Exp> {
+  pub const fn y_min(&self) -> IFix64<Exp> {
     self.points[0].y
   }
 
   /// Returns the maximum y value in the range.
   #[must_use]
-  pub fn y_max(&self) -> IFix64<Exp> {
+  pub const fn y_max(&self) -> IFix64<Exp> {
     self.points[RES - 1].y
   }
 
@@ -125,9 +125,34 @@ mod tests {
   use std::fs::File;
   use std::io::Write;
 
+  use itertools::Itertools;
+
   use super::*;
   use crate::error::CoreError;
-  use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
+  use crate::fees::curves::{
+    mint_fee_curve, redeem_fee_curve, MINT_FEE_INV, REDEEM_FEE_LN,
+  };
+
+  fn assert_segments_preserve_endpoints(points: &[Point<N5>]) {
+    points
+      .iter()
+      .tuple_windows::<(_, _)>()
+      .for_each(|(p0, p1)| {
+        let seg = LineSegment(p0, p1);
+        assert_eq!(seg.lerp(p0.x), Some(p0.y));
+        assert_eq!(seg.lerp(p1.x), Some(p1.y));
+      });
+  }
+
+  #[test]
+  fn mint_curve_continuous_at_breakpoints() {
+    assert_segments_preserve_endpoints(MINT_FEE_INV);
+  }
+
+  #[test]
+  fn redeem_curve_continuous_at_breakpoints() {
+    assert_segments_preserve_endpoints(REDEEM_FEE_LN);
+  }
 
   #[test]
   fn from_points_insufficient_points() {
@@ -268,5 +293,50 @@ mod tests {
       writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
       Ok(())
     })
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::fees::interp::{LineSegment, Point};
+  use crate::kani_generators::{deployed_curve_x, deployed_curve_y};
+
+  fn curve_coord() -> IFix64<N5> {
+    let bits = kani::any_where(|b: &i64| *b >= 0 && *b < (1i64 << 8));
+    IFix64::new(bits)
+  }
+
+  /// `lerp` at either endpoint returns that endpoint's `y`.
+  #[kani::proof]
+  fn lerp_preserves_endpoints() {
+    let x0: IFix64<N5> = curve_coord();
+    let y0: IFix64<N5> = curve_coord();
+    let x1: IFix64<N5> = curve_coord();
+    let y1: IFix64<N5> = curve_coord();
+    kani::assume(x0 < x1);
+    let p0 = Point { x: x0, y: y0 };
+    let p1 = Point { x: x1, y: y1 };
+    let seg = LineSegment(&p0, &p1);
+    let pick: bool = kani::any();
+    let (x, expected) = if pick { (x0, y0) } else { (x1, y1) };
+    assert_eq!(seg.lerp(x), Some(expected));
+  }
+
+  /// `lerp` is total on segments within the deployed fee curve domain.
+  #[kani::proof]
+  fn lerp_safe_on_deployed_curve_domain() {
+    let x0 = deployed_curve_x();
+    let x1 = deployed_curve_x();
+    kani::assume(x0 < x1);
+    let y0 = deployed_curve_y();
+    let y1 = deployed_curve_y();
+    let x = deployed_curve_x();
+    kani::assume(x >= x0 && x <= x1);
+    let p0 = Point::<N5> { x: x0, y: y0 };
+    let p1 = Point::<N5> { x: x1, y: y1 };
+    let seg = LineSegment(&p0, &p1);
+    assert!(seg.lerp(x).is_some());
   }
 }

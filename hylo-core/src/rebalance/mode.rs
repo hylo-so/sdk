@@ -69,6 +69,15 @@ impl RangeBounds<UFix64<N9>> for CrRange {
 }
 
 impl RebalanceMode {
+  pub const ALL: [RebalanceMode; 6] = [
+    RebalanceMode::Depeg,
+    RebalanceMode::SellZone2,
+    RebalanceMode::SellZone1,
+    RebalanceMode::Neutral,
+    RebalanceMode::BuyZone1,
+    RebalanceMode::BuyZone2,
+  ];
+
   #[must_use]
   pub const fn active_range(&self) -> CrRange {
     match self {
@@ -132,9 +141,6 @@ mod tests {
 
   use super::*;
 
-  const ALL: [RebalanceMode; 6] =
-    [Depeg, SellZone2, SellZone1, Neutral, BuyZone1, BuyZone2];
-
   #[test]
   fn mode_ordering() {
     assert!(Depeg < SellZone2);
@@ -146,9 +152,9 @@ mod tests {
 
   #[test]
   fn ranges_are_contiguous() {
-    ALL
+    RebalanceMode::ALL
       .iter()
-      .zip(ALL.iter().skip(1))
+      .zip(RebalanceMode::ALL.iter().skip(1))
       .for_each(|(lower, upper)| {
         assert_eq!(
           lower.active_range().end(),
@@ -165,7 +171,7 @@ mod tests {
 
   #[test]
   fn from_cr_start_inclusive() {
-    ALL.iter().for_each(|mode| {
+    RebalanceMode::ALL.iter().for_each(|mode| {
       assert_eq!(
         mode.active_range().start().map(RebalanceMode::from_cr),
         Ok(*mode),
@@ -175,7 +181,7 @@ mod tests {
 
   #[test]
   fn from_cr_end_exclusive() {
-    ALL.iter().for_each(|mode| {
+    RebalanceMode::ALL.iter().for_each(|mode| {
       if let Ok(end) = mode.active_range().end() {
         let just_below = UFix64::new(end.bits - 1);
         assert_ne!(RebalanceMode::from_cr(end), *mode);
@@ -198,5 +204,34 @@ mod tests {
     assert!(r.contains(&UFix64::constant(1_200_000_000)));
     assert!(r.contains(&UFix64::constant(1_349_999_999)));
     assert!(!r.contains(&UFix64::constant(1_350_000_000)));
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use std::ops::RangeBounds;
+
+  use fix::prelude::*;
+
+  use crate::kani_generators::any_ufix64;
+  use crate::rebalance::mode::RebalanceMode;
+
+  /// `from_cr(cr)` returns a mode whose `active_range` contains `cr`.
+  #[kani::proof]
+  fn from_cr_mode_contains_input() {
+    let cr: UFix64<N9> = any_ufix64();
+    let mode = RebalanceMode::from_cr(cr);
+    assert!(mode.active_range().contains(&cr));
+  }
+
+  /// Exactly one mode's `active_range` contains any given `cr` (partition).
+  #[kani::proof]
+  fn mode_zones_disjoint() {
+    let cr: UFix64<N9> = any_ufix64();
+    let count = RebalanceMode::ALL
+      .iter()
+      .filter(|m| m.active_range().contains(&cr))
+      .count();
+    assert_eq!(count, 1);
   }
 }

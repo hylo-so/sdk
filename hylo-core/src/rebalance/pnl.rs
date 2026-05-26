@@ -102,3 +102,19 @@ mod tests {
     );
   }
 }
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::kani_generators::any_ufix64;
+  use crate::rebalance::pnl::RebalancePnl;
+
+  /// `from_stablecoin_flow` never returns `None` for any `(in, out)` pair.
+  #[kani::proof]
+  fn from_stablecoin_flow_always_some() {
+    let in_amount: UFix64<N6> = any_ufix64();
+    let out_amount: UFix64<N6> = any_ufix64();
+    assert!(RebalancePnl::from_stablecoin_flow(in_amount, out_amount).is_some());
+  }
+}

@@ -93,10 +93,17 @@ impl LstSolPrice {
     current_epoch: u64,
   ) -> Result<UFix64<N9>> {
     let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
-    let lst = amount_sol
-      .mul_div_floor(UFix64::one(), lst_sol_price)
-      .ok_or(SolLstPriceConversion)?;
-    Ok(lst)
+    LstSolPrice::convert_sol_to_lst_inner(amount_sol, lst_sol_price)
+      .ok_or(SolLstPriceConversion.into())
+  }
+
+  fn convert_sol_to_lst_inner(
+    amount_sol: UFix64<N9>,
+    lst_sol_price: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (lst_sol_price != UFix64::zero())
+      .then_some(amount_sol)
+      .and_then(|amt| amt.mul_div_floor(UFix64::one(), lst_sol_price))
   }
 
   /// Converts an amount of this LST to another one using their prices.
@@ -112,9 +119,18 @@ impl LstSolPrice {
   ) -> Result<UFix64<N9>> {
     let in_price = self.get_epoch_price(current_epoch)?;
     let out_price = other.get_epoch_price(current_epoch)?;
-    amount_lst
-      .mul_div_floor(in_price, out_price)
+    LstSolPrice::convert_lst_amount_inner(amount_lst, in_price, out_price)
       .ok_or(LstLstPriceConversion.into())
+  }
+
+  fn convert_lst_amount_inner(
+    amount_lst: UFix64<N9>,
+    in_price: UFix64<N9>,
+    out_price: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (out_price != UFix64::zero())
+      .then_some(amount_lst)
+      .and_then(|amt| amt.mul_div_floor(in_price, out_price))
   }
 }
 

@@ -62,10 +62,41 @@ impl SplStakePool {
   /// # Errors
   /// * `pool_token_supply` is zero
   pub fn true_price(&self) -> Result<LstSolPrice> {
-    let price = self
-      .total_lamports
-      .mul_div_floor(UFix64::one(), self.pool_token_supply)
-      .ok_or(CoreError::StakePoolDivByZero)?;
+    let price = SplStakePool::true_price_inner(
+      self.total_lamports,
+      self.pool_token_supply,
+    )
+    .ok_or(CoreError::StakePoolDivByZero)?;
     Ok(LstSolPrice::new(price.into(), self.last_update_epoch))
+  }
+
+  fn true_price_inner(
+    total_lamports: UFix64<N9>,
+    pool_token_supply: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (pool_token_supply != UFix64::zero())
+      .then_some(total_lamports)
+      .and_then(|tl| tl.mul_div_floor(UFix64::one(), pool_token_supply))
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use fix::prelude::*;
+
+  use crate::error::CoreError;
+  use crate::lst::stake_pool::SplStakePool;
+
+  #[test]
+  fn true_price_zero_supply_returns_div_by_zero() {
+    let pool = SplStakePool {
+      total_lamports: UFix64::<N9>::one(),
+      pool_token_supply: UFix64::<N9>::zero(),
+      last_update_epoch: 0,
+    };
+    assert_eq!(
+      pool.true_price().err(),
+      Some(CoreError::StakePoolDivByZero.into()),
+    );
   }
 }

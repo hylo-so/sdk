@@ -73,15 +73,20 @@ impl<Exp> FeeExtract<Exp> {
   where
     UFix64<FeeExp>: FixExt,
   {
-    let fees_extracted = amount_in
-      .mul_div_ceil(fee, UFix64::<FeeExp>::one())
-      .ok_or(FeeExtraction)?;
+    FeeExtract::split(fee, amount_in).ok_or(FeeExtraction.into())
+  }
 
-    let amount_remaining = amount_in
-      .checked_sub(&fees_extracted)
-      .ok_or(FeeExtraction)?;
-
-    Ok(FeeExtract {
+  fn split<FeeExp>(
+    fee: UFix64<FeeExp>,
+    amount_in: UFix64<Exp>,
+  ) -> Option<FeeExtract<Exp>>
+  where
+    UFix64<FeeExp>: FixExt,
+  {
+    let fees_extracted =
+      amount_in.mul_div_ceil(fee, UFix64::<FeeExp>::one())?;
+    let amount_remaining = amount_in.checked_sub(&fees_extracted)?;
+    Some(FeeExtract {
       fees_extracted,
       amount_remaining,
     })
@@ -216,5 +221,24 @@ mod tests {
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
     assert_eq!(out.err(), Some(FeeExtraction.into()));
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::fees::controller::FeeExtract;
+  use crate::kani_generators::{narrow_ufix64, tolerance};
+
+  /// `fees_extracted + amount_remaining == amount_in` (fee in [0, 1.0]).
+  #[kani::proof]
+  fn fee_extract_conservation() {
+    let fee = tolerance();
+    let amount_in: UFix64<N6> = narrow_ufix64();
+    let extract = FeeExtract::split(fee, amount_in);
+    assert!(extract.is_none_or(|e| {
+      e.fees_extracted.checked_add(&e.amount_remaining) == Some(amount_in)
+    }));
   }
 }

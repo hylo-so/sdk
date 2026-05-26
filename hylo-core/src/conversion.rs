@@ -37,11 +37,21 @@ impl Conversion {
     amount_lst: UFix64<N9>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N6>> {
-    amount_lst
-      .mul_div_floor(self.lst_sol_price, UFix64::one())
+    self
+      .lst_to_token_inner(amount_lst, token_nav)
+      .ok_or(LstToToken.into())
+  }
+
+  fn lst_to_token_inner(
+    &self,
+    amount_lst: UFix64<N9>,
+    token_nav: UFix64<N9>,
+  ) -> Option<UFix64<N6>> {
+    (token_nav != UFix64::zero())
+      .then_some(amount_lst)
+      .and_then(|amt| amt.mul_div_floor(self.lst_sol_price, UFix64::one()))
       .and_then(|sol| sol.mul_div_floor(self.usd_sol_price.lower, token_nav))
       .map(UFix64::convert)
-      .ok_or(LstToToken.into())
   }
 
   /// Finds the conversion amount between a protocol tokens and an LST.
@@ -51,11 +61,21 @@ impl Conversion {
     amount_token: UFix64<N6>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    amount_token
-      .convert::<N9>()
-      .mul_div_floor(token_nav, self.usd_sol_price.upper)
-      .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
+    self
+      .token_to_lst_inner(amount_token, token_nav)
       .ok_or(TokenToLst.into())
+  }
+
+  fn token_to_lst_inner(
+    &self,
+    amount_token: UFix64<N6>,
+    token_nav: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (self.usd_sol_price.upper != UFix64::zero()
+      && self.lst_sol_price != UFix64::zero())
+    .then_some(amount_token.convert::<N9>())
+    .and_then(|amt| amt.mul_div_floor(token_nav, self.usd_sol_price.upper))
+    .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
   }
 }
 
@@ -81,22 +101,46 @@ impl SwapConversion {
     &self,
     amount_stable: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
-    amount_stable
-      .mul_div_floor(self.stablecoin_nav, UFix64::one())
-      .and_then(|usd| {
-        usd.mul_div_floor(UFix64::one(), self.levercoin_nav.upper)
-      })
-      .ok_or(StableToLever.into())
+    SwapConversion::stable_to_lever_inner(
+      amount_stable,
+      self.stablecoin_nav,
+      self.levercoin_nav.upper,
+    )
+    .ok_or(StableToLever.into())
+  }
+
+  fn stable_to_lever_inner(
+    amount_stable: UFix64<N6>,
+    stablecoin_nav: UFix64<N9>,
+    levercoin_nav_upper: UFix64<N9>,
+  ) -> Option<UFix64<N6>> {
+    (levercoin_nav_upper != UFix64::zero())
+      .then_some(amount_stable)
+      .and_then(|amt| amt.mul_div_floor(stablecoin_nav, UFix64::one()))
+      .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
   }
 
   pub fn lever_to_stable(
     &self,
     amount_lever: UFix64<N6>,
   ) -> Result<UFix64<N6>> {
-    amount_lever
-      .mul_div_floor(self.levercoin_nav.lower, UFix64::one())
-      .and_then(|usd| usd.mul_div_floor(UFix64::one(), self.stablecoin_nav))
-      .ok_or(LeverToStable.into())
+    SwapConversion::lever_to_stable_inner(
+      amount_lever,
+      self.levercoin_nav.lower,
+      self.stablecoin_nav,
+    )
+    .ok_or(LeverToStable.into())
+  }
+
+  fn lever_to_stable_inner(
+    amount_lever: UFix64<N6>,
+    levercoin_nav_lower: UFix64<N9>,
+    stablecoin_nav: UFix64<N9>,
+  ) -> Option<UFix64<N6>> {
+    (stablecoin_nav != UFix64::zero())
+      .then_some(amount_lever)
+      .and_then(|amt| amt.mul_div_floor(levercoin_nav_lower, UFix64::one()))
+      .and_then(|usd| usd.mul_div_floor(UFix64::one(), stablecoin_nav))
   }
 }
 
@@ -127,10 +171,22 @@ impl ExoConversion {
     amount: UFix64<N9>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N6>> {
-    amount
-      .mul_div_floor(self.collateral_usd_price.lower, token_nav)
-      .and_then(UFix64::checked_convert::<N6>)
+    self
+      .exo_to_token_inner(amount, token_nav)
       .ok_or(ExoToToken.into())
+  }
+
+  fn exo_to_token_inner(
+    &self,
+    amount: UFix64<N9>,
+    token_nav: UFix64<N9>,
+  ) -> Option<UFix64<N6>> {
+    (token_nav != UFix64::zero())
+      .then_some(amount)
+      .and_then(|amt| {
+        amt.mul_div_floor(self.collateral_usd_price.lower, token_nav)
+      })
+      .and_then(UFix64::checked_convert::<N6>)
   }
 
   /// Converts a protocol token amount to exogenous collateral.
@@ -142,10 +198,20 @@ impl ExoConversion {
     amount: UFix64<N6>,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    amount
-      .checked_convert::<N9>()
-      .and_then(|a| a.mul_div_floor(token_nav, self.collateral_usd_price.upper))
+    self
+      .token_to_exo_inner(amount, token_nav)
       .ok_or(ExoFromToken.into())
+  }
+
+  fn token_to_exo_inner(
+    &self,
+    amount: UFix64<N6>,
+    token_nav: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (self.collateral_usd_price.upper != UFix64::zero())
+      .then_some(amount)
+      .and_then(UFix64::checked_convert::<N9>)
+      .and_then(|a| a.mul_div_floor(token_nav, self.collateral_usd_price.upper))
   }
 }
 
@@ -181,8 +247,9 @@ impl UsdcStablecoinConversion {
     &self,
     stablecoin_amount: UFix64<N6>,
   ) -> Result<UFix64<N9>> {
-    stablecoin_amount
-      .checked_convert::<N9>()
+    (self.usdc_usd_price.upper != UFix64::zero())
+      .then_some(stablecoin_amount)
+      .and_then(UFix64::checked_convert::<N9>)
       .and_then(|a| a.mul_div_floor(UFix64::one(), self.usdc_usd_price.upper))
       .ok_or(ExoFromToken.into())
   }
@@ -231,9 +298,20 @@ impl ExoRebalanceConversion {
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    collateral_amount
-      .mul_div_floor(self.collateral_usd_price, self.usdc_usd_price.upper)
+    self
+      .collateral_to_usdc_inner(collateral_amount)
       .ok_or(ExoCollateralToUsdc.into())
+  }
+
+  fn collateral_to_usdc_inner(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (self.usdc_usd_price.upper != UFix64::zero())
+      .then_some(collateral_amount)
+      .and_then(|amt| {
+        amt.mul_div_floor(self.collateral_usd_price, self.usdc_usd_price.upper)
+      })
   }
 
   /// Converts USDC to exogenous collateral
@@ -244,9 +322,20 @@ impl ExoRebalanceConversion {
     &self,
     usdc_amount: UFix64<N9>,
   ) -> Result<UFix64<N9>> {
-    usdc_amount
-      .mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
+    self
+      .usdc_to_collateral_inner(usdc_amount)
       .ok_or(ExoUsdcToCollateral.into())
+  }
+
+  fn usdc_to_collateral_inner(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Option<UFix64<N9>> {
+    (self.collateral_usd_price != UFix64::zero())
+      .then_some(usdc_amount)
+      .and_then(|amt| {
+        amt.mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
+      })
   }
 }
 
@@ -276,8 +365,9 @@ impl LstRebalanceConversion {
   /// # Errors
   /// * Arithmetic failure
   pub fn lst_to_usdc(&self, lst_amount: UFix64<N9>) -> Result<UFix64<N9>> {
-    lst_amount
-      .mul_div_floor(self.lst_sol, UFix64::one())
+    (self.usdc_usd.upper != UFix64::zero())
+      .then_some(lst_amount)
+      .and_then(|amt| amt.mul_div_floor(self.lst_sol, UFix64::one()))
       .and_then(|sol| sol.mul_div_floor(self.sol_usd, self.usdc_usd.upper))
       .ok_or(LstToUsdc.into())
   }
@@ -287,8 +377,9 @@ impl LstRebalanceConversion {
   /// # Errors
   /// * Arithmetic failure
   pub fn usdc_to_lst(&self, usdc_amount: UFix64<N9>) -> Result<UFix64<N9>> {
-    usdc_amount
-      .mul_div_floor(self.usdc_usd.lower, self.sol_usd)
+    (self.sol_usd != UFix64::zero() && self.lst_sol != UFix64::zero())
+      .then_some(usdc_amount)
+      .and_then(|amt| amt.mul_div_floor(self.usdc_usd.lower, self.sol_usd))
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
       .ok_or(UsdcToLst.into())
   }
@@ -445,6 +536,33 @@ mod tests {
         eq_tolerance!(amount_lever, amount_lever_out, N6, UFix64::new(10000))
       );
     }
+
+    /// `usdc_to_lst(lst_to_usdc(x)) <= x`.
+    #[test]
+    fn lst_rebalance_roundtrip_favors_protocol(
+      amount_lst in lst_amount(),
+      lst_sol in lst_sol_price(),
+      sol_usd in usd_sol_price(),
+      usdc_usd in dollar_centered_price_range(),
+    ) {
+      let conv = LstRebalanceConversion::new(lst_sol, sol_usd, usdc_usd);
+      let usdc = conv.lst_to_usdc(amount_lst)?;
+      let back = conv.usdc_to_lst(usdc)?;
+      prop_assert!(back <= amount_lst);
+    }
+
+    /// `lever_to_stable(stable_to_lever(x)) <= x`.
+    #[test]
+    fn swap_conversion_stable_roundtrip_favors_protocol(
+      amount_stable in token_amount(),
+      stablecoin_nav in stablecoin_nav(),
+      levercoin_nav in dollar_centered_price_range(),
+    ) {
+      let conv = SwapConversion::new(stablecoin_nav, levercoin_nav);
+      let lever = conv.stable_to_lever(amount_stable)?;
+      let back = conv.lever_to_stable(lever)?;
+      prop_assert!(back <= amount_stable);
+    }
   }
 
   const UNDERPEGGED_USDC: PriceRange<N9> = PriceRange {
@@ -487,5 +605,59 @@ mod tests {
     let lst = conv.usdc_to_lst(UFix64::new(200_000_000_000))?;
     assert_eq!(lst, UFix64::new(1_026_300_467));
     Ok(())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::conversion::{Conversion, ExoConversion, ExoRebalanceConversion};
+  use crate::kani_generators::{
+    dollar_centered_price_range, narrow_price_range, narrow_ufix64,
+  };
+
+  /// `token_to_lst(lst_to_token(x)) <= x`.
+  #[kani::proof]
+  fn lst_conversion_roundtrip_favors_protocol() {
+    let amount_lst: UFix64<N9> = narrow_ufix64();
+    let token_nav: UFix64<N9> = narrow_ufix64();
+    let lst_sol_price: UFix64<N9> = narrow_ufix64();
+    let back = narrow_price_range::<N9>().and_then(|usd_sol_price| {
+      let conv = Conversion::new(usd_sol_price, lst_sol_price);
+      conv
+        .lst_to_token_inner(amount_lst, token_nav)
+        .and_then(|t| conv.token_to_lst_inner(t, token_nav))
+    });
+    assert!(back.is_none_or(|b| b <= amount_lst));
+  }
+
+  /// `token_to_exo(exo_to_token(x)) <= x`.
+  #[kani::proof]
+  fn exo_conversion_roundtrip_favors_protocol() {
+    let amount: UFix64<N9> = narrow_ufix64();
+    let token_nav = UFix64::<N9>::one();
+    let back = narrow_price_range::<N9>().and_then(|collateral_usd_price| {
+      let conv = ExoConversion::new(collateral_usd_price);
+      conv
+        .exo_to_token_inner(amount, token_nav)
+        .and_then(|t| conv.token_to_exo_inner(t, token_nav))
+    });
+    assert!(back.is_none_or(|b| b <= amount));
+  }
+
+  /// `usdc_to_collateral(collateral_to_usdc(x)) <= x`.
+  #[kani::proof]
+  fn exo_rebalance_roundtrip_favors_protocol() {
+    let amount: UFix64<N9> = narrow_ufix64();
+    let collateral_usd_price = UFix64::<N9>::one();
+    let back = dollar_centered_price_range().and_then(|usdc_usd_price| {
+      let conv =
+        ExoRebalanceConversion::new(collateral_usd_price, usdc_usd_price);
+      conv
+        .collateral_to_usdc_inner(amount)
+        .and_then(|u| conv.usdc_to_collateral_inner(u))
+    });
+    assert!(back.is_none_or(|b| b <= amount));
   }
 }

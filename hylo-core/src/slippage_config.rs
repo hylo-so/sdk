@@ -34,20 +34,33 @@ impl SlippageConfig {
     self.slippage_tolerance.try_into()
   }
 
+  fn tolerable_amount<Exp>(
+    expected: UFix64<Exp>,
+    tolerance: UFix64<N4>,
+  ) -> Option<UFix64<Exp>> {
+    UFix64::<N4>::one()
+      .checked_sub(&tolerance)
+      .and_then(|factor| expected.mul_div_floor(factor, UFix64::one()))
+  }
+
+  fn meets_tolerance<Exp>(
+    expected: UFix64<Exp>,
+    tolerance: UFix64<N4>,
+    token_out: UFix64<Exp>,
+  ) -> Option<bool> {
+    SlippageConfig::tolerable_amount(expected, tolerance)
+      .map(|t| token_out >= t)
+  }
+
   fn validate_inner<Exp>(
     expected: UFix64<Exp>,
     tolerance: UFix64<N4>,
     token_out: UFix64<Exp>,
   ) -> Result<()> {
-    // Invert slippage and multiply with expected amount
-    let tolerable_amount = UFix64::<N4>::one()
-      .checked_sub(&tolerance)
-      .and_then(|factor| expected.mul_div_floor(factor, UFix64::one()))
-      .ok_or(SlippageArithmetic)?;
-    if token_out >= tolerable_amount {
-      Ok(())
-    } else {
-      Err(SlippageExceeded.into())
+    match SlippageConfig::meets_tolerance(expected, tolerance, token_out) {
+      None => Err(SlippageArithmetic.into()),
+      Some(true) => Ok(()),
+      Some(false) => Err(SlippageExceeded.into()),
     }
   }
 
@@ -77,7 +90,7 @@ impl SlippageConfig {
 mod tests {
   use fix::prelude::*;
 
-  use crate::error::CoreError::SlippageExceeded;
+  use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
   use crate::slippage_config::SlippageConfig;
 
   const ONE_PERCENT: UFix64<N4> = UFix64::constant(100);
@@ -130,5 +143,16 @@ mod tests {
     // 100% tolerance accepts any output including zero
     let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::one());
     assert!(config.validate_token_out(UFix64::<N6>::zero()).is_ok());
+  }
+
+  #[test]
+  fn slippage_tolerance_above_one_neg() {
+    // 100.01% tolerance rejected as arithmetic error
+    let config =
+      SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::new(10_001));
+    assert_eq!(
+      config.validate_token_out(UFix64::<N6>::one()),
+      Err(SlippageArithmetic.into())
+    );
   }
 }

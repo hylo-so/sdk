@@ -31,9 +31,17 @@ pub fn lp_token_out(
   amount_stablecoin_in: UFix64<N6>,
   lp_token_nav: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  amount_stablecoin_in
-    .mul_div_floor(UFix64::one(), lp_token_nav)
+  lp_token_out_inner(amount_stablecoin_in, lp_token_nav)
     .ok_or(LpTokenOut.into())
+}
+
+fn lp_token_out_inner(
+  amount_stablecoin_in: UFix64<N6>,
+  lp_token_nav: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  (lp_token_nav != UFix64::zero())
+    .then_some(amount_stablecoin_in)
+    .and_then(|amt| amt.mul_div_floor(UFix64::one(), lp_token_nav))
 }
 
 /// Computes amount of token to withdraw, given a user's LP equity in the pool.
@@ -42,9 +50,22 @@ pub fn amount_token_to_withdraw(
   lp_token_supply: UFix64<N6>,
   pool_amount: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
-  user_lp_token_amount
-    .mul_div_floor(pool_amount, lp_token_supply)
-    .ok_or(TokenWithdraw.into())
+  amount_token_to_withdraw_inner(
+    user_lp_token_amount,
+    lp_token_supply,
+    pool_amount,
+  )
+  .ok_or(TokenWithdraw.into())
+}
+
+fn amount_token_to_withdraw_inner(
+  user_lp_token_amount: UFix64<N6>,
+  lp_token_supply: UFix64<N6>,
+  pool_amount: UFix64<N6>,
+) -> Option<UFix64<N6>> {
+  (lp_token_supply != UFix64::zero())
+    .then_some(user_lp_token_amount)
+    .and_then(|amt| amt.mul_div_floor(pool_amount, lp_token_supply))
 }
 
 /// Computes a stablecoin target based on levercoin in pool.
@@ -96,6 +117,33 @@ mod tests {
       prop_assert!(
         amount_token_to_withdraw(user_lp_token_amount, lp_token_supply, pool_amount).is_ok()
       );
+    }
+
+    /// `amount_token_to_withdraw` rounds down: `payout * supply <= user_lp * pool`.
+    #[test]
+    fn amount_token_to_withdraw_floor_favors_protocol(
+      user_lp in token_amount(),
+      supply in token_amount(),
+      pool in token_amount(),
+    ) {
+      if let Ok(payout) = amount_token_to_withdraw(user_lp, supply, pool) {
+        let withdrawn = u128::from(payout.bits) * u128::from(supply.bits);
+        let share = u128::from(user_lp.bits) * u128::from(pool.bits);
+        prop_assert!(withdrawn <= share);
+      }
+    }
+
+    /// `lp_token_out` rounds down: `tokens * nav <= amount * one`.
+    #[test]
+    fn lp_token_out_floor_favors_protocol(
+      amount in token_amount(),
+      nav in token_amount(),
+    ) {
+      if let Ok(tokens) = lp_token_out(amount, nav) {
+        let issued = u128::from(tokens.bits) * u128::from(nav.bits);
+        let owed = u128::from(amount.bits) * UFix128::<N6>::one().bits;
+        prop_assert!(issued <= owed);
+      }
     }
   }
 

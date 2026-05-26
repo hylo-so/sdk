@@ -16,15 +16,27 @@ pub fn collateral_ratio(
   usd_collateral_price: UFix64<N9>,
   amount_stablecoin: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
+  collateral_ratio_inner(
+    total_collateral,
+    usd_collateral_price,
+    amount_stablecoin,
+  )
+  .ok_or(CollateralRatio.into())
+}
+
+pub(crate) fn collateral_ratio_inner(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+  amount_stablecoin: UFix64<N6>,
+) -> Option<UFix64<N9>> {
   if amount_stablecoin == UFix64::zero() {
-    Ok(UFix64::new(u64::MAX))
+    Some(UFix64::new(u64::MAX))
   } else {
     amount_stablecoin
       .checked_convert::<N9>()
       .and_then(|stablecoin| {
         total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
       })
-      .ok_or(CollateralRatio.into())
   }
 }
 
@@ -33,9 +45,15 @@ pub fn total_value_locked(
   total_collateral: UFix64<N9>,
   usd_collateral_price: UFix64<N9>,
 ) -> Result<UFix64<N9>> {
-  total_collateral
-    .mul_div_floor(usd_collateral_price, UFix64::one())
+  total_value_locked_inner(total_collateral, usd_collateral_price)
     .ok_or(TotalValueLocked.into())
+}
+
+pub(crate) fn total_value_locked_inner(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+) -> Option<UFix64<N9>> {
+  total_collateral.mul_div_floor(usd_collateral_price, UFix64::one())
 }
 
 /// Multiplies levercoin supply by NAV to get its market cap in USD.
@@ -44,10 +62,17 @@ pub fn levercoin_market_cap(
   levercoin_supply: UFix64<N6>,
   levercoin_nav: UFix64<N9>,
 ) -> Result<UFix64<N9>> {
+  levercoin_market_cap_inner(levercoin_supply, levercoin_nav)
+    .ok_or(LevercoinMarketCapArithmetic.into())
+}
+
+fn levercoin_market_cap_inner(
+  levercoin_supply: UFix64<N6>,
+  levercoin_nav: UFix64<N9>,
+) -> Option<UFix64<N9>> {
   levercoin_supply
     .checked_convert::<N9>()
     .and_then(|supply| supply.mul_div_ceil(levercoin_nav, UFix64::one()))
-    .ok_or(LevercoinMarketCapArithmetic.into())
 }
 
 /// Given the next collateral ratio threshold below the current, determines the
@@ -95,11 +120,23 @@ pub fn max_swappable_stablecoin(
   total_value_locked: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N6>> {
+  max_swappable_stablecoin_inner(
+    target_collateral_ratio,
+    total_value_locked,
+    stablecoin_supply,
+  )
+  .ok_or(MaxSwappable.into())
+}
+
+fn max_swappable_stablecoin_inner(
+  target_collateral_ratio: UFix64<N2>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Option<UFix64<N6>> {
   total_value_locked
     .checked_div(&target_collateral_ratio)
     .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
     .and_then(UFix64::checked_convert::<N6>)
-    .ok_or(MaxSwappable.into())
 }
 
 /// Computes upper bound of levercoin NAV for minting.
@@ -162,18 +199,31 @@ pub fn depeg_stablecoin_nav(
   usd_collateral_price: UFix64<N9>,
   stablecoin_supply: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
-  stablecoin_supply
-    .checked_convert::<N9>()
+  depeg_stablecoin_nav_inner(
+    total_collateral,
+    usd_collateral_price,
+    stablecoin_supply,
+  )
+  .ok_or(StablecoinNav.into())
+}
+
+fn depeg_stablecoin_nav_inner(
+  total_collateral: UFix64<N9>,
+  usd_collateral_price: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Option<UFix64<N9>> {
+  (stablecoin_supply != UFix64::zero())
+    .then_some(stablecoin_supply)
+    .and_then(UFix64::checked_convert::<N9>)
     .and_then(|supply| {
       total_collateral.mul_div_floor(usd_collateral_price, supply)
     })
-    .ok_or(StablecoinNav.into())
 }
 
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Result;
-  use fix::prelude::UFix64;
+  use fix::prelude::*;
   use proptest::prelude::*;
 
   use super::*;
@@ -186,9 +236,9 @@ mod tests {
     fn max_mintable_props(
       state in protocol_state(()),
     ) {
-      if let Some(target) = state.next_target_collateral_ratio() {
+      if let Some(target) = state.next_target_collateral_ratio().and_then(UFix64::checked_convert) {
         // Skip unless target CR is above 100%, not realistic otherwise
-        if target > UFix64::one() {
+        if target > UFix64::<N2>::one() {
           let total_sol = state.total_sol().expect("total_sol");
           let max = max_mintable_stablecoin(
             target.convert::<N2>(),
@@ -411,5 +461,41 @@ mod tests {
     let got = max_swappable_stablecoin(target_cr, tvl, stablecoin)?;
     assert_eq!(expected, got);
     Ok(())
+  }
+}
+
+#[cfg(kani)]
+mod proofs {
+  use fix::prelude::*;
+
+  use crate::exchange_math::{
+    next_levercoin_mint_nav, next_levercoin_redeem_nav,
+  };
+  use crate::kani_generators::{narrow_price_range, narrow_ufix64};
+
+  /// Mint NAV is at least redeem NAV for any shared state.
+  #[kani::proof]
+  fn mint_nav_ge_redeem_nav() {
+    let total_collateral: UFix64<N9> = narrow_ufix64();
+    let stablecoin_supply: UFix64<N6> = narrow_ufix64();
+    let stablecoin_nav = UFix64::<N9>::one();
+    let levercoin_supply: UFix64<N6> = narrow_ufix64();
+    narrow_price_range::<N9>().map(|usd_collateral_price| {
+      let mint = next_levercoin_mint_nav(
+        total_collateral,
+        usd_collateral_price,
+        stablecoin_supply,
+        stablecoin_nav,
+        levercoin_supply,
+      );
+      let redeem = next_levercoin_redeem_nav(
+        total_collateral,
+        usd_collateral_price,
+        stablecoin_supply,
+        stablecoin_nav,
+        levercoin_supply,
+      );
+      mint.zip(redeem).map(|(m, r)| assert!(m >= r));
+    });
   }
 }

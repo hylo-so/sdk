@@ -26,6 +26,13 @@
     text = "nix develop --command cargo build";
   };
 
+  verify = writeShellApplication {
+    name = "verify";
+    text = ''
+      nix develop .#kani --command cargo kani "$@"
+    '';
+  };
+
   test-cargo = writeShellApplication {
     name = "test-cargo";
     text = ''
