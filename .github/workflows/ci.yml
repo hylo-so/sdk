@@ -41,7 +41,7 @@ jobs:
           core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL);
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN);
     - uses: DeterminateSystems/nix-installer-action@main
-    - uses: DeterminateSystems/flakehub-cache-action@main
+    - uses: DeterminateSystems/magic-nix-cache-action@v13
     - uses: mozilla-actions/sccache-action@v0.0.9
     - run: nix run .#lint
     - run: nix run .#build
@@ -61,6 +61,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: DeterminateSystems/nix-installer-action@main
-    - uses: DeterminateSystems/flakehub-cache-action@main
+    - uses: DeterminateSystems/magic-nix-cache-action@v13
     - uses: mozilla-actions/sccache-action@v0.0.9
     - run: nix run .#publish
