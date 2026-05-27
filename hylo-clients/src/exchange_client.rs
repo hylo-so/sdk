@@ -781,6 +781,28 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
+  /// Updates the levercoin market cap limit for an exo collateral.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_exo_levercoin_market_cap_limit(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+    args: &args::UpdateExoLevercoinMarketCapLimit,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_exo_levercoin_market_cap_limit(
+        squads.vault_pda(),
+        collateral_mint,
+        args,
+      );
+    let memo =
+      build_memo("update_exo_levercoin_market_cap_limit", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
   /// Initializes USDC support.
   ///
   /// # Errors
@@ -809,6 +831,39 @@ impl ExchangeClient {
       self.program.payer(),
     );
     Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Initializes the pool drawdown ledger for the LST pool.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_pool_drawdown_lst(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::initialize_pool_drawdown_lst(squads.vault_pda());
+    let memo = build_memo("initialize_pool_drawdown_lst", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Initializes the pool drawdown ledger for an exo collateral.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_pool_drawdown_exo(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::initialize_pool_drawdown_exo(
+      squads.vault_pda(),
+      collateral_mint,
+    );
+    let memo = build_memo("initialize_pool_drawdown_exo", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Registers an exo collateral.

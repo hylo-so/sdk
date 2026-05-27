@@ -5,13 +5,14 @@ use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
   ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
-  ConvertStableToLeverLst, HarvestBorrowRate, InitializeUsdc, MintLevercoinExo,
+  ConvertStableToLeverLst, HarvestBorrowRate, InitializePoolDrawdownExo,
+  InitializePoolDrawdownLst, InitializeUsdc, MintLevercoinExo,
   MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
   RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
   RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
   SettleVirtualStablecoinExo, SettleVirtualStablecoinLst, SwapExoToUsdc,
   SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
-  UpdateLstRebalanceFee, WithdrawFees,
+  UpdateExoLevercoinMarketCapLimit, UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{earn_pool, exchange, pda};
@@ -728,6 +729,48 @@ pub fn update_lst_rebalance_fee(
     hylo: pda::HYLO,
     lst_header: pda::lst_header(lst_mint),
     lst_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn update_exo_levercoin_market_cap_limit(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> UpdateExoLevercoinMarketCapLimit {
+  UpdateExoLevercoinMarketCapLimit {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn initialize_pool_drawdown_lst(
+  admin: Pubkey,
+) -> InitializePoolDrawdownLst {
+  InitializePoolDrawdownLst {
+    admin,
+    hylo: pda::HYLO,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn initialize_pool_drawdown_exo(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> InitializePoolDrawdownExo {
+  InitializePoolDrawdownExo {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
