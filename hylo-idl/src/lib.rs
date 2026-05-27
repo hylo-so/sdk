@@ -17,6 +17,10 @@ mod codegen {
   anchor_lang::declare_program!(hylo_router_shadow);
 }
 
+pub mod pda;
+pub mod tokens;
+pub mod type_bridge;
+
 mod account_builders;
 mod instruction_builders;
 
@@ -45,10 +49,6 @@ pub mod router {
   pub use super::codegen::hylo_router_shadow::*;
   pub use super::instruction_builders::router as instruction_builders;
 }
-
-pub mod pda;
-pub mod tokens;
-pub mod type_bridge;
 
 #[cfg(test)]
 mod tests {
