@@ -1119,12 +1119,7 @@ pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
 
 #[must_use]
 pub fn initialize_pool_drawdown_lst(admin: Pubkey) -> Instruction {
-  let accounts = accounts::InitializePoolDrawdownLst {
-    admin,
-    hylo: pda::HYLO,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
+  let accounts = account_builders::initialize_pool_drawdown_lst(admin);
   let args = args::InitializePoolDrawdownLst {};
   Instruction {
     program_id: exchange::ID,
@@ -1138,14 +1133,8 @@ pub fn initialize_pool_drawdown_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
 ) -> Instruction {
-  let accounts = accounts::InitializePoolDrawdownExo {
-    admin,
-    hylo: pda::HYLO,
-    exo_pair: pda::exo_pair(collateral_mint),
-    collateral_mint,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
+  let accounts =
+    account_builders::initialize_pool_drawdown_exo(admin, collateral_mint);
   let args = args::InitializePoolDrawdownExo {};
   Instruction {
     program_id: exchange::ID,
