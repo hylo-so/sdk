@@ -51,41 +51,45 @@ pub mod tokens;
 pub mod type_bridge;
 
 #[cfg(test)]
-mod program_id_tests {
+mod tests {
   use anchor_lang::prelude::{pubkey, Pubkey};
   use anchor_lang::Id;
 
   use crate::{earn_pool, exchange, router};
 
   #[cfg(not(feature = "shadow"))]
-  const EARN_POOL: Pubkey =
-    pubkey!("HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ");
-  #[cfg(not(feature = "shadow"))]
-  const EXCHANGE: Pubkey =
-    pubkey!("HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn");
-  #[cfg(not(feature = "shadow"))]
-  const ROUTER: Pubkey = pubkey!("hyRouTRDAgn65xyyJ3L5c4k5SFmSdr3NxDV8Euzjy3f");
+  mod expected {
+    use super::*;
+    pub const EARN_POOL: Pubkey =
+      pubkey!("HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ");
+    pub const EXCHANGE: Pubkey =
+      pubkey!("HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn");
+    pub const ROUTER: Pubkey =
+      pubkey!("hyRouTRDAgn65xyyJ3L5c4k5SFmSdr3NxDV8Euzjy3f");
+  }
 
   #[cfg(feature = "shadow")]
-  const EARN_POOL: Pubkey =
-    pubkey!("HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk");
-  #[cfg(feature = "shadow")]
-  const EXCHANGE: Pubkey =
-    pubkey!("HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH");
-  #[cfg(feature = "shadow")]
-  const ROUTER: Pubkey = pubkey!("hyshRoSsynsCxF5Dt9KnHc5pS1u8saVT79NywtWUSsv");
+  mod expected {
+    use super::*;
+    pub const EARN_POOL: Pubkey =
+      pubkey!("HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk");
+    pub const EXCHANGE: Pubkey =
+      pubkey!("HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH");
+    pub const ROUTER: Pubkey =
+      pubkey!("hyshRoSsynsCxF5Dt9KnHc5pS1u8saVT79NywtWUSsv");
+  }
 
   #[test]
   fn module_ids_match_expected() {
-    assert_eq!(earn_pool::ID, EARN_POOL);
-    assert_eq!(exchange::ID, EXCHANGE);
-    assert_eq!(router::ID, ROUTER);
+    assert_eq!(earn_pool::ID, expected::EARN_POOL);
+    assert_eq!(exchange::ID, expected::EXCHANGE);
+    assert_eq!(router::ID, expected::ROUTER);
   }
 
   #[test]
   fn id_trait_impls_match_expected() {
-    assert_eq!(earn_pool::program::HyloEarnPool::id(), EARN_POOL);
-    assert_eq!(exchange::program::HyloExchange::id(), EXCHANGE);
-    assert_eq!(router::program::HyloRouter::id(), ROUTER);
+    assert_eq!(earn_pool::program::HyloEarnPool::id(), expected::EARN_POOL);
+    assert_eq!(exchange::program::HyloExchange::id(), expected::EXCHANGE);
+    assert_eq!(router::program::HyloRouter::id(), expected::ROUTER);
   }
 }
