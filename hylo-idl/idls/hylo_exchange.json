@@ -14572,6 +14572,122 @@
       }
     },
     {
+      "name": "update_exo_levercoin_market_cap_limit",
+      "discriminator": [
+        7,
+        94,
+        19,
+        123,
+        92,
+        81,
+        123,
+        194
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_levercoin_market_cap_limit",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateLevercoinMarketCapLimitEvent"
+        }
+      }
+    },
+    {
       "name": "update_exo_oracle",
       "discriminator": [
         83,
@@ -17490,6 +17606,19 @@
         115,
         242,
         169
+      ]
+    },
+    {
+      "name": "UpdateLevercoinMarketCapLimitEvent",
+      "discriminator": [
+        8,
+        97,
+        206,
+        242,
+        245,
+        149,
+        100,
+        108
       ]
     },
     {
@@ -20466,6 +20595,30 @@
             "type": {
               "defined": {
                 "name": "LevercoinFees"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateLevercoinMarketCapLimitEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_levercoin_market_cap_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_levercoin_market_cap_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
               }
             }
           }

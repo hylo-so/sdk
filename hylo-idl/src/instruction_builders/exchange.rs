@@ -987,6 +987,23 @@ pub fn update_exo_levercoin_fees(
 }
 
 #[must_use]
+pub fn update_exo_levercoin_market_cap_limit(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoLevercoinMarketCapLimit,
+) -> Instruction {
+  let accounts = account_builders::update_exo_levercoin_market_cap_limit(
+    admin,
+    collateral_mint,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn initialize_usdc(
   admin: Pubkey,
   usdc_usd_pyth_feed: Pubkey,

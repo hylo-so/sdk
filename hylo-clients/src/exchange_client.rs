@@ -781,6 +781,28 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
+  /// Updates the levercoin market cap limit for an exo collateral.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_exo_levercoin_market_cap_limit(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+    args: &args::UpdateExoLevercoinMarketCapLimit,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_exo_levercoin_market_cap_limit(
+        squads.vault_pda(),
+        collateral_mint,
+        args,
+      );
+    let memo =
+      build_memo("update_exo_levercoin_market_cap_limit", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
   /// Initializes USDC support.
   ///
   /// # Errors
