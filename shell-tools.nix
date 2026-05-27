@@ -39,6 +39,7 @@
       nix develop --command bash -c "
         set -euo pipefail
         cargo test --workspace --exclude hylo-jupiter
+        cargo test --workspace --exclude hylo-jupiter --features shadow
         cargo test --doc
       "
     '';

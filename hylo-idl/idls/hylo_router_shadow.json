@@ -1,0 +1,105 @@
+{
+  "address": "hyshRoSsynsCxF5Dt9KnHc5pS1u8saVT79NywtWUSsv",
+  "metadata": {
+    "name": "hylo_router",
+    "version": "1.0.0",
+    "spec": "0.1.0",
+    "description": "Hylo Router Program"
+  },
+  "instructions": [
+    {
+      "name": "route",
+      "discriminator": [
+        229,
+        23,
+        203,
+        151,
+        122,
+        227,
+        173,
+        42
+      ],
+      "accounts": [],
+      "args": [
+        {
+          "name": "token_a",
+          "type": "pubkey"
+        },
+        {
+          "name": "token_b",
+          "type": "pubkey"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "UnsupportedPair",
+      "msg": "No valid route for given tokens."
+    }
+  ],
+  "types": [
+    {
+      "name": "SlippageConfig",
+      "docs": [
+        "Client specified slippage tolerance paired with expected token amount."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "expected_token_out",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "slippage_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UFixValue64",
+      "docs": [
+        "A value-space `Fix` where base is always 10 and bits are a concrete type.",
+        "Intended for serialized storage in Solana accounts where generics won't work."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bits",
+            "type": "u64"
+          },
+          {
+            "name": "exp",
+            "type": "i8"
+          }
+        ]
+      }
+    }
+  ]
+}

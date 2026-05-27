@@ -79,6 +79,13 @@ mod tests {
     assert!(a.starts_with("update_lst_swap_fee "));
   }
 
+  #[cfg(not(feature = "shadow"))]
+  const MEMO_SNAPSHOT: &str =
+    "update_lst_swap_fee E9wxi5EQDPtc5u9aSYfWY4zh6X8HYJufLN1ZNqXfdT5v";
+  #[cfg(feature = "shadow")]
+  const MEMO_SNAPSHOT: &str =
+    "update_lst_swap_fee 6ea7D3x7LqAgzG27fCA96QdwUViiERDC5DrezN1njob2";
+
   #[test]
   fn memo_snapshot() {
     let args = args::UpdateLstSwapFee {
@@ -86,10 +93,7 @@ mod tests {
     };
     let instruction = instruction_builders::update_lst_swap_fee(pk(7), &args);
     let memo = build_memo("update_lst_swap_fee", &instruction);
-    assert_eq!(
-      memo,
-      "update_lst_swap_fee E9wxi5EQDPtc5u9aSYfWY4zh6X8HYJufLN1ZNqXfdT5v",
-    );
+    assert_eq!(memo, MEMO_SNAPSHOT);
   }
 
   #[test]
