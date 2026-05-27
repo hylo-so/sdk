@@ -239,6 +239,7 @@ async fn jitosol_to_hylosol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
+#[ignore = "v2 SDK against v1 mainnet earn pool — re-enable after v2 deploy"]
 async fn hyusd_to_shyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
