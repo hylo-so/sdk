@@ -221,13 +221,13 @@ pub const EARN_POOL_PROGRAM_DATA: Pubkey = progdata(earn_pool::ID);
 pub const EXCHANGE_PROGRAM_DATA: Pubkey = progdata(exchange::ID);
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+  pubkey!("7AviUf9nL62mcxNbQGKm4nKDQnPjswo6c5MX4D57HmyE");
 
 pub const USDC_USD_PYTH_FEED: Pubkey =
-  pubkey!("Dpw1EAVrSB1ibxiDQyTAW6Zip3J4Btk2x4SgApQCeFbX");
+  pubkey!("6HAuqASbHEh4w4REJEUUUCginTLfj1kwCh215ZLtMkrT");
 
 pub const BTC_USD_PYTH_FEED: Pubkey =
-  pubkey!("4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo");
+  pubkey!("APgzQGGdv2qCgBkX6aHVkrGePtBVDDg68GiqaM7rmtf5");
 
 pub const DEAD: Pubkey = pda!(exchange::ID, exchange::constants::DEAD);
 
