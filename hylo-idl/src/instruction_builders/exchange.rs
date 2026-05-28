@@ -1239,13 +1239,13 @@ pub fn propose_address_update(
     admin,
     hylo: pda::HYLO,
     proposal: pda::address_update_proposal(address_field),
+    new_address,
     system_program: system_program::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   };
   let args = args::ProposeAddressUpdate {
     address_field,
-    new_address,
     ttl_secs,
   };
   Instruction {

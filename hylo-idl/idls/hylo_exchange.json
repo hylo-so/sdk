@@ -6557,6 +6557,9 @@
           }
         },
         {
+          "name": "new_address"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -6601,10 +6604,6 @@
               "name": "AddressField"
             }
           }
-        },
-        {
-          "name": "new_address",
-          "type": "pubkey"
         },
         {
           "name": "ttl_secs",
