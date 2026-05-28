@@ -2450,7 +2450,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "token_program",
@@ -2806,7 +2806,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "lst_registry",
@@ -10088,7 +10088,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -10447,7 +10447,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -11180,7 +11180,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -12372,7 +12372,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -13120,7 +13120,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -13807,7 +13807,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",

@@ -51,6 +51,11 @@
       "code": 6000,
       "name": "UnsupportedPair",
       "msg": "No valid route for given tokens."
+    },
+    {
+      "code": 6001,
+      "name": "InvalidRouteAccounts",
+      "msg": "Invalid accounts for route."
     }
   ],
   "types": [

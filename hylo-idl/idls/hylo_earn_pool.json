@@ -475,7 +475,44 @@
                   76
                 ]
               }
-            ]
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
           }
         },
         {
@@ -1826,6 +1863,16 @@
         {
           "name": "amount_stablecoin",
           "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
         }
       ],
       "returns": {
@@ -2318,6 +2365,16 @@
         {
           "name": "amount_lp_token",
           "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
         }
       ],
       "returns": {
@@ -2438,41 +2495,31 @@
   "errors": [
     {
       "code": 6000,
-      "name": "DepositDisabled",
-      "msg": "Deposits to pool disabled due to active rebalancing."
-    },
-    {
-      "code": 6001,
       "name": "ZeroLpDeposit",
       "msg": "Cannot process deposit yielding zero LP tokens."
     },
     {
-      "code": 6002,
+      "code": 6001,
       "name": "ZeroTokenWithdrawal",
       "msg": "Cannot process withdrawal resulting in zero protocol tokens."
     },
     {
-      "code": 6003,
+      "code": 6002,
       "name": "AdminNoop",
       "msg": "Cannot update configuration with identical value."
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "ProtocolPaused",
       "msg": "Protocol operations have been paused by admin."
     },
     {
-      "code": 6005,
-      "name": "LstPairPaused",
-      "msg": "Trading for the LST pair has been paused by admin."
-    },
-    {
-      "code": 6006,
+      "code": 6004,
       "name": "LevercoinPoolNonzero",
       "msg": "Unable to deprecate levercoin pool due to nonzero balance."
     },
     {
-      "code": 6007,
+      "code": 6005,
       "name": "EarnPoolPaused",
       "msg": "Earn pool operations have been paused."
     }
@@ -2883,6 +2930,33 @@
           },
           {
             "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SlippageConfig",
+      "docs": [
+        "Client specified slippage tolerance paired with expected token amount."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "expected_token_out",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "slippage_tolerance",
             "type": {
               "defined": {
                 "name": "UFixValue64"
