@@ -115,6 +115,15 @@ mod tests {
   }
 
   #[test]
+  fn apply_borrow_rate_multiple_epochs() -> Result<()> {
+    let config = test_config();
+    let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
+    let borrow = config.apply_borrow_rate(collateral, UFix64::constant(5))?;
+    assert_eq!(borrow, UFix64::new(2_374_197_509_495));
+    Ok(())
+  }
+
+  #[test]
   fn apply_fee_5_percent() -> Result<()> {
     let config = test_config();
     let amount = UFix64::<N6>::new(384_620_000);
