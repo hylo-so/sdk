@@ -284,7 +284,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = usdc_state.apply_fee(amount_n9)?;
+    } = FeeExtract::new(usdc_state.swap_fee, amount_n9)?;
     let out_amount = usdc_state
       .conversion()
       .deposit_to_stablecoin(amount_remaining)?;
@@ -313,7 +313,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = usdc_state.apply_fee(in_amount)?;
+    } = FeeExtract::new(usdc_state.swap_fee, in_amount)?;
     let usdc_out_n9 = usdc_state
       .conversion()
       .stablecoin_to_withdrawal(amount_remaining)?;
