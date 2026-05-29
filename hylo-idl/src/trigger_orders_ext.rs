@@ -2,7 +2,16 @@
 //! types. Lives in `hylo-idl` because Rust's orphan rule forbids `impl`s
 //! on generated types from a foreign crate.
 
+use crate::trigger_orders::accounts::TriggerOrder;
 use crate::trigger_orders::types::{ConvertDirection, PairTarget};
+
+impl TriggerOrder {
+  /// Byte offset of the `owner` field within the serialized account
+  /// (after the 8-byte Anchor discriminator). Used as the `memcmp` offset
+  /// in `getProgramAccounts` filters keyed by owner. If a future migration
+  /// inserts a field before `owner`, update this constant.
+  pub const OWNER_OFFSET: usize = 8;
+}
 
 impl ConvertDirection {
   /// PDA seed-slice tag for `StableToLever` orders. Must match
@@ -63,5 +72,16 @@ mod tag_tests {
       .tag_byte(),
       1
     );
+  }
+}
+
+#[cfg(test)]
+mod owner_offset_tests {
+  use crate::trigger_orders::accounts::TriggerOrder;
+
+  #[test]
+  fn owner_offset_is_post_discriminator() {
+    // Anchor 8-byte discriminator + owner as first struct field => offset 8.
+    assert_eq!(TriggerOrder::OWNER_OFFSET, 8);
   }
 }
