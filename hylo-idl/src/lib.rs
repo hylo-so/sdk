@@ -55,7 +55,8 @@ pub mod router {
 }
 
 pub mod trigger_orders {
-  // `account_builders` and `instruction_builders` modules added in later tasks.
+  pub use super::account_builders::trigger_orders as account_builders;
+  // `instruction_builders` module added in later tasks.
   #[cfg(not(feature = "shadow"))]
   pub use super::codegen::hylo_trigger_orders::*;
   #[cfg(feature = "shadow")]
