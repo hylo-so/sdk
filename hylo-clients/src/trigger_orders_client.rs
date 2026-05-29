@@ -9,7 +9,12 @@ use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::Program;
 use anyhow::Result;
 use hylo_idl::exchange::accounts::{ExoPair, Hylo};
+use hylo_idl::exchange::events::{
+  ConvertLeverToStableExoEvent, ConvertLeverToStableLstEvent,
+  ConvertStableToLeverExoEvent, ConvertStableToLeverLstEvent,
+};
 use hylo_idl::trigger_orders::client::args;
+use hylo_idl::trigger_orders::events::TriggerOrderFilled;
 use hylo_idl::trigger_orders::instruction_builders;
 use hylo_idl::trigger_orders::types::{
   ConvertDirection, PairTarget, TriggerDirection,
@@ -381,6 +386,105 @@ impl TriggerOrdersClient {
       VersionedTransactionData::one(ix)
         .with_compute_unit_limit(CONSERVATIVE_EXECUTE_CU),
     )
+  }
+
+  // The `simulate_execute_order_*` methods below run TWO simulations (two RPC
+  // round-trips) to extract the outer `TriggerOrderFilled` and the inner Hylo
+  // `Convert*Event` separately. This is acceptable for v1 because `simulate_*`
+  // is low-frequency (keeper pre-flight, not the hot path); it could be
+  // optimized to a single simulation later (parse both events from one result
+  // via `parse_event_filtered`, which is designed to be called repeatedly on
+  // the same result).
+
+  /// Simulate the execute path; return both events the chain emits on
+  /// success: the trigger-orders `TriggerOrderFilled` AND the inner Hylo
+  /// `ConvertStableToLeverLstEvent`.
+  ///
+  /// # Errors
+  /// Simulation failure (CPI revert, account loading, CR-gate blockers);
+  /// either event missing from the simulation result.
+  pub async fn simulate_execute_order_s2l_lst(
+    &self,
+    owner: Pubkey,
+    nonce: u64,
+  ) -> Result<(TriggerOrderFilled, ConvertStableToLeverLstEvent)> {
+    let vtd = self.execute_order_s2l_lst(owner, nonce).await?;
+    let user = self.keypair.pubkey();
+    let vt = self.build_simulation_transaction(&user, &vtd).await?;
+    let outer: TriggerOrderFilled =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    let inner: ConvertStableToLeverLstEvent =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    Ok((outer, inner))
+  }
+
+  /// Simulate the execute path; return the outer `TriggerOrderFilled` and the
+  /// inner Hylo `ConvertLeverToStableLstEvent`.
+  ///
+  /// # Errors
+  /// Simulation failure (CPI revert, account loading, CR-gate blockers);
+  /// either event missing from the simulation result.
+  pub async fn simulate_execute_order_l2s_lst(
+    &self,
+    owner: Pubkey,
+    nonce: u64,
+  ) -> Result<(TriggerOrderFilled, ConvertLeverToStableLstEvent)> {
+    let vtd = self.execute_order_l2s_lst(owner, nonce).await?;
+    let user = self.keypair.pubkey();
+    let vt = self.build_simulation_transaction(&user, &vtd).await?;
+    let outer: TriggerOrderFilled =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    let inner: ConvertLeverToStableLstEvent =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    Ok((outer, inner))
+  }
+
+  /// Simulate the EXO execute path; return the outer `TriggerOrderFilled` and
+  /// the inner Hylo `ConvertStableToLeverExoEvent`.
+  ///
+  /// # Errors
+  /// Simulation failure (CPI revert, account loading, CR-gate blockers);
+  /// either event missing from the simulation result.
+  pub async fn simulate_execute_order_s2l_exo(
+    &self,
+    owner: Pubkey,
+    collateral_mint: Pubkey,
+    nonce: u64,
+  ) -> Result<(TriggerOrderFilled, ConvertStableToLeverExoEvent)> {
+    let vtd = self
+      .execute_order_s2l_exo(owner, collateral_mint, nonce)
+      .await?;
+    let user = self.keypair.pubkey();
+    let vt = self.build_simulation_transaction(&user, &vtd).await?;
+    let outer: TriggerOrderFilled =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    let inner: ConvertStableToLeverExoEvent =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    Ok((outer, inner))
+  }
+
+  /// Simulate the EXO execute path; return the outer `TriggerOrderFilled` and
+  /// the inner Hylo `ConvertLeverToStableExoEvent`.
+  ///
+  /// # Errors
+  /// Simulation failure (CPI revert, account loading, CR-gate blockers);
+  /// either event missing from the simulation result.
+  pub async fn simulate_execute_order_l2s_exo(
+    &self,
+    owner: Pubkey,
+    collateral_mint: Pubkey,
+    nonce: u64,
+  ) -> Result<(TriggerOrderFilled, ConvertLeverToStableExoEvent)> {
+    let vtd = self
+      .execute_order_l2s_exo(owner, collateral_mint, nonce)
+      .await?;
+    let user = self.keypair.pubkey();
+    let vt = self.build_simulation_transaction(&user, &vtd).await?;
+    let outer: TriggerOrderFilled =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    let inner: ConvertLeverToStableExoEvent =
+      self.simulate_transaction_event_filtered(&vt).await?;
+    Ok((outer, inner))
   }
 }
 
