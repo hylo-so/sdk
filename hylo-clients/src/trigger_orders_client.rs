@@ -8,6 +8,7 @@ use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::Program;
 use anyhow::Result;
+use hylo_idl::exchange::accounts::{ExoPair, Hylo};
 use hylo_idl::trigger_orders::client::args;
 use hylo_idl::trigger_orders::instruction_builders;
 use hylo_idl::trigger_orders::types::{
@@ -16,6 +17,10 @@ use hylo_idl::trigger_orders::types::{
 use hylo_idl::{pda, trigger_orders};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
+
+/// Conservative CU limit for `execute_order_*` per on-chain spec §6.6.
+/// Profile and tune after a first mainnet keeper run.
+pub const CONSERVATIVE_EXECUTE_CU: u32 = 400_000;
 
 /// Permissionless client for the Hylo trigger-orders program. Manages
 /// trigger-order placement, cancellation, and execution. Unlike the admin
@@ -261,6 +266,122 @@ impl TriggerOrdersClient {
     );
     Ok(VersionedTransactionData::one(ix))
   }
+
+  /// Permissionless: any signer can call. Fetches the current `Hylo`
+  /// state to thread the SOL/USD oracle, builds the CPI, prepends 400k CU.
+  ///
+  /// # Errors
+  /// RPC error; `Hylo` PDA not found; transaction build failure.
+  pub async fn execute_order_s2l_lst(
+    &self,
+    owner: Pubkey,
+    nonce: u64,
+  ) -> Result<VersionedTransactionData> {
+    let executor = self.keypair.pubkey();
+    let (order, _) =
+      pda::trigger_order_lst(owner, ConvertDirection::StableToLever, nonce);
+    let hylo: Hylo = self.program.account(pda::HYLO).await?;
+    let ix = instruction_builders::execute_order_s2l_lst(
+      executor, owner, order, &hylo,
+    );
+    Ok(
+      VersionedTransactionData::one(ix)
+        .with_compute_unit_limit(CONSERVATIVE_EXECUTE_CU),
+    )
+  }
+
+  /// As above, lever→stable LST.
+  ///
+  /// # Errors
+  /// RPC error; `Hylo` PDA not found; transaction build failure.
+  pub async fn execute_order_l2s_lst(
+    &self,
+    owner: Pubkey,
+    nonce: u64,
+  ) -> Result<VersionedTransactionData> {
+    let executor = self.keypair.pubkey();
+    let (order, _) =
+      pda::trigger_order_lst(owner, ConvertDirection::LeverToStable, nonce);
+    let hylo: Hylo = self.program.account(pda::HYLO).await?;
+    let ix = instruction_builders::execute_order_l2s_lst(
+      executor, owner, order, &hylo,
+    );
+    Ok(
+      VersionedTransactionData::one(ix)
+        .with_compute_unit_limit(CONSERVATIVE_EXECUTE_CU),
+    )
+  }
+
+  /// Stable→lever EXO. Fetches `Hylo` (for builder-signature uniformity)
+  /// and the `ExoPair` (provides the collateral oracle).
+  ///
+  /// # Errors
+  /// RPC error; `Hylo`/`ExoPair` PDA not found; transaction build failure.
+  pub async fn execute_order_s2l_exo(
+    &self,
+    owner: Pubkey,
+    collateral_mint: Pubkey,
+    nonce: u64,
+  ) -> Result<VersionedTransactionData> {
+    let executor = self.keypair.pubkey();
+    let (order, _) = pda::trigger_order_exo(
+      owner,
+      ConvertDirection::StableToLever,
+      collateral_mint,
+      nonce,
+    );
+    // `Hylo` is fetched to satisfy the (uniform) execute-builder signature;
+    // the EXO CPI takes its oracle from `ExoPair`, not `Hylo`.
+    let hylo: Hylo = self.program.account(pda::HYLO).await?;
+    let exo_pair: ExoPair =
+      self.program.account(pda::exo_pair(collateral_mint)).await?;
+    let ix = instruction_builders::execute_order_s2l_exo(
+      executor,
+      owner,
+      order,
+      collateral_mint,
+      &hylo,
+      &exo_pair,
+    );
+    Ok(
+      VersionedTransactionData::one(ix)
+        .with_compute_unit_limit(CONSERVATIVE_EXECUTE_CU),
+    )
+  }
+
+  /// Lever→stable EXO. See `execute_order_s2l_exo` re: the `Hylo` fetch.
+  ///
+  /// # Errors
+  /// RPC error; `Hylo`/`ExoPair` PDA not found; transaction build failure.
+  pub async fn execute_order_l2s_exo(
+    &self,
+    owner: Pubkey,
+    collateral_mint: Pubkey,
+    nonce: u64,
+  ) -> Result<VersionedTransactionData> {
+    let executor = self.keypair.pubkey();
+    let (order, _) = pda::trigger_order_exo(
+      owner,
+      ConvertDirection::LeverToStable,
+      collateral_mint,
+      nonce,
+    );
+    let hylo: Hylo = self.program.account(pda::HYLO).await?;
+    let exo_pair: ExoPair =
+      self.program.account(pda::exo_pair(collateral_mint)).await?;
+    let ix = instruction_builders::execute_order_l2s_exo(
+      executor,
+      owner,
+      order,
+      collateral_mint,
+      &hylo,
+      &exo_pair,
+    );
+    Ok(
+      VersionedTransactionData::one(ix)
+        .with_compute_unit_limit(CONSERVATIVE_EXECUTE_CU),
+    )
+  }
 }
 
 #[cfg(test)]
@@ -273,6 +394,11 @@ mod tests {
   };
 
   use super::*;
+
+  #[test]
+  fn cu_constant_is_400k() {
+    assert_eq!(CONSERVATIVE_EXECUTE_CU, 400_000);
+  }
 
   #[test]
   fn client_id_matches_trigger_orders_program_id() {
