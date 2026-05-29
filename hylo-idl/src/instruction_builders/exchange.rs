@@ -1260,11 +1260,13 @@ pub fn propose_address_update(
 #[must_use]
 pub fn approve_address_update(
   upgrade_authority: Pubkey,
+  new_address: Pubkey,
   address_field: AddressField,
 ) -> Instruction {
   let accounts = accounts::ApproveAddressUpdate {
     upgrade_authority,
     proposal: pda::address_update_proposal(address_field),
+    new_address,
     program_data: pda::EXCHANGE_PROGRAM_DATA,
     hylo_exchange: exchange::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,

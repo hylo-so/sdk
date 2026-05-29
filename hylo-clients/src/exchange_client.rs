@@ -999,10 +999,12 @@ impl ExchangeClient {
   pub fn approve_address_update(
     &self,
     squads: &SquadsContext,
+    new_address: Pubkey,
     address_field: AddressField,
   ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::approve_address_update(
       squads.vault_pda(),
+      new_address,
       address_field,
     );
     let memo = build_memo("approve_address_update", &instruction);
@@ -1016,10 +1018,12 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub fn approve_address_update_direct(
     &self,
+    new_address: Pubkey,
     address_field: AddressField,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::approve_address_update(
       self.program.payer(),
+      new_address,
       address_field,
     );
     Ok(VersionedTransactionData::one(instruction))

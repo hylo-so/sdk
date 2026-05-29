@@ -198,6 +198,12 @@
           }
         },
         {
+          "name": "new_address",
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
           "name": "program_data"
         },
         {
