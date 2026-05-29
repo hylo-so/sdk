@@ -59,6 +59,5 @@ pub fn deprecate_levercoin_pool(admin: Pubkey) -> DeprecateLevercoinPool {
     admin_levercoin_ta: pda::xsol_ata(admin),
     levercoin_mint: XSOL::MINT,
     token_program: token::ID,
-    system_program: anchor_lang::system_program::ID,
   }
 }
