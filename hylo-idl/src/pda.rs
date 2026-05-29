@@ -235,3 +235,122 @@ pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);
 
 pub const USDC_PAIR: Pubkey =
   pda!(exchange::ID, exchange::constants::USDC_PAIR);
+
+use crate::trigger_orders::types::{ConvertDirection, PairTarget};
+
+/// Seed for `TriggerOrder` PDAs — byte-equal to `hylo_trigger_orders::ORDER`.
+pub const TRIGGER_ORDER: &[u8; 5] = b"order";
+
+/// PDA for an LST trigger order (s2l or l2s).
+#[must_use]
+pub fn trigger_order_lst(
+  owner: Pubkey,
+  direction: ConvertDirection,
+  nonce: u64,
+) -> (Pubkey, u8) {
+  Pubkey::find_program_address(
+    &[
+      TRIGGER_ORDER,
+      owner.as_ref(),
+      &[direction.tag_byte()],
+      &[PairTarget::LST_TAG],
+      &nonce.to_le_bytes(),
+    ],
+    &crate::trigger_orders::ID,
+  )
+}
+
+/// PDA for an EXO trigger order (s2l or l2s).
+#[must_use]
+pub fn trigger_order_exo(
+  owner: Pubkey,
+  direction: ConvertDirection,
+  collateral_mint: Pubkey,
+  nonce: u64,
+) -> (Pubkey, u8) {
+  Pubkey::find_program_address(
+    &[
+      TRIGGER_ORDER,
+      owner.as_ref(),
+      &[direction.tag_byte()],
+      &[PairTarget::EXO_TAG],
+      collateral_mint.as_ref(),
+      &nonce.to_le_bytes(),
+    ],
+    &crate::trigger_orders::ID,
+  )
+}
+
+/// `__event_authority` PDA for the trigger-orders program.
+#[must_use]
+pub fn trigger_orders_event_authority() -> Pubkey {
+  Pubkey::find_program_address(
+    &[b"__event_authority"],
+    &crate::trigger_orders::ID,
+  )
+  .0
+}
+
+#[cfg(test)]
+mod trigger_orders_pda_tests {
+  use anchor_lang::prelude::Pubkey;
+
+  use super::*;
+  use crate::trigger_orders::types::{ConvertDirection, PairTarget};
+
+  #[test]
+  fn lst_pda_seeds_round_trip() {
+    let owner = Pubkey::new_unique();
+    let (pda, _bump) =
+      trigger_order_lst(owner, ConvertDirection::StableToLever, 42);
+    let (expected, _) = Pubkey::find_program_address(
+      &[
+        TRIGGER_ORDER,
+        owner.as_ref(),
+        &[ConvertDirection::S2L_TAG],
+        &[PairTarget::LST_TAG],
+        &42u64.to_le_bytes(),
+      ],
+      &crate::trigger_orders::ID,
+    );
+    assert_eq!(pda, expected);
+  }
+
+  #[test]
+  fn exo_pda_seeds_include_collateral_mint() {
+    let owner = Pubkey::new_unique();
+    let mint = Pubkey::new_unique();
+    let (pda, _bump) =
+      trigger_order_exo(owner, ConvertDirection::LeverToStable, mint, 7);
+    let (expected, _) = Pubkey::find_program_address(
+      &[
+        TRIGGER_ORDER,
+        owner.as_ref(),
+        &[ConvertDirection::L2S_TAG],
+        &[PairTarget::EXO_TAG],
+        mint.as_ref(),
+        &7u64.to_le_bytes(),
+      ],
+      &crate::trigger_orders::ID,
+    );
+    assert_eq!(pda, expected);
+  }
+
+  #[test]
+  fn lst_and_exo_pdas_disjoint_at_same_owner_nonce() {
+    let owner = Pubkey::new_unique();
+    let mint = Pubkey::new_unique();
+    let (lst, _) = trigger_order_lst(owner, ConvertDirection::StableToLever, 1);
+    let (exo, _) =
+      trigger_order_exo(owner, ConvertDirection::StableToLever, mint, 1);
+    assert_ne!(lst, exo, "PDA-tag separation broken");
+  }
+
+  #[test]
+  fn s2l_and_l2s_pdas_disjoint_at_same_owner_pair_nonce() {
+    let owner = Pubkey::new_unique();
+    let (s2l, _) = trigger_order_lst(owner, ConvertDirection::StableToLever, 1);
+    let (l2s, _) = trigger_order_lst(owner, ConvertDirection::LeverToStable, 1);
+    assert_ne!(s2l, l2s, "direction-tag separation broken");
+  }
+}

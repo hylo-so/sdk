@@ -62,6 +62,8 @@ pub mod trigger_orders {
   pub use super::codegen::hylo_trigger_orders_shadow::*;
 }
 
+mod trigger_orders_ext;
+
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::{pubkey, Pubkey};
