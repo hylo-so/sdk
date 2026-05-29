@@ -8,9 +8,9 @@ use anchor_spl::{associated_token, token};
 use crate::exchange::accounts::{ExoPair, Hylo};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::trigger_orders::client::accounts::{
-  CreateOrderL2sExo, CreateOrderL2sLst, CreateOrderS2lExo, CreateOrderS2lLst,
-  ExecuteOrderL2sExo, ExecuteOrderL2sLst, ExecuteOrderS2lExo,
-  ExecuteOrderS2lLst,
+  CancelOrderL2sExo, CancelOrderL2sLst, CancelOrderS2l, CreateOrderL2sExo,
+  CreateOrderL2sLst, CreateOrderS2lExo, CreateOrderS2lLst, ExecuteOrderL2sExo,
+  ExecuteOrderL2sLst, ExecuteOrderS2lExo, ExecuteOrderS2lLst,
 };
 use crate::{pda, trigger_orders};
 
@@ -248,6 +248,60 @@ pub fn execute_order_l2s_exo(
     system_program: system_program::ID,
     event_authority: pda::trigger_orders_event_authority(),
     program: trigger_orders::ID,
+  }
+}
+
+/// Builds account context for cancelling a stable-to-lever order.
+///
+/// Handles both LST and EXO s2l orders: the s2l escrow is always HYUSD
+/// regardless of the order's lever target, so no collateral mint is needed.
+#[must_use]
+pub fn cancel_order_s2l(owner: Pubkey, order: Pubkey) -> CancelOrderS2l {
+  CancelOrderS2l {
+    owner,
+    order,
+    order_hyusd_vault: pda::ata(order, HYUSD::MINT),
+    owner_hyusd_ta: pda::ata(owner, HYUSD::MINT),
+    hyusd_mint: HYUSD::MINT,
+    event_authority: pda::trigger_orders_event_authority(),
+    program: trigger_orders::ID,
+    token_program: token::ID,
+  }
+}
+
+/// Builds account context for cancelling a lever-to-stable order (LST).
+#[must_use]
+pub fn cancel_order_l2s_lst(owner: Pubkey, order: Pubkey) -> CancelOrderL2sLst {
+  CancelOrderL2sLst {
+    owner,
+    order,
+    order_xsol_vault: pda::ata(order, XSOL::MINT),
+    owner_xsol_ta: pda::ata(owner, XSOL::MINT),
+    xsol_mint: XSOL::MINT,
+    event_authority: pda::trigger_orders_event_authority(),
+    program: trigger_orders::ID,
+    token_program: token::ID,
+  }
+}
+
+/// Builds account context for cancelling a lever-to-stable order (EXO).
+#[must_use]
+pub fn cancel_order_l2s_exo(
+  owner: Pubkey,
+  order: Pubkey,
+  collateral_mint: Pubkey,
+) -> CancelOrderL2sExo {
+  let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+  CancelOrderL2sExo {
+    owner,
+    order,
+    order_levercoin_vault: pda::ata(order, levercoin_mint),
+    owner_levercoin_ta: pda::ata(owner, levercoin_mint),
+    levercoin_mint,
+    collateral_mint,
+    event_authority: pda::trigger_orders_event_authority(),
+    program: trigger_orders::ID,
+    token_program: token::ID,
   }
 }
 
@@ -549,5 +603,53 @@ mod tests {
     assert_eq!(a.associated_token_program, associated_token::ID);
     assert_eq!(a.system_program, system_program::ID);
     assert_eq!(a.rent, rent::ID);
+  }
+
+  #[test]
+  fn cancel_order_s2l_minimal_fields() {
+    let owner = Pubkey::new_unique();
+    let order = Pubkey::new_unique();
+    let a = cancel_order_s2l(owner, order);
+    assert_eq!(a.owner, owner);
+    assert_eq!(a.order, order);
+    assert_eq!(a.order_hyusd_vault, pda::ata(order, HYUSD::MINT));
+    assert_eq!(a.owner_hyusd_ta, pda::ata(owner, HYUSD::MINT));
+    assert_eq!(a.hyusd_mint, HYUSD::MINT);
+    assert_eq!(a.event_authority, pda::trigger_orders_event_authority());
+    assert_eq!(a.program, trigger_orders::ID);
+    assert_eq!(a.token_program, token::ID);
+  }
+
+  #[test]
+  fn cancel_order_l2s_lst_minimal_fields() {
+    let owner = Pubkey::new_unique();
+    let order = Pubkey::new_unique();
+    let a = cancel_order_l2s_lst(owner, order);
+    assert_eq!(a.owner, owner);
+    assert_eq!(a.order, order);
+    assert_eq!(a.order_xsol_vault, pda::ata(order, XSOL::MINT));
+    assert_eq!(a.owner_xsol_ta, pda::ata(owner, XSOL::MINT));
+    assert_eq!(a.xsol_mint, XSOL::MINT);
+    assert_eq!(a.event_authority, pda::trigger_orders_event_authority());
+    assert_eq!(a.program, trigger_orders::ID);
+    assert_eq!(a.token_program, token::ID);
+  }
+
+  #[test]
+  fn cancel_order_l2s_exo_minimal_fields() {
+    let owner = Pubkey::new_unique();
+    let order = Pubkey::new_unique();
+    let collateral_mint = Pubkey::new_unique();
+    let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+    let a = cancel_order_l2s_exo(owner, order, collateral_mint);
+    assert_eq!(a.owner, owner);
+    assert_eq!(a.order, order);
+    assert_eq!(a.order_levercoin_vault, pda::ata(order, levercoin_mint));
+    assert_eq!(a.owner_levercoin_ta, pda::ata(owner, levercoin_mint));
+    assert_eq!(a.levercoin_mint, levercoin_mint);
+    assert_eq!(a.collateral_mint, collateral_mint);
+    assert_eq!(a.event_authority, pda::trigger_orders_event_authority());
+    assert_eq!(a.program, trigger_orders::ID);
+    assert_eq!(a.token_program, token::ID);
   }
 }
