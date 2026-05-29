@@ -10,7 +10,9 @@ use anchor_client::Program;
 use anyhow::Result;
 use hylo_idl::trigger_orders::client::args;
 use hylo_idl::trigger_orders::instruction_builders;
-use hylo_idl::trigger_orders::types::{ConvertDirection, TriggerDirection};
+use hylo_idl::trigger_orders::types::{
+  ConvertDirection, PairTarget, TriggerDirection,
+};
 use hylo_idl::{pda, trigger_orders};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -180,6 +182,85 @@ impl TriggerOrdersClient {
     );
     Ok(VersionedTransactionData::one(ix))
   }
+
+  /// Cancel an s2l trigger order. Refunds HYUSD escrow + executor tip to
+  /// the owner via Anchor's `close = owner`. Handles both LST and EXO s2l
+  /// (the s2l escrow is always HYUSD), selected by `pair_target`.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
+  pub async fn cancel_order_s2l(
+    &self,
+    nonce: u64,
+    pair_target: PairTarget,
+  ) -> Result<VersionedTransactionData> {
+    let owner = self.keypair.pubkey();
+    let (order, _) = match pair_target {
+      PairTarget::Lst => {
+        pda::trigger_order_lst(owner, ConvertDirection::StableToLever, nonce)
+      }
+      PairTarget::Exo { collateral_mint } => pda::trigger_order_exo(
+        owner,
+        ConvertDirection::StableToLever,
+        collateral_mint,
+        nonce,
+      ),
+    };
+    let ix = instruction_builders::cancel_order_s2l(
+      owner,
+      order,
+      &args::CancelOrderS2l {},
+    );
+    Ok(VersionedTransactionData::one(ix))
+  }
+
+  /// Cancel an l2s LST order. Refunds xSOL escrow + tip via `close = owner`.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
+  pub async fn cancel_order_l2s_lst(
+    &self,
+    nonce: u64,
+  ) -> Result<VersionedTransactionData> {
+    let owner = self.keypair.pubkey();
+    let (order, _) =
+      pda::trigger_order_lst(owner, ConvertDirection::LeverToStable, nonce);
+    let ix = instruction_builders::cancel_order_l2s_lst(
+      owner,
+      order,
+      &args::CancelOrderL2sLst {},
+    );
+    Ok(VersionedTransactionData::one(ix))
+  }
+
+  /// Cancel an l2s EXO order. Refunds the per-collateral levercoin escrow +
+  /// tip.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
+  pub async fn cancel_order_l2s_exo(
+    &self,
+    collateral_mint: Pubkey,
+    nonce: u64,
+  ) -> Result<VersionedTransactionData> {
+    let owner = self.keypair.pubkey();
+    let (order, _) = pda::trigger_order_exo(
+      owner,
+      ConvertDirection::LeverToStable,
+      collateral_mint,
+      nonce,
+    );
+    let ix = instruction_builders::cancel_order_l2s_exo(
+      owner,
+      order,
+      collateral_mint,
+      &args::CancelOrderL2sExo {},
+    );
+    Ok(VersionedTransactionData::one(ix))
+  }
 }
 
 #[cfg(test)]
@@ -187,7 +268,9 @@ mod tests {
   use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
   use anchor_client::Cluster;
   use hylo_idl::pda;
-  use hylo_idl::trigger_orders::types::{ConvertDirection, TriggerDirection};
+  use hylo_idl::trigger_orders::types::{
+    ConvertDirection, PairTarget, TriggerDirection,
+  };
 
   use super::*;
 
@@ -313,6 +396,102 @@ mod tests {
       ConvertDirection::LeverToStable,
       collateral_mint,
       9,
+    );
+    assert_eq!(tx.instructions[0].accounts[1].pubkey, expected_pda);
+  }
+
+  #[tokio::test]
+  async fn cancel_order_s2l_lst_derives_lst_pda() {
+    let c = TriggerOrdersClient::new_random_keypair(
+      Cluster::Localnet,
+      CommitmentConfig::confirmed(),
+    )
+    .unwrap();
+    let owner = c.keypair().pubkey();
+
+    let tx = c
+      .cancel_order_s2l(11, PairTarget::Lst)
+      .await
+      .expect("build tx");
+
+    assert_eq!(tx.instructions.len(), 1);
+    assert_eq!(tx.instructions[0].program_id, trigger_orders::ID);
+
+    let (expected_pda, _) =
+      pda::trigger_order_lst(owner, ConvertDirection::StableToLever, 11);
+    // The `order` account is at position 1 (owner, then order).
+    assert_eq!(tx.instructions[0].accounts[1].pubkey, expected_pda);
+  }
+
+  #[tokio::test]
+  async fn cancel_order_s2l_exo_derives_exo_pda() {
+    let c = TriggerOrdersClient::new_random_keypair(
+      Cluster::Localnet,
+      CommitmentConfig::confirmed(),
+    )
+    .unwrap();
+    let owner = c.keypair().pubkey();
+    let collateral_mint = Pubkey::new_unique();
+
+    let tx = c
+      .cancel_order_s2l(12, PairTarget::Exo { collateral_mint })
+      .await
+      .expect("build tx");
+
+    assert_eq!(tx.instructions.len(), 1);
+    assert_eq!(tx.instructions[0].program_id, trigger_orders::ID);
+
+    let (expected_pda, _) = pda::trigger_order_exo(
+      owner,
+      ConvertDirection::StableToLever,
+      collateral_mint,
+      12,
+    );
+    assert_eq!(tx.instructions[0].accounts[1].pubkey, expected_pda);
+  }
+
+  #[tokio::test]
+  async fn cancel_order_l2s_lst_derives_pda() {
+    let c = TriggerOrdersClient::new_random_keypair(
+      Cluster::Localnet,
+      CommitmentConfig::confirmed(),
+    )
+    .unwrap();
+    let owner = c.keypair().pubkey();
+
+    let tx = c.cancel_order_l2s_lst(13).await.expect("build tx");
+
+    assert_eq!(tx.instructions.len(), 1);
+    assert_eq!(tx.instructions[0].program_id, trigger_orders::ID);
+
+    let (expected_pda, _) =
+      pda::trigger_order_lst(owner, ConvertDirection::LeverToStable, 13);
+    assert_eq!(tx.instructions[0].accounts[1].pubkey, expected_pda);
+  }
+
+  #[tokio::test]
+  async fn cancel_order_l2s_exo_derives_pda() {
+    let c = TriggerOrdersClient::new_random_keypair(
+      Cluster::Localnet,
+      CommitmentConfig::confirmed(),
+    )
+    .unwrap();
+    let owner = c.keypair().pubkey();
+    let collateral_mint = Pubkey::new_unique();
+
+    let tx = c
+      .cancel_order_l2s_exo(collateral_mint, 14)
+      .await
+      .expect("build tx");
+
+    assert_eq!(tx.instructions.len(), 1);
+    assert_eq!(tx.instructions[0].program_id, trigger_orders::ID);
+
+    let (expected_pda, _) = pda::trigger_order_exo(
+      owner,
+      ConvertDirection::LeverToStable,
+      collateral_mint,
+      14,
     );
     assert_eq!(tx.instructions[0].accounts[1].pubkey, expected_pda);
   }
