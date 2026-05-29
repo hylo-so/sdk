@@ -13,6 +13,7 @@ use hylo_idl::exchange::events::{
   ConvertLeverToStableExoEvent, ConvertLeverToStableLstEvent,
   ConvertStableToLeverExoEvent, ConvertStableToLeverLstEvent,
 };
+use hylo_idl::trigger_orders::accounts::TriggerOrder;
 use hylo_idl::trigger_orders::client::args;
 use hylo_idl::trigger_orders::events::TriggerOrderFilled;
 use hylo_idl::trigger_orders::instruction_builders;
@@ -485,6 +486,48 @@ impl TriggerOrdersClient {
     let inner: ConvertLeverToStableExoEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     Ok((outer, inner))
+  }
+
+  /// Fetch a single open `TriggerOrder` by deriving its PDA. Returns
+  /// `Ok(None)` if the PDA doesn't exist (e.g. already cancelled/executed).
+  ///
+  /// # Errors
+  /// RPC error other than account-not-found.
+  pub async fn get_order(
+    &self,
+    owner: Pubkey,
+    direction: ConvertDirection,
+    pair_target: PairTarget,
+    nonce: u64,
+  ) -> Result<Option<TriggerOrder>> {
+    let (pda_pubkey, _) = match pair_target {
+      PairTarget::Lst => pda::trigger_order_lst(owner, direction, nonce),
+      PairTarget::Exo { collateral_mint } => {
+        pda::trigger_order_exo(owner, direction, collateral_mint, nonce)
+      }
+    };
+    match self.program.account::<TriggerOrder>(pda_pubkey).await {
+      Ok(o) => Ok(Some(o)),
+      Err(anchor_client::ClientError::AccountNotFound) => Ok(None),
+      Err(e) => Err(e.into()),
+    }
+  }
+
+  /// List all open orders for an owner via `getProgramAccounts` with a
+  /// memcmp filter at `TriggerOrder::OWNER_OFFSET`.
+  ///
+  /// # Errors
+  /// RPC error.
+  pub async fn list_orders_by_owner(
+    &self,
+    owner: Pubkey,
+  ) -> Result<Vec<(Pubkey, TriggerOrder)>> {
+    use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
+    let filters = vec![RpcFilterType::Memcmp(Memcmp::new_raw_bytes(
+      TriggerOrder::OWNER_OFFSET,
+      owner.to_bytes().to_vec(),
+    ))];
+    Ok(self.program.accounts::<TriggerOrder>(filters).await?)
   }
 }
 
