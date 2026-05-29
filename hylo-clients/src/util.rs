@@ -114,6 +114,10 @@ where
 /// differently-typed event from the same result. This variant filters by
 /// `E::DISCRIMINATOR` first, then picks the first match.
 ///
+/// Note: an instruction whose discriminator matches `E::DISCRIMINATOR` but
+/// whose payload fails to deserialize is SKIPPED (not surfaced as an error),
+/// unlike `parse_event`, which propagates the borsh error.
+///
 /// # Errors
 /// * Simulation contains a tx-level error
 /// * No inner instructions returned

@@ -13,13 +13,17 @@ use hylo_idl::exchange::events::{
   ConvertLeverToStableExoEvent, ConvertLeverToStableLstEvent,
   ConvertStableToLeverExoEvent, ConvertStableToLeverLstEvent,
 };
-use hylo_idl::trigger_orders::accounts::TriggerOrder;
+pub use hylo_idl::trigger_orders::accounts::TriggerOrder;
 use hylo_idl::trigger_orders::client::args;
-use hylo_idl::trigger_orders::events::TriggerOrderFilled;
+pub use hylo_idl::trigger_orders::constants::EXECUTOR_TIP_LAMPORTS;
+pub use hylo_idl::trigger_orders::events::{
+  TriggerOrderCancelled, TriggerOrderCreated, TriggerOrderFilled,
+};
 use hylo_idl::trigger_orders::instruction_builders;
-use hylo_idl::trigger_orders::types::{
+pub use hylo_idl::trigger_orders::types::{
   ConvertDirection, PairTarget, TriggerDirection,
 };
+pub use hylo_idl::trigger_orders::{ExecutabilityBlocker, TriggerOutcome};
 use hylo_idl::{pda, trigger_orders};
 
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -277,7 +281,8 @@ impl TriggerOrdersClient {
   /// state to thread the SOL/USD oracle, builds the CPI, prepends 400k CU.
   ///
   /// # Errors
-  /// RPC error; `Hylo` PDA not found; transaction build failure.
+  /// * RPC error fetching `Hylo`
+  /// * Account deserialization failure
   pub async fn execute_order_s2l_lst(
     &self,
     owner: Pubkey,
@@ -296,10 +301,11 @@ impl TriggerOrdersClient {
     )
   }
 
-  /// As above, lever→stable LST.
+  /// As `execute_order_s2l_lst`, but lever→stable.
   ///
   /// # Errors
-  /// RPC error; `Hylo` PDA not found; transaction build failure.
+  /// * RPC error fetching `Hylo`
+  /// * Account deserialization failure
   pub async fn execute_order_l2s_lst(
     &self,
     owner: Pubkey,
@@ -322,7 +328,8 @@ impl TriggerOrdersClient {
   /// and the `ExoPair` (provides the collateral oracle).
   ///
   /// # Errors
-  /// RPC error; `Hylo`/`ExoPair` PDA not found; transaction build failure.
+  /// * RPC error fetching `Hylo`/`ExoPair`
+  /// * Account deserialization failure
   pub async fn execute_order_s2l_exo(
     &self,
     owner: Pubkey,
@@ -358,7 +365,8 @@ impl TriggerOrdersClient {
   /// Lever→stable EXO. See `execute_order_s2l_exo` re: the `Hylo` fetch.
   ///
   /// # Errors
-  /// RPC error; `Hylo`/`ExoPair` PDA not found; transaction build failure.
+  /// * RPC error fetching `Hylo`/`ExoPair`
+  /// * Account deserialization failure
   pub async fn execute_order_l2s_exo(
     &self,
     owner: Pubkey,

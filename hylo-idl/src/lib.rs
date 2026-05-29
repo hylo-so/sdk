@@ -61,6 +61,7 @@ pub mod trigger_orders {
   #[cfg(feature = "shadow")]
   pub use super::codegen::hylo_trigger_orders_shadow::*;
   pub use super::instruction_builders::trigger_orders as instruction_builders;
+  pub use super::trigger_orders_ext::{ExecutabilityBlocker, TriggerOutcome};
 }
 
 mod trigger_orders_ext;
