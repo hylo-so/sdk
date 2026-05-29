@@ -44,6 +44,18 @@ impl VersionedTransactionData {
       lookup_tables,
     }
   }
+
+  /// Prepend a `ComputeBudget::SetComputeUnitLimit` instruction. Use for
+  /// transactions whose CU consumption exceeds the 200k default
+  /// (e.g., trigger-orders execute, 400k recommended).
+  #[must_use]
+  pub fn with_compute_unit_limit(mut self, limit: u32) -> Self {
+    use anchor_client::solana_sdk::compute_budget::ComputeBudgetInstruction;
+    self
+      .instructions
+      .insert(0, ComputeBudgetInstruction::set_compute_unit_limit(limit));
+    self
+  }
 }
 
 /// Abstracts the construction of client structs with `anchor_client::Program`.
@@ -283,5 +295,40 @@ pub trait ProgramClient: Sized {
     let event = parse_event(&result)?;
     let compute_units = result.value.units_consumed;
     Ok((event, compute_units))
+  }
+}
+
+#[cfg(test)]
+mod compute_unit_limit_tests {
+  use anchor_client::solana_sdk::instruction::Instruction;
+  use anchor_client::solana_sdk::pubkey::Pubkey;
+
+  use super::*;
+
+  fn nop() -> Instruction {
+    Instruction {
+      program_id: Pubkey::new_unique(),
+      accounts: vec![],
+      data: vec![],
+    }
+  }
+
+  #[test]
+  fn with_compute_unit_limit_prepends_compute_budget_ix() {
+    let tx =
+      VersionedTransactionData::one(nop()).with_compute_unit_limit(400_000);
+    assert_eq!(tx.instructions.len(), 2);
+    // First instruction is from the compute-budget program.
+    assert_eq!(
+      tx.instructions[0].program_id,
+      anchor_client::solana_sdk::compute_budget::ID,
+    );
+  }
+
+  #[test]
+  fn with_compute_unit_limit_preserves_lookup_tables() {
+    let tx = VersionedTransactionData::new(vec![nop()], vec![])
+      .with_compute_unit_limit(400_000);
+    assert_eq!(tx.lookup_tables.len(), 0);
   }
 }
