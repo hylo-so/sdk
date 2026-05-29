@@ -463,59 +463,6 @@
           }
         },
         {
-          "name": "levercoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  120,
-                  83,
-                  79,
-                  76
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                201,
-                14,
-                79,
-                100,
-                183,
-                39,
-                83,
-                147,
-                61,
-                13,
-                250,
-                91,
-                190,
-                238,
-                14,
-                23,
-                217,
-                217,
-                112,
-                162,
-                80,
-                102,
-                233,
-                10,
-                79,
-                26,
-                105,
-                133,
-                239,
-                241,
-                216
-              ]
-            }
-          }
-        },
-        {
           "name": "levercoin_pool",
           "writable": true,
           "pda": {
@@ -601,6 +548,63 @@
                 233,
                 248,
                 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "admin_levercoin_ta",
+          "writable": true
+        },
+        {
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                201,
+                14,
+                79,
+                100,
+                183,
+                39,
+                83,
+                147,
+                61,
+                13,
+                250,
+                91,
+                190,
+                238,
+                14,
+                23,
+                217,
+                217,
+                112,
+                162,
+                80,
+                102,
+                233,
+                10,
+                79,
+                26,
+                105,
+                133,
+                239,
+                241,
+                216
               ]
             }
           }
@@ -2515,11 +2519,6 @@
     },
     {
       "code": 6004,
-      "name": "LevercoinPoolNonzero",
-      "msg": "Unable to deprecate levercoin pool due to nonzero balance."
-    },
-    {
-      "code": 6005,
       "name": "EarnPoolPaused",
       "msg": "Earn pool operations have been paused."
     }
