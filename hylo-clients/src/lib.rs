@@ -40,4 +40,5 @@ pub mod program_client;
 pub mod router_client;
 pub mod squads;
 pub mod transaction;
+pub mod trigger_orders_client;
 pub mod util;
