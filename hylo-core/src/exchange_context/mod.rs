@@ -354,7 +354,8 @@ pub trait ExchangeContext {
       target,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
-    )?;
+    )
+    .unwrap_or_default();
     if requested <= max {
       Ok(requested)
     } else {
