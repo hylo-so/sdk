@@ -18055,6 +18055,11 @@
       "code": 6056,
       "name": "LstStakePoolNotSupported",
       "msg": "LST stake pool is not supported."
+    },
+    {
+      "code": 6057,
+      "name": "InsufficientEarnPoolLiquidity",
+      "msg": "Earn pool does not have enough liquidity to absorb rebalance loss."
     }
   ],
   "types": [
