@@ -285,8 +285,7 @@ pub trait ExchangeContext {
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 
-  /// Maximum mintable stablecoin before hitting the lowest CR
-  /// threshold.
+  /// Maximum mintable stablecoin before
   ///
   /// # Errors
   /// * Arithmetic overflow
@@ -335,6 +334,31 @@ pub trait ExchangeContext {
       Ok(requested)
     } else {
       Err(RequestedStablecoinOverMaxMintable.into())
+    }
+  }
+
+  /// Validates `PnL` stablecoin profit against `SellZone2` threshold.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  fn validate_stablecoin_pnl_profit(
+    &self,
+    requested: UFix64<N6>,
+  ) -> Result<UFix64<N6>> {
+    let target = RebalanceMode::SellZone2
+      .active_range()
+      .end()?
+      .checked_convert()
+      .ok_or(MaxMintable)?;
+    let max = max_swappable_stablecoin(
+      target,
+      self.total_value_locked()?,
+      self.virtual_stablecoin_supply()?,
+    )?;
+    if requested <= max {
+      Ok(requested)
+    } else {
+      Ok(max)
     }
   }
 
