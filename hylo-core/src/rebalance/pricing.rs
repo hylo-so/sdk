@@ -18,11 +18,12 @@ use crate::rebalance::mode::RebalanceMode;
 
 // Confidence multiplier boundaries
 const MIN_CONF_MULT: UFix64<N2> = UFix64::constant(0);
-const MAX_CONF_MULT: UFix64<N2> = UFix64::constant(200);
+const MAX_CONF_FLOOR_MULT: UFix64<N2> = UFix64::constant(200);
+const MAX_CONF_CEIL_MULT: UFix64<N2> = UFix64::constant(100);
 
 // Percent deviation boundaries
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(0);
-const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(150_000_000);
+const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(10_000_000);
 
 // Checks deviation tolerance against boundaries.
 pub fn validate_deviation_tolerance(dev: UFixValue64) -> Result<UFixValue64> {
@@ -83,10 +84,11 @@ impl RebalanceCurveConfig {
   /// # Errors
   /// * Incorrect precision or failed validation
   pub fn validate(self) -> Result<Self> {
-    let range = MIN_CONF_MULT..=MAX_CONF_MULT;
-    let valid =
-      range.contains(&self.floor_mult()?) && range.contains(&self.ceil_mult()?);
-    valid
+    let floor_ok =
+      (MIN_CONF_MULT..=MAX_CONF_FLOOR_MULT).contains(&self.floor_mult()?);
+    let ceil_ok =
+      (MIN_CONF_MULT..=MAX_CONF_CEIL_MULT).contains(&self.ceil_mult()?);
+    (floor_ok && ceil_ok)
       .then_some(self)
       .ok_or(CoreError::RebalanceCurveConfigValidation.into())
   }
