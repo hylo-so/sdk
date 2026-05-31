@@ -18,5 +18,6 @@ pub use crate::transaction::{BuildTransactionData, TransactionSyntax};
 pub use crate::trigger_orders_client::{
   ConvertDirection, ExecutabilityBlocker, PairTarget, TriggerDirection,
   TriggerOrder, TriggerOrderCancelled, TriggerOrderCreated, TriggerOrderFilled,
-  TriggerOrdersClient, TriggerOutcome, EXECUTOR_TIP_LAMPORTS,
+  TriggerOrdersClient, TriggerOutcome, CONSERVATIVE_EXECUTE_CU,
+  EXECUTOR_TIP_LAMPORTS,
 };

@@ -504,14 +504,16 @@ impl TriggerOrdersClient {
   pub async fn get_order(
     &self,
     owner: Pubkey,
-    direction: ConvertDirection,
+    convert_direction: ConvertDirection,
     pair_target: PairTarget,
     nonce: u64,
   ) -> Result<Option<TriggerOrder>> {
     let (pda_pubkey, _) = match pair_target {
-      PairTarget::Lst => pda::trigger_order_lst(owner, direction, nonce),
+      PairTarget::Lst => {
+        pda::trigger_order_lst(owner, convert_direction, nonce)
+      }
       PairTarget::Exo { collateral_mint } => {
-        pda::trigger_order_exo(owner, direction, collateral_mint, nonce)
+        pda::trigger_order_exo(owner, convert_direction, collateral_mint, nonce)
       }
     };
     match self.program.account::<TriggerOrder>(pda_pubkey).await {

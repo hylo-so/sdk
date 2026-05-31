@@ -431,4 +431,31 @@ mod parse_event_filtered_tests {
     let result: Result<TriggerOrderFilled> = parse_event_filtered(&resp);
     assert!(result.is_err());
   }
+
+  /// A discriminator-MATCHING but undeserializable blob: the correct event
+  /// discriminator followed by a payload too short to borsh-decode (the first
+  /// field of `TriggerOrderFilled` is a 32-byte `Pubkey`, so 3 bytes fail).
+  fn corrupt_blob<E: Discriminator>() -> String {
+    let mut bytes = vec![0xAB_u8; 8];
+    bytes.extend_from_slice(E::DISCRIMINATOR);
+    bytes.extend_from_slice(&[0x00, 0x01, 0x02]);
+    bs58::encode(bytes).into_string()
+  }
+
+  // `parse_event_filtered` must SKIP an inner instruction whose discriminator
+  // matches `E` but whose payload fails to deserialize, and keep scanning for
+  // a valid match — the documented divergence from `parse_event` (which
+  // propagates the borsh error). Here a corrupt match precedes a valid one.
+  #[test]
+  fn skips_discriminator_match_that_fails_to_deserialize() {
+    let valid = sample_trigger_order_filled();
+    let resp = response_with(vec![
+      corrupt_blob::<TriggerOrderFilled>(),
+      encode_event(&valid),
+    ]);
+
+    let got: TriggerOrderFilled = parse_event_filtered(&resp)
+      .expect("skips the corrupt match and returns the valid one");
+    assert_eq!(got.nonce, 42);
+  }
 }
