@@ -123,7 +123,8 @@ mod trigger_orders_smoke_tests {
   // adjust `pub mod trigger_orders { ... }` in lib.rs accordingly.
   #[allow(unused_imports)]
   use crate::trigger_orders::events::{
-    TriggerOrderCancelled, TriggerOrderCreated, TriggerOrderFilled,
+    TriggerOrderCancelledEvent, TriggerOrderCreatedEvent,
+    TriggerOrderFilledEvent,
   };
 
   #[test]

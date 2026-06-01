@@ -17,7 +17,7 @@ pub use hylo_idl::trigger_orders::accounts::TriggerOrder;
 use hylo_idl::trigger_orders::client::args;
 pub use hylo_idl::trigger_orders::constants::EXECUTOR_TIP_LAMPORTS;
 pub use hylo_idl::trigger_orders::events::{
-  TriggerOrderCancelled, TriggerOrderCreated, TriggerOrderFilled,
+  TriggerOrderCancelledEvent, TriggerOrderCreatedEvent, TriggerOrderFilledEvent,
 };
 use hylo_idl::trigger_orders::instruction_builders;
 pub use hylo_idl::trigger_orders::types::{
@@ -71,7 +71,7 @@ impl TriggerOrdersClient {
   // which do await) and so future escrow/balance lookups can be added without
   // a breaking API change.
   #[allow(clippy::unused_async)]
-  pub async fn create_order_s2l_lst(
+  pub async fn create_order_stable_to_lever_lst(
     &self,
     nonce: u64,
     escrow_amount: u64,
@@ -82,10 +82,10 @@ impl TriggerOrdersClient {
     let owner = self.keypair.pubkey();
     let (order, _) =
       pda::trigger_order_lst(owner, ConvertDirection::StableToLever, nonce);
-    let ix = instruction_builders::create_order_s2l_lst(
+    let ix = instruction_builders::create_order_stable_to_lever_lst(
       owner,
       order,
-      &args::CreateOrderS2lLst {
+      &args::CreateOrderStableToLeverLst {
         nonce,
         escrow_amount,
         trigger_price,
@@ -96,12 +96,12 @@ impl TriggerOrdersClient {
     Ok(VersionedTransactionData::one(ix))
   }
 
-  /// As `create_order_s2l_lst`, but for an EXO pair.
+  /// As `create_order_stable_to_lever_lst`, but for an EXO pair.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
-  pub async fn create_order_s2l_exo(
+  #[allow(clippy::unused_async)] // async for surface uniformity; see stable_to_lever_lst.
+  pub async fn create_order_stable_to_lever_exo(
     &self,
     collateral_mint: Pubkey,
     nonce: u64,
@@ -117,11 +117,11 @@ impl TriggerOrdersClient {
       collateral_mint,
       nonce,
     );
-    let ix = instruction_builders::create_order_s2l_exo(
+    let ix = instruction_builders::create_order_stable_to_lever_exo(
       owner,
       order,
       collateral_mint,
-      &args::CreateOrderS2lExo {
+      &args::CreateOrderStableToLeverExo {
         nonce,
         escrow_amount,
         trigger_price,
@@ -136,8 +136,8 @@ impl TriggerOrdersClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
-  pub async fn create_order_l2s_lst(
+  #[allow(clippy::unused_async)] // async for surface uniformity; see stable_to_lever_lst.
+  pub async fn create_order_lever_to_stable_lst(
     &self,
     nonce: u64,
     escrow_amount: u64,
@@ -148,10 +148,10 @@ impl TriggerOrdersClient {
     let owner = self.keypair.pubkey();
     let (order, _) =
       pda::trigger_order_lst(owner, ConvertDirection::LeverToStable, nonce);
-    let ix = instruction_builders::create_order_l2s_lst(
+    let ix = instruction_builders::create_order_lever_to_stable_lst(
       owner,
       order,
-      &args::CreateOrderL2sLst {
+      &args::CreateOrderLeverToStableLst {
         nonce,
         escrow_amount,
         trigger_price,
@@ -166,8 +166,8 @@ impl TriggerOrdersClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
-  pub async fn create_order_l2s_exo(
+  #[allow(clippy::unused_async)] // async for surface uniformity; see stable_to_lever_lst.
+  pub async fn create_order_lever_to_stable_exo(
     &self,
     collateral_mint: Pubkey,
     nonce: u64,
@@ -183,11 +183,11 @@ impl TriggerOrdersClient {
       collateral_mint,
       nonce,
     );
-    let ix = instruction_builders::create_order_l2s_exo(
+    let ix = instruction_builders::create_order_lever_to_stable_exo(
       owner,
       order,
       collateral_mint,
-      &args::CreateOrderL2sExo {
+      &args::CreateOrderLeverToStableExo {
         nonce,
         escrow_amount,
         trigger_price,
@@ -198,14 +198,15 @@ impl TriggerOrdersClient {
     Ok(VersionedTransactionData::one(ix))
   }
 
-  /// Cancel an s2l trigger order. Refunds HYUSD escrow + executor tip to
-  /// the owner via Anchor's `close = owner`. Handles both LST and EXO s2l
-  /// (the s2l escrow is always HYUSD), selected by `pair_target`.
+  /// Cancel a stable-to-lever trigger order. Refunds HYUSD escrow + executor
+  /// tip to the owner via Anchor's `close = owner`. Handles both LST and EXO
+  /// stable-to-lever (the stable-to-lever escrow is always HYUSD), selected by
+  /// `pair_target`.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
-  pub async fn cancel_order_s2l(
+  #[allow(clippy::unused_async)] // async for surface uniformity; see stable_to_lever_lst.
+  pub async fn cancel_order_stable_to_lever(
     &self,
     nonce: u64,
     pair_target: PairTarget,
@@ -222,41 +223,42 @@ impl TriggerOrdersClient {
         nonce,
       ),
     };
-    let ix = instruction_builders::cancel_order_s2l(
+    let ix = instruction_builders::cancel_order_stable_to_lever(
       owner,
       order,
-      &args::CancelOrderS2l {},
+      &args::CancelOrderStableToLever {},
     );
     Ok(VersionedTransactionData::one(ix))
   }
 
-  /// Cancel an l2s LST order. Refunds xSOL escrow + tip via `close = owner`.
+  /// Cancel a lever-to-stable LST order. Refunds xSOL escrow + tip via
+  /// `close = owner`.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
-  pub async fn cancel_order_l2s_lst(
+  #[allow(clippy::unused_async)] // async for surface uniformity; see stable_to_lever_lst.
+  pub async fn cancel_order_lever_to_stable_lst(
     &self,
     nonce: u64,
   ) -> Result<VersionedTransactionData> {
     let owner = self.keypair.pubkey();
     let (order, _) =
       pda::trigger_order_lst(owner, ConvertDirection::LeverToStable, nonce);
-    let ix = instruction_builders::cancel_order_l2s_lst(
+    let ix = instruction_builders::cancel_order_lever_to_stable_lst(
       owner,
       order,
-      &args::CancelOrderL2sLst {},
+      &args::CancelOrderLeverToStableLst {},
     );
     Ok(VersionedTransactionData::one(ix))
   }
 
-  /// Cancel an l2s EXO order. Refunds the per-collateral levercoin escrow +
-  /// tip.
+  /// Cancel a lever-to-stable EXO order. Refunds the per-collateral levercoin
+  /// escrow + tip.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  #[allow(clippy::unused_async)] // async for surface uniformity; see s2l_lst.
-  pub async fn cancel_order_l2s_exo(
+  #[allow(clippy::unused_async)] // async for surface uniformity; see stable_to_lever_lst.
+  pub async fn cancel_order_lever_to_stable_exo(
     &self,
     collateral_mint: Pubkey,
     nonce: u64,
@@ -268,11 +270,11 @@ impl TriggerOrdersClient {
       collateral_mint,
       nonce,
     );
-    let ix = instruction_builders::cancel_order_l2s_exo(
+    let ix = instruction_builders::cancel_order_lever_to_stable_exo(
       owner,
       order,
       collateral_mint,
-      &args::CancelOrderL2sExo {},
+      &args::CancelOrderLeverToStableExo {},
     );
     Ok(VersionedTransactionData::one(ix))
   }
@@ -283,7 +285,7 @@ impl TriggerOrdersClient {
   /// # Errors
   /// * RPC error fetching `Hylo`
   /// * Account deserialization failure
-  pub async fn execute_order_s2l_lst(
+  pub async fn execute_order_stable_to_lever_lst(
     &self,
     owner: Pubkey,
     nonce: u64,
@@ -292,7 +294,7 @@ impl TriggerOrdersClient {
     let (order, _) =
       pda::trigger_order_lst(owner, ConvertDirection::StableToLever, nonce);
     let hylo: Hylo = self.program.account(pda::HYLO).await?;
-    let ix = instruction_builders::execute_order_s2l_lst(
+    let ix = instruction_builders::execute_order_stable_to_lever_lst(
       executor, owner, order, &hylo,
     );
     Ok(
@@ -301,12 +303,12 @@ impl TriggerOrdersClient {
     )
   }
 
-  /// As `execute_order_s2l_lst`, but lever→stable.
+  /// As `execute_order_stable_to_lever_lst`, but lever→stable.
   ///
   /// # Errors
   /// * RPC error fetching `Hylo`
   /// * Account deserialization failure
-  pub async fn execute_order_l2s_lst(
+  pub async fn execute_order_lever_to_stable_lst(
     &self,
     owner: Pubkey,
     nonce: u64,
@@ -315,7 +317,7 @@ impl TriggerOrdersClient {
     let (order, _) =
       pda::trigger_order_lst(owner, ConvertDirection::LeverToStable, nonce);
     let hylo: Hylo = self.program.account(pda::HYLO).await?;
-    let ix = instruction_builders::execute_order_l2s_lst(
+    let ix = instruction_builders::execute_order_lever_to_stable_lst(
       executor, owner, order, &hylo,
     );
     Ok(
@@ -330,7 +332,7 @@ impl TriggerOrdersClient {
   /// # Errors
   /// * RPC error fetching `Hylo`/`ExoPair`
   /// * Account deserialization failure
-  pub async fn execute_order_s2l_exo(
+  pub async fn execute_order_stable_to_lever_exo(
     &self,
     owner: Pubkey,
     collateral_mint: Pubkey,
@@ -348,7 +350,7 @@ impl TriggerOrdersClient {
     let hylo: Hylo = self.program.account(pda::HYLO).await?;
     let exo_pair: ExoPair =
       self.program.account(pda::exo_pair(collateral_mint)).await?;
-    let ix = instruction_builders::execute_order_s2l_exo(
+    let ix = instruction_builders::execute_order_stable_to_lever_exo(
       executor,
       owner,
       order,
@@ -362,12 +364,13 @@ impl TriggerOrdersClient {
     )
   }
 
-  /// Lever→stable EXO. See `execute_order_s2l_exo` re: the `Hylo` fetch.
+  /// Lever→stable EXO. See `execute_order_stable_to_lever_exo` re: the `Hylo`
+  /// fetch.
   ///
   /// # Errors
   /// * RPC error fetching `Hylo`/`ExoPair`
   /// * Account deserialization failure
-  pub async fn execute_order_l2s_exo(
+  pub async fn execute_order_lever_to_stable_exo(
     &self,
     owner: Pubkey,
     collateral_mint: Pubkey,
@@ -383,7 +386,7 @@ impl TriggerOrdersClient {
     let hylo: Hylo = self.program.account(pda::HYLO).await?;
     let exo_pair: ExoPair =
       self.program.account(pda::exo_pair(collateral_mint)).await?;
-    let ix = instruction_builders::execute_order_l2s_exo(
+    let ix = instruction_builders::execute_order_lever_to_stable_exo(
       executor,
       owner,
       order,
@@ -398,98 +401,98 @@ impl TriggerOrdersClient {
   }
 
   // The `simulate_execute_order_*` methods below run TWO simulations (two RPC
-  // round-trips) to extract the outer `TriggerOrderFilled` and the inner Hylo
-  // `Convert*Event` separately. This is acceptable for v1 because `simulate_*`
-  // is low-frequency (keeper pre-flight, not the hot path); it could be
-  // optimized to a single simulation later (parse both events from one result
-  // via `parse_event_filtered`, which is designed to be called repeatedly on
-  // the same result).
+  // round-trips) to extract the outer `TriggerOrderFilledEvent` and the inner
+  // Hylo `Convert*Event` separately. This is acceptable for v1 because
+  // `simulate_*` is low-frequency (keeper pre-flight, not the hot path); it
+  // could be optimized to a single simulation later (parse both events from
+  // one result via `parse_event_filtered`, which is designed to be called
+  // repeatedly on the same result).
 
   /// Simulate the execute path; return both events the chain emits on
-  /// success: the trigger-orders `TriggerOrderFilled` AND the inner Hylo
+  /// success: the trigger-orders `TriggerOrderFilledEvent` AND the inner Hylo
   /// `ConvertStableToLeverLstEvent`.
   ///
   /// # Errors
   /// Simulation failure (CPI revert, account loading, CR-gate blockers);
   /// either event missing from the simulation result.
-  pub async fn simulate_execute_order_s2l_lst(
+  pub async fn simulate_execute_order_stable_to_lever_lst(
     &self,
     owner: Pubkey,
     nonce: u64,
-  ) -> Result<(TriggerOrderFilled, ConvertStableToLeverLstEvent)> {
-    let vtd = self.execute_order_s2l_lst(owner, nonce).await?;
+  ) -> Result<(TriggerOrderFilledEvent, ConvertStableToLeverLstEvent)> {
+    let vtd = self.execute_order_stable_to_lever_lst(owner, nonce).await?;
     let user = self.keypair.pubkey();
     let vt = self.build_simulation_transaction(&user, &vtd).await?;
-    let outer: TriggerOrderFilled =
+    let outer: TriggerOrderFilledEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     let inner: ConvertStableToLeverLstEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     Ok((outer, inner))
   }
 
-  /// Simulate the execute path; return the outer `TriggerOrderFilled` and the
-  /// inner Hylo `ConvertLeverToStableLstEvent`.
+  /// Simulate the execute path; return the outer `TriggerOrderFilledEvent` and
+  /// the inner Hylo `ConvertLeverToStableLstEvent`.
   ///
   /// # Errors
   /// Simulation failure (CPI revert, account loading, CR-gate blockers);
   /// either event missing from the simulation result.
-  pub async fn simulate_execute_order_l2s_lst(
+  pub async fn simulate_execute_order_lever_to_stable_lst(
     &self,
     owner: Pubkey,
     nonce: u64,
-  ) -> Result<(TriggerOrderFilled, ConvertLeverToStableLstEvent)> {
-    let vtd = self.execute_order_l2s_lst(owner, nonce).await?;
+  ) -> Result<(TriggerOrderFilledEvent, ConvertLeverToStableLstEvent)> {
+    let vtd = self.execute_order_lever_to_stable_lst(owner, nonce).await?;
     let user = self.keypair.pubkey();
     let vt = self.build_simulation_transaction(&user, &vtd).await?;
-    let outer: TriggerOrderFilled =
+    let outer: TriggerOrderFilledEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     let inner: ConvertLeverToStableLstEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     Ok((outer, inner))
   }
 
-  /// Simulate the EXO execute path; return the outer `TriggerOrderFilled` and
-  /// the inner Hylo `ConvertStableToLeverExoEvent`.
+  /// Simulate the EXO execute path; return the outer `TriggerOrderFilledEvent`
+  /// and the inner Hylo `ConvertStableToLeverExoEvent`.
   ///
   /// # Errors
   /// Simulation failure (CPI revert, account loading, CR-gate blockers);
   /// either event missing from the simulation result.
-  pub async fn simulate_execute_order_s2l_exo(
+  pub async fn simulate_execute_order_stable_to_lever_exo(
     &self,
     owner: Pubkey,
     collateral_mint: Pubkey,
     nonce: u64,
-  ) -> Result<(TriggerOrderFilled, ConvertStableToLeverExoEvent)> {
+  ) -> Result<(TriggerOrderFilledEvent, ConvertStableToLeverExoEvent)> {
     let vtd = self
-      .execute_order_s2l_exo(owner, collateral_mint, nonce)
+      .execute_order_stable_to_lever_exo(owner, collateral_mint, nonce)
       .await?;
     let user = self.keypair.pubkey();
     let vt = self.build_simulation_transaction(&user, &vtd).await?;
-    let outer: TriggerOrderFilled =
+    let outer: TriggerOrderFilledEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     let inner: ConvertStableToLeverExoEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     Ok((outer, inner))
   }
 
-  /// Simulate the EXO execute path; return the outer `TriggerOrderFilled` and
-  /// the inner Hylo `ConvertLeverToStableExoEvent`.
+  /// Simulate the EXO execute path; return the outer `TriggerOrderFilledEvent`
+  /// and the inner Hylo `ConvertLeverToStableExoEvent`.
   ///
   /// # Errors
   /// Simulation failure (CPI revert, account loading, CR-gate blockers);
   /// either event missing from the simulation result.
-  pub async fn simulate_execute_order_l2s_exo(
+  pub async fn simulate_execute_order_lever_to_stable_exo(
     &self,
     owner: Pubkey,
     collateral_mint: Pubkey,
     nonce: u64,
-  ) -> Result<(TriggerOrderFilled, ConvertLeverToStableExoEvent)> {
+  ) -> Result<(TriggerOrderFilledEvent, ConvertLeverToStableExoEvent)> {
     let vtd = self
-      .execute_order_l2s_exo(owner, collateral_mint, nonce)
+      .execute_order_lever_to_stable_exo(owner, collateral_mint, nonce)
       .await?;
     let user = self.keypair.pubkey();
     let vt = self.build_simulation_transaction(&user, &vtd).await?;
-    let outer: TriggerOrderFilled =
+    let outer: TriggerOrderFilledEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
     let inner: ConvertLeverToStableExoEvent =
       self.simulate_transaction_event_filtered(&vt).await?;
@@ -572,7 +575,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn create_order_s2l_lst_routes_to_correct_pda() {
+  async fn create_order_stable_to_lever_lst_routes_to_correct_pda() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -581,7 +584,13 @@ mod tests {
     let owner = c.keypair().pubkey();
 
     let tx = c
-      .create_order_s2l_lst(7, 1000, 100, -8, TriggerDirection::AtOrAbove)
+      .create_order_stable_to_lever_lst(
+        7,
+        1000,
+        100,
+        -8,
+        TriggerDirection::AtOrAbove,
+      )
       .await
       .expect("build tx");
 
@@ -595,7 +604,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn create_order_s2l_exo_derives_with_collateral_mint() {
+  async fn create_order_stable_to_lever_exo_derives_with_collateral_mint() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -605,7 +614,7 @@ mod tests {
     let collateral_mint = Pubkey::new_unique();
 
     let tx = c
-      .create_order_s2l_exo(
+      .create_order_stable_to_lever_exo(
         collateral_mint,
         3,
         500,
@@ -629,7 +638,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn create_order_l2s_lst_routes_to_correct_pda() {
+  async fn create_order_lever_to_stable_lst_routes_to_correct_pda() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -638,7 +647,13 @@ mod tests {
     let owner = c.keypair().pubkey();
 
     let tx = c
-      .create_order_l2s_lst(11, 750, 25, -8, TriggerDirection::AtOrBelow)
+      .create_order_lever_to_stable_lst(
+        11,
+        750,
+        25,
+        -8,
+        TriggerDirection::AtOrBelow,
+      )
       .await
       .expect("build tx");
 
@@ -651,7 +666,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn create_order_l2s_exo_derives_with_collateral_mint() {
+  async fn create_order_lever_to_stable_exo_derives_with_collateral_mint() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -660,7 +675,7 @@ mod tests {
     let owner = c.keypair().pubkey();
     let collateral_mint = Pubkey::new_unique();
     let tx = c
-      .create_order_l2s_exo(
+      .create_order_lever_to_stable_exo(
         collateral_mint,
         9,
         2_000,
@@ -684,7 +699,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn cancel_order_s2l_lst_derives_lst_pda() {
+  async fn cancel_order_stable_to_lever_lst_derives_lst_pda() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -693,7 +708,7 @@ mod tests {
     let owner = c.keypair().pubkey();
 
     let tx = c
-      .cancel_order_s2l(11, PairTarget::Lst)
+      .cancel_order_stable_to_lever(11, PairTarget::Lst)
       .await
       .expect("build tx");
 
@@ -707,7 +722,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn cancel_order_s2l_exo_derives_exo_pda() {
+  async fn cancel_order_stable_to_lever_exo_derives_exo_pda() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -717,7 +732,7 @@ mod tests {
     let collateral_mint = Pubkey::new_unique();
 
     let tx = c
-      .cancel_order_s2l(12, PairTarget::Exo { collateral_mint })
+      .cancel_order_stable_to_lever(12, PairTarget::Exo { collateral_mint })
       .await
       .expect("build tx");
 
@@ -734,7 +749,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn cancel_order_l2s_lst_derives_pda() {
+  async fn cancel_order_lever_to_stable_lst_derives_pda() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -742,7 +757,10 @@ mod tests {
     .unwrap();
     let owner = c.keypair().pubkey();
 
-    let tx = c.cancel_order_l2s_lst(13).await.expect("build tx");
+    let tx = c
+      .cancel_order_lever_to_stable_lst(13)
+      .await
+      .expect("build tx");
 
     assert_eq!(tx.instructions.len(), 1);
     assert_eq!(tx.instructions[0].program_id, trigger_orders::ID);
@@ -753,7 +771,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn cancel_order_l2s_exo_derives_pda() {
+  async fn cancel_order_lever_to_stable_exo_derives_pda() {
     let c = TriggerOrdersClient::new_random_keypair(
       Cluster::Localnet,
       CommitmentConfig::confirmed(),
@@ -763,7 +781,7 @@ mod tests {
     let collateral_mint = Pubkey::new_unique();
 
     let tx = c
-      .cancel_order_l2s_exo(collateral_mint, 14)
+      .cancel_order_lever_to_stable_exo(collateral_mint, 14)
       .await
       .expect("build tx");
 
