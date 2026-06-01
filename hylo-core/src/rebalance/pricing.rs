@@ -23,7 +23,7 @@ const MAX_CONF_CEIL_MULT: UFix64<N2> = UFix64::constant(100);
 
 // Percent deviation boundaries
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(0);
-const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(10_000_000);
+const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(20_000_000);
 
 // Checks deviation tolerance against boundaries.
 pub fn validate_deviation_tolerance(dev: UFixValue64) -> Result<UFixValue64> {
