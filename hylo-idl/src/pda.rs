@@ -229,6 +229,9 @@ pub const USDC_USD_PYTH_FEED: Pubkey =
 pub const BTC_USD_PYTH_FEED: Pubkey =
   pubkey!("4cSM2e6rvbGQUFiJbqytoVMi5GgghSMr8LwVrT9VPSPo");
 
+pub const INCINERATOR: Pubkey =
+  pubkey!("1nc1nerator11111111111111111111111111111111");
+
 pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 
 pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);

@@ -8,11 +8,15 @@ use hylo_core::idl::exchange;
 use hylo_idl::exchange::client::args;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{AddressField, TokenMetadata, UFixValue64};
+use hylo_idl::pda;
+use hylo_idl::tokens::{TokenMint, HYUSD};
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
-use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{
+  ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
+};
 
 /// Admin client for the Hylo exchange program. Manages LST
 /// registration, oracle configuration, fee updates, and protocol
@@ -885,6 +889,42 @@ impl ExchangeClient {
     );
     let memo = build_memo("register_exo", &instruction);
     let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Genesis mint for an exo pair: seeds an empty, paused pair with its
+  /// initial collateral, minting levercoin and stablecoin to the incinerator.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn genesis_mint_exo(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+    collateral_usd_pyth_feed: Pubkey,
+    args: &args::GenesisMintExo,
+  ) -> Result<SquadsTransactionData> {
+    let vault = squads.vault_pda();
+    let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+    let incinerator_levercoin_ata =
+      ata_instruction(&vault, &pda::INCINERATOR, &levercoin_mint);
+    let incinerator_stablecoin_ata =
+      ata_instruction(&vault, &pda::INCINERATOR, &HYUSD::MINT);
+    let instruction = instruction_builders::genesis_mint_exo(
+      vault,
+      collateral_mint,
+      collateral_usd_pyth_feed,
+      args,
+    );
+    let memo = build_memo("genesis_mint_exo", &instruction);
+    let inner = VersionedTransactionData::new(
+      vec![
+        incinerator_levercoin_ata,
+        incinerator_stablecoin_ata,
+        instruction,
+      ],
+      vec![],
+    );
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 

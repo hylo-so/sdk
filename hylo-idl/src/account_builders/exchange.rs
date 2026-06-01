@@ -5,11 +5,11 @@ use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
   ConvertLeverToStableExo, ConvertLeverToStableLst, ConvertStableToLeverExo,
-  ConvertStableToLeverLst, HarvestBorrowRate, InitializePoolDrawdownExo,
-  InitializePoolDrawdownLst, InitializeUsdc, MintLevercoinExo,
-  MintLevercoinLst, MintStablecoinExo, MintStablecoinLst, MintStablecoinUsdc,
-  RedeemLevercoinExo, RedeemLevercoinLst, RedeemStablecoinExo,
-  RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
+  ConvertStableToLeverLst, GenesisMintExo, HarvestBorrowRate,
+  InitializePoolDrawdownExo, InitializePoolDrawdownLst, InitializeUsdc,
+  MintLevercoinExo, MintLevercoinLst, MintStablecoinExo, MintStablecoinLst,
+  MintStablecoinUsdc, RedeemLevercoinExo, RedeemLevercoinLst,
+  RedeemStablecoinExo, RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
   SettleVirtualStablecoinExo, SettleVirtualStablecoinLst, SwapExoToUsdc,
   SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
   UpdateExoLevercoinMarketCapLimit, UpdateLstRebalanceFee, WithdrawFees,
@@ -299,6 +299,37 @@ pub fn redeem_stablecoin_exo(
     user_stablecoin_ta: pda::hyusd_ata(user),
     user_collateral_ta: pda::ata(user, collateral_mint),
     collateral_mint,
+    stablecoin_mint: HYUSD::MINT,
+    collateral_usd_pyth_feed,
+    token_program: token::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+/// Genesis mint seeding an empty exo pair with its initial collateral.
+#[must_use]
+pub fn genesis_mint_exo(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+) -> GenesisMintExo {
+  let vault_auth = pda::exo_vault_auth(collateral_mint);
+  let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+  GenesisMintExo {
+    admin,
+    incinerator: pda::INCINERATOR,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    levercoin_auth: pda::mint_auth(levercoin_mint),
+    stablecoin_auth: pda::HYUSD_AUTH,
+    vault_auth,
+    collateral_vault: pda::ata(vault_auth, collateral_mint),
+    admin_collateral_ta: pda::ata(admin, collateral_mint),
+    incinerator_levercoin_ta: pda::ata(pda::INCINERATOR, levercoin_mint),
+    incinerator_stablecoin_ta: pda::hyusd_ata(pda::INCINERATOR),
+    collateral_mint,
+    levercoin_mint,
     stablecoin_mint: HYUSD::MINT,
     collateral_usd_pyth_feed,
     token_program: token::ID,

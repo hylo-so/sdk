@@ -470,6 +470,25 @@ pub fn redeem_stablecoin_exo(
 }
 
 #[must_use]
+pub fn genesis_mint_exo(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::GenesisMintExo,
+) -> Instruction {
+  let accounts = account_builders::genesis_mint_exo(
+    admin,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,

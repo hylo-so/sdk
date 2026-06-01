@@ -1944,6 +1944,359 @@
       }
     },
     {
+      "name": "genesis_mint_exo",
+      "discriminator": [
+        140,
+        83,
+        64,
+        243,
+        219,
+        44,
+        0,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "incinerator"
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "levercoin_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "admin_collateral_ta",
+          "writable": true
+        },
+        {
+          "name": "incinerator_levercoin_ta",
+          "writable": true
+        },
+        {
+          "name": "incinerator_stablecoin_ta",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "levercoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_usd_pyth_feed"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "GenesisMintExoEvent"
+        }
+      }
+    },
+    {
       "name": "harvest_borrow_rate",
       "discriminator": [
         164,
@@ -9194,10 +9547,6 @@
               "name": "TokenMetadata"
             }
           }
-        },
-        {
-          "name": "paused",
-          "type": "bool"
         },
         {
           "name": "levercoin_market_cap_limit",
@@ -17224,6 +17573,19 @@
       ]
     },
     {
+      "name": "GenesisMintExoEvent",
+      "discriminator": [
+        13,
+        215,
+        102,
+        188,
+        148,
+        156,
+        165,
+        145
+      ]
+    },
+    {
       "name": "HarvestBorrowRateEvent",
       "discriminator": [
         93,
@@ -18060,6 +18422,21 @@
       "code": 6057,
       "name": "InsufficientEarnPoolLiquidity",
       "msg": "Earn pool does not have enough liquidity to absorb rebalance loss."
+    },
+    {
+      "code": 6058,
+      "name": "ExoGenesisConstraints",
+      "msg": "Exo pair genesis mint constraints not met."
+    },
+    {
+      "code": 6059,
+      "name": "ExoGenesisCollateralRatio",
+      "msg": "Error or constraint not met for collateral ratio for genesis."
+    },
+    {
+      "code": 6060,
+      "name": "ExoPairZeroVirtualStablecoin",
+      "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
     }
   ],
   "types": [
@@ -18607,6 +18984,62 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GenesisMintExoEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "exo_pair",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_deposited",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "levercoin_minted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_minted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "collateral_ratio",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "collateral_usd_price",
+            "type": {
+              "defined": {
+                "name": "OraclePriceEvent"
               }
             }
           }
