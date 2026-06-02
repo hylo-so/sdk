@@ -1940,7 +1940,6 @@
         },
         {
           "name": "hylo",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -3263,7 +3262,6 @@
         },
         {
           "name": "hylo",
-          "writable": true,
           "pda": {
             "seeds": [
               {
