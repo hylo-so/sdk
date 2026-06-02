@@ -5492,18 +5492,6 @@
           {
             "name": "bump",
             "type": "u8"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved for forward-compatible field additions without a migration."
-            ],
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
           }
         ]
       }

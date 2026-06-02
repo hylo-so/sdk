@@ -224,7 +224,6 @@ mod can_execute_tests {
       direction: TriggerDirection::AtOrAbove,
       created_at: 0,
       bump: 0,
-      _reserved: [0u8; 64],
     }
   }
 
@@ -502,7 +501,6 @@ mod evaluate_trigger_tests {
       direction,
       created_at: 0,
       bump: 0,
-      _reserved: [0u8; 64],
     }
   }
 
