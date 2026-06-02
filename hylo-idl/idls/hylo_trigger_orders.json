@@ -1939,7 +1939,58 @@
           ]
         },
         {
-          "name": "hylo"
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "exo_pair",
@@ -2639,7 +2690,57 @@
         },
         {
           "name": "hylo",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "sol_usd_pyth_feed"
@@ -2711,7 +2812,57 @@
         },
         {
           "name": "xsol_mint",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "levercoin_auth"
@@ -3111,7 +3262,58 @@
           ]
         },
         {
-          "name": "hylo"
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "exo_pair",
@@ -3811,7 +4013,57 @@
         },
         {
           "name": "hylo",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "sol_usd_pyth_feed"
@@ -3883,7 +4135,57 @@
         },
         {
           "name": "xsol_mint",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "levercoin_auth"
@@ -4378,6 +4680,11 @@
       "code": 6004,
       "name": "InvalidPythPrice",
       "msg": "Invalid Pyth price update account, feed id, or exponent."
+    },
+    {
+      "code": 6005,
+      "name": "TipArithmetic",
+      "msg": "Executor tip arithmetic overflowed the order's lamport balance."
     }
   ],
   "types": [
@@ -4412,8 +4719,8 @@
       "name": "ConvertDirection",
       "docs": [
         "Direction of the underlying Hylo convert ix the trigger order will fire.",
-        "`StableToLever` burns HYUSD to mint levercoin (the v1 direction).",
-        "`LeverToStable` burns levercoin to mint HYUSD (v1.1 addition)."
+        "`StableToLever` burns HYUSD to mint levercoin; `LeverToStable` burns",
+        "levercoin to mint HYUSD."
       ],
       "type": {
         "kind": "enum",
