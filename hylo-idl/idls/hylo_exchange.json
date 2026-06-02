@@ -1965,7 +1965,8 @@
           ]
         },
         {
-          "name": "incinerator"
+          "name": "incinerator",
+          "address": "1nc1nerator11111111111111111111111111111111"
         },
         {
           "name": "hylo",
@@ -18410,31 +18411,36 @@
     },
     {
       "code": 6055,
+      "name": "SettleVirtualStablecoinDisabled",
+      "msg": "Drawdown repayment disabled until CR recovers to the Neutral zone."
+    },
+    {
+      "code": 6056,
       "name": "DrawdownNotRepaid",
       "msg": "Operation disabled until pool drawdown is repaid."
     },
     {
-      "code": 6056,
+      "code": 6057,
       "name": "LstStakePoolNotSupported",
       "msg": "LST stake pool is not supported."
     },
     {
-      "code": 6057,
+      "code": 6058,
       "name": "InsufficientEarnPoolLiquidity",
       "msg": "Earn pool does not have enough liquidity to absorb rebalance loss."
     },
     {
-      "code": 6058,
+      "code": 6059,
       "name": "ExoGenesisConstraints",
       "msg": "Exo pair genesis mint constraints not met."
     },
     {
-      "code": 6059,
+      "code": 6060,
       "name": "ExoGenesisCollateralRatio",
       "msg": "Error or constraint not met for collateral ratio for genesis."
     },
     {
-      "code": 6060,
+      "code": 6061,
       "name": "ExoPairZeroVirtualStablecoin",
       "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
     }
