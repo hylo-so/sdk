@@ -8,16 +8,22 @@ use anchor_spl::{associated_token, token};
 use crate::exchange::accounts::{ExoPair, Hylo};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::trigger_orders::client::accounts::{
-  CancelOrderL2sExo, CancelOrderL2sLst, CancelOrderS2l, CreateOrderL2sExo,
-  CreateOrderL2sLst, CreateOrderS2lExo, CreateOrderS2lLst, ExecuteOrderL2sExo,
-  ExecuteOrderL2sLst, ExecuteOrderS2lExo, ExecuteOrderS2lLst,
+  CancelOrderLeverToStableExo, CancelOrderLeverToStableLst,
+  CancelOrderStableToLever, CreateOrderLeverToStableExo,
+  CreateOrderLeverToStableLst, CreateOrderStableToLeverExo,
+  CreateOrderStableToLeverLst, ExecuteOrderLeverToStableExo,
+  ExecuteOrderLeverToStableLst, ExecuteOrderStableToLeverExo,
+  ExecuteOrderStableToLeverLst,
 };
 use crate::{pda, trigger_orders};
 
 /// Builds account context for creating a stable-to-lever order (LST).
 #[must_use]
-pub fn create_order_s2l_lst(owner: Pubkey, order: Pubkey) -> CreateOrderS2lLst {
-  CreateOrderS2lLst {
+pub fn create_order_stable_to_lever_lst(
+  owner: Pubkey,
+  order: Pubkey,
+) -> CreateOrderStableToLeverLst {
+  CreateOrderStableToLeverLst {
     owner,
     order,
     order_hyusd_vault: pda::ata(order, HYUSD::MINT),
@@ -34,12 +40,12 @@ pub fn create_order_s2l_lst(owner: Pubkey, order: Pubkey) -> CreateOrderS2lLst {
 
 /// Builds account context for creating a stable-to-lever order (EXO).
 #[must_use]
-pub fn create_order_s2l_exo(
+pub fn create_order_stable_to_lever_exo(
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
-) -> CreateOrderS2lExo {
-  CreateOrderS2lExo {
+) -> CreateOrderStableToLeverExo {
+  CreateOrderStableToLeverExo {
     owner,
     order,
     order_hyusd_vault: pda::ata(order, HYUSD::MINT),
@@ -57,8 +63,11 @@ pub fn create_order_s2l_exo(
 
 /// Builds account context for creating a lever-to-stable order (LST).
 #[must_use]
-pub fn create_order_l2s_lst(owner: Pubkey, order: Pubkey) -> CreateOrderL2sLst {
-  CreateOrderL2sLst {
+pub fn create_order_lever_to_stable_lst(
+  owner: Pubkey,
+  order: Pubkey,
+) -> CreateOrderLeverToStableLst {
+  CreateOrderLeverToStableLst {
     owner,
     order,
     order_xsol_vault: pda::ata(order, XSOL::MINT),
@@ -75,13 +84,13 @@ pub fn create_order_l2s_lst(owner: Pubkey, order: Pubkey) -> CreateOrderL2sLst {
 
 /// Builds account context for creating a lever-to-stable order (EXO).
 #[must_use]
-pub fn create_order_l2s_exo(
+pub fn create_order_lever_to_stable_exo(
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
-) -> CreateOrderL2sExo {
+) -> CreateOrderLeverToStableExo {
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-  CreateOrderL2sExo {
+  CreateOrderLeverToStableExo {
     owner,
     order,
     order_levercoin_vault: pda::ata(order, levercoin_mint),
@@ -99,13 +108,13 @@ pub fn create_order_l2s_exo(
 
 /// Builds account context for executing a stable-to-lever order (LST).
 #[must_use]
-pub fn execute_order_s2l_lst(
+pub fn execute_order_stable_to_lever_lst(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
   hylo: &Hylo,
-) -> ExecuteOrderS2lLst {
-  ExecuteOrderS2lLst {
+) -> ExecuteOrderStableToLeverLst {
+  ExecuteOrderStableToLeverLst {
     executor,
     owner,
     hylo: pda::HYLO,
@@ -132,13 +141,13 @@ pub fn execute_order_s2l_lst(
 
 /// Builds account context for executing a lever-to-stable order (LST).
 #[must_use]
-pub fn execute_order_l2s_lst(
+pub fn execute_order_lever_to_stable_lst(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
   hylo: &Hylo,
-) -> ExecuteOrderL2sLst {
-  ExecuteOrderL2sLst {
+) -> ExecuteOrderLeverToStableLst {
+  ExecuteOrderLeverToStableLst {
     executor,
     owner,
     hylo: pda::HYLO,
@@ -168,17 +177,17 @@ pub fn execute_order_l2s_lst(
 /// `_hylo` is accepted for signature symmetry with the LST builders; the EXO
 /// CPI uses the per-pair `exo_pair.oracle` rather than the Hylo SOL/USD oracle.
 #[must_use]
-pub fn execute_order_s2l_exo(
+pub fn execute_order_stable_to_lever_exo(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
   _hylo: &Hylo,
   exo_pair: &ExoPair,
-) -> ExecuteOrderS2lExo {
+) -> ExecuteOrderStableToLeverExo {
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   let vault_auth = pda::exo_vault_auth(collateral_mint);
-  ExecuteOrderS2lExo {
+  ExecuteOrderStableToLeverExo {
     executor,
     owner,
     hylo: pda::HYLO,
@@ -212,17 +221,17 @@ pub fn execute_order_s2l_exo(
 /// `_hylo` is accepted for signature symmetry with the LST builders; the EXO
 /// CPI uses the per-pair `exo_pair.oracle` rather than the Hylo SOL/USD oracle.
 #[must_use]
-pub fn execute_order_l2s_exo(
+pub fn execute_order_lever_to_stable_exo(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
   _hylo: &Hylo,
   exo_pair: &ExoPair,
-) -> ExecuteOrderL2sExo {
+) -> ExecuteOrderLeverToStableExo {
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   let vault_auth = pda::exo_vault_auth(collateral_mint);
-  ExecuteOrderL2sExo {
+  ExecuteOrderLeverToStableExo {
     executor,
     owner,
     hylo: pda::HYLO,
@@ -253,11 +262,15 @@ pub fn execute_order_l2s_exo(
 
 /// Builds account context for cancelling a stable-to-lever order.
 ///
-/// Handles both LST and EXO s2l orders: the s2l escrow is always HYUSD
-/// regardless of the order's lever target, so no collateral mint is needed.
+/// Handles both LST and EXO stable-to-lever orders: the stable-to-lever
+/// escrow is always HYUSD regardless of the order's lever target, so no
+/// collateral mint is needed.
 #[must_use]
-pub fn cancel_order_s2l(owner: Pubkey, order: Pubkey) -> CancelOrderS2l {
-  CancelOrderS2l {
+pub fn cancel_order_stable_to_lever(
+  owner: Pubkey,
+  order: Pubkey,
+) -> CancelOrderStableToLever {
+  CancelOrderStableToLever {
     owner,
     order,
     order_hyusd_vault: pda::ata(order, HYUSD::MINT),
@@ -271,8 +284,11 @@ pub fn cancel_order_s2l(owner: Pubkey, order: Pubkey) -> CancelOrderS2l {
 
 /// Builds account context for cancelling a lever-to-stable order (LST).
 #[must_use]
-pub fn cancel_order_l2s_lst(owner: Pubkey, order: Pubkey) -> CancelOrderL2sLst {
-  CancelOrderL2sLst {
+pub fn cancel_order_lever_to_stable_lst(
+  owner: Pubkey,
+  order: Pubkey,
+) -> CancelOrderLeverToStableLst {
+  CancelOrderLeverToStableLst {
     owner,
     order,
     order_xsol_vault: pda::ata(order, XSOL::MINT),
@@ -286,13 +302,13 @@ pub fn cancel_order_l2s_lst(owner: Pubkey, order: Pubkey) -> CancelOrderL2sLst {
 
 /// Builds account context for cancelling a lever-to-stable order (EXO).
 #[must_use]
-pub fn cancel_order_l2s_exo(
+pub fn cancel_order_lever_to_stable_exo(
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
-) -> CancelOrderL2sExo {
+) -> CancelOrderLeverToStableExo {
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-  CancelOrderL2sExo {
+  CancelOrderLeverToStableExo {
     owner,
     order,
     order_levercoin_vault: pda::ata(order, levercoin_mint),
@@ -347,7 +363,7 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_s2l_lst_threads_hylo_oracle() {
+  fn execute_order_stable_to_lever_lst_threads_hylo_oracle() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
@@ -355,7 +371,7 @@ mod tests {
     let oracle = Pubkey::new_unique();
     hylo.sol_usd_oracle = oracle;
 
-    let a = execute_order_s2l_lst(executor, owner, order, &hylo);
+    let a = execute_order_stable_to_lever_lst(executor, owner, order, &hylo);
 
     assert_eq!(a.executor, executor);
     assert_eq!(a.owner, owner);
@@ -384,7 +400,7 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_l2s_lst_threads_hylo_oracle() {
+  fn execute_order_lever_to_stable_lst_threads_hylo_oracle() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
@@ -392,7 +408,7 @@ mod tests {
     let oracle = Pubkey::new_unique();
     hylo.sol_usd_oracle = oracle;
 
-    let a = execute_order_l2s_lst(executor, owner, order, &hylo);
+    let a = execute_order_lever_to_stable_lst(executor, owner, order, &hylo);
 
     assert_eq!(a.executor, executor);
     assert_eq!(a.owner, owner);
@@ -421,7 +437,7 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_s2l_exo_threads_exo_oracle() {
+  fn execute_order_stable_to_lever_exo_threads_exo_oracle() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
@@ -433,7 +449,7 @@ mod tests {
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
     let vault_auth = pda::exo_vault_auth(collateral_mint);
 
-    let a = execute_order_s2l_exo(
+    let a = execute_order_stable_to_lever_exo(
       executor,
       owner,
       order,
@@ -473,7 +489,7 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_l2s_exo_threads_exo_oracle() {
+  fn execute_order_lever_to_stable_exo_threads_exo_oracle() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
@@ -485,7 +501,7 @@ mod tests {
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
     let vault_auth = pda::exo_vault_auth(collateral_mint);
 
-    let a = execute_order_l2s_exo(
+    let a = execute_order_lever_to_stable_exo(
       executor,
       owner,
       order,
@@ -525,10 +541,10 @@ mod tests {
   }
 
   #[test]
-  fn create_order_s2l_lst_builds_correct_pdas() {
+  fn create_order_stable_to_lever_lst_builds_correct_pdas() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let a = create_order_s2l_lst(owner, order);
+    let a = create_order_stable_to_lever_lst(owner, order);
 
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
@@ -544,11 +560,11 @@ mod tests {
   }
 
   #[test]
-  fn create_order_s2l_exo_builds_correct_pdas() {
+  fn create_order_stable_to_lever_exo_builds_correct_pdas() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
-    let a = create_order_s2l_exo(owner, order, collateral_mint);
+    let a = create_order_stable_to_lever_exo(owner, order, collateral_mint);
 
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
@@ -565,10 +581,10 @@ mod tests {
   }
 
   #[test]
-  fn create_order_l2s_lst_builds_correct_pdas() {
+  fn create_order_lever_to_stable_lst_builds_correct_pdas() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let a = create_order_l2s_lst(owner, order);
+    let a = create_order_lever_to_stable_lst(owner, order);
 
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
@@ -584,12 +600,12 @@ mod tests {
   }
 
   #[test]
-  fn create_order_l2s_exo_builds_correct_pdas() {
+  fn create_order_lever_to_stable_exo_builds_correct_pdas() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-    let a = create_order_l2s_exo(owner, order, collateral_mint);
+    let a = create_order_lever_to_stable_exo(owner, order, collateral_mint);
 
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
@@ -606,10 +622,10 @@ mod tests {
   }
 
   #[test]
-  fn cancel_order_s2l_minimal_fields() {
+  fn cancel_order_stable_to_lever_minimal_fields() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let a = cancel_order_s2l(owner, order);
+    let a = cancel_order_stable_to_lever(owner, order);
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
     assert_eq!(a.order_hyusd_vault, pda::ata(order, HYUSD::MINT));
@@ -621,10 +637,10 @@ mod tests {
   }
 
   #[test]
-  fn cancel_order_l2s_lst_minimal_fields() {
+  fn cancel_order_lever_to_stable_lst_minimal_fields() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let a = cancel_order_l2s_lst(owner, order);
+    let a = cancel_order_lever_to_stable_lst(owner, order);
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
     assert_eq!(a.order_xsol_vault, pda::ata(order, XSOL::MINT));
@@ -636,12 +652,12 @@ mod tests {
   }
 
   #[test]
-  fn cancel_order_l2s_exo_minimal_fields() {
+  fn cancel_order_lever_to_stable_exo_minimal_fields() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-    let a = cancel_order_l2s_exo(owner, order, collateral_mint);
+    let a = cancel_order_lever_to_stable_exo(owner, order, collateral_mint);
     assert_eq!(a.owner, owner);
     assert_eq!(a.order, order);
     assert_eq!(a.order_levercoin_vault, pda::ata(order, levercoin_mint));

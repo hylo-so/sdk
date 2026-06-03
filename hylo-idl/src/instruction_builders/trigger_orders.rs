@@ -10,12 +10,13 @@ use crate::trigger_orders::account_builders;
 use crate::trigger_orders::client::args;
 
 #[must_use]
-pub fn create_order_s2l_lst(
+pub fn create_order_stable_to_lever_lst(
   owner: Pubkey,
   order: Pubkey,
-  args: &args::CreateOrderS2lLst,
+  args: &args::CreateOrderStableToLeverLst,
 ) -> Instruction {
-  let accounts = account_builders::create_order_s2l_lst(owner, order);
+  let accounts =
+    account_builders::create_order_stable_to_lever_lst(owner, order);
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -24,14 +25,17 @@ pub fn create_order_s2l_lst(
 }
 
 #[must_use]
-pub fn create_order_s2l_exo(
+pub fn create_order_stable_to_lever_exo(
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::CreateOrderS2lExo,
+  args: &args::CreateOrderStableToLeverExo,
 ) -> Instruction {
-  let accounts =
-    account_builders::create_order_s2l_exo(owner, order, collateral_mint);
+  let accounts = account_builders::create_order_stable_to_lever_exo(
+    owner,
+    order,
+    collateral_mint,
+  );
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -40,12 +44,13 @@ pub fn create_order_s2l_exo(
 }
 
 #[must_use]
-pub fn create_order_l2s_lst(
+pub fn create_order_lever_to_stable_lst(
   owner: Pubkey,
   order: Pubkey,
-  args: &args::CreateOrderL2sLst,
+  args: &args::CreateOrderLeverToStableLst,
 ) -> Instruction {
-  let accounts = account_builders::create_order_l2s_lst(owner, order);
+  let accounts =
+    account_builders::create_order_lever_to_stable_lst(owner, order);
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -54,14 +59,17 @@ pub fn create_order_l2s_lst(
 }
 
 #[must_use]
-pub fn create_order_l2s_exo(
+pub fn create_order_lever_to_stable_exo(
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::CreateOrderL2sExo,
+  args: &args::CreateOrderLeverToStableExo,
 ) -> Instruction {
-  let accounts =
-    account_builders::create_order_l2s_exo(owner, order, collateral_mint);
+  let accounts = account_builders::create_order_lever_to_stable_exo(
+    owner,
+    order,
+    collateral_mint,
+  );
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -70,39 +78,41 @@ pub fn create_order_l2s_exo(
 }
 
 #[must_use]
-pub fn execute_order_s2l_lst(
+pub fn execute_order_stable_to_lever_lst(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
   hylo: &Hylo,
 ) -> Instruction {
-  let accounts =
-    account_builders::execute_order_s2l_lst(executor, owner, order, hylo);
+  let accounts = account_builders::execute_order_stable_to_lever_lst(
+    executor, owner, order, hylo,
+  );
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
-    data: args::ExecuteOrderS2lLst {}.data(),
+    data: args::ExecuteOrderStableToLeverLst {}.data(),
   }
 }
 
 #[must_use]
-pub fn execute_order_l2s_lst(
+pub fn execute_order_lever_to_stable_lst(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
   hylo: &Hylo,
 ) -> Instruction {
-  let accounts =
-    account_builders::execute_order_l2s_lst(executor, owner, order, hylo);
+  let accounts = account_builders::execute_order_lever_to_stable_lst(
+    executor, owner, order, hylo,
+  );
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
-    data: args::ExecuteOrderL2sLst {}.data(),
+    data: args::ExecuteOrderLeverToStableLst {}.data(),
   }
 }
 
 #[must_use]
-pub fn execute_order_s2l_exo(
+pub fn execute_order_stable_to_lever_exo(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
@@ -110,7 +120,7 @@ pub fn execute_order_s2l_exo(
   hylo: &Hylo,
   exo_pair: &ExoPair,
 ) -> Instruction {
-  let accounts = account_builders::execute_order_s2l_exo(
+  let accounts = account_builders::execute_order_stable_to_lever_exo(
     executor,
     owner,
     order,
@@ -121,12 +131,12 @@ pub fn execute_order_s2l_exo(
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
-    data: args::ExecuteOrderS2lExo {}.data(),
+    data: args::ExecuteOrderStableToLeverExo {}.data(),
   }
 }
 
 #[must_use]
-pub fn execute_order_l2s_exo(
+pub fn execute_order_lever_to_stable_exo(
   executor: Pubkey,
   owner: Pubkey,
   order: Pubkey,
@@ -134,7 +144,7 @@ pub fn execute_order_l2s_exo(
   hylo: &Hylo,
   exo_pair: &ExoPair,
 ) -> Instruction {
-  let accounts = account_builders::execute_order_l2s_exo(
+  let accounts = account_builders::execute_order_lever_to_stable_exo(
     executor,
     owner,
     order,
@@ -145,17 +155,17 @@ pub fn execute_order_l2s_exo(
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
-    data: args::ExecuteOrderL2sExo {}.data(),
+    data: args::ExecuteOrderLeverToStableExo {}.data(),
   }
 }
 
 #[must_use]
-pub fn cancel_order_s2l(
+pub fn cancel_order_stable_to_lever(
   owner: Pubkey,
   order: Pubkey,
-  args: &args::CancelOrderS2l,
+  args: &args::CancelOrderStableToLever,
 ) -> Instruction {
-  let accounts = account_builders::cancel_order_s2l(owner, order);
+  let accounts = account_builders::cancel_order_stable_to_lever(owner, order);
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -164,12 +174,13 @@ pub fn cancel_order_s2l(
 }
 
 #[must_use]
-pub fn cancel_order_l2s_lst(
+pub fn cancel_order_lever_to_stable_lst(
   owner: Pubkey,
   order: Pubkey,
-  args: &args::CancelOrderL2sLst,
+  args: &args::CancelOrderLeverToStableLst,
 ) -> Instruction {
-  let accounts = account_builders::cancel_order_l2s_lst(owner, order);
+  let accounts =
+    account_builders::cancel_order_lever_to_stable_lst(owner, order);
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -178,14 +189,17 @@ pub fn cancel_order_l2s_lst(
 }
 
 #[must_use]
-pub fn cancel_order_l2s_exo(
+pub fn cancel_order_lever_to_stable_exo(
   owner: Pubkey,
   order: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::CancelOrderL2sExo,
+  args: &args::CancelOrderLeverToStableExo,
 ) -> Instruction {
-  let accounts =
-    account_builders::cancel_order_l2s_exo(owner, order, collateral_mint);
+  let accounts = account_builders::cancel_order_lever_to_stable_exo(
+    owner,
+    order,
+    collateral_mint,
+  );
   Instruction {
     program_id: trigger_orders::ID,
     accounts: accounts.to_account_metas(None),
@@ -202,8 +216,8 @@ mod tests {
   };
   use crate::trigger_orders::types::TriggerDirection;
 
-  fn create_args_l2s_lst() -> args::CreateOrderL2sLst {
-    args::CreateOrderL2sLst {
+  fn create_args_lever_to_stable_lst() -> args::CreateOrderLeverToStableLst {
+    args::CreateOrderLeverToStableLst {
       nonce: 42,
       escrow_amount: 1000,
       trigger_price: 100,
@@ -212,8 +226,8 @@ mod tests {
     }
   }
 
-  fn create_args_l2s_exo() -> args::CreateOrderL2sExo {
-    args::CreateOrderL2sExo {
+  fn create_args_lever_to_stable_exo() -> args::CreateOrderLeverToStableExo {
+    args::CreateOrderLeverToStableExo {
       nonce: 42,
       escrow_amount: 1000,
       trigger_price: 100,
@@ -222,8 +236,8 @@ mod tests {
     }
   }
 
-  fn create_args_s2l_exo() -> args::CreateOrderS2lExo {
-    args::CreateOrderS2lExo {
+  fn create_args_stable_to_lever_exo() -> args::CreateOrderStableToLeverExo {
+    args::CreateOrderStableToLeverExo {
       nonce: 42,
       escrow_amount: 1000,
       trigger_price: 100,
@@ -265,17 +279,17 @@ mod tests {
   }
 
   #[test]
-  fn create_order_s2l_lst_returns_well_formed_instruction() {
+  fn create_order_stable_to_lever_lst_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let args = args::CreateOrderS2lLst {
+    let args = args::CreateOrderStableToLeverLst {
       nonce: 42,
       escrow_amount: 1000,
       trigger_price: 100,
       trigger_expo: -8,
       direction: TriggerDirection::AtOrAbove,
     };
-    let ix = create_order_s2l_lst(owner, order, &args);
+    let ix = create_order_stable_to_lever_lst(owner, order, &args);
     assert_eq!(ix.program_id, trigger_orders::ID);
     // Anchor: 8-byte discriminator + borsh args.
     // 8 + 8(nonce u64) + 8(escrow u64) + 8(trigger_price i64) + 4(expo i32)
@@ -289,15 +303,15 @@ mod tests {
   }
 
   #[test]
-  fn create_order_s2l_exo_returns_well_formed_instruction() {
+  fn create_order_stable_to_lever_exo_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
-    let ix = create_order_s2l_exo(
+    let ix = create_order_stable_to_lever_exo(
       owner,
       order,
       collateral_mint,
-      &create_args_s2l_exo(),
+      &create_args_stable_to_lever_exo(),
     );
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 37);
@@ -307,10 +321,14 @@ mod tests {
   }
 
   #[test]
-  fn create_order_l2s_lst_returns_well_formed_instruction() {
+  fn create_order_lever_to_stable_lst_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let ix = create_order_l2s_lst(owner, order, &create_args_l2s_lst());
+    let ix = create_order_lever_to_stable_lst(
+      owner,
+      order,
+      &create_args_lever_to_stable_lst(),
+    );
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 37);
     assert_eq!(ix.accounts.len(), 11);
@@ -319,15 +337,15 @@ mod tests {
   }
 
   #[test]
-  fn create_order_l2s_exo_returns_well_formed_instruction() {
+  fn create_order_lever_to_stable_exo_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
-    let ix = create_order_l2s_exo(
+    let ix = create_order_lever_to_stable_exo(
       owner,
       order,
       collateral_mint,
-      &create_args_l2s_exo(),
+      &create_args_lever_to_stable_exo(),
     );
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 37);
@@ -337,12 +355,12 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_s2l_lst_returns_well_formed_instruction() {
+  fn execute_order_stable_to_lever_lst_returns_well_formed_instruction() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let hylo = healthy_hylo_min();
-    let ix = execute_order_s2l_lst(executor, owner, order, &hylo);
+    let ix = execute_order_stable_to_lever_lst(executor, owner, order, &hylo);
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 8);
     assert_eq!(ix.accounts.len(), 21);
@@ -350,12 +368,12 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_l2s_lst_returns_well_formed_instruction() {
+  fn execute_order_lever_to_stable_lst_returns_well_formed_instruction() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let hylo = healthy_hylo_min();
-    let ix = execute_order_l2s_lst(executor, owner, order, &hylo);
+    let ix = execute_order_lever_to_stable_lst(executor, owner, order, &hylo);
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 8);
     assert_eq!(ix.accounts.len(), 21);
@@ -363,14 +381,14 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_s2l_exo_returns_well_formed_instruction() {
+  fn execute_order_stable_to_lever_exo_returns_well_formed_instruction() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
     let hylo = healthy_hylo_min();
     let exo_pair = healthy_exo_pair_min();
-    let ix = execute_order_s2l_exo(
+    let ix = execute_order_stable_to_lever_exo(
       executor,
       owner,
       order,
@@ -385,14 +403,14 @@ mod tests {
   }
 
   #[test]
-  fn execute_order_l2s_exo_returns_well_formed_instruction() {
+  fn execute_order_lever_to_stable_exo_returns_well_formed_instruction() {
     let executor = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
     let hylo = healthy_hylo_min();
     let exo_pair = healthy_exo_pair_min();
-    let ix = execute_order_l2s_exo(
+    let ix = execute_order_lever_to_stable_exo(
       executor,
       owner,
       order,
@@ -407,10 +425,14 @@ mod tests {
   }
 
   #[test]
-  fn cancel_order_s2l_returns_well_formed_instruction() {
+  fn cancel_order_stable_to_lever_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let ix = cancel_order_s2l(owner, order, &args::CancelOrderS2l {});
+    let ix = cancel_order_stable_to_lever(
+      owner,
+      order,
+      &args::CancelOrderStableToLever {},
+    );
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 8);
     assert_eq!(ix.accounts.len(), 8);
@@ -419,10 +441,14 @@ mod tests {
   }
 
   #[test]
-  fn cancel_order_l2s_lst_returns_well_formed_instruction() {
+  fn cancel_order_lever_to_stable_lst_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
-    let ix = cancel_order_l2s_lst(owner, order, &args::CancelOrderL2sLst {});
+    let ix = cancel_order_lever_to_stable_lst(
+      owner,
+      order,
+      &args::CancelOrderLeverToStableLst {},
+    );
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 8);
     assert_eq!(ix.accounts.len(), 8);
@@ -431,15 +457,15 @@ mod tests {
   }
 
   #[test]
-  fn cancel_order_l2s_exo_returns_well_formed_instruction() {
+  fn cancel_order_lever_to_stable_exo_returns_well_formed_instruction() {
     let owner = Pubkey::new_unique();
     let order = Pubkey::new_unique();
     let collateral_mint = Pubkey::new_unique();
-    let ix = cancel_order_l2s_exo(
+    let ix = cancel_order_lever_to_stable_exo(
       owner,
       order,
       collateral_mint,
-      &args::CancelOrderL2sExo {},
+      &args::CancelOrderLeverToStableExo {},
     );
     assert_eq!(ix.program_id, trigger_orders::ID);
     assert_eq!(ix.data.len(), 8);

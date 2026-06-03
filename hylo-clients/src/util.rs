@@ -287,7 +287,7 @@ pub fn user_ata_instruction(user: &Pubkey, mint: &Pubkey) -> Instruction {
 mod parse_event_filtered_tests {
   use anchor_lang::{AnchorSerialize, Discriminator};
   use hylo_idl::exchange::events::ConvertStableToLeverLstEvent;
-  use hylo_idl::trigger_orders::events::TriggerOrderFilled;
+  use hylo_idl::trigger_orders::events::TriggerOrderFilledEvent;
   use hylo_idl::trigger_orders::types::{
     ConvertDirection, PairTarget, TriggerDirection,
   };
@@ -324,7 +324,7 @@ mod parse_event_filtered_tests {
 
   /// Builds a simulation response carrying the two given inner-instruction
   /// data blobs, mirroring a real `execute_order_*` tx that emits both a
-  /// `TriggerOrderFilled` and an inner Hylo convert event.
+  /// `TriggerOrderFilledEvent` and an inner Hylo convert event.
   fn response_with(
     blobs: Vec<String>,
   ) -> Response<RpcSimulateTransactionResult> {
@@ -349,8 +349,8 @@ mod parse_event_filtered_tests {
     }
   }
 
-  fn sample_trigger_order_filled() -> TriggerOrderFilled {
-    TriggerOrderFilled {
+  fn sample_trigger_order_filled() -> TriggerOrderFilledEvent {
+    TriggerOrderFilledEvent {
       order: Pubkey::new_unique(),
       owner: Pubkey::new_unique(),
       executor: Pubkey::new_unique(),
@@ -393,8 +393,8 @@ mod parse_event_filtered_tests {
     let resp =
       response_with(vec![encode_event(&filled), encode_event(&convert)]);
 
-    let got_filled: TriggerOrderFilled =
-      parse_event_filtered(&resp).expect("TriggerOrderFilled extractable");
+    let got_filled: TriggerOrderFilledEvent =
+      parse_event_filtered(&resp).expect("TriggerOrderFilledEvent extractable");
     let got_convert: ConvertStableToLeverLstEvent =
       parse_event_filtered(&resp).expect("convert event extractable");
 
@@ -418,7 +418,7 @@ mod parse_event_filtered_tests {
     let resp =
       response_with(vec![encode_event(&convert), encode_event(&filled)]);
 
-    let got_filled: TriggerOrderFilled =
+    let got_filled: TriggerOrderFilledEvent =
       parse_event_filtered(&resp).expect("fill event still extractable");
     assert_eq!(got_filled.nonce, 42);
   }
@@ -427,14 +427,15 @@ mod parse_event_filtered_tests {
   fn errors_when_event_absent() {
     let convert = sample_convert_event();
     let resp = response_with(vec![encode_event(&convert)]);
-    // No TriggerOrderFilled present → must error, not silently succeed.
-    let result: Result<TriggerOrderFilled> = parse_event_filtered(&resp);
+    // No TriggerOrderFilledEvent present → must error, not silently succeed.
+    let result: Result<TriggerOrderFilledEvent> = parse_event_filtered(&resp);
     assert!(result.is_err());
   }
 
   /// A discriminator-MATCHING but undeserializable blob: the correct event
   /// discriminator followed by a payload too short to borsh-decode (the first
-  /// field of `TriggerOrderFilled` is a 32-byte `Pubkey`, so 3 bytes fail).
+  /// field of `TriggerOrderFilledEvent` is a 32-byte `Pubkey`, so 3 bytes
+  /// fail).
   fn corrupt_blob<E: Discriminator>() -> String {
     let mut bytes = vec![0xAB_u8; 8];
     bytes.extend_from_slice(E::DISCRIMINATOR);
@@ -450,11 +451,11 @@ mod parse_event_filtered_tests {
   fn skips_discriminator_match_that_fails_to_deserialize() {
     let valid = sample_trigger_order_filled();
     let resp = response_with(vec![
-      corrupt_blob::<TriggerOrderFilled>(),
+      corrupt_blob::<TriggerOrderFilledEvent>(),
       encode_event(&valid),
     ]);
 
-    let got: TriggerOrderFilled = parse_event_filtered(&resp)
+    let got: TriggerOrderFilledEvent = parse_event_filtered(&resp)
       .expect("skips the corrupt match and returns the valid one");
     assert_eq!(got.nonce, 42);
   }

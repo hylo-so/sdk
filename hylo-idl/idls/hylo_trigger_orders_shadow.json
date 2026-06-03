@@ -8,16 +8,16 @@
   },
   "instructions": [
     {
-      "name": "cancel_order_l2s_exo",
+      "name": "cancel_order_lever_to_stable_exo",
       "discriminator": [
-        61,
-        165,
-        75,
-        198,
-        91,
-        170,
-        235,
-        153
+        47,
+        127,
+        17,
+        226,
+        125,
+        19,
+        22,
+        80
       ],
       "accounts": [
         {
@@ -239,21 +239,21 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCancelled"
+          "name": "TriggerOrderCancelledEvent"
         }
       }
     },
     {
-      "name": "cancel_order_l2s_lst",
+      "name": "cancel_order_lever_to_stable_lst",
       "discriminator": [
-        121,
-        201,
-        137,
-        113,
-        147,
-        216,
-        109,
-        177
+        68,
+        60,
+        120,
+        236,
+        126,
+        232,
+        1,
+        22
       ],
       "accounts": [
         {
@@ -455,21 +455,21 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCancelled"
+          "name": "TriggerOrderCancelledEvent"
         }
       }
     },
     {
-      "name": "cancel_order_s2l",
+      "name": "cancel_order_stable_to_lever",
       "discriminator": [
-        85,
-        20,
-        75,
-        12,
-        198,
-        159,
-        196,
-        50
+        45,
+        2,
+        38,
+        191,
+        74,
+        153,
+        31,
+        179
       ],
       "accounts": [
         {
@@ -672,21 +672,21 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCancelled"
+          "name": "TriggerOrderCancelledEvent"
         }
       }
     },
     {
-      "name": "create_order_l2s_exo",
+      "name": "create_order_lever_to_stable_exo",
       "discriminator": [
-        145,
-        7,
-        163,
-        2,
-        20,
-        124,
-        128,
-        146
+        18,
+        5,
+        47,
+        137,
+        57,
+        87,
+        9,
+        108
       ],
       "accounts": [
         {
@@ -923,8 +923,9 @@
             "above), so a malformed mint creates a PDA at an address unique to that",
             "owner/nonce/mint triple. No collision risk with other orders.",
             "2. Only the owner is harmed by an unfillable order — their levercoin goes",
-            "into a PDA they alone can drain via `cancel_order_l2s_exo`. There's no",
-            "path for an attacker to lock anyone else's funds via this vector.",
+            "into a PDA they alone can drain via",
+            "`cancel_order_lever_to_stable_exo`. There's no path for an attacker to",
+            "lock anyone else's funds via this vector.",
             "3. The cancel path doesn't read `ExoPair`, `Hylo`, or any pair-specific",
             "state. So even if Hylo deprecates this collateral, the owner can",
             "always recover. Funds-recoverability is structural, not policy.",
@@ -1011,21 +1012,21 @@
       ],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCreated"
+          "name": "TriggerOrderCreatedEvent"
         }
       }
     },
     {
-      "name": "create_order_l2s_lst",
+      "name": "create_order_lever_to_stable_lst",
       "discriminator": [
-        217,
-        157,
-        106,
-        121,
-        230,
-        232,
-        238,
-        73
+        169,
+        244,
+        48,
+        59,
+        91,
+        86,
+        47,
+        4
       ],
       "accounts": [
         {
@@ -1295,21 +1296,21 @@
       ],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCreated"
+          "name": "TriggerOrderCreatedEvent"
         }
       }
     },
     {
-      "name": "create_order_s2l_exo",
+      "name": "create_order_stable_to_lever_exo",
       "discriminator": [
+        64,
+        253,
+        226,
+        234,
         102,
-        197,
-        120,
-        21,
-        57,
-        139,
-        195,
-        202
+        182,
+        158,
+        44
       ],
       "accounts": [
         {
@@ -1534,8 +1535,9 @@
             "above), so a malformed mint creates a PDA at an address unique to that",
             "owner/nonce/mint triple. No collision risk with other orders.",
             "2. Only the owner is harmed by an unfillable order — their HYUSD goes",
-            "into a PDA they alone can drain via `cancel_order_s2l`. There's no",
-            "path for an attacker to lock anyone else's funds via this vector.",
+            "into a PDA they alone can drain via `cancel_order_stable_to_lever`.",
+            "There's no path for an attacker to lock anyone else's funds via this",
+            "vector.",
             "3. The cancel path doesn't read `ExoPair`, `Hylo`, or any pair-specific",
             "state. So even if Hylo deprecates this collateral, the owner can",
             "always recover. Funds-recoverability is structural, not policy.",
@@ -1622,21 +1624,21 @@
       ],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCreated"
+          "name": "TriggerOrderCreatedEvent"
         }
       }
     },
     {
-      "name": "create_order_s2l_lst",
+      "name": "create_order_stable_to_lever_lst",
       "discriminator": [
-        1,
-        195,
-        39,
-        158,
-        147,
-        192,
-        10,
-        101
+        44,
+        239,
+        230,
+        43,
+        167,
+        109,
+        159,
+        75
       ],
       "accounts": [
         {
@@ -1907,21 +1909,21 @@
       ],
       "returns": {
         "defined": {
-          "name": "TriggerOrderCreated"
+          "name": "TriggerOrderCreatedEvent"
         }
       }
     },
     {
-      "name": "execute_order_l2s_exo",
+      "name": "execute_order_lever_to_stable_exo",
       "discriminator": [
-        112,
-        175,
-        205,
-        216,
-        129,
-        95,
-        184,
-        153
+        37,
+        208,
+        145,
+        18,
+        1,
+        120,
+        209,
+        189
       ],
       "accounts": [
         {
@@ -1937,7 +1939,57 @@
           ]
         },
         {
-          "name": "hylo"
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "exo_pair",
@@ -2606,21 +2658,21 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderFilled"
+          "name": "TriggerOrderFilledEvent"
         }
       }
     },
     {
-      "name": "execute_order_l2s_lst",
+      "name": "execute_order_lever_to_stable_lst",
       "discriminator": [
-        96,
-        37,
-        224,
-        31,
-        190,
-        139,
-        223,
-        0
+        148,
+        194,
+        232,
+        208,
+        165,
+        164,
+        221,
+        71
       ],
       "accounts": [
         {
@@ -2637,7 +2689,57 @@
         },
         {
           "name": "hylo",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "sol_usd_pyth_feed"
@@ -2709,7 +2811,57 @@
         },
         {
           "name": "xsol_mint",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "levercoin_auth"
@@ -3079,21 +3231,21 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderFilled"
+          "name": "TriggerOrderFilledEvent"
         }
       }
     },
     {
-      "name": "execute_order_s2l_exo",
+      "name": "execute_order_stable_to_lever_exo",
       "discriminator": [
-        29,
-        184,
-        147,
-        164,
-        106,
-        9,
-        121,
-        21
+        78,
+        24,
+        242,
+        4,
+        17,
+        60,
+        133,
+        89
       ],
       "accounts": [
         {
@@ -3109,7 +3261,57 @@
           ]
         },
         {
-          "name": "hylo"
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "exo_pair",
@@ -3778,21 +3980,21 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderFilled"
+          "name": "TriggerOrderFilledEvent"
         }
       }
     },
     {
-      "name": "execute_order_s2l_lst",
+      "name": "execute_order_stable_to_lever_lst",
       "discriminator": [
-        26,
-        104,
-        100,
-        203,
-        82,
-        5,
-        112,
-        58
+        225,
+        97,
+        249,
+        74,
+        99,
+        214,
+        130,
+        114
       ],
       "accounts": [
         {
@@ -3809,7 +4011,57 @@
         },
         {
           "name": "hylo",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "sol_usd_pyth_feed"
@@ -3881,7 +4133,57 @@
         },
         {
           "name": "xsol_mint",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
         },
         {
           "name": "levercoin_auth"
@@ -4251,7 +4553,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "TriggerOrderFilled"
+          "name": "TriggerOrderFilledEvent"
         }
       }
     }
@@ -4312,42 +4614,42 @@
   ],
   "events": [
     {
-      "name": "TriggerOrderCancelled",
+      "name": "TriggerOrderCancelledEvent",
       "discriminator": [
-        255,
-        151,
-        206,
-        140,
-        98,
-        153,
-        223,
-        121
-      ]
-    },
-    {
-      "name": "TriggerOrderCreated",
-      "discriminator": [
-        90,
-        78,
+        178,
+        127,
         39,
-        34,
-        130,
-        168,
-        79,
-        55
+        234,
+        87,
+        193,
+        7,
+        119
       ]
     },
     {
-      "name": "TriggerOrderFilled",
+      "name": "TriggerOrderCreatedEvent",
       "discriminator": [
-        124,
-        156,
-        201,
-        86,
-        158,
-        86,
-        183,
-        212
+        231,
+        191,
+        133,
+        0,
+        130,
+        0,
+        198,
+        83
+      ]
+    },
+    {
+      "name": "TriggerOrderFilledEvent",
+      "discriminator": [
+        72,
+        131,
+        117,
+        214,
+        75,
+        219,
+        32,
+        36
       ]
     }
   ],
@@ -4355,27 +4657,32 @@
     {
       "code": 6000,
       "name": "AmountTooSmall",
-      "msg": "escrow_amount must be > 0"
+      "msg": "Escrow amount must be greater than zero."
     },
     {
       "code": 6001,
       "name": "AccountMismatch",
-      "msg": "account does not match the order's pair target"
+      "msg": "Account does not match the order's pair target."
     },
     {
       "code": 6002,
       "name": "TriggerNotMet",
-      "msg": "price condition not met"
+      "msg": "Price condition not met."
     },
     {
       "code": 6003,
       "name": "Unauthorized",
-      "msg": "signer is not the order owner"
+      "msg": "Signer is not the order owner."
     },
     {
       "code": 6004,
       "name": "InvalidPythPrice",
-      "msg": "invalid pyth price update account, feed id, or expo"
+      "msg": "Invalid Pyth price update account, feed id, or exponent."
+    },
+    {
+      "code": 6005,
+      "name": "TipArithmetic",
+      "msg": "Executor tip arithmetic overflowed the order's lamport balance."
     }
   ],
   "types": [
@@ -4410,8 +4717,8 @@
       "name": "ConvertDirection",
       "docs": [
         "Direction of the underlying Hylo convert ix the trigger order will fire.",
-        "`StableToLever` burns HYUSD to mint levercoin (the v1 direction).",
-        "`LeverToStable` burns levercoin to mint HYUSD (v1.1 addition)."
+        "`StableToLever` burns HYUSD to mint levercoin; `LeverToStable` burns",
+        "levercoin to mint HYUSD."
       ],
       "type": {
         "kind": "enum",
@@ -5125,7 +5432,8 @@
           {
             "name": "convert_direction",
             "docs": [
-              "Direction of the Hylo convert ix this order will fire (s2l or l2s)."
+              "Direction of the Hylo convert ix this order will fire",
+              "(`stable_to_lever` or `lever_to_stable`)."
             ],
             "type": {
               "defined": {
@@ -5145,7 +5453,8 @@
             "name": "escrow_amount",
             "docs": [
               "Amount escrowed in the order's escrow vault. Unit depends on",
-              "`convert_direction`: HYUSD for s2l; xSOL or per-EXO levercoin for l2s."
+              "`convert_direction`: HYUSD for `stable_to_lever`; xSOL or per-EXO",
+              "levercoin for `lever_to_stable`."
             ],
             "type": "u64"
           },
@@ -5186,10 +5495,9 @@
       }
     },
     {
-      "name": "TriggerOrderCancelled",
+      "name": "TriggerOrderCancelledEvent",
       "docs": [
-        "Emitted at the end of `cancel_order_{s2l,l2s_lst,l2s_exo}` after the",
-        "refund completes."
+        "Emitted at the end of `cancel_order_*` after the refund completes."
       ],
       "type": {
         "kind": "struct",
@@ -5230,10 +5538,9 @@
       }
     },
     {
-      "name": "TriggerOrderCreated",
+      "name": "TriggerOrderCreatedEvent",
       "docs": [
-        "Emitted at the end of `create_order_{s2l,l2s}_{lst,exo}` after state",
-        "mutations succeed."
+        "Emitted at the end of `create_order_*` after state mutations succeed."
       ],
       "type": {
         "kind": "struct",
@@ -5269,7 +5576,8 @@
           {
             "name": "escrow_amount",
             "docs": [
-              "Amount escrowed (HYUSD for s2l, levercoin for l2s)."
+              "Amount escrowed (HYUSD for `stable_to_lever`, levercoin for",
+              "`lever_to_stable`)."
             ],
             "type": "u64"
           },
@@ -5297,11 +5605,11 @@
       }
     },
     {
-      "name": "TriggerOrderFilled",
+      "name": "TriggerOrderFilledEvent",
       "docs": [
-        "Emitted at the end of `execute_order_{s2l,l2s}_{lst,exo}` after the order",
-        "fills. `output_received` mirrors Hylo's convert event field",
-        "(`UFixValue64`) verbatim."
+        "Emitted at the end of `execute_order_*` after the order fills.",
+        "`output_received` mirrors Hylo's convert event field (`UFixValue64`)",
+        "verbatim."
       ],
       "type": {
         "kind": "struct",
@@ -5348,8 +5656,8 @@
           {
             "name": "output_received",
             "docs": [
-              "Amount minted to the owner's output ATA (levercoin for s2l, HYUSD for",
-              "l2s)."
+              "Amount minted to the owner's output ATA (levercoin for",
+              "`stable_to_lever`, HYUSD for `lever_to_stable`)."
             ],
             "type": {
               "defined": {
@@ -5360,7 +5668,8 @@
           {
             "name": "output_mint",
             "docs": [
-              "Mint of the output token (levercoin mint for s2l, HYUSD mint for l2s)."
+              "Mint of the output token (levercoin mint for `stable_to_lever`, HYUSD",
+              "mint for `lever_to_stable`)."
             ],
             "type": "pubkey"
           },

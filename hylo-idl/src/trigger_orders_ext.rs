@@ -58,17 +58,17 @@ impl TriggerOrder {
 
 impl ConvertDirection {
   /// PDA seed-slice tag for `StableToLever` orders. Must match
-  /// `hylo_trigger_orders::state::ConvertDirection::S2L_TAG`.
-  pub const S2L_TAG: u8 = 0;
+  /// `hylo_trigger_orders::state::ConvertDirection::STABLE_TO_LEVER_TAG`.
+  pub const STABLE_TO_LEVER_TAG: u8 = 0;
   /// PDA seed-slice tag for `LeverToStable` orders. Must match
-  /// `hylo_trigger_orders::state::ConvertDirection::L2S_TAG`.
-  pub const L2S_TAG: u8 = 1;
+  /// `hylo_trigger_orders::state::ConvertDirection::LEVER_TO_STABLE_TAG`.
+  pub const LEVER_TO_STABLE_TAG: u8 = 1;
 
   #[must_use]
   pub const fn tag_byte(&self) -> u8 {
     match self {
-      Self::StableToLever => Self::S2L_TAG,
-      Self::LeverToStable => Self::L2S_TAG,
+      Self::StableToLever => Self::STABLE_TO_LEVER_TAG,
+      Self::LeverToStable => Self::LEVER_TO_STABLE_TAG,
     }
   }
 }
@@ -212,7 +212,7 @@ mod can_execute_tests {
 
   // `TriggerOrder` intentionally does NOT derive `Default`, so this fixture
   // lists every field explicitly — adding a field forces it to be updated.
-  fn lst_order_s2l_at_above_trigger() -> TriggerOrder {
+  fn lst_order_stable_to_lever_at_above_trigger() -> TriggerOrder {
     TriggerOrder {
       owner: Pubkey::default(),
       pair_target: PairTarget::Lst,
@@ -230,8 +230,8 @@ mod can_execute_tests {
   // An `Exo`-variant order at-or-above its trigger. Clones the LST fixture
   // and swaps the pair target so the EXO code paths in `can_execute` are
   // exercised. (`TriggerOrder` is `Copy`, so the clone is a plain reassign.)
-  fn exo_order_s2l_at_above_trigger() -> TriggerOrder {
-    let mut order = lst_order_s2l_at_above_trigger();
+  fn exo_order_stable_to_lever_at_above_trigger() -> TriggerOrder {
+    let mut order = lst_order_stable_to_lever_at_above_trigger();
     order.pair_target = PairTarget::Exo {
       collateral_mint: Pubkey::new_unique(),
     };
@@ -300,14 +300,14 @@ mod can_execute_tests {
 
   #[test]
   fn met_and_healthy_returns_ok() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     assert!(order.can_execute(&hylo, None, 150, -8, 978).is_ok());
   }
 
   #[test]
   fn trigger_not_met_returns_trigger_not_met() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     assert_eq!(
       order.can_execute(&hylo, None, 50, -8, 978),
@@ -317,7 +317,7 @@ mod can_execute_tests {
 
   #[test]
   fn expo_mismatch_returns_expo_mismatch() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     assert_eq!(
       order.can_execute(&hylo, None, 150, -6, 978),
@@ -327,7 +327,7 @@ mod can_execute_tests {
 
   #[test]
   fn protocol_paused_returns_protocol_paused() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let mut hylo = healthy_hylo(978);
     hylo.protocol_paused = true;
     assert_eq!(
@@ -338,7 +338,7 @@ mod can_execute_tests {
 
   #[test]
   fn lst_pair_paused_returns_lst_pair_paused() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let mut hylo = healthy_hylo(978);
     hylo.lst_pair_paused = true;
     assert_eq!(
@@ -349,7 +349,7 @@ mod can_execute_tests {
 
   #[test]
   fn drawdown_outstanding_returns_drawdown_not_repaid() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let mut hylo = healthy_hylo(978);
     hylo.pool_drawdown.ledger.supply.bits = 1;
     assert_eq!(
@@ -360,7 +360,7 @@ mod can_execute_tests {
 
   #[test]
   fn yield_harvest_stale_returns_stale() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(977); // one epoch behind
     assert_eq!(
       order.can_execute(&hylo, None, 150, -8, 978),
@@ -370,7 +370,7 @@ mod can_execute_tests {
 
   #[test]
   fn pair_state_shape_mismatch() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     let mut exo_order = order;
     exo_order.pair_target = PairTarget::Exo {
@@ -384,7 +384,7 @@ mod can_execute_tests {
 
   #[test]
   fn exo_met_and_healthy_returns_ok() {
-    let order = exo_order_s2l_at_above_trigger();
+    let order = exo_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     let exo_pair = healthy_exo_pair(978);
     assert!(order
@@ -394,7 +394,7 @@ mod can_execute_tests {
 
   #[test]
   fn exo_pair_paused_returns_exo_pair_paused() {
-    let order = exo_order_s2l_at_above_trigger();
+    let order = exo_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     let mut exo_pair = healthy_exo_pair(978);
     exo_pair.paused = true;
@@ -406,7 +406,7 @@ mod can_execute_tests {
 
   #[test]
   fn exo_drawdown_outstanding_returns_drawdown_not_repaid() {
-    let order = exo_order_s2l_at_above_trigger();
+    let order = exo_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     let mut exo_pair = healthy_exo_pair(978);
     exo_pair.pool_drawdown.ledger.supply.bits = 1;
@@ -418,7 +418,7 @@ mod can_execute_tests {
 
   #[test]
   fn exo_borrow_rate_harvest_stale_returns_stale() {
-    let order = exo_order_s2l_at_above_trigger();
+    let order = exo_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     let exo_pair = healthy_exo_pair(977); // one epoch behind
     assert_eq!(
@@ -429,7 +429,7 @@ mod can_execute_tests {
 
   #[test]
   fn lst_order_with_some_exo_pair_returns_pair_state_mismatch() {
-    let order = lst_order_s2l_at_above_trigger();
+    let order = lst_order_stable_to_lever_at_above_trigger();
     let hylo = healthy_hylo(978);
     let exo_pair = healthy_exo_pair(978);
     assert_eq!(
@@ -445,8 +445,8 @@ mod tag_tests {
 
   #[test]
   fn convert_direction_tags() {
-    assert_eq!(ConvertDirection::S2L_TAG, 0);
-    assert_eq!(ConvertDirection::L2S_TAG, 1);
+    assert_eq!(ConvertDirection::STABLE_TO_LEVER_TAG, 0);
+    assert_eq!(ConvertDirection::LEVER_TO_STABLE_TAG, 1);
     assert_eq!(ConvertDirection::StableToLever.tag_byte(), 0);
     assert_eq!(ConvertDirection::LeverToStable.tag_byte(), 1);
   }

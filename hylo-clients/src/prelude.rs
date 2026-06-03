@@ -17,7 +17,7 @@ pub use crate::router_client::{
 pub use crate::transaction::{BuildTransactionData, TransactionSyntax};
 pub use crate::trigger_orders_client::{
   ConvertDirection, ExecutabilityBlocker, PairTarget, TriggerDirection,
-  TriggerOrder, TriggerOrderCancelled, TriggerOrderCreated, TriggerOrderFilled,
-  TriggerOrdersClient, TriggerOutcome, CONSERVATIVE_EXECUTE_CU,
-  EXECUTOR_TIP_LAMPORTS,
+  TriggerOrder, TriggerOrderCancelledEvent, TriggerOrderCreatedEvent,
+  TriggerOrderFilledEvent, TriggerOrdersClient, TriggerOutcome,
+  CONSERVATIVE_EXECUTE_CU, EXECUTOR_TIP_LAMPORTS,
 };

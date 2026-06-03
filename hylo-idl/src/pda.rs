@@ -241,7 +241,7 @@ use crate::trigger_orders::types::{ConvertDirection, PairTarget};
 /// Seed for `TriggerOrder` PDAs — byte-equal to `hylo_trigger_orders::ORDER`.
 pub const TRIGGER_ORDER: &[u8; 5] = b"order";
 
-/// PDA for an LST trigger order (s2l or l2s).
+/// PDA for an LST trigger order (stable-to-lever or lever-to-stable).
 #[must_use]
 pub fn trigger_order_lst(
   owner: Pubkey,
@@ -260,7 +260,7 @@ pub fn trigger_order_lst(
   )
 }
 
-/// PDA for an EXO trigger order (s2l or l2s).
+/// PDA for an EXO trigger order (stable-to-lever or lever-to-stable).
 #[must_use]
 pub fn trigger_order_exo(
   owner: Pubkey,
@@ -307,7 +307,7 @@ mod trigger_orders_pda_tests {
       &[
         TRIGGER_ORDER,
         owner.as_ref(),
-        &[ConvertDirection::S2L_TAG],
+        &[ConvertDirection::STABLE_TO_LEVER_TAG],
         &[PairTarget::LST_TAG],
         &42u64.to_le_bytes(),
       ],
@@ -326,7 +326,7 @@ mod trigger_orders_pda_tests {
       &[
         TRIGGER_ORDER,
         owner.as_ref(),
-        &[ConvertDirection::L2S_TAG],
+        &[ConvertDirection::LEVER_TO_STABLE_TAG],
         &[PairTarget::EXO_TAG],
         mint.as_ref(),
         &7u64.to_le_bytes(),
@@ -347,10 +347,16 @@ mod trigger_orders_pda_tests {
   }
 
   #[test]
-  fn s2l_and_l2s_pdas_disjoint_at_same_owner_pair_nonce() {
+  fn stable_to_lever_and_lever_to_stable_pdas_disjoint_at_same_owner_pair_nonce(
+  ) {
     let owner = Pubkey::new_unique();
-    let (s2l, _) = trigger_order_lst(owner, ConvertDirection::StableToLever, 1);
-    let (l2s, _) = trigger_order_lst(owner, ConvertDirection::LeverToStable, 1);
-    assert_ne!(s2l, l2s, "direction-tag separation broken");
+    let (stable_to_lever, _) =
+      trigger_order_lst(owner, ConvertDirection::StableToLever, 1);
+    let (lever_to_stable, _) =
+      trigger_order_lst(owner, ConvertDirection::LeverToStable, 1);
+    assert_ne!(
+      stable_to_lever, lever_to_stable,
+      "direction-tag separation broken"
+    );
   }
 }
