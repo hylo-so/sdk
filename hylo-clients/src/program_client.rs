@@ -16,7 +16,8 @@ use itertools::Itertools;
 
 use crate::util::{
   build_lst_registry, build_v0_transaction, deserialize_lookup_table,
-  parse_event, simulation_config, LST_REGISTRY_LOOKUP_TABLE,
+  parse_event, parse_event_filtered, simulation_config,
+  LST_REGISTRY_LOOKUP_TABLE,
 };
 
 /// Components from which a [`VersionedTransaction`] can be built.
@@ -43,6 +44,18 @@ impl VersionedTransactionData {
       instructions,
       lookup_tables,
     }
+  }
+
+  /// Prepend a `ComputeBudget::SetComputeUnitLimit` instruction. Use for
+  /// transactions whose CU consumption exceeds the 200k default
+  /// (e.g., trigger-orders execute, 400k recommended).
+  #[must_use]
+  pub fn with_compute_unit_limit(mut self, limit: u32) -> Self {
+    use anchor_client::solana_sdk::compute_budget::ComputeBudgetInstruction;
+    self
+      .instructions
+      .insert(0, ComputeBudgetInstruction::set_compute_unit_limit(limit));
+    self
   }
 }
 
@@ -283,5 +296,62 @@ pub trait ProgramClient: Sized {
     let event = parse_event(&result)?;
     let compute_units = result.value.units_consumed;
     Ok((event, compute_units))
+  }
+
+  /// Run one simulation and extract a specific event by discriminator.
+  /// Use when a tx emits multiple events and you need a specific type —
+  /// `simulate_transaction_event<E>` only returns the first
+  /// `PartiallyDecoded` ix regardless of type, which can't extract multiple
+  /// event types from the same result.
+  ///
+  /// # Errors
+  /// * Transaction simulation fails
+  /// * No event matching `E::DISCRIMINATOR` present, or deserialization fails
+  async fn simulate_transaction_event_filtered<
+    E: AnchorDeserialize + Discriminator,
+  >(
+    &self,
+    tx: &VersionedTransaction,
+  ) -> Result<E> {
+    let rpc = self.program().rpc();
+    let result = rpc
+      .simulate_transaction_with_config(tx, simulation_config())
+      .await?;
+    parse_event_filtered(&result)
+  }
+}
+
+#[cfg(test)]
+mod compute_unit_limit_tests {
+  use anchor_client::solana_sdk::instruction::Instruction;
+  use anchor_client::solana_sdk::pubkey::Pubkey;
+
+  use super::*;
+
+  fn nop() -> Instruction {
+    Instruction {
+      program_id: Pubkey::new_unique(),
+      accounts: vec![],
+      data: vec![],
+    }
+  }
+
+  #[test]
+  fn with_compute_unit_limit_prepends_compute_budget_ix() {
+    let tx =
+      VersionedTransactionData::one(nop()).with_compute_unit_limit(400_000);
+    assert_eq!(tx.instructions.len(), 2);
+    // First instruction is from the compute-budget program.
+    assert_eq!(
+      tx.instructions[0].program_id,
+      anchor_client::solana_sdk::compute_budget::ID,
+    );
+  }
+
+  #[test]
+  fn with_compute_unit_limit_preserves_lookup_tables() {
+    let tx = VersionedTransactionData::new(vec![nop()], vec![])
+      .with_compute_unit_limit(400_000);
+    assert_eq!(tx.lookup_tables.len(), 0);
   }
 }

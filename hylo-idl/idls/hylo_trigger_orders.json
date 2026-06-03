@@ -1,0 +1,5837 @@
+{
+  "address": "2GbKbBumaPjHsJ5qzkUt6cnsyTBT6aPNj3gq2mvocpFW",
+  "metadata": {
+    "name": "hylo_trigger_orders",
+    "version": "1.0.0",
+    "spec": "0.1.0",
+    "description": "Hylo Trigger Orders Program"
+  },
+  "instructions": [
+    {
+      "name": "cancel_order_lever_to_stable_exo",
+      "discriminator": [
+        47,
+        127,
+        17,
+        226,
+        125,
+        19,
+        22,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "order",
+          "writable": true
+        },
+        {
+          "name": "order_levercoin_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_levercoin_ta",
+          "writable": true
+        },
+        {
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "Defines the EXO pair the order targets. Validated against",
+            "`order.pair_target` via the `constraint` on `order` above."
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCancelledEvent"
+        }
+      }
+    },
+    {
+      "name": "cancel_order_lever_to_stable_lst",
+      "discriminator": [
+        68,
+        60,
+        120,
+        236,
+        126,
+        232,
+        1,
+        22
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "order",
+          "writable": true
+        },
+        {
+          "name": "order_xsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "xsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_xsol_ta",
+          "writable": true
+        },
+        {
+          "name": "xsol_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCancelledEvent"
+        }
+      }
+    },
+    {
+      "name": "cancel_order_stable_to_lever",
+      "discriminator": [
+        45,
+        2,
+        38,
+        191,
+        74,
+        153,
+        31,
+        179
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "order",
+          "writable": true
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_hyusd_ta",
+          "writable": true
+        },
+        {
+          "name": "hyusd_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCancelledEvent"
+        }
+      }
+    },
+    {
+      "name": "create_order_lever_to_stable_exo",
+      "discriminator": [
+        18,
+        5,
+        47,
+        137,
+        57,
+        87,
+        9,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_levercoin_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_levercoin_ta",
+          "writable": true
+        },
+        {
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "Defines the EXO pair the order targets.",
+            "",
+            "Intentionally **not** constrained to a registered `ExoPair`. The obvious",
+            "alternative would be to add a seed-derived `exo_pair: Account<ExoPair>`",
+            "to this struct and let Anchor validate. We don't, because:",
+            "",
+            "- **Cost is real.** Loading `ExoPair` adds one account to the create",
+            "instruction's account list (counts against the 64-account tx ceiling",
+            "shared with the rest of the tx), ~500 bytes of deserialization, and",
+            "commits this program to whatever Hylo's `ExoPair` schema looks like.",
+            "Hylo's `ExoPair` evolves (levercoin caps, fee curves, oracle config",
+            "have all been added over time); each evolution would force a",
+            "trigger-orders upgrade just to keep create working.",
+            "",
+            "- **Benefit is small.** Validation here is UX-only — it catches a",
+            "malformed mint at create instead of at execute. The owner's funds are",
+            "safe either way (see the three guarantees below).",
+            "",
+            "Why we can safely skip the check:",
+            "",
+            "1. The PDA seeds bind this mint cryptographically (see the `order` seeds",
+            "above), so a malformed mint creates a PDA at an address unique to that",
+            "owner/nonce/mint triple. No collision risk with other orders.",
+            "2. Only the owner is harmed by an unfillable order — their levercoin goes",
+            "into a PDA they alone can drain via",
+            "`cancel_order_lever_to_stable_exo`. There's no path for an attacker to",
+            "lock anyone else's funds via this vector.",
+            "3. The cancel path doesn't read `ExoPair`, `Hylo`, or any pair-specific",
+            "state. So even if Hylo deprecates this collateral, the owner can",
+            "always recover. Funds-recoverability is structural, not policy.",
+            "",
+            "At execute time, the keeper passes the actual `ExoPair` account; it's",
+            "constrained to derive from this `collateral_mint`, so wrong-pair",
+            "execution attempts revert at account loading before any token movement."
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "escrow_amount",
+          "type": "u64"
+        },
+        {
+          "name": "trigger_price",
+          "type": "i64"
+        },
+        {
+          "name": "trigger_expo",
+          "type": "i32"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "defined": {
+              "name": "TriggerDirection"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCreatedEvent"
+        }
+      }
+    },
+    {
+      "name": "create_order_lever_to_stable_lst",
+      "discriminator": [
+        169,
+        244,
+        48,
+        59,
+        91,
+        86,
+        47,
+        4
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_xsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "xsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_xsol_ta",
+          "writable": true
+        },
+        {
+          "name": "xsol_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "escrow_amount",
+          "type": "u64"
+        },
+        {
+          "name": "trigger_price",
+          "type": "i64"
+        },
+        {
+          "name": "trigger_expo",
+          "type": "i32"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "defined": {
+              "name": "TriggerDirection"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCreatedEvent"
+        }
+      }
+    },
+    {
+      "name": "create_order_stable_to_lever_exo",
+      "discriminator": [
+        64,
+        253,
+        226,
+        234,
+        102,
+        182,
+        158,
+        44
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_hyusd_ta",
+          "writable": true
+        },
+        {
+          "name": "hyusd_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "Defines the EXO pair the order targets.",
+            "",
+            "Intentionally **not** constrained to a registered `ExoPair`. The obvious",
+            "alternative would be to add a seed-derived `exo_pair: Account<ExoPair>`",
+            "to this struct and let Anchor validate. We don't, because:",
+            "",
+            "- **Cost is real.** Loading `ExoPair` adds one account to the create",
+            "instruction's account list (counts against the 64-account tx ceiling",
+            "shared with the rest of the tx), ~500 bytes of deserialization, and",
+            "commits this program to whatever Hylo's `ExoPair` schema looks like.",
+            "Hylo's `ExoPair` evolves (levercoin caps, fee curves, oracle config",
+            "have all been added over time); each evolution would force a",
+            "trigger-orders upgrade just to keep create working.",
+            "",
+            "- **Benefit is small.** Validation here is UX-only — it catches a",
+            "malformed mint at create instead of at execute. The owner's funds are",
+            "safe either way (see the three guarantees below).",
+            "",
+            "Why we can safely skip the check:",
+            "",
+            "1. The PDA seeds bind this mint cryptographically (see the `order` seeds",
+            "above), so a malformed mint creates a PDA at an address unique to that",
+            "owner/nonce/mint triple. No collision risk with other orders.",
+            "2. Only the owner is harmed by an unfillable order — their HYUSD goes",
+            "into a PDA they alone can drain via `cancel_order_stable_to_lever`.",
+            "There's no path for an attacker to lock anyone else's funds via this",
+            "vector.",
+            "3. The cancel path doesn't read `ExoPair`, `Hylo`, or any pair-specific",
+            "state. So even if Hylo deprecates this collateral, the owner can",
+            "always recover. Funds-recoverability is structural, not policy.",
+            "",
+            "At execute time, the keeper passes the actual `ExoPair` account; it's",
+            "constrained to derive from this `collateral_mint`, so wrong-pair",
+            "execution attempts revert at account loading before any token movement."
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "escrow_amount",
+          "type": "u64"
+        },
+        {
+          "name": "trigger_price",
+          "type": "i64"
+        },
+        {
+          "name": "trigger_expo",
+          "type": "i32"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "defined": {
+              "name": "TriggerDirection"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCreatedEvent"
+        }
+      }
+    },
+    {
+      "name": "create_order_stable_to_lever_lst",
+      "discriminator": [
+        44,
+        239,
+        230,
+        43,
+        167,
+        109,
+        159,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_hyusd_ta",
+          "writable": true
+        },
+        {
+          "name": "hyusd_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "escrow_amount",
+          "type": "u64"
+        },
+        {
+          "name": "trigger_price",
+          "type": "i64"
+        },
+        {
+          "name": "trigger_expo",
+          "type": "i32"
+        },
+        {
+          "name": "direction",
+          "type": {
+            "defined": {
+              "name": "TriggerDirection"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderCreatedEvent"
+        }
+      }
+    },
+    {
+      "name": "execute_order_lever_to_stable_exo",
+      "discriminator": [
+        37,
+        208,
+        145,
+        18,
+        1,
+        120,
+        209,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "executor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "vault_auth"
+        },
+        {
+          "name": "collateral_vault",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_usd_pyth_feed"
+        },
+        {
+          "name": "hyusd_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "stablecoin_auth"
+        },
+        {
+          "name": "fee_auth"
+        },
+        {
+          "name": "fee_vault",
+          "writable": true
+        },
+        {
+          "name": "levercoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "levercoin_auth"
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order.owner",
+                "account": "TriggerOrder"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              },
+              {
+                "kind": "account",
+                "path": "order.nonce",
+                "account": "TriggerOrder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_levercoin_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_hyusd_ta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "hylo_exchange_event_authority"
+        },
+        {
+          "name": "hylo_exchange_program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderFilledEvent"
+        }
+      }
+    },
+    {
+      "name": "execute_order_lever_to_stable_lst",
+      "discriminator": [
+        148,
+        194,
+        232,
+        208,
+        165,
+        164,
+        221,
+        71
+      ],
+      "accounts": [
+        {
+          "name": "executor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "sol_usd_pyth_feed"
+        },
+        {
+          "name": "hyusd_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "stablecoin_auth"
+        },
+        {
+          "name": "fee_auth"
+        },
+        {
+          "name": "fee_vault",
+          "writable": true
+        },
+        {
+          "name": "xsol_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "levercoin_auth"
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order.owner",
+                "account": "TriggerOrder"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order.nonce",
+                "account": "TriggerOrder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_xsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "xsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_hyusd_ta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "hylo_exchange_event_authority"
+        },
+        {
+          "name": "hylo_exchange_program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderFilledEvent"
+        }
+      }
+    },
+    {
+      "name": "execute_order_stable_to_lever_exo",
+      "discriminator": [
+        78,
+        24,
+        242,
+        4,
+        17,
+        60,
+        133,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "executor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "vault_auth"
+        },
+        {
+          "name": "collateral_vault",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_usd_pyth_feed"
+        },
+        {
+          "name": "hyusd_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "stablecoin_auth"
+        },
+        {
+          "name": "fee_auth"
+        },
+        {
+          "name": "fee_vault",
+          "writable": true
+        },
+        {
+          "name": "levercoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "levercoin_auth"
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order.owner",
+                "account": "TriggerOrder"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  1
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              },
+              {
+                "kind": "account",
+                "path": "order.nonce",
+                "account": "TriggerOrder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "order_levercoin_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_levercoin_ta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "hylo_exchange_event_authority"
+        },
+        {
+          "name": "hylo_exchange_program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderFilledEvent"
+        }
+      }
+    },
+    {
+      "name": "execute_order_stable_to_lever_lst",
+      "discriminator": [
+        225,
+        97,
+        249,
+        74,
+        99,
+        214,
+        130,
+        114
+      ],
+      "accounts": [
+        {
+          "name": "executor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "sol_usd_pyth_feed"
+        },
+        {
+          "name": "hyusd_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "stablecoin_auth"
+        },
+        {
+          "name": "fee_auth"
+        },
+        {
+          "name": "fee_vault",
+          "writable": true
+        },
+        {
+          "name": "xsol_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "levercoin_auth"
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order.owner",
+                "account": "TriggerOrder"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order.nonce",
+                "account": "TriggerOrder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "order_hyusd_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hyusd_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "order_xsol_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "order"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "xsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner_xsol_ta",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "xsol_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "hylo_exchange_event_authority"
+        },
+        {
+          "name": "hylo_exchange_program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "TriggerOrderFilledEvent"
+        }
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ExoPair",
+      "discriminator": [
+        251,
+        244,
+        72,
+        181,
+        40,
+        119,
+        232,
+        48
+      ]
+    },
+    {
+      "name": "Hylo",
+      "discriminator": [
+        114,
+        161,
+        169,
+        210,
+        204,
+        175,
+        149,
+        174
+      ]
+    },
+    {
+      "name": "PriceUpdateV2",
+      "discriminator": [
+        34,
+        241,
+        35,
+        99,
+        157,
+        126,
+        244,
+        205
+      ]
+    },
+    {
+      "name": "TriggerOrder",
+      "discriminator": [
+        236,
+        61,
+        42,
+        190,
+        152,
+        12,
+        106,
+        116
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "TriggerOrderCancelledEvent",
+      "discriminator": [
+        178,
+        127,
+        39,
+        234,
+        87,
+        193,
+        7,
+        119
+      ]
+    },
+    {
+      "name": "TriggerOrderCreatedEvent",
+      "discriminator": [
+        231,
+        191,
+        133,
+        0,
+        130,
+        0,
+        198,
+        83
+      ]
+    },
+    {
+      "name": "TriggerOrderFilledEvent",
+      "discriminator": [
+        72,
+        131,
+        117,
+        214,
+        75,
+        219,
+        32,
+        36
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "AmountTooSmall",
+      "msg": "Escrow amount must be greater than zero."
+    },
+    {
+      "code": 6001,
+      "name": "AccountMismatch",
+      "msg": "Account does not match the order's pair target."
+    },
+    {
+      "code": 6002,
+      "name": "TriggerNotMet",
+      "msg": "Price condition not met."
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Signer is not the order owner."
+    },
+    {
+      "code": 6004,
+      "name": "InvalidPythPrice",
+      "msg": "Invalid Pyth price update account, feed id, or exponent."
+    },
+    {
+      "code": 6005,
+      "name": "TipArithmetic",
+      "msg": "Executor tip arithmetic overflowed the order's lamport balance."
+    }
+  ],
+  "types": [
+    {
+      "name": "BorrowRateConfig",
+      "docs": [
+        "Per-epoch borrow rate for exogenous collateral without native yield."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConvertDirection",
+      "docs": [
+        "Direction of the underlying Hylo convert ix the trigger order will fire.",
+        "`StableToLever` burns HYUSD to mint levercoin; `LeverToStable` burns",
+        "levercoin to mint HYUSD."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "StableToLever"
+          },
+          {
+            "name": "LeverToStable"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExoPair",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "fee_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_mint_threshold",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_config",
+            "type": {
+              "defined": {
+                "name": "BorrowRateConfig"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "rebalance_deviation_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "levercoin_market_cap_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                100
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeePair",
+      "docs": [
+        "Represents the spread of fees between mint and redeem for protocol tokens.",
+        "All fees must be in basis points to represent a fractional percentage",
+        "directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "redeem",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "HarvestCache",
+      "docs": [
+        "Records epoch harvest information for off-chain consumers."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "stability_pool_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_to_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Hylo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_registry",
+            "type": "pubkey"
+          },
+          {
+            "name": "stablecoin_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "stablecoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "stablecoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "registry_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "total_sol_cache_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
+              }
+            }
+          },
+          {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "total_sol_cache",
+            "type": {
+              "defined": {
+                "name": "TotalSolCache"
+              }
+            }
+          },
+          {
+            "name": "yield_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "yield_harvest_config",
+            "type": {
+              "defined": {
+                "name": "YieldHarvestConfig"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_mint_threshold",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "_legacy_stability_threshold_2",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "sol_usd_oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_swap_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "lst_buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "lst_sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "protocol_paused",
+            "type": "bool"
+          },
+          {
+            "name": "lst_pair_paused",
+            "type": "bool"
+          },
+          {
+            "name": "rebalance_deviation_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                13
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LevercoinFees",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "normal",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "sell_zone_1",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "sell_zone_2",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PairTarget",
+      "docs": [
+        "Which Hylo pair an order targets: an LST pair (output xSOL) or an EXO",
+        "pair (output the per-collateral xASSET)."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Lst"
+          },
+          {
+            "name": "Exo",
+            "fields": [
+              {
+                "name": "collateral_mint",
+                "type": "pubkey"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolDrawdown",
+      "docs": [
+        "Outstanding hyUSD debt owed to the earn pool after a Depeg absorption."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceFeedMessage",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "docs": [
+              "`FeedId` but avoid the type alias because of compatibility issues with Anchor's `idl-build` feature."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "conf",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i32"
+          },
+          {
+            "name": "publish_time",
+            "docs": [
+              "The timestamp of this price update in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "prev_publish_time",
+            "docs": [
+              "The timestamp of the previous price update. This field is intended to allow users to",
+              "identify the single unique price update for any moment in time:",
+              "for any time t, the unique update is the one such that prev_publish_time < t <= publish_time.",
+              "",
+              "Note that there may not be such an update while we are migrating to the new message-sending logic,",
+              "as some price updates on pythnet may not be sent to other chains (because the message-sending",
+              "logic may not have triggered). We can solve this problem by making the message-sending mandatory",
+              "(which we can do once publishers have migrated over).",
+              "",
+              "Additionally, this field may be equal to publish_time if the message is sent on a slot where",
+              "where the aggregation was unsuccesful. This problem will go away once all publishers have",
+              "migrated over to a recent version of pyth-agent."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "ema_price",
+            "type": "i64"
+          },
+          {
+            "name": "ema_conf",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceUpdateV2",
+      "docs": [
+        "A price update account. This account is used by the Pyth Receiver program to store a verified price update from a Pyth price feed.",
+        "It contains:",
+        "- `write_authority`: The write authority for this account. This authority can close this account to reclaim rent or update the account to contain a different price update.",
+        "- `verification_level`: The [`VerificationLevel`] of this price update. This represents how many Wormhole guardian signatures have been verified for this price update.",
+        "- `price_message`: The actual price update.",
+        "- `posted_slot`: The slot at which this price update was posted."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "write_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "verification_level",
+            "type": {
+              "defined": {
+                "name": "VerificationLevel"
+              }
+            }
+          },
+          {
+            "name": "price_message",
+            "type": {
+              "defined": {
+                "name": "PriceFeedMessage"
+              }
+            }
+          },
+          {
+            "name": "posted_slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceCurveConfig",
+      "docs": [
+        "Confidence interval multipliers for rebalance price curve construction."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StablecoinFees",
+      "docs": [
+        "**Deprecated** — retained only for `Hylo` account deserialization."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "normal",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "mode_1",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TotalSolCache",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "current_update_epoch",
+            "type": "u64"
+          },
+          {
+            "name": "total_sol",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TriggerDirection",
+      "docs": [
+        "Direction of a trigger order: fill when the underlying price is at or",
+        "below the trigger, or at or above."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "AtOrBelow"
+          },
+          {
+            "name": "AtOrAbove"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TriggerOrder",
+      "docs": [
+        "Per-order escrow account holding the user's escrow + trigger parameters."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "docs": [
+              "Owner can cancel; receives output on fill."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pair_target",
+            "type": {
+              "defined": {
+                "name": "PairTarget"
+              }
+            }
+          },
+          {
+            "name": "convert_direction",
+            "docs": [
+              "Direction of the Hylo convert ix this order will fire",
+              "(`stable_to_lever` or `lever_to_stable`)."
+            ],
+            "type": {
+              "defined": {
+                "name": "ConvertDirection"
+              }
+            }
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Client-chosen; `(owner, convert_direction, pair_target, nonce)` is",
+              "unique."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "escrow_amount",
+            "docs": [
+              "Amount escrowed in the order's escrow vault. Unit depends on",
+              "`convert_direction`: HYUSD for `stable_to_lever`; xSOL or per-EXO",
+              "levercoin for `lever_to_stable`."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "trigger_price",
+            "docs": [
+              "Pyth-style price."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "trigger_expo",
+            "docs": [
+              "Pyth-style exponent."
+            ],
+            "type": "i32"
+          },
+          {
+            "name": "direction",
+            "type": {
+              "defined": {
+                "name": "TriggerDirection"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Unix timestamp from Anchor's `Clock` at create."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TriggerOrderCancelledEvent",
+      "docs": [
+        "Emitted at the end of `cancel_order_*` after the refund completes."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "pair_target",
+            "type": {
+              "defined": {
+                "name": "PairTarget"
+              }
+            }
+          },
+          {
+            "name": "convert_direction",
+            "type": {
+              "defined": {
+                "name": "ConvertDirection"
+              }
+            }
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "escrow_refunded",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TriggerOrderCreatedEvent",
+      "docs": [
+        "Emitted at the end of `create_order_*` after state mutations succeed."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "pair_target",
+            "type": {
+              "defined": {
+                "name": "PairTarget"
+              }
+            }
+          },
+          {
+            "name": "convert_direction",
+            "type": {
+              "defined": {
+                "name": "ConvertDirection"
+              }
+            }
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "escrow_amount",
+            "docs": [
+              "Amount escrowed (HYUSD for `stable_to_lever`, levercoin for",
+              "`lever_to_stable`)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "trigger_price",
+            "type": "i64"
+          },
+          {
+            "name": "trigger_expo",
+            "type": "i32"
+          },
+          {
+            "name": "direction",
+            "type": {
+              "defined": {
+                "name": "TriggerDirection"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TriggerOrderFilledEvent",
+      "docs": [
+        "Emitted at the end of `execute_order_*` after the order fills.",
+        "`output_received` mirrors Hylo's convert event field (`UFixValue64`)",
+        "verbatim."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "pair_target",
+            "type": {
+              "defined": {
+                "name": "PairTarget"
+              }
+            }
+          },
+          {
+            "name": "convert_direction",
+            "type": {
+              "defined": {
+                "name": "ConvertDirection"
+              }
+            }
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "escrow_spent",
+            "docs": [
+              "Amount burned from the escrow vault."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "output_received",
+            "docs": [
+              "Amount minted to the owner's output ATA (levercoin for",
+              "`stable_to_lever`, HYUSD for `lever_to_stable`)."
+            ],
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "output_mint",
+            "docs": [
+              "Mint of the output token (levercoin mint for `stable_to_lever`, HYUSD",
+              "mint for `lever_to_stable`)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "trigger_price",
+            "type": "i64"
+          },
+          {
+            "name": "trigger_expo",
+            "type": "i32"
+          },
+          {
+            "name": "direction",
+            "type": {
+              "defined": {
+                "name": "TriggerDirection"
+              }
+            }
+          },
+          {
+            "name": "pyth_price",
+            "docs": [
+              "Snapshotted at the trigger-check step, pre-CPI."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "pyth_expo",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UFixValue64",
+      "docs": [
+        "A value-space `Fix` where base is always 10 and bits are a concrete type.",
+        "Intended for serialized storage in Solana accounts where generics won't work."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bits",
+            "type": "u64"
+          },
+          {
+            "name": "exp",
+            "type": "i8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VerificationLevel",
+      "docs": [
+        "Pyth price updates are bridged to all blockchains via Wormhole.",
+        "Using the price updates on another chain requires verifying the signatures of the Wormhole guardians.",
+        "The usual process is to check the signatures for two thirds of the total number of guardians, but this can be cumbersome on Solana because of the transaction size limits,",
+        "so we also allow for partial verification.",
+        "",
+        "This enum represents how much a price update has been verified:",
+        "- If `Full`, we have verified the signatures for two thirds of the current guardians.",
+        "- If `Partial`, only `num_signatures` guardian signatures have been checked.",
+        "",
+        "# Warning",
+        "Using partially verified price updates is dangerous, as it lowers the threshold of guardians that need to collude to produce a malicious price update."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Partial",
+            "fields": [
+              {
+                "name": "num_signatures",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "Full"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VirtualStablecoin",
+      "docs": [
+        "Simple counter representing the supply of a \"virtual\" stablecoin."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "supply",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldHarvestConfig",
+      "docs": [
+        "Captures yield harvest configuration as two basis point values:"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "allocation",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "EXECUTOR_TIP_LAMPORTS",
+      "docs": [
+        "Flat SOL tip paid to the executor on successful `execute_order_*`.",
+        "",
+        "Owner deposits this into the order PDA at `create_order_*` time (in",
+        "addition to the rent-exempt minimum). Executor receives these lamports",
+        "on successful execute. Cancel refunds the unused tip to the owner via",
+        "Anchor's `close = owner` on the order PDA.",
+        "",
+        "Sized to cover the executor's worst-case outlay (~0.00203 SOL ATA",
+        "donation + tx fee) with ~2.5x margin."
+      ],
+      "type": "u64",
+      "value": "5000000"
+    },
+    {
+      "name": "ORDER",
+      "docs": [
+        "Seed for `TriggerOrder` PDAs."
+      ],
+      "type": {
+        "array": [
+          "u8",
+          5
+        ]
+      },
+      "value": "[111, 114, 100, 101, 114]"
+    }
+  ]
+}

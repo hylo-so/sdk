@@ -31,6 +31,8 @@
 //!   program
 //! - [`earn_pool_client::EarnPoolClient`] — Admin operations for the earn pool
 //!   program
+//! - [`trigger_orders_client::TriggerOrdersClient`] — Permissionless
+//!   trigger-order placement, cancellation, and execution
 
 pub mod earn_pool_client;
 pub mod exchange_client;
@@ -40,4 +42,5 @@ pub mod program_client;
 pub mod router_client;
 pub mod squads;
 pub mod transaction;
+pub mod trigger_orders_client;
 pub mod util;
