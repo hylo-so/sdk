@@ -2517,6 +2517,11 @@
       "code": 6004,
       "name": "EarnPoolPaused",
       "msg": "Earn pool operations have been paused."
+    },
+    {
+      "code": 6005,
+      "name": "DepositDisabled",
+      "msg": "Earn pool empty due to drawdown. Deposits are temporarily disabled."
     }
   ],
   "types": [
