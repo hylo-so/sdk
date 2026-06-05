@@ -907,9 +907,9 @@ impl ExchangeClient {
     let vault = squads.vault_pda();
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
     let incinerator_levercoin_ata =
-      ata_instruction(&vault, &pda::INCINERATOR, &levercoin_mint);
+      ata_instruction(&vault, &pda::DEAD, &levercoin_mint);
     let incinerator_stablecoin_ata =
-      ata_instruction(&vault, &pda::INCINERATOR, &HYUSD::MINT);
+      ata_instruction(&vault, &pda::DEAD, &HYUSD::MINT);
     let instruction = instruction_builders::genesis_mint_exo(
       vault,
       collateral_mint,
