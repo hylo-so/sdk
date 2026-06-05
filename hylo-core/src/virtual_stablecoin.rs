@@ -2,7 +2,9 @@ use anchor_lang::prelude::*;
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::error::CoreError::{BurnUnderflow, MintOverflow};
+use crate::error::CoreError::{
+  BurnUnderflow, MintOverflow, VirtualStablecoinBurnLimit,
+};
 
 /// Simple counter representing the supply of a "virtual" stablecoin.
 #[derive(
@@ -67,6 +69,29 @@ impl VirtualStablecoin {
     self.supply = new_supply.into();
     Ok(())
   }
+
+  /// Decreases the supply of the virtual stablecoin, preserving the given
+  /// supply limit.
+  ///
+  /// # Errors
+  /// * State validation
+  /// * Underflow
+  /// * Burn exceeds limit
+  pub fn burn_limited(
+    &mut self,
+    amount: UFix64<N6>,
+    limit: UFix64<N6>,
+  ) -> Result<()> {
+    let current_supply = self.supply()?;
+    let new_supply =
+      current_supply.checked_sub(&amount).ok_or(BurnUnderflow)?;
+    if new_supply >= limit {
+      self.supply = new_supply.into();
+      Ok(())
+    } else {
+      Err(VirtualStablecoinBurnLimit.into())
+    }
+  }
 }
 
 #[cfg(test)]
@@ -130,6 +155,29 @@ mod tests {
     stablecoin.mint(UFix64::one())?;
     let result = stablecoin.burn(UFix64::new(2_000_000));
     assert!(result.is_err_and(|e| e == BurnUnderflow.into()));
+    Ok(())
+  }
+
+  #[test]
+  fn burn_limit_error() -> Result<()> {
+    let mut stablecoin = setup_virtual_stablecoin();
+    stablecoin.mint(UFix64::one())?;
+    let limit = UFix64::new(500_000);
+    let burn_amount = UFix64::new(600_000);
+    let result = stablecoin.burn_limited(burn_amount, limit);
+    assert!(result.is_err_and(|e| e == VirtualStablecoinBurnLimit.into()));
+    Ok(())
+  }
+
+  #[test]
+  fn burn_limit_pos() -> Result<()> {
+    let mut stablecoin = setup_virtual_stablecoin();
+    stablecoin.mint(UFix64::one())?;
+    let limit = UFix64::new(500_000);
+    let burn_amount = UFix64::new(500_000);
+    stablecoin.burn_limited(burn_amount, limit)?;
+    let supply = stablecoin.supply()?;
+    assert_eq!(limit, supply);
     Ok(())
   }
 }

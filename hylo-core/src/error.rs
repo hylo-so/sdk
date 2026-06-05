@@ -98,6 +98,8 @@ pub enum CoreError {
   VirtualStablecoinOverhang,
   #[msg("Arithmetic error while computing virtual stablecoin surplus.")]
   VirtualStablecoinSurplus,
+  #[msg("Virtual stablecoin burn exceeds given burn limit.")]
+  VirtualStablecoinBurnLimit,
   // `earn_pool_math`
   #[msg("Arithmetic error while computing LP token NAV.")]
   LpTokenNav,
