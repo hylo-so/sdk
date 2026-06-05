@@ -18411,36 +18411,31 @@
     },
     {
       "code": 6055,
-      "name": "SettleVirtualStablecoinDisabled",
-      "msg": "Drawdown repayment disabled until CR recovers to the Neutral zone."
-    },
-    {
-      "code": 6056,
       "name": "DrawdownNotRepaid",
       "msg": "Operation disabled until pool drawdown is repaid."
     },
     {
-      "code": 6057,
+      "code": 6056,
       "name": "LstStakePoolNotSupported",
       "msg": "LST stake pool is not supported."
     },
     {
-      "code": 6058,
+      "code": 6057,
       "name": "InsufficientEarnPoolLiquidity",
       "msg": "Earn pool does not have enough liquidity to absorb rebalance loss."
     },
     {
-      "code": 6059,
+      "code": 6058,
       "name": "ExoGenesisConstraints",
       "msg": "Exo pair genesis mint constraints not met."
     },
     {
-      "code": 6060,
+      "code": 6059,
       "name": "ExoGenesisCollateralRatio",
       "msg": "Error or constraint not met for collateral ratio for genesis."
     },
     {
-      "code": 6061,
+      "code": 6060,
       "name": "ExoPairZeroVirtualStablecoin",
       "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
     }
@@ -18956,11 +18951,19 @@
             }
           },
           {
+            "name": "virtual_stablecoin_supply_floor",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                100
+                91
               ]
             }
           }
