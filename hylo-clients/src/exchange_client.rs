@@ -893,7 +893,7 @@ impl ExchangeClient {
   }
 
   /// Genesis mint for an exo pair: seeds an empty, paused pair with its
-  /// initial collateral, minting levercoin and stablecoin to the incinerator.
+  /// initial collateral, minting levercoin and stablecoin to the dead address.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
@@ -906,10 +906,9 @@ impl ExchangeClient {
   ) -> Result<SquadsTransactionData> {
     let vault = squads.vault_pda();
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
-    let incinerator_levercoin_ata =
+    let dead_levercoin_ata =
       ata_instruction(&vault, &pda::DEAD, &levercoin_mint);
-    let incinerator_stablecoin_ata =
-      ata_instruction(&vault, &pda::DEAD, &HYUSD::MINT);
+    let dead_stablecoin_ata = ata_instruction(&vault, &pda::DEAD, &HYUSD::MINT);
     let instruction = instruction_builders::genesis_mint_exo(
       vault,
       collateral_mint,
@@ -918,11 +917,7 @@ impl ExchangeClient {
     );
     let memo = build_memo("genesis_mint_exo", &instruction);
     let inner = VersionedTransactionData::new(
-      vec![
-        incinerator_levercoin_ata,
-        incinerator_stablecoin_ata,
-        instruction,
-      ],
+      vec![dead_levercoin_ata, dead_stablecoin_ata, instruction],
       vec![],
     );
     squads.build_proposal(&inner, self.program.payer(), memo)

@@ -318,7 +318,7 @@ pub fn genesis_mint_exo(
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   GenesisMintExo {
     admin,
-    incinerator: pda::DEAD,
+    dead: pda::DEAD,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),
     levercoin_auth: pda::mint_auth(levercoin_mint),
@@ -326,8 +326,8 @@ pub fn genesis_mint_exo(
     vault_auth,
     collateral_vault: pda::ata(vault_auth, collateral_mint),
     admin_collateral_ta: pda::ata(admin, collateral_mint),
-    incinerator_levercoin_ta: pda::ata(pda::DEAD, levercoin_mint),
-    incinerator_stablecoin_ta: pda::hyusd_ata(pda::DEAD),
+    dead_levercoin_ta: pda::ata(pda::DEAD, levercoin_mint),
+    dead_stablecoin_ta: pda::hyusd_ata(pda::DEAD),
     collateral_mint,
     levercoin_mint,
     stablecoin_mint: HYUSD::MINT,

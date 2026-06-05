@@ -1965,8 +1965,8 @@
           ]
         },
         {
-          "name": "incinerator",
-          "address": "1nc1nerator11111111111111111111111111111111"
+          "name": "dead",
+          "address": "DEAUr88gdggjoQnuAZMf5qs9FKSj8itpZxTK2PZVve6"
         },
         {
           "name": "hylo",
@@ -2184,11 +2184,11 @@
           "writable": true
         },
         {
-          "name": "incinerator_levercoin_ta",
+          "name": "dead_levercoin_ta",
           "writable": true
         },
         {
-          "name": "incinerator_stablecoin_ta",
+          "name": "dead_stablecoin_ta",
           "writable": true
         },
         {
