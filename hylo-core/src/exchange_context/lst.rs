@@ -318,21 +318,34 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     usdc_amount: UFix64<N9>,
   ) -> Result<LstRebalanceConversion> {
     let sol_spot_price = self.collateral_oracle_price().spot;
-    let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
-    let lst_delta = LstRebalanceConversion::new(
-      lst_sol_price,
-      sol_spot_price,
+    let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
+    let lst_delta =
+      LstRebalanceConversion::new(lst_sol, sol_spot_price, usdc_usd_price)
+        .usdc_to_lst(usdc_amount)?;
+    let sol_usd_price =
+      self.projected_sell_price(lst_delta, lst_sol_price, sol_spot_price)?;
+    Ok(LstRebalanceConversion::new(
+      lst_sol,
+      sol_usd_price,
       usdc_usd_price,
-    )
-    .usdc_to_lst(usdc_amount)?;
-    let sol_delta = lst_delta
-      .mul_div_floor(lst_sol_price, UFix64::one())
-      .ok_or(RebalanceAmountExceeded)?;
+    ))
+  }
+
+  /// Sell-curve SOL/USD price at the CR projected after selling `lst_delta`.
+  fn projected_sell_price(
+    &self,
+    lst_delta: UFix64<N9>,
+    lst_sol_price: &LstSolPrice,
+    sol_spot_price: UFix64<N9>,
+  ) -> Result<UFix64<N9>> {
+    let sol_delta =
+      lst_sol_price.convert_lst_to_sol(lst_delta, self.clock.epoch())?;
+    let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_delta)
       .ok_or(RebalanceAmountExceeded)?;
-    let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
+    let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol)
       .lst_to_token(lst_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
@@ -340,13 +353,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .ok_or(DestinationStablecoin)?;
     let projected_cr =
       collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
-    let curve = self.rebalance_sell_curve()?;
-    let sol_usd_price = curve.price(projected_cr)?;
-    Ok(LstRebalanceConversion::new(
-      lst_sol_price,
-      sol_usd_price,
-      usdc_usd_price,
-    ))
+    self.rebalance_sell_curve()?.price(projected_cr)
   }
 
   /// Largest USDC input a sell-side rebalancing swap can take for the given LST
@@ -375,10 +382,14 @@ impl<C: SolanaClock> LstExchangeContext<C> {
 
     // Convert to USDC with sell curve
     let lst_sol = adjusted_price.get_epoch_price(self.clock.epoch())?;
-    let curve = self.rebalance_sell_curve()?;
-    let sell_price = curve.price(self.collateral_ratio())?;
+    let sol_spot_price = self.collateral_oracle_price().spot;
+    let sol_usd_price = self.projected_sell_price(
+      sellable_lst,
+      &adjusted_price,
+      sol_spot_price,
+    )?;
     let usdc_in_raw =
-      LstRebalanceConversion::new(lst_sol, sell_price, usdc_usd_price)
+      LstRebalanceConversion::new(lst_sol, sol_usd_price, usdc_usd_price)
         .lst_to_usdc(sellable_lst)?;
 
     // Virtual stablecoin at or above the floor converted to USDC
