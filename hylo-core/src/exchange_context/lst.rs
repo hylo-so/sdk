@@ -4,10 +4,12 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::ExchangeContext;
-use crate::conversion::{Conversion, LstRebalanceConversion};
+use crate::conversion::{
+  Conversion, LstRebalanceConversion, UsdcStablecoinConversion,
+};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
-  RebalanceAmountExceeded, RebalanceSwapPnl,
+  RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
@@ -344,6 +346,50 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       sol_usd_price,
       usdc_usd_price,
     ))
+  }
+
+  /// Largest USDC input a sell-side rebalancing swap can take for the given LST
+  /// while staying within sellable collateral and the virtual stablecoin floor.
+  ///
+  /// NB: Applies `rebalance_fee` to `lst_sol_price`.
+  ///
+  /// # Errors
+  /// * Sell-side rebalancing is inactive
+  /// * LST price is outdated
+  /// * Curve construction or pricing failure
+  /// * Virtual stablecoin is below the floor
+  /// * Arithmetic overflow
+  pub fn max_rebalance_sell_usdc(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    rebalance_fee: UFix64<N5>,
+    lst_vault_balance: UFix64<N9>,
+    usdc_usd_price: PriceRange<N9>,
+    virtual_stablecoin_supply_floor: UFix64<N6>,
+  ) -> Result<UFix64<N9>> {
+    // Sellable total collateral as LST capped by vault balance
+    let adjusted_price = lst_sol_price.adjust_price(rebalance_fee)?;
+    let sellable_lst = adjusted_price
+      .convert_sol_to_lst(self.rebalance_sell_liquidity()?, self.clock.epoch())?
+      .min(lst_vault_balance);
+
+    // Convert to USDC with sell curve
+    let lst_sol = adjusted_price.get_epoch_price(self.clock.epoch())?;
+    let curve = self.rebalance_sell_curve()?;
+    let sell_price = curve.price(self.collateral_ratio())?;
+    let usdc_in_raw =
+      LstRebalanceConversion::new(lst_sol, sell_price, usdc_usd_price)
+        .lst_to_usdc(sellable_lst)?;
+
+    // Virtual stablecoin at or above the floor converted to USDC
+    let max_burnable_stablecoin = self
+      .virtual_stablecoin_supply()?
+      .checked_sub(&virtual_stablecoin_supply_floor)
+      .ok_or(VirtualStablecoinBurnLimit)?;
+    let usdc_limit = UsdcStablecoinConversion::new(usdc_usd_price)
+      .stablecoin_to_withdrawal(max_burnable_stablecoin)?;
+
+    Ok(usdc_in_raw.min(usdc_limit))
   }
 
   /// Builds conversion for buy-side LST rebalancing.

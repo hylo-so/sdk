@@ -4,10 +4,12 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::ExchangeContext;
-use crate::conversion::{ExoConversion, ExoRebalanceConversion};
+use crate::conversion::{
+  ExoConversion, ExoRebalanceConversion, UsdcStablecoinConversion,
+};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
-  RebalanceAmountExceeded, RebalanceSwapPnl,
+  RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
@@ -280,6 +282,38 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_usd_price,
       usdc_usd_price,
     ))
+  }
+
+  /// Largest USDC input a sell-side rebalancing swap can take while staying
+  /// within sellable collateral and the virtual stablecoin floor.
+  ///
+  /// # Errors
+  /// * Sell-side rebalancing is inactive
+  /// * Curve construction or pricing failure
+  /// * Virtual stablecoin is below the floor
+  /// * Arithmetic overflow
+  pub fn max_rebalance_sell_usdc(
+    &self,
+    usdc_usd_price: PriceRange<N9>,
+    virtual_stablecoin_supply_floor: UFix64<N6>,
+  ) -> Result<UFix64<N9>> {
+    // Collateral the protocol can sell, priced as USDC via sell curve
+    let sellable_collateral =
+      self.rebalance_sell_liquidity()?.min(self.total_collateral);
+    let curve = self.rebalance_sell_curve()?;
+    let sell_price = curve.price(self.collateral_ratio())?;
+    let conversion = ExoRebalanceConversion::new(sell_price, usdc_usd_price);
+    let usdc_in_raw = conversion.collateral_to_usdc(sellable_collateral)?;
+
+    // Virtual stablecoin at or above the floor converted to USDC
+    let virtual_stablecoin_supply = self.virtual_stablecoin_supply()?;
+    let max_burnable_stablecoin = virtual_stablecoin_supply
+      .checked_sub(&virtual_stablecoin_supply_floor)
+      .ok_or(VirtualStablecoinBurnLimit)?;
+    let usdc_limit = UsdcStablecoinConversion::new(usdc_usd_price)
+      .stablecoin_to_withdrawal(max_burnable_stablecoin)?;
+
+    Ok(usdc_in_raw.min(usdc_limit))
   }
 
   /// Builds conversion for buy side rebalancing
