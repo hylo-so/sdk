@@ -18,6 +18,7 @@ use crate::fees::curve_controller::{
 };
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::lst::sol_price::LstSolPrice;
+use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
@@ -361,14 +362,13 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// * Arithmetic overflow
   pub fn max_rebalance_sell_usdc(
     &self,
-    lst_sol_price: &LstSolPrice,
-    rebalance_fee: UFix64<N5>,
+    stake_pool: SplStakePool,
     lst_vault_balance: UFix64<N9>,
     usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
   ) -> Result<UFix64<N9>> {
     // Sellable total collateral as LST capped by vault balance
-    let adjusted_price = lst_sol_price.adjust_price(rebalance_fee)?;
+    let adjusted_price = stake_pool.true_price()?;
     let sellable_lst = adjusted_price
       .convert_sol_to_lst(self.rebalance_sell_liquidity()?, self.clock.epoch())?
       .min(lst_vault_balance);
