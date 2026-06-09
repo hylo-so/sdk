@@ -352,8 +352,6 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// Largest USDC input a sell-side rebalancing swap can take for the given LST
   /// while staying within sellable collateral and the virtual stablecoin floor.
   ///
-  /// NB: Applies `rebalance_fee` to `lst_sol_price`.
-  ///
   /// # Errors
   /// * Sell-side rebalancing is inactive
   /// * LST price is outdated
@@ -363,12 +361,14 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn max_rebalance_sell_usdc(
     &self,
     stake_pool: SplStakePool,
+    rebalance_fee: UFix64<N5>,
     lst_vault_balance: UFix64<N9>,
     usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
   ) -> Result<UFix64<N9>> {
     // Sellable total collateral as LST capped by vault balance
-    let adjusted_price = stake_pool.true_price()?;
+    let true_price = stake_pool.true_price()?;
+    let adjusted_price = true_price.adjust_price(rebalance_fee)?;
     let sellable_lst = adjusted_price
       .convert_sol_to_lst(self.rebalance_sell_liquidity()?, self.clock.epoch())?
       .min(lst_vault_balance);
