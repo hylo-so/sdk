@@ -221,6 +221,11 @@ pub struct UsdcStablecoinConversion {
 }
 
 impl UsdcStablecoinConversion {
+  #[must_use]
+  pub fn new(usdc_usd_price: PriceRange<N9>) -> UsdcStablecoinConversion {
+    UsdcStablecoinConversion { usdc_usd_price }
+  }
+
   /// USDC deposit to stablecoin amount using lower bound.
   ///
   /// Used for USDC to stablecoin swaps and sell-side collateral swaps to

@@ -157,6 +157,13 @@ impl From<SlippageConfig> for hylo_idl::router::types::SlippageConfig {
   }
 }
 
+impl From<SlippageConfig> for hylo_idl::earn_pool::types::SlippageConfig {
+  fn from(val: SlippageConfig) -> Self {
+    let exchange_sc: hylo_idl::exchange::types::SlippageConfig = val.into();
+    exchange_sc.into()
+  }
+}
+
 impl From<FeePair> for hylo_idl::exchange::types::FeePair {
   fn from(val: FeePair) -> Self {
     hylo_idl::exchange::types::FeePair {

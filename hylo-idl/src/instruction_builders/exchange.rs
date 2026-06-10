@@ -470,6 +470,25 @@ pub fn redeem_stablecoin_exo(
 }
 
 #[must_use]
+pub fn genesis_mint_exo(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::GenesisMintExo,
+) -> Instruction {
+  let accounts = account_builders::genesis_mint_exo(
+    admin,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
@@ -1239,13 +1258,13 @@ pub fn propose_address_update(
     admin,
     hylo: pda::HYLO,
     proposal: pda::address_update_proposal(address_field),
+    new_address,
     system_program: system_program::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   };
   let args = args::ProposeAddressUpdate {
     address_field,
-    new_address,
     ttl_secs,
   };
   Instruction {
@@ -1260,11 +1279,13 @@ pub fn propose_address_update(
 #[must_use]
 pub fn approve_address_update(
   upgrade_authority: Pubkey,
+  new_address: Pubkey,
   address_field: AddressField,
 ) -> Instruction {
   let accounts = accounts::ApproveAddressUpdate {
     upgrade_authority,
     proposal: pda::address_update_proposal(address_field),
+    new_address,
     program_data: pda::EXCHANGE_PROGRAM_DATA,
     hylo_exchange: exchange::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,

@@ -8,11 +8,15 @@ use hylo_core::idl::exchange;
 use hylo_idl::exchange::client::args;
 use hylo_idl::exchange::instruction_builders;
 use hylo_idl::exchange::types::{AddressField, TokenMetadata, UFixValue64};
+use hylo_idl::pda;
+use hylo_idl::tokens::{TokenMint, HYUSD};
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
-use crate::util::{HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE};
+use crate::util::{
+  ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
+};
 
 /// Admin client for the Hylo exchange program. Manages LST
 /// registration, oracle configuration, fee updates, and protocol
@@ -888,6 +892,37 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
+  /// Seeds an empty exo pair with its initial collateral, minting
+  /// levercoin and stablecoin to the dead address.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn genesis_mint_exo(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+    collateral_usd_pyth_feed: Pubkey,
+    args: &args::GenesisMintExo,
+  ) -> Result<SquadsTransactionData> {
+    let vault = squads.vault_pda();
+    let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
+    let dead_levercoin_ata =
+      ata_instruction(&vault, &pda::DEAD, &levercoin_mint);
+    let dead_stablecoin_ata = ata_instruction(&vault, &pda::DEAD, &HYUSD::MINT);
+    let instruction = instruction_builders::genesis_mint_exo(
+      vault,
+      collateral_mint,
+      collateral_usd_pyth_feed,
+      args,
+    );
+    let memo = build_memo("genesis_mint_exo", &instruction);
+    let inner = VersionedTransactionData::new(
+      vec![dead_levercoin_ata, dead_stablecoin_ata, instruction],
+      vec![],
+    );
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
   /// Withdraws accumulated fees to the treasury.
   ///
   /// # Errors
@@ -999,10 +1034,12 @@ impl ExchangeClient {
   pub fn approve_address_update(
     &self,
     squads: &SquadsContext,
+    new_address: Pubkey,
     address_field: AddressField,
   ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::approve_address_update(
       squads.vault_pda(),
+      new_address,
       address_field,
     );
     let memo = build_memo("approve_address_update", &instruction);
@@ -1016,10 +1053,12 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub fn approve_address_update_direct(
     &self,
+    new_address: Pubkey,
     address_field: AddressField,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::approve_address_update(
       self.program.payer(),
+      new_address,
       address_field,
     );
     Ok(VersionedTransactionData::one(instruction))

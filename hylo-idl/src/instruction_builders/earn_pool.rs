@@ -9,7 +9,7 @@ use anchor_spl::{associated_token, token};
 use crate::earn_pool::account_builders;
 use crate::earn_pool::client::{accounts, args};
 use crate::earn_pool::types::TokenMetadata;
-use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
+use crate::tokens::{TokenMint, HYUSD, SHYUSD};
 use crate::{earn_pool, pda};
 
 #[must_use]
@@ -44,9 +44,7 @@ pub fn initialize_earn_pool(
     hylo: pda::HYLO,
     pool_auth: pda::POOL_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
-    levercoin_pool: pda::XSOL_POOL,
     stablecoin_mint: HYUSD::MINT,
-    levercoin_mint: XSOL::MINT,
     associated_token_program: associated_token::ID,
     token_program: token::ID,
     system_program: system_program::ID,

@@ -338,6 +338,28 @@ pub trait ExchangeContext {
     }
   }
 
+  /// Validates `PnL` stablecoin profit against `SellZone2` threshold.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  fn validate_stablecoin_pnl_profit(
+    &self,
+    requested: UFix64<N6>,
+  ) -> Result<UFix64<N6>> {
+    let target = RebalanceMode::SellZone2
+      .active_range()
+      .end()?
+      .checked_convert()
+      .ok_or(MaxMintable)?;
+    let max = max_swappable_stablecoin(
+      target,
+      self.total_value_locked()?,
+      self.virtual_stablecoin_supply()?,
+    )
+    .unwrap_or_default();
+    Ok(requested.min(max))
+  }
+
   /// Validates a stablecoin swap amount against the protocol max.
   ///
   /// # Errors

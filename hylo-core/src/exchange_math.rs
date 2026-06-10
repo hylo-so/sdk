@@ -164,7 +164,7 @@ pub fn next_levercoin_mint_nav(
     let free_collateral =
       collateral_value.checked_sub(&stablecoin_value.checked_convert()?)?;
     let nav = free_collateral.mul_div_ceil(UFix64::one(), levercoin_supply)?;
-    Some(nav)
+    (nav != UFix64::zero()).then_some(nav)
   }
 }
 
@@ -187,7 +187,7 @@ pub fn next_levercoin_redeem_nav(
     let free_collateral =
       collateral_value.checked_sub(&stablecoin_value.checked_convert()?)?;
     let nav = free_collateral.mul_div_floor(UFix64::one(), levercoin_supply)?;
-    Some(nav)
+    (nav != UFix64::zero()).then_some(nav)
   }
 }
 
@@ -376,7 +376,7 @@ mod tests {
 
   #[test]
   fn depeg_stablecoin_redeem_dust() -> Result<()> {
-    // Depeg setup at `$200 / 210 = $0.93`, levercoin should be $0
+    // Zero free collateral has no levercoin NAV.
     let total_sol = UFix64::<N9>::new(1_000_000_000);
     let usd_sol_price = PriceRange::one(UFix64::<N9>::new(200_000_000_000));
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
@@ -396,15 +396,14 @@ mod tests {
       amount_stablecoin,
       stablecoin_nav,
       lever_supply,
-    )
-    .ok_or(LevercoinNav)?;
-    assert_eq!(UFix64::zero(), levercoin_nav);
+    );
+    assert_eq!(None, levercoin_nav);
     Ok(())
   }
 
   #[test]
   fn depeg_stablecoin_mint_dust() -> Result<()> {
-    // Depeg setup at `$200 / 210 = $0.93`, levercoin should be $0
+    // Upper price + ceil keeps mint NAV dust-positive where redeem is None.
     let total_sol = UFix64::<N9>::new(1_000_000_000);
     let usd_sol_price = PriceRange::one(UFix64::<N9>::new(200_000_000_000));
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
@@ -418,15 +417,14 @@ mod tests {
       depeg_stablecoin_nav(total_sol, usd_sol_price.lower, amount_stablecoin)?;
     assert!(stablecoin_nav < UFix64::one());
 
-    let levercoin_nav = next_levercoin_redeem_nav(
+    let levercoin_nav = next_levercoin_mint_nav(
       total_sol,
       usd_sol_price,
       amount_stablecoin,
       stablecoin_nav,
       lever_supply,
-    )
-    .ok_or(LevercoinNav)?;
-    assert_eq!(UFix64::zero(), levercoin_nav);
+    );
+    assert_eq!(Some(UFix64::new(1000)), levercoin_nav);
     Ok(())
   }
 

@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::ops::{Bound, RangeBounds};
 
 use anchor_lang::prelude::*;
@@ -26,6 +27,19 @@ pub enum RebalanceMode {
   Neutral,
   BuyZone1,
   BuyZone2,
+}
+
+impl Display for RebalanceMode {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    match self {
+      RebalanceMode::Depeg => f.write_str("Depeg"),
+      RebalanceMode::SellZone2 => f.write_str("SellZone2"),
+      RebalanceMode::SellZone1 => f.write_str("SellZone1"),
+      RebalanceMode::Neutral => f.write_str("Neutral"),
+      RebalanceMode::BuyZone1 => f.write_str("BuyZone1"),
+      RebalanceMode::BuyZone2 => f.write_str("BuyZone2"),
+    }
+  }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

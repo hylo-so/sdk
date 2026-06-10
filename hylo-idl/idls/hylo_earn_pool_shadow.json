@@ -463,22 +463,6 @@
           }
         },
         {
-          "name": "levercoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  120,
-                  83,
-                  79,
-                  76
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "levercoin_pool",
           "writable": true,
           "pda": {
@@ -569,12 +553,65 @@
           }
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "admin_levercoin_ta",
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  120,
+                  83,
+                  79,
+                  76
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                201,
+                14,
+                79,
+                100,
+                183,
+                39,
+                83,
+                147,
+                61,
+                13,
+                250,
+                91,
+                190,
+                238,
+                14,
+                23,
+                217,
+                217,
+                112,
+                162,
+                80,
+                102,
+                233,
+                10,
+                79,
+                26,
+                105,
+                133,
+                239,
+                241,
+                216
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -793,96 +830,6 @@
           }
         },
         {
-          "name": "levercoin_pool",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_auth"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "levercoin_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
           "name": "stablecoin_mint",
           "pda": {
             "seeds": [
@@ -894,59 +841,6 @@
                   85,
                   83,
                   68
-                ]
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                245,
-                201,
-                14,
-                79,
-                100,
-                183,
-                39,
-                83,
-                147,
-                61,
-                13,
-                250,
-                91,
-                190,
-                238,
-                14,
-                23,
-                217,
-                217,
-                112,
-                162,
-                80,
-                102,
-                233,
-                10,
-                79,
-                26,
-                105,
-                133,
-                239,
-                241,
-                216
-              ]
-            }
-          }
-        },
-        {
-          "name": "levercoin_mint",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  120,
-                  83,
-                  79,
-                  76
                 ]
               }
             ],
@@ -1969,6 +1863,16 @@
         {
           "name": "amount_stablecoin",
           "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
         }
       ],
       "returns": {
@@ -2461,6 +2365,16 @@
         {
           "name": "amount_lp_token",
           "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
         }
       ],
       "returns": {
@@ -2581,43 +2495,33 @@
   "errors": [
     {
       "code": 6000,
-      "name": "DepositDisabled",
-      "msg": "Deposits to pool disabled due to active rebalancing."
-    },
-    {
-      "code": 6001,
       "name": "ZeroLpDeposit",
       "msg": "Cannot process deposit yielding zero LP tokens."
     },
     {
-      "code": 6002,
+      "code": 6001,
       "name": "ZeroTokenWithdrawal",
       "msg": "Cannot process withdrawal resulting in zero protocol tokens."
     },
     {
-      "code": 6003,
+      "code": 6002,
       "name": "AdminNoop",
       "msg": "Cannot update configuration with identical value."
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "ProtocolPaused",
       "msg": "Protocol operations have been paused by admin."
     },
     {
-      "code": 6005,
-      "name": "LstPairPaused",
-      "msg": "Trading for the LST pair has been paused by admin."
-    },
-    {
-      "code": 6006,
-      "name": "LevercoinPoolNonzero",
-      "msg": "Unable to deprecate levercoin pool due to nonzero balance."
-    },
-    {
-      "code": 6007,
+      "code": 6004,
       "name": "EarnPoolPaused",
       "msg": "Earn pool operations have been paused."
+    },
+    {
+      "code": 6005,
+      "name": "DepositDisabled",
+      "msg": "Earn pool empty due to drawdown. Deposits are temporarily disabled."
     }
   ],
   "types": [
@@ -3026,6 +2930,33 @@
           },
           {
             "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SlippageConfig",
+      "docs": [
+        "Client specified slippage tolerance paired with expected token amount."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "expected_token_out",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "slippage_tolerance",
             "type": {
               "defined": {
                 "name": "UFixValue64"

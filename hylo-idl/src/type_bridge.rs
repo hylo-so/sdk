@@ -84,3 +84,16 @@ impl From<crate::exchange::types::SlippageConfig>
     }
   }
 }
+
+impl From<crate::exchange::types::SlippageConfig>
+  for crate::earn_pool::types::SlippageConfig
+{
+  fn from(val: crate::exchange::types::SlippageConfig) -> Self {
+    let expected: UFixValue64 = val.expected_token_out.into();
+    let tolerance: UFixValue64 = val.slippage_tolerance.into();
+    crate::earn_pool::types::SlippageConfig {
+      expected_token_out: expected.into(),
+      slippage_tolerance: tolerance.into(),
+    }
+  }
+}

@@ -235,5 +235,15 @@ pub fn build_test_router_client() -> Result<RouterClient> {
 /// Builds ATA creation instruction for a user and mint.
 #[must_use]
 pub fn user_ata_instruction(user: &Pubkey, mint: &Pubkey) -> Instruction {
-  create_associated_token_account_idempotent(user, user, mint, &token::ID)
+  ata_instruction(user, user, mint)
+}
+
+/// Builds ATA creation instruction with separate payer and owner.
+#[must_use]
+pub fn ata_instruction(
+  payer: &Pubkey,
+  owner: &Pubkey,
+  mint: &Pubkey,
+) -> Instruction {
+  create_associated_token_account_idempotent(payer, owner, mint, &token::ID)
 }

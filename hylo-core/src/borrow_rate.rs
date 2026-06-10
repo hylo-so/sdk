@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
+use fix::typenum::Z0;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError::{BorrowRateApply, BorrowRateValidation};
@@ -26,7 +27,7 @@ pub struct BorrowRateConfig {
 const MAX_RATE: UFix64<N9> = UFix64::constant(600_000);
 
 /// Maximum fee exacted against borrow rate
-const MAX_FEE: UFix64<N4> = UFix64::constant(10_000);
+const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
 
 impl BorrowRateConfig {
   #[must_use]
@@ -51,13 +52,19 @@ impl BorrowRateConfig {
   }
 
   /// Applies the borrow rate to a USD amount.
+  /// Multiplies by elapsed epochs to cover missed harvests.
   ///
   /// # Errors
   /// * Arithmetic overflow
-  pub fn apply_borrow_rate(&self, amount: UFix64<N9>) -> Result<UFix64<N9>> {
+  pub fn apply_borrow_rate(
+    &self,
+    amount: UFix64<N9>,
+    elapsed_epochs: UFix64<Z0>,
+  ) -> Result<UFix64<N9>> {
     let rate = self.rate()?;
     amount
       .mul_div_floor(rate, UFix64::one())
+      .and_then(|base| base.checked_mul(&elapsed_epochs))
       .ok_or(BorrowRateApply.into())
   }
 
@@ -102,8 +109,17 @@ mod tests {
   fn apply_borrow_rate_7_percent_annual() -> Result<()> {
     let config = test_config();
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
-    let borrow = config.apply_borrow_rate(collateral)?;
+    let borrow = config.apply_borrow_rate(collateral, UFix64::constant(1))?;
     assert_eq!(borrow, UFix64::new(384_620_000_000));
+    Ok(())
+  }
+
+  #[test]
+  fn apply_borrow_rate_multiple_epochs() -> Result<()> {
+    let config = test_config();
+    let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
+    let borrow = config.apply_borrow_rate(collateral, UFix64::constant(5))?;
+    assert_eq!(borrow, UFix64::new(2_374_197_509_495));
     Ok(())
   }
 

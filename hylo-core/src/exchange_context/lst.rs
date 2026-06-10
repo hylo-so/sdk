@@ -4,10 +4,12 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::ExchangeContext;
-use crate::conversion::{Conversion, LstRebalanceConversion};
+use crate::conversion::{
+  Conversion, LstRebalanceConversion, UsdcStablecoinConversion,
+};
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
-  RebalanceAmountExceeded, RebalanceSwapPnl,
+  RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
@@ -16,6 +18,7 @@ use crate::fees::curve_controller::{
 };
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::lst::sol_price::LstSolPrice;
+use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
@@ -315,21 +318,17 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     usdc_amount: UFix64<N9>,
   ) -> Result<LstRebalanceConversion> {
     let sol_spot_price = self.collateral_oracle_price().spot;
-    let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
-    let lst_delta = LstRebalanceConversion::new(
-      lst_sol_price,
-      sol_spot_price,
-      usdc_usd_price,
-    )
-    .usdc_to_lst(usdc_amount)?;
-    let sol_delta = lst_delta
-      .mul_div_floor(lst_sol_price, UFix64::one())
-      .ok_or(RebalanceAmountExceeded)?;
+    let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
+    let lst_delta =
+      LstRebalanceConversion::new(lst_sol, sol_spot_price, usdc_usd_price)
+        .usdc_to_lst(usdc_amount)?;
+    let sol_delta =
+      lst_sol_price.convert_lst_to_sol(lst_delta, self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_delta)
       .ok_or(RebalanceAmountExceeded)?;
-    let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol_price)
+    let stablecoin_delta = Conversion::spot(sol_spot_price, lst_sol)
       .lst_to_token(lst_delta, self.stablecoin_nav()?)?;
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
@@ -337,13 +336,51 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .ok_or(DestinationStablecoin)?;
     let projected_cr =
       collateral_ratio(new_total_sol, sol_spot_price, new_stablecoin)?;
-    let curve = self.rebalance_sell_curve()?;
-    let sol_usd_price = curve.price(projected_cr)?;
+    let sol_usd_price = self.rebalance_sell_curve()?.price(projected_cr)?;
     Ok(LstRebalanceConversion::new(
-      lst_sol_price,
+      lst_sol,
       sol_usd_price,
       usdc_usd_price,
     ))
+  }
+
+  /// Maximum USDC input for a sell-side rebalancing swap.
+  ///
+  /// # Errors
+  /// * LST price is outdated
+  /// * Virtual stablecoin is below the floor
+  /// * Arithmetic overflow
+  pub fn max_rebalance_sell_usdc(
+    &self,
+    stake_pool: SplStakePool,
+    rebalance_fee: UFix64<N5>,
+    lst_vault_balance: UFix64<N9>,
+    usdc_usd_price: PriceRange<N9>,
+    virtual_stablecoin_supply_floor: UFix64<N6>,
+  ) -> Result<UFix64<N9>> {
+    // Sellable total collateral as LST capped by vault balance
+    let true_price = stake_pool.true_price()?;
+    let adjusted_price = true_price.adjust_price(rebalance_fee)?;
+    let sellable_lst = adjusted_price
+      .convert_sol_to_lst(self.rebalance_sell_liquidity()?, self.clock.epoch())?
+      .min(lst_vault_balance);
+
+    // Convert to USDC at spot
+    let lst_sol = adjusted_price.get_epoch_price(self.clock.epoch())?;
+    let sol_spot_price = self.collateral_oracle_price().spot;
+    let usdc_in_raw =
+      LstRebalanceConversion::new(lst_sol, sol_spot_price, usdc_usd_price)
+        .lst_to_usdc(sellable_lst)?;
+
+    // Virtual stablecoin at or above the floor converted to USDC
+    let max_burnable_stablecoin = self
+      .virtual_stablecoin_supply()?
+      .checked_sub(&virtual_stablecoin_supply_floor)
+      .ok_or(VirtualStablecoinBurnLimit)?;
+    let usdc_limit = UsdcStablecoinConversion::new(usdc_usd_price)
+      .stablecoin_to_withdrawal(max_burnable_stablecoin)?;
+
+    Ok(usdc_in_raw.min(usdc_limit))
   }
 
   /// Builds conversion for buy-side LST rebalancing.

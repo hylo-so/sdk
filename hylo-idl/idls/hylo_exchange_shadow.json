@@ -198,6 +198,12 @@
           }
         },
         {
+          "name": "new_address",
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
           "name": "program_data"
         },
         {
@@ -1938,6 +1944,360 @@
       }
     },
     {
+      "name": "genesis_mint_exo",
+      "discriminator": [
+        140,
+        83,
+        64,
+        243,
+        219,
+        44,
+        0,
+        222
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "dead",
+          "address": "DEAUr88gdggjoQnuAZMf5qs9FKSj8itpZxTK2PZVve6"
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "levercoin_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "levercoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "vault_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "admin_collateral_ta",
+          "writable": true
+        },
+        {
+          "name": "dead_levercoin_ta",
+          "writable": true
+        },
+        {
+          "name": "dead_stablecoin_ta",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "levercoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_usd_pyth_feed"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "GenesisMintExoEvent"
+        }
+      }
+    },
+    {
       "name": "harvest_borrow_rate",
       "discriminator": [
         164,
@@ -2450,7 +2810,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "token_program",
@@ -2806,7 +3166,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "lst_registry",
@@ -6557,6 +6917,9 @@
           }
         },
         {
+          "name": "new_address"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -6601,10 +6964,6 @@
               "name": "AddressField"
             }
           }
-        },
-        {
-          "name": "new_address",
-          "type": "pubkey"
         },
         {
           "name": "ttl_secs",
@@ -9191,10 +9550,6 @@
           }
         },
         {
-          "name": "paused",
-          "type": "bool"
-        },
-        {
           "name": "levercoin_market_cap_limit",
           "type": {
             "defined": {
@@ -10088,7 +10443,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -10447,7 +10802,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -11180,7 +11535,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -12372,7 +12727,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -13120,7 +13475,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -13807,7 +14162,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
         },
         {
           "name": "event_authority",
@@ -17219,6 +17574,19 @@
       ]
     },
     {
+      "name": "GenesisMintExoEvent",
+      "discriminator": [
+        13,
+        215,
+        102,
+        188,
+        148,
+        156,
+        165,
+        145
+      ]
+    },
+    {
       "name": "HarvestBorrowRateEvent",
       "discriminator": [
         93,
@@ -17933,113 +18301,143 @@
     },
     {
       "code": 6033,
+      "name": "BorrowRateHarvestEpochUnderflow",
+      "msg": "Underflow while computing elapsed epochs for borrow rate harvest."
+    },
+    {
+      "code": 6034,
       "name": "LstVirtualStablecoinAlreadyInitialized",
       "msg": "Virtual stablecoin already initialized for LSTs."
     },
     {
-      "code": 6034,
+      "code": 6035,
       "name": "AdminNoop",
       "msg": "Cannot update configuration with identical value."
     },
     {
-      "code": 6035,
+      "code": 6036,
       "name": "InsufficientLiquidity",
       "msg": "Insufficient liquidity to complete swap."
     },
     {
-      "code": 6036,
+      "code": 6037,
       "name": "RebalanceBuyTarget",
       "msg": "Collateral amount exceeds rebalancing buy target."
     },
     {
-      "code": 6037,
+      "code": 6038,
       "name": "ProtocolPaused",
       "msg": "Protocol operations have been paused by admin."
     },
     {
-      "code": 6038,
+      "code": 6039,
       "name": "LstPairPaused",
       "msg": "Trading for the LST pair has been paused by admin."
     },
     {
-      "code": 6039,
+      "code": 6040,
       "name": "ExoPairPaused",
       "msg": "Trading for this exo pair has been paused by admin."
     },
     {
-      "code": 6040,
+      "code": 6041,
       "name": "UsdcPairPaused",
       "msg": "Trading with USDC has been paused by admin."
     },
     {
-      "code": 6041,
+      "code": 6042,
       "name": "RebalanceSellInactive",
       "msg": "Sell-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6042,
+      "code": 6043,
       "name": "RebalanceBuyInactive",
       "msg": "Buy-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6043,
+      "code": 6044,
       "name": "ExoMintNotInAllowlist",
       "msg": "Mint is not in the exogenous collateral allowlist."
     },
     {
-      "code": 6044,
+      "code": 6045,
       "name": "AddressChangeExpired",
       "msg": "Address change proposal has expired."
     },
     {
-      "code": 6045,
+      "code": 6046,
       "name": "AddressChangeTtlInvalid",
       "msg": "Address change proposal's TTL not in configured range."
     },
     {
-      "code": 6046,
+      "code": 6047,
       "name": "AddressChangeNotApproved",
       "msg": "Address change proposal has not been approved."
     },
     {
-      "code": 6047,
+      "code": 6048,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
     },
     {
-      "code": 6048,
+      "code": 6049,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
     },
     {
-      "code": 6049,
+      "code": 6050,
       "name": "TokenAmountPrecisionError",
       "msg": "Failed while converting precision for a token amount."
     },
     {
-      "code": 6050,
+      "code": 6051,
       "name": "SettleVirtualStablecoinUnderflow",
       "msg": "Underflow while computing virtual stablecoin delta."
     },
     {
-      "code": 6051,
+      "code": 6052,
       "name": "SettleVirtualStablecoinConversion",
       "msg": "Underflow while converting TVL to stablecoin."
     },
     {
-      "code": 6052,
+      "code": 6053,
       "name": "SettleVirtualStablecoinNoop",
       "msg": "Virtual stablecoin settlement noop: nothing to drawdown or repay."
     },
     {
-      "code": 6053,
+      "code": 6054,
       "name": "SettleRebalancePnlDisabled",
       "msg": "Rebalance PnL settlement disabled in Depeg mode."
     },
     {
-      "code": 6054,
+      "code": 6055,
       "name": "DrawdownNotRepaid",
       "msg": "Operation disabled until pool drawdown is repaid."
+    },
+    {
+      "code": 6056,
+      "name": "LstStakePoolNotSupported",
+      "msg": "LST stake pool is not supported."
+    },
+    {
+      "code": 6057,
+      "name": "InsufficientEarnPoolLiquidity",
+      "msg": "Earn pool does not have enough liquidity to absorb rebalance loss."
+    },
+    {
+      "code": 6058,
+      "name": "ExoGenesisConstraints",
+      "msg": "Exo pair genesis mint constraints not met."
+    },
+    {
+      "code": 6059,
+      "name": "ExoGenesisCollateralRatio",
+      "msg": "Error or constraint not met for collateral ratio for genesis."
+    },
+    {
+      "code": 6060,
+      "name": "ExoPairZeroVirtualStablecoin",
+      "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
     }
   ],
   "types": [
@@ -18553,11 +18951,19 @@
             }
           },
           {
+            "name": "virtual_stablecoin_supply_floor",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                100
+                91
               ]
             }
           }
@@ -18587,6 +18993,62 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GenesisMintExoEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "exo_pair",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_deposited",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "levercoin_minted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_minted",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "collateral_ratio",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "collateral_usd_price",
+            "type": {
+              "defined": {
+                "name": "OraclePriceEvent"
               }
             }
           }
@@ -21022,6 +21484,16 @@
         ]
       },
       "value": "[97, 100, 100, 114, 101, 115, 115, 95, 117, 112, 100, 97, 116, 101, 95, 112, 114, 111, 112, 111, 115, 97, 108]"
+    },
+    {
+      "name": "DEAD",
+      "type": {
+        "array": [
+          "u8",
+          4
+        ]
+      },
+      "value": "[100, 101, 97, 100]"
     },
     {
       "name": "EVENT_AUTH",
