@@ -265,20 +265,6 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let collateral_delta =
       ExoRebalanceConversion::new(spot_price, usdc_usd_price)
         .usdc_to_collateral(usdc_amount)?;
-    let collateral_usd_price = self.projected_sell_price(collateral_delta)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
-  }
-
-  /// Sell-curve EXO/USD price at the CR projected after selling
-  /// `collateral_delta`.
-  fn projected_sell_price(
-    &self,
-    collateral_delta: UFix64<N9>,
-  ) -> Result<UFix64<N9>> {
-    let spot_price = self.collateral_oracle_price().spot;
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_delta)
@@ -290,15 +276,18 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .checked_sub(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
     let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
-    self.rebalance_sell_curve()?.price(projected_cr)
+    let collateral_usd_price =
+      self.rebalance_sell_curve()?.price(projected_cr)?;
+    Ok(ExoRebalanceConversion::new(
+      collateral_usd_price,
+      usdc_usd_price,
+    ))
   }
 
   /// Largest USDC input a sell-side rebalancing swap can take while staying
   /// within sellable collateral and the virtual stablecoin floor.
   ///
   /// # Errors
-  /// * Sell-side rebalancing is inactive
-  /// * Curve construction or pricing failure
   /// * Virtual stablecoin is below the floor
   /// * Arithmetic overflow
   pub fn max_rebalance_sell_usdc(
@@ -306,11 +295,11 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
   ) -> Result<UFix64<N9>> {
-    // Collateral the protocol can sell, priced as USDC via sell curve
+    // Collateral the protocol can sell, priced as USDC at spot
     let sellable_collateral =
       self.rebalance_sell_liquidity()?.min(self.total_collateral);
-    let sell_price = self.projected_sell_price(sellable_collateral)?;
-    let conversion = ExoRebalanceConversion::new(sell_price, usdc_usd_price);
+    let spot_price = self.collateral_oracle_price().spot;
+    let conversion = ExoRebalanceConversion::new(spot_price, usdc_usd_price);
     let usdc_in_raw = conversion.collateral_to_usdc(sellable_collateral)?;
 
     // Virtual stablecoin at or above the floor converted to USDC
