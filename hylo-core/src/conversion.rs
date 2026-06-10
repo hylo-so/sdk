@@ -221,7 +221,6 @@ pub struct UsdcStablecoinConversion {
 }
 
 impl UsdcStablecoinConversion {
-  /// Construct USDC <-> stablecoin conversion.
   #[must_use]
   pub fn new(usdc_usd_price: PriceRange<N9>) -> UsdcStablecoinConversion {
     UsdcStablecoinConversion { usdc_usd_price }

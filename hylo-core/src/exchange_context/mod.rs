@@ -285,7 +285,8 @@ pub trait ExchangeContext {
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 
-  /// Maximum mintable stablecoin before
+  /// Maximum mintable stablecoin before hitting the lowest CR
+  /// threshold.
   ///
   /// # Errors
   /// * Arithmetic overflow
@@ -356,11 +357,7 @@ pub trait ExchangeContext {
       self.virtual_stablecoin_supply()?,
     )
     .unwrap_or_default();
-    if requested <= max {
-      Ok(requested)
-    } else {
-      Ok(max)
-    }
+    Ok(requested.min(max))
   }
 
   /// Validates a stablecoin swap amount against the protocol max.

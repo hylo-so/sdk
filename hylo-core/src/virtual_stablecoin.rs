@@ -70,8 +70,8 @@ impl VirtualStablecoin {
     Ok(())
   }
 
-  /// Decreases the supply of the virtual stablecoin, preserving the given
-  /// supply limit.
+  /// Decreases the supply of the virtual stablecoin, keeping it at or
+  /// above `limit`.
   ///
   /// # Errors
   /// * State validation

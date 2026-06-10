@@ -284,8 +284,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     ))
   }
 
-  /// Largest USDC input a sell-side rebalancing swap can take while staying
-  /// within sellable collateral and the virtual stablecoin floor.
+  /// Maximum USDC input for a sell-side rebalancing swap.
   ///
   /// # Errors
   /// * Virtual stablecoin is below the floor

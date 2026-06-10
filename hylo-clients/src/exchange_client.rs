@@ -892,8 +892,8 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Genesis mint for an exo pair: seeds an empty, paused pair with its
-  /// initial collateral, minting levercoin and stablecoin to the dead address.
+  /// Seeds an empty exo pair with its initial collateral, minting
+  /// levercoin and stablecoin to the dead address.
   ///
   /// # Errors
   /// * Failed to build transaction instructions

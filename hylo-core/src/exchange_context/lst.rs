@@ -344,8 +344,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     ))
   }
 
-  /// Largest USDC input a sell-side rebalancing swap can take for the given LST
-  /// while staying within sellable collateral and the virtual stablecoin floor.
+  /// Maximum USDC input for a sell-side rebalancing swap.
   ///
   /// # Errors
   /// * LST price is outdated

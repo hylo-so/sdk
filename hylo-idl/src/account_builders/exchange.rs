@@ -307,7 +307,6 @@ pub fn redeem_stablecoin_exo(
   }
 }
 
-/// Genesis mint seeding an empty exo pair with its initial collateral.
 #[must_use]
 pub fn genesis_mint_exo(
   admin: Pubkey,

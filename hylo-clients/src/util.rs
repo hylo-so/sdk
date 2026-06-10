@@ -238,8 +238,7 @@ pub fn user_ata_instruction(user: &Pubkey, mint: &Pubkey) -> Instruction {
   ata_instruction(user, user, mint)
 }
 
-/// Builds an idempotent ATA creation instruction where the payer and the
-/// token account owner may differ.
+/// Builds ATA creation instruction with separate payer and owner.
 #[must_use]
 pub fn ata_instruction(
   payer: &Pubkey,
