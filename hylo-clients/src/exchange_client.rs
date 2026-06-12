@@ -929,18 +929,15 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub fn withdraw_fees(
     &self,
-    squads: &SquadsContext,
     treasury: Pubkey,
     fee_token_mint: Pubkey,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::withdraw_fees(
-      squads.vault_pda(),
+      self.program.payer(),
       treasury,
       fee_token_mint,
     );
-    let memo = build_memo("withdraw_fees", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Harvests the borrow rate for an exo collateral.
