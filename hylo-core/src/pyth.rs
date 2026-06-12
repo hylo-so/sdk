@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
-use hylo_idl::pda::{BTC_USD_PYTH_FEED, SOL_USD_PYTH_FEED, USDC_USD_PYTH_FEED};
 use pyth_solana_receiver_sdk::price_update::{
   FeedId, PriceUpdateV2, VerificationLevel,
 };
