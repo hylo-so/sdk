@@ -2555,11 +2555,12 @@ dependencies = [
 
 [[package]]
 name = "pyth-solana-receiver-sdk"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99df99fe99bd2f286bf3ee6364e611ef4d91a7b330c863dfc32f06c44e863c2f"
+checksum = "209892afe495433c5eae9406a76eedc1409100614727495348abdc91916154dd"
 dependencies = [
  "anchor-lang",
+ "cfg-if",
  "hex",
  "pythnet-sdk",
 ]
