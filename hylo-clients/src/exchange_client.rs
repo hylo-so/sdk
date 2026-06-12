@@ -923,7 +923,7 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Withdraws accumulated fees to the treasury. Permissionless.
+  /// Withdraws accumulated fees to the treasury.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
