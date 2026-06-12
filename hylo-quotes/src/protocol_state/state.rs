@@ -13,7 +13,7 @@ use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::conversion::UsdcStablecoinConversion;
 use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
-use hylo_core::fees::controller::{FeeExtract, LevercoinFees};
+use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
@@ -33,7 +33,7 @@ pub struct UsdcExchangeState {
   /// USDC/USD oracle price range
   pub usdc_usd_price: hylo_core::pyth::PriceRange<N9>,
   /// Swap fee extracted on USDC operations
-  pub swap_fee: UFix64<N9>,
+  pub swap_fee: UFix64<N4>,
 }
 
 impl UsdcExchangeState {
@@ -43,17 +43,6 @@ impl UsdcExchangeState {
     UsdcStablecoinConversion {
       usdc_usd_price: self.usdc_usd_price,
     }
-  }
-
-  /// Applies the swap fee to an amount at any precision.
-  ///
-  /// # Errors
-  /// * Arithmetic failure in fee extraction
-  pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>>
-  where
-    UFix64<N9>: FixExt,
-  {
-    Ok(FeeExtract::new(self.swap_fee, amount)?)
   }
 }
 
