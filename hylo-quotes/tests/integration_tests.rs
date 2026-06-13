@@ -83,6 +83,7 @@ fn assert_quotes_match(
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
+#[ignore = "re-enable after mainnet is on v2"]
 async fn jitosol_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -128,6 +129,7 @@ async fn hyusd_to_jitosol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
+#[ignore = "re-enable after mainnet is on v2"]
 async fn jitosol_to_xsol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(

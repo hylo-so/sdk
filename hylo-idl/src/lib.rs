@@ -72,11 +72,11 @@ mod tests {
   mod expected {
     use super::*;
     pub const EARN_POOL: Pubkey =
-      pubkey!("HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk");
+      pubkey!("HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N");
     pub const EXCHANGE: Pubkey =
-      pubkey!("HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH");
+      pubkey!("hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ");
     pub const ROUTER: Pubkey =
-      pubkey!("hyshRoSsynsCxF5Dt9KnHc5pS1u8saVT79NywtWUSsv");
+      pubkey!("HyshRo2hkqXGcyCfKU22zhSBPMwokmAnEoxDGeVQz7d");
   }
 
   #[test]
