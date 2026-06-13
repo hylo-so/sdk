@@ -1,5 +1,5 @@
 {
-  "address": "HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH",
+  "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ",
   "metadata": {
     "name": "hylo_exchange",
     "version": "1.0.0",
@@ -208,7 +208,7 @@
         },
         {
           "name": "hylo_exchange",
-          "address": "HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH"
+          "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ"
         },
         {
           "name": "event_authority",
@@ -3887,7 +3887,7 @@
         },
         {
           "name": "hylo_exchange",
-          "address": "HYSheX1FkQgYvzUsyPEuzXrGp2tNAWMvbuNVFETXGAXH"
+          "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ"
         }
       ],
       "args": [
