@@ -84,7 +84,7 @@ mod tests {
     "update_lst_swap_fee E9wxi5EQDPtc5u9aSYfWY4zh6X8HYJufLN1ZNqXfdT5v";
   #[cfg(feature = "shadow")]
   const MEMO_SNAPSHOT: &str =
-    "update_lst_swap_fee 6ea7D3x7LqAgzG27fCA96QdwUViiERDC5DrezN1njob2";
+    "update_lst_swap_fee 2bVnmoCxWZGTiK3as1KVecSzDakkst9Q4MZMtW3H4A9p";
 
   #[test]
   fn memo_snapshot() {
