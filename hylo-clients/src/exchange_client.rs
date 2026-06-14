@@ -324,6 +324,122 @@ impl ExchangeClient {
       instruction_builders::update_lst_swap_fee(self.program.payer(), args);
     Ok(VersionedTransactionData::one(instruction))
   }
+
+  /// Updates the protocol admin authority.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_admin(
+    &self,
+    upgrade_authority: Pubkey,
+    args: &args::UpdateAdmin,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_admin(
+      self.program.payer(),
+      upgrade_authority,
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the protocol treasury authority.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_treasury(
+    &self,
+    args: &args::UpdateTreasury,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_treasury(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the levercoin fee configuration.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_levercoin_fees(
+    &self,
+    args: &args::UpdateLevercoinFees,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_levercoin_fees(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the stablecoin fee configuration.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_stablecoin_fees(
+    &self,
+    args: &args::UpdateStablecoinFees,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_stablecoin_fees(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the oracle staleness interval.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_oracle_interval(
+    &self,
+    args: &args::UpdateOracleInterval,
+  ) -> Result<VersionedTransactionData> {
+    let instruction =
+      instruction_builders::update_oracle_interval(self.program.payer(), args);
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the stability mode thresholds.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_stability_thresholds(
+    &self,
+    args: &args::UpdateStabilityThresholds,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_stability_thresholds(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Updates the yield harvest configuration.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn update_yield_harvest_config(
+    &self,
+    args: &args::UpdateYieldHarvestConfig,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::update_yield_harvest_config(
+      self.program.payer(),
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Sweeps accrued protocol fees to the treasury. Permissionless.
+  ///
+  /// # Errors
+  /// - Failed to build transaction instructions
+  pub fn withdraw_fees(
+    &self,
+    treasury: Pubkey,
+    fee_token_mint: Pubkey,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::withdraw_fees(
+      self.program.payer(),
+      treasury,
+      fee_token_mint,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
 }
 
 #[async_trait::async_trait]

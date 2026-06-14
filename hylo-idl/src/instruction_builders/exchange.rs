@@ -379,3 +379,148 @@ pub fn update_lst_swap_fee(
     data: args.data(),
   }
 }
+
+#[must_use]
+pub fn update_admin(
+  payer: Pubkey,
+  upgrade_authority: Pubkey,
+  args: &args::UpdateAdmin,
+) -> Instruction {
+  let accounts = accounts::UpdateAdmin {
+    payer,
+    upgrade_authority,
+    hylo: *pda::HYLO,
+    program_data: *pda::EXCHANGE_PROGRAM_DATA,
+    hylo_exchange: exchange::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_treasury(
+  admin: Pubkey,
+  args: &args::UpdateTreasury,
+) -> Instruction {
+  let accounts = accounts::UpdateTreasury {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_levercoin_fees(
+  admin: Pubkey,
+  args: &args::UpdateLevercoinFees,
+) -> Instruction {
+  let accounts = accounts::UpdateLevercoinFees {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_stablecoin_fees(
+  admin: Pubkey,
+  args: &args::UpdateStablecoinFees,
+) -> Instruction {
+  let accounts = accounts::UpdateStablecoinFees {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_oracle_interval(
+  admin: Pubkey,
+  args: &args::UpdateOracleInterval,
+) -> Instruction {
+  let accounts = accounts::UpdateOracleInterval {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_stability_thresholds(
+  admin: Pubkey,
+  args: &args::UpdateStabilityThresholds,
+) -> Instruction {
+  let accounts = accounts::UpdateStabilityThresholds {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_yield_harvest_config(
+  admin: Pubkey,
+  args: &args::UpdateYieldHarvestConfig,
+) -> Instruction {
+  let accounts = accounts::UpdateYieldHarvestConfig {
+    admin,
+    hylo: *pda::HYLO,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn withdraw_fees(
+  payer: Pubkey,
+  treasury: Pubkey,
+  fee_token_mint: Pubkey,
+) -> Instruction {
+  let accounts =
+    account_builders::withdraw_fees(payer, treasury, fee_token_mint);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args::WithdrawFees {}.data(),
+  }
+}

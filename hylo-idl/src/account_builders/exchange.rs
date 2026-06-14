@@ -4,7 +4,7 @@ use anchor_spl::{associated_token, token};
 
 use crate::exchange::client::accounts::{
   MintLevercoin, MintStablecoin, RedeemLevercoin, RedeemStablecoin,
-  SwapLeverToStable, SwapLst, SwapStableToLever,
+  SwapLeverToStable, SwapLst, SwapStableToLever, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{ata, exchange, pda};
@@ -171,6 +171,28 @@ pub fn swap_lst(user: Pubkey, lst_a: Pubkey, lst_b: Pubkey) -> SwapLst {
     fee_vault: pda::fee_vault(lst_a),
     token_program: token::ID,
     associated_token_program: associated_token::ID,
+    event_authority: *pda::EXCHANGE_EVENT_AUTH,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn withdraw_fees(
+  payer: Pubkey,
+  treasury: Pubkey,
+  fee_token_mint: Pubkey,
+) -> WithdrawFees {
+  WithdrawFees {
+    payer,
+    treasury,
+    hylo: *pda::HYLO,
+    fee_auth: pda::fee_auth(fee_token_mint),
+    fee_vault: pda::fee_vault(fee_token_mint),
+    treasury_ata: ata!(treasury, fee_token_mint),
+    fee_token_mint,
+    associated_token_program: associated_token::ID,
+    token_program: token::ID,
+    system_program: system_program::ID,
     event_authority: *pda::EXCHANGE_EVENT_AUTH,
     program: exchange::ID,
   }
