@@ -1,5 +1,5 @@
 {
-  "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn",
+  "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ",
   "metadata": {
     "name": "hylo_exchange",
     "version": "0.1.4",
@@ -650,7 +650,7 @@
         },
         {
           "name": "hylo_stability_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "lst_registry",
@@ -1082,7 +1082,7 @@
         },
         {
           "name": "hylo_exchange",
-          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+          "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ"
         }
       ],
       "args": [
@@ -4320,7 +4320,7 @@
         },
         {
           "name": "hylo_exchange",
-          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+          "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ"
         },
         {
           "name": "event_authority",
