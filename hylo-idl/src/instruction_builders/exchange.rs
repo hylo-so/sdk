@@ -2,12 +2,14 @@
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
+use anchor_lang::solana_program::sysvar::rent;
 use anchor_lang::{system_program, InstructionData, ToAccountMetas};
 use anchor_spl::{associated_token, token};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::account_builders;
 use crate::exchange::client::{accounts, args};
+use crate::exchange::types::TokenMetadata;
 use crate::pda::{self, metadata};
 use crate::tokens::{TokenMint, HYUSD, XSOL};
 use crate::{exchange, stability_pool};
@@ -118,7 +120,11 @@ pub fn initialize_protocol(
 }
 
 #[must_use]
-pub fn initialize_mints(admin: Pubkey) -> Instruction {
+pub fn initialize_mints(
+  admin: Pubkey,
+  stablecoin_metadata: TokenMetadata,
+  levercoin_metadata: TokenMetadata,
+) -> Instruction {
   let accounts = accounts::InitializeMints {
     admin,
     hylo: *pda::HYLO,
@@ -131,9 +137,13 @@ pub fn initialize_mints(admin: Pubkey) -> Instruction {
     metadata_program: mpl_token_metadata::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
+    rent: rent::ID,
     system_program: system_program::ID,
   };
-  let args = args::InitializeMints {};
+  let args = args::InitializeMints {
+    stablecoin_metadata,
+    levercoin_metadata,
+  };
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

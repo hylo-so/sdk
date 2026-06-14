@@ -9,6 +9,7 @@ use hylo_idl::stability_pool::events::{
   StabilityPoolStats, UserWithdrawEventV1,
 };
 use hylo_idl::stability_pool::instruction_builders;
+use hylo_idl::stability_pool::types::TokenMetadata;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 
 use crate::exchange_client::ExchangeClient;
@@ -157,9 +158,14 @@ impl StabilityPoolClient {
   ///
   /// # Errors
   /// - Failed to build transaction instructions
-  pub fn initialize_lp_token_mint(&self) -> Result<VersionedTransactionData> {
-    let instruction =
-      instruction_builders::initialize_lp_token_mint(self.program.payer());
+  pub fn initialize_lp_token_mint(
+    &self,
+    lp_token_metadata: TokenMetadata,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::initialize_lp_token_mint(
+      self.program.payer(),
+      lp_token_metadata,
+    );
     Ok(VersionedTransactionData::one(instruction))
   }
 
