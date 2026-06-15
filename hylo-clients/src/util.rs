@@ -50,7 +50,7 @@ pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
 /// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and
 /// sHYUSD. Useful for simulations of mint and redemption.
 pub const REFERENCE_WALLET: Pubkey =
-  pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
+  pubkey!("EvSpFLUfdJT38di12JhAwfU6xe6YCKS6BL1gN3VDWYQG");
 
 /// Default configuration to use in simulated transactions.
 #[must_use]
