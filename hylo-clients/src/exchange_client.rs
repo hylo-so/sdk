@@ -813,6 +813,26 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub fn initialize_usdc(
     &self,
+    squads: &SquadsContext,
+    usdc_usd_pyth_feed: Pubkey,
+    args: &args::InitializeUsdc,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::initialize_usdc(
+      squads.vault_pda(),
+      usdc_usd_pyth_feed,
+      args,
+    );
+    let memo = build_memo("initialize_usdc", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::initialize_usdc`].
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_usdc_direct(
+    &self,
     usdc_usd_pyth_feed: Pubkey,
     args: &args::InitializeUsdc,
   ) -> Result<VersionedTransactionData> {
