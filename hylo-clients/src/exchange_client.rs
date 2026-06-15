@@ -894,7 +894,7 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn register_exo(
+  pub async fn register_exo(
     &self,
     squads: &SquadsContext,
     collateral_mint: Pubkey,
@@ -908,7 +908,9 @@ impl ExchangeClient {
       args,
     );
     let memo = build_memo("register_exo", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    let inner =
+      VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
