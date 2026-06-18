@@ -117,7 +117,7 @@ impl ExchangeClient {
   /// # Errors
   /// * Failed to build transaction instructions
   #[allow(clippy::too_many_arguments)]
-  pub fn register_lst(
+  pub async fn register_lst(
     &self,
     squads: &SquadsContext,
     lst_registry: Pubkey,
@@ -141,7 +141,9 @@ impl ExchangeClient {
       rebalance_fee,
     );
     let memo = build_memo("register_lst", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    let inner =
+      VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
@@ -813,6 +815,26 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub fn initialize_usdc(
     &self,
+    squads: &SquadsContext,
+    usdc_usd_pyth_feed: Pubkey,
+    args: &args::InitializeUsdc,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::initialize_usdc(
+      squads.vault_pda(),
+      usdc_usd_pyth_feed,
+      args,
+    );
+    let memo = build_memo("initialize_usdc", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::initialize_usdc`].
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_usdc_direct(
+    &self,
     usdc_usd_pyth_feed: Pubkey,
     args: &args::InitializeUsdc,
   ) -> Result<VersionedTransactionData> {
@@ -874,7 +896,7 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn register_exo(
+  pub async fn register_exo(
     &self,
     squads: &SquadsContext,
     collateral_mint: Pubkey,
@@ -888,7 +910,9 @@ impl ExchangeClient {
       args,
     );
     let memo = build_memo("register_exo", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    let inner =
+      VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 

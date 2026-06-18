@@ -41,7 +41,7 @@ pub const HYLO_LOOKUP_TABLE: Pubkey =
   pubkey!("71Upv8sJ7wtMpX95ndwVWJvCG3QtpDdVrsh2uJXJvtUz");
 #[cfg(feature = "shadow")]
 pub const HYLO_LOOKUP_TABLE: Pubkey =
-  pubkey!("AUJBw5F13K3pSJMZWok21xKueaNR9N5gM3r3ZFyx7det");
+  pubkey!("DzC3zFg7kKQuRnzFZZRDgdX1Nf3yP9GNN8oigZdCyojR");
 
 #[cfg(not(feature = "shadow"))]
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
