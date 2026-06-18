@@ -117,7 +117,7 @@ impl ExchangeClient {
   /// # Errors
   /// * Failed to build transaction instructions
   #[allow(clippy::too_many_arguments)]
-  pub fn register_lst(
+  pub async fn register_lst(
     &self,
     squads: &SquadsContext,
     lst_registry: Pubkey,
@@ -141,7 +141,9 @@ impl ExchangeClient {
       rebalance_fee,
     );
     let memo = build_memo("register_lst", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    let inner =
+      VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
