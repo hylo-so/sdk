@@ -18,8 +18,8 @@ use crate::rebalance::mode::RebalanceMode;
 
 // Confidence multiplier boundaries
 const MIN_CONF_MULT: UFix64<N2> = UFix64::constant(0);
-const MAX_CONF_FLOOR_MULT: UFix64<N2> = UFix64::constant(200);
-const MAX_CONF_CEIL_MULT: UFix64<N2> = UFix64::constant(100);
+const MAX_CONF_FLOOR_MULT: UFix64<N2> = UFix64::constant(1_000);
+const MAX_CONF_CEIL_MULT: UFix64<N2> = UFix64::constant(1_000);
 
 // Percent deviation boundaries
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(0);
