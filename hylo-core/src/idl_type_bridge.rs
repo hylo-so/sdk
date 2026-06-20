@@ -208,8 +208,8 @@ impl From<RebalanceCurveConfig>
 {
   fn from(val: RebalanceCurveConfig) -> Self {
     hylo_idl::exchange::types::RebalanceCurveConfig {
-      floor_mult: val.floor_mult.into(),
-      ceil_mult: val.ceil_mult.into(),
+      floor_mult: val.floor_pct.into(),
+      ceil_mult: val.ceil_pct.into(),
     }
   }
 }
