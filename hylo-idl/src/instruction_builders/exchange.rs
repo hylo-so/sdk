@@ -713,45 +713,6 @@ pub fn unpause_exo_pair(admin: Pubkey, collateral_mint: Pubkey) -> Instruction {
 }
 
 #[must_use]
-pub fn update_exo_rebalance_deviation_tolerance(
-  admin: Pubkey,
-  collateral_mint: Pubkey,
-  args: &args::UpdateExoRebalanceDeviationTolerance,
-) -> Instruction {
-  let accounts = accounts::UpdateExoRebalanceDeviationTolerance {
-    admin,
-    hylo: pda::HYLO,
-    exo_pair: pda::exo_pair(collateral_mint),
-    collateral_mint,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
-pub fn update_lst_rebalance_deviation_tolerance(
-  admin: Pubkey,
-  args: &args::UpdateLstRebalanceDeviationTolerance,
-) -> Instruction {
-  let accounts = accounts::UpdateLstRebalanceDeviationTolerance {
-    admin,
-    hylo: pda::HYLO,
-    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
-    program: exchange::ID,
-  };
-  Instruction {
-    program_id: exchange::ID,
-    accounts: accounts.to_account_metas(None),
-    data: args.data(),
-  }
-}
-
-#[must_use]
 pub fn pause_usdc_pair(pause_authority: Pubkey) -> Instruction {
   let accounts = accounts::PauseUsdcPair {
     pause_authority,

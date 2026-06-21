@@ -2723,7 +2723,7 @@
             }
           },
           {
-            "name": "_legacy_stability_threshold_2",
+            "name": "_unused_1",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -2783,7 +2783,7 @@
             "type": "bool"
           },
           {
-            "name": "rebalance_deviation_tolerance",
+            "name": "_unused_2",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -2915,13 +2915,13 @@
     {
       "name": "RebalanceCurveConfig",
       "docs": [
-        "Confidence interval multipliers for rebalance price curve construction."
+        "Floor/ceil deviation percentages for rebalance price curve construction."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "floor_mult",
+            "name": "floor_pct",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -2929,7 +2929,7 @@
             }
           },
           {
-            "name": "ceil_mult",
+            "name": "ceil_pct",
             "type": {
               "defined": {
                 "name": "UFixValue64"

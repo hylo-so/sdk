@@ -398,49 +398,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the LST rebalance deviation tolerance.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_lst_rebalance_deviation_tolerance(
-    &self,
-    squads: &SquadsContext,
-    args: &args::UpdateLstRebalanceDeviationTolerance,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::update_lst_rebalance_deviation_tolerance(
-        squads.vault_pda(),
-        args,
-      );
-    let memo =
-      build_memo("update_lst_rebalance_deviation_tolerance", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Updates the EXO rebalance deviation tolerance for the given
-  /// collateral mint.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_exo_rebalance_deviation_tolerance(
-    &self,
-    squads: &SquadsContext,
-    collateral_mint: Pubkey,
-    args: &args::UpdateExoRebalanceDeviationTolerance,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::update_exo_rebalance_deviation_tolerance(
-        squads.vault_pda(),
-        collateral_mint,
-        args,
-      );
-    let memo =
-      build_memo("update_exo_rebalance_deviation_tolerance", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
   /// Pauses the USDC pair.
   ///
   /// # Errors
