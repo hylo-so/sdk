@@ -153,11 +153,7 @@ pub enum CoreError {
   #[msg("Arithmetic error converting USDC to LST via SOL.")]
   UsdcToLst,
   // `rebalance::pricing`
-  #[msg("Rebalancing deviation tolerance not within valid range.")]
-  RebalanceDeviationValidation,
-  #[msg(
-    "Rebalance curve config multiplier is zero or has incorrect precision."
-  )]
+  #[msg("Rebalance curve config value is zero or has incorrect precision.")]
   RebalanceCurveConfigValidation,
   #[msg("Arithmetic error constructing rebalance price curve from oracle.")]
   RebalancePriceConstruction,
@@ -167,10 +163,8 @@ pub enum CoreError {
   RebalanceOutOfDomain,
   #[msg("Rebalance amount projects CR outside the pricing curve domain.")]
   RebalanceAmountExceeded,
-  #[msg("Rebalance price exceeds deviation tolerance from oracle spot.")]
-  RebalanceDeviationExceeded,
-  #[msg("Arithmetic error computing deviation tolerance band.")]
-  RebalanceDeviationArithmetic,
+  #[msg("Arithmetic error while converting percentage for rebalance curve.")]
+  RebalancePercentArithmetic,
   // `rebalance::math`
   #[msg("Arithmetic error while computing sell side liquidity.")]
   RebalanceSellSideLiquidity,

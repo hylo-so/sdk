@@ -1966,7 +1966,7 @@
         },
         {
           "name": "dead",
-          "address": "DEAUr88gdggjoQnuAZMf5qs9FKSj8itpZxTK2PZVve6"
+          "address": "5LiqnRECAcMAykXMEQ2EcbJc73myZERaJ4TtddqCck9c"
         },
         {
           "name": "hylo",
@@ -2810,7 +2810,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "token_program",
@@ -3166,7 +3166,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "lst_registry",
@@ -9518,14 +9518,6 @@
           }
         },
         {
-          "name": "rebalance_deviation_tolerance",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        },
-        {
           "name": "sell_curve_config",
           "type": {
             "defined": {
@@ -10057,36 +10049,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -10167,36 +10159,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -10443,7 +10435,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "event_authority",
@@ -10541,36 +10533,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -10651,36 +10643,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -10802,7 +10794,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "event_authority",
@@ -10903,36 +10895,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -11094,36 +11086,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -11535,7 +11527,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "event_authority",
@@ -12157,36 +12149,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -12351,36 +12343,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -12727,7 +12719,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "event_authority",
@@ -12843,36 +12835,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -13034,36 +13026,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -13475,7 +13467,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "event_authority",
@@ -13592,36 +13584,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -13786,36 +13778,36 @@
               "value": [
                 245,
                 201,
-                15,
-                116,
-                73,
-                124,
-                86,
+                12,
+                54,
+                233,
+                228,
+                201,
+                31,
+                254,
+                20,
+                114,
+                250,
+                201,
+                143,
+                7,
+                251,
+                211,
+                139,
+                244,
+                211,
+                120,
+                53,
                 133,
-                186,
-                241,
-                252,
-                125,
-                16,
-                19,
-                240,
-                13,
-                185,
+                135,
+                75,
                 147,
-                157,
-                192,
-                174,
-                103,
-                187,
-                37,
-                38,
-                2,
-                46,
-                132,
-                132,
-                162,
-                213,
-                187
+                241,
+                117,
+                134,
+                124,
+                218,
+                221
               ]
             }
           }
@@ -14162,7 +14154,7 @@
         },
         {
           "name": "earn_pool",
-          "address": "HYShspCfhpuFXJKUBunV7evNyJsGuq6M9qBUm6PPA8Xk"
+          "address": "HYShEAST5PHe5EFxUPYUgzXsmSo88VVdDqJE21jXBQ7N"
         },
         {
           "name": "event_authority",
@@ -15383,122 +15375,6 @@
       }
     },
     {
-      "name": "update_exo_rebalance_deviation_tolerance",
-      "discriminator": [
-        89,
-        150,
-        159,
-        99,
-        163,
-        197,
-        187,
-        66
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "exo_pair",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  120,
-                  111,
-                  95,
-                  112,
-                  97,
-                  105,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "collateral_mint",
-          "relations": [
-            "exo_pair"
-          ]
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_tolerance",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateRebalanceDeviationToleranceEvent"
-        }
-      }
-    },
-    {
       "name": "update_exo_sell_curve",
       "discriminator": [
         252,
@@ -15985,92 +15861,6 @@
       "returns": {
         "defined": {
           "name": "UpdateLstPricesEvent"
-        }
-      }
-    },
-    {
-      "name": "update_lst_rebalance_deviation_tolerance",
-      "discriminator": [
-        11,
-        96,
-        200,
-        144,
-        180,
-        69,
-        19,
-        206
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_tolerance",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateRebalanceDeviationToleranceEvent"
         }
       }
     },
@@ -18068,19 +17858,6 @@
       ]
     },
     {
-      "name": "UpdateRebalanceDeviationToleranceEvent",
-      "discriminator": [
-        187,
-        153,
-        210,
-        7,
-        139,
-        219,
-        216,
-        255
-      ]
-    },
-    {
       "name": "UpdateStablecoinMintThresholdEvent",
       "discriminator": [
         81,
@@ -18923,7 +18700,7 @@
             }
           },
           {
-            "name": "rebalance_deviation_tolerance",
+            "name": "_unused_1",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19303,7 +19080,7 @@
             }
           },
           {
-            "name": "_legacy_stability_threshold_2",
+            "name": "_unused_1",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -19363,7 +19140,7 @@
             "type": "bool"
           },
           {
-            "name": "rebalance_deviation_tolerance",
+            "name": "_unused_2",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -20076,13 +19853,13 @@
     {
       "name": "RebalanceCurveConfig",
       "docs": [
-        "Confidence interval multipliers for rebalance price curve construction."
+        "Floor/ceil deviation percentages for rebalance price curve construction."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "floor_mult",
+            "name": "floor_pct",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -20090,7 +19867,7 @@
             }
           },
           {
-            "name": "ceil_mult",
+            "name": "ceil_pct",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -21211,30 +20988,6 @@
             "type": {
               "defined": {
                 "name": "RebalanceCurveConfig"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "UpdateRebalanceDeviationToleranceEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_tolerance",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "new_tolerance",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
               }
             }
           }
