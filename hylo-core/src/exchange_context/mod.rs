@@ -156,7 +156,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Mode is not a buy zone
   /// * Curve or arithmetic failure
-  fn rebalance_buy_premium_target(&self) -> Result<UFix64<N9>> {
+  fn rebalance_buy_amount_at_premium(&self) -> Result<UFix64<N9>> {
     max_buyable_collateral(
       self.rebalance_buy_target_cr()?,
       self.virtual_stablecoin_supply()?,
@@ -191,7 +191,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Mode is not a sell zone
   /// * Curve or arithmetic failure
-  fn rebalance_sell_discount_liquidity(&self) -> Result<UFix64<N9>> {
+  fn rebalance_sell_amount_at_discount(&self) -> Result<UFix64<N9>> {
     max_sellable_collateral(
       self.rebalance_sell_target_cr()?,
       self.virtual_stablecoin_supply()?,
