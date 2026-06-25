@@ -134,6 +134,24 @@ pub trait RebalancePriceController {
       .ok_or(CoreError::RebalancePriceConversion.into())
   }
 
+  /// CR that produces the given price — inverse of [`price`](Self::price).
+  ///
+  /// Assumes `price` lies within the curve's `[floor, ceil]` range.
+  ///
+  /// ```txt
+  /// cr = x_0 + (price - y_0) * (x_1 - x_0) / (y_1 - y_0)
+  /// ```
+  ///
+  /// # Errors
+  /// * Conversion or arithmetic
+  fn cr_at_price(&self, price: UFix64<N9>) -> Result<UFix64<N9>> {
+    self
+      .curve()
+      .inverse_interpolate(narrow(price)?)?
+      .narrow()
+      .ok_or(CoreError::RebalancePriceConversion.into())
+  }
+
   /// Validate curve invariants after construction.
   ///
   /// # Errors

@@ -26,7 +26,9 @@ use crate::exchange_math::{
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
 use crate::pyth::{OraclePrice, PriceRange};
-use crate::rebalance::math::{max_buyable_collateral, max_sellable_collateral};
+use crate::rebalance::math::{
+  max_buyable_collateral, max_sellable_collateral, midpoint,
+};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
@@ -129,6 +131,82 @@ pub trait ExchangeContext {
       total_collateral,
     )
     .ok_or(RebalanceBuySideTarget.into())
+  }
+
+  /// Target collateral ratio for a buy-side rebalance.
+  ///
+  /// `BuyZone2` returns the `BuyZone1` upper bound. `BuyZone1` returns the
+  /// midpoint of the current CR and the CR at which the buy curve price
+  /// equals spot.
+  ///
+  /// # Errors
+  /// * Mode is not a buy zone
+  /// * Curve or arithmetic failure
+  fn rebalance_buy_target_cr(&self) -> Result<UFix64<N9>> {
+    match self.rebalance_mode() {
+      RebalanceMode::BuyZone2 => RebalanceMode::BuyZone1.active_range().end(),
+      RebalanceMode::BuyZone1 => {
+        let spot = self.collateral_oracle_price().spot;
+        let cr_spot = self.rebalance_buy_curve()?.cr_at_price(spot)?;
+        midpoint(self.collateral_ratio(), cr_spot)
+          .ok_or(RebalanceBuySideTarget.into())
+      }
+      _ => Err(RebalanceBuySideTarget.into()),
+    }
+  }
+
+  /// Collateral to buy to reach the buy-side target CR.
+  ///
+  /// # Errors
+  /// * Mode is not a buy zone
+  /// * Curve or arithmetic failure
+  fn rebalance_buy_breakeven_target(&self) -> Result<UFix64<N9>> {
+    max_buyable_collateral(
+      self.rebalance_buy_target_cr()?,
+      self.virtual_stablecoin_supply()?,
+      self.collateral_oracle_price().spot,
+      self.total_collateral(),
+    )
+    .ok_or(RebalanceBuySideTarget.into())
+  }
+
+  /// Target collateral ratio for a sell-side rebalance.
+  ///
+  /// `SellZone2` returns the `SellZone1` lower bound. `SellZone1` returns
+  /// the midpoint of the current CR and the CR at which the sell curve
+  /// price equals spot.
+  ///
+  /// # Errors
+  /// * Mode is not a sell zone
+  /// * Curve or arithmetic failure
+  fn rebalance_sell_target_cr(&self) -> Result<UFix64<N9>> {
+    match self.rebalance_mode() {
+      RebalanceMode::SellZone2 => {
+        RebalanceMode::SellZone1.active_range().start()
+      }
+      RebalanceMode::SellZone1 => {
+        let spot = self.collateral_oracle_price().spot;
+        let cr_spot = self.rebalance_sell_curve()?.cr_at_price(spot)?;
+        midpoint(self.collateral_ratio(), cr_spot)
+          .ok_or(RebalanceSellSideLiquidity.into())
+      }
+      _ => Err(RebalanceSellSideLiquidity.into()),
+    }
+  }
+
+  /// Collateral to sell to reach the sell-side target CR.
+  ///
+  /// # Errors
+  /// * Mode is not a sell zone
+  /// * Curve or arithmetic failure
+  fn rebalance_sell_breakeven_liquidity(&self) -> Result<UFix64<N9>> {
+    max_sellable_collateral(
+      self.rebalance_sell_target_cr()?,
+      self.virtual_stablecoin_supply()?,
+      self.collateral_oracle_price().spot,
+      self.total_collateral(),
+    )
+    .ok_or(RebalanceSellSideLiquidity.into())
   }
 
   /// Virtual stablecoin supply.

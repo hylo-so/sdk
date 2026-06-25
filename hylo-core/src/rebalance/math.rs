@@ -52,6 +52,20 @@ pub fn max_buyable_collateral(
   num.mul_div_floor(UFix64::one(), denom)
 }
 
+/// Arithmetic midpoint of two collateral ratios.
+///
+/// ```text
+///                    a + b
+/// midpoint(a, b) = ---------
+///                      2
+/// ```
+#[must_use]
+pub fn midpoint(a: UFix64<N9>, b: UFix64<N9>) -> Option<UFix64<N9>> {
+  let num = a.checked_add(&b)?;
+  let denom = UFix64::<N9>::constant(2_000_000_000);
+  num.mul_div_floor(UFix64::one(), denom)
+}
+
 #[cfg(test)]
 mod tests {
   use anyhow::{Context, Result};
