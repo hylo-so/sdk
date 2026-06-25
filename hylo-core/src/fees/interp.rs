@@ -138,14 +138,12 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .ok_or(CoreError::InterpArithmetic.into())
   }
 
-  /// Inverse of [`interpolate`](Self::interpolate): finds x for a given y.
-  ///
-  /// Assumes the curve's y values are monotonically increasing.
+  /// Inverse of [`interpolate`](Self::interpolate): the approximate `x`
+  /// for the given `y`.
   ///
   /// # Errors
-  ///
-  /// * Input y is outside the valid range.
-  /// * Arithmetic overflow during calculation.
+  /// * `y` is outside the valid range
+  /// * Arithmetic overflow
   pub fn inverse_interpolate(&self, y: IFix64<Exp>) -> Result<IFix64<Exp>> {
     (y >= self.y_min() && y <= self.y_max())
       .then_some(())

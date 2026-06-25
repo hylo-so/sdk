@@ -135,10 +135,6 @@ pub trait ExchangeContext {
 
   /// Target collateral ratio for a buy-side rebalance.
   ///
-  /// `BuyZone2` returns the `BuyZone1` upper bound. `BuyZone1` returns the
-  /// midpoint of the current CR and the CR at which the buy curve price
-  /// equals spot.
-  ///
   /// # Errors
   /// * Mode is not a buy zone
   /// * Curve or arithmetic failure
@@ -155,12 +151,12 @@ pub trait ExchangeContext {
     }
   }
 
-  /// Collateral to buy to reach the buy-side target CR.
+  /// Collateral to buy at a premium to spot.
   ///
   /// # Errors
   /// * Mode is not a buy zone
   /// * Curve or arithmetic failure
-  fn rebalance_buy_breakeven_target(&self) -> Result<UFix64<N9>> {
+  fn rebalance_buy_premium_target(&self) -> Result<UFix64<N9>> {
     max_buyable_collateral(
       self.rebalance_buy_target_cr()?,
       self.virtual_stablecoin_supply()?,
@@ -171,10 +167,6 @@ pub trait ExchangeContext {
   }
 
   /// Target collateral ratio for a sell-side rebalance.
-  ///
-  /// `SellZone2` returns the `SellZone1` lower bound. `SellZone1` returns
-  /// the midpoint of the current CR and the CR at which the sell curve
-  /// price equals spot.
   ///
   /// # Errors
   /// * Mode is not a sell zone
@@ -194,12 +186,12 @@ pub trait ExchangeContext {
     }
   }
 
-  /// Collateral to sell to reach the sell-side target CR.
+  /// Collateral to sell at a discount to spot.
   ///
   /// # Errors
   /// * Mode is not a sell zone
   /// * Curve or arithmetic failure
-  fn rebalance_sell_breakeven_liquidity(&self) -> Result<UFix64<N9>> {
+  fn rebalance_sell_discount_liquidity(&self) -> Result<UFix64<N9>> {
     max_sellable_collateral(
       self.rebalance_sell_target_cr()?,
       self.virtual_stablecoin_supply()?,
