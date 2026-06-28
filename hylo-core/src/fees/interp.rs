@@ -43,6 +43,25 @@ impl<Exp: Integer> LineSegment<'_, Exp> {
       .and_then(|d| y1.checked_sub(y0)?.mul_div_ceil(x.checked_sub(x0)?, d))
       .and_then(|div| y0.checked_add(&div))
   }
+
+  /// Finds approximate `x` for the given `y`.
+  /// This is the inverse of [`lerp`](Self::lerp).
+  ///
+  /// ```txt
+  ///           (y - y_0) * (x_1 - x_0)
+  /// x = x_0 + -----------------------
+  ///                  y_1 - y_0
+  /// ```
+  #[must_use]
+  pub fn inverse_lerp(&self, y: IFix64<Exp>) -> Option<IFix64<Exp>> {
+    let Point { x: x0, y: y0 } = self.0;
+    let Point { x: x1, y: y1 } = self.1;
+    let denom = y1.checked_sub(y0)?;
+    (denom != IFix64::zero())
+      .then_some(denom)
+      .and_then(|d| x1.checked_sub(x0)?.mul_div_floor(y.checked_sub(y0)?, d))
+      .and_then(|div| x0.checked_add(&div))
+  }
 }
 
 /// Piecewise linear interpolation over a fixed-size point array.
@@ -116,6 +135,26 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .zip(self.points.get(part))
       .map(|(p0, p1)| LineSegment(p0, p1))
       .and_then(|seg| seg.lerp(x))
+      .ok_or(CoreError::InterpArithmetic.into())
+  }
+
+  /// Inverse of [`interpolate`](Self::interpolate): the approximate `x`
+  /// for the given `y`.
+  ///
+  /// # Errors
+  /// * `y` is outside the valid range
+  /// * Arithmetic overflow
+  pub fn inverse_interpolate(&self, y: IFix64<Exp>) -> Result<IFix64<Exp>> {
+    (y >= self.y_min() && y <= self.y_max())
+      .then_some(())
+      .ok_or(CoreError::InterpOutOfDomain)?;
+    let part = self.points.partition_point(|p| p.y < y).max(1);
+    self
+      .points
+      .get(part - 1)
+      .zip(self.points.get(part))
+      .map(|(p0, p1)| LineSegment(p0, p1))
+      .and_then(|seg| seg.inverse_lerp(y))
       .ok_or(CoreError::InterpArithmetic.into())
   }
 }
@@ -265,6 +304,32 @@ mod tests {
       Some(CoreError::InterpOutOfDomain.into())
     );
     Ok(())
+  }
+
+  #[test]
+  fn inverse_lerp_recovers_endpoints() {
+    let p0 = Point::<N5>::from_ints(0, 100);
+    let p1 = Point::<N5>::from_ints(100, 200);
+    let seg = LineSegment(&p0, &p1);
+    assert_eq!(
+      seg.inverse_lerp(IFix64::constant(100)),
+      Some(IFix64::constant(0))
+    );
+    assert_eq!(
+      seg.inverse_lerp(IFix64::constant(200)),
+      Some(IFix64::constant(100))
+    );
+  }
+
+  #[test]
+  fn lerp_inverse_lerp_roundtrip() {
+    let p0 = Point::<N5>::from_ints(0, 100);
+    let p1 = Point::<N5>::from_ints(100, 200);
+    let seg = LineSegment(&p0, &p1);
+    [0, 25, 50, 75, 100].into_iter().for_each(|xi| {
+      let x = IFix64::<N5>::constant(xi);
+      assert_eq!(seg.lerp(x).and_then(|y| seg.inverse_lerp(y)), Some(x));
+    });
   }
 
   #[test]
