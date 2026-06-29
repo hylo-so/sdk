@@ -18,9 +18,9 @@ use crate::rebalance::mode::RebalanceMode;
 
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(1);
 pub const SELL_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
-pub const SELL_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(20_000_000);
-pub const BUY_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(20_000_000);
-pub const BUY_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(2_000_000);
+pub const SELL_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
+pub const BUY_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
+pub const BUY_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(1_500_000);
 
 /// Floor/ceil deviation percentages for rebalance price curve construction.
 #[derive(
@@ -469,8 +469,8 @@ mod tests {
 
   #[test]
   fn validate_accepts_in_range() -> Result<()> {
-    let sell = config(3_000_000, 10_000_000);
-    let buy = config(10_000_000, 2_000_000);
+    let sell = config(3_000_000, 3_000_000);
+    let buy = config(3_000_000, 1_000_000);
     assert_eq!(sell.validate_sell()?, sell);
     assert_eq!(buy.validate_buy()?, buy);
     Ok(())
