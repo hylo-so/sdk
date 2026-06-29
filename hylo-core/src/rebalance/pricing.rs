@@ -20,7 +20,7 @@ const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(1);
 pub const SELL_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
 pub const SELL_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
 pub const BUY_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
-pub const BUY_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(1_500_000);
+pub const BUY_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(2_000_000);
 
 /// Floor/ceil deviation percentages for rebalance price curve construction.
 #[derive(
