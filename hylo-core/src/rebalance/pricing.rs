@@ -16,9 +16,11 @@ use crate::fees::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
 use crate::rebalance::mode::RebalanceMode;
 
-// Percent deviation boundaries
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(1);
-const MAX_DEVIATION_PCT: UFix64<N9> = UFix64::constant(20_000_000);
+pub const SELL_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
+pub const SELL_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(20_000_000);
+pub const BUY_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(20_000_000);
+pub const BUY_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(2_000_000);
 
 /// Floor/ceil deviation percentages for rebalance price curve construction.
 #[derive(
@@ -65,13 +67,17 @@ impl RebalanceCurveConfig {
     self.ceil_pct.try_into()
   }
 
-  /// Checks validity of floor/ceil percentages.
+  /// Checks floor/ceil against side-specific deviation caps.
   ///
   /// # Errors
-  /// * Incorrect precision or failed validation
-  pub fn validate(self) -> Result<Self> {
-    let ok = |pct| (MIN_DEVIATION_PCT..=MAX_DEVIATION_PCT).contains(&pct);
-    (ok(self.floor_pct()?) && ok(self.ceil_pct()?))
+  /// * Incorrect precision or out-of-range deviation
+  pub fn validate(
+    self,
+    floor_max: UFix64<N9>,
+    ceil_max: UFix64<N9>,
+  ) -> Result<Self> {
+    let ok = |pct, max| (MIN_DEVIATION_PCT..=max).contains(&pct);
+    (ok(self.floor_pct()?, floor_max) && ok(self.ceil_pct()?, ceil_max))
       .then_some(self)
       .ok_or(CoreError::RebalanceCurveConfigValidation.into())
   }
@@ -439,40 +445,70 @@ mod tests {
     Ok(())
   }
 
+  fn config(floor: u64, ceil: u64) -> RebalanceCurveConfig {
+    RebalanceCurveConfig {
+      floor_pct: UFixValue64 {
+        bits: floor,
+        exp: -9,
+      },
+      ceil_pct: UFixValue64 {
+        bits: ceil,
+        exp: -9,
+      },
+    }
+  }
+
   #[test]
   fn validate_accepts_in_range() -> Result<()> {
-    assert_eq!(SELL_CONFIG.validate()?, SELL_CONFIG);
-    assert_eq!(BUY_CONFIG.validate()?, BUY_CONFIG);
+    let sell = config(3_000_000, 10_000_000);
+    let buy = config(10_000_000, 2_000_000);
+    assert_eq!(sell.validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)?, sell);
+    assert_eq!(buy.validate(BUY_FLOOR_MAX_PCT, BUY_CEIL_MAX_PCT)?, buy);
     Ok(())
   }
 
   #[test]
-  fn validate_rejects_above_max_deviation() {
-    let over_max = UFixValue64 {
-      bits: 20_000_001,
-      exp: -9,
-    };
+  fn validate_enforces_side_caps() {
     let err = Some(CoreError::RebalanceCurveConfigValidation.into());
-    let high_floor = RebalanceCurveConfig {
-      floor_pct: over_max,
-      ceil_pct: SELL_CONFIG.ceil_pct,
-    };
-    let high_ceil = RebalanceCurveConfig {
-      floor_pct: SELL_CONFIG.floor_pct,
-      ceil_pct: over_max,
-    };
-    assert_eq!(high_floor.validate().err(), err);
-    assert_eq!(high_ceil.validate().err(), err);
+    let sell_over = config(6_000_000, 1_000_000);
+    let buy_over = config(1_000_000, 3_000_000);
+    assert_eq!(
+      sell_over
+        .validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)
+        .err(),
+      err
+    );
+    assert_eq!(
+      buy_over.validate(BUY_FLOOR_MAX_PCT, BUY_CEIL_MAX_PCT).err(),
+      err
+    );
+  }
+
+  #[test]
+  fn validate_rejects_above_max_deviation() {
+    let err = Some(CoreError::RebalanceCurveConfigValidation.into());
+    let high_floor = config(20_000_001, 1_000_000);
+    let high_ceil = config(1_000_000, 20_000_001);
+    assert_eq!(
+      high_floor
+        .validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)
+        .err(),
+      err
+    );
+    assert_eq!(
+      high_ceil
+        .validate(SELL_CEIL_MAX_PCT, SELL_CEIL_MAX_PCT)
+        .err(),
+      err
+    );
   }
 
   #[test]
   fn validate_rejects_zero_band() {
-    let config = RebalanceCurveConfig {
-      floor_pct: UFixValue64 { bits: 0, exp: -9 },
-      ceil_pct: UFixValue64 { bits: 0, exp: -9 },
-    };
     assert_eq!(
-      config.validate().err(),
+      config(0, 0)
+        .validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)
+        .err(),
       Some(CoreError::RebalanceCurveConfigValidation.into())
     );
   }
