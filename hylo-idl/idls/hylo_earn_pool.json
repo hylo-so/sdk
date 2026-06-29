@@ -1,5 +1,5 @@
 {
-  "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ",
+  "address": "HYeARNuP78WqakviNj2hmLK935yL8ENfSyGtPk3UgB3r",
   "metadata": {
     "name": "hylo_earn_pool",
     "version": "1.0.0",
@@ -900,7 +900,7 @@
         },
         {
           "name": "hylo_earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
+          "address": "HYeARNuP78WqakviNj2hmLK935yL8ENfSyGtPk3UgB3r"
         }
       ],
       "args": []

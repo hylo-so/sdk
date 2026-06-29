@@ -61,7 +61,7 @@ mod tests {
   mod expected {
     use super::*;
     pub const EARN_POOL: Pubkey =
-      pubkey!("HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ");
+      pubkey!("HYeARNuP78WqakviNj2hmLK935yL8ENfSyGtPk3UgB3r");
     pub const EXCHANGE: Pubkey =
       pubkey!("HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn");
     pub const ROUTER: Pubkey =
