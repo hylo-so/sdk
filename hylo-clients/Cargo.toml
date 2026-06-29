@@ -17,7 +17,6 @@ anyhow.workspace = true
 async-trait.workspace = true
 base64.workspace = true
 bincode.workspace = true
-futures.workspace = true
 hylo-core = { workspace = true, features = ["offchain"] }
 hylo-fix.workspace = true
 hylo-idl.workspace = true

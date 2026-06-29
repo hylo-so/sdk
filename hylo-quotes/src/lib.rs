@@ -128,7 +128,6 @@ pub use simulation_strategy::SimulationStrategy;
 /// In the future, this could be replaced with per-instruction defaults based
 /// on more comprehensive statistical analysis.
 pub const DEFAULT_CUS_WITH_BUFFER: u64 = 100_000;
-pub const DEFAULT_CUS_WITH_BUFFER_X3: u64 = 300_000;
 
 /// Typed executable quote with amounts, instructions, and compute units.
 #[derive(Clone, Debug)]

@@ -26,8 +26,6 @@ use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
 };
 
-use crate::earn_pool_client::EarnPoolClient;
-use crate::exchange_client::ExchangeClient;
 use crate::prelude::VersionedTransactionData;
 use crate::program_client::ProgramClient;
 use crate::router_client::RouterClient;
@@ -189,34 +187,6 @@ pub fn cluster_from_env() -> Result<Cluster> {
   let url = std::env::var("RPC_URL")?;
   let ws_url = std::env::var("RPC_WS_URL")?;
   Ok(Cluster::Custom(url, ws_url))
-}
-
-/// Builds test exchange client with random keypair.
-///
-/// # Errors
-/// * Environment variable access
-/// * Client initialization
-pub fn build_test_exchange_client() -> Result<ExchangeClient> {
-  let client = ExchangeClient::new_from_keypair(
-    cluster_from_env()?,
-    Keypair::new(),
-    CommitmentConfig::confirmed(),
-  )?;
-  Ok(client)
-}
-
-/// Builds test earn pool client with random keypair.
-///
-/// # Errors
-/// * Environment variable access
-/// * Client initialization
-pub fn build_test_earn_pool_client() -> Result<EarnPoolClient> {
-  let client = EarnPoolClient::new_from_keypair(
-    cluster_from_env()?,
-    Keypair::new(),
-    CommitmentConfig::confirmed(),
-  )?;
-  Ok(client)
 }
 
 /// Builds test router client with random keypair.
