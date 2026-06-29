@@ -67,19 +67,28 @@ impl RebalanceCurveConfig {
     self.ceil_pct.try_into()
   }
 
-  /// Checks floor/ceil against side-specific deviation caps.
+  /// Validates a sell-side curve against its deviation caps.
   ///
   /// # Errors
   /// * Incorrect precision or out-of-range deviation
-  pub fn validate(
-    self,
-    floor_max: UFix64<N9>,
-    ceil_max: UFix64<N9>,
-  ) -> Result<Self> {
+  pub fn validate_sell(self) -> Result<Self> {
     let ok = |pct, max| (MIN_DEVIATION_PCT..=max).contains(&pct);
-    (ok(self.floor_pct()?, floor_max) && ok(self.ceil_pct()?, ceil_max))
-      .then_some(self)
-      .ok_or(CoreError::RebalanceCurveConfigValidation.into())
+    (ok(self.floor_pct()?, SELL_FLOOR_MAX_PCT)
+      && ok(self.ceil_pct()?, SELL_CEIL_MAX_PCT))
+    .then_some(self)
+    .ok_or(CoreError::RebalanceCurveConfigValidation.into())
+  }
+
+  /// Validates a buy-side curve against its deviation caps.
+  ///
+  /// # Errors
+  /// * Incorrect precision or out-of-range deviation
+  pub fn validate_buy(self) -> Result<Self> {
+    let ok = |pct, max| (MIN_DEVIATION_PCT..=max).contains(&pct);
+    (ok(self.floor_pct()?, BUY_FLOOR_MAX_PCT)
+      && ok(self.ceil_pct()?, BUY_CEIL_MAX_PCT))
+    .then_some(self)
+    .ok_or(CoreError::RebalanceCurveConfigValidation.into())
   }
 }
 
@@ -462,55 +471,30 @@ mod tests {
   fn validate_accepts_in_range() -> Result<()> {
     let sell = config(3_000_000, 10_000_000);
     let buy = config(10_000_000, 2_000_000);
-    assert_eq!(sell.validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)?, sell);
-    assert_eq!(buy.validate(BUY_FLOOR_MAX_PCT, BUY_CEIL_MAX_PCT)?, buy);
+    assert_eq!(sell.validate_sell()?, sell);
+    assert_eq!(buy.validate_buy()?, buy);
     Ok(())
   }
 
   #[test]
   fn validate_enforces_side_caps() {
     let err = Some(CoreError::RebalanceCurveConfigValidation.into());
-    let sell_over = config(6_000_000, 1_000_000);
-    let buy_over = config(1_000_000, 3_000_000);
-    assert_eq!(
-      sell_over
-        .validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)
-        .err(),
-      err
-    );
-    assert_eq!(
-      buy_over.validate(BUY_FLOOR_MAX_PCT, BUY_CEIL_MAX_PCT).err(),
-      err
-    );
+    assert_eq!(config(6_000_000, 1_000_000).validate_sell().err(), err);
+    assert_eq!(config(1_000_000, 3_000_000).validate_buy().err(), err);
   }
 
   #[test]
   fn validate_rejects_above_max_deviation() {
     let err = Some(CoreError::RebalanceCurveConfigValidation.into());
-    let high_floor = config(20_000_001, 1_000_000);
-    let high_ceil = config(1_000_000, 20_000_001);
-    assert_eq!(
-      high_floor
-        .validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)
-        .err(),
-      err
-    );
-    assert_eq!(
-      high_ceil
-        .validate(SELL_CEIL_MAX_PCT, SELL_CEIL_MAX_PCT)
-        .err(),
-      err
-    );
+    assert_eq!(config(1_000_000, 20_000_001).validate_sell().err(), err);
+    assert_eq!(config(20_000_001, 1_000_000).validate_buy().err(), err);
   }
 
   #[test]
   fn validate_rejects_zero_band() {
-    assert_eq!(
-      config(0, 0)
-        .validate(SELL_FLOOR_MAX_PCT, SELL_CEIL_MAX_PCT)
-        .err(),
-      Some(CoreError::RebalanceCurveConfigValidation.into())
-    );
+    let err = Some(CoreError::RebalanceCurveConfigValidation.into());
+    assert_eq!(config(0, 0).validate_sell().err(), err);
+    assert_eq!(config(0, 0).validate_buy().err(), err);
   }
 
   #[test]
