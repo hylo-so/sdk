@@ -4,4 +4,7 @@ mod state;
 
 pub use accounts::ProtocolAccounts;
 pub use provider::{RpcStateProvider, StateProvider};
-pub use state::{ProtocolState, UsdcExchangeState};
+pub use state::{
+  build_cbbtc_exchange_context, build_lst_exchange_context, ProtocolState,
+  UsdcExchangeState,
+};

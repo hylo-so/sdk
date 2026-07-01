@@ -5,6 +5,7 @@
 
 use std::sync::Arc;
 
+use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
@@ -119,25 +120,9 @@ impl<C: SolanaClock> ProtocolState<C> {
     hylosol_stake_pool: SplStakePool,
   ) -> Result<Self> {
     let fetched_at = clock.unix_timestamp();
-    let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
-    let oracle_config = OracleConfig::new(
-      hylo.oracle_interval_secs,
-      hylo.oracle_conf_tolerance.try_into()?,
-    );
-    let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
-    let exchange_context = LstExchangeContext::load(
-      clock,
-      &total_sol_cache,
-      hylo.stablecoin_mint_threshold.try_into()?,
-      oracle_config,
-      xsol_fees,
-      sol_usd,
-      hylo.virtual_stablecoin.into(),
-      Some(&xsol_mint),
-      hylo.lst_sell_curve_config.into(),
-      hylo.lst_buy_curve_config.into(),
-    )?;
+    let exchange_context =
+      build_lst_exchange_context(clock, hylo, &xsol_mint, sol_usd)?;
     Ok(Self {
       exchange_context,
       jitosol_header,
@@ -192,23 +177,53 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 }
 
+/// Builds the `LstExchangeContext` from protocol accounts.
+///
+/// # Errors
+/// * Oracle, curve, or stability controller validation
+pub fn build_lst_exchange_context<C: SolanaClock>(
+  clock: C,
+  hylo: &Hylo,
+  xsol_mint: &Mint,
+  sol_usd: &PriceUpdateV2,
+) -> Result<LstExchangeContext<C>> {
+  let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
+  let oracle_config = OracleConfig::new(
+    hylo.oracle_interval_secs,
+    hylo.oracle_conf_tolerance.try_into()?,
+  );
+  let xsol_fees: LevercoinFees = hylo.levercoin_fees.into();
+  LstExchangeContext::load(
+    clock,
+    &total_sol_cache,
+    hylo.stablecoin_mint_threshold.try_into()?,
+    oracle_config,
+    xsol_fees,
+    sol_usd,
+    hylo.virtual_stablecoin.into(),
+    Some(xsol_mint),
+    hylo.lst_sell_curve_config.into(),
+    hylo.lst_buy_curve_config.into(),
+  )
+  .context("LstExchangeContext::load")
+}
+
 /// Builds the cbBTC `ExoExchangeContext` from protocol accounts.
 ///
 /// # Errors
 /// * Deserialization or context-load failure
-fn build_cbbtc_exchange_context(
+pub fn build_cbbtc_exchange_context(
   clock: Clock,
-  accounts: &ProtocolAccounts,
+  exo_pair: &Account,
+  vault: &Account,
+  xbtc_mint: &Account,
+  btc_usd: &Account,
 ) -> Result<ExoExchangeContext<Clock>> {
-  let exo_pair =
-    ExoPair::try_deserialize(&mut accounts.cbbtc_exo_pair.data.as_slice())?;
-  let vault =
-    TokenAccount::try_deserialize(&mut accounts.cbbtc_vault.data.as_slice())?;
-  let xbtc_mint =
-    Mint::try_deserialize(&mut accounts.xbtc_mint.data.as_slice())?;
-  let btc_usd =
-    PriceUpdateV2::try_deserialize(&mut accounts.btc_usd_pyth.data.as_slice())
-      .context("BTC/USD Pyth deserialization")?;
+  let exo_pair = ExoPair::try_deserialize(&mut exo_pair.data.as_slice())?;
+  let vault = TokenAccount::try_deserialize(&mut vault.data.as_slice())?;
+  let xbtc_mint = Mint::try_deserialize(&mut xbtc_mint.data.as_slice())?;
+  let btc_usd = PriceUpdateV2::try_deserialize(&mut btc_usd.data.as_slice())
+    .context("BTC/USD Pyth deserialization")?;
 
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -307,8 +322,13 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_exchange_context =
-      Arc::new(build_cbbtc_exchange_context(clock.clone(), accounts)?);
+    let cbbtc_exchange_context = Arc::new(build_cbbtc_exchange_context(
+      clock.clone(),
+      &accounts.cbbtc_exo_pair,
+      &accounts.cbbtc_vault,
+      &accounts.xbtc_mint,
+      &accounts.btc_usd_pyth,
+    )?);
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =

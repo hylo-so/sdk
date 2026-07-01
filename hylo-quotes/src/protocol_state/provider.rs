@@ -5,12 +5,20 @@
 use std::sync::Arc;
 
 use anchor_lang::prelude::Clock;
-use anyhow::{anyhow, Result};
+use anchor_lang::AccountDeserialize;
+use anchor_spl::token::Mint;
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
+use hylo_core::idl::exchange::accounts::Hylo;
 use hylo_core::solana_clock::SolanaClock;
+use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
-use crate::protocol_state::{ProtocolAccounts, ProtocolState};
+use crate::protocol_state::{
+  build_cbbtc_exchange_context, build_lst_exchange_context, ProtocolAccounts,
+  ProtocolState,
+};
 
 /// Trait for fetching protocol state from a data source
 #[async_trait]
@@ -45,6 +53,61 @@ impl RpcStateProvider {
   #[must_use]
   pub fn new(rpc_client: Arc<RpcClient>) -> Self {
     Self { rpc_client }
+  }
+
+  /// Fetch the isolated LST exchange context.
+  ///
+  /// # Errors
+  /// Returns error if the fetch or deserialization fails.
+  pub async fn fetch_lst_context(&self) -> Result<LstExchangeContext<Clock>> {
+    let pubkeys = ProtocolAccounts::lst_pubkeys();
+    let data = self
+      .rpc_client
+      .get_multiple_accounts(&pubkeys)
+      .await
+      .map_err(|e| anyhow!("Failed to fetch LST accounts from RPC: {e}"))?;
+    let account = |i: usize, name: &str| {
+      data[i]
+        .as_ref()
+        .with_context(|| format!("{name} not found"))
+    };
+    let hylo = Hylo::try_deserialize(&mut account(0, "Hylo")?.data.as_slice())?;
+    let xsol_mint =
+      Mint::try_deserialize(&mut account(1, "XSOL mint")?.data.as_slice())?;
+    let sol_usd = PriceUpdateV2::try_deserialize(
+      &mut account(2, "SOL/USD Pyth feed")?.data.as_slice(),
+    )
+    .context("SOL/USD Pyth deserialization")?;
+    let clock: Clock = bincode::deserialize(&account(3, "Clock")?.data)
+      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+    build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)
+  }
+
+  /// Fetch the isolated cbBTC exchange context.
+  ///
+  /// # Errors
+  /// Returns error if the fetch or deserialization fails.
+  pub async fn fetch_cbbtc_context(&self) -> Result<ExoExchangeContext<Clock>> {
+    let pubkeys = ProtocolAccounts::cbbtc_pubkeys();
+    let data = self
+      .rpc_client
+      .get_multiple_accounts(&pubkeys)
+      .await
+      .map_err(|e| anyhow!("Failed to fetch cbBTC accounts from RPC: {e}"))?;
+    let account = |i: usize, name: &str| {
+      data[i]
+        .as_ref()
+        .with_context(|| format!("{name} not found"))
+    };
+    let clock: Clock = bincode::deserialize(&account(4, "Clock")?.data)
+      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+    build_cbbtc_exchange_context(
+      clock,
+      account(0, "cbBTC ExoPair")?,
+      account(1, "cbBTC vault")?,
+      account(2, "xBTC mint")?,
+      account(3, "BTC/USD Pyth feed")?,
+    )
   }
 }
 

@@ -103,6 +103,33 @@ impl ProtocolAccounts {
     ]
   }
 
+  /// Pubkey subset for the isolated LST exchange context.
+  ///
+  /// Order: Hylo, XSOL mint, SOL/USD feed, clock.
+  #[must_use]
+  pub fn lst_pubkeys() -> [Pubkey; 4] {
+    [
+      pda::HYLO,
+      XSOL::MINT,
+      hylo_core::pyth::SOL_USD.address,
+      sysvar::clock::ID,
+    ]
+  }
+
+  /// Pubkey subset for the isolated cbBTC exchange context.
+  ///
+  /// Order: exo pair, vault, levercoin mint, BTC/USD feed, clock.
+  #[must_use]
+  pub fn cbbtc_pubkeys() -> [Pubkey; 5] {
+    [
+      pda::exo_pair(CBBTC::MINT),
+      pda::exo_vault(CBBTC::MINT),
+      pda::exo_levercoin_mint(CBBTC::MINT),
+      pda::BTC_USD_PYTH_FEED,
+      sysvar::clock::ID,
+    ]
+  }
+
   /// Expected number of protocol accounts
   #[must_use]
   pub const fn expected_count() -> usize {
