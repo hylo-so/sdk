@@ -66,19 +66,17 @@ impl RpcStateProvider {
       .get_multiple_accounts(&pubkeys)
       .await
       .map_err(|e| anyhow!("Failed to fetch LST accounts from RPC: {e}"))?;
-    let account = |i: usize, name: &str| {
-      data[i]
-        .as_ref()
-        .with_context(|| format!("{name} not found"))
-    };
-    let hylo = Hylo::try_deserialize(&mut account(0, "Hylo")?.data.as_slice())?;
-    let xsol_mint =
-      Mint::try_deserialize(&mut account(1, "XSOL mint")?.data.as_slice())?;
-    let sol_usd = PriceUpdateV2::try_deserialize(
-      &mut account(2, "SOL/USD Pyth feed")?.data.as_slice(),
-    )
-    .context("SOL/USD Pyth deserialization")?;
-    let clock: Clock = bincode::deserialize(&account(3, "Clock")?.data)
+    let (hylo, xsol_mint, sol_usd, clock) = match data.as_slice() {
+      [Some(hylo), Some(xsol_mint), Some(sol_usd), Some(clock)] => {
+        Ok((hylo, xsol_mint, sol_usd, clock))
+      }
+      _ => Err(anyhow!("Missing LST account")),
+    }?;
+    let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
+    let xsol_mint = Mint::try_deserialize(&mut xsol_mint.data.as_slice())?;
+    let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())
+      .context("SOL/USD Pyth deserialization")?;
+    let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
     build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)
   }
@@ -94,20 +92,15 @@ impl RpcStateProvider {
       .get_multiple_accounts(&pubkeys)
       .await
       .map_err(|e| anyhow!("Failed to fetch cbBTC accounts from RPC: {e}"))?;
-    let account = |i: usize, name: &str| {
-      data[i]
-        .as_ref()
-        .with_context(|| format!("{name} not found"))
-    };
-    let clock: Clock = bincode::deserialize(&account(4, "Clock")?.data)
+    let (exo_pair, vault, xbtc_mint, btc_usd, clock) = match data.as_slice() {
+      [Some(exo_pair), Some(vault), Some(xbtc_mint), Some(btc_usd), Some(clock)] => {
+        Ok((exo_pair, vault, xbtc_mint, btc_usd, clock))
+      }
+      _ => Err(anyhow!("Missing cbBTC account")),
+    }?;
+    let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-    build_cbbtc_exchange_context(
-      clock,
-      account(0, "cbBTC ExoPair")?,
-      account(1, "cbBTC vault")?,
-      account(2, "xBTC mint")?,
-      account(3, "BTC/USD Pyth feed")?,
-    )
+    build_cbbtc_exchange_context(clock, exo_pair, vault, xbtc_mint, btc_usd)
   }
 }
 

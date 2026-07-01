@@ -105,9 +105,9 @@ impl ProtocolAccounts {
 
   /// Pubkey subset for the isolated LST exchange context.
   ///
-  /// Order: Hylo, XSOL mint, SOL/USD feed, clock.
+  /// Order: Hylo, xSOL mint, SOL/USD feed, clock.
   #[must_use]
-  pub fn lst_pubkeys() -> [Pubkey; 4] {
+  pub const fn lst_pubkeys() -> [Pubkey; 4] {
     [
       pda::HYLO,
       XSOL::MINT,
@@ -120,7 +120,7 @@ impl ProtocolAccounts {
   ///
   /// Order: exo pair, vault, levercoin mint, BTC/USD feed, clock.
   #[must_use]
-  pub fn cbbtc_pubkeys() -> [Pubkey; 5] {
+  pub const fn cbbtc_pubkeys() -> [Pubkey; 5] {
     [
       pda::exo_pair(CBBTC::MINT),
       pda::exo_vault(CBBTC::MINT),
