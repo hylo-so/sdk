@@ -1,9 +1,5 @@
 use std::iter::once;
 
-use anchor_client::solana_client::rpc_config::RpcSimulateTransactionConfig;
-use anchor_client::solana_client::rpc_response::{
-  Response, RpcSimulateTransactionResult,
-};
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::address_lookup_table::state::AddressLookupTable;
 use anchor_client::solana_sdk::address_lookup_table::AddressLookupTableAccount;
@@ -25,6 +21,8 @@ use anyhow::{anyhow, bail, Context, Result};
 use fix::typenum::N9;
 use hylo_core::idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
 use itertools::Itertools;
+use solana_rpc_client_api::config::RpcSimulateTransactionConfig;
+use solana_rpc_client_api::response::{Response, RpcSimulateTransactionResult};
 use solana_transaction_status_client_types::{
   UiInstruction, UiParsedInstruction, UiPartiallyDecodedInstruction,
 };

@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
 
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 use solana_loader_v3_interface::get_program_data_address;
 
@@ -144,4 +143,4 @@ pub static EXCHANGE_PROGRAM_DATA: LazyLock<Pubkey> =
   lazy!(get_program_data_address(&exchange::ID));
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+  pubkey!("7AviUf9nL62mcxNbQGKm4nKDQnPjswo6c5MX4D57HmyE");

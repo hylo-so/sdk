@@ -1,5 +1,4 @@
-use anchor_lang::prelude::{Pubkey, Result};
-use anchor_lang::solana_program::pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey, Result};
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
@@ -19,7 +18,7 @@ pub const SOL_USD: FeedId = [
 ];
 
 pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+  pubkey!("7AviUf9nL62mcxNbQGKm4nKDQnPjswo6c5MX4D57HmyE");
 
 #[derive(Copy, Clone)]
 pub struct OracleConfig<Exp> {

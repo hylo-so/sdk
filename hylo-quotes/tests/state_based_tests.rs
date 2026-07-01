@@ -2,7 +2,6 @@
 
 use std::fs::File;
 
-use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
 use anchor_lang::solana_program::clock::Clock;
 use anyhow::Result;
 use fix::prelude::*;
@@ -12,6 +11,7 @@ use hylo_quotes::prelude::{
   ProtocolAccounts, ProtocolState, TokenOperationExt,
 };
 use serde_json::{from_reader, to_writer};
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 /// Pulls needed accounts from RPC into a file indexed by epoch and slot.
 ///
