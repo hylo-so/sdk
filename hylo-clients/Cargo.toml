@@ -32,6 +32,8 @@ squads-multisig.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

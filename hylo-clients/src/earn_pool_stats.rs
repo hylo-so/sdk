@@ -6,15 +6,30 @@
 //! All math lives in [`hylo_core::earn_pool_stats`]; this module owns the
 //! result types and assembly.
 
+use anchor_client::solana_sdk::account::Account;
+use anchor_client::solana_sdk::clock::Clock;
+use anchor_lang::prelude::Pubkey;
+use anchor_lang::solana_program::sysvar;
+use anchor_lang::AccountDeserialize;
+use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::borrow_rate::BorrowRateConfig;
 use hylo_core::earn_pool_math::lp_token_nav;
 use hylo_core::earn_pool_stats::{
-  apply_drawdown_offset, epoch_yield_rate, projected_borrow_inflow,
-  projected_lst_inflow, EPOCHS_PER_YEAR,
+  apply_drawdown_offset, epoch_yield_rate, lst_epoch_growth,
+  projected_borrow_inflow, projected_lst_inflow, EPOCHS_PER_YEAR,
 };
+use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
+use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
+use hylo_core::lst::sol_price::LstSolPrice;
+use hylo_core::lst::stake_pool::SplStakePool;
+use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
+use hylo_idl::pda;
+use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
+use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 /// Snapshot of one harvest stream from its on-chain [`HarvestCache`].
 #[derive(Debug, Clone, Copy)]
@@ -160,6 +175,184 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
   })
 }
 
+/// Account keys required for [`EarnPoolStats`], in fetch order.
+/// Index constants below must match this list.
+#[must_use]
+pub fn stats_account_keys() -> Vec<Pubkey> {
+  vec![
+    pda::HYLO,
+    pda::lst_header(JITOSOL::MINT),
+    pda::lst_header(HYLOSOL::MINT),
+    pda::lst_vault(JITOSOL::MINT),
+    pda::lst_vault(HYLOSOL::MINT),
+    JITOSOL::POOL_STATE,
+    HYLOSOL::POOL_STATE,
+    pda::HYUSD_POOL,
+    SHYUSD::MINT,
+    pda::exo_pair(CBBTC::MINT),
+    pda::exo_vault(CBBTC::MINT),
+    pda::exo_levercoin_mint(CBBTC::MINT),
+    pda::BTC_USD_PYTH_FEED,
+    SOL_USD.address,
+    sysvar::clock::ID,
+  ]
+}
+
+const HYLO_IDX: usize = 0;
+const JITOSOL_HEADER_IDX: usize = 1;
+const HYLOSOL_HEADER_IDX: usize = 2;
+const JITOSOL_VAULT_IDX: usize = 3;
+const HYLOSOL_VAULT_IDX: usize = 4;
+const JITOSOL_POOL_STATE_IDX: usize = 5;
+const HYLOSOL_POOL_STATE_IDX: usize = 6;
+const HYUSD_POOL_IDX: usize = 7;
+const SHYUSD_MINT_IDX: usize = 8;
+const EXO_PAIR_IDX: usize = 9;
+const EXO_VAULT_IDX: usize = 10;
+const XBTC_MINT_IDX: usize = 11;
+const BTC_USD_IDX: usize = 12;
+const SOL_USD_IDX: usize = 13;
+const CLOCK_IDX: usize = 14;
+
+fn require<'a>(
+  accounts: &'a [Option<Account>],
+  keys: &[Pubkey],
+  index: usize,
+) -> Result<&'a Account> {
+  accounts.get(index).and_then(Option::as_ref).ok_or_else(|| {
+    anyhow!("Missing stats account at index {index}: {}", keys[index])
+  })
+}
+
+fn lst_position(
+  header: &LstHeader,
+  vault: &TokenAccount,
+  stake_pool: &SplStakePool,
+) -> Result<LstPosition> {
+  let price_sol: LstSolPrice = header.price_sol.into();
+  let prev_price_sol: LstSolPrice = header.prev_price_sol.into();
+  let epoch_growth = lst_epoch_growth(&price_sol, &prev_price_sol)?;
+  let lst_sol_price: UFix64<N9> = stake_pool.true_price()?.price.try_into()?;
+  let sol_value = UFix64::<N9>::new(vault.amount)
+    .mul_div_floor(lst_sol_price, UFix64::one())
+    .ok_or_else(|| anyhow!("LST vault SOL value overflow"))?;
+  Ok(LstPosition {
+    sol_value,
+    epoch_growth,
+  })
+}
+
+/// Builds [`StatsInputs`] from fetched accounts (order of
+/// [`stats_account_keys`]).
+///
+/// # Errors
+/// * Missing account or deserialization failure
+/// * Oracle validation failure
+pub fn build_stats_inputs(
+  keys: &[Pubkey],
+  accounts: &[Option<Account>],
+) -> Result<StatsInputs> {
+  let hylo = Hylo::try_deserialize(
+    &mut require(accounts, keys, HYLO_IDX)?.data.as_slice(),
+  )?;
+  let jitosol_header = LstHeader::try_deserialize(
+    &mut require(accounts, keys, JITOSOL_HEADER_IDX)?.data.as_slice(),
+  )?;
+  let hylosol_header = LstHeader::try_deserialize(
+    &mut require(accounts, keys, HYLOSOL_HEADER_IDX)?.data.as_slice(),
+  )?;
+  let jitosol_vault = TokenAccount::try_deserialize(
+    &mut require(accounts, keys, JITOSOL_VAULT_IDX)?.data.as_slice(),
+  )?;
+  let hylosol_vault = TokenAccount::try_deserialize(
+    &mut require(accounts, keys, HYLOSOL_VAULT_IDX)?.data.as_slice(),
+  )?;
+  let jitosol_pool_state = SplStakePool::from_bytes(
+    &require(accounts, keys, JITOSOL_POOL_STATE_IDX)?.data,
+  )?;
+  let hylosol_pool_state = SplStakePool::from_bytes(
+    &require(accounts, keys, HYLOSOL_POOL_STATE_IDX)?.data,
+  )?;
+  let hyusd_pool = TokenAccount::try_deserialize(
+    &mut require(accounts, keys, HYUSD_POOL_IDX)?.data.as_slice(),
+  )?;
+  let shyusd_mint = Mint::try_deserialize(
+    &mut require(accounts, keys, SHYUSD_MINT_IDX)?.data.as_slice(),
+  )?;
+  let exo_pair = ExoPair::try_deserialize(
+    &mut require(accounts, keys, EXO_PAIR_IDX)?.data.as_slice(),
+  )?;
+  let exo_vault = TokenAccount::try_deserialize(
+    &mut require(accounts, keys, EXO_VAULT_IDX)?.data.as_slice(),
+  )?;
+  let xbtc_mint = Mint::try_deserialize(
+    &mut require(accounts, keys, XBTC_MINT_IDX)?.data.as_slice(),
+  )?;
+  let btc_usd = PriceUpdateV2::try_deserialize(
+    &mut require(accounts, keys, BTC_USD_IDX)?.data.as_slice(),
+  )?;
+  let sol_usd = PriceUpdateV2::try_deserialize(
+    &mut require(accounts, keys, SOL_USD_IDX)?.data.as_slice(),
+  )?;
+  let clock: Clock =
+    bincode::deserialize(&require(accounts, keys, CLOCK_IDX)?.data)
+      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+
+  let oracle_config = OracleConfig::new(
+    hylo.oracle_interval_secs,
+    hylo.oracle_conf_tolerance.try_into()?,
+  );
+  let sol_usd_spot = query_pyth_oracle(&clock, &sol_usd, oracle_config)?.spot;
+
+  // Mirrors hylo-quotes build_cbbtc_exchange_context: value the xBTC
+  // market cap for the borrow-rate projection.
+  let exo_oracle_config = OracleConfig::new(
+    exo_pair.oracle_interval_secs,
+    exo_pair.oracle_conf_tolerance.try_into()?,
+  );
+  let total_collateral: UFix64<N9> = UFix64::<N8>::new(exo_vault.amount)
+    .checked_convert()
+    .ok_or_else(|| anyhow!("cbBTC vault amount N8->N9 overflow"))?;
+  let exo_context = ExoExchangeContext::load(
+    clock.clone(),
+    total_collateral,
+    exo_pair.stablecoin_mint_threshold.try_into()?,
+    exo_oracle_config,
+    exo_pair.levercoin_fees.into(),
+    &btc_usd,
+    exo_pair.virtual_stablecoin.into(),
+    Some(&xbtc_mint),
+    exo_pair.sell_curve_config.into(),
+    exo_pair.buy_curve_config.into(),
+    exo_pair.levercoin_market_cap_limit.try_into()?,
+  )?;
+  let levercoin_market_cap = exo_context.levercoin_market_cap()?;
+
+  let hylo_drawdown: PoolDrawdown = hylo.pool_drawdown.into();
+  let exo_drawdown: PoolDrawdown = exo_pair.pool_drawdown.into();
+  let outstanding_drawdown = hylo_drawdown
+    .outstanding()?
+    .checked_add(&exo_drawdown.outstanding()?)
+    .ok_or_else(|| anyhow!("Pool drawdown overflow"))?;
+
+  Ok(StatsInputs {
+    current_epoch: clock.epoch,
+    pool_balance: UFix64::new(hyusd_pool.amount),
+    shyusd_supply: UFix64::new(shyusd_mint.supply),
+    lst_harvest_cache: hylo.yield_harvest_cache.into(),
+    borrow_harvest_cache: exo_pair.borrow_rate_harvest_cache.into(),
+    harvest_config: hylo.yield_harvest_config.into(),
+    borrow_rate_config: exo_pair.borrow_rate_config.into(),
+    lst_positions: vec![
+      lst_position(&jitosol_header, &jitosol_vault, &jitosol_pool_state)?,
+      lst_position(&hylosol_header, &hylosol_vault, &hylosol_pool_state)?,
+    ],
+    sol_usd_spot,
+    levercoin_market_cap,
+    outstanding_drawdown,
+  })
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -262,5 +455,14 @@ mod tests {
     // 1,000,000 / 950,000 (ceil) = 1.052632
     assert_eq!(stats.nav, UFix64::<N6>::new(1_052_632));
     Ok(())
+  }
+
+  #[test]
+  fn stats_account_keys_order() {
+    let keys = stats_account_keys();
+    assert_eq!(keys.len(), 15);
+    assert_eq!(keys[0], hylo_idl::pda::HYLO);
+    assert_eq!(keys[7], hylo_idl::pda::HYUSD_POOL);
+    assert_eq!(keys[14], anchor_lang::solana_program::sysvar::clock::ID);
   }
 }

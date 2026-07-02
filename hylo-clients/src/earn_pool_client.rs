@@ -8,6 +8,9 @@ use hylo_idl::earn_pool::client::args;
 use hylo_idl::earn_pool::instruction_builders;
 use hylo_idl::earn_pool::types::TokenMetadata;
 
+use crate::earn_pool_stats::{
+  build_stats_inputs, compute_stats, stats_account_keys, EarnPoolStats,
+};
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
@@ -146,5 +149,21 @@ impl EarnPoolClient {
     let memo = build_memo("unpause_earn_pool", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Fetches earn pool yield statistics from current on-chain state:
+  /// last-epoch realized yield per harvest stream, its naive annualized
+  /// APY, and the projected next-epoch yield from current protocol
+  /// parameters.
+  ///
+  /// # Errors
+  /// * RPC fetch failure or missing account
+  /// * Deserialization or oracle validation failure
+  /// * Arithmetic overflow in yield math
+  pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
+    let keys = stats_account_keys();
+    let accounts = self.program().rpc().get_multiple_accounts(&keys).await?;
+    let inputs = build_stats_inputs(&keys, &accounts)?;
+    compute_stats(&inputs)
   }
 }
