@@ -24,7 +24,7 @@ use crate::virtual_stablecoin::VirtualStablecoin;
   Eq,
 )]
 pub struct WithdrawalLimiter {
-  limit: UFixValue64,
+  pub limit: UFixValue64,
   withdrawal_ledger: VirtualStablecoin,
   epoch: u64,
 }
