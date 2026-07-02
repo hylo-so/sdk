@@ -5,6 +5,7 @@ pub mod asset_swap_config;
 pub mod borrow_rate;
 pub mod conversion;
 pub mod earn_pool_math;
+pub mod earn_pool_stats;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;

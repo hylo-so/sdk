@@ -209,4 +209,11 @@ pub enum CoreError {
   WithdrawalLimitInvalidEpoch,
   #[msg("Withdrawal limit is zero or exceeds pool amount.")]
   WithdrawalLimitValidation,
+  // `earn_pool_stats`
+  #[msg("Arithmetic error computing epoch yield rate.")]
+  EpochYieldRate,
+  #[msg("Arithmetic error computing LST epoch growth.")]
+  LstEpochGrowth,
+  #[msg("Arithmetic error computing projected pool inflow.")]
+  ProjectedInflow,
 }
