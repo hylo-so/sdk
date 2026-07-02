@@ -13,7 +13,7 @@ pub mod fees;
 pub mod idl_type_bridge;
 #[cfg(kani)]
 pub mod kani_generators;
-pub mod levercoin_limiter;
+pub mod limiter;
 pub mod lst;
 pub mod pyth;
 pub mod rebalance;

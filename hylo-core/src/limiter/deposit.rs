@@ -6,7 +6,6 @@ use crate::error::CoreError::{
   DepositLimitArithmetic, DepositLimitExceeded, DepositLimitValidation,
 };
 
-/// Simple counter representing the supply of a "virtual" stablecoin.
 #[derive(
   Debug,
   Clone,
