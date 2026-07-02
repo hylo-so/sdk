@@ -19,7 +19,7 @@ use crate::error::CoreError::{
   Eq,
 )]
 pub struct DepositLimiter {
-  limit: UFixValue64,
+  pub limit: UFixValue64,
 }
 
 impl DepositLimiter {
