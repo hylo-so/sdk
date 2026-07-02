@@ -9,6 +9,7 @@ pub use hylo_core::idl::tokens::{
 };
 
 pub use crate::earn_pool_client::EarnPoolClient;
+pub use crate::earn_pool_stats::{EarnPoolStats, RealizedHarvest};
 pub use crate::exchange_client::ExchangeClient;
 pub use crate::program_client::{ProgramClient, VersionedTransactionData};
 pub use crate::router_client::{
