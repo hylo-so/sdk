@@ -1360,6 +1360,316 @@
       }
     },
     {
+      "name": "update_deposit_limit",
+      "discriminator": [
+        181,
+        115,
+        65,
+        169,
+        4,
+        1,
+        96,
+        109
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                10,
+                127,
+                138,
+                63,
+                145,
+                8,
+                204,
+                241,
+                253,
+                44,
+                108,
+                99,
+                138,
+                68,
+                50,
+                102,
+                11,
+                220,
+                187,
+                198,
+                169,
+                73,
+                232,
+                46,
+                165,
+                84,
+                250,
+                191,
+                15,
+                36,
+                129,
+                195
+              ]
+            }
+          }
+        },
+        {
+          "name": "pool_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "stablecoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                10,
+                127,
+                138,
+                63,
+                145,
+                8,
+                204,
+                241,
+                253,
+                44,
+                108,
+                99,
+                138,
+                68,
+                50,
+                102,
+                11,
+                220,
+                187,
+                198,
+                169,
+                73,
+                232,
+                46,
+                165,
+                84,
+                250,
+                191,
+                15,
+                36,
+                129,
+                195
+              ]
+            }
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_deposit_limit",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateDepositLimitEvent"
+        }
+      }
+    },
+    {
       "name": "update_withdrawal_fee",
       "discriminator": [
         165,
@@ -1502,6 +1812,316 @@
       "returns": {
         "defined": {
           "name": "UpdateWithdrawalFeeEvent"
+        }
+      }
+    },
+    {
+      "name": "update_withdrawal_limit",
+      "discriminator": [
+        146,
+        153,
+        162,
+        20,
+        19,
+        87,
+        243,
+        11
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                10,
+                127,
+                138,
+                63,
+                145,
+                8,
+                204,
+                241,
+                253,
+                44,
+                108,
+                99,
+                138,
+                68,
+                50,
+                102,
+                11,
+                220,
+                187,
+                198,
+                169,
+                73,
+                232,
+                46,
+                165,
+                84,
+                250,
+                191,
+                15,
+                36,
+                129,
+                195
+              ]
+            }
+          }
+        },
+        {
+          "name": "pool_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stablecoin_pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_auth"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stablecoin_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "stablecoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  85,
+                  83,
+                  68
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                10,
+                127,
+                138,
+                63,
+                145,
+                8,
+                204,
+                241,
+                253,
+                44,
+                108,
+                99,
+                138,
+                68,
+                50,
+                102,
+                11,
+                220,
+                187,
+                198,
+                169,
+                73,
+                232,
+                46,
+                165,
+                84,
+                250,
+                191,
+                15,
+                36,
+                129,
+                195
+              ]
+            }
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_withdrawal_limit",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateWithdrawalLimitEvent"
         }
       }
     },
@@ -2453,6 +3073,19 @@
       ]
     },
     {
+      "name": "UpdateDepositLimitEvent",
+      "discriminator": [
+        15,
+        216,
+        122,
+        168,
+        187,
+        211,
+        86,
+        137
+      ]
+    },
+    {
       "name": "UpdateWithdrawalFeeEvent",
       "discriminator": [
         204,
@@ -2463,6 +3096,19 @@
         211,
         107,
         115
+      ]
+    },
+    {
+      "name": "UpdateWithdrawalLimitEvent",
+      "discriminator": [
+        100,
+        152,
+        116,
+        186,
+        126,
+        43,
+        176,
+        213
       ]
     },
     {
@@ -2548,6 +3194,22 @@
           },
           {
             "name": "remaining_pool_balance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "DepositLimiter",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limit",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -2882,11 +3544,27 @@
             "type": "bool"
           },
           {
+            "name": "withdrawal_limiter",
+            "type": {
+              "defined": {
+                "name": "WithdrawalLimiter"
+              }
+            }
+          },
+          {
+            "name": "deposit_limiter",
+            "type": {
+              "defined": {
+                "name": "DepositLimiter"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                54
+                19
               ]
             }
           }
@@ -3059,6 +3737,30 @@
       }
     },
     {
+      "name": "UpdateDepositLimitEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_deposit_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_deposit_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateWithdrawalFeeEvent",
       "type": {
         "kind": "struct",
@@ -3073,6 +3775,30 @@
           },
           {
             "name": "new_withdrawal_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateWithdrawalLimitEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_withdrawal_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_withdrawal_limit",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -3161,6 +3887,37 @@
                 "name": "UFixValue64"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawalLimiter",
+      "docs": [
+        "Per-epoch withdrawal window, reset lazily on epoch rollover."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "withdrawal_ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "epoch",
+            "type": "u64"
           }
         ]
       }
