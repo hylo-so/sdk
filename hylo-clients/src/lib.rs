@@ -33,6 +33,7 @@
 //!   program
 
 pub mod earn_pool_client;
+pub mod earn_pool_stats;
 pub mod exchange_client;
 pub mod memo;
 pub mod prelude;
