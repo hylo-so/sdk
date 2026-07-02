@@ -24,7 +24,7 @@ use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::pyth::{query_pyth_oracle, OracleConfig};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 use hylo_idl::pda;
@@ -193,7 +193,7 @@ pub fn stats_account_keys() -> Vec<Pubkey> {
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
     pda::BTC_USD_PYTH_FEED,
-    SOL_USD.address,
+    pda::SOL_USD_PYTH_FEED,
     sysvar::clock::ID,
   ]
 }
@@ -220,7 +220,10 @@ fn require<'a>(
   index: usize,
 ) -> Result<&'a Account> {
   accounts.get(index).and_then(Option::as_ref).ok_or_else(|| {
-    anyhow!("Missing stats account at index {index}: {}", keys[index])
+    let key = keys
+      .get(index)
+      .map_or_else(|| "<unknown>".to_string(), Pubkey::to_string);
+    anyhow!("Missing stats account at index {index}: {key}")
   })
 }
 

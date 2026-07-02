@@ -26,7 +26,7 @@ lint     # Verify (CI check mode) (or: nix run .#lint)
 Other commands:
 ```bash
 build                         # Cargo build (or: nix run .#build)
-test                          # Workspace tests + doctests (or: nix run .#test)
+test                          # Workspace tests + doctests (or: nix run .#test-cargo)
 cargo test -p hylo-quotes     # Run tests for specific crate
 cargo +nightly udeps          # Check unused dependencies (nightly shell)
 ```
