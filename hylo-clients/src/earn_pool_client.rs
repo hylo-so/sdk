@@ -159,7 +159,7 @@ impl EarnPoolClient {
   pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
     let keys = stats_account_keys();
     let accounts = self.program().rpc().get_multiple_accounts(&keys).await?;
-    let inputs = build_stats_inputs(&keys, &accounts)?;
+    let inputs = build_stats_inputs(&accounts)?;
     compute_stats(&inputs)
   }
 }

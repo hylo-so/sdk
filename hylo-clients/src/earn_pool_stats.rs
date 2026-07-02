@@ -168,8 +168,11 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
   })
 }
 
-/// Account keys required for [`EarnPoolStats`], in fetch order.
-/// Index constants below must match this list.
+/// Number of accounts fetched for [`EarnPoolStats`].
+pub const STATS_ACCOUNT_COUNT: usize = 15;
+
+/// Account keys required for [`EarnPoolStats`], in fetch order —
+/// the same order [`build_stats_inputs`] destructures.
 #[must_use]
 pub fn stats_account_keys() -> Vec<Pubkey> {
   vec![
@@ -191,33 +194,57 @@ pub fn stats_account_keys() -> Vec<Pubkey> {
   ]
 }
 
-const HYLO_IDX: usize = 0;
-const JITOSOL_HEADER_IDX: usize = 1;
-const HYLOSOL_HEADER_IDX: usize = 2;
-const JITOSOL_VAULT_IDX: usize = 3;
-const HYLOSOL_VAULT_IDX: usize = 4;
-const JITOSOL_POOL_STATE_IDX: usize = 5;
-const HYLOSOL_POOL_STATE_IDX: usize = 6;
-const HYUSD_POOL_IDX: usize = 7;
-const SHYUSD_MINT_IDX: usize = 8;
-const EXO_PAIR_IDX: usize = 9;
-const EXO_VAULT_IDX: usize = 10;
-const XBTC_MINT_IDX: usize = 11;
-const BTC_USD_IDX: usize = 12;
-const SOL_USD_IDX: usize = 13;
-const CLOCK_IDX: usize = 14;
-
 fn require<'a>(
-  accounts: &'a [Option<Account>],
-  keys: &[Pubkey],
-  index: usize,
+  account: Option<&'a Account>,
+  name: &str,
 ) -> Result<&'a Account> {
-  accounts.get(index).and_then(Option::as_ref).ok_or_else(|| {
-    let key = keys
-      .get(index)
-      .map_or_else(|| "<unknown>".to_string(), Pubkey::to_string);
-    anyhow!("Missing stats account at index {index}: {key}")
-  })
+  account.ok_or_else(|| anyhow!("Missing stats account: {name}"))
+}
+
+/// Values the xBTC market cap for the borrow-rate projection.
+/// Mirrors hylo-quotes `build_cbbtc_exchange_context`.
+fn exo_levercoin_market_cap(
+  clock: &Clock,
+  exo_pair: &ExoPair,
+  exo_vault: &TokenAccount,
+  xbtc_mint: &Mint,
+  btc_usd: &PriceUpdateV2,
+) -> Result<UFix64<N9>> {
+  let oracle_config = OracleConfig::new(
+    exo_pair.oracle_interval_secs,
+    exo_pair.oracle_conf_tolerance.try_into()?,
+  );
+  let total_collateral: UFix64<N9> = UFix64::<N8>::new(exo_vault.amount)
+    .checked_convert()
+    .ok_or_else(|| anyhow!("cbBTC vault amount N8->N9 overflow"))?;
+  let exo_context = ExoExchangeContext::load(
+    clock.clone(),
+    total_collateral,
+    exo_pair.stablecoin_mint_threshold.try_into()?,
+    oracle_config,
+    exo_pair.levercoin_fees.into(),
+    btc_usd,
+    exo_pair.virtual_stablecoin.into(),
+    Some(xbtc_mint),
+    exo_pair.sell_curve_config.into(),
+    exo_pair.buy_curve_config.into(),
+    exo_pair.levercoin_market_cap_limit.try_into()?,
+  )?;
+  let market_cap = exo_context.levercoin_market_cap()?;
+  Ok(market_cap)
+}
+
+/// Sums outstanding pool drawdown across the LST pair and cbBTC exo pair.
+fn total_outstanding_drawdown(
+  hylo: &Hylo,
+  exo_pair: &ExoPair,
+) -> Result<UFix64<N6>> {
+  let hylo_drawdown: PoolDrawdown = hylo.pool_drawdown.into();
+  let exo_drawdown: PoolDrawdown = exo_pair.pool_drawdown.into();
+  hylo_drawdown
+    .outstanding()?
+    .checked_add(&exo_drawdown.outstanding()?)
+    .ok_or_else(|| anyhow!("Pool drawdown overflow"))
 }
 
 fn lst_position(
@@ -244,54 +271,75 @@ fn lst_position(
 /// # Errors
 /// * Missing account or deserialization failure
 /// * Oracle validation failure
-pub fn build_stats_inputs(
-  keys: &[Pubkey],
-  accounts: &[Option<Account>],
-) -> Result<StatsInputs> {
+pub fn build_stats_inputs(accounts: &[Option<Account>]) -> Result<StatsInputs> {
+  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_vault, xbtc_mint, btc_usd, sol_usd, clock]: &[Option<Account>; STATS_ACCOUNT_COUNT] =
+    accounts.try_into().map_err(|_| {
+      anyhow!(
+        "Expected {STATS_ACCOUNT_COUNT} stats accounts, got {}",
+        accounts.len()
+      )
+    })?;
+
   let hylo = Hylo::try_deserialize(
-    &mut require(accounts, keys, HYLO_IDX)?.data.as_slice(),
+    &mut require(hylo.as_ref(), "Hylo")?.data.as_slice(),
   )?;
   let jitosol_header = LstHeader::try_deserialize(
-    &mut require(accounts, keys, JITOSOL_HEADER_IDX)?.data.as_slice(),
+    &mut require(jitosol_header.as_ref(), "jitoSOL header")?
+      .data
+      .as_slice(),
   )?;
   let hylosol_header = LstHeader::try_deserialize(
-    &mut require(accounts, keys, HYLOSOL_HEADER_IDX)?.data.as_slice(),
+    &mut require(hylosol_header.as_ref(), "hyloSOL header")?
+      .data
+      .as_slice(),
   )?;
   let jitosol_vault = TokenAccount::try_deserialize(
-    &mut require(accounts, keys, JITOSOL_VAULT_IDX)?.data.as_slice(),
+    &mut require(jitosol_vault.as_ref(), "jitoSOL vault")?
+      .data
+      .as_slice(),
   )?;
   let hylosol_vault = TokenAccount::try_deserialize(
-    &mut require(accounts, keys, HYLOSOL_VAULT_IDX)?.data.as_slice(),
+    &mut require(hylosol_vault.as_ref(), "hyloSOL vault")?
+      .data
+      .as_slice(),
   )?;
   let jitosol_pool_state = SplStakePool::from_bytes(
-    &require(accounts, keys, JITOSOL_POOL_STATE_IDX)?.data,
+    &require(jitosol_pool_state.as_ref(), "jitoSOL pool state")?.data,
   )?;
   let hylosol_pool_state = SplStakePool::from_bytes(
-    &require(accounts, keys, HYLOSOL_POOL_STATE_IDX)?.data,
+    &require(hylosol_pool_state.as_ref(), "hyloSOL pool state")?.data,
   )?;
   let hyusd_pool = TokenAccount::try_deserialize(
-    &mut require(accounts, keys, HYUSD_POOL_IDX)?.data.as_slice(),
+    &mut require(hyusd_pool.as_ref(), "hyUSD pool")?.data.as_slice(),
   )?;
   let shyusd_mint = Mint::try_deserialize(
-    &mut require(accounts, keys, SHYUSD_MINT_IDX)?.data.as_slice(),
+    &mut require(shyusd_mint.as_ref(), "sHYUSD mint")?
+      .data
+      .as_slice(),
   )?;
   let exo_pair = ExoPair::try_deserialize(
-    &mut require(accounts, keys, EXO_PAIR_IDX)?.data.as_slice(),
+    &mut require(exo_pair.as_ref(), "cbBTC exo pair")?
+      .data
+      .as_slice(),
   )?;
   let exo_vault = TokenAccount::try_deserialize(
-    &mut require(accounts, keys, EXO_VAULT_IDX)?.data.as_slice(),
+    &mut require(exo_vault.as_ref(), "cbBTC vault")?.data.as_slice(),
   )?;
   let xbtc_mint = Mint::try_deserialize(
-    &mut require(accounts, keys, XBTC_MINT_IDX)?.data.as_slice(),
+    &mut require(xbtc_mint.as_ref(), "xBTC mint")?.data.as_slice(),
   )?;
   let btc_usd = PriceUpdateV2::try_deserialize(
-    &mut require(accounts, keys, BTC_USD_IDX)?.data.as_slice(),
+    &mut require(btc_usd.as_ref(), "BTC/USD Pyth feed")?
+      .data
+      .as_slice(),
   )?;
   let sol_usd = PriceUpdateV2::try_deserialize(
-    &mut require(accounts, keys, SOL_USD_IDX)?.data.as_slice(),
+    &mut require(sol_usd.as_ref(), "SOL/USD Pyth feed")?
+      .data
+      .as_slice(),
   )?;
   let clock: Clock =
-    bincode::deserialize(&require(accounts, keys, CLOCK_IDX)?.data)
+    bincode::deserialize(&require(clock.as_ref(), "clock sysvar")?.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
   let oracle_config = OracleConfig::new(
@@ -300,36 +348,10 @@ pub fn build_stats_inputs(
   );
   let sol_usd_spot = query_pyth_oracle(&clock, &sol_usd, oracle_config)?.spot;
 
-  // Mirrors hylo-quotes build_cbbtc_exchange_context: value the xBTC
-  // market cap for the borrow-rate projection.
-  let exo_oracle_config = OracleConfig::new(
-    exo_pair.oracle_interval_secs,
-    exo_pair.oracle_conf_tolerance.try_into()?,
-  );
-  let total_collateral: UFix64<N9> = UFix64::<N8>::new(exo_vault.amount)
-    .checked_convert()
-    .ok_or_else(|| anyhow!("cbBTC vault amount N8->N9 overflow"))?;
-  let exo_context = ExoExchangeContext::load(
-    clock.clone(),
-    total_collateral,
-    exo_pair.stablecoin_mint_threshold.try_into()?,
-    exo_oracle_config,
-    exo_pair.levercoin_fees.into(),
-    &btc_usd,
-    exo_pair.virtual_stablecoin.into(),
-    Some(&xbtc_mint),
-    exo_pair.sell_curve_config.into(),
-    exo_pair.buy_curve_config.into(),
-    exo_pair.levercoin_market_cap_limit.try_into()?,
+  let levercoin_market_cap = exo_levercoin_market_cap(
+    &clock, &exo_pair, &exo_vault, &xbtc_mint, &btc_usd,
   )?;
-  let levercoin_market_cap = exo_context.levercoin_market_cap()?;
-
-  let hylo_drawdown: PoolDrawdown = hylo.pool_drawdown.into();
-  let exo_drawdown: PoolDrawdown = exo_pair.pool_drawdown.into();
-  let outstanding_drawdown = hylo_drawdown
-    .outstanding()?
-    .checked_add(&exo_drawdown.outstanding()?)
-    .ok_or_else(|| anyhow!("Pool drawdown overflow"))?;
+  let outstanding_drawdown = total_outstanding_drawdown(&hylo, &exo_pair)?;
 
   Ok(StatsInputs {
     current_epoch: clock.epoch,
@@ -456,7 +478,7 @@ mod tests {
   #[test]
   fn stats_account_keys_order() {
     let keys = stats_account_keys();
-    assert_eq!(keys.len(), 15);
+    assert_eq!(keys.len(), STATS_ACCOUNT_COUNT);
     assert_eq!(keys[0], hylo_idl::pda::HYLO);
     assert_eq!(keys[7], hylo_idl::pda::HYUSD_POOL);
     assert_eq!(keys[14], anchor_lang::solana_program::sysvar::clock::ID);
