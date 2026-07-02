@@ -1,10 +1,5 @@
-//! Earn pool yield statistics for sHYUSD.
-//!
-//! Realized yield reads the on-chain `HarvestCache` snapshots; projected
-//! yield recomputes next-epoch inflows from current protocol parameters
-//! with last epoch's LST price appreciation as the growth estimate.
-//! All math lives in [`hylo_core::earn_pool_stats`]; this module owns the
-//! result types and assembly.
+//! Earn pool yield statistics for sHYUSD: realized last-epoch yield,
+//! naive APY, and projected next-epoch yield.
 
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::Clock;
@@ -42,8 +37,7 @@ pub struct RealizedHarvest {
   pub is_stale: bool,
 }
 
-/// One LST's contribution to the projection: current vault holdings
-/// valued in SOL, and last epoch's per-epoch price growth.
+/// One LST's projection inputs: vault SOL value and per-epoch growth.
 #[derive(Debug, Clone, Copy)]
 pub struct LstPosition {
   pub sol_value: UFix64<N9>,
@@ -71,8 +65,7 @@ pub struct StatsInputs {
 pub struct EarnPoolStats {
   /// hyUSD per sHYUSD.
   pub nav: UFix64<N6>,
-  /// Current hyUSD in the pool (realized-yield denominator; approximate
-  /// if large deposits/withdrawals happened since the last harvest).
+  /// Current hyUSD in the pool (denominator for both yield rates).
   pub pool_balance: UFix64<N6>,
   pub shyusd_supply: UFix64<N6>,
   pub current_epoch: u64,

@@ -1,9 +1,4 @@
 //! Yield statistics math for the earn pool (sHYUSD).
-//!
-//! Realized yield comes from [`crate::yields::HarvestCache`] snapshots
-//! written by the `harvest_yield` and `harvest_borrow_rate` cranks.
-//! Projected yield combines the last completed epoch's LST price
-//! appreciation with current protocol parameters.
 
 use anchor_lang::prelude::*;
 use fix::prelude::*;
@@ -17,14 +12,20 @@ use crate::lst::sol_price::LstSolPrice;
 use crate::yields::YieldHarvestConfig;
 
 /// Solana epochs per year (~2 per day), the protocol's annualization
-/// convention (see `borrow_rate` module).
+/// convention.
 pub const EPOCHS_PER_YEAR: u64 = 182;
 
-/// Per-epoch yield rate: hyUSD deposited into the pool over the pool's
-/// hyUSD balance. A zero pool balance yields a zero rate.
+/// Computes the pool's realized yield rate for one epoch.
+/// Zero pool balance yields a zero rate.
+///
+/// ```txt
+///                     hyusd_to_pool
+/// epoch_yield_rate = ---------------
+///                     pool_balance
+/// ```
 ///
 /// # Errors
-/// * Arithmetic overflow during conversion or division
+/// * Arithmetic overflow
 pub fn epoch_yield_rate(
   hyusd_to_pool: UFix64<N6>,
   pool_balance: UFix64<N6>,
@@ -40,13 +41,15 @@ pub fn epoch_yield_rate(
   }
 }
 
-/// The last completed epoch's LST/SOL price appreciation, normalized per
-/// epoch: `(price / prev_price - 1) / epoch_gap`.
+/// Computes the last completed epoch's LST/SOL price appreciation,
+/// the backward-looking estimate for next epoch's growth.
+/// Price regression or a zero epoch gap clamps to zero.
 ///
-/// This backward-looking growth is the forward estimate for next epoch's
-/// yield — the actual next-epoch appreciation is unknowable before the
-/// epoch ends. Price regression or a zero epoch gap clamps to zero:
-/// harvests never withdraw from the pool.
+/// ```txt
+///                     price / prev_price - 1
+/// lst_epoch_growth = ------------------------
+///                           epoch_gap
+/// ```
 ///
 /// # Errors
 /// * Invalid price data or arithmetic overflow
@@ -72,9 +75,12 @@ pub fn lst_epoch_growth(
   }
 }
 
-/// Projected hyUSD inflow to the pool from one LST next epoch:
-/// vault SOL value x per-epoch growth x SOL/USD spot, through the
-/// harvest allocation and treasury fee.
+/// Projects next epoch's hyUSD inflow to the pool from one LST.
+///
+/// ```txt
+/// inflow = lst_sol_value * epoch_growth * sol_usd_spot
+///          * allocation * (1 - fee)
+/// ```
 ///
 /// # Errors
 /// * Arithmetic overflow
@@ -95,8 +101,11 @@ pub fn projected_lst_inflow(
   Ok(extract.amount_remaining)
 }
 
-/// Projected hyUSD inflow from the borrow-rate stream next epoch:
-/// levercoin market cap x per-epoch rate, minus the treasury fee.
+/// Projects next epoch's hyUSD inflow from the borrow-rate stream.
+///
+/// ```txt
+/// inflow = levercoin_market_cap * rate * (1 - fee)
+/// ```
 ///
 /// # Errors
 /// * Arithmetic overflow
@@ -113,9 +122,8 @@ pub fn projected_borrow_inflow(
   Ok(extract.amount_remaining)
 }
 
-/// Inflow remaining after repaying outstanding pool drawdown,
-/// saturating at zero. Harvests repay bad debt before hyUSD reaches
-/// the pool.
+/// Subtracts outstanding pool drawdown from a projected inflow,
+/// saturating at zero. Harvests repay drawdown before the pool.
 #[must_use]
 pub fn apply_drawdown_offset(
   inflow: UFix64<N6>,
