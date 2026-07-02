@@ -27,7 +27,10 @@ async fn earn_pool_stats_mainnet() -> Result<()> {
       assert!(stats.naive_apy >= 0.0);
       assert!(stats.projected_apy >= 0.0);
       assert!(stats.lst_harvest.epoch <= stats.current_epoch);
-      assert!(stats.borrow_harvest.epoch <= stats.current_epoch);
+      assert!(stats
+        .exo_streams
+        .iter()
+        .all(|stream| stream.harvest.epoch <= stats.current_epoch));
       Ok(())
     }
   }
