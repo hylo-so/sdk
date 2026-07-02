@@ -151,14 +151,10 @@ impl EarnPoolClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Fetches earn pool yield statistics from current on-chain state:
-  /// last-epoch realized yield per harvest stream, its naive annualized
-  /// APY, and the projected next-epoch yield from current protocol
-  /// parameters.
+  /// Fetches [`EarnPoolStats`] from current on-chain state.
   ///
   /// # Errors
-  /// * RPC fetch failure or missing account
-  /// * Deserialization or oracle validation failure
+  /// * RPC fetch, deserialization, or oracle validation failure
   /// * Arithmetic overflow in yield math
   pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
     let keys = stats_account_keys();
