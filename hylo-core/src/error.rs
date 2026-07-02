@@ -209,7 +209,7 @@ pub enum CoreError {
   WithdrawalLimitInvalidEpoch,
   #[msg("Withdrawal limit is zero or exceeds pool amount.")]
   WithdrawalLimitValidation,
-  // `earn_pool_stats`
+  // `earn_pool_stats` (offchain-only module; codes never emitted on-chain)
   #[msg("Arithmetic error computing epoch yield rate.")]
   EpochYieldRate,
   #[msg("Arithmetic error computing LST epoch growth.")]
