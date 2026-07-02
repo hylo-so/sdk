@@ -11,7 +11,7 @@ use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::borrow_rate::BorrowRateConfig;
 use hylo_core::earn_pool_math::lp_token_nav;
-use hylo_core::earn_pool_stats::{
+use hylo_core::earn_pool_yield_math::{
   apply_drawdown_offset, epoch_yield_rate, lst_epoch_growth,
   projected_borrow_inflow, projected_lst_inflow, EPOCHS_PER_YEAR,
 };
