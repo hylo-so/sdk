@@ -8,15 +8,12 @@ use hylo_idl::earn_pool::client::args;
 use hylo_idl::earn_pool::instruction_builders;
 use hylo_idl::earn_pool::types::TokenMetadata;
 
-use crate::earn_pool_stats::{
-  build_stats_inputs, compute_stats, stats_account_keys, EarnPoolStats,
-};
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
 
 /// Admin client for the Hylo earn pool program. Manages pool
-/// initialization, rebalancing, fee configuration, and stats.
+/// initialization, rebalancing, and fee configuration.
 /// User-facing deposit/withdraw goes through
 /// [`crate::router_client::RouterClient`].
 pub struct EarnPoolClient {
@@ -149,17 +146,5 @@ impl EarnPoolClient {
     let memo = build_memo("unpause_earn_pool", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Fetches [`EarnPoolStats`] from current on-chain state.
-  ///
-  /// # Errors
-  /// * RPC fetch, deserialization, or oracle validation failure
-  /// * Arithmetic overflow in yield math
-  pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
-    let keys = stats_account_keys();
-    let accounts = self.program().rpc().get_multiple_accounts(&keys).await?;
-    let inputs = build_stats_inputs(&accounts)?;
-    compute_stats(&inputs)
   }
 }

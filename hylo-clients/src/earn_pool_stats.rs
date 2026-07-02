@@ -25,6 +25,7 @@ use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 use hylo_idl::pda;
 use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 /// Snapshot of one harvest stream from its on-chain [`HarvestCache`].
 #[derive(Debug, Clone, Copy)]
@@ -230,6 +231,18 @@ pub fn stats_account_keys() -> Vec<Pubkey> {
     pda::SOL_USD_PYTH_FEED,
     sysvar::clock::ID,
   ]
+}
+
+/// Fetches [`EarnPoolStats`] from current on-chain state in one
+/// slot-consistent `get_multiple_accounts` call. Read-only: needs no
+/// keypair or program client.
+///
+/// # Errors
+/// * RPC fetch, deserialization, or oracle validation failure
+/// * Arithmetic overflow in yield math
+pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
+  let accounts = rpc.get_multiple_accounts(&stats_account_keys()).await?;
+  compute_stats(&build_stats_inputs(&accounts)?)
 }
 
 fn require<'a>(

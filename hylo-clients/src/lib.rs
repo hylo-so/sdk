@@ -29,8 +29,10 @@
 //!   redeem, swap, earn pool) via the router program
 //! - [`exchange_client::ExchangeClient`] — Admin operations for the exchange
 //!   program
-//! - [`earn_pool_client::EarnPoolClient`] — Admin operations and yield stats
-//!   for the earn pool program
+//! - [`earn_pool_client::EarnPoolClient`] — Admin operations for the earn pool
+//!   program
+//! - [`earn_pool_stats`] — Read-only earn pool yield statistics (no keypair
+//!   required)
 
 pub mod earn_pool_client;
 pub mod earn_pool_stats;
