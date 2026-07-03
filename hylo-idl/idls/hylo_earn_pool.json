@@ -2521,6 +2521,7 @@
         },
         {
           "name": "pool_config",
+          "writable": true,
           "pda": {
             "seeds": [
               {
