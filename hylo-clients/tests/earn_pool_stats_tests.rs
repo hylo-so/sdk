@@ -19,6 +19,7 @@ async fn earn_pool_stats_mainnet() -> Result<()> {
       assert!(stats.projected_apy.is_finite());
       assert!(stats.naive_apy >= 0.0);
       assert!(stats.projected_apy >= 0.0);
+      assert!(stats.epochs_per_year > 100.0 && stats.epochs_per_year < 400.0);
       assert!(stats.lst_harvest.epoch <= stats.current_epoch);
       assert!(stats
         .exo_streams

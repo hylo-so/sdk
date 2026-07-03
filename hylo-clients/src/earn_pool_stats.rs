@@ -67,6 +67,7 @@ pub struct StatsInputs {
   pub exo_streams: Vec<ExoStream>,
   pub sol_usd_spot: UFix64<N9>,
   pub outstanding_drawdown: UFix64<N6>,
+  pub epochs_per_year: f64,
 }
 
 /// Per-stream results for one exo borrow-rate stream.
@@ -89,6 +90,8 @@ pub struct EarnPoolStats {
   pub pool_balance: UFix64<N6>,
   pub shyusd_supply: UFix64<N6>,
   pub current_epoch: u64,
+  /// Annualization basis used for both APYs.
+  pub epochs_per_year: f64,
   /// LST staking-yield stream (`harvest_yield`).
   pub lst_harvest: RealizedHarvest,
   /// Exo borrow-rate streams (`harvest_borrow_rate`), one per pair.
@@ -96,7 +99,7 @@ pub struct EarnPoolStats {
   /// Sum of the LST stream plus all exo streams whose epoch equals the
   /// most recent harvested epoch across all streams, over the pool.
   pub last_epoch_yield_rate: UFix64<N9>,
-  /// `(1 + last_epoch_yield_rate)^182 - 1`
+  /// `(1 + last_epoch_yield_rate)^epochs_per_year - 1`
   pub naive_apy: f64,
   pub projected_lst_inflow: UFix64<N6>,
   /// Aggregate projected next-epoch inflow across all exo streams.
@@ -107,13 +110,63 @@ pub struct EarnPoolStats {
   pub projected_apy: f64,
 }
 
-/// Compounded annual percentage yield from an `N9` per-epoch rate.
+/// Seconds in a Julian year.
+const SECONDS_PER_YEAR: f64 = 31_557_600.0;
+
+/// Fallback annualization basis when epoch measurement fails: the
+/// protocol convention ([`EPOCHS_PER_YEAR`]).
+const FALLBACK_EPOCHS_PER_YEAR: f64 = 182.0;
+
+/// Compounded APY from an `N9` per-epoch rate at a given annualization
+/// basis (epochs per year).
+#[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
+#[must_use]
+pub fn annualize_with(per_epoch_rate: UFix64<N9>, epochs_per_year: f64) -> f64 {
+  let rate = per_epoch_rate.bits as f64 * 1e-9;
+  (1.0 + rate).powf(epochs_per_year) - 1.0
+}
+
+/// Compounded APY at the protocol's 182-epochs/year convention.
 #[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
 #[must_use]
 pub fn annualize(per_epoch_rate: UFix64<N9>) -> f64 {
-  let rate = per_epoch_rate.bits as f64 * 1e-9;
-  let epochs = EPOCHS_PER_YEAR as f64;
-  (1.0 + rate).powf(epochs) - 1.0
+  annualize_with(per_epoch_rate, EPOCHS_PER_YEAR as f64)
+}
+
+/// Measures the last completed epoch's exact wall-clock duration from
+/// block times at the epoch boundary slots, returning epochs per year.
+///
+/// # Errors
+/// * RPC failure, missing boundary blocks, or non-positive duration
+#[allow(clippy::cast_precision_loss)] // advisory stats
+pub async fn measure_epochs_per_year(
+  rpc: &RpcClient,
+  current_epoch: u64,
+) -> Result<f64> {
+  let prev_epoch = current_epoch
+    .checked_sub(1)
+    .ok_or_else(|| anyhow!("No previous epoch to measure"))?;
+  let schedule = rpc.get_epoch_schedule().await?;
+  let start_prev = schedule.get_first_slot_in_epoch(prev_epoch);
+  let start_curr = schedule.get_first_slot_in_epoch(current_epoch);
+  let t0 = block_time_at_or_after(rpc, start_prev).await?;
+  let t1 = block_time_at_or_after(rpc, start_curr).await?;
+  let duration = t1
+    .checked_sub(t0)
+    .filter(|d| *d > 0)
+    .ok_or_else(|| anyhow!("Non-positive epoch duration"))?;
+  Ok(SECONDS_PER_YEAR / duration as f64)
+}
+
+/// Block time of the first block at or after `slot` (epoch boundary
+/// slots can be skipped).
+async fn block_time_at_or_after(rpc: &RpcClient, slot: u64) -> Result<i64> {
+  let slots = rpc.get_blocks_with_limit(slot, 1).await?;
+  let first = slots
+    .first()
+    .copied()
+    .ok_or_else(|| anyhow!("No block found at or after slot {slot}"))?;
+  Ok(rpc.get_block_time(first).await?)
 }
 
 fn realized(
@@ -195,15 +248,16 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
     pool_balance: inputs.pool_balance,
     shyusd_supply: inputs.shyusd_supply,
     current_epoch: inputs.current_epoch,
+    epochs_per_year: inputs.epochs_per_year,
     lst_harvest,
     exo_streams,
     last_epoch_yield_rate,
-    naive_apy: annualize(last_epoch_yield_rate),
+    naive_apy: annualize_with(last_epoch_yield_rate, inputs.epochs_per_year),
     projected_lst_inflow: projected_lst,
     projected_exo_inflow,
     outstanding_drawdown: inputs.outstanding_drawdown,
     projected_epoch_rate,
-    projected_apy: annualize(projected_epoch_rate),
+    projected_apy: annualize_with(projected_epoch_rate, inputs.epochs_per_year),
   })
 }
 
@@ -233,16 +287,32 @@ pub fn stats_account_keys() -> Vec<Pubkey> {
   ]
 }
 
-/// Fetches [`EarnPoolStats`] from current on-chain state in one
-/// slot-consistent `get_multiple_accounts` call. Read-only: needs no
-/// keypair or program client.
+/// Fetches [`EarnPoolStats`] from current on-chain state: one
+/// slot-consistent `get_multiple_accounts` call, plus an epoch-schedule
+/// fetch and two epoch-boundary block-time lookups to measure the last
+/// completed epoch's duration. Measurement failure does not error: the
+/// annualization basis falls back to the protocol's 182-epochs/year
+/// convention. Read-only: needs no keypair or program client.
 ///
 /// # Errors
 /// * RPC fetch, deserialization, or oracle validation failure
 /// * Arithmetic overflow in yield math
 pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
   let accounts = rpc.get_multiple_accounts(&stats_account_keys()).await?;
-  compute_stats(&build_stats_inputs(&accounts)?)
+  let clock: Clock = bincode::deserialize(
+    &require(
+      accounts
+        .get(STATS_ACCOUNT_COUNT - 1)
+        .and_then(Option::as_ref),
+      "clock sysvar",
+    )?
+    .data,
+  )
+  .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+  let epochs_per_year = measure_epochs_per_year(rpc, clock.epoch)
+    .await
+    .unwrap_or(FALLBACK_EPOCHS_PER_YEAR);
+  compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
 }
 
 fn require<'a>(
@@ -322,7 +392,10 @@ fn lst_position(
 /// # Errors
 /// * Missing account or deserialization failure
 /// * Oracle validation failure
-pub fn build_stats_inputs(accounts: &[Option<Account>]) -> Result<StatsInputs> {
+pub fn build_stats_inputs(
+  accounts: &[Option<Account>],
+  epochs_per_year: f64,
+) -> Result<StatsInputs> {
   let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_vault, xbtc_mint, btc_usd, sol_usd, clock]: &[Option<Account>; STATS_ACCOUNT_COUNT] =
     accounts.try_into().map_err(|_| {
       anyhow!(
@@ -422,6 +495,7 @@ pub fn build_stats_inputs(accounts: &[Option<Account>]) -> Result<StatsInputs> {
     }],
     sol_usd_spot,
     outstanding_drawdown,
+    epochs_per_year,
   })
 }
 
@@ -472,6 +546,7 @@ mod tests {
       )],
       sol_usd_spot: UFix64::<N9>::new(150_000_000_000),
       outstanding_drawdown: UFix64::zero(),
+      epochs_per_year: 182.0,
     }
   }
 
@@ -486,6 +561,34 @@ mod tests {
   fn annualize_zero_rate() {
     let apy = annualize(UFix64::zero());
     assert!(apy.abs() < f64::EPSILON);
+  }
+
+  #[test]
+  fn annualize_with_matches_convention() {
+    let rate = UFix64::<N9>::new(1_000_000);
+    let diff = (annualize_with(rate, 182.0) - annualize(rate)).abs();
+    assert!(diff < f64::EPSILON);
+  }
+
+  #[test]
+  fn annualize_with_lower_basis_lowers_apy() {
+    let rate = UFix64::<N9>::new(2_000_000);
+    let low = annualize_with(rate, 166.0);
+    let high = annualize_with(rate, 182.0);
+    assert!(low < high, "low = {low}, high = {high}");
+    let expected = (1.002f64).powf(166.0) - 1.0;
+    assert!((low - expected).abs() < 1e-12, "low = {low}");
+  }
+
+  #[test]
+  fn compute_stats_uses_given_basis() -> Result<()> {
+    let mut input = inputs();
+    input.epochs_per_year = 100.0;
+    let stats = compute_stats(&input)?;
+    assert!((stats.epochs_per_year - 100.0).abs() < f64::EPSILON);
+    let expected = annualize_with(stats.last_epoch_yield_rate, 100.0);
+    assert!((stats.naive_apy - expected).abs() < f64::EPSILON);
+    Ok(())
   }
 
   #[test]
