@@ -1,11 +1,13 @@
 //! Integration test for earn pool yield stats against mainnet.
-//! Skips silently unless `RPC_URL` is set (matches CI secrets setup).
+//! Requires `RPC_URL`; run explicitly with `cargo test -- --ignored`
+//! (add `--features shadow` to target the shadow deployment).
 
 use anyhow::Result;
 use hylo_clients::earn_pool_stats::fetch_earn_pool_stats;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 #[tokio::test]
+#[ignore = "re-enable after mainnet is on v2"]
 async fn earn_pool_stats_mainnet() -> Result<()> {
   match std::env::var("RPC_URL") {
     Err(_) => Ok(()),
