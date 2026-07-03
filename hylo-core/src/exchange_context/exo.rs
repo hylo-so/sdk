@@ -17,7 +17,7 @@ use crate::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
-use crate::levercoin_limiter::LevercoinMarketCapLimiter;
+use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;

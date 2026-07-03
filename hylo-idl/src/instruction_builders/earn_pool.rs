@@ -115,6 +115,32 @@ pub fn update_withdrawal_fee(
 }
 
 #[must_use]
+pub fn update_withdrawal_limit(
+  admin: Pubkey,
+  args: &args::UpdateWithdrawalLimit,
+) -> Instruction {
+  let accounts = account_builders::update_withdrawal_limit(admin);
+  Instruction {
+    program_id: earn_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_deposit_limit(
+  admin: Pubkey,
+  args: &args::UpdateDepositLimit,
+) -> Instruction {
+  let accounts = account_builders::update_deposit_limit(admin);
+  Instruction {
+    program_id: earn_pool::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn pause_earn_pool(pause_authority: Pubkey) -> Instruction {
   let accounts = accounts::PauseEarnPool {
     pause_authority,

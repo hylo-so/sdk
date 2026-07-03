@@ -186,11 +186,27 @@ pub enum CoreError {
   RangeUnexpectedBound,
   #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]
   StablecoinMintThresholdInvalid,
-  // `levercoin_limiter`
+  // `limiter::levercoin`
   #[msg("Levercoin market cap limit not in valid configuration range.")]
   LevercoinMarketCapLimitInvalid,
   #[msg("Cannot mint new levercoin as market cap limit has been reached.")]
   LevercoinMarketCapLimitReached,
   #[msg("Arithmetic error while computing levercoin market cap limit.")]
   LevercoinMarketCapArithmetic,
+  // `limiter::deposit`
+  #[msg("Arithmetic error while computing total deposit.")]
+  DepositLimitArithmetic,
+  #[msg("Deposit exceeds configured limit.")]
+  DepositLimitExceeded,
+  #[msg("Deposit limit cannot be lower than pool amount.")]
+  DepositLimitValidation,
+  // `limiter::withdraw`
+  #[msg("Arithmetic error while computing total withdrawal.")]
+  WithdrawalLimitArithmetic,
+  #[msg("Withdrawal exceeds configured limit for epoch.")]
+  WithdrawalLimitExceededForEpoch,
+  #[msg("Withdrawal limiter logged epoch greater than current epoch.")]
+  WithdrawalLimitInvalidEpoch,
+  #[msg("Withdrawal limit is zero or exceeds pool amount.")]
+  WithdrawalLimitValidation,
 }

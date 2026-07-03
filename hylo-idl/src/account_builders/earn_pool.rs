@@ -2,7 +2,8 @@ use anchor_lang::prelude::Pubkey;
 use anchor_spl::token;
 
 use crate::earn_pool::client::accounts::{
-  DeprecateLevercoinPool, UserDeposit, UserWithdraw,
+  DeprecateLevercoinPool, UpdateDepositLimit, UpdateWithdrawalLimit,
+  UserDeposit, UserWithdraw,
 };
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, XSOL};
 use crate::{earn_pool, pda};
@@ -43,6 +44,36 @@ pub fn withdraw(user: Pubkey) -> UserWithdraw {
     stablecoin_pool: pda::HYUSD_POOL,
     lp_token_mint: SHYUSD::MINT,
     token_program: token::ID,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
+  }
+}
+
+/// Builds account context for earn pool withdrawal limit update.
+#[must_use]
+pub fn update_withdrawal_limit(admin: Pubkey) -> UpdateWithdrawalLimit {
+  UpdateWithdrawalLimit {
+    admin,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
+    event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
+    program: earn_pool::ID,
+  }
+}
+
+/// Builds account context for earn pool deposit limit update.
+#[must_use]
+pub fn update_deposit_limit(admin: Pubkey) -> UpdateDepositLimit {
+  UpdateDepositLimit {
+    admin,
+    hylo: pda::HYLO,
+    pool_config: pda::POOL_CONFIG,
+    pool_auth: pda::POOL_AUTH,
+    stablecoin_pool: pda::HYUSD_POOL,
+    stablecoin_mint: HYUSD::MINT,
     event_authority: pda::EARN_POOL_EVENT_AUTHORITY,
     program: earn_pool::ID,
   }

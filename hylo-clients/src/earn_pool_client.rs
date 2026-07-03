@@ -87,6 +87,38 @@ impl EarnPoolClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
+  /// Updates the withdrawal limit.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_withdrawal_limit(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateWithdrawalLimit,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_withdrawal_limit(squads.vault_pda(), args);
+    let memo = build_memo("update_withdrawal_limit", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Updates the deposit limit.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_deposit_limit(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateDepositLimit,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_deposit_limit(squads.vault_pda(), args);
+    let memo = build_memo("update_deposit_limit", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
   /// Pauses the earn pool.
   ///
   /// # Errors
