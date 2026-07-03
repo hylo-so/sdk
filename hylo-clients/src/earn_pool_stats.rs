@@ -113,8 +113,7 @@ pub struct EarnPoolStats {
 /// Seconds in a Julian year.
 const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 
-/// Fallback annualization basis when epoch measurement fails: the
-/// protocol convention ([`EPOCHS_PER_YEAR`]).
+/// Basis when epoch measurement fails ([`EPOCHS_PER_YEAR`]).
 const FALLBACK_EPOCHS_PER_YEAR: f64 = 182.0;
 
 /// Compounded APY from an `N9` per-epoch rate at a given annualization
