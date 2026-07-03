@@ -52,15 +52,14 @@ impl WithdrawalLimiter {
   ///
   /// # Errors
   /// * Numeric conversion
-  /// * New limit zero or greater than current pool amount
+  /// * New limit zero
   pub fn update_limit(
     &mut self,
-    pool_amount: UFix64<N6>,
     new_limit_raw: UFixValue64,
     current_epoch: u64,
   ) -> Result<()> {
     let new_limit: UFix64<N6> = new_limit_raw.try_into()?;
-    if new_limit > UFix64::zero() && new_limit <= pool_amount {
+    if new_limit > UFix64::zero() {
       self.limit = new_limit_raw;
       self.withdrawal_ledger = VirtualStablecoin::new();
       self.epoch = current_epoch;
@@ -124,11 +123,10 @@ mod tests {
   }
 
   #[test]
-  fn update_limit_within_pool() -> Result<()> {
+  fn update_limit_nonzero() -> Result<()> {
     let mut limiter = limiter();
-    let pool = UFix64::constant(3_000_000);
     let new_limit = UFixValue64::new(2_000_000, -6);
-    limiter.update_limit(pool, new_limit, EPOCH)?;
+    limiter.update_limit(new_limit, EPOCH)?;
     assert_eq!(limiter.limit()?, UFix64::constant(2_000_000));
     Ok(())
   }
@@ -136,17 +134,7 @@ mod tests {
   #[test]
   fn reject_update_zero_limit() {
     let mut limiter = limiter();
-    let pool = UFix64::constant(1_000_000);
-    let result = limiter.update_limit(pool, UFixValue64::new(0, -6), EPOCH);
-    assert_eq!(result.err(), Some(WithdrawalLimitValidation.into()));
-  }
-
-  #[test]
-  fn reject_update_above_pool() {
-    let mut limiter = limiter();
-    let pool = UFix64::constant(1_000_000);
-    let new_limit = UFixValue64::new(1_000_001, -6);
-    let result = limiter.update_limit(pool, new_limit, EPOCH);
+    let result = limiter.update_limit(UFixValue64::new(0, -6), EPOCH);
     assert_eq!(result.err(), Some(WithdrawalLimitValidation.into()));
   }
 
@@ -154,8 +142,7 @@ mod tests {
   fn update_limit_resets_ledger_and_epoch() -> Result<()> {
     let mut limiter = limiter();
     limiter.register_withdrawal(UFix64::constant(1_000_000), EPOCH)?;
-    let pool = UFix64::constant(2_000_000);
-    limiter.update_limit(pool, UFixValue64::new(1_000_000, -6), EPOCH)?;
+    limiter.update_limit(UFixValue64::new(1_000_000, -6), EPOCH)?;
     assert_eq!(limiter.epoch, EPOCH);
     assert_eq!(limiter.withdrawal_ledger.supply()?, UFix64::zero());
     limiter.register_withdrawal(UFix64::constant(1_000_000), EPOCH)?;
