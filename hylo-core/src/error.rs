@@ -200,7 +200,7 @@ pub enum CoreError {
   DepositLimitExceeded,
   #[msg("Deposit limit cannot be lower than pool amount.")]
   DepositLimitValidation,
-  // `limiter::withdrawal`
+  // `limiter::withdraw`
   #[msg("Arithmetic error while computing total withdrawal.")]
   WithdrawalLimitArithmetic,
   #[msg("Withdrawal exceeds configured limit for epoch.")]

@@ -23,9 +23,8 @@ pub struct DepositLimiter {
 }
 
 impl DepositLimiter {
-  /// Creates a limiter with the given raw deposit limit.
-  #[must_use]
-  pub fn new(limit: UFixValue64) -> DepositLimiter {
+  #[cfg(test)]
+  fn new(limit: UFixValue64) -> DepositLimiter {
     DepositLimiter { limit }
   }
 
@@ -33,7 +32,7 @@ impl DepositLimiter {
   ///
   /// # Errors
   /// * Numeric conversion
-  /// * New limit less than or equal to current pool amount
+  /// * New limit less than current pool amount
   pub fn update_limit(
     &mut self,
     pool_amount: UFix64<N6>,

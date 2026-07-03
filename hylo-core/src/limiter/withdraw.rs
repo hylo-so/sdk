@@ -30,9 +30,8 @@ pub struct WithdrawalLimiter {
 }
 
 impl WithdrawalLimiter {
-  /// Creates a limiter with the given raw withdrawal limit.
-  #[must_use]
-  pub fn new(limit: UFixValue64, epoch: u64) -> WithdrawalLimiter {
+  #[cfg(test)]
+  fn new(limit: UFixValue64, epoch: u64) -> WithdrawalLimiter {
     WithdrawalLimiter {
       limit,
       withdrawal_ledger: VirtualStablecoin::new(),
@@ -53,13 +52,16 @@ impl WithdrawalLimiter {
   /// # Errors
   /// * Numeric conversion
   /// * New limit zero
+  /// * Ledger epoch greater than current epoch
   pub fn update_limit(
     &mut self,
     new_limit_raw: UFixValue64,
     current_epoch: u64,
   ) -> Result<()> {
     let new_limit: UFix64<N6> = new_limit_raw.try_into()?;
-    if new_limit > UFix64::zero() {
+    if current_epoch < self.epoch {
+      Err(WithdrawalLimitInvalidEpoch.into())
+    } else if new_limit > UFix64::zero() {
       self.limit = new_limit_raw;
       self.withdrawal_ledger = VirtualStablecoin::new();
       self.epoch = current_epoch;
@@ -206,6 +208,14 @@ mod tests {
       limiter.register_withdrawal(UFix64::constant(1_000_001), EPOCH + 1);
     assert_eq!(result.err(), Some(WithdrawalLimitExceededForEpoch.into()));
     Ok(())
+  }
+
+  #[test]
+  fn reject_update_stale_epoch() {
+    let mut limiter = limiter();
+    let result =
+      limiter.update_limit(UFixValue64::new(2_000_000, -6), EPOCH - 1);
+    assert_eq!(result.err(), Some(WithdrawalLimitInvalidEpoch.into()));
   }
 
   #[test]
