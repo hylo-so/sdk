@@ -113,9 +113,6 @@ pub struct EarnPoolStats {
 /// Seconds in a Julian year.
 const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 
-/// Basis when epoch measurement fails ([`EPOCHS_PER_YEAR`]).
-const FALLBACK_EPOCHS_PER_YEAR: f64 = 182.0;
-
 /// Compounded APY from an `N9` per-epoch rate at a given annualization
 /// basis (epochs per year).
 #[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
@@ -289,12 +286,12 @@ pub fn stats_account_keys() -> Vec<Pubkey> {
 /// Fetches [`EarnPoolStats`] from current on-chain state: one
 /// slot-consistent `get_multiple_accounts` call, plus an epoch-schedule
 /// fetch and two epoch-boundary block-time lookups to measure the last
-/// completed epoch's duration. Measurement failure does not error: the
-/// annualization basis falls back to the protocol's 182-epochs/year
-/// convention. Read-only: needs no keypair or program client.
+/// completed epoch's duration. Read-only: needs no keypair or program
+/// client.
 ///
 /// # Errors
 /// * RPC fetch, deserialization, or oracle validation failure
+/// * Epoch duration measurement failure
 /// * Arithmetic overflow in yield math
 pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
   let accounts = rpc.get_multiple_accounts(&stats_account_keys()).await?;
@@ -308,9 +305,7 @@ pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
     .data,
   )
   .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-  let epochs_per_year = measure_epochs_per_year(rpc, clock.epoch)
-    .await
-    .unwrap_or(FALLBACK_EPOCHS_PER_YEAR);
+  let epochs_per_year = measure_epochs_per_year(rpc, clock.epoch).await?;
   compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
 }
 
