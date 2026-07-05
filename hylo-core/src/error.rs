@@ -39,8 +39,6 @@ pub enum CoreError {
   PythOracleOutdated,
   #[msg("Oracle price is out of range.")]
   PythOraclePriceRange,
-  #[msg("Oracle publish slot greater than current slot.")]
-  PythOracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
   PythOracleVerificationLevel,
   // `nav`
