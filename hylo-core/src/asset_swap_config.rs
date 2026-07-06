@@ -1,6 +1,6 @@
-use anchor_lang::Result;
 use fix::prelude::*;
 
+use crate::error::CoreError;
 use crate::error::CoreError::InvalidFees;
 use crate::fees::controller::FeeExtract;
 
@@ -13,22 +13,27 @@ pub struct AssetSwapConfig {
 }
 
 impl AssetSwapConfig {
-  pub fn new(serialized_fee: UFixValue64) -> Result<AssetSwapConfig> {
+  pub fn new(
+    serialized_fee: UFixValue64,
+  ) -> Result<AssetSwapConfig, CoreError> {
     let fee = serialized_fee.try_into()?;
     Self::validate_fee(fee)?;
     Ok(AssetSwapConfig { fee })
   }
 
   /// Applies swap fee to a token amount.
-  pub fn apply_fee<Exp>(&self, amount: UFix64<Exp>) -> Result<FeeExtract<Exp>> {
+  pub fn apply_fee<Exp>(
+    &self,
+    amount: UFix64<Exp>,
+  ) -> Result<FeeExtract<Exp>, CoreError> {
     FeeExtract::new(self.fee, amount)
   }
 
-  pub fn validate_fee(fee: UFix64<N4>) -> Result<()> {
+  pub fn validate_fee(fee: UFix64<N4>) -> Result<(), CoreError> {
     if fee > UFix64::zero() && fee <= MAX_FEE {
       Ok(())
     } else {
-      Err(InvalidFees.into())
+      Err(InvalidFees)
     }
   }
 }
@@ -38,7 +43,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn apply_fee() -> Result<()> {
+  fn apply_fee() -> Result<(), CoreError> {
     let config = AssetSwapConfig::new(UFixValue64::new(50, -4))?;
     let amount = UFix64::<N9>::new(1_000_000_000);
     let result = config.apply_fee(amount)?;
@@ -51,8 +56,8 @@ mod tests {
   fn reject_out_of_range_fee() {
     let zero = AssetSwapConfig::new(UFixValue64::new(0, -4));
     let one = AssetSwapConfig::new(UFixValue64::new(10000, -4));
-    assert_eq!(zero.err(), Some(InvalidFees.into()));
-    assert_eq!(one.err(), Some(InvalidFees.into()));
+    assert_eq!(zero.err(), Some(InvalidFees));
+    assert_eq!(one.err(), Some(InvalidFees));
   }
 
   #[test]

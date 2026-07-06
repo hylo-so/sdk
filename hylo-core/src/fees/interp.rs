@@ -1,6 +1,5 @@
 //! Piecewise linear interpolation for fee curves.
 
-use anchor_lang::Result;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use itertools::Itertools;
@@ -76,7 +75,7 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   /// # Errors
   /// * Minimum of 2 points resolution
   /// * Monotonically increasing x values
-  pub fn from_points(points: [Point<Exp>; RES]) -> Result<Self> {
+  pub fn from_points(points: [Point<Exp>; RES]) -> Result<Self, CoreError> {
     (RES >= 2)
       .then_some(())
       .ok_or(CoreError::InterpInsufficientPoints)?;
@@ -85,7 +84,7 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .tuple_windows::<(_, _)>()
       .all(|(p0, p1)| p0.x < p1.x)
       .then_some(FixInterp { points })
-      .ok_or(CoreError::InterpPointsNotMonotonic.into())
+      .ok_or(CoreError::InterpPointsNotMonotonic)
   }
 
   /// Constructs interpolator with no validations.
@@ -124,7 +123,7 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   ///
   /// * Input x is outside the valid domain.
   /// * Arithmetic overflow during calculation.
-  pub fn interpolate(&self, x: IFix64<Exp>) -> Result<IFix64<Exp>> {
+  pub fn interpolate(&self, x: IFix64<Exp>) -> Result<IFix64<Exp>, CoreError> {
     (x >= self.x_min() && x <= self.x_max())
       .then_some(())
       .ok_or(CoreError::InterpOutOfDomain)?;
@@ -135,7 +134,7 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .zip(self.points.get(part))
       .map(|(p0, p1)| LineSegment(p0, p1))
       .and_then(|seg| seg.lerp(x))
-      .ok_or(CoreError::InterpArithmetic.into())
+      .ok_or(CoreError::InterpArithmetic)
   }
 
   /// Inverse of [`interpolate`](Self::interpolate): the approximate `x`
@@ -144,7 +143,10 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   /// # Errors
   /// * `y` is outside the valid range
   /// * Arithmetic overflow
-  pub fn inverse_interpolate(&self, y: IFix64<Exp>) -> Result<IFix64<Exp>> {
+  pub fn inverse_interpolate(
+    &self,
+    y: IFix64<Exp>,
+  ) -> Result<IFix64<Exp>, CoreError> {
     (y >= self.y_min() && y <= self.y_max())
       .then_some(())
       .ok_or(CoreError::InterpOutOfDomain)?;
@@ -155,7 +157,7 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .zip(self.points.get(part))
       .map(|(p0, p1)| LineSegment(p0, p1))
       .and_then(|seg| seg.inverse_lerp(y))
-      .ok_or(CoreError::InterpArithmetic.into())
+      .ok_or(CoreError::InterpArithmetic)
   }
 }
 
@@ -196,20 +198,14 @@ mod tests {
   #[test]
   fn from_points_insufficient_points() {
     let result = FixInterp::from_points([Point::<N5>::from_ints(0, 0)]);
-    assert_eq!(
-      result.err(),
-      Some(CoreError::InterpInsufficientPoints.into())
-    );
+    assert_eq!(result.err(), Some(CoreError::InterpInsufficientPoints));
   }
 
   #[test]
   fn from_points_non_monotonic() {
     let points = [Point::<N5>::from_ints(100, 10), Point::from_ints(50, 20)];
     let result = FixInterp::from_points(points);
-    assert_eq!(
-      result.err(),
-      Some(CoreError::InterpPointsNotMonotonic.into())
-    );
+    assert_eq!(result.err(), Some(CoreError::InterpPointsNotMonotonic));
   }
 
   #[test]
@@ -225,7 +221,7 @@ mod tests {
     let x = IFix64::<N5>::constant(149_999);
     assert_eq!(
       interp.interpolate(x).err(),
-      Some(CoreError::InterpOutOfDomain.into())
+      Some(CoreError::InterpOutOfDomain)
     );
     Ok(())
   }
@@ -236,7 +232,7 @@ mod tests {
     let x = IFix64::<N5>::constant(170_001);
     assert_eq!(
       interp.interpolate(x).err(),
-      Some(CoreError::InterpOutOfDomain.into())
+      Some(CoreError::InterpOutOfDomain)
     );
     Ok(())
   }
@@ -297,11 +293,11 @@ mod tests {
 
     assert_eq!(
       interp.interpolate(IFix64::constant(-1)).err(),
-      Some(CoreError::InterpOutOfDomain.into())
+      Some(CoreError::InterpOutOfDomain)
     );
     assert_eq!(
       interp.interpolate(IFix64::constant(101)).err(),
-      Some(CoreError::InterpOutOfDomain.into())
+      Some(CoreError::InterpOutOfDomain)
     );
     Ok(())
   }

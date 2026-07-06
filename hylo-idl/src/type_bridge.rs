@@ -1,4 +1,4 @@
-use fix::prelude::{UFix64, UFixValue64};
+use fix::prelude::{ExponentMismatch, UFix64, UFixValue64};
 use fix::typenum::Integer;
 
 impl From<crate::exchange::types::UFixValue64> for UFixValue64 {
@@ -13,7 +13,7 @@ impl From<crate::exchange::types::UFixValue64> for UFixValue64 {
 impl<Exp: Integer> TryFrom<crate::exchange::types::UFixValue64>
   for UFix64<Exp>
 {
-  type Error = anchor_lang::error::Error;
+  type Error = ExponentMismatch;
 
   fn try_from(
     idl: crate::exchange::types::UFixValue64,
@@ -35,7 +35,7 @@ impl From<crate::earn_pool::types::UFixValue64> for UFixValue64 {
 impl<Exp: Integer> TryFrom<crate::earn_pool::types::UFixValue64>
   for UFix64<Exp>
 {
-  type Error = anchor_lang::error::Error;
+  type Error = ExponentMismatch;
 
   fn try_from(
     idl: crate::earn_pool::types::UFixValue64,

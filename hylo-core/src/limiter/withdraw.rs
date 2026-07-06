@@ -1,9 +1,12 @@
 use std::cmp::Ordering;
 
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   WithdrawalLimitArithmetic, WithdrawalLimitExceededForEpoch,
   WithdrawalLimitInvalidEpoch, WithdrawalLimitValidation,
@@ -43,8 +46,8 @@ impl WithdrawalLimiter {
   ///
   /// # Errors
   /// * Numeric conversion
-  pub fn limit(&self) -> Result<UFix64<N6>> {
-    self.limit.try_into()
+  pub fn limit(&self) -> Result<UFix64<N6>, CoreError> {
+    Ok(self.limit.try_into()?)
   }
 
   /// Sets new withdrawal limit, resetting ledger and epoch.
@@ -57,17 +60,17 @@ impl WithdrawalLimiter {
     &mut self,
     new_limit_raw: UFixValue64,
     current_epoch: u64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     let new_limit: UFix64<N6> = new_limit_raw.try_into()?;
     if current_epoch < self.epoch {
-      Err(WithdrawalLimitInvalidEpoch.into())
+      Err(WithdrawalLimitInvalidEpoch)
     } else if new_limit > UFix64::zero() {
       self.limit = new_limit_raw;
       self.withdrawal_ledger = VirtualStablecoin::new();
       self.epoch = current_epoch;
       Ok(())
     } else {
-      Err(WithdrawalLimitValidation.into())
+      Err(WithdrawalLimitValidation)
     }
   }
 
@@ -83,9 +86,9 @@ impl WithdrawalLimiter {
     &mut self,
     withdrawal: UFix64<N6>,
     current_epoch: u64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     match current_epoch.cmp(&self.epoch) {
-      Ordering::Less => Err(WithdrawalLimitInvalidEpoch.into()),
+      Ordering::Less => Err(WithdrawalLimitInvalidEpoch),
       Ordering::Equal => self.register_within_limit(withdrawal),
       Ordering::Greater => {
         self.epoch = current_epoch;
@@ -96,7 +99,10 @@ impl WithdrawalLimiter {
   }
 
   /// Adds withdrawal to ledger if projected total stays within limit.
-  fn register_within_limit(&mut self, withdrawal: UFix64<N6>) -> Result<()> {
+  fn register_within_limit(
+    &mut self,
+    withdrawal: UFix64<N6>,
+  ) -> Result<(), CoreError> {
     let projected = self
       .withdrawal_ledger
       .supply()?
@@ -105,7 +111,7 @@ impl WithdrawalLimiter {
     if projected <= self.limit()? {
       self.withdrawal_ledger.mint(withdrawal)
     } else {
-      Err(WithdrawalLimitExceededForEpoch.into())
+      Err(WithdrawalLimitExceededForEpoch)
     }
   }
 }
@@ -125,7 +131,7 @@ mod tests {
   }
 
   #[test]
-  fn update_limit_nonzero() -> Result<()> {
+  fn update_limit_nonzero() -> Result<(), CoreError> {
     let mut limiter = limiter();
     let new_limit = UFixValue64::new(2_000_000, -6);
     limiter.update_limit(new_limit, EPOCH)?;
@@ -137,11 +143,11 @@ mod tests {
   fn reject_update_zero_limit() {
     let mut limiter = limiter();
     let result = limiter.update_limit(UFixValue64::new(0, -6), EPOCH);
-    assert_eq!(result.err(), Some(WithdrawalLimitValidation.into()));
+    assert_eq!(result.err(), Some(WithdrawalLimitValidation));
   }
 
   #[test]
-  fn update_limit_resets_ledger_and_epoch() -> Result<()> {
+  fn update_limit_resets_ledger_and_epoch() -> Result<(), CoreError> {
     let mut limiter = limiter();
     limiter.register_withdrawal(UFix64::constant(1_000_000), EPOCH)?;
     limiter.update_limit(UFixValue64::new(1_000_000, -6), EPOCH)?;
@@ -152,7 +158,7 @@ mod tests {
   }
 
   #[test]
-  fn accept_withdrawal_under_limit() -> Result<()> {
+  fn accept_withdrawal_under_limit() -> Result<(), CoreError> {
     let mut limiter = limiter();
     let amount = UFix64::constant(400_000);
     limiter.register_withdrawal(amount, EPOCH)?;
@@ -161,7 +167,7 @@ mod tests {
   }
 
   #[test]
-  fn accept_cumulative_at_limit() -> Result<()> {
+  fn accept_cumulative_at_limit() -> Result<(), CoreError> {
     let mut limiter = limiter();
     limiter.register_withdrawal(UFix64::constant(400_000), EPOCH)?;
     limiter.register_withdrawal(UFix64::constant(600_000), EPOCH)?;
@@ -170,27 +176,27 @@ mod tests {
   }
 
   #[test]
-  fn reject_cumulative_over_limit() -> Result<()> {
+  fn reject_cumulative_over_limit() -> Result<(), CoreError> {
     let mut limiter = limiter();
     let amount = UFix64::constant(400_000);
     limiter.register_withdrawal(amount, EPOCH)?;
     let result = limiter.register_withdrawal(UFix64::constant(600_001), EPOCH);
-    assert_eq!(result.err(), Some(WithdrawalLimitExceededForEpoch.into()));
+    assert_eq!(result.err(), Some(WithdrawalLimitExceededForEpoch));
     assert_eq!(limiter.withdrawal_ledger.supply()?, amount);
     Ok(())
   }
 
   #[test]
-  fn reject_on_ledger_overflow() -> Result<()> {
+  fn reject_on_ledger_overflow() -> Result<(), CoreError> {
     let mut limiter = limiter();
     limiter.register_withdrawal(UFix64::constant(1), EPOCH)?;
     let result = limiter.register_withdrawal(UFix64::constant(u64::MAX), EPOCH);
-    assert_eq!(result.err(), Some(WithdrawalLimitArithmetic.into()));
+    assert_eq!(result.err(), Some(WithdrawalLimitArithmetic));
     Ok(())
   }
 
   #[test]
-  fn rollover_resets_ledger() -> Result<()> {
+  fn rollover_resets_ledger() -> Result<(), CoreError> {
     let mut limiter = limiter();
     limiter.register_withdrawal(UFix64::constant(1_000_000), EPOCH)?;
     let amount = UFix64::constant(700_000);
@@ -201,12 +207,12 @@ mod tests {
   }
 
   #[test]
-  fn reject_rollover_over_limit() -> Result<()> {
+  fn reject_rollover_over_limit() -> Result<(), CoreError> {
     let mut limiter = limiter();
     limiter.register_withdrawal(UFix64::constant(500_000), EPOCH)?;
     let result =
       limiter.register_withdrawal(UFix64::constant(1_000_001), EPOCH + 1);
-    assert_eq!(result.err(), Some(WithdrawalLimitExceededForEpoch.into()));
+    assert_eq!(result.err(), Some(WithdrawalLimitExceededForEpoch));
     Ok(())
   }
 
@@ -215,13 +221,13 @@ mod tests {
     let mut limiter = limiter();
     let result =
       limiter.update_limit(UFixValue64::new(2_000_000, -6), EPOCH - 1);
-    assert_eq!(result.err(), Some(WithdrawalLimitInvalidEpoch.into()));
+    assert_eq!(result.err(), Some(WithdrawalLimitInvalidEpoch));
   }
 
   #[test]
   fn reject_stale_epoch() {
     let mut limiter = limiter();
     let result = limiter.register_withdrawal(UFix64::constant(1), EPOCH - 1);
-    assert_eq!(result.err(), Some(WithdrawalLimitInvalidEpoch.into()));
+    assert_eq!(result.err(), Some(WithdrawalLimitInvalidEpoch));
   }
 }

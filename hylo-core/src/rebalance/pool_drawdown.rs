@@ -1,7 +1,10 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::virtual_stablecoin::VirtualStablecoin;
 
 /// Outstanding hyUSD debt owed to the earn pool after a Depeg absorption.
@@ -38,7 +41,7 @@ impl PoolDrawdown {
   ///
   /// # Errors
   /// * Underlying conversion
-  pub fn outstanding(&self) -> Result<UFix64<N6>> {
+  pub fn outstanding(&self) -> Result<UFix64<N6>, CoreError> {
     self.ledger.supply()
   }
 
@@ -46,7 +49,7 @@ impl PoolDrawdown {
   ///
   /// # Errors
   /// * Underlying arithmetic
-  pub fn drawdown(&mut self, amount: UFix64<N6>) -> Result<()> {
+  pub fn drawdown(&mut self, amount: UFix64<N6>) -> Result<(), CoreError> {
     self.ledger.mint(amount)
   }
 
@@ -54,7 +57,7 @@ impl PoolDrawdown {
   ///
   /// # Errors
   /// * Underlying arithmetic
-  pub fn repay(&mut self, amount: UFix64<N6>) -> Result<()> {
+  pub fn repay(&mut self, amount: UFix64<N6>) -> Result<(), CoreError> {
     self.ledger.burn(amount)
   }
 

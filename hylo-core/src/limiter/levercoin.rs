@@ -1,6 +1,6 @@
-use anchor_lang::prelude::Result;
 use fix::prelude::*;
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   LevercoinMarketCapArithmetic, LevercoinMarketCapLimitInvalid,
   LevercoinMarketCapLimitReached,
@@ -19,12 +19,12 @@ const MAX_MARKET_CAP_LIMIT: UFix64<N9> =
 /// * Limit outside the admissible range
 pub fn validate_levercoin_market_cap_limit(
   limit_raw: UFixValue64,
-) -> Result<UFixValue64> {
+) -> Result<UFixValue64, CoreError> {
   let limit: UFix64<N9> = limit_raw.try_into()?;
   (MIN_MARKET_CAP_LIMIT..=MAX_MARKET_CAP_LIMIT)
     .contains(&limit)
     .then_some(limit_raw)
-    .ok_or(LevercoinMarketCapLimitInvalid.into())
+    .ok_or(LevercoinMarketCapLimitInvalid)
 }
 
 /// Market cap limiter for levercoin mints.
@@ -51,7 +51,7 @@ impl LevercoinMarketCapLimiter {
   fn target_market_cap(
     &self,
     levercoin_to_mint: UFix64<N6>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     let target_supply = self
       .levercoin_supply
       .checked_add(&levercoin_to_mint)
@@ -67,12 +67,12 @@ impl LevercoinMarketCapLimiter {
   pub fn validate_token_out(
     &self,
     levercoin_to_mint: UFix64<N6>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     let target_market_cap = self.target_market_cap(levercoin_to_mint)?;
     if target_market_cap <= self.market_cap_limit {
       Ok(levercoin_to_mint)
     } else {
-      Err(LevercoinMarketCapLimitReached.into())
+      Err(LevercoinMarketCapLimitReached)
     }
   }
 }
@@ -86,7 +86,7 @@ mod tests {
   };
 
   #[test]
-  fn validate_limit_boundaries() -> Result<()> {
+  fn validate_limit_boundaries() -> Result<(), CoreError> {
     let min = MIN_MARKET_CAP_LIMIT.into();
     let max = MAX_MARKET_CAP_LIMIT.into();
     let below = UFixValue64::new(MIN_MARKET_CAP_LIMIT.bits - 1, -9);
@@ -95,11 +95,11 @@ mod tests {
     assert_eq!(validate_levercoin_market_cap_limit(max)?, max);
     assert_eq!(
       validate_levercoin_market_cap_limit(below).err(),
-      Some(LevercoinMarketCapLimitInvalid.into())
+      Some(LevercoinMarketCapLimitInvalid)
     );
     assert_eq!(
       validate_levercoin_market_cap_limit(above).err(),
-      Some(LevercoinMarketCapLimitInvalid.into())
+      Some(LevercoinMarketCapLimitInvalid)
     );
     Ok(())
   }
@@ -120,14 +120,14 @@ mod tests {
   }
 
   #[test]
-  fn accept_mint_under_limit() -> Result<()> {
+  fn accept_mint_under_limit() -> Result<(), CoreError> {
     let to_mint = UFix64::new(1_000_000_000_000);
     assert_eq!(limiter().validate_token_out(to_mint)?, to_mint);
     Ok(())
   }
 
   #[test]
-  fn accept_mint_at_limit() -> Result<()> {
+  fn accept_mint_at_limit() -> Result<(), CoreError> {
     let to_mint = UFix64::new(5_000_000_000_000);
     assert_eq!(limiter().validate_token_out(to_mint)?, to_mint);
     Ok(())
@@ -138,7 +138,7 @@ mod tests {
     let to_mint = UFix64::new(5_000_000_000_001);
     assert_eq!(
       limiter().validate_token_out(to_mint).err(),
-      Some(LevercoinMarketCapLimitReached.into())
+      Some(LevercoinMarketCapLimitReached)
     );
   }
 
@@ -147,7 +147,7 @@ mod tests {
     let to_mint = UFix64::new(u64::MAX);
     assert_eq!(
       limiter().validate_token_out(to_mint).err(),
-      Some(LevercoinMarketCapArithmetic.into())
+      Some(LevercoinMarketCapArithmetic)
     );
   }
 }

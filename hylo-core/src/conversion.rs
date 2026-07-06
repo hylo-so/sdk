@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
 use fix::prelude::*;
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   ExoCollateralToUsdc, ExoFromToken, ExoToToken, ExoUsdcToCollateral,
   LeverToStable, LstToToken, LstToUsdc, StableToLever, TokenToLst, UsdcToLst,
@@ -36,10 +36,10 @@ impl Conversion {
     &self,
     amount_lst: UFix64<N9>,
     token_nav: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     self
       .lst_to_token_inner(amount_lst, token_nav)
-      .ok_or(LstToToken.into())
+      .ok_or(LstToToken)
   }
 
   fn lst_to_token_inner(
@@ -60,10 +60,10 @@ impl Conversion {
     &self,
     amount_token: UFix64<N6>,
     token_nav: UFix64<N9>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     self
       .token_to_lst_inner(amount_token, token_nav)
-      .ok_or(TokenToLst.into())
+      .ok_or(TokenToLst)
   }
 
   fn token_to_lst_inner(
@@ -100,13 +100,13 @@ impl SwapConversion {
   pub fn stable_to_lever(
     &self,
     amount_stable: UFix64<N6>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     SwapConversion::stable_to_lever_inner(
       amount_stable,
       self.stablecoin_nav,
       self.levercoin_nav.upper,
     )
-    .ok_or(StableToLever.into())
+    .ok_or(StableToLever)
   }
 
   fn stable_to_lever_inner(
@@ -123,13 +123,13 @@ impl SwapConversion {
   pub fn lever_to_stable(
     &self,
     amount_lever: UFix64<N6>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     SwapConversion::lever_to_stable_inner(
       amount_lever,
       self.levercoin_nav.lower,
       self.stablecoin_nav,
     )
-    .ok_or(LeverToStable.into())
+    .ok_or(LeverToStable)
   }
 
   fn lever_to_stable_inner(
@@ -170,10 +170,8 @@ impl ExoConversion {
     &self,
     amount: UFix64<N9>,
     token_nav: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
-    self
-      .exo_to_token_inner(amount, token_nav)
-      .ok_or(ExoToToken.into())
+  ) -> Result<UFix64<N6>, CoreError> {
+    self.exo_to_token_inner(amount, token_nav).ok_or(ExoToToken)
   }
 
   fn exo_to_token_inner(
@@ -197,10 +195,10 @@ impl ExoConversion {
     &self,
     amount: UFix64<N6>,
     token_nav: UFix64<N9>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     self
       .token_to_exo_inner(amount, token_nav)
-      .ok_or(ExoFromToken.into())
+      .ok_or(ExoFromToken)
   }
 
   fn token_to_exo_inner(
@@ -236,11 +234,11 @@ impl UsdcStablecoinConversion {
   pub fn deposit_to_stablecoin(
     &self,
     usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     usdc_amount
       .mul_div_floor(self.usdc_usd_price.lower, UFix64::one())
       .and_then(UFix64::checked_convert)
-      .ok_or(ExoToToken.into())
+      .ok_or(ExoToToken)
   }
 
   /// Stablecoin to USDC withdrawal amount using upper bound.
@@ -251,12 +249,12 @@ impl UsdcStablecoinConversion {
   pub fn stablecoin_to_withdrawal(
     &self,
     stablecoin_amount: UFix64<N6>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     (self.usdc_usd_price.upper != UFix64::zero())
       .then_some(stablecoin_amount)
       .and_then(UFix64::checked_convert::<N9>)
       .and_then(|a| a.mul_div_floor(UFix64::one(), self.usdc_usd_price.upper))
-      .ok_or(ExoFromToken.into())
+      .ok_or(ExoFromToken)
   }
 
   /// USDC withdrawal to stablecoin equivalent using upper bound.
@@ -269,11 +267,11 @@ impl UsdcStablecoinConversion {
   pub fn withdrawal_to_stablecoin(
     &self,
     usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     usdc_amount
       .mul_div_floor(self.usdc_usd_price.upper, UFix64::one())
       .and_then(UFix64::checked_convert)
-      .ok_or(ExoToToken.into())
+      .ok_or(ExoToToken)
   }
 }
 
@@ -302,10 +300,10 @@ impl ExoRebalanceConversion {
   pub fn collateral_to_usdc(
     &self,
     collateral_amount: UFix64<N9>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     self
       .collateral_to_usdc_inner(collateral_amount)
-      .ok_or(ExoCollateralToUsdc.into())
+      .ok_or(ExoCollateralToUsdc)
   }
 
   fn collateral_to_usdc_inner(
@@ -326,10 +324,10 @@ impl ExoRebalanceConversion {
   pub fn usdc_to_collateral(
     &self,
     usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     self
       .usdc_to_collateral_inner(usdc_amount)
-      .ok_or(ExoUsdcToCollateral.into())
+      .ok_or(ExoUsdcToCollateral)
   }
 
   fn usdc_to_collateral_inner(
@@ -369,24 +367,30 @@ impl LstRebalanceConversion {
   ///
   /// # Errors
   /// * Arithmetic failure
-  pub fn lst_to_usdc(&self, lst_amount: UFix64<N9>) -> Result<UFix64<N9>> {
+  pub fn lst_to_usdc(
+    &self,
+    lst_amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
     (self.usdc_usd.upper != UFix64::zero())
       .then_some(lst_amount)
       .and_then(|amt| amt.mul_div_floor(self.lst_sol, UFix64::one()))
       .and_then(|sol| sol.mul_div_floor(self.sol_usd, self.usdc_usd.upper))
-      .ok_or(LstToUsdc.into())
+      .ok_or(LstToUsdc)
   }
 
   /// Converts USDC to LST for buy-side rebalancing.
   ///
   /// # Errors
   /// * Arithmetic failure
-  pub fn usdc_to_lst(&self, usdc_amount: UFix64<N9>) -> Result<UFix64<N9>> {
+  pub fn usdc_to_lst(
+    &self,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
     (self.sol_usd != UFix64::zero() && self.lst_sol != UFix64::zero())
       .then_some(usdc_amount)
       .and_then(|amt| amt.mul_div_floor(self.usdc_usd.lower, self.sol_usd))
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
-      .ok_or(UsdcToLst.into())
+      .ok_or(UsdcToLst)
   }
 }
 
@@ -464,7 +468,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_to_mint_lever() -> Result<()> {
+  fn amount_to_mint_lever() -> Result<(), CoreError> {
     let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
@@ -476,7 +480,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_to_mint_stable() -> Result<()> {
+  fn amount_to_mint_stable() -> Result<(), CoreError> {
     let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_736_835_834);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
@@ -487,7 +491,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_to_redeem_stable() -> Result<()> {
+  fn amount_to_redeem_stable() -> Result<(), CoreError> {
     let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
@@ -498,7 +502,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_to_redeem_lever() -> Result<()> {
+  fn amount_to_redeem_lever() -> Result<(), CoreError> {
     let usd_sol_price = PriceRange::one(UFix64::<N9>::new(171_030_000_000));
     let lst_sol = UFix64::<N9>::new(1_110_462_847);
     let conversion = Conversion::new(usd_sol_price, lst_sol);
@@ -578,7 +582,7 @@ mod tests {
   const COLLATERAL_PRICE: UFix64<N9> = UFix64::constant(148_370_000_000);
 
   #[test]
-  fn exo_rebalance_collateral_to_usdc() -> Result<()> {
+  fn exo_rebalance_collateral_to_usdc() -> Result<(), CoreError> {
     let conv = ExoRebalanceConversion::new(COLLATERAL_PRICE, UNDERPEGGED_USDC);
     let usdc = conv.collateral_to_usdc(UFix64::new(10_000_000_000))?;
     assert_eq!(usdc, UFix64::new(1_485_185_185_185));
@@ -586,7 +590,7 @@ mod tests {
   }
 
   #[test]
-  fn exo_rebalance_usdc_to_collateral() -> Result<()> {
+  fn exo_rebalance_usdc_to_collateral() -> Result<(), CoreError> {
     let conv = ExoRebalanceConversion::new(COLLATERAL_PRICE, UNDERPEGGED_USDC);
     let coll = conv.usdc_to_collateral(UFix64::new(1_500_000_000_000))?;
     assert_eq!(coll, UFix64::new(10_079_530_902));
@@ -597,7 +601,7 @@ mod tests {
   const SOL_USD: UFix64<N9> = UFix64::constant(171_030_000_000);
 
   #[test]
-  fn lst_rebalance_lst_to_usdc() -> Result<()> {
+  fn lst_rebalance_lst_to_usdc() -> Result<(), CoreError> {
     let conv = LstRebalanceConversion::new(LST_SOL, SOL_USD, UNDERPEGGED_USDC);
     let usdc = conv.lst_to_usdc(UFix64::new(10_000_000_000))?;
     assert_eq!(usdc, UFix64::new(1_944_845_645_645));
@@ -605,7 +609,7 @@ mod tests {
   }
 
   #[test]
-  fn lst_rebalance_usdc_to_lst() -> Result<()> {
+  fn lst_rebalance_usdc_to_lst() -> Result<(), CoreError> {
     let conv = LstRebalanceConversion::new(LST_SOL, SOL_USD, UNDERPEGGED_USDC);
     let lst = conv.usdc_to_lst(UFix64::new(200_000_000_000))?;
     assert_eq!(lst, UFix64::new(1_026_300_467));
