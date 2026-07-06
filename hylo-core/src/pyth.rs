@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use fix::prelude::*;
-use fix::typenum::{Integer, Z0};
+use fix::typenum::Integer;
 use pyth_solana_receiver_sdk::price_update::{
   FeedId, PriceUpdateV2, VerificationLevel,
 };
@@ -8,8 +8,7 @@ use pyth_solana_receiver_sdk::price_update::{
 use crate::error::CoreError::{
   OracleConfToleranceInvalid, OracleIntervalSecsInvalid, PythOracleConfidence,
   PythOracleExponent, PythOracleNegativePrice, PythOracleNegativeTime,
-  PythOracleOutdated, PythOraclePriceRange, PythOracleSlotInvalid,
-  PythOracleVerificationLevel,
+  PythOracleOutdated, PythOraclePriceRange, PythOracleVerificationLevel,
 };
 use crate::solana_clock::SolanaClock;
 
@@ -152,27 +151,6 @@ fn validate_publish_time(
   }
 }
 
-/// Number of Solana slots in configured oracle interval time.
-fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
-  let time: UFix64<N2> = UFix64::<Z0>::new(oracle_interval_secs).convert();
-  let slot_time = UFix64::<N2>::new(40); // 400ms slot time
-  time.checked_div(&slot_time).map(|i| i.bits)
-}
-
-/// Checks the posted slot of a price against the configured oracle interval.
-fn validate_posted_slot(
-  posted_slot: u64,
-  oracle_interval_secs: u64,
-  current_slot: u64,
-) -> Result<()> {
-  current_slot
-    .checked_sub(posted_slot)
-    .zip(slot_interval(oracle_interval_secs))
-    .filter(|(delta, slot_interval)| *delta <= *slot_interval)
-    .ok_or(PythOracleSlotInvalid.into())
-    .map(|_| ())
-}
-
 /// Validates a Pyth price is positive and normalizes to `N9`.
 ///
 /// # Errors
@@ -249,7 +227,6 @@ pub fn query_pyth_oracle<C: SolanaClock>(
     interval_secs,
     clock.unix_timestamp(),
   )?;
-  validate_posted_slot(oracle.posted_slot, interval_secs, clock.slot())?;
 
   let exp = oracle.price_message.exponent;
   let spot = validate_price(oracle.price_message.price, exp)?;
@@ -450,50 +427,5 @@ mod tests {
   #[test]
   fn publish_time_negative_clock() {
     assert!(validate_publish_time(100, 30, -1).is_err());
-  }
-
-  #[test]
-  fn slot_interval_precise() {
-    assert_eq!(slot_interval(60), Some(150));
-  }
-
-  #[test]
-  fn slot_interval_lossy() {
-    assert_eq!(slot_interval(1), Some(2));
-  }
-
-  #[test]
-  fn slot_interval_zero() {
-    assert_eq!(slot_interval(0), Some(0));
-  }
-
-  #[test]
-  fn slot_interval_large() {
-    assert_eq!(slot_interval(3600), Some(9000));
-  }
-
-  #[test]
-  fn posted_slot_within_interval() {
-    assert!(validate_posted_slot(1000, 60, 1100).is_ok());
-  }
-
-  #[test]
-  fn posted_slot_exact_boundary() {
-    assert!(validate_posted_slot(1000, 60, 1150).is_ok());
-  }
-
-  #[test]
-  fn posted_slot_one_over() {
-    assert!(validate_posted_slot(1000, 60, 1151).is_err());
-  }
-
-  #[test]
-  fn posted_slot_future_fails() {
-    assert!(validate_posted_slot(2000, 60, 1000).is_err());
-  }
-
-  #[test]
-  fn posted_slot_same() {
-    assert!(validate_posted_slot(500, 60, 500).is_ok());
   }
 }
