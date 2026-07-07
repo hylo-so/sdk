@@ -1,8 +1,12 @@
 use std::cmp::Ordering::{Equal, Greater, Less};
 
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
+
+use crate::error::CoreError;
 
 /// Profit or loss ensuing from a rebalancing trade.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,9 +38,9 @@ impl RebalancePnl {
 }
 
 impl TryFrom<RebalancePnlValue> for RebalancePnl {
-  type Error = Error;
+  type Error = CoreError;
 
-  fn try_from(pnl: RebalancePnlValue) -> Result<RebalancePnl> {
+  fn try_from(pnl: RebalancePnlValue) -> Result<RebalancePnl, CoreError> {
     match pnl {
       RebalancePnlValue::Profit(profit) => {
         Ok(RebalancePnl::Profit(profit.try_into()?))

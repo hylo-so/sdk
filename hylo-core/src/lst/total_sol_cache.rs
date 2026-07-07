@@ -1,7 +1,10 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   TotalSolCacheDecrement, TotalSolCacheIncrement, TotalSolCacheOutdated,
   TotalSolCacheOverflow, TotalSolCacheUnderflow,
@@ -36,7 +39,7 @@ impl TotalSolCache {
     &mut self,
     sol_in: UFix64<N9>,
     current_epoch: u64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     if current_epoch == self.current_update_epoch {
       let prev_total: UFix64<N9> = self.total_sol.try_into()?;
       let new_total = prev_total
@@ -45,7 +48,7 @@ impl TotalSolCache {
       self.total_sol = new_total.into();
       Ok(())
     } else {
-      Err(TotalSolCacheIncrement.into())
+      Err(TotalSolCacheIncrement)
     }
   }
 
@@ -54,7 +57,7 @@ impl TotalSolCache {
     &mut self,
     sol_out: UFix64<N9>,
     current_epoch: u64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     if current_epoch == self.current_update_epoch {
       let prev_total: UFix64<N9> = self.total_sol.try_into()?;
       let new_total = prev_total
@@ -63,7 +66,7 @@ impl TotalSolCache {
       self.total_sol = new_total.into();
       Ok(())
     } else {
-      Err(TotalSolCacheDecrement.into())
+      Err(TotalSolCacheDecrement)
     }
   }
 
@@ -72,18 +75,21 @@ impl TotalSolCache {
     &mut self,
     total_sol: UFix64<N9>,
     current_epoch: u64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     self.current_update_epoch = current_epoch;
     self.total_sol = total_sol.into();
     Ok(())
   }
 
   /// Gets the total SOL cached value, if last update epoch is same as current.
-  pub fn get_validated(&self, current_epoch: u64) -> Result<UFix64<N9>> {
+  pub fn get_validated(
+    &self,
+    current_epoch: u64,
+  ) -> Result<UFix64<N9>, CoreError> {
     if current_epoch == self.current_update_epoch {
-      self.total_sol.try_into()
+      Ok(self.total_sol.try_into()?)
     } else {
-      Err(TotalSolCacheOutdated.into())
+      Err(TotalSolCacheOutdated)
     }
   }
 }
@@ -95,7 +101,7 @@ mod tests {
   const CURRENT_EPOCH: u64 = 0;
 
   #[test]
-  fn increment_ok() -> Result<()> {
+  fn increment_ok() -> Result<(), CoreError> {
     let mut cache = TotalSolCache::new(CURRENT_EPOCH);
     cache.increment(UFix64::new(364), CURRENT_EPOCH)?;
     cache.increment(UFix64::new(69), CURRENT_EPOCH)?;
@@ -104,7 +110,7 @@ mod tests {
   }
 
   #[test]
-  fn increment_decrement_ok() -> Result<()> {
+  fn increment_decrement_ok() -> Result<(), CoreError> {
     let mut cache = TotalSolCache::new(CURRENT_EPOCH);
     cache.increment(UFix64::new(420), CURRENT_EPOCH)?;
     cache.decrement(UFix64::new(69), CURRENT_EPOCH)?;
@@ -117,19 +123,19 @@ mod tests {
     let mut cache = TotalSolCache::new(CURRENT_EPOCH);
     let inc = cache.increment(UFix64::new(420), CURRENT_EPOCH + 1);
     let dec = cache.decrement(UFix64::new(420), CURRENT_EPOCH + 1);
-    assert!(inc.is_err_and(|e| e == TotalSolCacheIncrement.into()));
-    assert!(dec.is_err_and(|e| e == TotalSolCacheDecrement.into()));
+    assert!(inc.is_err_and(|e| e == TotalSolCacheIncrement));
+    assert!(dec.is_err_and(|e| e == TotalSolCacheDecrement));
   }
 
   #[test]
-  fn overflow_underflow_err() -> Result<()> {
+  fn overflow_underflow_err() -> Result<(), CoreError> {
     let mut cache = TotalSolCache::new(CURRENT_EPOCH);
     cache.set(UFix64::new(u64::MAX), CURRENT_EPOCH)?;
     let inc = cache.increment(UFix64::new(1), CURRENT_EPOCH);
     cache.set(UFix64::new(u64::MIN), CURRENT_EPOCH)?;
     let dec = cache.decrement(UFix64::new(1), CURRENT_EPOCH);
-    assert!(inc.is_err_and(|e| e == TotalSolCacheOverflow.into()));
-    assert!(dec.is_err_and(|e| e == TotalSolCacheUnderflow.into()));
+    assert!(inc.is_err_and(|e| e == TotalSolCacheOverflow));
+    assert!(dec.is_err_and(|e| e == TotalSolCacheUnderflow));
     Ok(())
   }
 }

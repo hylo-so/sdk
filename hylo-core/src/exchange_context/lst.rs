@@ -1,4 +1,3 @@
-use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -7,6 +6,7 @@ use super::ExchangeContext;
 use crate::conversion::{
   Conversion, LstRebalanceConversion, UsdcStablecoinConversion,
 };
+use crate::error::CoreError;
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
   RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
@@ -73,12 +73,12 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     &self.buy_curve_config
   }
 
-  fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
+  fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>, CoreError> {
     self.virtual_stablecoin.supply()
   }
 
-  fn levercoin_supply(&self) -> Result<UFix64<N6>> {
-    self.levercoin_supply.ok_or(LevercoinNav.into())
+  fn levercoin_supply(&self) -> Result<UFix64<N6>, CoreError> {
+    self.levercoin_supply.ok_or(LevercoinNav)
   }
 
   fn rebalance_mode(&self) -> RebalanceMode {
@@ -111,7 +111,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
-  ) -> Result<LstExchangeContext<C>> {
+  ) -> Result<LstExchangeContext<C>, CoreError> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
     let sol_usd_oracle =
       query_pyth_oracle(&clock, sol_usd_pyth_feed, oracle_config)?;
@@ -150,7 +150,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     &self,
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let new_sol =
       lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
@@ -180,7 +180,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     &self,
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let sol_rm =
       lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
@@ -212,7 +212,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     &self,
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let new_sol =
       lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
@@ -242,7 +242,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     &self,
     lst_sol_price: &LstSolPrice,
     amount_lst: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let sol_rm =
       lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
     let new_total_sol = self
@@ -271,7 +271,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn token_conversion(
     &self,
     lst_sol_price: &LstSolPrice,
-  ) -> Result<Conversion> {
+  ) -> Result<Conversion, CoreError> {
     let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     Ok(Conversion::new(self.sol_usd_price, lst_sol))
   }
@@ -284,7 +284,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn sol_to_stablecoin(
     &self,
     amount_sol: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     let nav = self.stablecoin_nav()?;
     let conversion = Conversion::new(self.sol_usd_price, UFix64::one());
     conversion.lst_to_token(amount_sol, nav)
@@ -294,7 +294,10 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   ///
   /// # Errors
   /// * NAV or arithmetic failure
-  pub fn sol_to_levercoin(&self, amount_sol: UFix64<N9>) -> Result<UFix64<N6>> {
+  pub fn sol_to_levercoin(
+    &self,
+    amount_sol: UFix64<N9>,
+  ) -> Result<UFix64<N6>, CoreError> {
     let nav = self.levercoin_mint_nav()?;
     let conversion = Conversion::new(self.sol_usd_price, UFix64::one());
     conversion.lst_to_token(amount_sol, nav)
@@ -309,7 +312,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     usdc_usd_price: PriceRange<N9>,
     usdc_amount: UFix64<N9>,
-  ) -> Result<LstRebalanceConversion> {
+  ) -> Result<LstRebalanceConversion, CoreError> {
     let sol_spot_price = self.collateral_oracle_price().spot;
     let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     let lst_delta =
@@ -350,7 +353,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_vault_balance: UFix64<N9>,
     usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     // Sellable total collateral as LST capped by vault balance
     let true_price = stake_pool.true_price()?;
     let adjusted_price = true_price.adjust_price(rebalance_fee)?;
@@ -385,7 +388,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     usdc_usd_price: PriceRange<N9>,
     lst_amount: UFix64<N9>,
-  ) -> Result<LstRebalanceConversion> {
+  ) -> Result<LstRebalanceConversion, CoreError> {
     let usd_sol_price = self.collateral_oracle_price().spot;
     let lst_sol_price = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     let sol_delta = lst_amount
@@ -422,7 +425,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     &self,
     lst_sol_price: &LstSolPrice,
     lst_amount: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     let usd_sol_price = self.collateral_oracle_price().spot;
     let stablecoin_nav = self.stablecoin_nav()?;
@@ -440,11 +443,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     lst_in: UFix64<N9>,
     stablecoin_moved: UFix64<N6>,
-  ) -> Result<RebalancePnl> {
+  ) -> Result<RebalancePnl, CoreError> {
     let stablecoin_value_in =
       self.lst_to_stablecoin_spot(lst_sol_price, lst_in)?;
     RebalancePnl::from_stablecoin_flow(stablecoin_value_in, stablecoin_moved)
-      .ok_or(RebalanceSwapPnl.into())
+      .ok_or(RebalanceSwapPnl)
   }
 
   /// Computes rebalance `PnL` for a sell-side LST swap.
@@ -457,10 +460,10 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     lst_out: UFix64<N9>,
     stablecoin_moved: UFix64<N6>,
-  ) -> Result<RebalancePnl> {
+  ) -> Result<RebalancePnl, CoreError> {
     let stablecoin_value_out =
       self.lst_to_stablecoin_spot(lst_sol_price, lst_out)?;
     RebalancePnl::from_stablecoin_flow(stablecoin_moved, stablecoin_value_out)
-      .ok_or(RebalanceSwapPnl.into())
+      .ok_or(RebalanceSwapPnl)
   }
 }

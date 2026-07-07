@@ -1,4 +1,3 @@
-use anchor_lang::*;
 use fix::prelude::*;
 
 use super::controller::FeeExtract;
@@ -9,10 +8,10 @@ use crate::error::CoreError;
 ///
 /// # Errors
 /// * `CollateralRatioConversion` on `i64` overflow.
-pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>> {
+pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>, CoreError> {
   cr.convert::<N5>()
     .narrow::<i64>()
-    .ok_or(CoreError::CollateralRatioConversion.into())
+    .ok_or(CoreError::CollateralRatioConversion)
 }
 
 /// Interpolated fee curve controller.
@@ -25,7 +24,7 @@ pub trait InterpolatedFeeController<const RES: usize> {
   ///
   /// # Errors
   /// * Domain or arithmetic errors
-  fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>>;
+  fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError>;
 
   /// Applies the interpolated fee to an input amount.
   ///
@@ -35,7 +34,7 @@ pub trait InterpolatedFeeController<const RES: usize> {
     &self,
     ucr: UFix64<N9>,
     amount_in: UFix64<InExp>,
-  ) -> Result<FeeExtract<InExp>> {
+  ) -> Result<FeeExtract<InExp>, CoreError> {
     let cr = narrow_cr(ucr)?;
     let fee = self
       .fee_inner(cr)?
@@ -45,13 +44,13 @@ pub trait InterpolatedFeeController<const RES: usize> {
   }
 
   /// Minimum collateral ratio in the curve's domain.
-  fn cr_floor(&self) -> Result<UFix64<N2>> {
+  fn cr_floor(&self) -> Result<UFix64<N2>, CoreError> {
     self
       .curve()
       .x_min()
       .narrow()
       .and_then(UFix64::checked_convert::<N2>)
-      .ok_or(CoreError::InterpFeeConversion.into())
+      .ok_or(CoreError::InterpFeeConversion)
   }
 }
 
@@ -72,10 +71,10 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
     &self.curve
   }
 
-  fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>> {
+  fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
     let interp = self.curve();
     if cr < interp.x_min() {
-      Err(CoreError::NoValidStablecoinMintFee.into())
+      Err(CoreError::NoValidStablecoinMintFee)
     } else if cr > interp.x_max() {
       Ok(interp.y_max())
     } else {
@@ -101,7 +100,7 @@ impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
     &self.curve
   }
 
-  fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>> {
+  fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
     let interp = self.curve();
     if cr < interp.x_min() {
       Ok(interp.y_min())
@@ -166,7 +165,7 @@ mod tests {
       Err(e) => {
         prop_assert!(
           cr_n5 < fees.curve().x_min()
-            && e == CoreError::NoValidStablecoinMintFee.into(),
+            && e == CoreError::NoValidStablecoinMintFee,
           "Mint fee rejected in-domain CR {:?}: {}",
           cr,
           e,

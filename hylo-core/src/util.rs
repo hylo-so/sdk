@@ -1,14 +1,17 @@
-use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 
+use crate::error::CoreError;
 use crate::error::CoreError::ExoAmountNormalization;
 
 /// Bridges runtime mint decimals to typed `UFix64<N9>`.
 ///
 /// # Errors
 /// * Unsupported decimal count or conversion overflow
-pub fn normalize_mint_exp(mint: &Mint, amount: u64) -> Result<UFix64<N9>> {
+pub fn normalize_mint_exp(
+  mint: &Mint,
+  amount: u64,
+) -> Result<UFix64<N9>, CoreError> {
   match mint.decimals {
     2 => UFix64::<N2>::new(amount).checked_convert(),
     3 => UFix64::<N3>::new(amount).checked_convert(),
@@ -21,7 +24,7 @@ pub fn normalize_mint_exp(mint: &Mint, amount: u64) -> Result<UFix64<N9>> {
     10 => UFix64::<N10>::new(amount).checked_convert(),
     _ => None,
   }
-  .ok_or(ExoAmountNormalization.into())
+  .ok_or(ExoAmountNormalization)
 }
 
 /// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
@@ -29,7 +32,10 @@ pub fn normalize_mint_exp(mint: &Mint, amount: u64) -> Result<UFix64<N9>> {
 ///
 /// # Errors
 /// * Unsupported decimal count
-pub fn denormalize_mint_exp(mint: &Mint, amount: UFix64<N9>) -> Result<u64> {
+pub fn denormalize_mint_exp(
+  mint: &Mint,
+  amount: UFix64<N9>,
+) -> Result<u64, CoreError> {
   match mint.decimals {
     2 => amount.checked_convert::<N2>().map(|o| o.bits),
     3 => amount.checked_convert::<N3>().map(|o| o.bits),
@@ -42,7 +48,7 @@ pub fn denormalize_mint_exp(mint: &Mint, amount: UFix64<N9>) -> Result<u64> {
     10 => amount.checked_convert::<N10>().map(|o| o.bits),
     _ => None,
   }
-  .ok_or(ExoAmountNormalization.into())
+  .ok_or(ExoAmountNormalization)
 }
 
 #[macro_export]
@@ -245,7 +251,7 @@ mod tests {
       SlippageConfig::new(UFix64::<N6>::new(1_201_346), UFix64::new(20));
     let amount = UFix64::<N6>::new(1_198_942);
     let out = config.validate_token_out(amount);
-    assert_eq!(out, Err(SlippageExceeded.into()));
+    assert_eq!(out, Err(SlippageExceeded));
   }
 
   #[test]
