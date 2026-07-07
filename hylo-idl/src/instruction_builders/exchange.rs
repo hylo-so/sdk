@@ -1143,11 +1143,49 @@ pub fn swap_exo_to_usdc(
 }
 
 #[must_use]
+pub fn swap_exo_to_usdc_all(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::SwapExoToUsdcAll,
+) -> Instruction {
+  let accounts = account_builders::swap_exo_to_usdc(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
   args: &args::SwapUsdcToExo,
+) -> Instruction {
+  let accounts = account_builders::swap_usdc_to_exo(
+    user,
+    collateral_mint,
+    collateral_usd_pyth_feed,
+  );
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_usdc_to_exo_all(
+  user: Pubkey,
+  collateral_mint: Pubkey,
+  collateral_usd_pyth_feed: Pubkey,
+  args: &args::SwapUsdcToExoAll,
 ) -> Instruction {
   let accounts = account_builders::swap_usdc_to_exo(
     user,
@@ -1177,11 +1215,41 @@ pub fn swap_lst_to_usdc(
 }
 
 #[must_use]
+pub fn swap_lst_to_usdc_all(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  pool_state: Pubkey,
+  args: &args::SwapLstToUsdcAll,
+) -> Instruction {
+  let accounts = account_builders::swap_lst_to_usdc(user, lst_mint, pool_state);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn swap_usdc_to_lst(
   user: Pubkey,
   lst_mint: Pubkey,
   pool_state: Pubkey,
   args: &args::SwapUsdcToLst,
+) -> Instruction {
+  let accounts = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn swap_usdc_to_lst_all(
+  user: Pubkey,
+  lst_mint: Pubkey,
+  pool_state: Pubkey,
+  args: &args::SwapUsdcToLstAll,
 ) -> Instruction {
   let accounts = account_builders::swap_usdc_to_lst(user, lst_mint, pool_state);
   Instruction {
