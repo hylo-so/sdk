@@ -13,6 +13,7 @@ use anyhow::{anyhow, Context, Result};
 use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::conversion::UsdcStablecoinConversion;
+use hylo_core::error::CoreError;
 use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
 use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
@@ -146,11 +147,11 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// # Errors
   /// * LST does not have a corresponding header field in this struct
-  pub fn lst_header<L: LST>(&self) -> Result<&LstHeader> {
+  pub fn lst_header<L: LST>(&self) -> Result<&LstHeader, CoreError> {
     match L::MINT {
       JITOSOL::MINT => Ok(&self.jitosol_header),
       HYLOSOL::MINT => Ok(&self.hylosol_header),
-      _ => Err(anyhow!("LstHeader not found for {}", L::MINT)),
+      _ => Err(CoreError::UnknownLstMint),
     }
   }
 
@@ -158,11 +159,11 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// # Errors
   /// * Unknown LST mint
-  pub fn stake_pool<L: LST>(&self) -> Result<&SplStakePool> {
+  pub fn stake_pool<L: LST>(&self) -> Result<&SplStakePool, CoreError> {
     match L::MINT {
       JITOSOL::MINT => Ok(&self.jitosol_stake_pool),
       HYLOSOL::MINT => Ok(&self.hylosol_stake_pool),
-      _ => Err(anyhow!("stake_pool not found for mint {}", L::MINT)),
+      _ => Err(CoreError::UnknownLstMint),
     }
   }
 

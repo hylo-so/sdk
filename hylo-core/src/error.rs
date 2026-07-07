@@ -221,4 +221,11 @@ pub enum CoreError {
   FixValueConversion,
   #[msg("SPL stake pool account data failed to deserialize.")]
   StakePoolAccountData,
+  // `token_operation`
+  #[msg("Operation disabled in current protocol state.")]
+  OperationDisabled,
+  #[msg("Failed while converting precision for a token amount.")]
+  TokenAmountPrecision,
+  #[msg("No LST header or stake pool found for mint.")]
+  UnknownLstMint,
 }

@@ -1,10 +1,10 @@
 //! `TokenOperation` implementations for earn pool pairs.
 
-use anyhow::{ensure, Result};
 use fix::prelude::*;
 use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
 };
+use hylo_core::error::CoreError;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
@@ -21,7 +21,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<SwapOperationOutput> {
+  ) -> Result<SwapOperationOutput, CoreError> {
     let shyusd_nav = lp_token_nav(
       UFix64::new(self.hyusd_pool.amount),
       UFix64::new(self.shyusd_mint.supply),
@@ -44,11 +44,10 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<SwapOperationOutput> {
-    ensure!(
-      self.xsol_pool.amount == 0,
-      "SHYUSD -> HYUSD not possible: levercoin present in pool"
-    );
+  ) -> Result<SwapOperationOutput, CoreError> {
+    (self.xsol_pool.amount == 0)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     let hyusd_to_withdraw =

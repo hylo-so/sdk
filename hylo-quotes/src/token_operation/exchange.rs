@@ -1,7 +1,7 @@
 //! `TokenOperation` implementations for exchange pairs.
 
-use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
+use hylo_core::error::CoreError;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
@@ -27,11 +27,12 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
   fn compute_output(
     &self,
     in_amount: UFix64<N9>,
-  ) -> Result<MintOperationOutput> {
-    ensure!(
-      self.exchange_context.stablecoin_mint_enabled(),
-      "LST stablecoin mint disabled"
-    );
+  ) -> Result<MintOperationOutput, CoreError> {
+    self
+      .exchange_context
+      .stablecoin_mint_enabled()
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
@@ -67,7 +68,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
   fn compute_output(
     &self,
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
-  ) -> Result<RedeemOperationOutput> {
+  ) -> Result<RedeemOperationOutput, CoreError> {
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
@@ -100,11 +101,12 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
   fn compute_output(
     &self,
     in_amount: UFix64<N9>,
-  ) -> Result<MintOperationOutput> {
-    ensure!(
-      self.exchange_context.levercoin_mint_enabled(),
-      "Levercoin mint disabled in current rebalance mode"
-    );
+  ) -> Result<MintOperationOutput, CoreError> {
+    self
+      .exchange_context
+      .levercoin_mint_enabled()
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let FeeExtract {
@@ -137,11 +139,10 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
   fn compute_output(
     &self,
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
-  ) -> Result<RedeemOperationOutput> {
-    ensure!(
-      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
-      "Levercoin redemption disabled in current rebalance mode"
-    );
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    (self.exchange_context.rebalance_mode() != RebalanceMode::Depeg)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let xsol_nav = self.exchange_context.levercoin_redeem_nav()?;
@@ -172,11 +173,10 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
-  ) -> Result<SwapOperationOutput> {
-    ensure!(
-      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
-      "Swaps are disabled in current rebalance mode"
-    );
+  ) -> Result<SwapOperationOutput, CoreError> {
+    (self.exchange_context.rebalance_mode() != RebalanceMode::Depeg)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -204,11 +204,10 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
-  ) -> Result<SwapOperationOutput> {
-    ensure!(
-      self.exchange_context.rebalance_mode() >= RebalanceMode::SellZone1,
-      "Swaps are disabled in current rebalance mode"
-    );
+  ) -> Result<SwapOperationOutput, CoreError> {
+    (self.exchange_context.rebalance_mode() >= RebalanceMode::SellZone1)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let converted = self
       .exchange_context
       .swap_conversion()?
@@ -241,7 +240,7 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
   fn compute_output(
     &self,
     in_amount: UFix64<N9>,
-  ) -> Result<LstSwapOperationOutput> {
+  ) -> Result<LstSwapOperationOutput, CoreError> {
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -276,11 +275,11 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N9>> {
+  ) -> Result<OperationOutput<N6, N6, N9>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
     let amount_n9: UFix64<N9> = in_amount
       .checked_convert()
-      .ok_or_else(|| anyhow!("USDC N6->N9 overflow"))?;
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -308,7 +307,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>> {
+  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
     let FeeExtract {
       fees_extracted,
@@ -319,7 +318,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       .stablecoin_to_withdrawal(amount_remaining)?;
     let out_amount: UFix64<N6> = usdc_out_n9
       .checked_convert()
-      .ok_or_else(|| anyhow!("USDC N9->N6 overflow"))?;
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -337,15 +336,15 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>> {
+  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(
-      exo.stablecoin_mint_enabled(),
-      "Exo stablecoin mint disabled"
-    );
+    exo
+      .stablecoin_mint_enabled()
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let collateral_n9: UFix64<N9> = in_amount
       .checked_convert()
-      .ok_or_else(|| anyhow!("cbBTC N8->N9 overflow"))?;
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -372,7 +371,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>> {
+  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let stablecoin_nav = exo.stablecoin_nav()?;
     let collateral_n9 = exo
@@ -384,7 +383,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
     } = exo.stablecoin_redeem_fee(collateral_n9)?;
     let out_amount: UFix64<N8> = amount_remaining
       .checked_convert()
-      .ok_or_else(|| anyhow!("cbBTC N9->N8 overflow"))?;
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -402,15 +401,15 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>> {
+  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(
-      exo.levercoin_mint_enabled(),
-      "Exo levercoin mint disabled in current rebalance mode"
-    );
+    exo
+      .levercoin_mint_enabled()
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let collateral_n9: UFix64<N9> = in_amount
       .checked_convert()
-      .ok_or_else(|| anyhow!("cbBTC N8->N9 overflow"))?;
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -436,12 +435,11 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>> {
+  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(
-      exo.rebalance_mode() > RebalanceMode::Depeg,
-      "Exo levercoin redemption disabled in current rebalance mode"
-    );
+    (exo.rebalance_mode() > RebalanceMode::Depeg)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let levercoin_nav = exo.levercoin_redeem_nav()?;
     let collateral_n9 = exo
       .exo_conversion()
@@ -452,7 +450,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
     } = exo.levercoin_redeem_fee(collateral_n9)?;
     let out_amount: UFix64<N8> = amount_remaining
       .checked_convert()
-      .ok_or_else(|| anyhow!("cbBTC N9->N8 overflow"))?;
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -470,12 +468,11 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>> {
+  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(
-      exo.rebalance_mode() > RebalanceMode::Depeg,
-      "Exo swaps disabled in current rebalance mode"
-    );
+    (exo.rebalance_mode() > RebalanceMode::Depeg)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -499,12 +496,11 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>> {
+  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    ensure!(
-      exo.rebalance_mode() >= RebalanceMode::SellZone1,
-      "Exo swaps disabled in current rebalance mode"
-    );
+    (exo.rebalance_mode() >= RebalanceMode::SellZone1)
+      .then_some(())
+      .ok_or(CoreError::OperationDisabled)?;
     let converted = exo.swap_conversion()?.lever_to_stable(in_amount)?;
     let hyusd_total = exo.validate_stablecoin_swap_amount(converted)?;
     let FeeExtract {
@@ -528,7 +524,7 @@ impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N9>,
-  ) -> Result<OperationOutput<N9, N6, N9>> {
+  ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
     let header = self.lst_header::<JITOSOL>()?;
     let true_price = self.stake_pool::<JITOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
@@ -537,7 +533,9 @@ impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
       .exchange_context
       .rebalance_buy_conversion(&adjusted, usdc_price, in_amount)?;
     let usdc_out: UFix64<N9> = conversion.lst_to_usdc(in_amount)?;
-    let out_amount = usdc_out.checked_convert().context("usdc N9->N6")?;
+    let out_amount = usdc_out
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -555,7 +553,7 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N9>,
-  ) -> Result<OperationOutput<N9, N6, N9>> {
+  ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
     let header = self.lst_header::<HYLOSOL>()?;
     let true_price = self.stake_pool::<HYLOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
@@ -564,7 +562,9 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
       .exchange_context
       .rebalance_buy_conversion(&adjusted, usdc_price, in_amount)?;
     let usdc_out: UFix64<N9> = conversion.lst_to_usdc(in_amount)?;
-    let out_amount = usdc_out.checked_convert().context("usdc N9->N6")?;
+    let out_amount = usdc_out
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -582,9 +582,10 @@ impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N9, N6>> {
-    let normalized: UFix64<N9> =
-      in_amount.checked_convert().context("usdc N6->N9")?;
+  ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
+    let normalized: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let header = self.lst_header::<JITOSOL>()?;
     let true_price = self.stake_pool::<JITOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
@@ -610,9 +611,10 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N9, N6>> {
-    let normalized: UFix64<N9> =
-      in_amount.checked_convert().context("usdc N6->N9")?;
+  ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
+    let normalized: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let header = self.lst_header::<HYLOSOL>()?;
     let true_price = self.stake_pool::<HYLOSOL>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
@@ -638,15 +640,18 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N8>> {
-    let normalized: UFix64<N9> =
-      in_amount.checked_convert().context("cbbtc N8->N9")?;
+  ) -> Result<OperationOutput<N8, N6, N8>, CoreError> {
+    let normalized: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .cbbtc_exchange_context()
       .rebalance_buy_conversion(usdc_price, normalized)?;
     let usdc_out: UFix64<N9> = conversion.collateral_to_usdc(normalized)?;
-    let out_amount = usdc_out.checked_convert().context("usdc N9->N6")?;
+    let out_amount = usdc_out
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -664,17 +669,19 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
   fn compute_output(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N6>> {
-    let normalized: UFix64<N9> =
-      in_amount.checked_convert().context("usdc N6->N9")?;
+  ) -> Result<OperationOutput<N6, N8, N6>, CoreError> {
+    let normalized: UFix64<N9> = in_amount
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .cbbtc_exchange_context()
       .rebalance_sell_conversion(usdc_price, normalized)?;
     let collateral_out: UFix64<N9> =
       conversion.usdc_to_collateral(normalized)?;
-    let out_amount =
-      collateral_out.checked_convert().context("cbbtc N9->N8")?;
+    let out_amount = collateral_out
+      .checked_convert()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,

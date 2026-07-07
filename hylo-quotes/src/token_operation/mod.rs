@@ -4,9 +4,9 @@ mod earn_pool;
 mod exchange;
 
 use anchor_lang::prelude::Pubkey;
-use anyhow::Result;
 use fix::prelude::{UFix64, N6, N9};
 use fix::typenum::Integer;
+use hylo_core::error::CoreError;
 use hylo_idl::tokens::TokenMint;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,7 +33,7 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   fn compute_output(
     &self,
     amount_in: UFix64<IN::Exp>,
-  ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>>;
+  ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>, CoreError>;
 }
 
 /// Turbofish helper for [`TokenOperation`].
@@ -49,6 +49,7 @@ pub trait TokenOperationExt {
       OUT::Exp,
       <Self as TokenOperation<IN, OUT>>::FeeExp,
     >,
+    CoreError,
   >
   where
     Self: TokenOperation<IN, OUT>,
@@ -67,6 +68,7 @@ impl<X> TokenOperationExt for X {
       OUT::Exp,
       <Self as TokenOperation<IN, OUT>>::FeeExp,
     >,
+    CoreError,
   >
   where
     Self: TokenOperation<IN, OUT>,
