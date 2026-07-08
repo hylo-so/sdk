@@ -24,8 +24,6 @@ pub enum StatsError {
   PoolDrawdownOverflow,
   #[error("Overflow computing LST vault SOL value.")]
   LstVaultValueOverflow,
-  #[error("Exo vault amount overflow converting N8 to N9.")]
-  ExoVaultConversion,
   #[error("No previous epoch to measure.")]
   NoPreviousEpoch,
   #[error("Non-positive epoch duration.")]

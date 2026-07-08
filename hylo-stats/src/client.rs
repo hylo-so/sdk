@@ -16,6 +16,7 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
+use hylo_core::util::normalize_mint_exp;
 use hylo_idl::pda;
 use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -24,9 +25,9 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use crate::earn_pool_stats::compute_stats;
 use crate::earn_pool_yield_math::lst_epoch_growth;
 use crate::error::StatsError::{
-  AccountCountMismatch, ClockDeserialize, ExoVaultConversion,
-  LstVaultValueOverflow, MissingAccounts, NoBlockAtOrAfterSlot,
-  NoPreviousEpoch, NonPositiveEpochDuration, PoolDrawdownOverflow,
+  AccountCountMismatch, ClockDeserialize, LstVaultValueOverflow,
+  MissingAccounts, NoBlockAtOrAfterSlot, NoPreviousEpoch,
+  NonPositiveEpochDuration, PoolDrawdownOverflow,
 };
 use crate::types::{EarnPoolStats, ExoSnapshot, LstPosition, StatsInputs};
 
@@ -34,7 +35,7 @@ use crate::types::{EarnPoolStats, ExoSnapshot, LstPosition, StatsInputs};
 const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 
 /// Number of accounts fetched for [`EarnPoolStats`].
-pub const STATS_ACCOUNT_COUNT: usize = 15;
+pub const STATS_ACCOUNT_COUNT: usize = 16;
 
 /// Account keys required for [`EarnPoolStats`], in fetch order —
 /// the same order [`build_stats_inputs`] destructures.
@@ -49,6 +50,7 @@ pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
   pda::HYUSD_POOL,
   SHYUSD::MINT,
   pda::exo_pair(CBBTC::MINT),
+  CBBTC::MINT,
   pda::exo_vault(CBBTC::MINT),
   pda::exo_levercoin_mint(CBBTC::MINT),
   pda::BTC_USD_PYTH_FEED,
@@ -149,31 +151,30 @@ fn resolve_stats_accounts(
   }
 }
 
-/// Values the xBTC market cap for the borrow-rate projection.
-/// Mirrors hylo-quotes `build_cbbtc_exchange_context`.
+/// Values an exo pair's levercoin market cap for the borrow-rate
+/// projection. Mirrors hylo-quotes `build_cbbtc_exchange_context`.
 fn exo_levercoin_market_cap(
   clock: &Clock,
   exo_pair: &ExoPair,
+  collateral_mint: &Mint,
   exo_vault: &TokenAccount,
-  xbtc_mint: &Mint,
-  btc_usd: &PriceUpdateV2,
+  levercoin_mint: &Mint,
+  collateral_usd: &PriceUpdateV2,
 ) -> Result<UFix64<N9>> {
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
     exo_pair.oracle_conf_tolerance.try_into()?,
   );
-  let total_collateral: UFix64<N9> = UFix64::<N8>::new(exo_vault.amount)
-    .checked_convert()
-    .ok_or(ExoVaultConversion)?;
+  let total_collateral = normalize_mint_exp(collateral_mint, exo_vault.amount)?;
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
     exo_pair.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     exo_pair.levercoin_fees.into(),
-    btc_usd,
+    collateral_usd,
     exo_pair.virtual_stablecoin.into(),
-    Some(xbtc_mint),
+    Some(levercoin_mint),
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
     exo_pair.levercoin_market_cap_limit.try_into()?,
@@ -225,7 +226,7 @@ pub fn build_stats_inputs(
   accounts: &[Account; STATS_ACCOUNT_COUNT],
   epochs_per_year: f64,
 ) -> Result<StatsInputs> {
-  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_vault, xbtc_mint, btc_usd, sol_usd, clock] =
+  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_collateral_mint, exo_vault, exo_levercoin_mint, btc_usd, sol_usd, clock] =
     accounts;
 
   let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
@@ -243,9 +244,12 @@ pub fn build_stats_inputs(
     TokenAccount::try_deserialize(&mut hyusd_pool.data.as_slice())?;
   let shyusd_mint = Mint::try_deserialize(&mut shyusd_mint.data.as_slice())?;
   let exo_pair = ExoPair::try_deserialize(&mut exo_pair.data.as_slice())?;
+  let exo_collateral_mint =
+    Mint::try_deserialize(&mut exo_collateral_mint.data.as_slice())?;
   let exo_vault =
     TokenAccount::try_deserialize(&mut exo_vault.data.as_slice())?;
-  let xbtc_mint = Mint::try_deserialize(&mut xbtc_mint.data.as_slice())?;
+  let exo_levercoin_mint =
+    Mint::try_deserialize(&mut exo_levercoin_mint.data.as_slice())?;
   let btc_usd = PriceUpdateV2::try_deserialize(&mut btc_usd.data.as_slice())?;
   let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())?;
   let clock: Clock =
@@ -258,7 +262,12 @@ pub fn build_stats_inputs(
   let sol_usd_spot = query_pyth_oracle(&clock, &sol_usd, oracle_config)?.spot;
 
   let levercoin_market_cap = exo_levercoin_market_cap(
-    &clock, &exo_pair, &exo_vault, &xbtc_mint, &btc_usd,
+    &clock,
+    &exo_pair,
+    &exo_collateral_mint,
+    &exo_vault,
+    &exo_levercoin_mint,
+    &btc_usd,
   )?;
   let outstanding_drawdown = total_outstanding_drawdown(&hylo, &exo_pair)?;
 
@@ -293,7 +302,7 @@ mod tests {
     assert_eq!(STATS_ACCOUNT_KEYS[0], hylo_idl::pda::HYLO);
     assert_eq!(STATS_ACCOUNT_KEYS[7], hylo_idl::pda::HYUSD_POOL);
     assert_eq!(
-      STATS_ACCOUNT_KEYS[14],
+      STATS_ACCOUNT_KEYS[STATS_ACCOUNT_COUNT - 1],
       anchor_lang::solana_program::sysvar::clock::ID
     );
   }
