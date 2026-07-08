@@ -96,7 +96,7 @@ impl StatsClient {
   ///
   /// # Errors
   /// * RPC failure, missing boundary blocks, or non-positive duration
-  #[allow(clippy::cast_precision_loss)] // advisory stats
+  #[allow(clippy::cast_precision_loss)]
   pub async fn measure_epochs_per_year(
     &self,
     current_epoch: u64,

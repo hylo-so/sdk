@@ -21,7 +21,7 @@ use crate::types::{
 
 /// Compounded APY from an `N9` per-epoch rate at a given annualization
 /// basis (epochs per year).
-#[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
+#[allow(clippy::cast_precision_loss)]
 #[must_use]
 pub fn annualize_with(per_epoch_rate: UFix64<N9>, epochs_per_year: f64) -> f64 {
   let rate = per_epoch_rate.bits as f64 * 1e-9;
@@ -29,7 +29,7 @@ pub fn annualize_with(per_epoch_rate: UFix64<N9>, epochs_per_year: f64) -> f64 {
 }
 
 /// Compounded APY at the protocol's 182-epochs/year convention.
-#[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
+#[allow(clippy::cast_precision_loss)]
 #[must_use]
 pub fn annualize(per_epoch_rate: UFix64<N9>) -> f64 {
   annualize_with(per_epoch_rate, EPOCHS_PER_YEAR as f64)
