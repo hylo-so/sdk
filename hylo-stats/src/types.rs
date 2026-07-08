@@ -5,7 +5,7 @@ use fix::prelude::*;
 use hylo_core::borrow_rate::BorrowRateConfig;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
-/// Snapshot of one harvest stream from its on-chain [`HarvestCache`]:
+/// Snapshot of one harvest stream from its onchain [`HarvestCache`]:
 /// the most recent harvest's epoch, the hyUSD it deposited into the
 /// pool, and staleness (no harvest yet for the current epoch).
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +32,7 @@ pub struct ExoSnapshot {
   pub levercoin_market_cap: UFix64<N9>,
 }
 
-/// Deserialized on-chain inputs for
+/// Deserialized onchain inputs for
 /// [`compute_stats`](crate::earn_pool_stats::compute_stats).
 #[derive(Debug, Clone)]
 pub struct StatsInputs {

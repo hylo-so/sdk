@@ -129,7 +129,7 @@ fn projected_rate(
   epoch_yield_rate(net, pool_balance)
 }
 
-/// Computes yield statistics from deserialized on-chain inputs.
+/// Computes yield statistics from deserialized onchain inputs.
 ///
 /// # Errors
 /// * Arithmetic overflow in yield math

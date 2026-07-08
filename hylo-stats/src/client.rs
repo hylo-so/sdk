@@ -71,7 +71,7 @@ impl StatsClient {
     StatsClient { rpc }
   }
 
-  /// Fetches [`EarnPoolStats`] from current on-chain state: one
+  /// Fetches [`EarnPoolStats`] from current onchain state: one
   /// slot-consistent `get_multiple_accounts` call, plus an
   /// epoch-schedule fetch and two epoch-boundary block-time lookups to
   /// measure the last completed epoch's duration.
