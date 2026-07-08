@@ -28,6 +28,32 @@ use crate::earn_pool_yield_math::{
   projected_borrow_inflow, projected_lst_inflow, EPOCHS_PER_YEAR,
 };
 
+/// Seconds in a Julian year.
+const SECONDS_PER_YEAR: f64 = 31_557_600.0;
+
+/// Number of accounts fetched for [`EarnPoolStats`].
+pub const STATS_ACCOUNT_COUNT: usize = 15;
+
+/// Account keys required for [`EarnPoolStats`], in fetch order —
+/// the same order [`build_stats_inputs`] destructures.
+pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
+  pda::HYLO,
+  pda::lst_header(JITOSOL::MINT),
+  pda::lst_header(HYLOSOL::MINT),
+  pda::lst_vault(JITOSOL::MINT),
+  pda::lst_vault(HYLOSOL::MINT),
+  JITOSOL::POOL_STATE,
+  HYLOSOL::POOL_STATE,
+  pda::HYUSD_POOL,
+  SHYUSD::MINT,
+  pda::exo_pair(CBBTC::MINT),
+  pda::exo_vault(CBBTC::MINT),
+  pda::exo_levercoin_mint(CBBTC::MINT),
+  pda::BTC_USD_PYTH_FEED,
+  pda::SOL_USD_PYTH_FEED,
+  sysvar::clock::ID,
+];
+
 /// Snapshot of one harvest stream from its on-chain [`HarvestCache`].
 #[derive(Debug, Clone, Copy)]
 pub struct RealizedHarvest {
@@ -110,9 +136,6 @@ pub struct EarnPoolStats {
   pub projected_epoch_rate: UFix64<N9>,
   pub projected_apy: f64,
 }
-
-/// Seconds in a Julian year.
-const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 
 /// Compounded APY from an `N9` per-epoch rate at a given annualization
 /// basis (epochs per year).
@@ -258,32 +281,6 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
   })
 }
 
-/// Number of accounts fetched for [`EarnPoolStats`].
-pub const STATS_ACCOUNT_COUNT: usize = 15;
-
-/// Account keys required for [`EarnPoolStats`], in fetch order —
-/// the same order [`build_stats_inputs`] destructures.
-#[must_use]
-pub fn stats_account_keys() -> Vec<Pubkey> {
-  vec![
-    pda::HYLO,
-    pda::lst_header(JITOSOL::MINT),
-    pda::lst_header(HYLOSOL::MINT),
-    pda::lst_vault(JITOSOL::MINT),
-    pda::lst_vault(HYLOSOL::MINT),
-    JITOSOL::POOL_STATE,
-    HYLOSOL::POOL_STATE,
-    pda::HYUSD_POOL,
-    SHYUSD::MINT,
-    pda::exo_pair(CBBTC::MINT),
-    pda::exo_vault(CBBTC::MINT),
-    pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
-    pda::SOL_USD_PYTH_FEED,
-    sysvar::clock::ID,
-  ]
-}
-
 /// Fetches [`EarnPoolStats`] from current on-chain state: one
 /// slot-consistent `get_multiple_accounts` call, plus an epoch-schedule
 /// fetch and two epoch-boundary block-time lookups to measure the last
@@ -295,7 +292,7 @@ pub fn stats_account_keys() -> Vec<Pubkey> {
 /// * Epoch duration measurement failure
 /// * Arithmetic overflow in yield math
 pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
-  let accounts = rpc.get_multiple_accounts(&stats_account_keys()).await?;
+  let accounts = rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
   let clock: Clock = bincode::deserialize(
     &require(
       accounts
@@ -668,10 +665,11 @@ mod tests {
 
   #[test]
   fn stats_account_keys_order() {
-    let keys = stats_account_keys();
-    assert_eq!(keys.len(), STATS_ACCOUNT_COUNT);
-    assert_eq!(keys[0], hylo_idl::pda::HYLO);
-    assert_eq!(keys[7], hylo_idl::pda::HYUSD_POOL);
-    assert_eq!(keys[14], anchor_lang::solana_program::sysvar::clock::ID);
+    assert_eq!(STATS_ACCOUNT_KEYS[0], hylo_idl::pda::HYLO);
+    assert_eq!(STATS_ACCOUNT_KEYS[7], hylo_idl::pda::HYUSD_POOL);
+    assert_eq!(
+      STATS_ACCOUNT_KEYS[14],
+      anchor_lang::solana_program::sysvar::clock::ID
+    );
   }
 }
