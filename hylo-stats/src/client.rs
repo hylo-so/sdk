@@ -38,7 +38,7 @@ const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 pub const STATS_ACCOUNT_COUNT: usize = 16;
 
 /// Account keys required for [`EarnPoolStats`], in fetch order —
-/// the same order [`build_stats_inputs`] destructures.
+/// the same order [`StatsAccounts::from_fetched`] deserializes.
 pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
   pda::HYLO,
   pda::lst_header(JITOSOL::MINT),
@@ -57,6 +57,97 @@ pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
   pda::SOL_USD_PYTH_FEED,
   sysvar::clock::ID,
 ];
+
+/// Deserialized onchain accounts backing one stats fetch, in
+/// [`STATS_ACCOUNT_KEYS`] order.
+#[derive(Clone)]
+pub struct StatsAccounts {
+  pub hylo: Hylo,
+  pub jitosol_header: LstHeader,
+  pub hylosol_header: LstHeader,
+  pub jitosol_vault: TokenAccount,
+  pub hylosol_vault: TokenAccount,
+  pub jitosol_pool_state: SplStakePool,
+  pub hylosol_pool_state: SplStakePool,
+  pub hyusd_pool: TokenAccount,
+  pub shyusd_mint: Mint,
+  pub exo_pair: ExoPair,
+  pub exo_collateral_mint: Mint,
+  pub exo_vault: TokenAccount,
+  pub exo_levercoin_mint: Mint,
+  pub btc_usd: PriceUpdateV2,
+  pub sol_usd: PriceUpdateV2,
+  pub clock: Clock,
+}
+
+impl StatsAccounts {
+  /// Deserializes a fetched account list, erroring with the keys of
+  /// any missing accounts.
+  ///
+  /// # Errors
+  /// * Missing account, count mismatch, or deserialization failure
+  pub fn from_fetched(fetched: Vec<Option<Account>>) -> Result<StatsAccounts> {
+    let actual = fetched.len();
+    let missing = STATS_ACCOUNT_KEYS
+      .iter()
+      .zip(&fetched)
+      .filter(|(_, account)| account.is_none())
+      .map(|(key, _)| *key)
+      .collect::<Vec<Pubkey>>();
+    if actual != STATS_ACCOUNT_COUNT {
+      Err(
+        AccountCountMismatch {
+          expected: STATS_ACCOUNT_COUNT,
+          actual,
+        }
+        .into(),
+      )
+    } else if !missing.is_empty() {
+      Err(MissingAccounts(missing).into())
+    } else {
+      let accounts = fetched.into_iter().flatten().collect::<Vec<Account>>();
+      Ok(StatsAccounts {
+        hylo: Hylo::try_deserialize(&mut accounts[0].data.as_slice())?,
+        jitosol_header: LstHeader::try_deserialize(
+          &mut accounts[1].data.as_slice(),
+        )?,
+        hylosol_header: LstHeader::try_deserialize(
+          &mut accounts[2].data.as_slice(),
+        )?,
+        jitosol_vault: TokenAccount::try_deserialize(
+          &mut accounts[3].data.as_slice(),
+        )?,
+        hylosol_vault: TokenAccount::try_deserialize(
+          &mut accounts[4].data.as_slice(),
+        )?,
+        jitosol_pool_state: SplStakePool::from_bytes(&accounts[5].data)?,
+        hylosol_pool_state: SplStakePool::from_bytes(&accounts[6].data)?,
+        hyusd_pool: TokenAccount::try_deserialize(
+          &mut accounts[7].data.as_slice(),
+        )?,
+        shyusd_mint: Mint::try_deserialize(&mut accounts[8].data.as_slice())?,
+        exo_pair: ExoPair::try_deserialize(&mut accounts[9].data.as_slice())?,
+        exo_collateral_mint: Mint::try_deserialize(
+          &mut accounts[10].data.as_slice(),
+        )?,
+        exo_vault: TokenAccount::try_deserialize(
+          &mut accounts[11].data.as_slice(),
+        )?,
+        exo_levercoin_mint: Mint::try_deserialize(
+          &mut accounts[12].data.as_slice(),
+        )?,
+        btc_usd: PriceUpdateV2::try_deserialize(
+          &mut accounts[13].data.as_slice(),
+        )?,
+        sol_usd: PriceUpdateV2::try_deserialize(
+          &mut accounts[14].data.as_slice(),
+        )?,
+        clock: bincode::deserialize(&accounts[15].data)
+          .map_err(ClockDeserialize)?,
+      })
+    }
+  }
+}
 
 /// Read-only client for earn pool yield statistics. Needs no keypair
 /// or program client.
@@ -82,11 +173,9 @@ impl StatsClient {
   /// * Arithmetic overflow in yield math
   pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
     let fetched = self.rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
-    let accounts = resolve_stats_accounts(fetched)?;
-    let clock: Clock =
-      bincode::deserialize(&accounts[STATS_ACCOUNT_COUNT - 1].data)
-        .map_err(ClockDeserialize)?;
-    let epochs_per_year = self.measure_epochs_per_year(clock.epoch).await?;
+    let accounts = StatsAccounts::from_fetched(fetched)?;
+    let epochs_per_year =
+      self.measure_epochs_per_year(accounts.clock.epoch).await?;
     compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
   }
 
@@ -120,34 +209,6 @@ impl StatsClient {
     let slots = self.rpc.get_blocks_with_limit(slot, 1).await?;
     let first = slots.first().copied().ok_or(NoBlockAtOrAfterSlot(slot))?;
     Ok(self.rpc.get_block_time(first).await?)
-  }
-}
-
-/// Resolves a fetched account list, erroring with the keys of any
-/// missing accounts.
-fn resolve_stats_accounts(
-  accounts: Vec<Option<Account>>,
-) -> Result<[Account; STATS_ACCOUNT_COUNT]> {
-  let missing = STATS_ACCOUNT_KEYS
-    .iter()
-    .zip(&accounts)
-    .filter(|(_, account)| account.is_none())
-    .map(|(key, _)| *key)
-    .collect::<Vec<Pubkey>>();
-  if missing.is_empty() {
-    Ok(
-      accounts
-        .into_iter()
-        .flatten()
-        .collect::<Vec<Account>>()
-        .try_into()
-        .map_err(|accounts: Vec<Account>| AccountCountMismatch {
-          expected: STATS_ACCOUNT_COUNT,
-          actual: accounts.len(),
-        })?,
-    )
-  } else {
-    Err(MissingAccounts(missing).into())
   }
 }
 
@@ -216,75 +277,55 @@ fn lst_position(
   })
 }
 
-/// Builds [`StatsInputs`] from fetched accounts (order of
-/// [`STATS_ACCOUNT_KEYS`]).
+/// Builds [`StatsInputs`] from deserialized accounts.
 ///
 /// # Errors
-/// * Deserialization failure
 /// * Oracle validation failure
+/// * Arithmetic overflow
 pub fn build_stats_inputs(
-  accounts: &[Account; STATS_ACCOUNT_COUNT],
+  accounts: &StatsAccounts,
   epochs_per_year: f64,
 ) -> Result<StatsInputs> {
-  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_collateral_mint, exo_vault, exo_levercoin_mint, btc_usd, sol_usd, clock] =
-    accounts;
-
-  let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
-  let jitosol_header =
-    LstHeader::try_deserialize(&mut jitosol_header.data.as_slice())?;
-  let hylosol_header =
-    LstHeader::try_deserialize(&mut hylosol_header.data.as_slice())?;
-  let jitosol_vault =
-    TokenAccount::try_deserialize(&mut jitosol_vault.data.as_slice())?;
-  let hylosol_vault =
-    TokenAccount::try_deserialize(&mut hylosol_vault.data.as_slice())?;
-  let jitosol_pool_state = SplStakePool::from_bytes(&jitosol_pool_state.data)?;
-  let hylosol_pool_state = SplStakePool::from_bytes(&hylosol_pool_state.data)?;
-  let hyusd_pool =
-    TokenAccount::try_deserialize(&mut hyusd_pool.data.as_slice())?;
-  let shyusd_mint = Mint::try_deserialize(&mut shyusd_mint.data.as_slice())?;
-  let exo_pair = ExoPair::try_deserialize(&mut exo_pair.data.as_slice())?;
-  let exo_collateral_mint =
-    Mint::try_deserialize(&mut exo_collateral_mint.data.as_slice())?;
-  let exo_vault =
-    TokenAccount::try_deserialize(&mut exo_vault.data.as_slice())?;
-  let exo_levercoin_mint =
-    Mint::try_deserialize(&mut exo_levercoin_mint.data.as_slice())?;
-  let btc_usd = PriceUpdateV2::try_deserialize(&mut btc_usd.data.as_slice())?;
-  let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())?;
-  let clock: Clock =
-    bincode::deserialize(&clock.data).map_err(ClockDeserialize)?;
-
   let oracle_config = OracleConfig::new(
-    hylo.oracle_interval_secs,
-    hylo.oracle_conf_tolerance.try_into()?,
+    accounts.hylo.oracle_interval_secs,
+    accounts.hylo.oracle_conf_tolerance.try_into()?,
   );
-  let sol_usd_spot = query_pyth_oracle(&clock, &sol_usd, oracle_config)?.spot;
+  let sol_usd_spot =
+    query_pyth_oracle(&accounts.clock, &accounts.sol_usd, oracle_config)?.spot;
 
   let levercoin_market_cap = exo_levercoin_market_cap(
-    &clock,
-    &exo_pair,
-    &exo_collateral_mint,
-    &exo_vault,
-    &exo_levercoin_mint,
-    &btc_usd,
+    &accounts.clock,
+    &accounts.exo_pair,
+    &accounts.exo_collateral_mint,
+    &accounts.exo_vault,
+    &accounts.exo_levercoin_mint,
+    &accounts.btc_usd,
   )?;
-  let outstanding_drawdown = total_outstanding_drawdown(&hylo, &exo_pair)?;
+  let outstanding_drawdown =
+    total_outstanding_drawdown(&accounts.hylo, &accounts.exo_pair)?;
 
   Ok(StatsInputs {
-    current_epoch: clock.epoch,
-    pool_balance: UFix64::new(hyusd_pool.amount),
-    shyusd_supply: UFix64::new(shyusd_mint.supply),
-    lst_harvest_cache: hylo.yield_harvest_cache.into(),
-    harvest_config: hylo.yield_harvest_config.into(),
+    current_epoch: accounts.clock.epoch,
+    pool_balance: UFix64::new(accounts.hyusd_pool.amount),
+    shyusd_supply: UFix64::new(accounts.shyusd_mint.supply),
+    lst_harvest_cache: accounts.hylo.yield_harvest_cache.into(),
+    harvest_config: accounts.hylo.yield_harvest_config.into(),
     lst_positions: vec![
-      lst_position(&jitosol_header, &jitosol_vault, &jitosol_pool_state)?,
-      lst_position(&hylosol_header, &hylosol_vault, &hylosol_pool_state)?,
+      lst_position(
+        &accounts.jitosol_header,
+        &accounts.jitosol_vault,
+        &accounts.jitosol_pool_state,
+      )?,
+      lst_position(
+        &accounts.hylosol_header,
+        &accounts.hylosol_vault,
+        &accounts.hylosol_pool_state,
+      )?,
     ],
     exo_snapshots: vec![ExoSnapshot {
       collateral_mint: CBBTC::MINT,
-      harvest_cache: exo_pair.borrow_rate_harvest_cache.into(),
-      borrow_rate_config: exo_pair.borrow_rate_config.into(),
+      harvest_cache: accounts.exo_pair.borrow_rate_harvest_cache.into(),
+      borrow_rate_config: accounts.exo_pair.borrow_rate_config.into(),
       levercoin_market_cap,
     }],
     sol_usd_spot,
