@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
 use fix::prelude::*;
 
 use crate::conversion::SwapConversion;
+use crate::error::CoreError;
 use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
 use crate::fees::controller::FeeExtract;
 use crate::pyth::PriceRange;
@@ -16,13 +16,13 @@ use crate::pyth::PriceRange;
 pub fn lp_token_nav(
   stablecoin_in_pool: UFix64<N6>,
   lp_token_supply: UFix64<N6>,
-) -> Result<UFix64<N6>> {
+) -> Result<UFix64<N6>, CoreError> {
   if lp_token_supply == UFix64::zero() {
     Ok(UFix64::one())
   } else {
     stablecoin_in_pool
       .mul_div_ceil(UFix64::one(), lp_token_supply)
-      .ok_or(LpTokenNav.into())
+      .ok_or(LpTokenNav)
   }
 }
 
@@ -30,9 +30,8 @@ pub fn lp_token_nav(
 pub fn lp_token_out(
   amount_stablecoin_in: UFix64<N6>,
   lp_token_nav: UFix64<N6>,
-) -> Result<UFix64<N6>> {
-  lp_token_out_inner(amount_stablecoin_in, lp_token_nav)
-    .ok_or(LpTokenOut.into())
+) -> Result<UFix64<N6>, CoreError> {
+  lp_token_out_inner(amount_stablecoin_in, lp_token_nav).ok_or(LpTokenOut)
 }
 
 fn lp_token_out_inner(
@@ -49,13 +48,13 @@ pub fn amount_token_to_withdraw(
   user_lp_token_amount: UFix64<N6>,
   lp_token_supply: UFix64<N6>,
   pool_amount: UFix64<N6>,
-) -> Result<UFix64<N6>> {
+) -> Result<UFix64<N6>, CoreError> {
   amount_token_to_withdraw_inner(
     user_lp_token_amount,
     lp_token_supply,
     pool_amount,
   )
-  .ok_or(TokenWithdraw.into())
+  .ok_or(TokenWithdraw)
 }
 
 fn amount_token_to_withdraw_inner(
@@ -74,7 +73,7 @@ pub fn amount_lever_to_swap(
   levercoin_in_pool: UFix64<N6>,
   levercoin_nav: PriceRange<N9>,
   max_swappable_stablecoin: UFix64<N6>,
-) -> Result<UFix64<N6>> {
+) -> Result<UFix64<N6>, CoreError> {
   let conversion = SwapConversion::new(UFix64::one(), levercoin_nav);
   let target_stablecoin = conversion.lever_to_stable(levercoin_in_pool)?;
   if target_stablecoin <= max_swappable_stablecoin {
@@ -90,7 +89,7 @@ pub fn amount_lever_to_swap(
 pub fn stablecoin_withdrawal_fee(
   stablecoin_to_withdraw: UFix64<N6>,
   withdrawal_fee: UFix64<N4>,
-) -> Result<FeeExtract<N6>> {
+) -> Result<FeeExtract<N6>, CoreError> {
   FeeExtract::new(withdrawal_fee, stablecoin_to_withdraw)
 }
 
@@ -176,7 +175,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_lever_to_swap_none() -> Result<()> {
+  fn amount_lever_to_swap_none() -> Result<(), CoreError> {
     let levercoin_in_pool = UFix64::zero();
     let max_swappable_stablecoin = UFix64::new(619_882_000);
     let levercoin_nav = PriceRange::one(UFix64::new(14_591_006));
@@ -190,7 +189,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_lever_to_swap_more() -> Result<()> {
+  fn amount_lever_to_swap_more() -> Result<(), CoreError> {
     let levercoin_in_pool = UFix64::new(78_119_200_118);
     let max_swappable_stablecoin = UFix64::new(619_882_000);
     let levercoin_nav = PriceRange::one(UFix64::new(149_106_000));
@@ -207,7 +206,7 @@ mod tests {
   }
 
   #[test]
-  fn amount_lever_to_swap_less() -> Result<()> {
+  fn amount_lever_to_swap_less() -> Result<(), CoreError> {
     let levercoin_in_pool = UFix64::new(19_200_118);
     let max_swappable_stablecoin = UFix64::new(619_882_000);
     let levercoin_nav = PriceRange::one(UFix64::new(149_106));

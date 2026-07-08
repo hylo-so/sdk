@@ -2,7 +2,6 @@
 
 use std::mem::size_of;
 
-use anchor_lang::prelude::{ProgramError, Result};
 use fix::prelude::*;
 
 use super::sol_price::LstSolPrice;
@@ -28,26 +27,26 @@ impl SplStakePool {
   ///
   /// # Errors
   /// * Invalid account data
-  pub fn from_bytes(data: &[u8]) -> Result<SplStakePool> {
+  pub fn from_bytes(data: &[u8]) -> Result<SplStakePool, CoreError> {
     let total_lamports = data
       .get(TOTAL_LAMPORTS_OFFSET..TOTAL_LAMPORTS_OFFSET + U64_SIZE)
       .and_then(|b| b.try_into().ok())
       .map(u64::from_le_bytes)
       .map(UFix64::new)
-      .ok_or(ProgramError::InvalidAccountData)?;
+      .ok_or(CoreError::StakePoolAccountData)?;
 
     let pool_token_supply = data
       .get(POOL_TOKEN_SUPPLY_OFFSET..POOL_TOKEN_SUPPLY_OFFSET + U64_SIZE)
       .and_then(|b| b.try_into().ok())
       .map(u64::from_le_bytes)
       .map(UFix64::new)
-      .ok_or(ProgramError::InvalidAccountData)?;
+      .ok_or(CoreError::StakePoolAccountData)?;
 
     let last_update_epoch = data
       .get(LAST_UPDATE_EPOCH_OFFSET..LAST_UPDATE_EPOCH_OFFSET + U64_SIZE)
       .and_then(|b| b.try_into().ok())
       .map(u64::from_le_bytes)
-      .ok_or(ProgramError::InvalidAccountData)?;
+      .ok_or(CoreError::StakePoolAccountData)?;
 
     Ok(SplStakePool {
       total_lamports,
@@ -61,7 +60,7 @@ impl SplStakePool {
   ///
   /// # Errors
   /// * `pool_token_supply` is zero
-  pub fn true_price(&self) -> Result<LstSolPrice> {
+  pub fn true_price(&self) -> Result<LstSolPrice, CoreError> {
     let price = SplStakePool::true_price_inner(
       self.total_lamports,
       self.pool_token_supply,
@@ -94,9 +93,6 @@ mod tests {
       pool_token_supply: UFix64::<N9>::zero(),
       last_update_epoch: 0,
     };
-    assert_eq!(
-      pool.true_price().err(),
-      Some(CoreError::StakePoolDivByZero.into()),
-    );
+    assert_eq!(pool.true_price().err(), Some(CoreError::StakePoolDivByZero),);
   }
 }

@@ -1,4 +1,3 @@
-use anchor_lang::prelude::*;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -7,6 +6,7 @@ use super::ExchangeContext;
 use crate::conversion::{
   ExoConversion, ExoRebalanceConversion, UsdcStablecoinConversion,
 };
+use crate::error::CoreError;
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
   RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
@@ -71,12 +71,12 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     &self.buy_curve_config
   }
 
-  fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>> {
+  fn virtual_stablecoin_supply(&self) -> Result<UFix64<N6>, CoreError> {
     self.virtual_stablecoin.supply()
   }
 
-  fn levercoin_supply(&self) -> Result<UFix64<N6>> {
-    self.levercoin_supply.ok_or(LevercoinSupplyNotSet.into())
+  fn levercoin_supply(&self) -> Result<UFix64<N6>, CoreError> {
+    self.levercoin_supply.ok_or(LevercoinSupplyNotSet)
   }
 
   fn rebalance_mode(&self) -> RebalanceMode {
@@ -110,7 +110,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
     levercoin_market_cap_limit: UFix64<N9>,
-  ) -> Result<ExoExchangeContext<C>> {
+  ) -> Result<ExoExchangeContext<C>, CoreError> {
     let collateral_oracle =
       query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
     let collateral_usd_price = collateral_oracle.price_range()?;
@@ -151,7 +151,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn stablecoin_mint_fee(
     &self,
     collateral_amount: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let new_total = self
       .total_collateral
       .checked_add(&collateral_amount)
@@ -179,7 +179,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn stablecoin_redeem_fee(
     &self,
     collateral_amount: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_amount)
@@ -208,7 +208,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn levercoin_mint_fee(
     &self,
     collateral_amount: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let new_total = self
       .total_collateral
       .checked_add(&collateral_amount)
@@ -227,7 +227,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn levercoin_redeem_fee(
     &self,
     collateral_amount: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>> {
+  ) -> Result<FeeExtract<N9>, CoreError> {
     let new_total = self
       .total_collateral
       .checked_sub(&collateral_amount)
@@ -253,7 +253,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     usdc_usd_price: PriceRange<N9>,
     usdc_amount: UFix64<N9>,
-  ) -> Result<ExoRebalanceConversion> {
+  ) -> Result<ExoRebalanceConversion, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
     let collateral_delta =
       ExoRebalanceConversion::new(spot_price, usdc_usd_price)
@@ -286,7 +286,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     // Collateral the protocol can sell, priced as USDC at spot
     let sellable_collateral =
       self.rebalance_sell_liquidity()?.min(self.total_collateral);
@@ -313,7 +313,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     usdc_usd_price: PriceRange<N9>,
     collateral_amount: UFix64<N9>,
-  ) -> Result<ExoRebalanceConversion> {
+  ) -> Result<ExoRebalanceConversion, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
     let new_total = self
       .total_collateral
@@ -341,7 +341,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Levercoin mint NAV fails
   pub fn levercoin_market_cap_limiter(
     &self,
-  ) -> Result<LevercoinMarketCapLimiter> {
+  ) -> Result<LevercoinMarketCapLimiter, CoreError> {
     let levercoin_supply = self.levercoin_supply()?;
     let levercoin_nav = self.levercoin_mint_nav()?;
     Ok(LevercoinMarketCapLimiter::new(
@@ -359,7 +359,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn exo_to_stablecoin_spot(
     &self,
     exo_amount: UFix64<N9>,
-  ) -> Result<UFix64<N6>> {
+  ) -> Result<UFix64<N6>, CoreError> {
     let spot = self.collateral_oracle_price().spot;
     let stablecoin_nav = self.stablecoin_nav()?;
     ExoConversion::spot(spot).exo_to_token(exo_amount, stablecoin_nav)
@@ -374,10 +374,10 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     exo_in: UFix64<N9>,
     stablecoin_moved: UFix64<N6>,
-  ) -> Result<RebalancePnl> {
+  ) -> Result<RebalancePnl, CoreError> {
     let stablecoin_value_in = self.exo_to_stablecoin_spot(exo_in)?;
     RebalancePnl::from_stablecoin_flow(stablecoin_value_in, stablecoin_moved)
-      .ok_or(RebalanceSwapPnl.into())
+      .ok_or(RebalanceSwapPnl)
   }
 
   /// Computes rebalance `PnL` for a sell-side swap.
@@ -389,9 +389,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     exo_out: UFix64<N9>,
     stablecoin_moved: UFix64<N6>,
-  ) -> Result<RebalancePnl> {
+  ) -> Result<RebalancePnl, CoreError> {
     let stablecoin_value_out = self.exo_to_stablecoin_spot(exo_out)?;
     RebalancePnl::from_stablecoin_flow(stablecoin_moved, stablecoin_value_out)
-      .ok_or(RebalanceSwapPnl.into())
+      .ok_or(RebalanceSwapPnl)
   }
 }

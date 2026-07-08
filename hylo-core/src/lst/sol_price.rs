@@ -1,6 +1,9 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   LstLstPriceConversion, LstSolPriceConversion, LstSolPriceDelta,
   LstSolPriceEpochOrder, LstSolPriceOutdated, SolLstPriceConversion,
@@ -35,7 +38,10 @@ impl LstSolPrice {
   ///
   /// # Errors
   /// * Fee extraction arithmetic
-  pub fn adjust_price(&self, fee: UFix64<N5>) -> Result<LstSolPrice> {
+  pub fn adjust_price(
+    &self,
+    fee: UFix64<N5>,
+  ) -> Result<LstSolPrice, CoreError> {
     let price: UFix64<N9> = self.price.try_into()?;
     let extract = FeeExtract::new(fee, price)?;
     Ok(LstSolPrice::new(
@@ -47,21 +53,27 @@ impl LstSolPrice {
   /// Computes difference between previous and current LST SOL price:
   ///  * Current epoch should be greater than the previous
   ///  * Price subtraction does not underflow
-  pub fn checked_delta(&self, prev: &LstSolPrice) -> Result<UFix64<N9>> {
+  pub fn checked_delta(
+    &self,
+    prev: &LstSolPrice,
+  ) -> Result<UFix64<N9>, CoreError> {
     if self.epoch > prev.epoch {
       let cur: UFix64<N9> = self.price.try_into()?;
       let prev: UFix64<N9> = prev.price.try_into()?;
-      cur.checked_sub(&prev).ok_or(LstSolPriceDelta.into())
+      cur.checked_sub(&prev).ok_or(LstSolPriceDelta)
     } else {
-      Err(LstSolPriceEpochOrder.into())
+      Err(LstSolPriceEpochOrder)
     }
   }
 
-  pub fn get_epoch_price(&self, current_epoch: u64) -> Result<UFix64<N9>> {
+  pub fn get_epoch_price(
+    &self,
+    current_epoch: u64,
+  ) -> Result<UFix64<N9>, CoreError> {
     if current_epoch == self.epoch {
-      self.price.try_into()
+      Ok(self.price.try_into()?)
     } else {
-      Err(LstSolPriceOutdated.into())
+      Err(LstSolPriceOutdated)
     }
   }
 
@@ -74,7 +86,7 @@ impl LstSolPrice {
     &self,
     amount_lst: UFix64<N9>,
     current_epoch: u64,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
     let sol = lst_sol_price
       .mul_div_floor(amount_lst, UFix64::one())
@@ -91,10 +103,10 @@ impl LstSolPrice {
     &self,
     amount_sol: UFix64<N9>,
     current_epoch: u64,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
     LstSolPrice::convert_sol_to_lst_inner(amount_sol, lst_sol_price)
-      .ok_or(SolLstPriceConversion.into())
+      .ok_or(SolLstPriceConversion)
   }
 
   fn convert_sol_to_lst_inner(
@@ -116,11 +128,11 @@ impl LstSolPrice {
     current_epoch: u64,
     amount_lst: UFix64<N9>,
     other: &LstSolPrice,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     let in_price = self.get_epoch_price(current_epoch)?;
     let out_price = other.get_epoch_price(current_epoch)?;
     LstSolPrice::convert_lst_amount_inner(amount_lst, in_price, out_price)
-      .ok_or(LstLstPriceConversion.into())
+      .ok_or(LstLstPriceConversion)
   }
 
   fn convert_lst_amount_inner(

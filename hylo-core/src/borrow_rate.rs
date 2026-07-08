@@ -1,8 +1,11 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use fix::typenum::Z0;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::error::CoreError::{BorrowRateApply, BorrowRateValidation};
 use crate::fees::controller::FeeExtract;
 
@@ -39,16 +42,16 @@ impl BorrowRateConfig {
   ///
   /// # Errors
   /// * Invalid rate data
-  pub fn rate(&self) -> Result<UFix64<N9>> {
-    self.rate.try_into()
+  pub fn rate(&self) -> Result<UFix64<N9>, CoreError> {
+    Ok(self.rate.try_into()?)
   }
 
   /// Percentage of borrow rate harvest to divert to treasury.
   ///
   /// # Errors
   /// * Invalid fee data
-  pub fn fee(&self) -> Result<UFix64<N4>> {
-    self.fee.try_into()
+  pub fn fee(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.fee.try_into()?)
   }
 
   /// Applies the borrow rate to a USD amount.
@@ -60,19 +63,22 @@ impl BorrowRateConfig {
     &self,
     amount: UFix64<N9>,
     elapsed_epochs: UFix64<Z0>,
-  ) -> Result<UFix64<N9>> {
+  ) -> Result<UFix64<N9>, CoreError> {
     let rate = self.rate()?;
     amount
       .mul_div_floor(rate, UFix64::one())
       .and_then(|base| base.checked_mul(&elapsed_epochs))
-      .ok_or(BorrowRateApply.into())
+      .ok_or(BorrowRateApply)
   }
 
   /// Extracts treasury fee from the harvested borrow amount.
   ///
   /// # Errors
   /// * Fee extraction arithmetic
-  pub fn apply_fee(&self, amount: UFix64<N6>) -> Result<FeeExtract<N6>> {
+  pub fn apply_fee(
+    &self,
+    amount: UFix64<N6>,
+  ) -> Result<FeeExtract<N6>, CoreError> {
     let fee = self.fee()?;
     FeeExtract::new(fee, amount)
   }
@@ -80,7 +86,7 @@ impl BorrowRateConfig {
   /// # Errors
   /// * Rate is zero or exceeds maximum
   /// * Fee is zero or exceeds 100%
-  pub fn validate(&self) -> Result<BorrowRateConfig> {
+  pub fn validate(&self) -> Result<BorrowRateConfig, CoreError> {
     let rate = self.rate()?;
     let fee = self.fee()?;
     if rate > UFix64::zero()
@@ -90,7 +96,7 @@ impl BorrowRateConfig {
     {
       Ok(*self)
     } else {
-      Err(BorrowRateValidation.into())
+      Err(BorrowRateValidation)
     }
   }
 }
@@ -106,7 +112,7 @@ mod tests {
   }
 
   #[test]
-  fn apply_borrow_rate_7_percent_annual() -> Result<()> {
+  fn apply_borrow_rate_7_percent_annual() -> Result<(), CoreError> {
     let config = test_config();
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
     let borrow = config.apply_borrow_rate(collateral, UFix64::constant(1))?;
@@ -115,7 +121,7 @@ mod tests {
   }
 
   #[test]
-  fn apply_borrow_rate_multiple_epochs() -> Result<()> {
+  fn apply_borrow_rate_multiple_epochs() -> Result<(), CoreError> {
     let config = test_config();
     let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
     let borrow = config.apply_borrow_rate(collateral, UFix64::constant(5))?;
@@ -124,7 +130,7 @@ mod tests {
   }
 
   #[test]
-  fn apply_fee_5_percent() -> Result<()> {
+  fn apply_fee_5_percent() -> Result<(), CoreError> {
     let config = test_config();
     let amount = UFix64::<N6>::new(384_620_000);
     let extract = config.apply_fee(amount)?;
@@ -134,7 +140,7 @@ mod tests {
   }
 
   #[test]
-  fn validate_pos() -> Result<()> {
+  fn validate_pos() -> Result<(), CoreError> {
     test_config().validate()?;
     Ok(())
   }
@@ -145,7 +151,7 @@ mod tests {
       UFix64::<N9>::zero().into(),
       UFix64::<N4>::new(500).into(),
     );
-    assert_eq!(config.validate(), Err(BorrowRateValidation.into()));
+    assert_eq!(config.validate(), Err(BorrowRateValidation));
   }
 
   #[test]
@@ -154,7 +160,7 @@ mod tests {
       UFix64::<N9>::new(600_001).into(),
       UFix64::<N4>::new(500).into(),
     );
-    assert_eq!(config.validate(), Err(BorrowRateValidation.into()));
+    assert_eq!(config.validate(), Err(BorrowRateValidation));
   }
 
   #[test]
@@ -163,7 +169,7 @@ mod tests {
       UFix64::<N9>::new(384_620).into(),
       UFix64::<N4>::zero().into(),
     );
-    assert_eq!(config.validate(), Err(BorrowRateValidation.into()));
+    assert_eq!(config.validate(), Err(BorrowRateValidation));
   }
 
   #[test]
@@ -172,6 +178,6 @@ mod tests {
       UFix64::<N9>::new(384_620).into(),
       UFix64::<N4>::new(10_001).into(),
     );
-    assert_eq!(config.validate(), Err(BorrowRateValidation.into()));
+    assert_eq!(config.validate(), Err(BorrowRateValidation));
   }
 }

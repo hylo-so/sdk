@@ -1,7 +1,10 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   YieldHarvestAllocation, YieldHarvestConfigValidation,
 };
@@ -32,32 +35,38 @@ impl YieldHarvestConfig {
     &mut self,
     allocation: UFixValue64,
     fee: UFixValue64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     self.allocation = allocation;
     self.fee = fee;
     Ok(())
   }
 
   /// Percentage of accrued yield to qualify for harvest
-  pub fn allocation(&self) -> Result<UFix64<N4>> {
-    self.allocation.try_into()
+  pub fn allocation(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.allocation.try_into()?)
   }
 
   /// Percentage of harvest allocation to divert to treasury
-  pub fn fee(&self) -> Result<UFix64<N4>> {
-    self.fee.try_into()
+  pub fn fee(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.fee.try_into()?)
   }
 
   /// Multiplies allocation bps by amount of harvestable stablecoin.
-  pub fn apply_allocation(&self, stablecoin: UFix64<N6>) -> Result<UFix64<N6>> {
+  pub fn apply_allocation(
+    &self,
+    stablecoin: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
     let allocation = self.allocation()?;
     stablecoin
       .mul_div_floor(allocation, UFix64::one())
-      .ok_or(YieldHarvestAllocation.into())
+      .ok_or(YieldHarvestAllocation)
   }
 
   /// Applies configuration to the given amount of stablecoin to harvest.
-  pub fn apply_fee(&self, stablecoin: UFix64<N6>) -> Result<FeeExtract<N6>> {
+  pub fn apply_fee(
+    &self,
+    stablecoin: UFix64<N6>,
+  ) -> Result<FeeExtract<N6>, CoreError> {
     let fee = self.fee()?;
     let extract = FeeExtract::new(fee, stablecoin)?;
     Ok(extract)
@@ -70,13 +79,13 @@ impl YieldHarvestConfig {
     fee_valid && allocation_valid
   }
 
-  pub fn validate(&self) -> Result<Self> {
+  pub fn validate(&self) -> Result<Self, CoreError> {
     let fee: UFix64<N4> = self.fee.try_into()?;
     let allocation: UFix64<N4> = self.allocation.try_into()?;
     if YieldHarvestConfig::is_valid(fee, allocation) {
       Ok(*self)
     } else {
-      Err(YieldHarvestConfigValidation.into())
+      Err(YieldHarvestConfigValidation)
     }
   }
 }
@@ -99,7 +108,7 @@ pub struct HarvestCache {
 }
 
 impl HarvestCache {
-  pub fn init(&mut self, epoch: u64) -> Result<()> {
+  pub fn init(&mut self, epoch: u64) -> Result<(), CoreError> {
     self.epoch = epoch;
     self.stability_pool_cap = UFix64::<N6>::zero().into();
     self.stablecoin_to_pool = UFix64::<N6>::zero().into();
@@ -111,7 +120,7 @@ impl HarvestCache {
     stability_pool_cap: UFix64<N6>,
     stablecoin_to_pool: UFix64<N6>,
     epoch: u64,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     self.epoch = epoch;
     self.stability_pool_cap = stability_pool_cap.into();
     self.stablecoin_to_pool = stablecoin_to_pool.into();

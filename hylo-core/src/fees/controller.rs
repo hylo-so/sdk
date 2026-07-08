@@ -1,7 +1,10 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
   NoValidLevercoinRedeemFee, NoValidSwapFee,
@@ -36,26 +39,26 @@ impl FeePair {
     FeePair { mint, redeem }
   }
 
-  pub fn mint(&self) -> Result<UFix64<N4>> {
-    self.mint.try_into()
+  pub fn mint(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.mint.try_into()?)
   }
 
-  pub fn redeem(&self) -> Result<UFix64<N4>> {
-    self.redeem.try_into()
+  pub fn redeem(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.redeem.try_into()?)
   }
 
-  pub fn validate(&self) -> Result<()> {
+  pub fn validate(&self) -> Result<(), CoreError> {
     (self.mint()? <= MAX_FEE && self.redeem()? <= MAX_FEE)
       .then_some(())
-      .ok_or(InvalidFees.into())
+      .ok_or(InvalidFees)
   }
 }
 
 /// Fee configuration table reacts to different rebalance modes.
 pub trait FeeController: Sized {
-  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>>;
-  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>>;
-  fn validate(self) -> Result<Self>;
+  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError>;
+  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError>;
+  fn validate(self) -> Result<Self, CoreError>;
 }
 
 /// Combines fee multiplication for a token amount with the remaining token
@@ -69,11 +72,11 @@ impl<Exp> FeeExtract<Exp> {
   pub fn new<FeeExp>(
     fee: UFix64<FeeExp>,
     amount_in: UFix64<Exp>,
-  ) -> Result<FeeExtract<Exp>>
+  ) -> Result<FeeExtract<Exp>, CoreError>
   where
     UFix64<FeeExp>: FixExt,
   {
-    FeeExtract::split(fee, amount_in).ok_or(FeeExtraction.into())
+    FeeExtract::split(fee, amount_in).ok_or(FeeExtraction)
   }
 
   fn split<FeeExp>(
@@ -133,27 +136,27 @@ pub struct LevercoinFees {
 
 impl FeeController for LevercoinFees {
   /// Determines minting fee based on
-  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>> {
+  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
     match mode {
       Neutral | BuyZone1 | BuyZone2 => self.normal.mint(),
       SellZone1 => self.sell_zone_1.mint(),
       SellZone2 => self.sell_zone_2.mint(),
-      Depeg => Err(NoValidLevercoinMintFee.into()),
+      Depeg => Err(NoValidLevercoinMintFee),
     }
   }
 
   /// Determines fee to charge when redeeming `xSOL`.
-  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>> {
+  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
     match mode {
       Neutral | BuyZone1 | BuyZone2 => self.normal.redeem(),
       SellZone1 => self.sell_zone_1.redeem(),
       SellZone2 => self.sell_zone_2.redeem(),
-      Depeg => Err(NoValidLevercoinRedeemFee.into()),
+      Depeg => Err(NoValidLevercoinRedeemFee),
     }
   }
 
   /// Run validations
-  fn validate(self) -> Result<LevercoinFees> {
+  fn validate(self) -> Result<LevercoinFees, CoreError> {
     self.normal.validate()?;
     self.sell_zone_1.validate()?;
     self.sell_zone_2.validate()?;
@@ -179,11 +182,11 @@ impl LevercoinFees {
   pub fn convert_to_stablecoin_fee(
     &self,
     mode: RebalanceMode,
-  ) -> Result<UFix64<N4>> {
+  ) -> Result<UFix64<N4>, CoreError> {
     match mode {
-      Neutral | BuyZone1 | BuyZone2 => self.normal.redeem.try_into(),
-      SellZone1 => self.sell_zone_1.redeem.try_into(),
-      SellZone2 | Depeg => Err(NoValidSwapFee.into()),
+      Neutral | BuyZone1 | BuyZone2 => self.normal.redeem(),
+      SellZone1 => self.sell_zone_1.redeem(),
+      SellZone2 | Depeg => Err(NoValidSwapFee),
     }
   }
 
@@ -191,12 +194,12 @@ impl LevercoinFees {
   pub fn convert_from_stablecoin_fee(
     &self,
     mode: RebalanceMode,
-  ) -> Result<UFix64<N4>> {
+  ) -> Result<UFix64<N4>, CoreError> {
     match mode {
       Neutral | BuyZone1 | BuyZone2 => self.normal.mint(),
       SellZone1 => self.sell_zone_1.mint(),
       SellZone2 => self.sell_zone_2.mint(),
-      Depeg => Err(NoValidSwapFee.into()),
+      Depeg => Err(NoValidSwapFee),
     }
   }
 }
@@ -206,7 +209,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn fee_extraction() -> Result<()> {
+  fn fee_extraction() -> Result<(), CoreError> {
     let fee = UFix64::<N4>::new(50);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount)?;
@@ -220,7 +223,7 @@ mod tests {
     let fee = UFix64::<N4>::new(10001);
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
-    assert_eq!(out.err(), Some(FeeExtraction.into()));
+    assert_eq!(out.err(), Some(FeeExtraction));
   }
 }
 

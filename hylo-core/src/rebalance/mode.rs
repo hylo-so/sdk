@@ -1,9 +1,12 @@
 use std::fmt::{Display, Formatter};
 use std::ops::{Bound, RangeBounds};
 
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   RangeUnexpectedBound, StablecoinMintThresholdInvalid,
 };
@@ -57,17 +60,17 @@ impl CrRange {
     CrRange { start, end }
   }
 
-  pub fn start(&self) -> Result<UFix64<N9>> {
+  pub fn start(&self) -> Result<UFix64<N9>, CoreError> {
     match self.start {
       Bound::Included(start) => Ok(start),
-      Bound::Excluded(_) | Bound::Unbounded => Err(RangeUnexpectedBound.into()),
+      Bound::Excluded(_) | Bound::Unbounded => Err(RangeUnexpectedBound),
     }
   }
 
-  pub fn end(&self) -> Result<UFix64<N9>> {
+  pub fn end(&self) -> Result<UFix64<N9>, CoreError> {
     match self.end {
       Bound::Excluded(end) => Ok(end),
-      Bound::Included(_) | Bound::Unbounded => Err(RangeUnexpectedBound.into()),
+      Bound::Included(_) | Bound::Unbounded => Err(RangeUnexpectedBound),
     }
   }
 }
@@ -141,12 +144,12 @@ impl RebalanceMode {
 /// rebalance zone.
 pub fn validate_stablecoin_mint_threshold(
   stablecoin_mint_threshold: UFixValue64,
-) -> Result<UFixValue64> {
+) -> Result<UFixValue64, CoreError> {
   RebalanceMode::Neutral
     .active_range()
     .contains(&stablecoin_mint_threshold.try_into()?)
     .then_some(stablecoin_mint_threshold)
-    .ok_or(StablecoinMintThresholdInvalid.into())
+    .ok_or(StablecoinMintThresholdInvalid)
 }
 
 #[cfg(test)]
@@ -177,10 +180,7 @@ mod tests {
         );
       });
     assert_eq!(Depeg.active_range().start(), Ok(UFix64::zero()));
-    assert_eq!(
-      BuyZone2.active_range().end(),
-      Err(RangeUnexpectedBound.into())
-    );
+    assert_eq!(BuyZone2.active_range().end(), Err(RangeUnexpectedBound));
   }
 
   #[test]

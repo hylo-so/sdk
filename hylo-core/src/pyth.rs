@@ -1,10 +1,11 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{
   FeedId, PriceUpdateV2, VerificationLevel,
 };
 
+use crate::error::CoreError;
 use crate::error::CoreError::{
   OracleConfToleranceInvalid, OracleIntervalSecsInvalid, PythOracleConfidence,
   PythOracleExponent, PythOracleNegativePrice, PythOracleNegativeTime,
@@ -64,21 +65,23 @@ impl OracleConfig {
 }
 
 /// Oracle interval must be in `[MIN, MAX]`.
-pub fn validate_interval_secs(secs: u64) -> Result<u64> {
+pub fn validate_interval_secs(secs: u64) -> Result<u64, CoreError> {
   if (MIN_INTERVAL_SECS..=MAX_INTERVAL_SECS).contains(&secs) {
     Ok(secs)
   } else {
-    Err(OracleIntervalSecsInvalid.into())
+    Err(OracleIntervalSecsInvalid)
   }
 }
 
 /// Confidence tolerance must be in `[MIN, MAX]`.
-pub fn validate_conf_tolerance(tolerance: UFixValue64) -> Result<UFixValue64> {
+pub fn validate_conf_tolerance(
+  tolerance: UFixValue64,
+) -> Result<UFixValue64, CoreError> {
   let pct: UFix64<N9> = tolerance.try_into()?;
   if (MIN_CONF_TOLERANCE..=MAX_CONF_TOLERANCE).contains(&pct) {
     Ok(tolerance)
   } else {
-    Err(OracleConfToleranceInvalid.into())
+    Err(OracleConfToleranceInvalid)
   }
 }
 
@@ -98,7 +101,7 @@ impl<Exp: Integer> PriceRange<Exp> {
   pub fn from_conf(
     price: UFix64<Exp>,
     conf: UFix64<Exp>,
-  ) -> Result<PriceRange<Exp>> {
+  ) -> Result<PriceRange<Exp>, CoreError> {
     let (lower, upper) = price
       .checked_sub(&conf)
       .zip(price.checked_add(&conf))
@@ -124,12 +127,12 @@ fn validate_conf(
   price: UFix64<N9>,
   conf: UFix64<N9>,
   tolerance: UFix64<N9>,
-) -> Result<UFix64<N9>> {
+) -> Result<UFix64<N9>, CoreError> {
   conf
     .mul_div_floor(UFix64::one(), price)
     .filter(|diff| diff.le(&tolerance))
     .map(|_| conf)
-    .ok_or(PythOracleConfidence.into())
+    .ok_or(PythOracleConfidence)
 }
 
 /// Ensures the oracle's publish time is within the inclusive range:
@@ -138,7 +141,7 @@ fn validate_publish_time(
   publish_time: i64,
   oracle_interval: u64,
   clock_time: i64,
-) -> Result<()> {
+) -> Result<(), CoreError> {
   let (publish_time, clock_time) =
     if publish_time.is_positive() && clock_time.is_positive() {
       Ok((publish_time.unsigned_abs(), clock_time.unsigned_abs()))
@@ -148,14 +151,14 @@ fn validate_publish_time(
   if publish_time.saturating_add(oracle_interval) >= clock_time {
     Ok(())
   } else {
-    Err(PythOracleOutdated.into())
+    Err(PythOracleOutdated)
   }
 }
 
 /// Number of Solana slots in configured oracle interval time.
 fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
   let time: UFix64<N2> = UFix64::<Z0>::new(oracle_interval_secs).convert();
-  let slot_time = UFix64::<N2>::new(40); // 400ms slot time
+  let slot_time = UFix64::<N2>::new(20); // 200ms slot time
   time.checked_div(&slot_time).map(|i| i.bits)
 }
 
@@ -164,22 +167,22 @@ fn validate_posted_slot(
   posted_slot: u64,
   oracle_interval_secs: u64,
   current_slot: u64,
-) -> Result<()> {
+) -> Result<(), CoreError> {
   current_slot
     .checked_sub(posted_slot)
     .zip(slot_interval(oracle_interval_secs))
     .filter(|(delta, slot_interval)| *delta <= *slot_interval)
-    .ok_or(PythOracleSlotInvalid.into())
     .map(|_| ())
+    .ok_or(PythOracleSlotInvalid)
 }
 
 /// Validates a Pyth price is positive and normalizes to `N9`.
 ///
 /// # Errors
 /// * Negative price or unsupported exponent
-fn validate_price(price: i64, exp: i32) -> Result<UFix64<N9>> {
+fn validate_price(price: i64, exp: i32) -> Result<UFix64<N9>, CoreError> {
   if price <= 0 {
-    Err(PythOracleNegativePrice.into())
+    Err(PythOracleNegativePrice)
   } else {
     normalize_pyth_price(price.unsigned_abs(), exp)
   }
@@ -190,7 +193,7 @@ fn validate_price(price: i64, exp: i32) -> Result<UFix64<N9>> {
 ///
 /// # Errors
 /// * Unsupported exponent or conversion overflow
-fn normalize_pyth_price(price: u64, exp: i32) -> Result<UFix64<N9>> {
+fn normalize_pyth_price(price: u64, exp: i32) -> Result<UFix64<N9>, CoreError> {
   match exp {
     -2 => UFix64::<N2>::new(price).checked_convert(),
     -3 => UFix64::<N3>::new(price).checked_convert(),
@@ -202,15 +205,17 @@ fn normalize_pyth_price(price: u64, exp: i32) -> Result<UFix64<N9>> {
     -9 => Some(UFix64::<N9>::new(price)),
     _ => None,
   }
-  .ok_or(PythOracleExponent.into())
+  .ok_or(PythOracleExponent)
 }
 
 /// Checks Pythnet verification level for the price update.
-fn validate_verification_level(level: VerificationLevel) -> Result<()> {
+fn validate_verification_level(
+  level: VerificationLevel,
+) -> Result<(), CoreError> {
   if level == VerificationLevel::Full {
     Ok(())
   } else {
-    Err(PythOracleVerificationLevel.into())
+    Err(PythOracleVerificationLevel)
   }
 }
 
@@ -226,7 +231,7 @@ impl OraclePrice {
   ///
   /// # Errors
   /// * Arithmetic overflow from `PriceRange::from_conf`
-  pub fn price_range(&self) -> Result<PriceRange<N9>> {
+  pub fn price_range(&self) -> Result<PriceRange<N9>, CoreError> {
     PriceRange::from_conf(self.spot, self.conf)
   }
 }
@@ -242,7 +247,7 @@ pub fn query_pyth_oracle<C: SolanaClock>(
     interval_secs,
     conf_tolerance,
   }: OracleConfig,
-) -> Result<OraclePrice> {
+) -> Result<OraclePrice, CoreError> {
   validate_verification_level(oracle.verification_level)?;
   validate_publish_time(
     oracle.price_message.publish_time,
@@ -266,7 +271,7 @@ pub fn query_pyth_price<C: SolanaClock>(
   clock: &C,
   oracle: &PriceUpdateV2,
   config: OracleConfig,
-) -> Result<PriceRange<N9>> {
+) -> Result<PriceRange<N9>, CoreError> {
   let oracle_price = query_pyth_oracle(clock, oracle, config)?;
   PriceRange::from_conf(oracle_price.spot, oracle_price.conf)
 }
@@ -328,28 +333,28 @@ mod tests {
   }
 
   #[test]
-  fn normalize_n8_known_value() -> Result<()> {
+  fn normalize_n8_known_value() -> Result<(), CoreError> {
     let result = normalize_pyth_price(14_640_110_937, -8)?;
     assert_eq!(result, UFix64::<N9>::new(146_401_109_370));
     Ok(())
   }
 
   #[test]
-  fn normalize_n9_passthrough() -> Result<()> {
+  fn normalize_n9_passthrough() -> Result<(), CoreError> {
     let result = normalize_pyth_price(123_456_789, -9)?;
     assert_eq!(result, UFix64::<N9>::new(123_456_789));
     Ok(())
   }
 
   #[test]
-  fn normalize_n9_max() -> Result<()> {
+  fn normalize_n9_max() -> Result<(), CoreError> {
     let result = normalize_pyth_price(u64::MAX, -9)?;
     assert_eq!(result, UFix64::<N9>::new(u64::MAX));
     Ok(())
   }
 
   #[test]
-  fn normalize_n2_small() -> Result<()> {
+  fn normalize_n2_small() -> Result<(), CoreError> {
     let result = normalize_pyth_price(14_640, -2)?;
     assert_eq!(result, UFix64::<N9>::new(146_400_000_000));
     Ok(())
@@ -377,14 +382,14 @@ mod tests {
   }
 
   #[test]
-  fn normalize_zero_price() -> Result<()> {
+  fn normalize_zero_price() -> Result<(), CoreError> {
     let result = normalize_pyth_price(0, -8)?;
     assert_eq!(result, UFix64::<N9>::zero());
     Ok(())
   }
 
   #[test]
-  fn validate_conf_within_tolerance() -> Result<()> {
+  fn validate_conf_within_tolerance() -> Result<(), CoreError> {
     let price = UFix64::<N9>::new(146_401_109_370);
     let conf = UFix64::<N9>::new(80_000_000);
     let tolerance = UFix64::<N9>::new(1_000_000);
@@ -402,7 +407,7 @@ mod tests {
   }
 
   #[test]
-  fn validate_conf_exact_boundary() -> Result<()> {
+  fn validate_conf_exact_boundary() -> Result<(), CoreError> {
     let price = UFix64::<N9>::new(1_000_000_000);
     let conf = UFix64::<N9>::new(10_000_000);
     let tolerance = UFix64::<N9>::new(10_000_000);
@@ -412,7 +417,7 @@ mod tests {
   }
 
   #[test]
-  fn validate_conf_zero_passes() -> Result<()> {
+  fn validate_conf_zero_passes() -> Result<(), CoreError> {
     let price = UFix64::<N9>::new(100_000_000_000);
     let conf = UFix64::<N9>::zero();
     let tolerance = UFix64::<N9>::new(1_000_000);
@@ -454,12 +459,12 @@ mod tests {
 
   #[test]
   fn slot_interval_precise() {
-    assert_eq!(slot_interval(60), Some(150));
+    assert_eq!(slot_interval(60), Some(300));
   }
 
   #[test]
-  fn slot_interval_lossy() {
-    assert_eq!(slot_interval(1), Some(2));
+  fn slot_interval_one_sec() {
+    assert_eq!(slot_interval(1), Some(5));
   }
 
   #[test]
@@ -469,7 +474,7 @@ mod tests {
 
   #[test]
   fn slot_interval_large() {
-    assert_eq!(slot_interval(3600), Some(9000));
+    assert_eq!(slot_interval(3600), Some(18_000));
   }
 
   #[test]
@@ -479,12 +484,12 @@ mod tests {
 
   #[test]
   fn posted_slot_exact_boundary() {
-    assert!(validate_posted_slot(1000, 60, 1150).is_ok());
+    assert!(validate_posted_slot(1000, 60, 1300).is_ok());
   }
 
   #[test]
   fn posted_slot_one_over() {
-    assert!(validate_posted_slot(1000, 60, 1151).is_err());
+    assert!(validate_posted_slot(1000, 60, 1301).is_err());
   }
 
   #[test]

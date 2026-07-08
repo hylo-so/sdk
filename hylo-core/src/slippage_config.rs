@@ -1,9 +1,10 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{borsh, AnchorDeserialize, AnchorSerialize};
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use serde::{Deserialize, Serialize};
 
+use crate::error::CoreError;
 use crate::error::CoreError::{SlippageArithmetic, SlippageExceeded};
 use crate::util::normalize_mint_exp;
 
@@ -26,12 +27,14 @@ impl SlippageConfig {
     }
   }
 
-  pub fn expected_token_out<Exp: Integer>(&self) -> Result<UFix64<Exp>> {
-    self.expected_token_out.try_into()
+  pub fn expected_token_out<Exp: Integer>(
+    &self,
+  ) -> Result<UFix64<Exp>, CoreError> {
+    Ok(self.expected_token_out.try_into()?)
   }
 
-  pub fn slippage_tolerance(&self) -> Result<UFix64<N4>> {
-    self.slippage_tolerance.try_into()
+  pub fn slippage_tolerance(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.slippage_tolerance.try_into()?)
   }
 
   fn tolerable_amount<Exp>(
@@ -56,11 +59,11 @@ impl SlippageConfig {
     expected: UFix64<Exp>,
     tolerance: UFix64<N4>,
     token_out: UFix64<Exp>,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     match SlippageConfig::meets_tolerance(expected, tolerance, token_out) {
-      None => Err(SlippageArithmetic.into()),
+      None => Err(SlippageArithmetic),
       Some(true) => Ok(()),
-      Some(false) => Err(SlippageExceeded.into()),
+      Some(false) => Err(SlippageExceeded),
     }
   }
 
@@ -68,7 +71,7 @@ impl SlippageConfig {
   pub fn validate_token_out<Exp: Integer>(
     &self,
     token_out: UFix64<Exp>,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     let expected = self.expected_token_out()?;
     let tolerance = self.slippage_tolerance()?;
     Self::validate_inner(expected, tolerance, token_out)
@@ -79,7 +82,7 @@ impl SlippageConfig {
     &self,
     mint: &Mint,
     token_out: UFix64<N9>,
-  ) -> Result<()> {
+  ) -> Result<(), CoreError> {
     let expected = normalize_mint_exp(mint, self.expected_token_out.bits)?;
     let tolerance = self.slippage_tolerance()?;
     Self::validate_inner(expected, tolerance, token_out)
@@ -108,10 +111,7 @@ mod tests {
     // One unit below the boundary
     let config = SlippageConfig::new(UFix64::<N6>::one(), ONE_PERCENT);
     let amount = UFix64::<N6>::new(989_999);
-    assert_eq!(
-      config.validate_token_out(amount),
-      Err(SlippageExceeded.into())
-    );
+    assert_eq!(config.validate_token_out(amount), Err(SlippageExceeded));
   }
 
   #[test]
@@ -124,10 +124,7 @@ mod tests {
   fn slippage_zero_tolerance_below_neg() {
     let config = SlippageConfig::new(UFix64::<N6>::one(), UFix64::zero());
     let amount = UFix64::<N6>::new(999_999);
-    assert_eq!(
-      config.validate_token_out(amount),
-      Err(SlippageExceeded.into())
-    );
+    assert_eq!(config.validate_token_out(amount), Err(SlippageExceeded));
   }
 
   #[test]
@@ -152,7 +149,7 @@ mod tests {
       SlippageConfig::new(UFix64::<N6>::one(), UFix64::<N4>::new(10_001));
     assert_eq!(
       config.validate_token_out(UFix64::<N6>::one()),
-      Err(SlippageArithmetic.into())
+      Err(SlippageArithmetic)
     );
   }
 }

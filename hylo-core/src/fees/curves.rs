@@ -1,7 +1,7 @@
-use anchor_lang::Result;
 use fix::prelude::*;
 
 use super::interp::{FixInterp, Point};
+use crate::error::CoreError;
 
 macro_rules! generate_curve {
     ($name:ident, $res:expr, $prec:ty, $(($x:expr, $y:expr)),* $(,)?) => {
@@ -17,7 +17,7 @@ macro_rules! generate_curve {
 ///
 /// # Errors
 /// * Curve validation
-pub fn mint_fee_curve() -> Result<FixInterp<21, N5>> {
+pub fn mint_fee_curve() -> Result<FixInterp<21, N5>, CoreError> {
   FixInterp::from_points(*MINT_FEE_INV)
 }
 
@@ -25,7 +25,7 @@ pub fn mint_fee_curve() -> Result<FixInterp<21, N5>> {
 ///
 /// # Errors
 /// * Curve validation
-pub fn redeem_fee_curve() -> Result<FixInterp<20, N5>> {
+pub fn redeem_fee_curve() -> Result<FixInterp<20, N5>, CoreError> {
   FixInterp::from_points(*REDEEM_FEE_LN)
 }
 

@@ -1,6 +1,16 @@
 use anchor_lang::prelude::error_code;
+use fix::prelude::ExponentMismatch;
+
+impl std::error::Error for CoreError {}
+
+impl From<ExponentMismatch> for CoreError {
+  fn from(_: ExponentMismatch) -> CoreError {
+    CoreError::FixValueConversion
+  }
+}
 
 #[error_code]
+#[derive(PartialEq, Eq)]
 pub enum CoreError {
   // `lst::total_sol_cache`
   #[msg("Cannot decrement TotalSolCache due to outdated epoch.")]
@@ -209,6 +219,17 @@ pub enum CoreError {
   WithdrawalLimitInvalidEpoch,
   #[msg("Withdrawal limit is zero or exceeds pool amount.")]
   WithdrawalLimitValidation,
+  #[msg("Fixed-point value has unexpected exponent.")]
+  FixValueConversion,
+  #[msg("SPL stake pool account data failed to deserialize.")]
+  StakePoolAccountData,
+  // `token_operation`
+  #[msg("Operation disabled in current protocol state.")]
+  OperationDisabled,
+  #[msg("Failed while converting precision for a token amount.")]
+  TokenAmountPrecision,
+  #[msg("No LST header or stake pool found for mint.")]
+  UnknownLstMint,
   // `earn_pool_yield_math` (offchain-only module; codes never emitted
   // on-chain)
   #[msg("Arithmetic error computing epoch yield rate.")]
