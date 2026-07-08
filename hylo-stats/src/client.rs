@@ -34,32 +34,8 @@ use crate::types::{EarnPoolStats, ExoSnapshot, LstPosition, StatsInputs};
 /// Seconds in a Julian year.
 const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 
-/// Number of accounts fetched for [`EarnPoolStats`].
-pub const STATS_ACCOUNT_COUNT: usize = 16;
-
-/// Account keys required for [`EarnPoolStats`], in fetch order —
-/// the same order [`StatsAccounts::from_fetched`] deserializes.
-pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
-  pda::HYLO,
-  pda::lst_header(JITOSOL::MINT),
-  pda::lst_header(HYLOSOL::MINT),
-  pda::lst_vault(JITOSOL::MINT),
-  pda::lst_vault(HYLOSOL::MINT),
-  JITOSOL::POOL_STATE,
-  HYLOSOL::POOL_STATE,
-  pda::HYUSD_POOL,
-  SHYUSD::MINT,
-  pda::exo_pair(CBBTC::MINT),
-  CBBTC::MINT,
-  pda::exo_vault(CBBTC::MINT),
-  pda::exo_levercoin_mint(CBBTC::MINT),
-  pda::BTC_USD_PYTH_FEED,
-  pda::SOL_USD_PYTH_FEED,
-  sysvar::clock::ID,
-];
-
 /// Deserialized onchain accounts backing one stats fetch, in
-/// [`STATS_ACCOUNT_KEYS`] order.
+/// [`StatsAccounts::KEYS`] order.
 #[derive(Clone)]
 pub struct StatsAccounts {
   pub hylo: Hylo,
@@ -81,70 +57,100 @@ pub struct StatsAccounts {
 }
 
 impl StatsAccounts {
+  /// Number of accounts fetched for [`EarnPoolStats`].
+  pub const COUNT: usize = 16;
+
+  /// Account keys required for [`EarnPoolStats`], in fetch order —
+  /// the same order [`StatsAccounts::from_fetched`] deserializes.
+  pub const KEYS: [Pubkey; StatsAccounts::COUNT] = [
+    pda::HYLO,
+    pda::lst_header(JITOSOL::MINT),
+    pda::lst_header(HYLOSOL::MINT),
+    pda::lst_vault(JITOSOL::MINT),
+    pda::lst_vault(HYLOSOL::MINT),
+    JITOSOL::POOL_STATE,
+    HYLOSOL::POOL_STATE,
+    pda::HYUSD_POOL,
+    SHYUSD::MINT,
+    pda::exo_pair(CBBTC::MINT),
+    CBBTC::MINT,
+    pda::exo_vault(CBBTC::MINT),
+    pda::exo_levercoin_mint(CBBTC::MINT),
+    pda::BTC_USD_PYTH_FEED,
+    pda::SOL_USD_PYTH_FEED,
+    sysvar::clock::ID,
+  ];
+
   /// Deserializes a fetched account list, erroring with the keys of
   /// any missing accounts.
   ///
   /// # Errors
   /// * Missing account, count mismatch, or deserialization failure
   pub fn from_fetched(fetched: Vec<Option<Account>>) -> Result<StatsAccounts> {
-    let actual = fetched.len();
-    let missing = STATS_ACCOUNT_KEYS
+    StatsAccounts::validate(&fetched)?;
+    let accounts = fetched.into_iter().flatten().collect::<Vec<Account>>();
+    Ok(StatsAccounts {
+      hylo: Hylo::try_deserialize(&mut accounts[0].data.as_slice())?,
+      jitosol_header: LstHeader::try_deserialize(
+        &mut accounts[1].data.as_slice(),
+      )?,
+      hylosol_header: LstHeader::try_deserialize(
+        &mut accounts[2].data.as_slice(),
+      )?,
+      jitosol_vault: TokenAccount::try_deserialize(
+        &mut accounts[3].data.as_slice(),
+      )?,
+      hylosol_vault: TokenAccount::try_deserialize(
+        &mut accounts[4].data.as_slice(),
+      )?,
+      jitosol_pool_state: SplStakePool::from_bytes(&accounts[5].data)?,
+      hylosol_pool_state: SplStakePool::from_bytes(&accounts[6].data)?,
+      hyusd_pool: TokenAccount::try_deserialize(
+        &mut accounts[7].data.as_slice(),
+      )?,
+      shyusd_mint: Mint::try_deserialize(&mut accounts[8].data.as_slice())?,
+      exo_pair: ExoPair::try_deserialize(&mut accounts[9].data.as_slice())?,
+      exo_collateral_mint: Mint::try_deserialize(
+        &mut accounts[10].data.as_slice(),
+      )?,
+      exo_vault: TokenAccount::try_deserialize(
+        &mut accounts[11].data.as_slice(),
+      )?,
+      exo_levercoin_mint: Mint::try_deserialize(
+        &mut accounts[12].data.as_slice(),
+      )?,
+      btc_usd: PriceUpdateV2::try_deserialize(
+        &mut accounts[13].data.as_slice(),
+      )?,
+      sol_usd: PriceUpdateV2::try_deserialize(
+        &mut accounts[14].data.as_slice(),
+      )?,
+      clock: bincode::deserialize(&accounts[15].data)
+        .map_err(ClockDeserialize)?,
+    })
+  }
+
+  /// Checks the fetched list has [`StatsAccounts::COUNT`] entries and
+  /// no missing accounts.
+  fn validate(fetched: &[Option<Account>]) -> Result<()> {
+    let missing = StatsAccounts::KEYS
       .iter()
-      .zip(&fetched)
+      .zip(fetched)
       .filter(|(_, account)| account.is_none())
       .map(|(key, _)| *key)
       .collect::<Vec<Pubkey>>();
-    if actual != STATS_ACCOUNT_COUNT {
+    if fetched.len() != StatsAccounts::COUNT {
       Err(
         AccountCountMismatch {
-          expected: STATS_ACCOUNT_COUNT,
-          actual,
+          expected: StatsAccounts::COUNT,
+          actual: fetched.len(),
         }
         .into(),
       )
-    } else if !missing.is_empty() {
-      Err(MissingAccounts(missing).into())
+    } else if missing.is_empty() {
+      Ok(())
     } else {
-      let accounts = fetched.into_iter().flatten().collect::<Vec<Account>>();
-      Ok(StatsAccounts {
-        hylo: Hylo::try_deserialize(&mut accounts[0].data.as_slice())?,
-        jitosol_header: LstHeader::try_deserialize(
-          &mut accounts[1].data.as_slice(),
-        )?,
-        hylosol_header: LstHeader::try_deserialize(
-          &mut accounts[2].data.as_slice(),
-        )?,
-        jitosol_vault: TokenAccount::try_deserialize(
-          &mut accounts[3].data.as_slice(),
-        )?,
-        hylosol_vault: TokenAccount::try_deserialize(
-          &mut accounts[4].data.as_slice(),
-        )?,
-        jitosol_pool_state: SplStakePool::from_bytes(&accounts[5].data)?,
-        hylosol_pool_state: SplStakePool::from_bytes(&accounts[6].data)?,
-        hyusd_pool: TokenAccount::try_deserialize(
-          &mut accounts[7].data.as_slice(),
-        )?,
-        shyusd_mint: Mint::try_deserialize(&mut accounts[8].data.as_slice())?,
-        exo_pair: ExoPair::try_deserialize(&mut accounts[9].data.as_slice())?,
-        exo_collateral_mint: Mint::try_deserialize(
-          &mut accounts[10].data.as_slice(),
-        )?,
-        exo_vault: TokenAccount::try_deserialize(
-          &mut accounts[11].data.as_slice(),
-        )?,
-        exo_levercoin_mint: Mint::try_deserialize(
-          &mut accounts[12].data.as_slice(),
-        )?,
-        btc_usd: PriceUpdateV2::try_deserialize(
-          &mut accounts[13].data.as_slice(),
-        )?,
-        sol_usd: PriceUpdateV2::try_deserialize(
-          &mut accounts[14].data.as_slice(),
-        )?,
-        clock: bincode::deserialize(&accounts[15].data)
-          .map_err(ClockDeserialize)?,
-      })
+      Err(MissingAccounts(missing).into())
     }
   }
 }
@@ -172,7 +178,7 @@ impl StatsClient {
   /// * Epoch duration measurement failure
   /// * Arithmetic overflow in yield math
   pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
-    let fetched = self.rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
+    let fetched = self.rpc.get_multiple_accounts(&StatsAccounts::KEYS).await?;
     let accounts = StatsAccounts::from_fetched(fetched)?;
     let epochs_per_year =
       self.measure_epochs_per_year(accounts.clock.epoch).await?;
@@ -340,10 +346,10 @@ mod tests {
 
   #[test]
   fn stats_account_keys_order() {
-    assert_eq!(STATS_ACCOUNT_KEYS[0], hylo_idl::pda::HYLO);
-    assert_eq!(STATS_ACCOUNT_KEYS[7], hylo_idl::pda::HYUSD_POOL);
+    assert_eq!(StatsAccounts::KEYS[0], hylo_idl::pda::HYLO);
+    assert_eq!(StatsAccounts::KEYS[7], hylo_idl::pda::HYUSD_POOL);
     assert_eq!(
-      STATS_ACCOUNT_KEYS[STATS_ACCOUNT_COUNT - 1],
+      StatsAccounts::KEYS[StatsAccounts::COUNT - 1],
       anchor_lang::solana_program::sysvar::clock::ID
     );
   }
