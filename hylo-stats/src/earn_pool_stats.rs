@@ -4,7 +4,7 @@
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::earn_pool_math::lp_token_nav;
-use hylo_core::yields::HarvestCache;
+use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
 use crate::earn_pool_yield_math::{
   apply_drawdown_offset, epoch_yield_rate, projected_borrow_inflow,
@@ -14,7 +14,10 @@ use crate::error::StatsError::{
   ProjectedExoInflowOverflow, ProjectedInflowOverflow,
   ProjectedLstInflowOverflow, RealizedYieldOverflow,
 };
-use crate::types::{EarnPoolStats, ExoStats, RealizedHarvest, StatsInputs};
+use crate::types::{
+  EarnPoolStats, ExoSnapshot, ExoStats, LstPosition, RealizedHarvest,
+  StatsInputs,
+};
 
 /// Compounded APY from an `N9` per-epoch rate at a given annualization
 /// basis (epochs per year).
@@ -43,6 +46,89 @@ fn realized(
   })
 }
 
+/// Realized harvest and projected inflow for one exo snapshot.
+fn exo_snapshot_stats(
+  snapshot: &ExoSnapshot,
+  current_epoch: u64,
+) -> Result<ExoStats> {
+  Ok(ExoStats {
+    collateral_mint: snapshot.collateral_mint,
+    harvest: realized(&snapshot.harvest_cache, current_epoch)?,
+    projected_inflow: projected_borrow_inflow(
+      snapshot.levercoin_market_cap,
+      &snapshot.borrow_rate_config,
+    )?,
+  })
+}
+
+/// Realized per-epoch yield rate: harvests at the most recent
+/// harvested epoch across all streams, summed over the pool.
+fn realized_yield_rate(
+  lst_harvest: &RealizedHarvest,
+  exo_stats: &[ExoStats],
+  pool_balance: UFix64<N6>,
+) -> Result<UFix64<N9>> {
+  let last_harvest_epoch = exo_stats
+    .iter()
+    .map(|stats| stats.harvest.epoch)
+    .fold(lst_harvest.epoch, u64::max);
+  let realized_total = std::iter::once(lst_harvest)
+    .chain(exo_stats.iter().map(|stats| &stats.harvest))
+    .filter(|harvest| harvest.epoch == last_harvest_epoch)
+    .try_fold(UFix64::zero(), |acc: UFix64<N6>, harvest| {
+      acc.checked_add(&harvest.hyusd_to_pool)
+    })
+    .ok_or(RealizedYieldOverflow)?;
+  epoch_yield_rate(realized_total, pool_balance)
+}
+
+/// Sum of projected next-epoch hyUSD inflows across LST positions.
+fn projected_lst_total(
+  lst_positions: &[LstPosition],
+  sol_usd_spot: UFix64<N9>,
+  harvest_config: &YieldHarvestConfig,
+) -> Result<UFix64<N6>> {
+  lst_positions.iter().try_fold(
+    UFix64::zero(),
+    |acc: UFix64<N6>, position| -> Result<UFix64<N6>> {
+      let inflow = projected_lst_inflow(
+        position.sol_value,
+        position.epoch_growth,
+        sol_usd_spot,
+        harvest_config,
+      )?;
+      Ok(acc.checked_add(&inflow).ok_or(ProjectedLstInflowOverflow)?)
+    },
+  )
+}
+
+/// Sum of projected next-epoch hyUSD inflows across exo streams.
+fn projected_exo_total(exo_stats: &[ExoStats]) -> Result<UFix64<N6>> {
+  Ok(
+    exo_stats
+      .iter()
+      .try_fold(UFix64::zero(), |acc: UFix64<N6>, stats| {
+        acc.checked_add(&stats.projected_inflow)
+      })
+      .ok_or(ProjectedExoInflowOverflow)?,
+  )
+}
+
+/// Projected per-epoch rate: gross inflow net of outstanding
+/// drawdown, over the pool.
+fn projected_rate(
+  projected_lst: UFix64<N6>,
+  projected_exo: UFix64<N6>,
+  outstanding_drawdown: UFix64<N6>,
+  pool_balance: UFix64<N6>,
+) -> Result<UFix64<N9>> {
+  let gross = projected_lst
+    .checked_add(&projected_exo)
+    .ok_or(ProjectedInflowOverflow)?;
+  let net = apply_drawdown_offset(gross, outstanding_drawdown);
+  epoch_yield_rate(net, pool_balance)
+}
+
 /// Computes yield statistics from deserialized on-chain inputs.
 ///
 /// # Errors
@@ -54,55 +140,22 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
   let exo_stats = inputs
     .exo_snapshots
     .iter()
-    .map(|snapshot| {
-      Ok(ExoStats {
-        collateral_mint: snapshot.collateral_mint,
-        harvest: realized(&snapshot.harvest_cache, inputs.current_epoch)?,
-        projected_inflow: projected_borrow_inflow(
-          snapshot.levercoin_market_cap,
-          &snapshot.borrow_rate_config,
-        )?,
-      })
-    })
+    .map(|snapshot| exo_snapshot_stats(snapshot, inputs.current_epoch))
     .collect::<Result<Vec<ExoStats>>>()?;
-
-  let last_harvest_epoch = exo_stats
-    .iter()
-    .map(|stats| stats.harvest.epoch)
-    .fold(lst_harvest.epoch, u64::max);
-  let realized_total = std::iter::once(&lst_harvest)
-    .chain(exo_stats.iter().map(|stats| &stats.harvest))
-    .filter(|harvest| harvest.epoch == last_harvest_epoch)
-    .try_fold(UFix64::zero(), |acc: UFix64<N6>, harvest| {
-      acc.checked_add(&harvest.hyusd_to_pool)
-    })
-    .ok_or(RealizedYieldOverflow)?;
   let last_epoch_yield_rate =
-    epoch_yield_rate(realized_total, inputs.pool_balance)?;
-
-  let projected_lst = inputs.lst_positions.iter().try_fold(
-    UFix64::zero(),
-    |acc: UFix64<N6>, position| -> Result<UFix64<N6>> {
-      let inflow = projected_lst_inflow(
-        position.sol_value,
-        position.epoch_growth,
-        inputs.sol_usd_spot,
-        &inputs.harvest_config,
-      )?;
-      Ok(acc.checked_add(&inflow).ok_or(ProjectedLstInflowOverflow)?)
-    },
+    realized_yield_rate(&lst_harvest, &exo_stats, inputs.pool_balance)?;
+  let projected_lst_inflow = projected_lst_total(
+    &inputs.lst_positions,
+    inputs.sol_usd_spot,
+    &inputs.harvest_config,
   )?;
-  let projected_exo_inflow = exo_stats
-    .iter()
-    .try_fold(UFix64::zero(), |acc: UFix64<N6>, stats| {
-      acc.checked_add(&stats.projected_inflow)
-    })
-    .ok_or(ProjectedExoInflowOverflow)?;
-  let gross = projected_lst
-    .checked_add(&projected_exo_inflow)
-    .ok_or(ProjectedInflowOverflow)?;
-  let net = apply_drawdown_offset(gross, inputs.outstanding_drawdown);
-  let projected_epoch_rate = epoch_yield_rate(net, inputs.pool_balance)?;
+  let projected_exo_inflow = projected_exo_total(&exo_stats)?;
+  let projected_epoch_rate = projected_rate(
+    projected_lst_inflow,
+    projected_exo_inflow,
+    inputs.outstanding_drawdown,
+    inputs.pool_balance,
+  )?;
 
   Ok(EarnPoolStats {
     nav,
@@ -114,7 +167,7 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
     exo_stats,
     last_epoch_yield_rate,
     naive_apy: annualize_with(last_epoch_yield_rate, inputs.epochs_per_year),
-    projected_lst_inflow: projected_lst,
+    projected_lst_inflow,
     projected_exo_inflow,
     outstanding_drawdown: inputs.outstanding_drawdown,
     projected_epoch_rate,

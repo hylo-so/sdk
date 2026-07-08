@@ -1,5 +1,7 @@
 //! Read-only fetch layer for earn pool yield statistics.
 
+use std::sync::Arc;
+
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::Clock;
 use anchor_lang::prelude::Pubkey;
@@ -54,55 +56,69 @@ pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
   sysvar::clock::ID,
 ];
 
-/// Measures the last completed epoch's exact wall-clock duration from
-/// block times at the epoch boundary slots, returning epochs per year.
-///
-/// # Errors
-/// * RPC failure, missing boundary blocks, or non-positive duration
-#[allow(clippy::cast_precision_loss)] // advisory stats
-pub async fn measure_epochs_per_year(
-  rpc: &RpcClient,
-  current_epoch: u64,
-) -> Result<f64> {
-  let prev_epoch = current_epoch.checked_sub(1).ok_or(NoPreviousEpoch)?;
-  let schedule = rpc.get_epoch_schedule().await?;
-  let start_prev = schedule.get_first_slot_in_epoch(prev_epoch);
-  let start_curr = schedule.get_first_slot_in_epoch(current_epoch);
-  let t0 = block_time_at_or_after(rpc, start_prev).await?;
-  let t1 = block_time_at_or_after(rpc, start_curr).await?;
-  let duration = t1
-    .checked_sub(t0)
-    .filter(|d| *d > 0)
-    .ok_or(NonPositiveEpochDuration)?;
-  Ok(SECONDS_PER_YEAR / duration as f64)
+/// Read-only client for earn pool yield statistics. Needs no keypair
+/// or program client.
+#[derive(Clone)]
+pub struct StatsClient {
+  rpc: Arc<RpcClient>,
 }
 
-/// Block time of the first block at or after `slot` (epoch boundary
-/// slots can be skipped).
-async fn block_time_at_or_after(rpc: &RpcClient, slot: u64) -> Result<i64> {
-  let slots = rpc.get_blocks_with_limit(slot, 1).await?;
-  let first = slots.first().copied().ok_or(NoBlockAtOrAfterSlot(slot))?;
-  Ok(rpc.get_block_time(first).await?)
-}
+impl StatsClient {
+  #[must_use]
+  pub fn new(rpc: Arc<RpcClient>) -> StatsClient {
+    StatsClient { rpc }
+  }
 
-/// Fetches [`EarnPoolStats`] from current on-chain state: one
-/// slot-consistent `get_multiple_accounts` call, plus an epoch-schedule
-/// fetch and two epoch-boundary block-time lookups to measure the last
-/// completed epoch's duration. Read-only: needs no keypair or program
-/// client.
-///
-/// # Errors
-/// * RPC fetch, deserialization, or oracle validation failure
-/// * Epoch duration measurement failure
-/// * Arithmetic overflow in yield math
-pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
-  let fetched = rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
-  let accounts = resolve_stats_accounts(fetched)?;
-  let clock: Clock =
-    bincode::deserialize(&accounts[STATS_ACCOUNT_COUNT - 1].data)
-      .map_err(ClockDeserialize)?;
-  let epochs_per_year = measure_epochs_per_year(rpc, clock.epoch).await?;
-  compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
+  /// Fetches [`EarnPoolStats`] from current on-chain state: one
+  /// slot-consistent `get_multiple_accounts` call, plus an
+  /// epoch-schedule fetch and two epoch-boundary block-time lookups to
+  /// measure the last completed epoch's duration.
+  ///
+  /// # Errors
+  /// * RPC fetch, deserialization, or oracle validation failure
+  /// * Epoch duration measurement failure
+  /// * Arithmetic overflow in yield math
+  pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
+    let fetched = self.rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
+    let accounts = resolve_stats_accounts(fetched)?;
+    let clock: Clock =
+      bincode::deserialize(&accounts[STATS_ACCOUNT_COUNT - 1].data)
+        .map_err(ClockDeserialize)?;
+    let epochs_per_year = self.measure_epochs_per_year(clock.epoch).await?;
+    compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
+  }
+
+  /// Measures the last completed epoch's exact wall-clock duration
+  /// from block times at the epoch boundary slots, returning epochs
+  /// per year.
+  ///
+  /// # Errors
+  /// * RPC failure, missing boundary blocks, or non-positive duration
+  #[allow(clippy::cast_precision_loss)] // advisory stats
+  pub async fn measure_epochs_per_year(
+    &self,
+    current_epoch: u64,
+  ) -> Result<f64> {
+    let prev_epoch = current_epoch.checked_sub(1).ok_or(NoPreviousEpoch)?;
+    let schedule = self.rpc.get_epoch_schedule().await?;
+    let start_prev = schedule.get_first_slot_in_epoch(prev_epoch);
+    let start_curr = schedule.get_first_slot_in_epoch(current_epoch);
+    let t0 = self.block_time_at_or_after(start_prev).await?;
+    let t1 = self.block_time_at_or_after(start_curr).await?;
+    let duration = t1
+      .checked_sub(t0)
+      .filter(|d| *d > 0)
+      .ok_or(NonPositiveEpochDuration)?;
+    Ok(SECONDS_PER_YEAR / duration as f64)
+  }
+
+  /// Block time of the first block at or after `slot` (epoch boundary
+  /// slots can be skipped).
+  async fn block_time_at_or_after(&self, slot: u64) -> Result<i64> {
+    let slots = self.rpc.get_blocks_with_limit(slot, 1).await?;
+    let first = slots.first().copied().ok_or(NoBlockAtOrAfterSlot(slot))?;
+    Ok(self.rpc.get_block_time(first).await?)
+  }
 }
 
 /// Resolves a fetched account list, erroring with the keys of any
