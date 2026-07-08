@@ -31,11 +31,8 @@
 //!   program
 //! - [`earn_pool_client::EarnPoolClient`] — Admin operations for the earn pool
 //!   program
-//! - [`earn_pool_stats`] — Read-only earn pool yield statistics (no keypair
-//!   required)
 
 pub mod earn_pool_client;
-pub mod earn_pool_stats;
 pub mod exchange_client;
 pub mod memo;
 pub mod prelude;

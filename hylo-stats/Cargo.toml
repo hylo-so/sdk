@@ -1,0 +1,29 @@
+[package]
+name = "hylo-stats"
+version.workspace = true
+edition.workspace = true
+description = "Offchain yield statistics for the Hylo protocol"
+license.workspace = true
+homepage.workspace = true
+
+[features]
+shadow = ["hylo-idl/shadow", "hylo-core/shadow"]
+
+[dependencies]
+anchor-client.workspace = true
+anchor-lang.workspace = true
+anchor-spl.workspace = true
+anyhow.workspace = true
+bincode.workspace = true
+hylo-core = { workspace = true, features = ["offchain"] }
+hylo-fix.workspace = true
+hylo-idl.workspace = true
+pyth-solana-receiver-sdk.workspace = true
+solana-rpc-client.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+
+[lints]
+workspace = true

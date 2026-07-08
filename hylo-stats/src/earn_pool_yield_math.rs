@@ -1,15 +1,15 @@
 //! Yield statistics math for the earn pool (sHYUSD).
 
-use anchor_lang::prelude::*;
+use anyhow::Result;
 use fix::prelude::*;
 use fix::typenum::Z0;
+use hylo_core::borrow_rate::BorrowRateConfig;
+use hylo_core::lst::sol_price::LstSolPrice;
+use hylo_core::yields::YieldHarvestConfig;
 
-use crate::borrow_rate::BorrowRateConfig;
-use crate::error::CoreError::{
+use crate::error::StatsError::{
   EpochYieldRate, LstEpochGrowth, ProjectedInflow,
 };
-use crate::lst::sol_price::LstSolPrice;
-use crate::yields::YieldHarvestConfig;
 
 /// Solana epochs per year (~2 per day), the protocol's annualization
 /// convention.
@@ -136,10 +136,11 @@ pub fn apply_drawdown_offset(
 
 #[cfg(test)]
 mod tests {
+  use hylo_core::borrow_rate::BorrowRateConfig;
+  use hylo_core::lst::sol_price::LstSolPrice;
+  use hylo_core::yields::YieldHarvestConfig;
+
   use super::*;
-  use crate::borrow_rate::BorrowRateConfig;
-  use crate::lst::sol_price::LstSolPrice;
-  use crate::yields::YieldHarvestConfig;
 
   #[test]
   fn epoch_yield_rate_basic() -> Result<()> {

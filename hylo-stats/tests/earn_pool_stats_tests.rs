@@ -3,7 +3,7 @@
 //! (add `--features shadow` to target the shadow deployment).
 
 use anyhow::Result;
-use hylo_clients::earn_pool_stats::fetch_earn_pool_stats;
+use hylo_stats::earn_pool_stats::fetch_earn_pool_stats;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 #[tokio::test]

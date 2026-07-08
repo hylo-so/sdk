@@ -5,8 +5,6 @@ pub mod asset_swap_config;
 pub mod borrow_rate;
 pub mod conversion;
 pub mod earn_pool_math;
-#[cfg(feature = "offchain")]
-pub mod earn_pool_yield_math;
 pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;

@@ -11,10 +11,6 @@ use anyhow::{anyhow, Result};
 use fix::prelude::*;
 use hylo_core::borrow_rate::BorrowRateConfig;
 use hylo_core::earn_pool_math::lp_token_nav;
-use hylo_core::earn_pool_yield_math::{
-  apply_drawdown_offset, epoch_yield_rate, lst_epoch_growth,
-  projected_borrow_inflow, projected_lst_inflow, EPOCHS_PER_YEAR,
-};
 use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
 use hylo_core::lst::sol_price::LstSolPrice;
@@ -26,6 +22,11 @@ use hylo_idl::pda;
 use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+
+use crate::earn_pool_yield_math::{
+  apply_drawdown_offset, epoch_yield_rate, lst_epoch_growth,
+  projected_borrow_inflow, projected_lst_inflow, EPOCHS_PER_YEAR,
+};
 
 /// Snapshot of one harvest stream from its on-chain [`HarvestCache`].
 #[derive(Debug, Clone, Copy)]

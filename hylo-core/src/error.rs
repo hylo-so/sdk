@@ -230,12 +230,4 @@ pub enum CoreError {
   TokenAmountPrecision,
   #[msg("No LST header or stake pool found for mint.")]
   UnknownLstMint,
-  // `earn_pool_yield_math` (offchain-only module; codes never emitted
-  // on-chain)
-  #[msg("Arithmetic error computing epoch yield rate.")]
-  EpochYieldRate,
-  #[msg("Arithmetic error computing LST epoch growth.")]
-  LstEpochGrowth,
-  #[msg("Arithmetic error computing projected pool inflow.")]
-  ProjectedInflow,
 }

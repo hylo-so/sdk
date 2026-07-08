@@ -48,6 +48,7 @@ RPC_WS_URL=wss://mainnet.helius-rpc.com/?api-key=<key>
 | `hylo-clients` | Transaction builders and execution clients |
 | `hylo-quotes` | High-level quoting strategies |
 | `hylo-jupiter` | Jupiter AMM integration |
+| `hylo-stats` | Offchain yield statistics (earn pool APYs) |
 
 ## Code Style
 
@@ -86,10 +87,13 @@ Naming:
 
 ```
 hylo-core (no hylo deps) → hylo-idl → hylo-clients → hylo-quotes → hylo-jupiter
+                                    → hylo-stats
 ```
 
 `hylo-core` has an `offchain` feature flag that enables `hylo-idl` and Jupiter AMM interface
 dependencies. All downstream crates depend on `hylo-core` with `offchain` enabled.
+`hylo-stats` sits outside the client chain: it depends only on `hylo-core` and `hylo-idl`
+and fetches accounts with a raw `RpcClient`.
 
 ### Type-Safe Token System
 
