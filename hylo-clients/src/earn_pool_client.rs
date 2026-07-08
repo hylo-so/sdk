@@ -13,7 +13,7 @@ use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
 
 /// Admin client for the Hylo earn pool program. Manages pool
-/// initialization, rebalancing, and fee configuration.
+/// initialization, rebalancing, fee configuration, and stats.
 /// User-facing deposit/withdraw goes through
 /// [`crate::router_client::RouterClient`].
 pub struct EarnPoolClient {

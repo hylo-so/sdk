@@ -31,5 +31,7 @@ solana-transaction-status-client-types.workspace = true
 squads-multisig.workspace = true
 tokio.workspace = true
 
+[dev-dependencies]
+
 [lints]
 workspace = true
