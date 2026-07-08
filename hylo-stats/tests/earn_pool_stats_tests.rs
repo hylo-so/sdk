@@ -3,7 +3,7 @@
 //! (add `--features shadow` to target the shadow deployment).
 
 use anyhow::Result;
-use hylo_stats::earn_pool_stats::fetch_earn_pool_stats;
+use hylo_stats::client::fetch_earn_pool_stats;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 #[tokio::test]
@@ -24,9 +24,9 @@ async fn earn_pool_stats_mainnet() -> Result<()> {
       assert!(stats.epochs_per_year > 100.0 && stats.epochs_per_year < 400.0);
       assert!(stats.lst_harvest.epoch <= stats.current_epoch);
       assert!(stats
-        .exo_streams
+        .exo_stats
         .iter()
-        .all(|stream| stream.harvest.epoch <= stats.current_epoch));
+        .all(|exo| exo.harvest.epoch <= stats.current_epoch));
       Ok(())
     }
   }
