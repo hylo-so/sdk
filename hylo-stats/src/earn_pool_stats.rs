@@ -54,14 +54,13 @@ pub const STATS_ACCOUNT_KEYS: [Pubkey; STATS_ACCOUNT_COUNT] = [
   sysvar::clock::ID,
 ];
 
-/// Snapshot of one harvest stream from its on-chain [`HarvestCache`].
+/// Snapshot of one harvest stream from its on-chain [`HarvestCache`]:
+/// the most recent harvest's epoch, the hyUSD it deposited into the
+/// pool, and staleness (no harvest yet for the current epoch).
 #[derive(Debug, Clone, Copy)]
 pub struct RealizedHarvest {
-  /// Epoch of the most recent harvest for this stream.
   pub epoch: u64,
-  /// hyUSD deposited into the pool by that harvest.
   pub hyusd_to_pool: UFix64<N6>,
-  /// True if no harvest has landed for the current epoch yet.
   pub is_stale: bool,
 }
 
@@ -72,10 +71,10 @@ pub struct LstPosition {
   pub epoch_growth: UFix64<N9>,
 }
 
-/// One exogenous-collateral pair's inputs for the borrow-rate stream.
+/// One exogenous-collateral pair's inputs for the borrow-rate stream,
+/// labeled by its collateral mint.
 #[derive(Debug, Clone, Copy)]
 pub struct ExoStream {
-  /// Exo collateral mint (labels the stream).
   pub collateral_mint: Pubkey,
   pub harvest_cache: HarvestCache,
   pub borrow_rate_config: BorrowRateConfig,
@@ -97,42 +96,43 @@ pub struct StatsInputs {
   pub epochs_per_year: f64,
 }
 
-/// Per-stream results for one exo borrow-rate stream.
+/// Per-stream results for one exo borrow-rate stream, labeled by its
+/// collateral mint: realized harvest snapshot and projected next-epoch
+/// hyUSD inflow.
 #[derive(Debug, Clone, Copy)]
 pub struct ExoStreamStats {
-  /// Exo collateral mint (labels the stream).
   pub collateral_mint: Pubkey,
-  /// Realized harvest snapshot for this stream.
   pub harvest: RealizedHarvest,
-  /// Projected next-epoch hyUSD inflow from this stream.
   pub projected_inflow: UFix64<N6>,
 }
 
 /// Earn pool yield statistics for sHYUSD.
+///
+/// * `nav` — hyUSD per sHYUSD
+/// * `pool_balance` — current hyUSD in the pool, the denominator for both yield
+///   rates
+/// * `epochs_per_year` — annualization basis used for both APYs
+/// * `lst_harvest` — LST staking-yield stream (`harvest_yield`); `exo_streams`
+///   — exo borrow-rate streams (`harvest_borrow_rate`), one per pair
+/// * `last_epoch_yield_rate` — sum of the LST stream plus all exo streams at
+///   the most recent harvested epoch, over the pool; `naive_apy` — `(1 +
+///   last_epoch_yield_rate)^epochs_per_year - 1`
+/// * `projected_epoch_rate` — net projected inflow next epoch (LST + exo, minus
+///   outstanding drawdown) over the pool; `projected_apy` — its annualization
 #[derive(Debug, Clone)]
 pub struct EarnPoolStats {
-  /// hyUSD per sHYUSD.
   pub nav: UFix64<N6>,
-  /// Current hyUSD in the pool (denominator for both yield rates).
   pub pool_balance: UFix64<N6>,
   pub shyusd_supply: UFix64<N6>,
   pub current_epoch: u64,
-  /// Annualization basis used for both APYs.
   pub epochs_per_year: f64,
-  /// LST staking-yield stream (`harvest_yield`).
   pub lst_harvest: RealizedHarvest,
-  /// Exo borrow-rate streams (`harvest_borrow_rate`), one per pair.
   pub exo_streams: Vec<ExoStreamStats>,
-  /// Sum of the LST stream plus all exo streams whose epoch equals the
-  /// most recent harvested epoch across all streams, over the pool.
   pub last_epoch_yield_rate: UFix64<N9>,
-  /// `(1 + last_epoch_yield_rate)^epochs_per_year - 1`
   pub naive_apy: f64,
   pub projected_lst_inflow: UFix64<N6>,
-  /// Aggregate projected next-epoch inflow across all exo streams.
   pub projected_exo_inflow: UFix64<N6>,
   pub outstanding_drawdown: UFix64<N6>,
-  /// Net projected inflow next epoch over the pool.
   pub projected_epoch_rate: UFix64<N9>,
   pub projected_apy: f64,
 }
