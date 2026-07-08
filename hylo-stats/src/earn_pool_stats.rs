@@ -1,122 +1,27 @@
 //! Earn pool yield statistics for sHYUSD: realized last-epoch yield,
 //! naive APY, and projected next-epoch yield.
 
-use anchor_client::solana_sdk::account::Account;
-use anchor_client::solana_sdk::clock::Clock;
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::solana_program::sysvar;
-use anchor_lang::AccountDeserialize;
-use anchor_spl::token::{Mint, TokenAccount};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use fix::prelude::*;
-use hylo_core::borrow_rate::BorrowRateConfig;
 use hylo_core::earn_pool_math::lp_token_nav;
-use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
-use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
-use hylo_core::lst::sol_price::LstSolPrice;
-use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig};
-use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
-use hylo_idl::pda;
-use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
-use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::earn_pool_yield_math::{
-  apply_drawdown_offset, epoch_yield_rate, lst_epoch_growth,
-  projected_borrow_inflow, projected_lst_inflow, EPOCHS_PER_YEAR,
+  apply_drawdown_offset, epoch_yield_rate, projected_borrow_inflow,
+  projected_lst_inflow, EPOCHS_PER_YEAR,
 };
-
-/// Snapshot of one harvest stream from its on-chain [`HarvestCache`].
-#[derive(Debug, Clone, Copy)]
-pub struct RealizedHarvest {
-  /// Epoch of the most recent harvest for this stream.
-  pub epoch: u64,
-  /// hyUSD deposited into the pool by that harvest.
-  pub hyusd_to_pool: UFix64<N6>,
-  /// True if no harvest has landed for the current epoch yet.
-  pub is_stale: bool,
-}
-
-/// One LST's projection inputs: vault SOL value and per-epoch growth.
-#[derive(Debug, Clone, Copy)]
-pub struct LstPosition {
-  pub sol_value: UFix64<N9>,
-  pub epoch_growth: UFix64<N9>,
-}
-
-/// One exogenous-collateral pair's inputs for the borrow-rate stream.
-#[derive(Debug, Clone, Copy)]
-pub struct ExoStream {
-  /// Exo collateral mint (labels the stream).
-  pub collateral_mint: Pubkey,
-  pub harvest_cache: HarvestCache,
-  pub borrow_rate_config: BorrowRateConfig,
-  pub levercoin_market_cap: UFix64<N9>,
-}
-
-/// Deserialized on-chain inputs for [`compute_stats`].
-#[derive(Debug, Clone)]
-pub struct StatsInputs {
-  pub current_epoch: u64,
-  pub pool_balance: UFix64<N6>,
-  pub shyusd_supply: UFix64<N6>,
-  pub lst_harvest_cache: HarvestCache,
-  pub harvest_config: YieldHarvestConfig,
-  pub lst_positions: Vec<LstPosition>,
-  pub exo_streams: Vec<ExoStream>,
-  pub sol_usd_spot: UFix64<N9>,
-  pub outstanding_drawdown: UFix64<N6>,
-  pub epochs_per_year: f64,
-}
-
-/// Per-stream results for one exo borrow-rate stream.
-#[derive(Debug, Clone, Copy)]
-pub struct ExoStreamStats {
-  /// Exo collateral mint (labels the stream).
-  pub collateral_mint: Pubkey,
-  /// Realized harvest snapshot for this stream.
-  pub harvest: RealizedHarvest,
-  /// Projected next-epoch hyUSD inflow from this stream.
-  pub projected_inflow: UFix64<N6>,
-}
-
-/// Earn pool yield statistics for sHYUSD.
-#[derive(Debug, Clone)]
-pub struct EarnPoolStats {
-  /// hyUSD per sHYUSD.
-  pub nav: UFix64<N6>,
-  /// Current hyUSD in the pool (denominator for both yield rates).
-  pub pool_balance: UFix64<N6>,
-  pub shyusd_supply: UFix64<N6>,
-  pub current_epoch: u64,
-  /// Annualization basis used for both APYs.
-  pub epochs_per_year: f64,
-  /// LST staking-yield stream (`harvest_yield`).
-  pub lst_harvest: RealizedHarvest,
-  /// Exo borrow-rate streams (`harvest_borrow_rate`), one per pair.
-  pub exo_streams: Vec<ExoStreamStats>,
-  /// Sum of the LST stream plus all exo streams whose epoch equals the
-  /// most recent harvested epoch across all streams, over the pool.
-  pub last_epoch_yield_rate: UFix64<N9>,
-  /// `(1 + last_epoch_yield_rate)^epochs_per_year - 1`
-  pub naive_apy: f64,
-  pub projected_lst_inflow: UFix64<N6>,
-  /// Aggregate projected next-epoch inflow across all exo streams.
-  pub projected_exo_inflow: UFix64<N6>,
-  pub outstanding_drawdown: UFix64<N6>,
-  /// Net projected inflow next epoch over the pool.
-  pub projected_epoch_rate: UFix64<N9>,
-  pub projected_apy: f64,
-}
-
-/// Seconds in a Julian year.
-const SECONDS_PER_YEAR: f64 = 31_557_600.0;
+use crate::error::StatsError::{
+  ProjectedExoInflowOverflow, ProjectedInflowOverflow,
+  ProjectedLstInflowOverflow, RealizedYieldOverflow,
+};
+use crate::types::{
+  EarnPoolStats, ExoSnapshot, ExoStats, LstPosition, RealizedHarvest,
+  StatsInputs,
+};
 
 /// Compounded APY from an `N9` per-epoch rate at a given annualization
 /// basis (epochs per year).
-#[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
+#[allow(clippy::cast_precision_loss)]
 #[must_use]
 pub fn annualize_with(per_epoch_rate: UFix64<N9>, epochs_per_year: f64) -> f64 {
   let rate = per_epoch_rate.bits as f64 * 1e-9;
@@ -124,46 +29,10 @@ pub fn annualize_with(per_epoch_rate: UFix64<N9>, epochs_per_year: f64) -> f64 {
 }
 
 /// Compounded APY at the protocol's 182-epochs/year convention.
-#[allow(clippy::cast_precision_loss)] // advisory stats; f64 suffices
+#[allow(clippy::cast_precision_loss)]
 #[must_use]
 pub fn annualize(per_epoch_rate: UFix64<N9>) -> f64 {
   annualize_with(per_epoch_rate, EPOCHS_PER_YEAR as f64)
-}
-
-/// Measures the last completed epoch's exact wall-clock duration from
-/// block times at the epoch boundary slots, returning epochs per year.
-///
-/// # Errors
-/// * RPC failure, missing boundary blocks, or non-positive duration
-#[allow(clippy::cast_precision_loss)] // advisory stats
-pub async fn measure_epochs_per_year(
-  rpc: &RpcClient,
-  current_epoch: u64,
-) -> Result<f64> {
-  let prev_epoch = current_epoch
-    .checked_sub(1)
-    .ok_or_else(|| anyhow!("No previous epoch to measure"))?;
-  let schedule = rpc.get_epoch_schedule().await?;
-  let start_prev = schedule.get_first_slot_in_epoch(prev_epoch);
-  let start_curr = schedule.get_first_slot_in_epoch(current_epoch);
-  let t0 = block_time_at_or_after(rpc, start_prev).await?;
-  let t1 = block_time_at_or_after(rpc, start_curr).await?;
-  let duration = t1
-    .checked_sub(t0)
-    .filter(|d| *d > 0)
-    .ok_or_else(|| anyhow!("Non-positive epoch duration"))?;
-  Ok(SECONDS_PER_YEAR / duration as f64)
-}
-
-/// Block time of the first block at or after `slot` (epoch boundary
-/// slots can be skipped).
-async fn block_time_at_or_after(rpc: &RpcClient, slot: u64) -> Result<i64> {
-  let slots = rpc.get_blocks_with_limit(slot, 1).await?;
-  let first = slots
-    .first()
-    .copied()
-    .ok_or_else(|| anyhow!("No block found at or after slot {slot}"))?;
-  Ok(rpc.get_block_time(first).await?)
 }
 
 fn realized(
@@ -177,7 +46,90 @@ fn realized(
   })
 }
 
-/// Computes yield statistics from deserialized on-chain inputs.
+/// Realized harvest and projected inflow for one exo snapshot.
+fn exo_snapshot_stats(
+  snapshot: &ExoSnapshot,
+  current_epoch: u64,
+) -> Result<ExoStats> {
+  Ok(ExoStats {
+    collateral_mint: snapshot.collateral_mint,
+    harvest: realized(&snapshot.harvest_cache, current_epoch)?,
+    projected_inflow: projected_borrow_inflow(
+      snapshot.levercoin_market_cap,
+      &snapshot.borrow_rate_config,
+    )?,
+  })
+}
+
+/// Realized per-epoch yield rate: harvests at the most recent
+/// harvested epoch across all streams, summed over the pool.
+fn realized_yield_rate(
+  lst_harvest: &RealizedHarvest,
+  exo_stats: &[ExoStats],
+  pool_balance: UFix64<N6>,
+) -> Result<UFix64<N9>> {
+  let last_harvest_epoch = exo_stats
+    .iter()
+    .map(|stats| stats.harvest.epoch)
+    .fold(lst_harvest.epoch, u64::max);
+  let realized_total = std::iter::once(lst_harvest)
+    .chain(exo_stats.iter().map(|stats| &stats.harvest))
+    .filter(|harvest| harvest.epoch == last_harvest_epoch)
+    .try_fold(UFix64::zero(), |acc: UFix64<N6>, harvest| {
+      acc.checked_add(&harvest.hyusd_to_pool)
+    })
+    .ok_or(RealizedYieldOverflow)?;
+  epoch_yield_rate(realized_total, pool_balance)
+}
+
+/// Sum of projected next-epoch hyUSD inflows across LST positions.
+fn projected_lst_total(
+  lst_positions: &[LstPosition],
+  sol_usd_spot: UFix64<N9>,
+  harvest_config: &YieldHarvestConfig,
+) -> Result<UFix64<N6>> {
+  lst_positions.iter().try_fold(
+    UFix64::zero(),
+    |acc: UFix64<N6>, position| -> Result<UFix64<N6>> {
+      let inflow = projected_lst_inflow(
+        position.sol_value,
+        position.epoch_growth,
+        sol_usd_spot,
+        harvest_config,
+      )?;
+      Ok(acc.checked_add(&inflow).ok_or(ProjectedLstInflowOverflow)?)
+    },
+  )
+}
+
+/// Sum of projected next-epoch hyUSD inflows across exo streams.
+fn projected_exo_total(exo_stats: &[ExoStats]) -> Result<UFix64<N6>> {
+  Ok(
+    exo_stats
+      .iter()
+      .try_fold(UFix64::zero(), |acc: UFix64<N6>, stats| {
+        acc.checked_add(&stats.projected_inflow)
+      })
+      .ok_or(ProjectedExoInflowOverflow)?,
+  )
+}
+
+/// Projected per-epoch rate: gross inflow net of outstanding
+/// drawdown, over the pool.
+fn projected_rate(
+  projected_lst: UFix64<N6>,
+  projected_exo: UFix64<N6>,
+  outstanding_drawdown: UFix64<N6>,
+  pool_balance: UFix64<N6>,
+) -> Result<UFix64<N9>> {
+  let gross = projected_lst
+    .checked_add(&projected_exo)
+    .ok_or(ProjectedInflowOverflow)?;
+  let net = apply_drawdown_offset(gross, outstanding_drawdown);
+  epoch_yield_rate(net, pool_balance)
+}
+
+/// Computes yield statistics from deserialized onchain inputs.
 ///
 /// # Errors
 /// * Arithmetic overflow in yield math
@@ -185,60 +137,25 @@ fn realized(
 pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
   let nav = lp_token_nav(inputs.pool_balance, inputs.shyusd_supply)?;
   let lst_harvest = realized(&inputs.lst_harvest_cache, inputs.current_epoch)?;
-  let exo_streams = inputs
-    .exo_streams
+  let exo_stats = inputs
+    .exo_snapshots
     .iter()
-    .map(|stream| {
-      Ok(ExoStreamStats {
-        collateral_mint: stream.collateral_mint,
-        harvest: realized(&stream.harvest_cache, inputs.current_epoch)?,
-        projected_inflow: projected_borrow_inflow(
-          stream.levercoin_market_cap,
-          &stream.borrow_rate_config,
-        )?,
-      })
-    })
-    .collect::<Result<Vec<ExoStreamStats>>>()?;
-
-  let last_harvest_epoch = exo_streams
-    .iter()
-    .map(|stream| stream.harvest.epoch)
-    .fold(lst_harvest.epoch, u64::max);
-  let realized_total = std::iter::once(&lst_harvest)
-    .chain(exo_streams.iter().map(|stream| &stream.harvest))
-    .filter(|harvest| harvest.epoch == last_harvest_epoch)
-    .try_fold(UFix64::zero(), |acc: UFix64<N6>, harvest| {
-      acc.checked_add(&harvest.hyusd_to_pool)
-    })
-    .ok_or_else(|| anyhow!("Realized yield overflow"))?;
+    .map(|snapshot| exo_snapshot_stats(snapshot, inputs.current_epoch))
+    .collect::<Result<Vec<ExoStats>>>()?;
   let last_epoch_yield_rate =
-    epoch_yield_rate(realized_total, inputs.pool_balance)?;
-
-  let projected_lst = inputs.lst_positions.iter().try_fold(
-    UFix64::zero(),
-    |acc: UFix64<N6>, position| {
-      let inflow = projected_lst_inflow(
-        position.sol_value,
-        position.epoch_growth,
-        inputs.sol_usd_spot,
-        &inputs.harvest_config,
-      )?;
-      acc
-        .checked_add(&inflow)
-        .ok_or_else(|| anyhow!("Projected LST inflow overflow"))
-    },
+    realized_yield_rate(&lst_harvest, &exo_stats, inputs.pool_balance)?;
+  let projected_lst_inflow = projected_lst_total(
+    &inputs.lst_positions,
+    inputs.sol_usd_spot,
+    &inputs.harvest_config,
   )?;
-  let projected_exo_inflow = exo_streams
-    .iter()
-    .try_fold(UFix64::zero(), |acc: UFix64<N6>, stream| {
-      acc.checked_add(&stream.projected_inflow)
-    })
-    .ok_or_else(|| anyhow!("Projected exo inflow overflow"))?;
-  let gross = projected_lst
-    .checked_add(&projected_exo_inflow)
-    .ok_or_else(|| anyhow!("Projected inflow overflow"))?;
-  let net = apply_drawdown_offset(gross, inputs.outstanding_drawdown);
-  let projected_epoch_rate = epoch_yield_rate(net, inputs.pool_balance)?;
+  let projected_exo_inflow = projected_exo_total(&exo_stats)?;
+  let projected_epoch_rate = projected_rate(
+    projected_lst_inflow,
+    projected_exo_inflow,
+    inputs.outstanding_drawdown,
+    inputs.pool_balance,
+  )?;
 
   Ok(EarnPoolStats {
     nav,
@@ -247,10 +164,10 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
     current_epoch: inputs.current_epoch,
     epochs_per_year: inputs.epochs_per_year,
     lst_harvest,
-    exo_streams,
+    exo_stats,
     last_epoch_yield_rate,
     naive_apy: annualize_with(last_epoch_yield_rate, inputs.epochs_per_year),
-    projected_lst_inflow: projected_lst,
+    projected_lst_inflow,
     projected_exo_inflow,
     outstanding_drawdown: inputs.outstanding_drawdown,
     projected_epoch_rate,
@@ -258,245 +175,14 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
   })
 }
 
-/// Number of accounts fetched for [`EarnPoolStats`].
-pub const STATS_ACCOUNT_COUNT: usize = 15;
-
-/// Account keys required for [`EarnPoolStats`], in fetch order —
-/// the same order [`build_stats_inputs`] destructures.
-#[must_use]
-pub fn stats_account_keys() -> Vec<Pubkey> {
-  vec![
-    pda::HYLO,
-    pda::lst_header(JITOSOL::MINT),
-    pda::lst_header(HYLOSOL::MINT),
-    pda::lst_vault(JITOSOL::MINT),
-    pda::lst_vault(HYLOSOL::MINT),
-    JITOSOL::POOL_STATE,
-    HYLOSOL::POOL_STATE,
-    pda::HYUSD_POOL,
-    SHYUSD::MINT,
-    pda::exo_pair(CBBTC::MINT),
-    pda::exo_vault(CBBTC::MINT),
-    pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
-    pda::SOL_USD_PYTH_FEED,
-    sysvar::clock::ID,
-  ]
-}
-
-/// Fetches [`EarnPoolStats`] from current on-chain state: one
-/// slot-consistent `get_multiple_accounts` call, plus an epoch-schedule
-/// fetch and two epoch-boundary block-time lookups to measure the last
-/// completed epoch's duration. Read-only: needs no keypair or program
-/// client.
-///
-/// # Errors
-/// * RPC fetch, deserialization, or oracle validation failure
-/// * Epoch duration measurement failure
-/// * Arithmetic overflow in yield math
-pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
-  let accounts = rpc.get_multiple_accounts(&stats_account_keys()).await?;
-  let clock: Clock = bincode::deserialize(
-    &require(
-      accounts
-        .get(STATS_ACCOUNT_COUNT - 1)
-        .and_then(Option::as_ref),
-      "clock sysvar",
-    )?
-    .data,
-  )
-  .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-  let epochs_per_year = measure_epochs_per_year(rpc, clock.epoch).await?;
-  compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
-}
-
-fn require<'a>(
-  account: Option<&'a Account>,
-  name: &str,
-) -> Result<&'a Account> {
-  account.ok_or_else(|| anyhow!("Missing stats account: {name}"))
-}
-
-/// Values the xBTC market cap for the borrow-rate projection.
-/// Mirrors hylo-quotes `build_cbbtc_exchange_context`.
-fn exo_levercoin_market_cap(
-  clock: &Clock,
-  exo_pair: &ExoPair,
-  exo_vault: &TokenAccount,
-  xbtc_mint: &Mint,
-  btc_usd: &PriceUpdateV2,
-) -> Result<UFix64<N9>> {
-  let oracle_config = OracleConfig::new(
-    exo_pair.oracle_interval_secs,
-    exo_pair.oracle_conf_tolerance.try_into()?,
-  );
-  let total_collateral: UFix64<N9> = UFix64::<N8>::new(exo_vault.amount)
-    .checked_convert()
-    .ok_or_else(|| anyhow!("cbBTC vault amount N8->N9 overflow"))?;
-  let exo_context = ExoExchangeContext::load(
-    clock.clone(),
-    total_collateral,
-    exo_pair.stablecoin_mint_threshold.try_into()?,
-    oracle_config,
-    exo_pair.levercoin_fees.into(),
-    btc_usd,
-    exo_pair.virtual_stablecoin.into(),
-    Some(xbtc_mint),
-    exo_pair.sell_curve_config.into(),
-    exo_pair.buy_curve_config.into(),
-    exo_pair.levercoin_market_cap_limit.try_into()?,
-  )?;
-  let market_cap = exo_context.levercoin_market_cap()?;
-  Ok(market_cap)
-}
-
-/// Sums outstanding pool drawdown across the LST pair and cbBTC exo pair.
-fn total_outstanding_drawdown(
-  hylo: &Hylo,
-  exo_pair: &ExoPair,
-) -> Result<UFix64<N6>> {
-  let hylo_drawdown: PoolDrawdown = hylo.pool_drawdown.into();
-  let exo_drawdown: PoolDrawdown = exo_pair.pool_drawdown.into();
-  hylo_drawdown
-    .outstanding()?
-    .checked_add(&exo_drawdown.outstanding()?)
-    .ok_or_else(|| anyhow!("Pool drawdown overflow"))
-}
-
-fn lst_position(
-  header: &LstHeader,
-  vault: &TokenAccount,
-  stake_pool: &SplStakePool,
-) -> Result<LstPosition> {
-  let price_sol: LstSolPrice = header.price_sol.into();
-  let prev_price_sol: LstSolPrice = header.prev_price_sol.into();
-  let epoch_growth = lst_epoch_growth(&price_sol, &prev_price_sol)?;
-  let lst_sol_price: UFix64<N9> = stake_pool.true_price()?.price.try_into()?;
-  let sol_value = UFix64::<N9>::new(vault.amount)
-    .mul_div_floor(lst_sol_price, UFix64::one())
-    .ok_or_else(|| anyhow!("LST vault SOL value overflow"))?;
-  Ok(LstPosition {
-    sol_value,
-    epoch_growth,
-  })
-}
-
-/// Builds [`StatsInputs`] from fetched accounts (order of
-/// [`stats_account_keys`]).
-///
-/// # Errors
-/// * Missing account or deserialization failure
-/// * Oracle validation failure
-pub fn build_stats_inputs(
-  accounts: &[Option<Account>],
-  epochs_per_year: f64,
-) -> Result<StatsInputs> {
-  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_vault, xbtc_mint, btc_usd, sol_usd, clock]: &[Option<Account>; STATS_ACCOUNT_COUNT] =
-    accounts.try_into().map_err(|_| {
-      anyhow!(
-        "Expected {STATS_ACCOUNT_COUNT} stats accounts, got {}",
-        accounts.len()
-      )
-    })?;
-
-  let hylo = Hylo::try_deserialize(
-    &mut require(hylo.as_ref(), "Hylo")?.data.as_slice(),
-  )?;
-  let jitosol_header = LstHeader::try_deserialize(
-    &mut require(jitosol_header.as_ref(), "jitoSOL header")?
-      .data
-      .as_slice(),
-  )?;
-  let hylosol_header = LstHeader::try_deserialize(
-    &mut require(hylosol_header.as_ref(), "hyloSOL header")?
-      .data
-      .as_slice(),
-  )?;
-  let jitosol_vault = TokenAccount::try_deserialize(
-    &mut require(jitosol_vault.as_ref(), "jitoSOL vault")?
-      .data
-      .as_slice(),
-  )?;
-  let hylosol_vault = TokenAccount::try_deserialize(
-    &mut require(hylosol_vault.as_ref(), "hyloSOL vault")?
-      .data
-      .as_slice(),
-  )?;
-  let jitosol_pool_state = SplStakePool::from_bytes(
-    &require(jitosol_pool_state.as_ref(), "jitoSOL pool state")?.data,
-  )?;
-  let hylosol_pool_state = SplStakePool::from_bytes(
-    &require(hylosol_pool_state.as_ref(), "hyloSOL pool state")?.data,
-  )?;
-  let hyusd_pool = TokenAccount::try_deserialize(
-    &mut require(hyusd_pool.as_ref(), "hyUSD pool")?.data.as_slice(),
-  )?;
-  let shyusd_mint = Mint::try_deserialize(
-    &mut require(shyusd_mint.as_ref(), "sHYUSD mint")?
-      .data
-      .as_slice(),
-  )?;
-  let exo_pair = ExoPair::try_deserialize(
-    &mut require(exo_pair.as_ref(), "cbBTC exo pair")?
-      .data
-      .as_slice(),
-  )?;
-  let exo_vault = TokenAccount::try_deserialize(
-    &mut require(exo_vault.as_ref(), "cbBTC vault")?.data.as_slice(),
-  )?;
-  let xbtc_mint = Mint::try_deserialize(
-    &mut require(xbtc_mint.as_ref(), "xBTC mint")?.data.as_slice(),
-  )?;
-  let btc_usd = PriceUpdateV2::try_deserialize(
-    &mut require(btc_usd.as_ref(), "BTC/USD Pyth feed")?
-      .data
-      .as_slice(),
-  )?;
-  let sol_usd = PriceUpdateV2::try_deserialize(
-    &mut require(sol_usd.as_ref(), "SOL/USD Pyth feed")?
-      .data
-      .as_slice(),
-  )?;
-  let clock: Clock =
-    bincode::deserialize(&require(clock.as_ref(), "clock sysvar")?.data)
-      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-
-  let oracle_config = OracleConfig::new(
-    hylo.oracle_interval_secs,
-    hylo.oracle_conf_tolerance.try_into()?,
-  );
-  let sol_usd_spot = query_pyth_oracle(&clock, &sol_usd, oracle_config)?.spot;
-
-  let levercoin_market_cap = exo_levercoin_market_cap(
-    &clock, &exo_pair, &exo_vault, &xbtc_mint, &btc_usd,
-  )?;
-  let outstanding_drawdown = total_outstanding_drawdown(&hylo, &exo_pair)?;
-
-  Ok(StatsInputs {
-    current_epoch: clock.epoch,
-    pool_balance: UFix64::new(hyusd_pool.amount),
-    shyusd_supply: UFix64::new(shyusd_mint.supply),
-    lst_harvest_cache: hylo.yield_harvest_cache.into(),
-    harvest_config: hylo.yield_harvest_config.into(),
-    lst_positions: vec![
-      lst_position(&jitosol_header, &jitosol_vault, &jitosol_pool_state)?,
-      lst_position(&hylosol_header, &hylosol_vault, &hylosol_pool_state)?,
-    ],
-    exo_streams: vec![ExoStream {
-      collateral_mint: CBBTC::MINT,
-      harvest_cache: exo_pair.borrow_rate_harvest_cache.into(),
-      borrow_rate_config: exo_pair.borrow_rate_config.into(),
-      levercoin_market_cap,
-    }],
-    sol_usd_spot,
-    outstanding_drawdown,
-    epochs_per_year,
-  })
-}
-
 #[cfg(test)]
 mod tests {
+  use anchor_lang::prelude::Pubkey;
+  use hylo_core::borrow_rate::BorrowRateConfig;
+  use hylo_core::yields::YieldHarvestConfig;
+
   use super::*;
+  use crate::types::{ExoSnapshot, LstPosition};
 
   fn cache(epoch: u64, to_pool_bits: u64) -> HarvestCache {
     HarvestCache {
@@ -506,11 +192,11 @@ mod tests {
     }
   }
 
-  fn exo_stream(
+  fn exo_snapshot(
     harvest_cache: HarvestCache,
     levercoin_market_cap: UFix64<N9>,
-  ) -> ExoStream {
-    ExoStream {
+  ) -> ExoSnapshot {
+    ExoSnapshot {
       collateral_mint: Pubkey::new_unique(),
       harvest_cache,
       borrow_rate_config: BorrowRateConfig::new(
@@ -535,7 +221,7 @@ mod tests {
         sol_value: UFix64::<N9>::new(100_000_000_000_000),
         epoch_growth: UFix64::<N9>::new(500_000),
       }],
-      exo_streams: vec![exo_stream(
+      exo_snapshots: vec![exo_snapshot(
         cache(800, 200_000_000),
         UFix64::<N9>::new(1_000_000_000_000_000),
       )],
@@ -592,30 +278,30 @@ mod tests {
     // 1,000 + 200 hyUSD over 1,000,000 pool = 0.12% per epoch
     assert_eq!(stats.last_epoch_yield_rate, UFix64::<N9>::new(1_200_000));
     assert!(!stats.lst_harvest.is_stale);
-    assert!(!stats.exo_streams[0].harvest.is_stale);
+    assert!(!stats.exo_stats[0].harvest.is_stale);
     Ok(())
   }
 
   #[test]
   fn compute_stats_ignores_older_stream_epoch() -> Result<()> {
     let mut input = inputs();
-    input.exo_streams[0].harvest_cache = cache(799, 200_000_000);
+    input.exo_snapshots[0].harvest_cache = cache(799, 200_000_000);
     let stats = compute_stats(&input)?;
     // Only the LST stream (epoch 800) counts: 0.1% per epoch
     assert_eq!(stats.last_epoch_yield_rate, UFix64::<N9>::new(1_000_000));
-    assert!(stats.exo_streams[0].harvest.is_stale);
+    assert!(stats.exo_stats[0].harvest.is_stale);
     Ok(())
   }
 
   #[test]
-  fn compute_stats_two_exo_streams() -> Result<()> {
+  fn compute_stats_two_exo_snapshots() -> Result<()> {
     let mut input = inputs();
-    input.exo_streams = vec![
-      exo_stream(
+    input.exo_snapshots = vec![
+      exo_snapshot(
         cache(800, 200_000_000),
         UFix64::<N9>::new(1_000_000_000_000_000),
       ),
-      exo_stream(
+      exo_snapshot(
         cache(799, 999_000_000),
         UFix64::<N9>::new(500_000_000_000_000),
       ),
@@ -623,11 +309,11 @@ mod tests {
     let stats = compute_stats(&input)?;
     // lst 1,000 + stream A 200 hyUSD over 1,000,000 pool; B is stale
     assert_eq!(stats.last_epoch_yield_rate, UFix64::<N9>::new(1_200_000));
-    assert!(stats.exo_streams[1].harvest.is_stale);
-    let expected_exo = stats.exo_streams[0]
+    assert!(stats.exo_stats[1].harvest.is_stale);
+    let expected_exo = stats.exo_stats[0]
       .projected_inflow
-      .checked_add(&stats.exo_streams[1].projected_inflow)
-      .ok_or_else(|| anyhow!("Projected exo inflow overflow"))?;
+      .checked_add(&stats.exo_stats[1].projected_inflow)
+      .ok_or(ProjectedExoInflowOverflow)?;
     assert_eq!(stats.projected_exo_inflow, expected_exo);
     Ok(())
   }
@@ -638,7 +324,7 @@ mod tests {
     // LST: $6,750 (Task 3 fixture); borrow: $365.389
     assert_eq!(stats.projected_lst_inflow, UFix64::<N6>::new(6_750_000_000));
     assert_eq!(
-      stats.exo_streams[0].projected_inflow,
+      stats.exo_stats[0].projected_inflow,
       UFix64::<N6>::new(365_389_000)
     );
     assert_eq!(stats.projected_exo_inflow, UFix64::<N6>::new(365_389_000));
@@ -664,14 +350,5 @@ mod tests {
     // 1,000,000 / 950,000 (ceil) = 1.052632
     assert_eq!(stats.nav, UFix64::<N6>::new(1_052_632));
     Ok(())
-  }
-
-  #[test]
-  fn stats_account_keys_order() {
-    let keys = stats_account_keys();
-    assert_eq!(keys.len(), STATS_ACCOUNT_COUNT);
-    assert_eq!(keys[0], hylo_idl::pda::HYLO);
-    assert_eq!(keys[7], hylo_idl::pda::HYUSD_POOL);
-    assert_eq!(keys[14], anchor_lang::solana_program::sysvar::clock::ID);
   }
 }
