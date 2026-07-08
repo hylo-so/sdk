@@ -292,26 +292,41 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
 /// * Epoch duration measurement failure
 /// * Arithmetic overflow in yield math
 pub async fn fetch_earn_pool_stats(rpc: &RpcClient) -> Result<EarnPoolStats> {
-  let accounts = rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
-  let clock: Clock = bincode::deserialize(
-    &require(
-      accounts
-        .get(STATS_ACCOUNT_COUNT - 1)
-        .and_then(Option::as_ref),
-      "clock sysvar",
-    )?
-    .data,
-  )
-  .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+  let fetched = rpc.get_multiple_accounts(&STATS_ACCOUNT_KEYS).await?;
+  let accounts = resolve_stats_accounts(fetched)?;
+  let clock: Clock =
+    bincode::deserialize(&accounts[STATS_ACCOUNT_COUNT - 1].data)
+      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
   let epochs_per_year = measure_epochs_per_year(rpc, clock.epoch).await?;
   compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
 }
 
-fn require<'a>(
-  account: Option<&'a Account>,
-  name: &str,
-) -> Result<&'a Account> {
-  account.ok_or_else(|| anyhow!("Missing stats account: {name}"))
+/// Resolves a fetched account list, erroring with the keys of any
+/// missing accounts.
+fn resolve_stats_accounts(
+  accounts: Vec<Option<Account>>,
+) -> Result<[Account; STATS_ACCOUNT_COUNT]> {
+  let missing = STATS_ACCOUNT_KEYS
+    .iter()
+    .zip(&accounts)
+    .filter(|(_, account)| account.is_none())
+    .map(|(key, _)| key.to_string())
+    .collect::<Vec<String>>();
+  if missing.is_empty() {
+    accounts
+      .into_iter()
+      .flatten()
+      .collect::<Vec<Account>>()
+      .try_into()
+      .map_err(|accounts: Vec<Account>| {
+        anyhow!(
+          "Expected {STATS_ACCOUNT_COUNT} stats accounts, got {}",
+          accounts.len()
+        )
+      })
+  } else {
+    Err(anyhow!("Missing stats accounts: {}", missing.join(", ")))
+  }
 }
 
 /// Values the xBTC market cap for the borrow-rate projection.
@@ -385,78 +400,34 @@ fn lst_position(
 /// * Missing account or deserialization failure
 /// * Oracle validation failure
 pub fn build_stats_inputs(
-  accounts: &[Option<Account>],
+  accounts: &[Account; STATS_ACCOUNT_COUNT],
   epochs_per_year: f64,
 ) -> Result<StatsInputs> {
-  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_vault, xbtc_mint, btc_usd, sol_usd, clock]: &[Option<Account>; STATS_ACCOUNT_COUNT] =
-    accounts.try_into().map_err(|_| {
-      anyhow!(
-        "Expected {STATS_ACCOUNT_COUNT} stats accounts, got {}",
-        accounts.len()
-      )
-    })?;
+  let [hylo, jitosol_header, hylosol_header, jitosol_vault, hylosol_vault, jitosol_pool_state, hylosol_pool_state, hyusd_pool, shyusd_mint, exo_pair, exo_vault, xbtc_mint, btc_usd, sol_usd, clock] =
+    accounts;
 
-  let hylo = Hylo::try_deserialize(
-    &mut require(hylo.as_ref(), "Hylo")?.data.as_slice(),
-  )?;
-  let jitosol_header = LstHeader::try_deserialize(
-    &mut require(jitosol_header.as_ref(), "jitoSOL header")?
-      .data
-      .as_slice(),
-  )?;
-  let hylosol_header = LstHeader::try_deserialize(
-    &mut require(hylosol_header.as_ref(), "hyloSOL header")?
-      .data
-      .as_slice(),
-  )?;
-  let jitosol_vault = TokenAccount::try_deserialize(
-    &mut require(jitosol_vault.as_ref(), "jitoSOL vault")?
-      .data
-      .as_slice(),
-  )?;
-  let hylosol_vault = TokenAccount::try_deserialize(
-    &mut require(hylosol_vault.as_ref(), "hyloSOL vault")?
-      .data
-      .as_slice(),
-  )?;
-  let jitosol_pool_state = SplStakePool::from_bytes(
-    &require(jitosol_pool_state.as_ref(), "jitoSOL pool state")?.data,
-  )?;
-  let hylosol_pool_state = SplStakePool::from_bytes(
-    &require(hylosol_pool_state.as_ref(), "hyloSOL pool state")?.data,
-  )?;
-  let hyusd_pool = TokenAccount::try_deserialize(
-    &mut require(hyusd_pool.as_ref(), "hyUSD pool")?.data.as_slice(),
-  )?;
-  let shyusd_mint = Mint::try_deserialize(
-    &mut require(shyusd_mint.as_ref(), "sHYUSD mint")?
-      .data
-      .as_slice(),
-  )?;
-  let exo_pair = ExoPair::try_deserialize(
-    &mut require(exo_pair.as_ref(), "cbBTC exo pair")?
-      .data
-      .as_slice(),
-  )?;
-  let exo_vault = TokenAccount::try_deserialize(
-    &mut require(exo_vault.as_ref(), "cbBTC vault")?.data.as_slice(),
-  )?;
-  let xbtc_mint = Mint::try_deserialize(
-    &mut require(xbtc_mint.as_ref(), "xBTC mint")?.data.as_slice(),
-  )?;
-  let btc_usd = PriceUpdateV2::try_deserialize(
-    &mut require(btc_usd.as_ref(), "BTC/USD Pyth feed")?
-      .data
-      .as_slice(),
-  )?;
-  let sol_usd = PriceUpdateV2::try_deserialize(
-    &mut require(sol_usd.as_ref(), "SOL/USD Pyth feed")?
-      .data
-      .as_slice(),
-  )?;
-  let clock: Clock =
-    bincode::deserialize(&require(clock.as_ref(), "clock sysvar")?.data)
-      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+  let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
+  let jitosol_header =
+    LstHeader::try_deserialize(&mut jitosol_header.data.as_slice())?;
+  let hylosol_header =
+    LstHeader::try_deserialize(&mut hylosol_header.data.as_slice())?;
+  let jitosol_vault =
+    TokenAccount::try_deserialize(&mut jitosol_vault.data.as_slice())?;
+  let hylosol_vault =
+    TokenAccount::try_deserialize(&mut hylosol_vault.data.as_slice())?;
+  let jitosol_pool_state = SplStakePool::from_bytes(&jitosol_pool_state.data)?;
+  let hylosol_pool_state = SplStakePool::from_bytes(&hylosol_pool_state.data)?;
+  let hyusd_pool =
+    TokenAccount::try_deserialize(&mut hyusd_pool.data.as_slice())?;
+  let shyusd_mint = Mint::try_deserialize(&mut shyusd_mint.data.as_slice())?;
+  let exo_pair = ExoPair::try_deserialize(&mut exo_pair.data.as_slice())?;
+  let exo_vault =
+    TokenAccount::try_deserialize(&mut exo_vault.data.as_slice())?;
+  let xbtc_mint = Mint::try_deserialize(&mut xbtc_mint.data.as_slice())?;
+  let btc_usd = PriceUpdateV2::try_deserialize(&mut btc_usd.data.as_slice())?;
+  let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())?;
+  let clock: Clock = bincode::deserialize(&clock.data)
+    .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
   let oracle_config = OracleConfig::new(
     hylo.oracle_interval_secs,
