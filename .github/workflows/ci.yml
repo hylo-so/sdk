@@ -1,7 +1,7 @@
 name: "Hylo SDK CI"
 on:
   pull_request:
-    branches: ["main", "main-v2"]
+    branches: ["main"]
   push:
     branches: ["main"]
 
