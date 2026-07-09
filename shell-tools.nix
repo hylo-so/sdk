@@ -48,6 +48,7 @@
   publish = writeShellApplication {
     name = "publish";
     text = ''
+      # shellcheck disable=SC2016
       nix develop --command bash -c '
         set -euo pipefail
         if ! cargo workspaces changed --error-on-empty >/dev/null 2>&1; then
@@ -56,12 +57,14 @@
         fi
         cargo build --release
         cargo doc --workspace --no-deps
-        cargo publish --package hylo-idl
-        cargo publish --package hylo-core
-        cargo publish --package hylo-clients
-        cargo publish --package hylo-stats
-        cargo publish --package hylo-quotes
-        cargo publish --package hylo-jupiter
+        for pkg in hylo-idl hylo-core hylo-clients hylo-stats hylo-quotes hylo-jupiter; do
+          out=$(cargo publish --package "$pkg" 2>&1) && ok=0 || ok=1
+          echo "$out"
+          if [ "$ok" -eq 1 ]; then
+            echo "$out" | grep -q "already exists on crates.io index" || exit 1
+            echo "Skipping $pkg: version already published"
+          fi
+        done
       '
     '';
   };
