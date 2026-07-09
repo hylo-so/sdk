@@ -28,7 +28,7 @@ solana-address-lookup-table-interface.workspace = true
 solana-rpc-client.workspace = true
 solana-rpc-client-api.workspace = true
 solana-transaction-status-client-types.workspace = true
-squads-multisig.workspace = true
+hylo-squads-multisig.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]

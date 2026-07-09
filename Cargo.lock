@@ -1605,6 +1605,7 @@ dependencies = [
  "hylo-core",
  "hylo-fix",
  "hylo-idl",
+ "hylo-squads-multisig",
  "itertools 0.14.0",
  "mpl-token-metadata",
  "pyth-solana-receiver-sdk",
@@ -1613,7 +1614,6 @@ dependencies = [
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-transaction-status-client-types",
- "squads-multisig",
  "tokio",
 ]
 
@@ -1721,6 +1721,34 @@ dependencies = [
  "solana-rpc-client",
  "test-context",
  "tokio",
+]
+
+[[package]]
+name = "hylo-squads-multisig"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf258b0daf6154c0c82be141c92e41cdd4b50aa88db4e621beeca8913882665f"
+dependencies = [
+ "futures",
+ "hylo-squads-multisig-program",
+ "solana-message",
+ "solana-rpc-client",
+ "solana-rpc-client-api",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "hylo-squads-multisig-program"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c49b02c39db8ec0cd6bd0c98fe6b1826bf060ad41b5238f5dc3deae91fe0665c"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "solana-address-lookup-table-interface",
+ "solana-borsh",
+ "solana-program",
+ "solana-security-txt",
 ]
 
 [[package]]
@@ -5437,32 +5465,6 @@ dependencies = [
  "spl-discriminator",
  "spl-pod",
  "thiserror 2.0.18",
-]
-
-[[package]]
-name = "squads-multisig"
-version = "2.1.0"
-source = "git+https://github.com/hylo-so/v4?branch=main#a0324f524d9afd011ccfeea9293f0eddfc360be3"
-dependencies = [
- "futures",
- "solana-message",
- "solana-rpc-client",
- "solana-rpc-client-api",
- "squads-multisig-program",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "squads-multisig-program"
-version = "2.1.0"
-source = "git+https://github.com/hylo-so/v4?branch=main#a0324f524d9afd011ccfeea9293f0eddfc360be3"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "solana-address-lookup-table-interface",
- "solana-borsh",
- "solana-program",
- "solana-security-txt",
 ]
 
 [[package]]
