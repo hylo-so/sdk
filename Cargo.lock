@@ -1724,6 +1724,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "hylo-stats"
+version = "1.0.0"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "bincode",
+ "hylo-core",
+ "hylo-fix",
+ "hylo-idl",
+ "pyth-solana-receiver-sdk",
+ "solana-rpc-client",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "hyper"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

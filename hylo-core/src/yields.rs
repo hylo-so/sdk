@@ -17,6 +17,7 @@ const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 #[derive(
   Copy,
   Clone,
+  Debug,
   PartialEq,
   InitSpace,
   AnchorSerialize,
@@ -93,6 +94,7 @@ impl YieldHarvestConfig {
 #[derive(
   Copy,
   Clone,
+  Debug,
   InitSpace,
   AnchorSerialize,
   AnchorDeserialize,

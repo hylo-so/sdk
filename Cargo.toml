@@ -5,6 +5,7 @@ members = [
     "hylo-idl",
     "hylo-jupiter",
     "hylo-quotes",
+    "hylo-stats",
 ]
 resolver = "2"
 
@@ -30,6 +31,7 @@ hylo-fix = "0.7.0"
 hylo-idl = { version = "1.0.0", path = "hylo-idl" }
 hylo-jupiter = { version = "1.0.0", path = "hylo-jupiter" }
 hylo-quotes = { version = "1.0.0", path = "hylo-quotes" }
+hylo-stats = { version = "1.0.0", path = "hylo-stats" }
 itertools = "0.14.0"
 hylo-jupiter-amm-interface = "0.6.0"
 more-asserts = "0.3.1"
@@ -43,6 +45,7 @@ solana-address-lookup-table-interface = "=2.2.2"
 solana-rpc-client = "=2.3.13"
 solana-rpc-client-api = "=2.3.13"
 test-context = "0.3.0"
+thiserror = "2.0.18"
 solana-loader-v3-interface = "5.0.0"
 solana-transaction-status-client-types = "=2.3.13"
 squads-multisig = { git = "https://github.com/hylo-so/v4", branch = "main" }
