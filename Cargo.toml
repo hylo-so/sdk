@@ -48,7 +48,7 @@ test-context = "0.3.0"
 thiserror = "2.0.18"
 solana-loader-v3-interface = "5.0.0"
 solana-transaction-status-client-types = "=2.3.13"
-squads-multisig = { version = "2.1.0", git = "https://github.com/hylo-so/v4", branch = "main" }
+squads-multisig = { git = "https://github.com/hylo-so/v4", branch = "main" }
 tokio = "1.36.0"
 tokio-test = "0.4"
 
