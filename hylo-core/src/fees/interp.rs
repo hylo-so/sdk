@@ -1,5 +1,7 @@
 //! Piecewise linear interpolation for fee curves.
 
+use std::ops::RangeInclusive;
+
 use fix::prelude::*;
 use fix::typenum::Integer;
 use itertools::Itertools;
@@ -103,6 +105,12 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   #[must_use]
   pub const fn x_max(&self) -> IFix64<Exp> {
     self.points[RES - 1].x
+  }
+
+  /// Returns the domain as an inclusive range.
+  #[must_use]
+  pub fn domain(&self) -> RangeInclusive<IFix64<Exp>> {
+    self.x_min()..=self.x_max()
   }
 
   /// Returns the minimum y value in the range.

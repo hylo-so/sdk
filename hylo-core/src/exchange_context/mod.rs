@@ -346,15 +346,14 @@ pub trait ExchangeContext {
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 
-  /// Maximum mintable stablecoin before hitting the lowest CR
-  /// threshold.
+  /// Maximum mintable stablecoin before hitting the configured
+  /// stablecoin mint threshold.
   ///
   /// # Errors
   /// * Arithmetic overflow
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = RebalanceMode::SellZone1
-      .active_range()
-      .end()?
+    let target = self
+      .stablecoin_mint_threshold()
       .checked_convert()
       .ok_or(MaxMintable)?;
     max_mintable_stablecoin(

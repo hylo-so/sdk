@@ -10,6 +10,8 @@ use crate::error::CoreError;
 use crate::error::CoreError::{
   RangeUnexpectedBound, StablecoinMintThresholdInvalid,
 };
+use crate::fees::curve_controller::narrow_cr;
+use crate::fees::curves::mint_fee_curve;
 
 #[derive(
   Debug,
@@ -140,14 +142,17 @@ impl RebalanceMode {
   }
 }
 
-/// Checks that the given stablecoin mint threshold is within the Neutral
-/// rebalance zone.
+/// Checks that the given stablecoin mint threshold is within the mint fee
+/// curve's domain.
+///
+/// # Errors
+/// * Curve validation or threshold outside domain
 pub fn validate_stablecoin_mint_threshold(
   stablecoin_mint_threshold: UFixValue64,
 ) -> Result<UFixValue64, CoreError> {
-  RebalanceMode::Neutral
-    .active_range()
-    .contains(&stablecoin_mint_threshold.try_into()?)
+  mint_fee_curve()?
+    .domain()
+    .contains(&narrow_cr(stablecoin_mint_threshold.try_into()?)?)
     .then_some(stablecoin_mint_threshold)
     .ok_or(StablecoinMintThresholdInvalid)
 }
@@ -208,6 +213,25 @@ mod tests {
   fn from_cr_extremes() {
     assert_eq!(RebalanceMode::from_cr(UFix64::zero()), Depeg);
     assert_eq!(RebalanceMode::from_cr(UFix64::new(u64::MAX)), BuyZone2);
+  }
+
+  #[test]
+  fn mint_threshold_must_be_in_curve_domain() {
+    let threshold = |bits| UFixValue64::new(bits, -9);
+    assert!(
+      validate_stablecoin_mint_threshold(threshold(1_500_000_000)).is_ok()
+    );
+    assert!(
+      validate_stablecoin_mint_threshold(threshold(1_700_000_000)).is_ok()
+    );
+    assert_eq!(
+      validate_stablecoin_mint_threshold(threshold(1_499_999_999)),
+      Err(StablecoinMintThresholdInvalid),
+    );
+    assert_eq!(
+      validate_stablecoin_mint_threshold(threshold(1_710_000_000)),
+      Err(StablecoinMintThresholdInvalid),
+    );
   }
 
   #[test]
