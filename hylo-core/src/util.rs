@@ -51,6 +51,33 @@ pub fn denormalize_mint_exp(
   .ok_or(ExoAmountNormalization)
 }
 
+/// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
+/// decimals, rounding up.
+///
+/// When splitting one normalized amount, ceil exactly one part and floor
+/// the rest so the denormalized parts sum to the original amount.
+///
+/// # Errors
+/// * Unsupported decimal count
+pub fn denormalize_mint_exp_ceil(
+  mint: &Mint,
+  amount: UFix64<N9>,
+) -> Result<u64, CoreError> {
+  match mint.decimals {
+    2 => amount.checked_convert_ceil::<N2>().map(|o| o.bits),
+    3 => amount.checked_convert_ceil::<N3>().map(|o| o.bits),
+    4 => amount.checked_convert_ceil::<N4>().map(|o| o.bits),
+    5 => amount.checked_convert_ceil::<N5>().map(|o| o.bits),
+    6 => amount.checked_convert_ceil::<N6>().map(|o| o.bits),
+    7 => amount.checked_convert_ceil::<N7>().map(|o| o.bits),
+    8 => amount.checked_convert_ceil::<N8>().map(|o| o.bits),
+    9 => Some(amount.bits),
+    10 => amount.checked_convert_ceil::<N10>().map(|o| o.bits),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization)
+}
+
 #[macro_export]
 macro_rules! eq_tolerance {
   ($l:expr, $r:expr, $place:ty, $tol:expr) => {{
@@ -212,11 +239,36 @@ pub mod proptest {
 
 #[cfg(test)]
 mod tests {
+  use anchor_lang::prelude::program_option::COption;
+  use anchor_lang::AccountDeserialize;
+  use anchor_spl::token::spl_token::solana_program::program_pack::Pack;
+  use anchor_spl::token::spl_token::state::Mint as SplMint;
+  use anchor_spl::token::Mint;
+  use anyhow::Result;
   use fix::aliases::si::{Micro, Nano};
   use fix::prelude::*;
+  use proptest::prelude::*;
 
+  use super::{
+    denormalize_mint_exp, denormalize_mint_exp_ceil, normalize_mint_exp,
+  };
+  use crate::asset_swap_config::AssetSwapConfig;
   use crate::error::CoreError::SlippageExceeded;
+  use crate::fees::controller::FeeExtract;
   use crate::slippage_config::SlippageConfig;
+
+  fn test_mint(decimals: u8) -> Result<Mint> {
+    let spl_mint = SplMint {
+      mint_authority: COption::None,
+      supply: 0,
+      decimals,
+      is_initialized: true,
+      freeze_authority: COption::None,
+    };
+    let mut buf = [0u8; SplMint::LEN];
+    SplMint::pack(spl_mint, &mut buf)?;
+    Ok(Mint::try_deserialize(&mut buf.as_slice())?)
+  }
 
   #[test]
   fn one_nano() {
@@ -261,5 +313,36 @@ mod tests {
     let amount = UFix64::<N6>::new(99_312_089);
     let out = config.validate_token_out(amount);
     assert!(out.is_ok());
+  }
+
+  proptest! {
+    #[test]
+    fn fee_split_denorm_conserves(
+      amount in 1u64..1_000_000_000_000,
+      decimals in 2u8..=9,
+      fee_bps in 1u64..=100,
+    ) {
+      let mint = test_mint(decimals).expect("mint");
+
+      // Normalize
+      let norm = normalize_mint_exp(&mint, amount).expect("normalize");
+
+      // Extract fees
+      let config = AssetSwapConfig::new(UFixValue64::new(fee_bps, -4))
+        .expect("config");
+      let FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      } = config.apply_fee(norm).expect("apply_fee");
+
+      // Denormalize, rounding the fee up and the remainder down
+      let fee_out =
+        denormalize_mint_exp_ceil(&mint, fees_extracted).expect("ceil");
+      let amount_out =
+        denormalize_mint_exp(&mint, amount_remaining).expect("floor");
+
+      // Operation is lossless
+      prop_assert_eq!(fee_out + amount_out, amount);
+    }
   }
 }
