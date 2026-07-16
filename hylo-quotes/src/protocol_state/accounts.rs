@@ -112,7 +112,6 @@ impl ProtocolAccounts {
     pda::HYUSD_POOL,
     hylo_core::pyth::SOL_USD.address,
     sysvar::clock::ID,
-    // exo accounts (may be missing on some deployments)
     pda::exo_pair(CBBTC::MINT),
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
@@ -252,11 +251,7 @@ impl ProtocolAccounts {
   }
 }
 
-/// Convert from RPC response (pubkeys and accounts) to `ProtocolAccounts`
-///
-/// Deprecated since 2.1.0, removed in 3.0: use
-/// [`ProtocolAccounts::from_fetched`]. The pubkeys parameter is redundant
-/// with [`ProtocolAccounts::PUBKEYS`].
+/// Deprecated: use [`ProtocolAccounts::from_fetched`]. Removed in 3.0.
 impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
   type Error = anyhow::Error;
 
