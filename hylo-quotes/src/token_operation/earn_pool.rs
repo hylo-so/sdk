@@ -16,7 +16,6 @@ use crate::token_operation::{
   gate, OperationOutput, SwapOperationOutput, TokenOperation,
 };
 
-/// Deposit stablecoin (HYUSD) into earn pool for LP token (SHYUSD).
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -50,7 +49,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   }
 }
 
-/// Withdraw LP token (SHYUSD) from earn pool for stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 

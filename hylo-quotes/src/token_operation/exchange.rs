@@ -20,7 +20,6 @@ use crate::token_operation::{
 };
 use crate::{Local, LST};
 
-/// Mint stablecoin (HYUSD) from LST collateral.
 impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
   for ProtocolState<C>
 {
@@ -68,7 +67,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
   }
 }
 
-/// Redeem stablecoin (HYUSD) for LST collateral.
 impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
   for ProtocolState<C>
 {
@@ -117,7 +115,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
   }
 }
 
-/// Mint levercoin (XSOL) from LST collateral.
 impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
   for ProtocolState<C>
 {
@@ -162,7 +159,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
   }
 }
 
-/// Redeem levercoin (XSOL) for LST collateral.
 impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
   for ProtocolState<C>
 {
@@ -211,7 +207,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
   }
 }
 
-/// Swap stablecoin (HYUSD) to levercoin (XSOL).
 impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
   type FeeExp = <HYUSD as TokenMint>::Exp;
 
@@ -256,7 +251,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
   }
 }
 
-/// Swap levercoin (XSOL) to stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
   type FeeExp = <HYUSD as TokenMint>::Exp;
 
@@ -299,7 +293,6 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
   }
 }
 
-/// Swap LST -> LST.
 impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
   for ProtocolState<C>
 {
@@ -344,10 +337,6 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
   }
 }
 
-/// Mint stablecoin (HYUSD) from USDC.
-///
-/// On-chain flow: normalize USDC to N9, apply fee at N9, then convert
-/// to stablecoin. Fee is denominated in USDC (at N9 precision).
 impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -379,10 +368,6 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   }
 }
 
-/// Redeem stablecoin (HYUSD) for USDC.
-///
-/// On-chain flow: apply fee to HYUSD input first, then convert
-/// remaining HYUSD to USDC. Fee is denominated in HYUSD.
 impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -418,7 +403,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   }
 }
 
-/// Mint stablecoin (HYUSD) from cbBTC.
 impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -462,7 +446,6 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
   }
 }
 
-/// Redeem stablecoin (HYUSD) for cbBTC.
 impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -509,7 +492,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
   }
 }
 
-/// Mint levercoin (xBTC) from cbBTC.
 impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -555,7 +537,6 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
   }
 }
 
-/// Redeem levercoin (xBTC) for cbBTC.
 impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -605,7 +586,6 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
   }
 }
 
-/// Swap stablecoin (HYUSD) to exo levercoin (xBTC).
 impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -651,7 +631,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
   }
 }
 
-/// Swap exo levercoin (xBTC) to stablecoin (HYUSD).
 impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -778,9 +757,7 @@ impl<C: SolanaClock> ProtocolState<C> {
 
   /// Quotes a sell-side rebalance swap (USDC in, LST out).
   ///
-  /// Liquidity is enforced on the input via `max_rebalance_sell_usdc`, a
-  /// spot-priced bound over the onchain post-conversion vault and
-  /// burn-floor gates; boundary sizes are conservative approximations.
+  /// Input cap is a conservative spot-priced bound on the onchain gates.
   fn rebalance_sell_quote<L: LST + Local>(
     &self,
     in_amount: UFix64<N6>,
@@ -840,7 +817,6 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 }
 
-/// Swap `JitoSOL` for USDC.
 impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -852,7 +828,6 @@ impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
   }
 }
 
-/// Swap `hyloSOL` for USDC.
 impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -864,7 +839,6 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
   }
 }
 
-/// Swap USDC for `JitoSOL`.
 impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -876,7 +850,6 @@ impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
   }
 }
 
-/// Swap USDC for `hyloSOL`.
 impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -888,7 +861,6 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
   }
 }
 
-/// Swap cbBTC for USDC.
 impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
   type FeeExp = N8;
 
@@ -944,7 +916,6 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
   }
 }
 
-/// Swap USDC for cbBTC.
 impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
   type FeeExp = N6;
 
