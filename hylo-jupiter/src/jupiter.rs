@@ -19,7 +19,9 @@ use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
-use hylo_quotes::protocol_state::{ProtocolState, UsdcExchangeState};
+use hylo_quotes::protocol_state::{
+  BtcPairState, ProtocolState, UsdcExchangeState,
+};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
@@ -731,7 +733,6 @@ where
       SOL_USD.address,
       SHYUSD::MINT,
       pda::HYUSD_POOL,
-      pda::XSOL_POOL,
       pda::POOL_CONFIG,
       pda::exo_pair(CBBTC::MINT),
       pda::exo_vault(CBBTC::MINT),
@@ -739,6 +740,9 @@ where
       pda::BTC_USD_PYTH_FEED,
       pda::USDC_PAIR,
       pda::USDC_USD_PYTH_FEED,
+      pda::lst_vault(JITOSOL::MINT),
+      pda::lst_vault(HYLOSOL::MINT),
+      pda::usdc_vault(USDC::MINT),
     ]
   }
 
@@ -758,8 +762,6 @@ where
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
-    let xsol_pool: TokenAccount =
-      account_map_get(account_map, &pda::XSOL_POOL)?;
     let pool_config: PoolConfig =
       account_map_get(account_map, &pda::POOL_CONFIG)?;
 
@@ -773,6 +775,12 @@ where
     let btc_usd: PriceUpdateV2 =
       account_map_get(account_map, &pda::BTC_USD_PYTH_FEED)?;
     let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
+    let jitosol_vault: TokenAccount =
+      account_map_get(account_map, &pda::lst_vault(JITOSOL::MINT))?;
+    let hylosol_vault: TokenAccount =
+      account_map_get(account_map, &pda::lst_vault(HYLOSOL::MINT))?;
+    let usdc_vault: TokenAccount =
+      account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
     let usdc_usd: PriceUpdateV2 =
       account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
     let exo_oracle_config = OracleConfig::new(
@@ -809,6 +817,8 @@ where
     let usdc_exchange_state = UsdcExchangeState {
       usdc_usd_price: usdc_oracle.price_range()?,
       swap_fee: usdc_pair.swap_fee.try_into()?,
+      paused: usdc_pair.paused,
+      vault_balance: UFix64::new(usdc_vault.amount),
     };
 
     // Stake pools
@@ -833,12 +843,14 @@ where
       shyusd_mint,
       pool_config,
       hyusd_pool,
-      xsol_pool,
       &sol_usd,
       cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
+      UFix64::new(jitosol_vault.amount),
+      UFix64::new(hylosol_vault.amount),
+      BtcPairState::try_from(&exo_pair)?,
     )?);
 
     Ok(())

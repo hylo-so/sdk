@@ -23,19 +23,19 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 /// * Protocol accounts construction
 /// * File IO
 pub async fn dump_protocol_accounts() -> Result<()> {
-  let pubkeys = ProtocolAccounts::pubkeys();
   let rpc_client = RpcClient::new_with_commitment(
     "https://api.mainnet-beta.solana.com".to_string(),
     CommitmentConfig::confirmed(),
   );
-  let accounts = rpc_client.get_multiple_accounts(&pubkeys).await?;
+  let accounts = rpc_client
+    .get_multiple_accounts(&ProtocolAccounts::PUBKEYS)
+    .await?;
   let epoch = rpc_client.get_epoch_info().await?;
   let filename = format!(
     "tests/data/protocol-state-{}-{}.json",
     epoch.epoch, epoch.slot_index
   );
-  let protocol_accounts =
-    ProtocolAccounts::try_from((pubkeys.as_slice(), accounts.as_slice()))?;
+  let protocol_accounts = ProtocolAccounts::from_fetched(&accounts)?;
   let file = File::create_new(filename)?;
   to_writer(file, &protocol_accounts)?;
   Ok(())

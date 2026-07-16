@@ -9,6 +9,11 @@ use fix::typenum::Integer;
 use hylo_core::error::CoreError;
 use hylo_idl::tokens::TokenMint;
 
+/// Maps a failed gate condition to its error.
+pub(crate) fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
+  condition.then_some(()).ok_or(error)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OperationOutput<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
   pub in_amount: UFix64<InExp>,

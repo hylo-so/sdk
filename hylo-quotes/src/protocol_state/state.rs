@@ -21,6 +21,7 @@ use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::pyth::OracleConfig;
+use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
@@ -36,6 +37,10 @@ pub struct UsdcExchangeState {
   pub usdc_usd_price: hylo_core::pyth::PriceRange<N9>,
   /// Swap fee extracted on USDC operations
   pub swap_fee: UFix64<N4>,
+  /// USDC pair pause flag
+  pub paused: bool,
+  /// USDC collateral vault balance
+  pub vault_balance: UFix64<N6>,
 }
 
 impl UsdcExchangeState {
@@ -45,6 +50,32 @@ impl UsdcExchangeState {
     UsdcStablecoinConversion {
       usdc_usd_price: self.usdc_usd_price,
     }
+  }
+}
+
+/// BTC pair gate state for offchain quoting.
+#[derive(Clone)]
+pub struct BtcPairState {
+  /// Pair pause flag
+  pub paused: bool,
+  /// Drawdown repayment ledger
+  pub pool_drawdown: PoolDrawdown,
+  /// Epoch of the last borrow rate harvest
+  pub borrow_rate_harvest_epoch: u64,
+  /// Virtual stablecoin supply floor for redeems
+  pub supply_floor: UFix64<N6>,
+}
+
+impl TryFrom<&ExoPair> for BtcPairState {
+  type Error = anyhow::Error;
+
+  fn try_from(exo_pair: &ExoPair) -> Result<BtcPairState> {
+    Ok(BtcPairState {
+      paused: exo_pair.paused,
+      pool_drawdown: exo_pair.pool_drawdown.into(),
+      borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
+      supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
+    })
   }
 }
 
@@ -75,9 +106,6 @@ pub struct ProtocolState<C: SolanaClock> {
   /// HYUSD earn pool token account
   pub hyusd_pool: TokenAccount,
 
-  /// XSOL earn pool token account
-  pub xsol_pool: TokenAccount,
-
   /// Timestamp of when this state was fetched
   pub fetched_at: UnixTimestamp,
 
@@ -95,6 +123,27 @@ pub struct ProtocolState<C: SolanaClock> {
 
   /// `hyloSOL` SPL stake pool
   pub hylosol_stake_pool: SplStakePool,
+
+  /// Protocol-wide pause flag
+  pub protocol_paused: bool,
+
+  /// LST pair pause flag
+  pub lst_pair_paused: bool,
+
+  /// Drawdown repayment ledger
+  pub pool_drawdown: PoolDrawdown,
+
+  /// Epoch of the last yield harvest
+  pub yield_harvest_epoch: u64,
+
+  /// `JitoSOL` collateral vault balance
+  pub jitosol_vault_balance: UFix64<N9>,
+
+  /// `hyloSOL` collateral vault balance
+  pub hylosol_vault_balance: UFix64<N9>,
+
+  /// BTC pair gate state
+  pub btc_pair_state: BtcPairState,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -113,12 +162,14 @@ impl<C: SolanaClock> ProtocolState<C> {
     shyusd_mint: Mint,
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
-    xsol_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
     cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
+    jitosol_vault_balance: UFix64<N9>,
+    hylosol_vault_balance: UFix64<N9>,
+    btc_pair_state: BtcPairState,
   ) -> Result<Self> {
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
@@ -133,13 +184,19 @@ impl<C: SolanaClock> ProtocolState<C> {
       shyusd_mint,
       pool_config,
       hyusd_pool,
-      xsol_pool,
       fetched_at,
       lst_swap_config,
       cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
+      protocol_paused: hylo.protocol_paused,
+      lst_pair_paused: hylo.lst_pair_paused,
+      pool_drawdown: hylo.pool_drawdown.into(),
+      yield_harvest_epoch: hylo.yield_harvest_cache.epoch,
+      jitosol_vault_balance,
+      hylosol_vault_balance,
+      btc_pair_state,
     })
   }
 
@@ -151,6 +208,18 @@ impl<C: SolanaClock> ProtocolState<C> {
     match L::MINT {
       JITOSOL::MINT => Ok(&self.jitosol_header),
       HYLOSOL::MINT => Ok(&self.hylosol_header),
+      _ => Err(CoreError::UnknownLstMint),
+    }
+  }
+
+  /// Collateral vault balance for the given LST.
+  ///
+  /// # Errors
+  /// * Unknown LST mint
+  pub fn lst_vault_balance<L: LST>(&self) -> Result<UFix64<N9>, CoreError> {
+    match L::MINT {
+      JITOSOL::MINT => Ok(self.jitosol_vault_balance),
+      HYLOSOL::MINT => Ok(self.hylosol_vault_balance),
       _ => Err(CoreError::UnknownLstMint),
     }
   }
@@ -274,10 +343,14 @@ fn build_usdc_exchange_state(
   let usdc_oracle =
     hylo_core::pyth::query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
   let usdc_usd_price = usdc_oracle.price_range()?;
+  let usdc_vault =
+    TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
 
   Ok(UsdcExchangeState {
     usdc_usd_price,
     swap_fee: usdc_pair.swap_fee.try_into()?,
+    paused: usdc_pair.paused,
+    vault_balance: UFix64::new(usdc_vault.amount),
   })
 }
 
@@ -312,9 +385,6 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hyusd_pool =
       TokenAccount::try_deserialize(&mut accounts.hyusd_pool.data.as_slice())?;
 
-    let xsol_pool =
-      TokenAccount::try_deserialize(&mut accounts.xsol_pool.data.as_slice())?;
-
     let sol_usd = PriceUpdateV2::try_deserialize(
       &mut accounts.sol_usd_pyth.data.as_slice(),
     )
@@ -337,6 +407,16 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hylosol_stake_pool =
       SplStakePool::from_bytes(&accounts.hylosol_pool_state.data)?;
 
+    let jitosol_vault = TokenAccount::try_deserialize(
+      &mut accounts.jitosol_vault.data.as_slice(),
+    )?;
+    let hylosol_vault = TokenAccount::try_deserialize(
+      &mut accounts.hylosol_vault.data.as_slice(),
+    )?;
+    let exo_pair =
+      ExoPair::try_deserialize(&mut accounts.cbbtc_exo_pair.data.as_slice())?;
+    let btc_pair_state = BtcPairState::try_from(&exo_pair)?;
+
     Self::build(
       clock,
       &hylo,
@@ -347,12 +427,14 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       shyusd_mint,
       pool_config,
       hyusd_pool,
-      xsol_pool,
       &sol_usd,
       cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
+      UFix64::new(jitosol_vault.amount),
+      UFix64::new(hylosol_vault.amount),
+      btc_pair_state,
     )
   }
 }

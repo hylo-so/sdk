@@ -107,16 +107,12 @@ impl RpcStateProvider {
 #[async_trait]
 impl StateProvider<Clock> for RpcStateProvider {
   async fn fetch_state(&self) -> Result<ProtocolState<Clock>> {
-    let pubkeys = ProtocolAccounts::pubkeys();
     let account_data = self
       .rpc_client
-      .get_multiple_accounts(&pubkeys)
+      .get_multiple_accounts(&ProtocolAccounts::PUBKEYS)
       .await
       .map_err(|e| anyhow!("Failed to fetch accounts from RPC: {e}"))?;
-    let accounts = ProtocolAccounts::try_from((
-      pubkeys.as_slice(),
-      account_data.as_slice(),
-    ))?;
+    let accounts = ProtocolAccounts::from_fetched(&account_data)?;
     ProtocolState::try_from(&accounts)
   }
 }
