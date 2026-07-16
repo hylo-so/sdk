@@ -92,29 +92,38 @@ impl WithdrawalLimiter {
     withdrawal: UFix64<N6>,
     current_epoch: u64,
   ) -> Result<(), CoreError> {
-    match current_epoch.cmp(&self.epoch) {
-      Ordering::Less => Err(WithdrawalLimitInvalidEpoch),
-      Ordering::Equal => self.register_within_limit(withdrawal),
-      Ordering::Greater => {
-        self.epoch = current_epoch;
-        self.withdrawal_ledger = VirtualStablecoin::new();
-        self.register_within_limit(withdrawal)
-      }
-    }
+    let projected = self.validate_withdrawal(withdrawal, current_epoch)?;
+    self.epoch = current_epoch;
+    self.withdrawal_ledger = VirtualStablecoin {
+      supply: projected.into(),
+    };
+    Ok(())
   }
 
-  /// Adds withdrawal to ledger if projected total stays within limit.
-  fn register_within_limit(
-    &mut self,
+  /// Projected ledger total for `current_epoch` after a withdrawal,
+  /// requiring it to stay within the limit. The ledger resets on epoch
+  /// rollover.
+  ///
+  /// # Errors
+  /// * Numeric conversion
+  /// * Overflow while totaling withdrawals
+  /// * Withdrawal exceeds limit for epoch
+  /// * Ledger epoch greater than current epoch
+  pub fn validate_withdrawal(
+    &self,
     withdrawal: UFix64<N6>,
-  ) -> Result<(), CoreError> {
-    let projected = self
-      .withdrawal_ledger
-      .supply()?
+    current_epoch: u64,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let ledger_total = match current_epoch.cmp(&self.epoch) {
+      Ordering::Less => Err(WithdrawalLimitInvalidEpoch),
+      Ordering::Equal => self.withdrawal_ledger.supply(),
+      Ordering::Greater => Ok(UFix64::zero()),
+    }?;
+    let projected = ledger_total
       .checked_add(&withdrawal)
       .ok_or(WithdrawalLimitArithmetic)?;
     if projected <= self.limit()? {
-      self.withdrawal_ledger.mint(withdrawal)
+      Ok(projected)
     } else {
       Err(WithdrawalLimitExceededForEpoch)
     }

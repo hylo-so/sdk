@@ -64,9 +64,9 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     let hyusd_to_withdraw =
       amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
-    let mut withdrawal_limiter: WithdrawalLimiter =
+    let withdrawal_limiter: WithdrawalLimiter =
       self.pool_config.withdrawal_limiter.into();
-    withdrawal_limiter.register_withdrawal(
+    withdrawal_limiter.validate_withdrawal(
       hyusd_to_withdraw,
       self.exchange_context.clock.epoch(),
     )?;
