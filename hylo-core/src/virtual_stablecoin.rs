@@ -9,8 +9,7 @@ use crate::error::CoreError::{
   BurnUnderflow, MintOverflow, VirtualStablecoinBurnLimit,
 };
 
-/// Stablecoin supply floor: $0.10 sent to the exchange's dead address at
-/// genesis.
+/// Stablecoin sent to the exchange's dead address at genesis.
 pub const SUPPLY_FLOOR: UFix64<N6> = UFix64::constant(100_000);
 
 /// Computes the supply after burning `amount`, requiring the result to
