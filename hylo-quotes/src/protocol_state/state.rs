@@ -53,16 +53,12 @@ impl UsdcExchangeState {
   }
 }
 
-/// BTC pair gate state for offchain quoting.
+/// [`ExoPair`] state not carried by the exchange context.
 #[derive(Clone)]
 pub struct BtcPairState {
-  /// Pair pause flag
   pub paused: bool,
-  /// Drawdown repayment ledger
   pub pool_drawdown: PoolDrawdown,
-  /// Epoch of the last borrow rate harvest
   pub borrow_rate_harvest_epoch: u64,
-  /// Virtual stablecoin supply floor for redeems
   pub supply_floor: UFix64<N6>,
 }
 
