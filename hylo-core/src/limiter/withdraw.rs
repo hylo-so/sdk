@@ -33,11 +33,16 @@ pub struct WithdrawalLimiter {
 }
 
 impl WithdrawalLimiter {
-  #[cfg(test)]
-  fn new(limit: UFixValue64, epoch: u64) -> WithdrawalLimiter {
+  #[cfg(any(test, feature = "offchain"))]
+  #[must_use]
+  pub fn new(
+    limit: UFixValue64,
+    withdrawal_ledger: VirtualStablecoin,
+    epoch: u64,
+  ) -> WithdrawalLimiter {
     WithdrawalLimiter {
       limit,
-      withdrawal_ledger: VirtualStablecoin::new(),
+      withdrawal_ledger,
       epoch,
     }
   }
@@ -127,7 +132,11 @@ mod tests {
   const EPOCH: u64 = 10;
 
   fn limiter() -> WithdrawalLimiter {
-    WithdrawalLimiter::new(UFixValue64::new(1_000_000, -6), EPOCH)
+    WithdrawalLimiter::new(
+      UFixValue64::new(1_000_000, -6),
+      VirtualStablecoin::new(),
+      EPOCH,
+    )
   }
 
   #[test]

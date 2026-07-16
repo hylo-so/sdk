@@ -26,8 +26,9 @@ pub struct DepositLimiter {
 }
 
 impl DepositLimiter {
-  #[cfg(test)]
-  fn new(limit: UFixValue64) -> DepositLimiter {
+  #[cfg(any(test, feature = "offchain"))]
+  #[must_use]
+  pub fn new(limit: UFixValue64) -> DepositLimiter {
     DepositLimiter { limit }
   }
 

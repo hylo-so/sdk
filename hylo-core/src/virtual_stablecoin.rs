@@ -9,6 +9,29 @@ use crate::error::CoreError::{
   BurnUnderflow, MintOverflow, VirtualStablecoinBurnLimit,
 };
 
+/// Stablecoin supply floor: $0.10 sent to the exchange's dead address at
+/// genesis.
+pub const SUPPLY_FLOOR: UFix64<N6> = UFix64::constant(100_000);
+
+/// Computes the supply after burning `amount`, requiring the result to
+/// stay at or above `limit`.
+///
+/// # Errors
+/// * Underflow
+/// * Burn exceeds limit
+pub fn validate_burn(
+  supply: UFix64<N6>,
+  amount: UFix64<N6>,
+  limit: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  let new_supply = supply.checked_sub(&amount).ok_or(BurnUnderflow)?;
+  if new_supply >= limit {
+    Ok(new_supply)
+  } else {
+    Err(VirtualStablecoinBurnLimit)
+  }
+}
+
 /// Simple counter representing the supply of a "virtual" stablecoin.
 #[derive(
   Debug,
@@ -85,15 +108,9 @@ impl VirtualStablecoin {
     amount: UFix64<N6>,
     limit: UFix64<N6>,
   ) -> Result<(), CoreError> {
-    let current_supply = self.supply()?;
-    let new_supply =
-      current_supply.checked_sub(&amount).ok_or(BurnUnderflow)?;
-    if new_supply >= limit {
-      self.supply = new_supply.into();
-      Ok(())
-    } else {
-      Err(VirtualStablecoinBurnLimit)
-    }
+    let new_supply = validate_burn(self.supply()?, amount, limit)?;
+    self.supply = new_supply.into();
+    Ok(())
   }
 }
 
