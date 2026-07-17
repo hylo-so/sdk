@@ -7,6 +7,7 @@ use anchor_lang::prelude::Pubkey;
 use fix::prelude::{UFix64, N6, N9};
 use fix::typenum::Integer;
 use hylo_core::error::CoreError;
+use hylo_core::marginal::positive_rate;
 use hylo_idl::tokens::TokenMint;
 
 /// Maps a failed gate condition to its error.
@@ -14,13 +15,37 @@ pub(crate) fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
   condition.then_some(()).ok_or(error)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Marginal rate of a fee-flat route in atoms. The output is linear in
+/// the input, so the realized atom ratio is the exact derivative.
+///
+/// # Errors
+/// * Non-finite or non-positive rate (zero input or output)
+#[allow(clippy::cast_precision_loss)]
+pub(crate) fn linear_rate<InExp: Integer, OutExp: Integer>(
+  in_amount: UFix64<InExp>,
+  out_amount: UFix64<OutExp>,
+) -> Result<f64, CoreError> {
+  positive_rate(out_amount.bits as f64 / in_amount.bits as f64)
+}
+
+/// Scales a token-level marginal rate to atoms:
+/// `rate * 10^(out_decimals - in_decimals)`.
+pub(crate) fn atom_rate<InExp: Integer, OutExp: Integer>(
+  token_rate: f64,
+) -> f64 {
+  token_rate * 10f64.powi(InExp::to_i32() - OutExp::to_i32())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OperationOutput<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
   pub in_amount: UFix64<InExp>,
   pub out_amount: UFix64<OutExp>,
   pub fee_amount: UFix64<FeeExp>,
   pub fee_mint: Pubkey,
   pub fee_base: UFix64<FeeExp>,
+  /// Marginal output rate `f'(in_amount)` in atoms — Titan's
+  /// `QuoteResult.price`.
+  pub marginal_rate: f64,
 }
 
 pub type MintOperationOutput = OperationOutput<N9, N6, N9>;

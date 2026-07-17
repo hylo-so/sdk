@@ -13,7 +13,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  gate, OperationOutput, SwapOperationOutput, TokenOperation,
+  gate, linear_rate, OperationOutput, SwapOperationOutput, TokenOperation,
 };
 
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
@@ -45,6 +45,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
       fee_amount: UFix64::<N6>::zero(),
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, shyusd_out)?,
     })
   }
 }
@@ -81,6 +82,7 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_to_withdraw,
+      marginal_rate: linear_rate(in_amount, amount_remaining)?,
     })
   }
 }

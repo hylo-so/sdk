@@ -15,6 +15,8 @@ pub mod idl_type_bridge;
 pub mod kani_generators;
 pub mod limiter;
 pub mod lst;
+#[cfg(feature = "offchain")]
+pub mod marginal;
 pub mod pyth;
 pub mod rebalance;
 pub mod slippage_config;

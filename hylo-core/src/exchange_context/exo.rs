@@ -2,7 +2,7 @@ use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use super::ExchangeContext;
+use super::{ExchangeContext, ProjectedState};
 use crate::conversion::{
   ExoConversion, ExoRebalanceConversion, UsdcStablecoinConversion,
 };
@@ -13,11 +13,17 @@ use crate::error::CoreError::{
 };
 use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
+#[cfg(feature = "offchain")]
+use crate::fees::curve_controller::narrow_cr;
 use crate::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
 };
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
+#[cfg(feature = "offchain")]
+use crate::marginal::{
+  cr_impact, ifix_to_f64, marginal_rate, positive, ufix_to_f64,
+};
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
@@ -152,24 +158,37 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
-    let new_total = self
+    let projected = self.projected_mint_state(collateral_amount)?;
+    self
+      .stablecoin_mint_fees
+      .apply_fee(projected.collateral_ratio, collateral_amount)
+  }
+
+  /// Post-trade state used by the stablecoin mint fee projection.
+  fn projected_mint_state(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
+    let total_collateral = self
       .total_collateral
       .checked_add(&collateral_amount)
       .ok_or(DestinationCollateral)?;
     let stablecoin_minted = self
       .exo_conversion()
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
-    let new_stablecoin = stablecoin_minted
+    let stablecoin_supply = stablecoin_minted
       .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(
-      new_total,
+    let collateral_ratio = collateral_ratio(
+      total_collateral,
       self.collateral_usd_price.lower,
-      new_stablecoin,
+      stablecoin_supply,
     )?;
-    self
-      .stablecoin_mint_fees
-      .apply_fee(projected_cr, collateral_amount)
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Stablecoin redeem fee via interpolated curve at projected CR.
@@ -180,25 +199,38 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
-    let new_total = self
+    let projected = self.projected_redeem_state(collateral_amount)?;
+    self
+      .stablecoin_redeem_fees
+      .apply_fee(projected.collateral_ratio, collateral_amount)
+  }
+
+  /// Post-trade state used by the stablecoin redeem fee projection.
+  fn projected_redeem_state(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
+    let total_collateral = self
       .total_collateral
       .checked_sub(&collateral_amount)
       .ok_or(DestinationCollateral)?;
     let stablecoin_redeemed = self
       .exo_conversion()
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
-    let new_stablecoin = self
+    let stablecoin_supply = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(
-      new_total,
+    let collateral_ratio = collateral_ratio(
+      total_collateral,
       self.collateral_usd_price.lower,
-      new_stablecoin,
+      stablecoin_supply,
     )?;
-    self
-      .stablecoin_redeem_fees
-      .apply_fee(projected_cr, collateral_amount)
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Levercoin mint fee based on projected rebalance mode.
@@ -254,27 +286,44 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     usdc_usd_price: PriceRange<N9>,
     usdc_amount: UFix64<N9>,
   ) -> Result<ExoRebalanceConversion, CoreError> {
+    let projected =
+      self.projected_rebalance_sell_state(usdc_usd_price, usdc_amount)?;
+    let collateral_usd_price = self
+      .rebalance_sell_curve()?
+      .price(projected.collateral_ratio)?;
+    Ok(ExoRebalanceConversion::new(
+      collateral_usd_price,
+      usdc_usd_price,
+    ))
+  }
+
+  /// Post-trade state used by the sell-side rebalance projection.
+  fn projected_rebalance_sell_state(
+    &self,
+    usdc_usd_price: PriceRange<N9>,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
     let collateral_delta =
       ExoRebalanceConversion::new(spot_price, usdc_usd_price)
         .usdc_to_collateral(usdc_amount)?;
-    let new_total = self
+    let total_collateral = self
       .total_collateral
       .checked_sub(&collateral_delta)
       .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_delta, self.stablecoin_nav()?)?;
-    let new_stablecoin = self
+    let stablecoin_supply = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
-    let collateral_usd_price =
-      self.rebalance_sell_curve()?.price(projected_cr)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
+    let collateral_ratio =
+      collateral_ratio(total_collateral, spot_price, stablecoin_supply)?;
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Maximum USDC input for a sell-side rebalancing swap.
@@ -314,24 +363,39 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     usdc_usd_price: PriceRange<N9>,
     collateral_amount: UFix64<N9>,
   ) -> Result<ExoRebalanceConversion, CoreError> {
+    let projected = self.projected_rebalance_buy_state(collateral_amount)?;
+    let collateral_usd_price = self
+      .rebalance_buy_curve()?
+      .price(projected.collateral_ratio)?;
+    Ok(ExoRebalanceConversion::new(
+      collateral_usd_price,
+      usdc_usd_price,
+    ))
+  }
+
+  /// Post-trade state used by the buy-side rebalance projection.
+  fn projected_rebalance_buy_state(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
-    let new_total = self
+    let total_collateral = self
       .total_collateral
       .checked_add(&collateral_amount)
       .ok_or(DestinationCollateral)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
-    let new_stablecoin = self
+    let stablecoin_supply = self
       .virtual_stablecoin_supply()?
       .checked_add(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
-    let curve = self.rebalance_buy_curve()?;
-    let collateral_usd_price = curve.price(projected_cr)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
+    let collateral_ratio =
+      collateral_ratio(total_collateral, spot_price, stablecoin_supply)?;
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Builds the levercoin market cap limiter from exchange inputs.
@@ -393,5 +457,146 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let stablecoin_value_out = self.exo_to_stablecoin_spot(exo_out)?;
     RebalancePnl::from_stablecoin_flow(stablecoin_moved, stablecoin_value_out)
       .ok_or(RebalanceSwapPnl)
+  }
+}
+
+#[cfg(feature = "offchain")]
+impl<C: SolanaClock> ExoExchangeContext<C> {
+  /// Marginal stablecoin output per collateral input at
+  /// `collateral_amount`, in tokens.
+  ///
+  /// ```txt
+  /// f'(x) = nav_rate * (1 - fee - x * fee_slope * cr'(x))
+  /// ```
+  ///
+  /// # Errors
+  /// * Projection, curve, NAV, or marginal rate failure
+  pub fn stablecoin_mint_marginal(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<f64, CoreError> {
+    let projected = self.projected_mint_state(collateral_amount)?;
+    let cr = narrow_cr(projected.collateral_ratio)?;
+    let fee = ifix_to_f64(self.stablecoin_mint_fees.fee_inner(cr)?);
+    let fee_slope = ifix_to_f64(self.stablecoin_mint_fees.fee_slope(cr)?);
+    let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
+    let nav = positive(self.stablecoin_nav()?)?;
+    let nav_rate = collateral_usd_lower.get() / nav.get();
+    let impact = cr_impact(
+      positive(projected.total_collateral)?,
+      positive(projected.stablecoin_supply)?,
+      collateral_usd_lower,
+      1.0,
+      nav_rate,
+    );
+    let rate = nav_rate * (1.0 - fee);
+    let rate_slope = -nav_rate * fee_slope;
+    marginal_rate(ufix_to_f64(collateral_amount), rate, rate_slope, impact)
+  }
+
+  /// Marginal collateral output per stablecoin input at
+  /// `amount_stablecoin`, in tokens.
+  ///
+  /// # Errors
+  /// * Projection, curve, NAV, or marginal rate failure
+  pub fn stablecoin_redeem_marginal(
+    &self,
+    amount_stablecoin: UFix64<N6>,
+  ) -> Result<f64, CoreError> {
+    let nav = positive(self.stablecoin_nav()?)?;
+    let collateral_out = self
+      .exo_conversion()
+      .token_to_exo(amount_stablecoin, self.stablecoin_nav()?)?;
+    let projected = self.projected_redeem_state(collateral_out)?;
+    let cr = narrow_cr(projected.collateral_ratio)?;
+    let fee = ifix_to_f64(self.stablecoin_redeem_fees.fee_inner(cr)?);
+    let fee_slope = ifix_to_f64(self.stablecoin_redeem_fees.fee_slope(cr)?);
+    let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
+    let collateral_usd_upper = positive(self.collateral_usd_price.upper)?;
+    let nav_rate = nav.get() / collateral_usd_upper.get();
+    let impact = cr_impact(
+      positive(projected.total_collateral)?,
+      positive(projected.stablecoin_supply)?,
+      collateral_usd_lower,
+      -nav_rate,
+      -(collateral_usd_lower.get() / collateral_usd_upper.get()),
+    );
+    let rate = nav_rate * (1.0 - fee);
+    let rate_slope = -nav_rate * fee_slope;
+    marginal_rate(ufix_to_f64(amount_stablecoin), rate, rate_slope, impact)
+  }
+
+  /// Marginal USDC output per collateral input at `collateral_amount`,
+  /// in tokens.
+  ///
+  /// ```txt
+  /// f'(x) = R(cr(x)) + x * R'(cr(x)) * cr'(x)
+  /// ```
+  ///
+  /// where `R` is the buy-side price curve scaled into USDC.
+  ///
+  /// # Errors
+  /// * Projection, curve, NAV, or marginal rate failure
+  pub fn rebalance_buy_marginal(
+    &self,
+    usdc_usd_price: PriceRange<N9>,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<f64, CoreError> {
+    let projected = self.projected_rebalance_buy_state(collateral_amount)?;
+    let curve = self.rebalance_buy_curve()?;
+    let curve_price = ufix_to_f64(curve.price(projected.collateral_ratio)?);
+    let curve_slope =
+      ifix_to_f64(curve.price_slope(projected.collateral_ratio)?);
+    let collateral_spot = positive(self.collateral_oracle_price().spot)?;
+    let nav = positive(self.stablecoin_nav()?)?;
+    let usdc_usd_upper = positive(usdc_usd_price.upper)?;
+    let impact = cr_impact(
+      positive(projected.total_collateral)?,
+      positive(projected.stablecoin_supply)?,
+      collateral_spot,
+      1.0,
+      collateral_spot.get() / nav.get(),
+    );
+    let rate = curve_price / usdc_usd_upper.get();
+    let rate_slope = curve_slope / usdc_usd_upper.get();
+    marginal_rate(ufix_to_f64(collateral_amount), rate, rate_slope, impact)
+  }
+
+  /// Marginal collateral output per USDC input at `usdc_amount`, in
+  /// tokens.
+  ///
+  /// The sell-side curve price sits in the denominator of the rate, so
+  ///
+  /// ```txt
+  /// R'(c) = -usdc_usd * p'(c) / p(c)^2
+  /// ```
+  ///
+  /// # Errors
+  /// * Projection, curve, NAV, or marginal rate failure
+  pub fn rebalance_sell_marginal(
+    &self,
+    usdc_usd_price: PriceRange<N9>,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<f64, CoreError> {
+    let projected =
+      self.projected_rebalance_sell_state(usdc_usd_price, usdc_amount)?;
+    let curve = self.rebalance_sell_curve()?;
+    let curve_price = positive(curve.price(projected.collateral_ratio)?)?;
+    let curve_slope =
+      ifix_to_f64(curve.price_slope(projected.collateral_ratio)?);
+    let collateral_spot = positive(self.collateral_oracle_price().spot)?;
+    let nav = positive(self.stablecoin_nav()?)?;
+    let usdc_usd_lower = positive(usdc_usd_price.lower)?;
+    let impact = cr_impact(
+      positive(projected.total_collateral)?,
+      positive(projected.stablecoin_supply)?,
+      collateral_spot,
+      -(usdc_usd_lower.get() / collateral_spot.get()),
+      -(usdc_usd_lower.get() / nav.get()),
+    );
+    let rate = usdc_usd_lower.get() / curve_price.get();
+    let rate_slope = -usdc_usd_lower.get() * curve_slope
+      / (curve_price.get() * curve_price.get());
+    marginal_rate(ufix_to_f64(usdc_amount), rate, rate_slope, impact)
   }
 }

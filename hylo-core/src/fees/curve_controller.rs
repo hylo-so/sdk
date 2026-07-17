@@ -26,6 +26,13 @@ pub trait InterpolatedFeeController<const RES: usize> {
   /// * Domain or arithmetic errors
   fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError>;
 
+  /// Slope of the fee curve at the given collateral ratio.
+  /// Zero on the flat regions outside the curve domain.
+  ///
+  /// # Errors
+  /// * Domain or arithmetic errors
+  fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError>;
+
   /// Applies the interpolated fee to an input amount.
   ///
   /// # Errors
@@ -81,6 +88,17 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
       interp.interpolate(cr)
     }
   }
+
+  fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
+    let interp = self.curve();
+    if cr < interp.x_min() {
+      Err(CoreError::NoValidStablecoinMintFee)
+    } else if cr > interp.x_max() {
+      Ok(IFix64::zero())
+    } else {
+      interp.derivative(cr)
+    }
+  }
 }
 
 #[derive(Clone)]
@@ -108,6 +126,15 @@ impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
       Ok(interp.y_max())
     } else {
       interp.interpolate(cr)
+    }
+  }
+
+  fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
+    let interp = self.curve();
+    if cr < interp.x_min() || cr > interp.x_max() {
+      Ok(IFix64::zero())
+    } else {
+      interp.derivative(cr)
     }
   }
 }

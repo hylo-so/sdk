@@ -34,6 +34,15 @@ use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
 
+/// Post-trade totals and collateral ratio from a fee projection.
+/// Totals feed the offchain marginal rate math.
+#[cfg_attr(not(feature = "offchain"), allow(dead_code))]
+pub(crate) struct ProjectedState {
+  pub total_collateral: UFix64<N9>,
+  pub stablecoin_supply: UFix64<N6>,
+  pub collateral_ratio: UFix64<N9>,
+}
+
 /// Shared interface for exchange context implementations.
 pub trait ExchangeContext {
   /// Total collateral in N9 precision.

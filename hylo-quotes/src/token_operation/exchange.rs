@@ -15,8 +15,8 @@ use hylo_idl::tokens::{
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  gate, LstSwapOperationOutput, MintOperationOutput, OperationOutput,
-  RedeemOperationOutput, SwapOperationOutput, TokenOperation,
+  atom_rate, gate, linear_rate, LstSwapOperationOutput, MintOperationOutput,
+  OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
 use crate::{Local, LST};
 
@@ -57,12 +57,18 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     let out_amount = self
       .exchange_context
       .validate_stablecoin_amount(converted)?;
+    let marginal_rate = atom_rate::<N9, N6>(
+      self
+        .exchange_context
+        .stablecoin_mint_marginal(&lst_price, in_amount)?,
+    );
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: in_amount,
+      marginal_rate,
     })
   }
 }
@@ -105,12 +111,18 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
       in_amount,
       SUPPLY_FLOOR,
     )?;
+    let marginal_rate = atom_rate::<N6, N9>(
+      self
+        .exchange_context
+        .stablecoin_redeem_marginal(&lst_price, in_amount)?,
+    );
     Ok(OperationOutput {
       in_amount,
       out_amount: amount_remaining,
       fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: lst_out,
+      marginal_rate,
     })
   }
 }
@@ -155,6 +167,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
       fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -203,6 +216,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
       fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: lst_out,
+      marginal_rate: linear_rate(in_amount, amount_remaining)?,
     })
   }
 }
@@ -247,6 +261,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -289,6 +304,7 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_total,
+      marginal_rate: linear_rate(in_amount, amount_remaining)?,
     })
   }
 }
@@ -333,6 +349,7 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
       fee_amount: fees_extracted,
       fee_mint: L1::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -364,6 +381,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: USDC::MINT,
       fee_base: usdc_in,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -399,6 +417,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -442,6 +461,9 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: CBBTC::MINT,
       fee_base: collateral_n9,
+      marginal_rate: atom_rate::<N8, N6>(
+        exo.stablecoin_mint_marginal(collateral_n9)?,
+      ),
     })
   }
 }
@@ -488,6 +510,9 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: CBBTC::MINT,
       fee_base: collateral_out,
+      marginal_rate: atom_rate::<N6, N8>(
+        exo.stablecoin_redeem_marginal(in_amount)?,
+      ),
     })
   }
 }
@@ -533,6 +558,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: CBBTC::MINT,
       fee_base: collateral_in,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -582,6 +608,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: CBBTC::MINT,
       fee_base: collateral_out,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -627,6 +654,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -664,6 +692,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_total,
+      marginal_rate: linear_rate(in_amount, amount_remaining)?,
     })
   }
 }
@@ -746,12 +775,18 @@ impl<C: SolanaClock> ProtocolState<C> {
       stablecoin_moved,
     )?;
     self.validate_pnl_settlement(&self.exchange_context, SUPPLY_FLOOR, pnl)?;
+    let marginal_rate = atom_rate::<N9, N6>(
+      self
+        .exchange_context
+        .rebalance_buy_marginal(&adjusted, usdc_price, in_amount)?,
+    );
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: UFix64::zero(),
       fee_mint: L::MINT,
       fee_base: in_amount,
+      marginal_rate,
     })
   }
 
@@ -807,12 +842,18 @@ impl<C: SolanaClock> ProtocolState<C> {
       stablecoin_moved,
     )?;
     self.validate_pnl_settlement(&self.exchange_context, SUPPLY_FLOOR, pnl)?;
+    let marginal_rate = atom_rate::<N6, N9>(
+      self
+        .exchange_context
+        .rebalance_sell_marginal(&adjusted, usdc_price, normalized)?,
+    );
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: UFix64::zero(),
       fee_mint: USDC::MINT,
       fee_base: in_amount,
+      marginal_rate,
     })
   }
 }
@@ -912,6 +953,9 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
       fee_amount: UFix64::zero(),
       fee_mint: CBBTC::MINT,
       fee_base: in_amount,
+      marginal_rate: atom_rate::<N8, N6>(
+        exo.rebalance_buy_marginal(usdc_price, normalized)?,
+      ),
     })
   }
 }
@@ -963,6 +1007,9 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
       fee_amount: UFix64::zero(),
       fee_mint: USDC::MINT,
       fee_base: in_amount,
+      marginal_rate: atom_rate::<N6, N8>(
+        exo.rebalance_sell_marginal(usdc_price, normalized)?,
+      ),
     })
   }
 }

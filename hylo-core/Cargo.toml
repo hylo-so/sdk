@@ -8,7 +8,11 @@ homepage.workspace = true
 
 [features]
 default = []
-offchain = ["dep:hylo-idl", "dep:hylo-jupiter-amm-interface"]
+offchain = [
+  "dep:hylo-idl",
+  "dep:hylo-jupiter-amm-interface",
+  "dep:typed_floats",
+]
 shadow = ["hylo-idl?/shadow"]
 
 [dependencies]
@@ -20,6 +24,7 @@ hylo-jupiter-amm-interface = { workspace = true, optional = true }
 itertools.workspace = true
 pyth-solana-receiver-sdk.workspace = true
 serde.workspace = true
+typed_floats = { workspace = true, optional = true }
 
 [dev-dependencies]
 anyhow.workspace = true

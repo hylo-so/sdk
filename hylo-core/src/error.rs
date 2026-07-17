@@ -136,6 +136,9 @@ pub enum CoreError {
   InterpOutOfDomain,
   #[msg("Arithmetic overflow during interpolation calculation.")]
   InterpArithmetic,
+  // `marginal`
+  #[msg("Marginal rate is non-finite or non-positive.")]
+  MarginalRateInvalid,
   // `fees::curve_controller`
   #[msg("Failed to convert collateral ratio from u64 to i64.")]
   CollateralRatioConversion,
