@@ -10,8 +10,7 @@ use hylo_core::error::CoreError;
 use hylo_core::marginal::positive_rate;
 use hylo_idl::tokens::TokenMint;
 
-/// Maps a failed gate condition to its error.
-pub(crate) fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
+fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
   condition.then_some(()).ok_or(error)
 }
 
@@ -30,9 +29,7 @@ pub(crate) fn linear_rate<InExp: Integer, OutExp: Integer>(
 
 /// Scales a token-level marginal rate to atoms:
 /// `rate * 10^(out_decimals - in_decimals)`.
-pub(crate) fn atom_rate<InExp: Integer, OutExp: Integer>(
-  token_rate: f64,
-) -> f64 {
+fn atom_rate<InExp: Integer, OutExp: Integer>(token_rate: f64) -> f64 {
   token_rate * 10f64.powi(InExp::to_i32() - OutExp::to_i32())
 }
 

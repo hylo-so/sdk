@@ -722,7 +722,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     }
   }
 
-  /// Quotes a buy-side rebalance swap (LST in, USDC out).
   fn rebalance_buy_quote<L: LST + Local>(
     &self,
     in_amount: UFix64<N9>,
@@ -790,8 +789,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  /// Quotes a sell-side rebalance swap (USDC in, LST out).
-  ///
   /// Input cap is a conservative spot-priced bound on the onchain gates.
   fn rebalance_sell_quote<L: LST + Local>(
     &self,
