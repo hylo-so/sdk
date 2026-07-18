@@ -155,7 +155,6 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
     self.points[RES - 1].y
   }
 
-  /// Returns the range as an inclusive range.
   #[must_use]
   pub fn range(&self) -> RangeInclusive<IFix64<Exp>> {
     self.y_min()..=self.y_max()

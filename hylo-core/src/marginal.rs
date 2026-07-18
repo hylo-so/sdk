@@ -20,14 +20,12 @@ use typed_floats::StrictlyPositiveFinite;
 
 use crate::error::CoreError;
 
-/// Converts an unsigned fixed-point value to `f64`.
 #[must_use]
 #[allow(clippy::cast_precision_loss)]
 pub fn ufix_to_f64<Exp: Integer>(value: UFix64<Exp>) -> f64 {
   (value.bits as f64) * 10f64.powi(Exp::to_i32())
 }
 
-/// Converts a signed fixed-point value to `f64`.
 #[must_use]
 #[allow(clippy::cast_precision_loss)]
 pub fn ifix_to_f64<Exp: Integer>(value: IFix64<Exp>) -> f64 {
