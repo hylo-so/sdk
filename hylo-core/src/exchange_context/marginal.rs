@@ -18,7 +18,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// `collateral_amount`, in tokens.
   ///
   /// ```txt
-  /// f'(x) = nav_rate * (1 - fee - x * fee_slope * cr'(x))
+  /// f'(x) = nav * (1 - fee - x * fee_slope * cr'(x))
   /// ```
   ///
   /// # Errors
@@ -34,16 +34,16 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
     let nav = positive(self.stablecoin_nav()?)?;
 
-    // hyusd_out(x) = x * nav_rate * (1 - fee(cr(x)))
-    //   where nav_rate = collateral_usd_lower / nav
+    // stablecoin_out(x) = x * nav_rate * (1 - fee(cr(x)))
+    // where nav_rate = collateral_usd_lower / nav
     let nav_rate = collateral_usd_lower.get() / nav.get();
 
-    // total_collateral(x)  = vault  + x             => d = 1
-    // stablecoin_supply(x) = supply + x * nav_rate  => d = nav_rate
+    // total_collateral(x) = vault + x => d = 1
+    // stablecoin_supply(x) = supply + x * nav_rate => d = nav_rate
     let d_total_collateral = 1.0;
     let d_stablecoin_supply = nav_rate;
 
-    // cr(x)  = total_collateral * collateral_usd_lower / stablecoin_supply
+    // cr(x) = total_collateral * collateral_usd_lower / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * collateral_usd_lower / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -56,7 +56,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     // d fee(cr(x)) = fee'(cr) * cr'(x)
     let d_fee = chain_rule(fee_slope, d_cr);
 
-    // hyusd_out'(x) = nav_rate * (1 - fee) - x * nav_rate * d_fee
+    // stablecoin_out'(x) = nav_rate * (1 - fee) - x * nav_rate * d_fee
     let rate = nav_rate * (1.0 - fee);
     positive_rate(rate - collateral_amount.to_f64() * nav_rate * d_fee)
   }
@@ -82,17 +82,17 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let collateral_usd_upper = positive(self.collateral_usd_price.upper)?;
 
     // collateral_out(x) = x * nav_rate * (1 - fee(cr(x)))
-    //   where nav_rate = nav / collateral_usd_upper
+    // where nav_rate = nav / collateral_usd_upper
     let nav_rate = nav.get() / collateral_usd_upper.get();
 
-    // total_collateral(x)  = vault  - x * nav_rate
-    // stablecoin_supply(x) = supply - x * collateral_usd_lower /
-    // collateral_usd_upper
+    // total_collateral(x) = vault - x * nav_rate
+    // stablecoin_supply(x) =
+    //   supply - x * collateral_usd_lower / collateral_usd_upper
     let d_total_collateral = -nav_rate;
     let d_stablecoin_supply =
       -(collateral_usd_lower.get() / collateral_usd_upper.get());
 
-    // cr(x)  = total_collateral * collateral_usd_lower / stablecoin_supply
+    // cr(x) = total_collateral * collateral_usd_lower / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * collateral_usd_lower / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -136,12 +136,12 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
 
     // usdc_out(x) = x * curve_price(cr(x)) / usdc_usd_upper
 
-    // total_collateral(x)  = vault  + x                          => d = 1
+    // total_collateral(x) = vault + x => d = 1
     // stablecoin_supply(x) = supply + x * collateral_spot / nav
     let d_total_collateral = 1.0;
     let d_stablecoin_supply = collateral_spot.get() / nav.get();
 
-    // cr(x)  = total_collateral * collateral_spot / stablecoin_supply
+    // cr(x) = total_collateral * collateral_spot / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * collateral_spot / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -188,12 +188,12 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
 
     // collateral_out(x) = x * usdc_usd_lower / curve_price(cr(x))
 
-    // total_collateral(x)  = vault  - x * usdc_usd_lower / collateral_spot
+    // total_collateral(x) = vault - x * usdc_usd_lower / collateral_spot
     // stablecoin_supply(x) = supply - x * usdc_usd_lower / nav
     let d_total_collateral = -(usdc_usd_lower.get() / collateral_spot.get());
     let d_stablecoin_supply = -(usdc_usd_lower.get() / nav.get());
 
-    // cr(x)  = total_collateral * collateral_spot / stablecoin_supply
+    // cr(x) = total_collateral * collateral_spot / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * collateral_spot / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -208,7 +208,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
 
     // reciprocal rule on the divisor:
     // collateral_out'(x) = usdc_usd_lower
-    //   * (1 / curve_price - x * d_curve_price / curve_price^2)
+    // * (1 / curve_price - x * d_curve_price / curve_price^2)
     let rate = usdc_usd_lower.get() / curve_price.get();
     positive_rate(
       rate
@@ -241,16 +241,16 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let sol_usd_lower = positive(self.sol_usd_price.lower)?;
     let nav = positive(self.stablecoin_nav()?)?;
 
-    // hyusd_out(x) = x * nav_rate * (1 - fee(cr(x)))
-    //   where nav_rate = lst_sol * sol_usd_lower / nav
+    // stablecoin_out(x) = x * nav_rate * (1 - fee(cr(x)))
+    // where nav_rate = lst_sol * sol_usd_lower / nav
     let nav_rate = lst_sol.get() * sol_usd_lower.get() / nav.get();
 
-    // total_collateral(x)  = total_sol + x * lst_sol   (vault counts SOL)
-    // stablecoin_supply(x) = supply    + x * nav_rate
+    // total_collateral(x) = total_sol + x * lst_sol (vault counts SOL)
+    // stablecoin_supply(x) = supply + x * nav_rate
     let d_total_collateral = lst_sol.get();
     let d_stablecoin_supply = nav_rate;
 
-    // cr(x)  = total_collateral * sol_usd_lower / stablecoin_supply
+    // cr(x) = total_collateral * sol_usd_lower / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * sol_usd_lower / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -263,7 +263,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     // d fee(cr(x)) = fee'(cr) * cr'(x)
     let d_fee = chain_rule(fee_slope, d_cr);
 
-    // hyusd_out'(x) = nav_rate * (1 - fee) - x * nav_rate * d_fee
+    // stablecoin_out'(x) = nav_rate * (1 - fee) - x * nav_rate * d_fee
     let rate = nav_rate * (1.0 - fee);
     positive_rate(rate - amount_lst.to_f64() * nav_rate * d_fee)
   }
@@ -291,15 +291,15 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let sol_usd_upper = positive(self.sol_usd_price.upper)?;
 
     // lst_out(x) = x * nav_rate * (1 - fee(cr(x)))
-    //   where nav_rate = nav / (sol_usd_upper * lst_sol)
+    // where nav_rate = nav / (sol_usd_upper * lst_sol)
     let nav_rate = nav.get() / (sol_usd_upper.get() * lst_sol.get());
 
-    // total_collateral(x)  = total_sol - x * nav / sol_usd_upper
+    // total_collateral(x) = total_sol - x * nav / sol_usd_upper
     // stablecoin_supply(x) = supply - x * sol_usd_lower / sol_usd_upper
     let d_total_collateral = -(nav.get() / sol_usd_upper.get());
     let d_stablecoin_supply = -(sol_usd_lower.get() / sol_usd_upper.get());
 
-    // cr(x)  = total_collateral * sol_usd_lower / stablecoin_supply
+    // cr(x) = total_collateral * sol_usd_lower / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * sol_usd_lower / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -345,12 +345,12 @@ impl<C: SolanaClock> LstExchangeContext<C> {
 
     // usdc_out(x) = x * lst_sol * curve_price(cr(x)) / usdc_usd_upper
 
-    // total_collateral(x)  = total_sol + x * lst_sol   (vault counts SOL)
+    // total_collateral(x) = total_sol + x * lst_sol (vault counts SOL)
     // stablecoin_supply(x) = supply + x * lst_sol * sol_spot / nav
     let d_total_collateral = lst_sol.get();
     let d_stablecoin_supply = lst_sol.get() * sol_spot.get() / nav.get();
 
-    // cr(x)  = total_collateral * sol_spot / stablecoin_supply
+    // cr(x) = total_collateral * sol_spot / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * sol_spot / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -363,8 +363,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
     let d_curve_price = chain_rule(curve_slope, d_cr);
 
-    // usdc_out'(x) = lst_sol * (curve_price + x * d_curve_price) /
-    // usdc_usd_upper
+    // usdc_out'(x) =
+    //   lst_sol * (curve_price + x * d_curve_price) / usdc_usd_upper
     let rate = lst_sol.get() * curve_price / usdc_usd_upper.get();
     positive_rate(
       rate
@@ -404,12 +404,12 @@ impl<C: SolanaClock> LstExchangeContext<C> {
 
     // lst_out(x) = x * usdc_usd_lower / (curve_price(cr(x)) * lst_sol)
 
-    // total_collateral(x)  = total_sol - x * usdc_usd_lower / sol_spot
+    // total_collateral(x) = total_sol - x * usdc_usd_lower / sol_spot
     // stablecoin_supply(x) = supply - x * usdc_usd_lower / nav
     let d_total_collateral = -(usdc_usd_lower.get() / sol_spot.get());
     let d_stablecoin_supply = -(usdc_usd_lower.get() / nav.get());
 
-    // cr(x)  = total_collateral * sol_spot / stablecoin_supply
+    // cr(x) = total_collateral * sol_spot / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * sol_spot / S^2
     let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
@@ -424,7 +424,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
 
     // reciprocal rule on the divisor:
     // lst_out'(x) = usdc_usd_lower / lst_sol
-    //   * (1 / curve_price - x * d_curve_price / curve_price^2)
+    // * (1 / curve_price - x * d_curve_price / curve_price^2)
     let rate = usdc_usd_lower.get() / (curve_price.get() * lst_sol.get());
     positive_rate(
       rate
