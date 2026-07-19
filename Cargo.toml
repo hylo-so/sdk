@@ -27,7 +27,7 @@ bincode = "1.3.3"
 futures = "0.3.31"
 hylo-clients = { version = "2.0.0", path = "hylo-clients" }
 hylo-core = { version = "2.0.0", path = "hylo-core" }
-hylo-fix = { git = "https://github.com/hylo-so/fix", branch = "feat/to-f64" }
+hylo-fix = "0.7.2"
 hylo-idl = { version = "2.0.0", path = "hylo-idl" }
 hylo-jupiter = { version = "2.0.0", path = "hylo-jupiter" }
 hylo-quotes = { version = "2.0.0", path = "hylo-quotes" }
