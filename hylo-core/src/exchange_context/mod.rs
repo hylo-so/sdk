@@ -6,6 +6,8 @@
 
 mod exo;
 mod lst;
+#[cfg(feature = "offchain")]
+mod marginal;
 
 use fix::prelude::*;
 

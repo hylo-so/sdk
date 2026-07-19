@@ -1,22 +1,8 @@
-//! Marginal rate math for offchain quoting.
+//! Differentiation rules and float guards for marginal rate math.
 //!
-//! Every operation has the shape `f(x) = x * R(cr(x))` for an effective
-//! rate `R` over the projected post-trade collateral ratio. Its
-//! derivative is
-//!
-//! ```txt
-//! f'(x) = R(cr(x)) + x * R'(cr(x)) * cr'(x)
-//! ```
-//!
-//! Each marginal function performs the derivation explicitly: leg
-//! derivatives of its projected state, [`quotient_rule`] for `cr'`,
-//! [`chain_rule`] for the curve term, and the product rule assembled in
-//! its tail expression.
-//!
-//! Floating point: the quotient rule squares the stablecoin supply,
-//! which overflows 64-bit fixed-point. Division hazards are contained
-//! by type: every divisor enters as [`StrictlyPositiveFinite`] via
-//! [`positive`], and the final rate leaves through [`positive_rate`].
+//! Division hazards are contained by type: every divisor enters as
+//! [`StrictlyPositiveFinite`] via [`positive`], and rates leave
+//! through [`positive_rate`].
 
 use fix::prelude::*;
 use fix::typed_floats::StrictlyPositiveFinite;
@@ -35,6 +21,17 @@ pub fn positive<Exp: Integer>(
   value
     .to_positive_f64()
     .ok_or(CoreError::MarginalRateInvalid)
+}
+
+/// Validates a rate as strictly positive and finite — the only form a
+/// marginal rate may leave this module in.
+///
+/// # Errors
+/// * Non-finite or non-positive rate
+pub fn positive_rate(rate: f64) -> Result<f64, CoreError> {
+  StrictlyPositiveFinite::try_from(rate)
+    .map(|checked| checked.get())
+    .map_err(|_| CoreError::MarginalRateInvalid)
 }
 
 /// Derivative of a scaled ratio of two moving quantities:
@@ -77,15 +74,4 @@ pub fn chain_rule(curve_slope: f64, d_inner: f64) -> f64 {
   } else {
     curve_slope * d_inner
   }
-}
-
-/// Validates a rate as strictly positive and finite — the only form a
-/// marginal rate may leave this module in.
-///
-/// # Errors
-/// * Non-finite or non-positive rate
-pub fn positive_rate(rate: f64) -> Result<f64, CoreError> {
-  StrictlyPositiveFinite::try_from(rate)
-    .map(|checked| checked.get())
-    .map_err(|_| CoreError::MarginalRateInvalid)
 }

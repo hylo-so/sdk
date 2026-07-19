@@ -6,8 +6,8 @@ mod exchange;
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::{UFix64, N6, N9};
 use fix::typenum::Integer;
+use hylo_core::calculus::positive_rate;
 use hylo_core::error::CoreError;
-use hylo_core::marginal::positive_rate;
 use hylo_idl::tokens::TokenMint;
 
 fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {

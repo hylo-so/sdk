@@ -3,6 +3,8 @@
 
 pub mod asset_swap_config;
 pub mod borrow_rate;
+#[cfg(feature = "offchain")]
+pub mod calculus;
 pub mod conversion;
 pub mod earn_pool_math;
 pub mod error;
@@ -15,8 +17,6 @@ pub mod idl_type_bridge;
 pub mod kani_generators;
 pub mod limiter;
 pub mod lst;
-#[cfg(feature = "offchain")]
-pub mod marginal;
 pub mod pyth;
 pub mod rebalance;
 pub mod slippage_config;
