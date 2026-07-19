@@ -21,9 +21,7 @@ use crate::fees::curve_controller::{
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 #[cfg(feature = "offchain")]
-use crate::marginal::{
-  cr_impact, ifix_to_f64, marginal_rate, positive, ufix_to_f64,
-};
+use crate::marginal::{chain_rule, positive, positive_rate, quotient_rule};
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
@@ -477,21 +475,36 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   ) -> Result<f64, CoreError> {
     let projected = self.projected_mint_state(collateral_amount)?;
     let cr = narrow_cr(projected.collateral_ratio)?;
-    let fee = ifix_to_f64(self.stablecoin_mint_fees.fee_inner(cr)?);
-    let fee_slope = ifix_to_f64(self.stablecoin_mint_fees.fee_slope(cr)?);
+    let fee = self.stablecoin_mint_fees.fee_inner(cr)?.to_f64();
+    let fee_slope = self.stablecoin_mint_fees.fee_slope(cr)?.to_f64();
     let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
     let nav = positive(self.stablecoin_nav()?)?;
+
+    // hyusd_out(x) = x * nav_rate * (1 - fee(cr(x)))
+    //   where nav_rate = collateral_usd_lower / nav
     let nav_rate = collateral_usd_lower.get() / nav.get();
-    let impact = cr_impact(
+
+    // total_collateral(x)  = vault  + x             => d = 1
+    // stablecoin_supply(x) = supply + x * nav_rate  => d = nav_rate
+    let d_total_collateral = 1.0;
+    let d_stablecoin_supply = nav_rate;
+
+    // cr(x)  = total_collateral * collateral_usd_lower / stablecoin_supply
+    // cr'(x) = (d_C * S - C * d_S) * collateral_usd_lower / S^2
+    let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
+      d_total_collateral,
       positive(projected.stablecoin_supply)?,
+      d_stablecoin_supply,
       collateral_usd_lower,
-      1.0,
-      nav_rate,
     );
+
+    // d fee(cr(x)) = fee'(cr) * cr'(x)
+    let d_fee = chain_rule(fee_slope, d_cr);
+
+    // hyusd_out'(x) = nav_rate * (1 - fee) - x * nav_rate * d_fee
     let rate = nav_rate * (1.0 - fee);
-    let rate_slope = -nav_rate * fee_slope;
-    marginal_rate(ufix_to_f64(collateral_amount), rate, rate_slope, impact)
+    positive_rate(rate - collateral_amount.to_f64() * nav_rate * d_fee)
   }
 
   /// Marginal collateral output per stablecoin input at
@@ -509,21 +522,38 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .token_to_exo(amount_stablecoin, self.stablecoin_nav()?)?;
     let projected = self.projected_redeem_state(collateral_out)?;
     let cr = narrow_cr(projected.collateral_ratio)?;
-    let fee = ifix_to_f64(self.stablecoin_redeem_fees.fee_inner(cr)?);
-    let fee_slope = ifix_to_f64(self.stablecoin_redeem_fees.fee_slope(cr)?);
+    let fee = self.stablecoin_redeem_fees.fee_inner(cr)?.to_f64();
+    let fee_slope = self.stablecoin_redeem_fees.fee_slope(cr)?.to_f64();
     let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
     let collateral_usd_upper = positive(self.collateral_usd_price.upper)?;
+
+    // collateral_out(x) = x * nav_rate * (1 - fee(cr(x)))
+    //   where nav_rate = nav / collateral_usd_upper
     let nav_rate = nav.get() / collateral_usd_upper.get();
-    let impact = cr_impact(
+
+    // total_collateral(x)  = vault  - x * nav_rate
+    // stablecoin_supply(x) = supply - x * collateral_usd_lower /
+    // collateral_usd_upper
+    let d_total_collateral = -nav_rate;
+    let d_stablecoin_supply =
+      -(collateral_usd_lower.get() / collateral_usd_upper.get());
+
+    // cr(x)  = total_collateral * collateral_usd_lower / stablecoin_supply
+    // cr'(x) = (d_C * S - C * d_S) * collateral_usd_lower / S^2
+    let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
+      d_total_collateral,
       positive(projected.stablecoin_supply)?,
+      d_stablecoin_supply,
       collateral_usd_lower,
-      -nav_rate,
-      -(collateral_usd_lower.get() / collateral_usd_upper.get()),
     );
+
+    // d fee(cr(x)) = fee'(cr) * cr'(x)
+    let d_fee = chain_rule(fee_slope, d_cr);
+
+    // collateral_out'(x) = nav_rate * (1 - fee) - x * nav_rate * d_fee
     let rate = nav_rate * (1.0 - fee);
-    let rate_slope = -nav_rate * fee_slope;
-    marginal_rate(ufix_to_f64(amount_stablecoin), rate, rate_slope, impact)
+    positive_rate(rate - amount_stablecoin.to_f64() * nav_rate * d_fee)
   }
 
   /// Marginal USDC output per collateral input at `collateral_amount`,
@@ -544,22 +574,37 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   ) -> Result<f64, CoreError> {
     let projected = self.projected_rebalance_buy_state(collateral_amount)?;
     let curve = self.rebalance_buy_curve()?;
-    let curve_price = ufix_to_f64(curve.price(projected.collateral_ratio)?);
-    let curve_slope =
-      ifix_to_f64(curve.price_slope(projected.collateral_ratio)?);
+    let curve_price = curve.price(projected.collateral_ratio)?.to_f64();
+    let curve_slope = curve.price_slope(projected.collateral_ratio)?.to_f64();
     let collateral_spot = positive(self.collateral_oracle_price().spot)?;
     let nav = positive(self.stablecoin_nav()?)?;
     let usdc_usd_upper = positive(usdc_usd_price.upper)?;
-    let impact = cr_impact(
+
+    // usdc_out(x) = x * curve_price(cr(x)) / usdc_usd_upper
+
+    // total_collateral(x)  = vault  + x                          => d = 1
+    // stablecoin_supply(x) = supply + x * collateral_spot / nav
+    let d_total_collateral = 1.0;
+    let d_stablecoin_supply = collateral_spot.get() / nav.get();
+
+    // cr(x)  = total_collateral * collateral_spot / stablecoin_supply
+    // cr'(x) = (d_C * S - C * d_S) * collateral_spot / S^2
+    let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
+      d_total_collateral,
       positive(projected.stablecoin_supply)?,
+      d_stablecoin_supply,
       collateral_spot,
-      1.0,
-      collateral_spot.get() / nav.get(),
     );
+
+    // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
+    let d_curve_price = chain_rule(curve_slope, d_cr);
+
+    // usdc_out'(x) = (curve_price + x * d_curve_price) / usdc_usd_upper
     let rate = curve_price / usdc_usd_upper.get();
-    let rate_slope = curve_slope / usdc_usd_upper.get();
-    marginal_rate(ufix_to_f64(collateral_amount), rate, rate_slope, impact)
+    positive_rate(
+      rate + collateral_amount.to_f64() * d_curve_price / usdc_usd_upper.get(),
+    )
   }
 
   /// Marginal collateral output per USDC input at `usdc_amount`, in
@@ -582,21 +627,39 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       self.projected_rebalance_sell_state(usdc_usd_price, usdc_amount)?;
     let curve = self.rebalance_sell_curve()?;
     let curve_price = positive(curve.price(projected.collateral_ratio)?)?;
-    let curve_slope =
-      ifix_to_f64(curve.price_slope(projected.collateral_ratio)?);
+    let curve_slope = curve.price_slope(projected.collateral_ratio)?.to_f64();
     let collateral_spot = positive(self.collateral_oracle_price().spot)?;
     let nav = positive(self.stablecoin_nav()?)?;
     let usdc_usd_lower = positive(usdc_usd_price.lower)?;
-    let impact = cr_impact(
+
+    // collateral_out(x) = x * usdc_usd_lower / curve_price(cr(x))
+
+    // total_collateral(x)  = vault  - x * usdc_usd_lower / collateral_spot
+    // stablecoin_supply(x) = supply - x * usdc_usd_lower / nav
+    let d_total_collateral = -(usdc_usd_lower.get() / collateral_spot.get());
+    let d_stablecoin_supply = -(usdc_usd_lower.get() / nav.get());
+
+    // cr(x)  = total_collateral * collateral_spot / stablecoin_supply
+    // cr'(x) = (d_C * S - C * d_S) * collateral_spot / S^2
+    let d_cr = quotient_rule(
       positive(projected.total_collateral)?,
+      d_total_collateral,
       positive(projected.stablecoin_supply)?,
+      d_stablecoin_supply,
       collateral_spot,
-      -(usdc_usd_lower.get() / collateral_spot.get()),
-      -(usdc_usd_lower.get() / nav.get()),
     );
+
+    // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
+    let d_curve_price = chain_rule(curve_slope, d_cr);
+
+    // reciprocal rule on the divisor:
+    // collateral_out'(x) = usdc_usd_lower
+    //   * (1 / curve_price - x * d_curve_price / curve_price^2)
     let rate = usdc_usd_lower.get() / curve_price.get();
-    let rate_slope = -usdc_usd_lower.get() * curve_slope
-      / (curve_price.get() * curve_price.get());
-    marginal_rate(ufix_to_f64(usdc_amount), rate, rate_slope, impact)
+    positive_rate(
+      rate
+        - usdc_amount.to_f64() * usdc_usd_lower.get() * d_curve_price
+          / (curve_price.get() * curve_price.get()),
+    )
   }
 }

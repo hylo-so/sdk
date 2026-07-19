@@ -8,29 +8,21 @@
 //! f'(x) = R(cr(x)) + x * R'(cr(x)) * cr'(x)
 //! ```
 //!
+//! Each marginal function performs the derivation explicitly: leg
+//! derivatives of its projected state, [`quotient_rule`] for `cr'`,
+//! [`chain_rule`] for the curve term, and the product rule assembled in
+//! its tail expression.
+//!
 //! Floating point: the quotient rule squares the stablecoin supply,
 //! which overflows 64-bit fixed-point. Division hazards are contained
 //! by type: every divisor enters as [`StrictlyPositiveFinite`] via
-//! [`positive`], and the final rate leaves through the same check in
-//! [`marginal_rate`].
+//! [`positive`], and the final rate leaves through [`positive_rate`].
 
 use fix::prelude::*;
+use fix::typed_floats::StrictlyPositiveFinite;
 use fix::typenum::Integer;
-use typed_floats::StrictlyPositiveFinite;
 
 use crate::error::CoreError;
-
-#[must_use]
-#[allow(clippy::cast_precision_loss)]
-pub fn ufix_to_f64<Exp: Integer>(value: UFix64<Exp>) -> f64 {
-  (value.bits as f64) * 10f64.powi(Exp::to_i32())
-}
-
-#[must_use]
-#[allow(clippy::cast_precision_loss)]
-pub fn ifix_to_f64<Exp: Integer>(value: IFix64<Exp>) -> f64 {
-  (value.bits as f64) * 10f64.powi(Exp::to_i32())
-}
 
 /// Converts an unsigned fixed-point value to a strictly positive
 /// finite float, the only form accepted as a divisor here.
@@ -40,55 +32,51 @@ pub fn ifix_to_f64<Exp: Integer>(value: IFix64<Exp>) -> f64 {
 pub fn positive<Exp: Integer>(
   value: UFix64<Exp>,
 ) -> Result<StrictlyPositiveFinite, CoreError> {
-  StrictlyPositiveFinite::try_from(ufix_to_f64(value))
-    .map_err(|_| CoreError::MarginalRateInvalid)
+  value
+    .to_positive_f64()
+    .ok_or(CoreError::MarginalRateInvalid)
 }
 
-/// Derivative `cr'(x)` of the projected collateral ratio
-/// `cr(x) = C(x) * p / S(x)` by the quotient rule:
+/// Derivative of a scaled ratio of two moving quantities:
 ///
 /// ```txt
-///          (C' * S - C * S') * p
-/// cr'(x) = ---------------------
-///                   S^2
+/// d(numerator * scale / denominator)
+///
+///   (d_numerator * denominator - numerator * d_denominator) * scale
+/// = ---------------------------------------------------------------
+///                          denominator^2
 /// ```
 ///
-/// `collateral` and `supply` are the post-trade `C(x)` and `S(x)`.
+/// `numerator` and `denominator` are evaluated at the quoted size;
+/// `scale` is constant in the differentiation variable.
 #[must_use]
-pub fn cr_impact(
-  collateral: StrictlyPositiveFinite,
-  supply: StrictlyPositiveFinite,
-  collateral_price: StrictlyPositiveFinite,
-  d_collateral: f64,
-  d_supply: f64,
+pub fn quotient_rule(
+  numerator: StrictlyPositiveFinite,
+  d_numerator: f64,
+  denominator: StrictlyPositiveFinite,
+  d_denominator: f64,
+  scale: StrictlyPositiveFinite,
 ) -> f64 {
-  let supply = supply.get();
-  (d_collateral * supply - collateral.get() * d_supply) * collateral_price.get()
-    / (supply * supply)
+  let denominator = denominator.get();
+  (d_numerator * denominator - numerator.get() * d_denominator) * scale.get()
+    / (denominator * denominator)
 }
 
-/// Marginal rate `f'(x) = R + x * R' * cr'(x)` at `amount_in`.
+/// Derivative of a curve applied to a moving input:
 ///
-/// Zero `rate_slope` short-circuits to `rate`: with a flat rate curve
-/// the `cr'(x)` factor is irrelevant and may be infinite (zero
-/// projected supply). The result must be strictly positive and finite —
-/// Titan's venue contract for a valid quote — so any `NaN`/`inf` that
-/// propagated through the arithmetic is rejected here.
+/// ```txt
+/// d(curve(inner(x))) = curve_slope * d_inner
+/// ```
 ///
-/// # Errors
-/// * Non-finite or non-positive result
-pub fn marginal_rate(
-  amount_in: f64,
-  rate: f64,
-  rate_slope: f64,
-  cr_impact: f64,
-) -> Result<f64, CoreError> {
-  let value = if rate_slope == 0.0 {
-    rate
+/// Zero `curve_slope` short-circuits to zero: on a flat curve region
+/// the `d_inner` factor is irrelevant and may be infinite.
+#[must_use]
+pub fn chain_rule(curve_slope: f64, d_inner: f64) -> f64 {
+  if curve_slope == 0.0 {
+    0.0
   } else {
-    rate + amount_in * rate_slope * cr_impact
-  };
-  positive_rate(value)
+    curve_slope * d_inner
+  }
 }
 
 /// Validates a rate as strictly positive and finite — the only form a

@@ -1638,14 +1638,12 @@ dependencies = [
  "proptest",
  "pyth-solana-receiver-sdk",
  "serde",
- "typed_floats",
 ]
 
 [[package]]
 name = "hylo-fix"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74185c5f481949e7b4363af2c8fd66da7d0467e779c24f542fd672f373b3bef9"
+version = "0.7.2"
+source = "git+https://github.com/hylo-so/fix?branch=feat%2Fto-f64#7b98d78d1c8dd7197963c377a4b59f113c41eb61"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -1654,6 +1652,7 @@ dependencies = [
  "paste",
  "quote",
  "serde",
+ "typed_floats",
  "typenum",
 ]
 
