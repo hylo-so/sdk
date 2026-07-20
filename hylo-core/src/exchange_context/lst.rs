@@ -542,6 +542,7 @@ mod tests {
 
   use super::*;
   use crate::calculus::{positive, quotient_rule};
+  use crate::exchange_context::marginal::SwapMarginals;
   use crate::fees::controller::FeePair;
   use crate::fees::curve_controller::narrow_cr;
 
@@ -828,6 +829,82 @@ mod tests {
     let marginal = ctx.stablecoin_mint_marginal(&lst_price(), amount)?;
     let out = mint_output(&ctx, amount)?;
     assert_rel_close(marginal, out / amount.to_f64(), 1e-3);
+    Ok(())
+  }
+
+  #[test]
+  fn marginals_defined_at_zero_input() -> Result<(), CoreError> {
+    let ctx = mid_cr_context()?;
+    ctx.stablecoin_mint_marginal(&lst_price(), UFix64::zero())?;
+    ctx.stablecoin_redeem_marginal(&lst_price(), UFix64::zero())?;
+    ctx.levercoin_mint_marginal(&lst_price(), UFix64::zero())?;
+    ctx.levercoin_redeem_marginal(&lst_price(), UFix64::zero())?;
+    ctx.stablecoin_to_levercoin_marginal(UFix64::zero())?;
+    ctx.levercoin_to_stablecoin_marginal(UFix64::zero())?;
+    Ok(())
+  }
+
+  #[test]
+  fn levercoin_mint_marginal_matches_chord() -> Result<(), CoreError> {
+    let ctx = mid_cr_context()?;
+    let amount = UFix64::constant(937_412_058_331);
+    let analytic = ctx.levercoin_mint_marginal(&lst_price(), amount)?;
+    let FeeExtract {
+      amount_remaining, ..
+    } = ctx.levercoin_mint_fee(&lst_price(), amount)?;
+    let out = ctx
+      .token_conversion(&lst_price())?
+      .lst_to_token(amount_remaining, ctx.levercoin_mint_nav()?)?;
+    assert_rel_close(analytic, out.to_f64() / amount.to_f64(), 1e-6);
+    Ok(())
+  }
+
+  #[test]
+  fn levercoin_redeem_marginal_matches_chord() -> Result<(), CoreError> {
+    let ctx = mid_cr_context()?;
+    let amount = UFix64::constant(937_412_058_331);
+    let analytic = ctx.levercoin_redeem_marginal(&lst_price(), amount)?;
+    let lst_out = ctx
+      .token_conversion(&lst_price())?
+      .token_to_lst(amount, ctx.levercoin_redeem_nav()?)?;
+    let FeeExtract {
+      amount_remaining, ..
+    } = ctx.levercoin_redeem_fee(&lst_price(), lst_out)?;
+    assert_rel_close(
+      analytic,
+      amount_remaining.to_f64() / amount.to_f64(),
+      1e-6,
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn stablecoin_to_levercoin_marginal_matches_chord() -> Result<(), CoreError> {
+    let ctx = mid_cr_context()?;
+    let amount = UFix64::constant(937_412_058_331);
+    let analytic = ctx.stablecoin_to_levercoin_marginal(amount)?;
+    let FeeExtract {
+      amount_remaining, ..
+    } = ctx.stablecoin_to_levercoin_fee(amount)?;
+    let out = ctx.swap_conversion()?.stable_to_lever(amount_remaining)?;
+    assert_rel_close(analytic, out.to_f64() / amount.to_f64(), 1e-6);
+    Ok(())
+  }
+
+  #[test]
+  fn levercoin_to_stablecoin_marginal_matches_chord() -> Result<(), CoreError> {
+    let ctx = mid_cr_context()?;
+    let amount = UFix64::constant(937_412_058_331);
+    let analytic = ctx.levercoin_to_stablecoin_marginal(amount)?;
+    let converted = ctx.swap_conversion()?.lever_to_stable(amount)?;
+    let FeeExtract {
+      amount_remaining, ..
+    } = ctx.levercoin_to_stablecoin_fee(converted)?;
+    assert_rel_close(
+      analytic,
+      amount_remaining.to_f64() / amount.to_f64(),
+      1e-6,
+    );
     Ok(())
   }
 }

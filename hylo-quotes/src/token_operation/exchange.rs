@@ -1,7 +1,9 @@
 //! `TokenOperation` implementations for exchange pairs.
 
 use fix::prelude::*;
+use hylo_core::calculus::positive_rate;
 use hylo_core::error::CoreError;
+use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
@@ -15,7 +17,7 @@ use hylo_idl::tokens::{
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  atom_rate, gate, linear_rate, LstSwapOperationOutput, MintOperationOutput,
+  atom_rate, gate, LstSwapOperationOutput, MintOperationOutput,
   OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
 use crate::{Local, LST};
@@ -31,7 +33,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
   ) -> Result<MintOperationOutput, CoreError> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.stablecoin_mint_enabled(),
@@ -84,7 +85,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
   ) -> Result<RedeemOperationOutput, CoreError> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
       CoreError::YieldHarvestNotRun,
@@ -139,7 +139,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       self.exchange_context.levercoin_mint_enabled(),
       CoreError::OperationDisabled,
@@ -167,7 +166,11 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
       fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: in_amount,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate: atom_rate::<N9, N6>(
+        self
+          .exchange_context
+          .levercoin_mint_marginal(&lst_price, in_amount)?,
+      ),
     })
   }
 }
@@ -184,7 +187,6 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
       CoreError::OperationDisabled,
@@ -216,7 +218,11 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
       fee_amount: fees_extracted,
       fee_mint: L::MINT,
       fee_base: lst_out,
-      marginal_rate: linear_rate(in_amount, amount_remaining)?,
+      marginal_rate: atom_rate::<N6, N9>(
+        self
+          .exchange_context
+          .levercoin_redeem_marginal(&lst_price, in_amount)?,
+      ),
     })
   }
 }
@@ -231,7 +237,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       self.exchange_context.levercoin_mint_enabled(),
       CoreError::OperationDisabled,
@@ -261,7 +266,9 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate: self
+        .exchange_context
+        .stablecoin_to_levercoin_marginal(in_amount)?,
     })
   }
 }
@@ -276,7 +283,6 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       self.exchange_context.stablecoin_mint_enabled(),
       CoreError::OperationDisabled,
@@ -304,7 +310,9 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_total,
-      marginal_rate: linear_rate(in_amount, amount_remaining)?,
+      marginal_rate: self
+        .exchange_context
+        .levercoin_to_stablecoin_marginal(in_amount)?,
     })
   }
 }
@@ -325,7 +333,6 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
       self.yield_harvest_epoch == epoch,
       CoreError::YieldHarvestNotRun,
     )?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -343,13 +350,19 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
       CoreError::InsufficientLiquidity,
     )?;
 
+    // lst_out(x) = x * (1 - fee) * in_price / out_price
+    let marginal_rate = positive_rate(
+      (1.0 - self.lst_swap_config.fee.to_f64())
+        * in_price.get_epoch_price(epoch)?.to_f64()
+        / out_price.get_epoch_price(epoch)?.to_f64(),
+    )?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
       fee_mint: L1::MINT,
       fee_base: in_amount,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate,
     })
   }
 }
@@ -364,7 +377,6 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     let usdc_state = self.usdc_exchange_state();
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!usdc_state.paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     let usdc_in: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
@@ -375,13 +387,19 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     let out_amount = usdc_state
       .conversion()
       .deposit_to_stablecoin(amount_remaining)?;
+
+    // stablecoin_out(x) = x * (1 - fee) * usdc_usd_lower
+    let marginal_rate = positive_rate(
+      (1.0 - usdc_state.swap_fee.to_f64())
+        * usdc_state.usdc_usd_price.lower.to_f64(),
+    )?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
       fee_mint: USDC::MINT,
       fee_base: usdc_in,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate,
     })
   }
 }
@@ -396,7 +414,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     let usdc_state = self.usdc_exchange_state();
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!usdc_state.paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -415,13 +432,19 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       out_amount <= usdc_state.vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
+
+    // usdc_out(x) = x * (1 - fee) / usdc_usd_upper
+    let marginal_rate = positive_rate(
+      (1.0 - usdc_state.swap_fee.to_f64())
+        / usdc_state.usdc_usd_price.upper.to_f64(),
+    )?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate,
     })
   }
 }
@@ -437,7 +460,6 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
     let btc_pair = &self.btc_pair_state;
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!btc_pair.paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
@@ -483,7 +505,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
     let btc_pair = &self.btc_pair_state;
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!btc_pair.paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
       CoreError::BorrowRateHarvestNotRun,
@@ -536,7 +557,6 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(exo.levercoin_mint_enabled(), CoreError::OperationDisabled)?;
     gate(
       btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
@@ -562,7 +582,9 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: CBBTC::MINT,
       fee_base: collateral_in,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate: atom_rate::<N8, N6>(
+        exo.levercoin_mint_marginal(collateral_in)?,
+      ),
     })
   }
 }
@@ -582,7 +604,6 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       exo.rebalance_mode() != RebalanceMode::Depeg,
       CoreError::OperationDisabled,
@@ -612,7 +633,9 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: CBBTC::MINT,
       fee_base: collateral_out,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate: atom_rate::<N6, N8>(
+        exo.levercoin_redeem_marginal(in_amount)?,
+      ),
     })
   }
 }
@@ -632,7 +655,6 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(exo.levercoin_mint_enabled(), CoreError::OperationDisabled)?;
     gate(
       btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
@@ -658,7 +680,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-      marginal_rate: linear_rate(in_amount, out_amount)?,
+      marginal_rate: exo.stablecoin_to_levercoin_marginal(in_amount)?,
     })
   }
 }
@@ -678,7 +700,6 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
     gate(
       btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
@@ -696,7 +717,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_total,
-      marginal_rate: linear_rate(in_amount, amount_remaining)?,
+      marginal_rate: exo.levercoin_to_stablecoin_marginal(in_amount)?,
     })
   }
 }
@@ -734,7 +755,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.yield_harvest_epoch == epoch,
@@ -806,7 +826,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.lst_pair_paused, CoreError::PairPaused)?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.yield_harvest_epoch == epoch,
@@ -919,7 +938,6 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!btc_pair.paused, CoreError::PairPaused)?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
@@ -981,7 +999,6 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!btc_pair.paused, CoreError::PairPaused)?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
-    gate(in_amount > UFix64::zero(), CoreError::ZeroAmount)?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,

@@ -1,6 +1,7 @@
 //! `TokenOperation` implementations for earn pool pairs.
 
 use fix::prelude::*;
+use hylo_core::calculus::positive_rate;
 use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
 };
@@ -13,7 +14,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  gate, linear_rate, OperationOutput, SwapOperationOutput, TokenOperation,
+  gate, OperationOutput, SwapOperationOutput, TokenOperation,
 };
 
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
@@ -38,14 +39,16 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
     deposit_limiter
       .validate_deposit(UFix64::new(self.hyusd_pool.amount), in_amount)?;
     let shyusd_out = lp_token_out(in_amount, shyusd_nav)?;
-    gate(shyusd_out > UFix64::zero(), CoreError::ZeroAmount)?;
+
+    // shyusd_out(x) = x / shyusd_nav
+    let marginal_rate = positive_rate(1.0 / shyusd_nav.to_f64())?;
     Ok(OperationOutput {
       in_amount,
       out_amount: shyusd_out,
       fee_amount: UFix64::<N6>::zero(),
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-      marginal_rate: linear_rate(in_amount, shyusd_out)?,
+      marginal_rate,
     })
   }
 }
@@ -75,14 +78,19 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
       fees_extracted,
       amount_remaining,
     } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
-    gate(amount_remaining > UFix64::zero(), CoreError::ZeroAmount)?;
+
+    // hyusd_out(x) = x * hyusd_in_pool / shyusd_supply * (1 - fee)
+    let marginal_rate = positive_rate(
+      hyusd_in_pool.to_f64() / shyusd_supply.to_f64()
+        * (1.0 - withdrawal_fee.to_f64()),
+    )?;
     Ok(OperationOutput {
       in_amount,
       out_amount: amount_remaining,
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: hyusd_to_withdraw,
-      marginal_rate: linear_rate(in_amount, amount_remaining)?,
+      marginal_rate,
     })
   }
 }

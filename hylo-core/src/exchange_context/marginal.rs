@@ -7,6 +7,7 @@ use super::lst::LstExchangeContext;
 use super::ExchangeContext;
 use crate::calculus::{chain_rule, positive, positive_rate, quotient_rule};
 use crate::error::CoreError;
+use crate::fees::controller::FeeController;
 use crate::fees::curve_controller::{narrow_cr, InterpolatedFeeController};
 use crate::lst::sol_price::LstSolPrice;
 use crate::pyth::PriceRange;
@@ -201,6 +202,55 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let right = usdc_usd_lower.get() * usdc_amount.to_f64() * d_curve_price
       / (curve_price.get() * curve_price.get());
     positive_rate(left - right)
+  }
+
+  /// Marginal levercoin output per collateral input.
+  ///
+  /// # Errors
+  /// * Projection, fee lookup, NAV, or marginal rate failure
+  pub fn levercoin_mint_marginal(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<f64, CoreError> {
+    let new_total = self
+      .total_collateral
+      .checked_add(&collateral_amount)
+      .ok_or(CoreError::DestinationCollateral)?;
+    let projected = self
+      .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self.levercoin_fees().mint_fee(mode)?.to_f64();
+    let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
+    let nav = positive(self.levercoin_mint_nav()?)?;
+
+    // levercoin_out(x) = x * (1 - fee) * collateral_usd_lower / nav
+    positive_rate((1.0 - fee) * collateral_usd_lower.get() / nav.get())
+  }
+
+  /// Marginal collateral output per levercoin input.
+  ///
+  /// # Errors
+  /// * Projection, fee lookup, NAV, or marginal rate failure
+  pub fn levercoin_redeem_marginal(
+    &self,
+    amount_levercoin: UFix64<N6>,
+  ) -> Result<f64, CoreError> {
+    let nav = positive(self.levercoin_redeem_nav()?)?;
+    let collateral_out = self
+      .exo_conversion()
+      .token_to_exo(amount_levercoin, self.levercoin_redeem_nav()?)?;
+    let new_total = self
+      .total_collateral
+      .checked_sub(&collateral_out)
+      .ok_or(CoreError::DestinationCollateral)?;
+    let projected = self
+      .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self.levercoin_fees().redeem_fee(mode)?.to_f64();
+    let collateral_usd_upper = positive(self.collateral_usd_price.upper)?;
+
+    // collateral_out(x) = x * nav / collateral_usd_upper * (1 - fee)
+    positive_rate(nav.get() / collateral_usd_upper.get() * (1.0 - fee))
   }
 }
 
@@ -405,4 +455,130 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       / (curve_price.get() * curve_price.get() * lst_sol.get());
     positive_rate(left - right)
   }
+
+  /// Marginal levercoin output per LST input.
+  ///
+  /// # Errors
+  /// * Projection, fee lookup, NAV, or marginal rate failure
+  pub fn levercoin_mint_marginal(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst: UFix64<N9>,
+  ) -> Result<f64, CoreError> {
+    let new_sol =
+      lst_sol_price.convert_lst_to_sol(amount_lst, self.clock.epoch())?;
+    let new_total_sol = self
+      .total_sol
+      .checked_add(&new_sol)
+      .ok_or(CoreError::DestinationCollateral)?;
+    let projected = self.projected_rebalance_mode(
+      new_total_sol,
+      self.virtual_stablecoin_supply()?,
+    )?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self.levercoin_fees().mint_fee(mode)?.to_f64();
+    let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
+    let sol_usd_lower = positive(self.sol_usd_price.lower)?;
+    let nav = positive(self.levercoin_mint_nav()?)?;
+
+    // levercoin_out(x) = x * (1 - fee) * lst_sol * sol_usd_lower / nav
+    positive_rate((1.0 - fee) * lst_sol.get() * sol_usd_lower.get() / nav.get())
+  }
+
+  /// Marginal LST output per levercoin input.
+  ///
+  /// # Errors
+  /// * Projection, fee lookup, NAV, or marginal rate failure
+  pub fn levercoin_redeem_marginal(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_levercoin: UFix64<N6>,
+  ) -> Result<f64, CoreError> {
+    let nav = positive(self.levercoin_redeem_nav()?)?;
+    let lst_out = self
+      .token_conversion(lst_sol_price)?
+      .token_to_lst(amount_levercoin, self.levercoin_redeem_nav()?)?;
+    let sol_rm =
+      lst_sol_price.convert_lst_to_sol(lst_out, self.clock.epoch())?;
+    let new_total_sol = self
+      .total_sol
+      .checked_sub(&sol_rm)
+      .ok_or(CoreError::DestinationCollateral)?;
+    let projected = self.projected_rebalance_mode(
+      new_total_sol,
+      self.virtual_stablecoin_supply()?,
+    )?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self.levercoin_fees().redeem_fee(mode)?.to_f64();
+    let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
+    let sol_usd_upper = positive(self.sol_usd_price.upper)?;
+
+    // lst_out(x) = x * nav / (sol_usd_upper * lst_sol) * (1 - fee)
+    positive_rate(
+      nav.get() / (sol_usd_upper.get() * lst_sol.get()) * (1.0 - fee),
+    )
+  }
 }
+
+/// Levercoin swap marginals shared by every exchange context.
+pub trait SwapMarginals: ExchangeContext {
+  /// Marginal levercoin output per stablecoin input.
+  ///
+  /// # Errors
+  /// * Projection, fee lookup, NAV, or marginal rate failure
+  fn stablecoin_to_levercoin_marginal(
+    &self,
+    amount_stablecoin: UFix64<N6>,
+  ) -> Result<f64, CoreError> {
+    let new_stablecoin = self
+      .virtual_stablecoin_supply()?
+      .checked_sub(&amount_stablecoin)
+      .ok_or(CoreError::DestinationStablecoin)?;
+    let projected =
+      self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self
+      .levercoin_fees()
+      .convert_from_stablecoin_fee(mode)?
+      .to_f64();
+    let stablecoin_nav = positive(self.stablecoin_nav()?)?;
+    let levercoin_nav_upper = positive(self.levercoin_mint_nav()?)?;
+
+    // levercoin_out(x) = x * (1 - fee) * stablecoin_nav / levercoin_nav_upper
+    positive_rate(
+      (1.0 - fee) * stablecoin_nav.get() / levercoin_nav_upper.get(),
+    )
+  }
+
+  /// Marginal stablecoin output per levercoin input.
+  ///
+  /// # Errors
+  /// * Projection, fee lookup, NAV, or marginal rate failure
+  fn levercoin_to_stablecoin_marginal(
+    &self,
+    amount_levercoin: UFix64<N6>,
+  ) -> Result<f64, CoreError> {
+    let converted =
+      self.swap_conversion()?.lever_to_stable(amount_levercoin)?;
+    let new_stablecoin = self
+      .virtual_stablecoin_supply()?
+      .checked_add(&converted)
+      .ok_or(CoreError::DestinationStablecoin)?;
+    let projected =
+      self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    let fee = self
+      .levercoin_fees()
+      .convert_to_stablecoin_fee(mode)?
+      .to_f64();
+    let levercoin_nav_lower = positive(self.levercoin_redeem_nav()?)?;
+    let stablecoin_nav = positive(self.stablecoin_nav()?)?;
+
+    // stablecoin_out(x) = x * levercoin_nav_lower / stablecoin_nav * (1 - fee)
+    positive_rate(
+      levercoin_nav_lower.get() / stablecoin_nav.get() * (1.0 - fee),
+    )
+  }
+}
+
+impl<T: ExchangeContext> SwapMarginals for T {}
