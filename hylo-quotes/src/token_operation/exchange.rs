@@ -401,6 +401,10 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       fees_extracted,
       amount_remaining,
     } = FeeExtract::new(usdc_state.swap_fee, in_amount)?;
+    gate(
+      amount_remaining <= usdc_state.virtual_stablecoin_supply,
+      CoreError::BurnUnderflow,
+    )?;
     let usdc_out = usdc_state
       .conversion()
       .stablecoin_to_withdrawal(amount_remaining)?;
@@ -768,6 +772,10 @@ impl<C: SolanaClock> ProtocolState<C> {
       .usdc_exchange_state()
       .conversion()
       .withdrawal_to_stablecoin(usdc_out)?;
+    gate(
+      stablecoin_moved <= self.usdc_exchange_state().virtual_stablecoin_supply,
+      CoreError::BurnUnderflow,
+    )?;
     let pnl = self.exchange_context.rebalance_pnl_buy_side(
       &lst_price,
       in_amount,
@@ -942,6 +950,10 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
       .usdc_exchange_state()
       .conversion()
       .withdrawal_to_stablecoin(usdc_out)?;
+    gate(
+      stablecoin_moved <= self.usdc_exchange_state().virtual_stablecoin_supply,
+      CoreError::BurnUnderflow,
+    )?;
     let pnl = exo.rebalance_pnl_buy_side(normalized, stablecoin_moved)?;
     self.validate_pnl_settlement(exo, btc_pair.supply_floor, pnl)?;
     Ok(OperationOutput {

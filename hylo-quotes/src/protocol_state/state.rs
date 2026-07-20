@@ -41,6 +41,8 @@ pub struct UsdcExchangeState {
   pub paused: bool,
   /// USDC collateral vault balance
   pub vault_balance: UFix64<N6>,
+  /// Virtual stablecoin supply for the USDC pair
+  pub virtual_stablecoin_supply: UFix64<N6>,
 }
 
 impl UsdcExchangeState {
@@ -342,11 +344,15 @@ fn build_usdc_exchange_state(
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
 
+  let virtual_stablecoin: VirtualStablecoin =
+    usdc_pair.virtual_stablecoin.into();
+
   Ok(UsdcExchangeState {
     usdc_usd_price,
     swap_fee: usdc_pair.swap_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
+    virtual_stablecoin_supply: virtual_stablecoin.supply()?,
   })
 }
 

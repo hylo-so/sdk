@@ -15,6 +15,7 @@ use hylo_core::idl::tokens::{
 use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
@@ -814,11 +815,14 @@ where
     );
     let usdc_oracle =
       query_pyth_oracle(&self.clock, &usdc_usd, usdc_oracle_config)?;
+    let usdc_virtual_stablecoin: VirtualStablecoin =
+      usdc_pair.virtual_stablecoin.into();
     let usdc_exchange_state = UsdcExchangeState {
       usdc_usd_price: usdc_oracle.price_range()?,
       swap_fee: usdc_pair.swap_fee.try_into()?,
       paused: usdc_pair.paused,
       vault_balance: UFix64::new(usdc_vault.amount),
+      virtual_stablecoin_supply: usdc_virtual_stablecoin.supply()?,
     };
 
     // Stake pools
