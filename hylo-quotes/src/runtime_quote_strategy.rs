@@ -6,8 +6,10 @@ use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
 };
 
+use crate::protocol_state::ProtocolState;
 use crate::quote_metadata::{Operation, QuoteMetadata};
 use crate::quote_strategy::QuoteStrategy;
+use crate::token_operation::TokenOperation;
 use crate::ExecutableQuoteValue;
 
 macro_rules! runtime_quote_strategies {
@@ -49,6 +51,27 @@ macro_rules! runtime_quote_strategies {
               (<$in>::MINT, <$out>::MINT) => {
                 let quote = QuoteStrategy::<$in, $out, C>::get_quote(self, amount_in, user, slippage_tolerance).await?;
                 Ok((quote.into(), QuoteMetadata::new($op, $desc)))
+              },
+            )*
+            _ => Err(anyhow!("Unsupported pair")),
+          }
+        }
+      }
+
+      impl<C: SolanaClock> ProtocolState<C> {
+        /// Largest executable input for the pair in input-mint atoms.
+        ///
+        /// # Errors
+        /// * Unsupported pair or route gated in current state
+        pub fn runtime_max_input(
+          &self,
+          input_mint: Pubkey,
+          output_mint: Pubkey,
+        ) -> Result<u64> {
+          match (input_mint, output_mint) {
+            $(
+              (<$in>::MINT, <$out>::MINT) => {
+                Ok(TokenOperation::<$in, $out>::max_input(self)?.bits)
               },
             )*
             _ => Err(anyhow!("Unsupported pair")),

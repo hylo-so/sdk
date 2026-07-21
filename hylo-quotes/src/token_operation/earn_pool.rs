@@ -4,6 +4,7 @@ use fix::prelude::*;
 use hylo_core::calculus::positive_rate;
 use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
+  max_lp_token_for_withdrawal,
 };
 use hylo_core::error::CoreError;
 use hylo_core::fees::controller::FeeExtract;
@@ -51,6 +52,18 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
       marginal_rate,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.pool_config.paused, CoreError::PairPaused)?;
+    gate(
+      self.hyusd_pool.amount > 0 || self.shyusd_mint.supply == 0,
+      CoreError::OperationDisabled,
+    )?;
+    let deposit_limiter: DepositLimiter =
+      self.pool_config.deposit_limiter.into();
+    deposit_limiter.max_deposit(UFix64::new(self.hyusd_pool.amount))
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
@@ -64,6 +77,10 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     gate(!self.pool_config.paused, CoreError::PairPaused)?;
     let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
+    gate(
+      in_amount <= shyusd_supply,
+      CoreError::InsufficientEarnPoolLiquidity,
+    )?;
     let hyusd_to_withdraw =
       amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
     let withdrawal_limiter: WithdrawalLimiter =
@@ -92,5 +109,23 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
       fee_base: hyusd_to_withdraw,
       marginal_rate,
     })
+  }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.pool_config.paused, CoreError::PairPaused)?;
+    let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
+    let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
+    gate(
+      hyusd_in_pool > UFix64::zero(),
+      CoreError::InsufficientEarnPoolLiquidity,
+    )?;
+    let withdrawal_limiter: WithdrawalLimiter =
+      self.pool_config.withdrawal_limiter.into();
+    let headroom =
+      withdrawal_limiter.max_withdrawal(self.exchange_context.clock.epoch())?;
+    let limiter_cap =
+      max_lp_token_for_withdrawal(headroom, shyusd_supply, hyusd_in_pool)?;
+    Ok(limiter_cap.min(shyusd_supply))
   }
 }

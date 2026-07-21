@@ -6,7 +6,7 @@ mod exchange;
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::{UFix64, N6, N9};
 use fix::typenum::Integer;
-use hylo_core::calculus::positive_rate;
+use hylo_core::calculus::{positive, positive_rate};
 use hylo_core::error::CoreError;
 use hylo_idl::tokens::TokenMint;
 
@@ -19,12 +19,12 @@ fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
 ///
 /// # Errors
 /// * Non-finite or non-positive rate (zero input or output)
-#[allow(clippy::cast_precision_loss)]
 pub(crate) fn linear_rate<InExp: Integer, OutExp: Integer>(
   in_amount: UFix64<InExp>,
   out_amount: UFix64<OutExp>,
 ) -> Result<f64, CoreError> {
-  positive_rate(out_amount.bits as f64 / in_amount.bits as f64)
+  let rate = positive(out_amount)?.get() / positive(in_amount)?.get();
+  positive_rate(atom_rate::<InExp, OutExp>(rate))
 }
 
 /// Scales a token-level marginal rate to atoms:
@@ -40,8 +40,6 @@ pub struct OperationOutput<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
   pub fee_amount: UFix64<FeeExp>,
   pub fee_mint: Pubkey,
   pub fee_base: UFix64<FeeExp>,
-  /// Marginal output rate `f'(in_amount)` in atoms — Titan's
-  /// `QuoteResult.price`.
   pub marginal_rate: f64,
 }
 
@@ -61,6 +59,13 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>, CoreError>;
+
+  /// Largest input the protocol accepts for this route in the current
+  /// state.
+  ///
+  /// # Errors
+  /// * Route gated in current state (paused, mode-disabled, unharvested)
+  fn max_input(&self) -> Result<UFix64<IN::Exp>, CoreError>;
 }
 
 /// Turbofish helper for [`TokenOperation`].

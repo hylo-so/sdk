@@ -2,9 +2,11 @@
 
 use fix::prelude::*;
 use hylo_core::calculus::positive_rate;
+use hylo_core::conversion::UsdcStablecoinConversion;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
+use hylo_core::exchange_math::max_mintable_stablecoin;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::rebalance::mode::RebalanceMode;
@@ -22,6 +24,52 @@ use crate::token_operation::{
 };
 use crate::{Local, LST};
 
+/// Maximum mintable stablecoin as projected by the mint fee curve,
+/// which prices collateral at the lower oracle bound.
+fn fee_curve_mintable(
+  context: &impl ExchangeContext,
+) -> Result<UFix64<N6>, CoreError> {
+  let target = context
+    .stablecoin_mint_threshold()
+    .checked_convert()
+    .ok_or(CoreError::MaxMintable)?;
+  max_mintable_stablecoin(
+    target,
+    context.total_collateral(),
+    context.collateral_usd_price().lower,
+    context.virtual_stablecoin_supply()?,
+  )
+}
+
+impl<C: SolanaClock> ProtocolState<C> {
+  /// Pause and harvest gates for LST-pair routes.
+  fn lst_pair_gates(&self) -> Result<(), CoreError> {
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    gate(
+      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
+      CoreError::YieldHarvestNotRun,
+    )
+  }
+
+  /// Pause and harvest gates for BTC-pair routes.
+  fn btc_pair_gates(&self) -> Result<(), CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.btc_pair_state.paused, CoreError::PairPaused)?;
+    gate(
+      self.btc_pair_state.borrow_rate_harvest_epoch == exo.clock.epoch(),
+      CoreError::BorrowRateHarvestNotRun,
+    )
+  }
+
+  /// Pause gates for USDC-pair routes.
+  fn usdc_pair_gates(&self) -> Result<(), CoreError> {
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)
+  }
+}
+
 impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
   for ProtocolState<C>
 {
@@ -31,16 +79,11 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     &self,
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.stablecoin_mint_enabled(),
       CoreError::OperationDisabled,
-    )?;
-    gate(
-      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
-      CoreError::YieldHarvestNotRun,
     )?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -72,6 +115,24 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
       marginal_rate,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N9>, CoreError> {
+    self.lst_pair_gates()?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.stablecoin_mint_enabled(),
+      CoreError::OperationDisabled,
+    )?;
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
+    let cap = self
+      .exchange_context
+      .max_mintable_stablecoin()?
+      .min(fee_curve_mintable(&self.exchange_context)?);
+    self
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .max_lst_for_token(cap, self.exchange_context.stablecoin_nav()?)
+  }
 }
 
 impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
@@ -83,12 +144,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     &self,
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
   ) -> Result<RedeemOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
-    gate(
-      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
-      CoreError::YieldHarvestNotRun,
-    )?;
+    self.lst_pair_gates()?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
@@ -125,6 +181,24 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
       marginal_rate,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.lst_pair_gates()?;
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
+    let vault_cap = self
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .max_token_for_lst(
+        self.lst_vault_balance::<L>()?,
+        self.exchange_context.stablecoin_nav()?,
+      )?;
+    let supply_cap = self
+      .exchange_context
+      .virtual_stablecoin_supply()?
+      .checked_sub(&SUPPLY_FLOOR)
+      .unwrap_or(UFix64::zero());
+    Ok(vault_cap.min(supply_cap))
+  }
 }
 
 impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
@@ -136,16 +210,11 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
     &self,
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.levercoin_mint_enabled(),
       CoreError::OperationDisabled,
-    )?;
-    gate(
-      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
-      CoreError::YieldHarvestNotRun,
     )?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -173,6 +242,26 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, XSOL>
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N9>, CoreError> {
+    self.lst_pair_gates()?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.levercoin_mint_enabled(),
+      CoreError::OperationDisabled,
+    )?;
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
+    let collateral_cap =
+      self.exchange_context.max_collateral_deposit(&lst_price)?;
+    let representable = self
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .max_representable_lst(self.exchange_context.levercoin_mint_nav()?)?;
+    let fee_rate = self
+      .exchange_context
+      .levercoin_mint_fee_rate(&lst_price, collateral_cap.min(representable))?;
+    Ok(collateral_cap.min(FeeExtract::max_input(fee_rate, representable)?))
+  }
 }
 
 impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
@@ -184,16 +273,15 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
     &self,
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
   ) -> Result<RedeemOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
       CoreError::OperationDisabled,
     )?;
     gate(
-      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
-      CoreError::YieldHarvestNotRun,
+      in_amount <= self.exchange_context.levercoin_supply()?,
+      CoreError::InsufficientLiquidity,
     )?;
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -225,6 +313,25 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.lst_pair_gates()?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.rebalance_mode() != RebalanceMode::Depeg,
+      CoreError::OperationDisabled,
+    )?;
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
+    let vault_cap = self
+      .exchange_context
+      .token_conversion(&lst_price)?
+      .max_token_for_lst(
+        self.lst_vault_balance::<L>()?,
+        self.exchange_context.levercoin_redeem_nav()?,
+      )?;
+    let supply_cap = self.exchange_context.levercoin_supply()?;
+    Ok(vault_cap.min(supply_cap))
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
@@ -234,16 +341,11 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
     &self,
     in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
   ) -> Result<SwapOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.levercoin_mint_enabled(),
       CoreError::OperationDisabled,
-    )?;
-    gate(
-      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
-      CoreError::YieldHarvestNotRun,
     )?;
     let FeeExtract {
       fees_extracted,
@@ -271,6 +373,21 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
         .stablecoin_to_levercoin_marginal(in_amount)?,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.lst_pair_gates()?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.levercoin_mint_enabled(),
+      CoreError::OperationDisabled,
+    )?;
+    let supply = self.exchange_context.virtual_stablecoin_supply()?;
+    let burn_cap = supply.checked_sub(&SUPPLY_FLOOR).unwrap_or(UFix64::zero());
+    let fee_rate = self
+      .exchange_context
+      .stablecoin_to_levercoin_fee_rate(burn_cap)?;
+    Ok(FeeExtract::max_input(fee_rate, burn_cap)?.min(supply))
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
@@ -280,16 +397,15 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<<XSOL as TokenMint>::Exp>,
   ) -> Result<SwapOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.stablecoin_mint_enabled(),
       CoreError::OperationDisabled,
     )?;
     gate(
-      self.yield_harvest_epoch == self.exchange_context.clock.epoch(),
-      CoreError::YieldHarvestNotRun,
+      in_amount <= self.exchange_context.levercoin_supply()?,
+      CoreError::InsufficientLiquidity,
     )?;
     let converted = self
       .exchange_context
@@ -315,6 +431,23 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
         .levercoin_to_stablecoin_marginal(in_amount)?,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.lst_pair_gates()?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.stablecoin_mint_enabled(),
+      CoreError::OperationDisabled,
+    )?;
+    let swap_cap = self
+      .exchange_context
+      .swap_conversion()?
+      .max_lever_for_stable(
+        self.exchange_context.max_swappable_stablecoin()?,
+      )?;
+    let supply_cap = self.exchange_context.levercoin_supply()?;
+    Ok(swap_cap.min(supply_cap))
+  }
 }
 
 impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
@@ -327,12 +460,7 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
     in_amount: UFix64<N9>,
   ) -> Result<LstSwapOperationOutput, CoreError> {
     let epoch = self.exchange_context.clock.epoch();
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
-    gate(
-      self.yield_harvest_epoch == epoch,
-      CoreError::YieldHarvestNotRun,
-    )?;
+    self.lst_pair_gates()?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -365,6 +493,19 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
       marginal_rate,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N9>, CoreError> {
+    let epoch = self.exchange_context.clock.epoch();
+    self.lst_pair_gates()?;
+    let in_price: LstSolPrice = self.lst_header::<L1>()?.price_sol.into();
+    let out_price: LstSolPrice = self.lst_header::<L2>()?.price_sol.into();
+    let remaining = in_price.max_lst_for_lst(
+      self.lst_vault_balance::<L2>()?,
+      epoch,
+      &out_price,
+    )?;
+    FeeExtract::max_input(self.lst_swap_config.fee, remaining)
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
@@ -375,8 +516,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N9>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!usdc_state.paused, CoreError::PairPaused)?;
+    self.usdc_pair_gates()?;
     let usdc_in: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
@@ -402,6 +542,11 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
       marginal_rate,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.usdc_pair_gates()?;
+    Ok(UsdcStablecoinConversion::max_deposit())
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
@@ -412,8 +557,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!usdc_state.paused, CoreError::PairPaused)?;
+    self.usdc_pair_gates()?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -447,6 +591,16 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       marginal_rate,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.usdc_pair_gates()?;
+    let usdc_state = self.usdc_exchange_state();
+    let vault_cap = usdc_state
+      .conversion()
+      .max_stablecoin_for_withdrawal(usdc_state.vault_balance)?;
+    let remaining = vault_cap.min(usdc_state.virtual_stablecoin_supply);
+    FeeExtract::max_input(usdc_state.swap_fee, remaining)
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
@@ -458,17 +612,12 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
   ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
     gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
-    gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
-    )?;
     let collateral_n9: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
@@ -492,6 +641,21 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N8>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
+    let cap = exo.max_mintable_stablecoin()?.min(fee_curve_mintable(exo)?);
+    let mintable = exo
+      .exo_conversion()
+      .max_exo_for_token(cap, exo.stablecoin_nav()?)?;
+    Ok(mintable.convert::<N8>())
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
@@ -503,12 +667,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
-    gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
-    )?;
+    self.btc_pair_gates()?;
     let stablecoin_nav = exo.stablecoin_nav()?;
     let collateral_out = exo
       .exo_conversion()
@@ -540,6 +699,19 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    let vault_cap = exo
+      .exo_conversion()
+      .max_token_for_exo(exo.total_collateral, exo.stablecoin_nav()?)?;
+    let supply_cap = exo
+      .virtual_stablecoin_supply()?
+      .checked_sub(&self.btc_pair_state.supply_floor)
+      .unwrap_or(UFix64::zero());
+    Ok(vault_cap.min(supply_cap))
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
@@ -551,17 +723,12 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
     gate(exo.levercoin_mint_enabled(), CoreError::OperationDisabled)?;
-    gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
-    )?;
     let collateral_in: UFix64<N9> = in_amount
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
@@ -587,6 +754,22 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N8>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(exo.levercoin_mint_enabled(), CoreError::OperationDisabled)?;
+    let headroom = exo.levercoin_market_cap_limiter()?.max_token_out()?;
+    let remaining = exo
+      .exo_conversion()
+      .max_exo_for_token(headroom, exo.levercoin_mint_nav()?)?;
+    let fee_rate = exo.levercoin_mint_fee_rate(remaining)?;
+    FeeExtract::max_input(fee_rate, remaining).map(UFix64::convert::<N8>)
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
@@ -598,8 +781,7 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
@@ -609,8 +791,8 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       CoreError::OperationDisabled,
     )?;
     gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
+      in_amount <= exo.levercoin_supply()?,
+      CoreError::InsufficientLiquidity,
     )?;
     let levercoin_nav = exo.levercoin_redeem_nav()?;
     let collateral_out = exo
@@ -638,6 +820,23 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(
+      exo.rebalance_mode() != RebalanceMode::Depeg,
+      CoreError::OperationDisabled,
+    )?;
+    let vault_cap = exo
+      .exo_conversion()
+      .max_token_for_exo(exo.total_collateral, exo.levercoin_redeem_nav()?)?;
+    Ok(vault_cap.min(exo.levercoin_supply()?))
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
@@ -649,17 +848,12 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
     gate(exo.levercoin_mint_enabled(), CoreError::OperationDisabled)?;
-    gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
-    )?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -683,6 +877,26 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       marginal_rate: exo.stablecoin_to_levercoin_marginal(in_amount)?,
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(exo.levercoin_mint_enabled(), CoreError::OperationDisabled)?;
+    let market_cap = exo.swap_conversion()?.max_stable_for_lever(
+      exo.levercoin_market_cap_limiter()?.max_token_out()?,
+    )?;
+    let supply = exo.virtual_stablecoin_supply()?;
+    let burn_cap = supply
+      .checked_sub(&self.btc_pair_state.supply_floor)
+      .unwrap_or(UFix64::zero());
+    let remaining = market_cap.min(burn_cap);
+    let fee_rate = exo.stablecoin_to_levercoin_fee_rate(remaining)?;
+    Ok(FeeExtract::max_input(fee_rate, remaining)?.min(supply))
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
@@ -694,16 +908,15 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
     gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
     gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
+      in_amount <= exo.levercoin_supply()?,
+      CoreError::InsufficientLiquidity,
     )?;
     let converted = exo.swap_conversion()?.lever_to_stable(in_amount)?;
     let hyusd_total = exo.validate_stablecoin_swap_amount(converted)?;
@@ -719,6 +932,20 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
       fee_base: hyusd_total,
       marginal_rate: exo.levercoin_to_stablecoin_marginal(in_amount)?,
     })
+  }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
+    let swap_cap = exo
+      .swap_conversion()?
+      .max_lever_for_stable(exo.max_swappable_stablecoin()?)?;
+    Ok(swap_cap.min(exo.levercoin_supply()?))
   }
 }
 
@@ -752,14 +979,9 @@ impl<C: SolanaClock> ProtocolState<C> {
     in_amount: UFix64<N9>,
   ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
     let epoch = self.exchange_context.clock.epoch();
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
-    gate(
-      self.yield_harvest_epoch == epoch,
-      CoreError::YieldHarvestNotRun,
-    )?;
     gate(
       self.exchange_context.rebalance_buy_active(),
       CoreError::OperationDisabled,
@@ -822,15 +1044,9 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
-    let epoch = self.exchange_context.clock.epoch();
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.lst_pair_paused, CoreError::PairPaused)?;
+    self.lst_pair_gates()?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
-    gate(
-      self.yield_harvest_epoch == epoch,
-      CoreError::YieldHarvestNotRun,
-    )?;
     gate(
       self.exchange_context.rebalance_sell_active(),
       CoreError::OperationDisabled,
@@ -880,6 +1096,55 @@ impl<C: SolanaClock> ProtocolState<C> {
       marginal_rate,
     })
   }
+
+  /// Largest LST input the rebalance buy leg accepts.
+  fn rebalance_buy_max_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let epoch = self.exchange_context.clock.epoch();
+    self.lst_pair_gates()?;
+    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.rebalance_buy_active(),
+      CoreError::OperationDisabled,
+    )?;
+    let header = self.lst_header::<L>()?;
+    let true_price = self.stake_pool::<L>()?.true_price()?;
+    let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
+    let buy_target = adjusted.convert_sol_to_lst(
+      self.exchange_context.rebalance_buy_target()?,
+      epoch,
+    )?;
+    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
+    let vault_cap = self
+      .exchange_context
+      .rebalance_buy_conversion(&adjusted, usdc_price, buy_target)?
+      .max_lst_for_usdc(self.usdc_exchange_state().vault_balance)?;
+    Ok(buy_target.min(vault_cap))
+  }
+
+  /// Largest USDC input the rebalance sell leg accepts.
+  fn rebalance_sell_max_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    self.lst_pair_gates()?;
+    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+    gate(
+      self.exchange_context.rebalance_sell_active(),
+      CoreError::OperationDisabled,
+    )?;
+    let header = self.lst_header::<L>()?;
+    let max_usdc_in = self.exchange_context.max_rebalance_sell_usdc(
+      *self.stake_pool::<L>()?,
+      header.rebalance_fee.try_into()?,
+      self.lst_vault_balance::<L>()?,
+      self.usdc_exchange_state().usdc_usd_price,
+      SUPPLY_FLOOR,
+    )?;
+    Ok(max_usdc_in.convert::<N6>())
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
@@ -890,6 +1155,10 @@ impl<C: SolanaClock> TokenOperation<JITOSOL, USDC> for ProtocolState<C> {
     in_amount: UFix64<N9>,
   ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
     self.rebalance_buy_quote::<JITOSOL>(in_amount)
+  }
+
+  fn max_input(&self) -> Result<UFix64<N9>, CoreError> {
+    self.rebalance_buy_max_input::<JITOSOL>()
   }
 }
 
@@ -902,6 +1171,10 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, USDC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
     self.rebalance_buy_quote::<HYLOSOL>(in_amount)
   }
+
+  fn max_input(&self) -> Result<UFix64<N9>, CoreError> {
+    self.rebalance_buy_max_input::<HYLOSOL>()
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
@@ -912,6 +1185,10 @@ impl<C: SolanaClock> TokenOperation<USDC, JITOSOL> for ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
     self.rebalance_sell_quote::<JITOSOL>(in_amount)
+  }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.rebalance_sell_max_input::<JITOSOL>()
   }
 }
 
@@ -924,6 +1201,10 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
     self.rebalance_sell_quote::<HYLOSOL>(in_amount)
   }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    self.rebalance_sell_max_input::<HYLOSOL>()
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
@@ -935,16 +1216,11 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N8, N6, N8>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
     )?;
     gate(exo.rebalance_buy_active(), CoreError::OperationDisabled)?;
     let normalized: UFix64<N9> = in_amount
@@ -985,6 +1261,23 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
       ),
     })
   }
+
+  fn max_input(&self) -> Result<UFix64<N8>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(exo.rebalance_buy_active(), CoreError::OperationDisabled)?;
+    let buy_target = exo.rebalance_buy_target()?;
+    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
+    let vault_cap = exo
+      .rebalance_buy_conversion(usdc_price, buy_target)?
+      .max_collateral_for_usdc(self.usdc_exchange_state().vault_balance)?;
+    Ok(buy_target.min(vault_cap).convert::<N8>())
+  }
 }
 
 impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
@@ -996,16 +1289,11 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N8, N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!btc_pair.paused, CoreError::PairPaused)?;
+    self.btc_pair_gates()?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
     gate(
       btc_pair.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      btc_pair.borrow_rate_harvest_epoch == exo.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
     )?;
     gate(exo.rebalance_sell_active(), CoreError::OperationDisabled)?;
     let normalized: UFix64<N9> = in_amount
@@ -1037,5 +1325,21 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
         exo.rebalance_sell_marginal(usdc_price, normalized)?,
       ),
     })
+  }
+
+  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
+    let exo = self.cbbtc_exchange_context();
+    self.btc_pair_gates()?;
+    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    gate(
+      self.btc_pair_state.pool_drawdown.is_repaid(),
+      CoreError::DrawdownNotRepaid,
+    )?;
+    gate(exo.rebalance_sell_active(), CoreError::OperationDisabled)?;
+    let max_usdc_in = exo.max_rebalance_sell_usdc(
+      self.usdc_exchange_state().usdc_usd_price,
+      self.btc_pair_state.supply_floor,
+    )?;
+    Ok(max_usdc_in.convert::<N6>())
   }
 }
