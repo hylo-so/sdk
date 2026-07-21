@@ -33,18 +33,6 @@ pub trait InterpolatedFeeController<const RES: usize> {
   /// * Domain or arithmetic errors
   fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError>;
 
-  /// Narrowed fee rate the extraction applies at `ucr`.
-  ///
-  /// # Errors
-  /// * CR conversion or domain
-  fn fee_rate(&self, ucr: UFix64<N9>) -> Result<UFix64<N5>, CoreError> {
-    let cr = narrow_cr(ucr)?;
-    self
-      .fee_inner(cr)?
-      .narrow()
-      .ok_or(CoreError::InterpFeeConversion)
-  }
-
   /// Applies the interpolated fee to an input amount.
   ///
   /// # Errors
@@ -54,7 +42,12 @@ pub trait InterpolatedFeeController<const RES: usize> {
     ucr: UFix64<N9>,
     amount_in: UFix64<InExp>,
   ) -> Result<FeeExtract<InExp>, CoreError> {
-    FeeExtract::new(self.fee_rate(ucr)?, amount_in)
+    let cr = narrow_cr(ucr)?;
+    let fee = self
+      .fee_inner(cr)?
+      .narrow()
+      .ok_or(CoreError::InterpFeeConversion)?;
+    FeeExtract::new(fee, amount_in)
   }
 
   /// Minimum collateral ratio in the curve's domain.
