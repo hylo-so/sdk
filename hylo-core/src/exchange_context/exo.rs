@@ -152,10 +152,22 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
+    let rate = self.stablecoin_mint_fee_rate(collateral_amount)?;
+    FeeExtract::new(rate, collateral_amount)
+  }
+
+  /// Stablecoin mint fee rate at the projected CR.
+  ///
+  /// # Errors
+  /// * Projection overflow or interpolation
+  pub fn stablecoin_mint_fee_rate(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<UFix64<N5>, CoreError> {
     let projected = self.projected_mint_state(collateral_amount)?;
     self
       .stablecoin_mint_fees
-      .apply_fee(projected.collateral_ratio, collateral_amount)
+      .fee_rate(projected.collateral_ratio)
   }
 
   /// Post-trade state used by the stablecoin mint fee projection.
@@ -235,6 +247,18 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
+    let rate = self.levercoin_mint_fee_rate(collateral_amount)?;
+    FeeExtract::new(rate, collateral_amount)
+  }
+
+  /// Levercoin mint fee rate at the projected rebalance mode.
+  ///
+  /// # Errors
+  /// * Projection overflow or mode-based fee lookup
+  pub fn levercoin_mint_fee_rate(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let new_total = self
       .total_collateral
       .checked_add(&collateral_amount)
@@ -242,8 +266,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self
       .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
     let mode = self.select_rebalance_mode_for_fees(projected);
-    let fee = self.levercoin_fees.mint_fee(mode)?;
-    FeeExtract::new(fee, collateral_amount)
+    self.levercoin_fees.mint_fee(mode)
   }
 
   /// Levercoin redeem fee based on projected rebalance mode.

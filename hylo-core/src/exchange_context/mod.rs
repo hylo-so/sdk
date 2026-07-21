@@ -474,6 +474,18 @@ pub trait ExchangeContext {
     &self,
     amount_stablecoin: UFix64<N6>,
   ) -> Result<FeeExtract<N6>, CoreError> {
+    let rate = self.stablecoin_to_levercoin_fee_rate(amount_stablecoin)?;
+    FeeExtract::new(rate, amount_stablecoin)
+  }
+
+  /// Mode-based fee rate for the stablecoin-to-levercoin direction.
+  ///
+  /// # Errors
+  /// * Projection underflow or mode-based fee lookup
+  fn stablecoin_to_levercoin_fee_rate(
+    &self,
+    amount_stablecoin: UFix64<N6>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
       .checked_sub(&amount_stablecoin)
@@ -481,7 +493,6 @@ pub trait ExchangeContext {
     let projected =
       self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
     let mode = self.select_rebalance_mode_for_fees(projected);
-    let fee = self.levercoin_fees().convert_from_stablecoin_fee(mode)?;
-    FeeExtract::new(fee, amount_stablecoin)
+    self.levercoin_fees().convert_from_stablecoin_fee(mode)
   }
 }

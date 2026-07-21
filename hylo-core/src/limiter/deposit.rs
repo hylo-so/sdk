@@ -59,6 +59,23 @@ impl DepositLimiter {
     Ok(self.limit.try_into()?)
   }
 
+  /// Largest deposit the limit admits at the current pool balance.
+  ///
+  /// # Errors
+  /// * Numeric conversion
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn max_deposit(
+    &self,
+    pool_amount: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    Ok(
+      self
+        .limit()?
+        .checked_sub(&pool_amount)
+        .unwrap_or(UFix64::zero()),
+    )
+  }
+
   /// Validates incoming deposit against limit.
   ///
   /// # Errors

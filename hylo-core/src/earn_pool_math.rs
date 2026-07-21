@@ -5,6 +5,8 @@ use crate::error::CoreError;
 use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
 use crate::fees::controller::FeeExtract;
 use crate::pyth::PriceRange;
+#[cfg(any(test, feature = "offchain"))]
+use crate::util::max_scaled_input;
 
 /// Computes NAV for the earn pool's LP token.
 ///
@@ -65,6 +67,20 @@ fn amount_token_to_withdraw_inner(
   (lp_token_supply != UFix64::zero())
     .then_some(user_lp_token_amount)
     .and_then(|amt| amt.mul_div_floor(pool_amount, lp_token_supply))
+}
+
+/// Largest LP token input withdrawing at most `cap` from the pool:
+/// inverse of [`amount_token_to_withdraw`].
+///
+/// # Errors
+/// * Zero pool amount
+#[cfg(any(test, feature = "offchain"))]
+pub fn max_lp_token_for_withdrawal(
+  cap: UFix64<N6>,
+  lp_token_supply: UFix64<N6>,
+  pool_amount: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  max_scaled_input(cap, pool_amount, lp_token_supply).ok_or(TokenWithdraw)
 }
 
 /// Computes a stablecoin target based on levercoin in pool.

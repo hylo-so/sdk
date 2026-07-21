@@ -124,6 +124,25 @@ impl WithdrawalLimiter {
     }
   }
 
+  /// Largest withdrawal the limit admits for `current_epoch`.
+  ///
+  /// # Errors
+  /// * Numeric conversion
+  /// * Ledger epoch greater than current epoch
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn max_withdrawal(
+    &self,
+    current_epoch: u64,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let ledger_total = self.epoch_ledger(current_epoch)?.supply()?;
+    Ok(
+      self
+        .limit()?
+        .checked_sub(&ledger_total)
+        .unwrap_or(UFix64::zero()),
+    )
+  }
+
   fn epoch_ledger(
     &self,
     current_epoch: u64,

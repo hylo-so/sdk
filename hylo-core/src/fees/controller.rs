@@ -2,6 +2,8 @@ use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
 };
 use fix::prelude::*;
+#[cfg(any(test, feature = "offchain"))]
+use fix::typenum::Integer;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
@@ -12,6 +14,8 @@ use crate::error::CoreError::{
 use crate::rebalance::mode::RebalanceMode::{
   self, BuyZone1, BuyZone2, Depeg, Neutral, SellZone1, SellZone2,
 };
+#[cfg(any(test, feature = "offchain"))]
+use crate::util::max_scaled_input;
 
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 
@@ -93,6 +97,31 @@ impl<Exp> FeeExtract<Exp> {
       fees_extracted,
       amount_remaining,
     })
+  }
+
+  /// Largest input with post-fee remainder at most `cap`.
+  ///
+  /// ```txt
+  /// x - ceil(x * fee) = floor(x * (1 - fee)) <= cap
+  /// ```
+  ///
+  /// # Errors
+  /// * Fee at or above 100%
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn max_input<FeeExp>(
+    fee: UFix64<FeeExp>,
+    cap: UFix64<Exp>,
+  ) -> Result<UFix64<Exp>, CoreError>
+  where
+    UFix64<FeeExp>: FixExt,
+    Exp: Integer,
+    FeeExp: Integer,
+  {
+    let kept = UFix64::one()
+      .checked_sub(&fee)
+      .filter(|kept| *kept != UFix64::zero())
+      .ok_or(FeeExtraction)?;
+    max_scaled_input(cap, kept, UFix64::one()).ok_or(FeeExtraction)
   }
 }
 
