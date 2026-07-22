@@ -299,8 +299,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .and_then(|fee| FeeExtract::new(fee, amount_lst_out))
   }
 
-  /// Largest LST deposit whose SOL value can be added to total SOL
-  /// without overflow.
+  /// Overflow frontier for adding an LST deposit to total SOL.
   ///
   /// # Errors
   /// * Price outdated or degenerate

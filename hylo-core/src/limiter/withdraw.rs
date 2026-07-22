@@ -124,7 +124,7 @@ impl WithdrawalLimiter {
     }
   }
 
-  /// Largest withdrawal the limit admits for `current_epoch`.
+  /// Remaining withdrawal headroom in the given epoch.
   ///
   /// # Errors
   /// * Numeric conversion

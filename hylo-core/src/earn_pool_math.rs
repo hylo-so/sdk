@@ -69,8 +69,7 @@ fn amount_token_to_withdraw_inner(
     .and_then(|amt| amt.mul_div_floor(pool_amount, lp_token_supply))
 }
 
-/// Largest LP token input withdrawing at most `cap` from the pool:
-/// inverse of [`amount_token_to_withdraw`].
+/// Inverse of [`amount_token_to_withdraw`] under a withdrawal cap.
 ///
 /// # Errors
 /// * Zero pool amount

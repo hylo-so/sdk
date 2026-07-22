@@ -59,7 +59,7 @@ impl DepositLimiter {
     Ok(self.limit.try_into()?)
   }
 
-  /// Largest deposit the limit admits at the current pool balance.
+  /// Remaining deposit headroom at the current pool balance.
   ///
   /// # Errors
   /// * Numeric conversion

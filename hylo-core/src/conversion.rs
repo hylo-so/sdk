@@ -9,7 +9,7 @@ use crate::pyth::PriceRange;
 #[cfg(any(test, feature = "offchain"))]
 use crate::util::max_scaled_input;
 
-/// Largest `N9` amount truncating to at most `cap` at `N6`.
+/// Inverse of the `N9` to `N6` truncation under a cap.
 #[cfg(any(test, feature = "offchain"))]
 fn max_before_truncation(cap: UFix64<N6>) -> Option<UFix64<N9>> {
   cap
@@ -65,8 +65,7 @@ impl Conversion {
       .map(UFix64::convert)
   }
 
-  /// Largest LST input converting to at most `cap` tokens: inverse of
-  /// [`lst_to_token`](Self::lst_to_token).
+  /// Inverse of [`lst_to_token`](Self::lst_to_token) under a token cap.
   ///
   /// # Errors
   /// * Degenerate NAV or price
@@ -83,8 +82,7 @@ impl Conversion {
     max_scaled_input(sol, self.lst_sol_price, UFix64::one()).ok_or(LstToToken)
   }
 
-  /// Largest LST input [`lst_to_token`](Self::lst_to_token) can convert
-  /// without overflow.
+  /// Overflow frontier of [`lst_to_token`](Self::lst_to_token).
   ///
   /// # Errors
   /// * Degenerate NAV or price
@@ -123,8 +121,7 @@ impl Conversion {
     .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
   }
 
-  /// Largest token input converting to at most `cap` LST.
-  /// Inverse of [`token_to_lst`](Self::token_to_lst).
+  /// Inverse of [`token_to_lst`](Self::token_to_lst) under an LST cap.
   ///
   /// # Errors
   /// * Degenerate NAV
@@ -184,8 +181,8 @@ impl SwapConversion {
       .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
   }
 
-  /// Largest stablecoin input converting to at most `cap` levercoin:
-  /// inverse of [`stable_to_lever`](Self::stable_to_lever).
+  /// Inverse of [`stable_to_lever`](Self::stable_to_lever) under a
+  /// levercoin cap.
   ///
   /// # Errors
   /// * Degenerate NAV
@@ -212,8 +209,8 @@ impl SwapConversion {
     .ok_or(LeverToStable)
   }
 
-  /// Largest levercoin input converting to at most `cap` stablecoin:
-  /// inverse of [`lever_to_stable`](Self::lever_to_stable).
+  /// Inverse of [`lever_to_stable`](Self::lever_to_stable) under a
+  /// stablecoin cap.
   ///
   /// # Errors
   /// * Degenerate NAV
@@ -283,8 +280,7 @@ impl ExoConversion {
       .and_then(UFix64::checked_convert::<N6>)
   }
 
-  /// Largest collateral input converting to at most `cap` tokens:
-  /// inverse of [`exo_to_token`](Self::exo_to_token).
+  /// Inverse of [`exo_to_token`](Self::exo_to_token) under a token cap.
   ///
   /// # Errors
   /// * Degenerate price
@@ -299,8 +295,8 @@ impl ExoConversion {
       .ok_or(ExoToToken)
   }
 
-  /// Largest token input converting to at most `cap` collateral:
-  /// inverse of [`token_to_exo`](Self::token_to_exo).
+  /// Inverse of [`token_to_exo`](Self::token_to_exo) under a
+  /// collateral cap.
   ///
   /// # Errors
   /// * Degenerate NAV
@@ -386,9 +382,9 @@ impl UsdcStablecoinConversion {
       .ok_or(ExoFromToken)
   }
 
-  /// Largest stablecoin input withdrawing at most `cap` USDC at `N6`
-  /// precision: inverse of
-  /// [`stablecoin_to_withdrawal`](Self::stablecoin_to_withdrawal).
+  /// Inverse of
+  /// [`stablecoin_to_withdrawal`](Self::stablecoin_to_withdrawal) under
+  /// a USDC cap.
   ///
   /// # Errors
   /// * Degenerate price
@@ -404,7 +400,7 @@ impl UsdcStablecoinConversion {
     Ok(normalized.convert::<N6>())
   }
 
-  /// Largest USDC deposit representable after `N9` normalization.
+  /// `N9` normalization frontier for USDC deposits.
   #[cfg(any(test, feature = "offchain"))]
   #[must_use]
   pub fn max_representable_deposit() -> UFix64<N6> {
@@ -471,8 +467,8 @@ impl ExoRebalanceConversion {
       })
   }
 
-  /// Largest collateral input converting to at most `cap` USDC: inverse
-  /// of [`collateral_to_usdc`](Self::collateral_to_usdc).
+  /// Inverse of [`collateral_to_usdc`](Self::collateral_to_usdc) under
+  /// a USDC cap.
   ///
   /// # Errors
   /// * Degenerate price
@@ -547,8 +543,7 @@ impl LstRebalanceConversion {
       .ok_or(LstToUsdc)
   }
 
-  /// Largest LST input converting to at most `cap` USDC: inverse of
-  /// [`lst_to_usdc`](Self::lst_to_usdc).
+  /// Inverse of [`lst_to_usdc`](Self::lst_to_usdc) under a USDC cap.
   ///
   /// # Errors
   /// * Degenerate price

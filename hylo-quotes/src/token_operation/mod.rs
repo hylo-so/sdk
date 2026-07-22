@@ -60,7 +60,7 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     amount_in: UFix64<IN::Exp>,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>, CoreError>;
 
-  /// Largest input the protocol accepts for this route in the current
+  /// Input ceiling the protocol accepts for this route in the current
   /// state.
   ///
   /// # Errors

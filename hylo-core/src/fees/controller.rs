@@ -99,7 +99,7 @@ impl<Exp> FeeExtract<Exp> {
     })
   }
 
-  /// Largest input with post-fee remainder at most `cap`.
+  /// Inverse of fee extraction under a remainder cap.
   ///
   /// ```txt
   /// x - ceil(x * fee) = floor(x * (1 - fee)) <= cap

@@ -1074,7 +1074,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  /// Largest LST input the rebalance buy leg accepts.
+  /// Input ceiling for the rebalance buy leg.
   fn rebalance_buy_max_input<L: LST + Local>(
     &self,
   ) -> Result<UFix64<N9>, CoreError> {
@@ -1101,7 +1101,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(buy_target.min(vault_cap))
   }
 
-  /// Largest USDC input the rebalance sell leg accepts.
+  /// Input ceiling for the rebalance sell leg.
   fn rebalance_sell_max_input<L: LST + Local>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {

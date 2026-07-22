@@ -59,7 +59,7 @@ macro_rules! runtime_quote_strategies {
       }
 
       impl<C: SolanaClock> ProtocolState<C> {
-        /// Largest executable input for the pair in input-mint atoms.
+        /// Executable input ceiling for the pair in input-mint atoms.
         ///
         /// # Errors
         /// * Unsupported pair or route gated in current state

@@ -397,10 +397,8 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Largest collateral removal keeping the projected rebalance mode
-  /// out of Depeg: inverse of
-  /// [`projected_rebalance_mode`](ExchangeContext::projected_rebalance_mode)
-  /// over the collateral argument.
+  /// Collateral removable before the projected rebalance mode reaches
+  /// [`RebalanceMode::Depeg`].
   ///
   /// # Errors
   /// * Arithmetic overflow

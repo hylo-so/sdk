@@ -96,8 +96,8 @@ impl LstSolPrice {
     Ok(sol)
   }
 
-  /// Largest LST amount converting to at most `cap` SOL: inverse of
-  /// [`convert_lst_to_sol`](Self::convert_lst_to_sol).
+  /// Inverse of [`convert_lst_to_sol`](Self::convert_lst_to_sol) under
+  /// a SOL cap.
   ///
   /// # Errors
   /// * Degenerate price
@@ -113,8 +113,8 @@ impl LstSolPrice {
       .ok_or(LstSolPriceConversion)
   }
 
-  /// Largest amount of this LST converting to at most `cap` of `other`:
-  /// inverse of [`convert_lst_amount`](Self::convert_lst_amount).
+  /// Inverse of [`convert_lst_amount`](Self::convert_lst_amount) under
+  /// an output cap.
   ///
   /// # Errors
   /// * Degenerate price

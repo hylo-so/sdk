@@ -59,8 +59,8 @@ impl LevercoinMarketCapLimiter {
     levercoin_market_cap(target_supply, self.levercoin_nav)
   }
 
-  /// Largest mint keeping the projected market cap within the limit:
-  /// inverse of [`levercoin_market_cap`].
+  /// Mint headroom under the market cap limit; inverse of
+  /// [`levercoin_market_cap`].
   ///
   /// # Errors
   /// * Zero levercoin NAV
