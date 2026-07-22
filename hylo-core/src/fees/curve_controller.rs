@@ -93,7 +93,7 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
     let interp = self.curve();
     if cr < interp.x_min() {
       Err(CoreError::NoValidStablecoinMintFee)
-    } else if cr > interp.x_max() {
+    } else if cr > interp.x_max() || interp.is_saturated(cr)? {
       Ok(IFix64::zero())
     } else {
       interp.derivative(cr)
@@ -131,7 +131,7 @@ impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
 
   fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
     let interp = self.curve();
-    if cr < interp.x_min() || cr > interp.x_max() {
+    if cr < interp.x_min() || cr > interp.x_max() || interp.is_saturated(cr)? {
       Ok(IFix64::zero())
     } else {
       interp.derivative(cr)
@@ -213,6 +213,26 @@ mod tests {
       ))
     })?;
     assert_conservation(&extract, amount, cr)
+  }
+
+  #[test]
+  fn redeem_slope_zero_where_fee_saturates() -> anyhow::Result<()> {
+    let fees = redeem_fees();
+    let cr = IFix64::<N5>::constant(299_999);
+    assert_eq!(fees.fee_inner(cr)?, fees.curve().y_max());
+    assert_eq!(fees.fee_slope(cr)?, IFix64::zero());
+    Ok(())
+  }
+
+  #[test]
+  fn mint_slope_zero_where_fee_pinned() -> anyhow::Result<()> {
+    let fees = mint_fees();
+    let pinned = IFix64::<N5>::constant(150_001);
+    assert_eq!(fees.fee_inner(pinned)?, fees.curve().y_min());
+    assert_eq!(fees.fee_slope(pinned)?, IFix64::zero());
+    let interior = IFix64::<N5>::constant(150_500);
+    assert!(fees.fee_slope(interior)? < IFix64::zero());
+    Ok(())
   }
 
   proptest! {

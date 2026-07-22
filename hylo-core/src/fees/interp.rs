@@ -208,6 +208,18 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .ok_or(CoreError::InterpArithmetic)
   }
 
+  /// Whether the ceiling-rounded [`interpolate`](Self::interpolate) has
+  /// pinned the output at a boundary value, so the output is locally
+  /// flat even though the containing segment has slope.
+  ///
+  /// # Errors
+  /// * `x` is outside the valid domain
+  /// * Arithmetic overflow
+  pub fn is_saturated(&self, x: IFix64<Exp>) -> Result<bool, CoreError> {
+    let y = self.interpolate(x)?;
+    Ok(y == self.y_min() || y == self.y_max())
+  }
+
   /// Segment whose endpoints straddle the partition by `below`.
   fn segment_at(
     &self,

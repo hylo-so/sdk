@@ -113,43 +113,89 @@ async fn runtime_max_input_dispatch() -> Result<()> {
 
 /// Marginal rate stays finite, positive, and within 1% of a central
 /// finite difference at interior points of the quotable range.
+fn assert_marginal_tracks_quotes<IN, OUT>(
+  state: &ProtocolState<Clock>,
+  route: &str,
+) where
+  IN: TokenMint,
+  OUT: TokenMint,
+  ProtocolState<Clock>: TokenOperation<IN, OUT>,
+  <IN as TokenMint>::Exp: Integer,
+{
+  let Ok(max) = TokenOperation::<IN, OUT>::max_input(state) else {
+    return;
+  };
+  let max = max.bits;
+  if max == 0 || max == u64::MAX {
+    return;
+  }
+  let quote = |x: u64| {
+    state
+      .output::<IN, OUT>(UFix64::new(x))
+      .map(|op| (op.out_amount.bits, op.marginal_rate))
+  };
+  let delta = (max / 100_000).max(1_000);
+  (1..=8u64).for_each(|i| {
+    let x = max / 10 * i;
+    let (
+      Ok((_, marginal)),
+      Ok((out_lo, marginal_lo)),
+      Ok((out_hi, marginal_hi)),
+    ) = (quote(x), quote(x - delta), quote(x + delta))
+    else {
+      return;
+    };
+    assert!(
+      marginal.is_finite() && marginal > 0.0,
+      "{route}: bad marginal {marginal} at {x}"
+    );
+    #[allow(clippy::cast_precision_loss)]
+    let fd = (out_hi.saturating_sub(out_lo)) as f64 / (2 * delta) as f64;
+    // Windows straddling a fee-curve knot make the central difference
+    // average two segment slopes; only smooth points are comparable.
+    if fd > 0.0 && (marginal_hi - marginal_lo).abs() / marginal < 1e-3 {
+      let rel = (marginal - fd).abs() / fd;
+      assert!(
+        rel < 0.01,
+        "{route}: marginal {marginal} vs finite difference {fd} at {x} (rel \
+         {rel})"
+      );
+    }
+  });
+}
+
 #[tokio::test]
 async fn marginal_matches_finite_difference() -> Result<()> {
   let Some(state) = live_state().await else {
     return Ok(());
   };
-  let max = match TokenOperation::<HYUSD, JITOSOL>::max_input(&state) {
-    Ok(max) => max.bits,
-    Err(_) => return Ok(()),
-  };
-  let quote = |x: u64| {
-    state
-      .output::<HYUSD, JITOSOL>(UFix64::<N6>::new(x))
-      .map(|op| (op.out_amount.bits, op.marginal_rate))
-  };
-  let delta = (max / 100_000).max(1_000);
-  (1..=8u64).try_for_each(|i| -> Result<()> {
-    let x = max / 10 * i;
-    let (_, marginal) = quote(x)?;
-    let (out_lo, _) = quote(x - delta)?;
-    let (out_hi, _) = quote(x + delta)?;
-    #[allow(clippy::cast_precision_loss)]
-    let fd = (out_hi - out_lo) as f64 / (2 * delta) as f64;
-    assert!(
-      marginal.is_finite() && marginal > 0.0,
-      "bad marginal {marginal} at {x}"
-    );
-    // Windows straddling a fee-curve knot make the central difference
-    // average two segment slopes; only smooth points are comparable.
-    let (_, marginal_lo) = quote(x - delta)?;
-    let (_, marginal_hi) = quote(x + delta)?;
-    if (marginal_hi - marginal_lo).abs() / marginal < 1e-3 {
-      let rel = (marginal - fd).abs() / fd;
-      assert!(
-        rel < 0.01,
-        "marginal {marginal} vs finite difference {fd} at {x} (rel {rel})"
-      );
-    }
-    Ok(())
-  })
+  assert_marginal_tracks_quotes::<JITOSOL, HYUSD>(&state, "JITOSOL->HYUSD");
+  assert_marginal_tracks_quotes::<HYUSD, JITOSOL>(&state, "HYUSD->JITOSOL");
+  assert_marginal_tracks_quotes::<HYLOSOL, HYUSD>(&state, "HYLOSOL->HYUSD");
+  assert_marginal_tracks_quotes::<HYUSD, HYLOSOL>(&state, "HYUSD->HYLOSOL");
+  assert_marginal_tracks_quotes::<JITOSOL, XSOL>(&state, "JITOSOL->XSOL");
+  assert_marginal_tracks_quotes::<XSOL, JITOSOL>(&state, "XSOL->JITOSOL");
+  assert_marginal_tracks_quotes::<HYLOSOL, XSOL>(&state, "HYLOSOL->XSOL");
+  assert_marginal_tracks_quotes::<XSOL, HYLOSOL>(&state, "XSOL->HYLOSOL");
+  assert_marginal_tracks_quotes::<HYUSD, XSOL>(&state, "HYUSD->XSOL");
+  assert_marginal_tracks_quotes::<XSOL, HYUSD>(&state, "XSOL->HYUSD");
+  assert_marginal_tracks_quotes::<JITOSOL, HYLOSOL>(&state, "JITOSOL->HYLOSOL");
+  assert_marginal_tracks_quotes::<HYLOSOL, JITOSOL>(&state, "HYLOSOL->JITOSOL");
+  assert_marginal_tracks_quotes::<JITOSOL, USDC>(&state, "JITOSOL->USDC");
+  assert_marginal_tracks_quotes::<HYLOSOL, USDC>(&state, "HYLOSOL->USDC");
+  assert_marginal_tracks_quotes::<USDC, JITOSOL>(&state, "USDC->JITOSOL");
+  assert_marginal_tracks_quotes::<USDC, HYLOSOL>(&state, "USDC->HYLOSOL");
+  assert_marginal_tracks_quotes::<CBBTC, USDC>(&state, "CBBTC->USDC");
+  assert_marginal_tracks_quotes::<USDC, CBBTC>(&state, "USDC->CBBTC");
+  assert_marginal_tracks_quotes::<HYUSD, SHYUSD>(&state, "HYUSD->SHYUSD");
+  assert_marginal_tracks_quotes::<SHYUSD, HYUSD>(&state, "SHYUSD->HYUSD");
+  assert_marginal_tracks_quotes::<USDC, HYUSD>(&state, "USDC->HYUSD");
+  assert_marginal_tracks_quotes::<HYUSD, USDC>(&state, "HYUSD->USDC");
+  assert_marginal_tracks_quotes::<CBBTC, HYUSD>(&state, "CBBTC->HYUSD");
+  assert_marginal_tracks_quotes::<HYUSD, CBBTC>(&state, "HYUSD->CBBTC");
+  assert_marginal_tracks_quotes::<CBBTC, XBTC>(&state, "CBBTC->XBTC");
+  assert_marginal_tracks_quotes::<XBTC, CBBTC>(&state, "XBTC->CBBTC");
+  assert_marginal_tracks_quotes::<HYUSD, XBTC>(&state, "HYUSD->XBTC");
+  assert_marginal_tracks_quotes::<XBTC, HYUSD>(&state, "XBTC->HYUSD");
+  Ok(())
 }
