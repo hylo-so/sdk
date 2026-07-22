@@ -60,7 +60,7 @@ impl LevercoinMarketCapLimiter {
   }
 
   /// Largest mint keeping the projected market cap within the limit:
-  /// inverts `market_cap = ceil(supply * nav)`.
+  /// inverse of [`levercoin_market_cap`].
   ///
   /// # Errors
   /// * Zero levercoin NAV
@@ -68,14 +68,11 @@ impl LevercoinMarketCapLimiter {
   pub fn max_token_out(&self) -> Result<UFix64<N6>, CoreError> {
     let max_supply = self
       .market_cap_limit
-      .mul_div_floor(UFix64::one(), self.levercoin_nav)
+      .div_floor(self.levercoin_nav)
       .and_then(UFix64::checked_convert::<N6>)
       .ok_or(LevercoinMarketCapArithmetic)?;
-    Ok(
-      max_supply
-        .checked_sub(&self.levercoin_supply)
-        .unwrap_or(UFix64::zero()),
-    )
+    let headroom = max_supply.checked_sub(&self.levercoin_supply);
+    Ok(headroom.unwrap_or_default())
   }
 
   /// Checks given mint amount against configured market cap limit.

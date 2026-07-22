@@ -21,8 +21,8 @@ pub(crate) fn max_scaled_input<Exp: Integer, RExp: Integer>(
   (num != UFix64::zero())
     .then_some(cap)
     .and_then(|cap| cap.checked_add(&atom))
-    .and_then(|bound| bound.mul_div_ceil(den, num))
-    .and_then(|max| max.checked_sub(&atom))
+    .and_then(|first_output_over| first_output_over.mul_div_ceil(den, num))
+    .and_then(|first_input_over| first_input_over.checked_sub(&atom))
 }
 
 /// Bridges runtime mint decimals to typed `UFix64<N9>`.

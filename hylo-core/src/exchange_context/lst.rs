@@ -311,7 +311,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   ) -> Result<UFix64<N9>, CoreError> {
     let headroom = UFix64::new(u64::MAX)
       .checked_sub(&self.total_sol)
-      .unwrap_or(UFix64::zero());
+      .ok_or(DestinationCollateral)?;
     lst_sol_price.max_lst_for_sol(headroom, self.clock.epoch())
   }
 

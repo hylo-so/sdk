@@ -195,9 +195,8 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     let supply_cap = self
       .exchange_context
       .virtual_stablecoin_supply()?
-      .checked_sub(&SUPPLY_FLOOR)
-      .unwrap_or(UFix64::zero());
-    Ok(vault_cap.min(supply_cap))
+      .checked_sub(&SUPPLY_FLOOR);
+    Ok(vault_cap.min(supply_cap.unwrap_or_default()))
   }
 }
 
@@ -382,7 +381,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
       CoreError::OperationDisabled,
     )?;
     let supply = self.exchange_context.virtual_stablecoin_supply()?;
-    let burn_cap = supply.checked_sub(&SUPPLY_FLOOR).unwrap_or(UFix64::zero());
+    let burn_cap = supply.checked_sub(&SUPPLY_FLOOR).unwrap_or_default();
     let fee_rate = self
       .exchange_context
       .stablecoin_to_levercoin_fee_rate(burn_cap)?;
@@ -708,9 +707,8 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
       .max_token_for_exo(exo.total_collateral, exo.stablecoin_nav()?)?;
     let supply_cap = exo
       .virtual_stablecoin_supply()?
-      .checked_sub(&self.btc_pair_state.supply_floor)
-      .unwrap_or(UFix64::zero());
-    Ok(vault_cap.min(supply_cap))
+      .checked_sub(&self.btc_pair_state.supply_floor);
+    Ok(vault_cap.min(supply_cap.unwrap_or_default()))
   }
 }
 
@@ -892,7 +890,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
     let supply = exo.virtual_stablecoin_supply()?;
     let burn_cap = supply
       .checked_sub(&self.btc_pair_state.supply_floor)
-      .unwrap_or(UFix64::zero());
+      .unwrap_or_default();
     let remaining = market_cap.min(burn_cap);
     let fee_rate = exo.stablecoin_to_levercoin_fee_rate(remaining)?;
     Ok(FeeExtract::max_input(fee_rate, remaining)?.min(supply))

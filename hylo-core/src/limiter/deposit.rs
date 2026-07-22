@@ -68,12 +68,8 @@ impl DepositLimiter {
     &self,
     pool_amount: UFix64<N6>,
   ) -> Result<UFix64<N6>, CoreError> {
-    Ok(
-      self
-        .limit()?
-        .checked_sub(&pool_amount)
-        .unwrap_or(UFix64::zero()),
-    )
+    let max = self.limit()?.checked_sub(&pool_amount);
+    Ok(max.unwrap_or_default())
   }
 
   /// Validates incoming deposit against limit.

@@ -93,11 +93,9 @@ impl Conversion {
     &self,
     token_nav: UFix64<N9>,
   ) -> Result<UFix64<N9>, CoreError> {
-    let top = UFix64::new(u64::MAX);
-    let sol = top
+    let sol = UFix64::new(u64::MAX)
       .mul_div_floor(token_nav, self.usd_sol_price.lower)
-      .unwrap_or(top)
-      .min(top);
+      .ok_or(LstToToken)?;
     max_scaled_input(sol, self.lst_sol_price, UFix64::one()).ok_or(LstToToken)
   }
 
@@ -410,7 +408,7 @@ impl UsdcStablecoinConversion {
   #[cfg(any(test, feature = "offchain"))]
   #[must_use]
   pub fn max_deposit() -> UFix64<N6> {
-    UFix64::<N9>::new(u64::MAX).convert::<N6>()
+    UFix64::<N9>::new(u64::MAX).convert()
   }
 
   /// USDC withdrawal to stablecoin equivalent using upper bound.

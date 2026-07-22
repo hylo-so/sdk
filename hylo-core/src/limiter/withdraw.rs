@@ -135,12 +135,8 @@ impl WithdrawalLimiter {
     current_epoch: u64,
   ) -> Result<UFix64<N6>, CoreError> {
     let ledger_total = self.epoch_ledger(current_epoch)?.supply()?;
-    Ok(
-      self
-        .limit()?
-        .checked_sub(&ledger_total)
-        .unwrap_or(UFix64::zero()),
-    )
+    let projected = self.limit()?.checked_sub(&ledger_total);
+    Ok(projected.unwrap_or_default())
   }
 
   fn epoch_ledger(
