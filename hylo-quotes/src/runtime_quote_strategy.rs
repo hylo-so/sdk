@@ -77,6 +77,25 @@ macro_rules! runtime_quote_strategies {
             _ => Err(anyhow!("Unsupported pair")),
           }
         }
+
+        /// Smallest executable input for the pair in input-mint atoms.
+        ///
+        /// # Errors
+        /// * Unsupported pair or route gated in current state
+        pub fn runtime_min_input(
+          &self,
+          input_mint: Pubkey,
+          output_mint: Pubkey,
+        ) -> Result<u64> {
+          match (input_mint, output_mint) {
+            $(
+              (<$in>::MINT, <$out>::MINT) => {
+                Ok(TokenOperation::<$in, $out>::min_input(self)?.bits)
+              },
+            )*
+            _ => Err(anyhow!("Unsupported pair")),
+          }
+        }
       }
     };
 }

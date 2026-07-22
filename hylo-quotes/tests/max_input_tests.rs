@@ -111,6 +111,102 @@ async fn runtime_max_input_dispatch() -> Result<()> {
   Ok(())
 }
 
+#[tokio::test]
+async fn runtime_min_input_dispatch() -> Result<()> {
+  let Some(state) = live_state().await else {
+    return Ok(());
+  };
+  let typed = TokenOperation::<HYUSD, JITOSOL>::min_input(&state);
+  let dispatched = state.runtime_min_input(HYUSD::MINT, JITOSOL::MINT);
+  match (typed, dispatched) {
+    (Ok(min), Ok(bits)) => assert_eq!(min.bits, bits),
+    (Err(_), Err(_)) => {}
+    (typed, dispatched) => {
+      panic!("dispatch mismatch: typed={typed:?} runtime={dispatched:?}")
+    }
+  }
+  assert!(state.runtime_min_input(HYUSD::MINT, HYUSD::MINT).is_err());
+  Ok(())
+}
+
+/// Parity between `min_input` and `compute_output`: the reported min
+/// yields at least one output atom and one input atom less yields none.
+fn assert_min_input_parity<IN, OUT>(state: &ProtocolState<Clock>, route: &str)
+where
+  IN: TokenMint,
+  OUT: TokenMint,
+  ProtocolState<Clock>: TokenOperation<IN, OUT>,
+  <IN as TokenMint>::Exp: Integer,
+{
+  let min = match TokenOperation::<IN, OUT>::min_input(state) {
+    Ok(min) => min,
+    Err(gate_error) => {
+      let quote = state.output::<IN, OUT>(UFix64::new(1_000_000));
+      assert!(
+        quote.is_err(),
+        "{route}: min_input gated with {gate_error} but quote succeeded"
+      );
+      return;
+    }
+  };
+  let quotable =
+    TokenOperation::<IN, OUT>::max_input(state).is_ok_and(|max| min <= max);
+  if quotable {
+    match state.output::<IN, OUT>(min) {
+      Ok(op) => assert!(
+        op.out_amount.bits >= 1,
+        "{route}: quote at min_input {} yields no output",
+        min.bits
+      ),
+      Err(error) => {
+        panic!("{route}: quote at min_input {} failed: {error}", min.bits)
+      }
+    }
+  }
+  let below = state.output::<IN, OUT>(UFix64::new(min.bits - 1));
+  assert!(
+    below.map_or(true, |op| op.out_amount.bits == 0),
+    "{route}: quote below min_input {} yields output",
+    min.bits
+  );
+}
+
+#[tokio::test]
+async fn min_input_parity_all_routes() -> Result<()> {
+  let Some(state) = live_state().await else {
+    return Ok(());
+  };
+  assert_min_input_parity::<JITOSOL, HYUSD>(&state, "JITOSOL->HYUSD");
+  assert_min_input_parity::<HYUSD, JITOSOL>(&state, "HYUSD->JITOSOL");
+  assert_min_input_parity::<HYLOSOL, HYUSD>(&state, "HYLOSOL->HYUSD");
+  assert_min_input_parity::<HYUSD, HYLOSOL>(&state, "HYUSD->HYLOSOL");
+  assert_min_input_parity::<JITOSOL, XSOL>(&state, "JITOSOL->XSOL");
+  assert_min_input_parity::<XSOL, JITOSOL>(&state, "XSOL->JITOSOL");
+  assert_min_input_parity::<HYLOSOL, XSOL>(&state, "HYLOSOL->XSOL");
+  assert_min_input_parity::<XSOL, HYLOSOL>(&state, "XSOL->HYLOSOL");
+  assert_min_input_parity::<HYUSD, XSOL>(&state, "HYUSD->XSOL");
+  assert_min_input_parity::<XSOL, HYUSD>(&state, "XSOL->HYUSD");
+  assert_min_input_parity::<JITOSOL, HYLOSOL>(&state, "JITOSOL->HYLOSOL");
+  assert_min_input_parity::<HYLOSOL, JITOSOL>(&state, "HYLOSOL->JITOSOL");
+  assert_min_input_parity::<JITOSOL, USDC>(&state, "JITOSOL->USDC");
+  assert_min_input_parity::<HYLOSOL, USDC>(&state, "HYLOSOL->USDC");
+  assert_min_input_parity::<USDC, JITOSOL>(&state, "USDC->JITOSOL");
+  assert_min_input_parity::<USDC, HYLOSOL>(&state, "USDC->HYLOSOL");
+  assert_min_input_parity::<CBBTC, USDC>(&state, "CBBTC->USDC");
+  assert_min_input_parity::<USDC, CBBTC>(&state, "USDC->CBBTC");
+  assert_min_input_parity::<HYUSD, SHYUSD>(&state, "HYUSD->SHYUSD");
+  assert_min_input_parity::<SHYUSD, HYUSD>(&state, "SHYUSD->HYUSD");
+  assert_min_input_parity::<USDC, HYUSD>(&state, "USDC->HYUSD");
+  assert_min_input_parity::<HYUSD, USDC>(&state, "HYUSD->USDC");
+  assert_min_input_parity::<CBBTC, HYUSD>(&state, "CBBTC->HYUSD");
+  assert_min_input_parity::<HYUSD, CBBTC>(&state, "HYUSD->CBBTC");
+  assert_min_input_parity::<CBBTC, XBTC>(&state, "CBBTC->XBTC");
+  assert_min_input_parity::<XBTC, CBBTC>(&state, "XBTC->CBBTC");
+  assert_min_input_parity::<HYUSD, XBTC>(&state, "HYUSD->XBTC");
+  assert_min_input_parity::<XBTC, HYUSD>(&state, "XBTC->HYUSD");
+  Ok(())
+}
+
 /// Marginal rate stays finite, positive, and within 1% of a central
 /// finite difference at interior points of the quotable range.
 fn assert_marginal_tracks_quotes<IN, OUT>(

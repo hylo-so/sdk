@@ -256,4 +256,6 @@ pub enum CoreError {
   RebalanceBuyTargetExceeded,
   #[msg("Earn pool cannot absorb rebalance swap loss.")]
   InsufficientEarnPoolLiquidity,
+  #[msg("Overflow while computing minimum input.")]
+  MinInputOverflow,
 }

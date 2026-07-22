@@ -4,7 +4,7 @@ use fix::prelude::*;
 use hylo_core::calculus::positive_rate;
 use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
-  max_lp_token_for_withdrawal,
+  max_lp_token_for_withdrawal, max_token_for_lp_deposit,
 };
 use hylo_core::error::CoreError;
 use hylo_core::fees::controller::FeeExtract;
@@ -15,7 +15,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  gate, OperationOutput, SwapOperationOutput, TokenOperation,
+  gate, past_zero, OperationOutput, SwapOperationOutput, TokenOperation,
 };
 
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
@@ -60,6 +60,14 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
     let deposit_limiter: DepositLimiter =
       self.pool_config.deposit_limiter.into();
     deposit_limiter.max_deposit(UFix64::new(self.hyusd_pool.amount))
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    let shyusd_nav = lp_token_nav(
+      UFix64::new(self.hyusd_pool.amount),
+      UFix64::new(self.shyusd_mint.supply),
+    )?;
+    past_zero(max_token_for_lp_deposit(UFix64::zero(), shyusd_nav)?)
   }
 }
 
@@ -125,5 +133,18 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     let limiter_cap =
       max_lp_token_for_withdrawal(headroom, shyusd_supply, hyusd_in_pool)?;
     Ok(limiter_cap.min(shyusd_supply))
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    let withdrawal_fee: UFix64<N4> =
+      self.pool_config.withdrawal_fee.try_into()?;
+    let max_zero_withdrawal =
+      FeeExtract::max_input(withdrawal_fee, UFix64::zero())?;
+    let max_zero_lp = max_lp_token_for_withdrawal(
+      max_zero_withdrawal,
+      UFix64::new(self.shyusd_mint.supply),
+      UFix64::new(self.hyusd_pool.amount),
+    )?;
+    past_zero(max_zero_lp)
   }
 }

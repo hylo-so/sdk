@@ -400,6 +400,21 @@ impl UsdcStablecoinConversion {
     Ok(normalized.convert::<N6>())
   }
 
+  /// Inverse of [`deposit_to_stablecoin`](Self::deposit_to_stablecoin)
+  /// under a stablecoin cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn max_deposit_for_stablecoin(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let unconverted = max_before_truncation(cap).ok_or(ExoToToken)?;
+    max_scaled_input(unconverted, self.usdc_usd_price.lower, UFix64::one())
+      .ok_or(ExoToToken)
+  }
+
   /// `N9` normalization frontier for USDC deposits.
   #[cfg(any(test, feature = "offchain"))]
   #[must_use]
@@ -505,6 +520,20 @@ impl ExoRebalanceConversion {
         amt.mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
       })
   }
+
+  /// Inverse of [`usdc_to_collateral`](Self::usdc_to_collateral) under a
+  /// collateral cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn max_usdc_for_collateral(
+    &self,
+    cap: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    max_scaled_input(cap, self.usdc_usd_price.lower, self.collateral_usd_price)
+      .ok_or(ExoUsdcToCollateral)
+  }
 }
 
 /// Conversions between LST and USDC via SOL for rebalancing.
@@ -571,6 +600,20 @@ impl LstRebalanceConversion {
       .and_then(|amt| amt.mul_div_floor(self.usdc_usd.lower, self.sol_usd))
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
       .ok_or(UsdcToLst)
+  }
+
+  /// Inverse of [`usdc_to_lst`](Self::usdc_to_lst) under an LST cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn max_usdc_for_lst(
+    &self,
+    cap: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let sol =
+      max_scaled_input(cap, UFix64::one(), self.lst_sol).ok_or(UsdcToLst)?;
+    max_scaled_input(sol, self.usdc_usd.lower, self.sol_usd).ok_or(UsdcToLst)
   }
 }
 

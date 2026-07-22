@@ -45,6 +45,18 @@ fn lp_token_out_inner(
     .and_then(|amt| amt.mul_div_floor(UFix64::one(), lp_token_nav))
 }
 
+/// Inverse of [`lp_token_out`] under an LP token cap.
+///
+/// # Errors
+/// * Zero NAV
+#[cfg(any(test, feature = "offchain"))]
+pub fn max_token_for_lp_deposit(
+  cap: UFix64<N6>,
+  lp_token_nav: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  max_scaled_input(cap, UFix64::one(), lp_token_nav).ok_or(LpTokenOut)
+}
+
 /// Computes amount of token to withdraw, given a user's LP equity in the pool.
 pub fn amount_token_to_withdraw(
   user_lp_token_amount: UFix64<N6>,

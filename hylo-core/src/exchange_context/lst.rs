@@ -186,6 +186,22 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     })
   }
 
+  /// Stablecoin mint fee rate at the projected CR.
+  ///
+  /// # Errors
+  /// * Projection overflow or curve lookup
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn stablecoin_mint_fee_rate(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst_in: UFix64<N9>,
+  ) -> Result<UFix64<N5>, CoreError> {
+    let projected = self.projected_mint_state(lst_sol_price, amount_lst_in)?;
+    self
+      .stablecoin_mint_fees
+      .fee_rate(projected.collateral_ratio)
+  }
+
   /// Stablecoin redeem fee via interpolated curve at projected CR.
   ///
   /// # Errors
@@ -200,6 +216,23 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     self
       .stablecoin_redeem_fees
       .apply_fee(projected.collateral_ratio, amount_lst_out)
+  }
+
+  /// Stablecoin redeem fee rate at the projected CR.
+  ///
+  /// # Errors
+  /// * Projection underflow or curve lookup
+  #[cfg(any(test, feature = "offchain"))]
+  pub fn stablecoin_redeem_fee_rate(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst_out: UFix64<N9>,
+  ) -> Result<UFix64<N5>, CoreError> {
+    let projected =
+      self.projected_redeem_state(lst_sol_price, amount_lst_out)?;
+    self
+      .stablecoin_redeem_fees
+      .fee_rate(projected.collateral_ratio)
   }
 
   /// Post-trade state used by the stablecoin redeem fee projection.
@@ -278,25 +311,31 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     lst_sol_price: &LstSolPrice,
     amount_lst_out: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
+    let rate = self.levercoin_redeem_fee_rate(lst_sol_price, amount_lst_out)?;
+    FeeExtract::new(rate, amount_lst_out)
+  }
+
+  /// Levercoin redeem fee rate at the projected rebalance mode.
+  ///
+  /// # Errors
+  /// * Projection underflow or mode-based fee lookup
+  pub fn levercoin_redeem_fee_rate(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst_out: UFix64<N9>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let sol_rm =
       lst_sol_price.convert_lst_to_sol(amount_lst_out, self.clock.epoch())?;
     let new_total_sol = self
       .total_sol
       .checked_sub(&sol_rm)
       .ok_or(DestinationCollateral)?;
-
-    let rebalance_mode_for_fees = {
-      let projected = self.projected_rebalance_mode(
-        new_total_sol,
-        self.virtual_stablecoin_supply()?,
-      )?;
-      self.select_rebalance_mode_for_fees(projected)
-    };
-
-    self
-      .levercoin_fees
-      .redeem_fee(rebalance_mode_for_fees)
-      .and_then(|fee| FeeExtract::new(fee, amount_lst_out))
+    let projected = self.projected_rebalance_mode(
+      new_total_sol,
+      self.virtual_stablecoin_supply()?,
+    )?;
+    let mode = self.select_rebalance_mode_for_fees(projected);
+    self.levercoin_fees.redeem_fee(mode)
   }
 
   /// Overflow frontier for adding an LST deposit to total SOL.

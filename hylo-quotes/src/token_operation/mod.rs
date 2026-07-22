@@ -4,7 +4,7 @@ mod earn_pool;
 mod exchange;
 
 use anchor_lang::prelude::Pubkey;
-use fix::prelude::{UFix64, N6, N9};
+use fix::prelude::{CheckedAdd, UFix64, N6, N9};
 use fix::typenum::Integer;
 use hylo_core::calculus::{positive, positive_rate};
 use hylo_core::error::CoreError;
@@ -12,6 +12,15 @@ use hylo_idl::tokens::TokenMint;
 
 fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
   condition.then_some(()).ok_or(error)
+}
+
+/// Smallest input past the largest zero-output input.
+fn past_zero<Exp: Integer>(
+  zero_ceiling: UFix64<Exp>,
+) -> Result<UFix64<Exp>, CoreError> {
+  zero_ceiling
+    .checked_add(&UFix64::new(1))
+    .ok_or(CoreError::MinInputOverflow)
 }
 
 /// Marginal rate of a fee-flat route in atoms. The output is linear in
@@ -72,6 +81,13 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   /// * Underlying arithmetic
   fn max_input_ungated(&self) -> Result<UFix64<IN::Exp>, CoreError>;
 
+  /// Smallest input yielding at least one output atom, skipping
+  /// [`Self::preconditions`].
+  ///
+  /// # Errors
+  /// * Underlying arithmetic
+  fn min_input_ungated(&self) -> Result<UFix64<IN::Exp>, CoreError>;
+
   /// Pure math to complete a token pair operation (mint/redeem/swap).
   ///
   /// # Errors
@@ -92,6 +108,15 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   fn max_input(&self) -> Result<UFix64<IN::Exp>, CoreError> {
     self.preconditions()?;
     self.max_input_ungated()
+  }
+
+  /// Smallest input the route turns into output in the current state.
+  ///
+  /// # Errors
+  /// * Route gated in current state or underlying arithmetic
+  fn min_input(&self) -> Result<UFix64<IN::Exp>, CoreError> {
+    self.preconditions()?;
+    self.min_input_ungated()
   }
 }
 
