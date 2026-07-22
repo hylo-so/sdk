@@ -21,16 +21,19 @@ use crate::token_operation::{
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
-  fn compute_output(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<SwapOperationOutput, CoreError> {
+  fn preconditions(&self) -> Result<(), CoreError> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.pool_config.paused, CoreError::PairPaused)?;
     gate(
       self.hyusd_pool.amount > 0 || self.shyusd_mint.supply == 0,
       CoreError::OperationDisabled,
-    )?;
+    )
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<SwapOperationOutput, CoreError> {
     let shyusd_nav = lp_token_nav(
       UFix64::new(self.hyusd_pool.amount),
       UFix64::new(self.shyusd_mint.supply),
@@ -53,13 +56,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
     })
   }
 
-  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.pool_config.paused, CoreError::PairPaused)?;
-    gate(
-      self.hyusd_pool.amount > 0 || self.shyusd_mint.supply == 0,
-      CoreError::OperationDisabled,
-    )?;
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let deposit_limiter: DepositLimiter =
       self.pool_config.deposit_limiter.into();
     deposit_limiter.max_deposit(UFix64::new(self.hyusd_pool.amount))
@@ -69,12 +66,19 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
-  fn compute_output(
+  fn preconditions(&self) -> Result<(), CoreError> {
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.pool_config.paused, CoreError::PairPaused)?;
+    gate(
+      self.hyusd_pool.amount > 0,
+      CoreError::InsufficientEarnPoolLiquidity,
+    )
+  }
+
+  fn compute_output_ungated(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<SwapOperationOutput, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.pool_config.paused, CoreError::PairPaused)?;
     let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     gate(
@@ -111,15 +115,9 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     })
   }
 
-  fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
-    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.pool_config.paused, CoreError::PairPaused)?;
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
     let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
-    gate(
-      hyusd_in_pool > UFix64::zero(),
-      CoreError::InsufficientEarnPoolLiquidity,
-    )?;
     let withdrawal_limiter: WithdrawalLimiter =
       self.pool_config.withdrawal_limiter.into();
     let headroom =

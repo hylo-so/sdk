@@ -51,21 +51,48 @@ pub type LstSwapOperationOutput = OperationOutput<N9, N9, N9>;
 pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   type FeeExp: Integer;
 
-  /// Pure math to complete a token pair operation (mint/redeem/swap).
+  /// State-only route gates; an error means the route is closed.
+  ///
+  /// # Errors
+  /// * Route gated in current state (paused, mode-disabled, unharvested)
+  fn preconditions(&self) -> Result<(), CoreError>;
+
+  /// Pure math for the operation, skipping [`Self::preconditions`].
   ///
   /// # Errors
   /// * Underlying arithmetic
-  fn compute_output(
+  fn compute_output_ungated(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>, CoreError>;
+
+  /// Input ceiling for the route, skipping [`Self::preconditions`].
+  ///
+  /// # Errors
+  /// * Underlying arithmetic
+  fn max_input_ungated(&self) -> Result<UFix64<IN::Exp>, CoreError>;
+
+  /// Pure math to complete a token pair operation (mint/redeem/swap).
+  ///
+  /// # Errors
+  /// * Route gated in current state or underlying arithmetic
+  fn compute_output(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>, CoreError> {
+    self.preconditions()?;
+    self.compute_output_ungated(amount_in)
+  }
 
   /// Input ceiling the protocol accepts for this route in the current
   /// state.
   ///
   /// # Errors
-  /// * Route gated in current state (paused, mode-disabled, unharvested)
-  fn max_input(&self) -> Result<UFix64<IN::Exp>, CoreError>;
+  /// * Route gated in current state or underlying arithmetic
+  fn max_input(&self) -> Result<UFix64<IN::Exp>, CoreError> {
+    self.preconditions()?;
+    self.max_input_ungated()
+  }
 }
 
 /// Turbofish helper for [`TokenOperation`].
