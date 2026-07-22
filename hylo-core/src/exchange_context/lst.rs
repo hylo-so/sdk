@@ -774,6 +774,18 @@ mod tests {
   }
 
   #[test]
+  fn stablecoin_removal_keeps_cr_representable() -> Result<(), CoreError> {
+    let ctx = mid_cr_context()?;
+    let removal = ctx.max_stablecoin_removal()?;
+    let remaining = ctx
+      .virtual_stablecoin_supply()?
+      .checked_sub(&removal)
+      .ok_or(CoreError::CollateralRatio)?;
+    collateral_ratio(ctx.total_sol, ctx.sol_usd_price.lower, remaining)?;
+    Ok(())
+  }
+
+  #[test]
   fn mint_fee_slope_is_negative() -> Result<(), CoreError> {
     let ctx = mid_cr_context()?;
     let cr = narrow_cr(ctx.collateral_ratio)?;

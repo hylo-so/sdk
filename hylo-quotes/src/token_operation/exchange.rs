@@ -428,7 +428,8 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
     let fee_rate = self
       .exchange_context
       .stablecoin_to_levercoin_fee_rate(burn_cap)?;
-    Ok(FeeExtract::max_input(fee_rate, burn_cap)?.min(supply))
+    let projectable = self.exchange_context.max_stablecoin_removal()?;
+    Ok(FeeExtract::max_input(fee_rate, burn_cap)?.min(projectable))
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
@@ -1022,7 +1023,8 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       .unwrap_or_default();
     let remaining = market_cap.min(burn_cap);
     let fee_rate = exo.stablecoin_to_levercoin_fee_rate(remaining)?;
-    Ok(FeeExtract::max_input(fee_rate, remaining)?.min(supply))
+    let projectable = exo.max_stablecoin_removal()?;
+    Ok(FeeExtract::max_input(fee_rate, remaining)?.min(projectable))
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {

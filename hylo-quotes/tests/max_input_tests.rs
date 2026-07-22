@@ -171,6 +171,79 @@ where
   );
 }
 
+/// Every size on a geometric grid across `[min_input, max_input]`
+/// quotes without error.
+fn assert_range_soundness<IN, OUT>(state: &ProtocolState<Clock>, route: &str)
+where
+  IN: TokenMint,
+  OUT: TokenMint,
+  ProtocolState<Clock>: TokenOperation<IN, OUT>,
+  <IN as TokenMint>::Exp: Integer,
+{
+  let (Ok(min), Ok(max)) = (
+    TokenOperation::<IN, OUT>::min_input(state),
+    TokenOperation::<IN, OUT>::max_input(state),
+  ) else {
+    return;
+  };
+  if min > max {
+    return;
+  }
+  #[allow(clippy::cast_precision_loss)]
+  let ratio = (max.bits as f64 / min.bits as f64).powf(1.0 / 63.0);
+  (0..64u32).for_each(|i| {
+    #[allow(
+      clippy::cast_precision_loss,
+      clippy::cast_possible_truncation,
+      clippy::cast_sign_loss
+    )]
+    let x = ((min.bits as f64) * ratio.powi(i.cast_signed())) as u64;
+    let x = x.clamp(min.bits, max.bits);
+    assert!(
+      state.output::<IN, OUT>(UFix64::new(x)).is_ok(),
+      "{route}: quote failed at {x} inside [{}, {}]",
+      min.bits,
+      max.bits
+    );
+  });
+}
+
+#[tokio::test]
+async fn range_soundness_all_routes() -> Result<()> {
+  let Some(state) = live_state().await else {
+    return Ok(());
+  };
+  assert_range_soundness::<JITOSOL, HYUSD>(&state, "JITOSOL->HYUSD");
+  assert_range_soundness::<HYUSD, JITOSOL>(&state, "HYUSD->JITOSOL");
+  assert_range_soundness::<HYLOSOL, HYUSD>(&state, "HYLOSOL->HYUSD");
+  assert_range_soundness::<HYUSD, HYLOSOL>(&state, "HYUSD->HYLOSOL");
+  assert_range_soundness::<JITOSOL, XSOL>(&state, "JITOSOL->XSOL");
+  assert_range_soundness::<XSOL, JITOSOL>(&state, "XSOL->JITOSOL");
+  assert_range_soundness::<HYLOSOL, XSOL>(&state, "HYLOSOL->XSOL");
+  assert_range_soundness::<XSOL, HYLOSOL>(&state, "XSOL->HYLOSOL");
+  assert_range_soundness::<HYUSD, XSOL>(&state, "HYUSD->XSOL");
+  assert_range_soundness::<XSOL, HYUSD>(&state, "XSOL->HYUSD");
+  assert_range_soundness::<JITOSOL, HYLOSOL>(&state, "JITOSOL->HYLOSOL");
+  assert_range_soundness::<HYLOSOL, JITOSOL>(&state, "HYLOSOL->JITOSOL");
+  assert_range_soundness::<JITOSOL, USDC>(&state, "JITOSOL->USDC");
+  assert_range_soundness::<HYLOSOL, USDC>(&state, "HYLOSOL->USDC");
+  assert_range_soundness::<USDC, JITOSOL>(&state, "USDC->JITOSOL");
+  assert_range_soundness::<USDC, HYLOSOL>(&state, "USDC->HYLOSOL");
+  assert_range_soundness::<CBBTC, USDC>(&state, "CBBTC->USDC");
+  assert_range_soundness::<USDC, CBBTC>(&state, "USDC->CBBTC");
+  assert_range_soundness::<HYUSD, SHYUSD>(&state, "HYUSD->SHYUSD");
+  assert_range_soundness::<SHYUSD, HYUSD>(&state, "SHYUSD->HYUSD");
+  assert_range_soundness::<USDC, HYUSD>(&state, "USDC->HYUSD");
+  assert_range_soundness::<HYUSD, USDC>(&state, "HYUSD->USDC");
+  assert_range_soundness::<CBBTC, HYUSD>(&state, "CBBTC->HYUSD");
+  assert_range_soundness::<HYUSD, CBBTC>(&state, "HYUSD->CBBTC");
+  assert_range_soundness::<CBBTC, XBTC>(&state, "CBBTC->XBTC");
+  assert_range_soundness::<XBTC, CBBTC>(&state, "XBTC->CBBTC");
+  assert_range_soundness::<HYUSD, XBTC>(&state, "HYUSD->XBTC");
+  assert_range_soundness::<XBTC, HYUSD>(&state, "XBTC->HYUSD");
+  Ok(())
+}
+
 #[tokio::test]
 async fn min_input_parity_all_routes() -> Result<()> {
   let Some(state) = live_state().await else {

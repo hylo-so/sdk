@@ -435,6 +435,29 @@ pub trait ExchangeContext {
     }
   }
 
+  /// Stablecoin removable before the projected collateral ratio
+  /// overflows its representation.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  #[cfg(any(test, feature = "offchain"))]
+  fn max_stablecoin_removal(&self) -> Result<UFix64<N6>, CoreError> {
+    let min_supply = self
+      .total_collateral()
+      .mul_div_ceil(
+        self.collateral_usd_price().lower,
+        UFix64::<N9>::new(u64::MAX),
+      )
+      .and_then(UFix64::checked_convert_ceil::<N6>)
+      .ok_or(CollateralRatio)?;
+    Ok(
+      self
+        .virtual_stablecoin_supply()?
+        .checked_sub(&min_supply)
+        .unwrap_or_default(),
+    )
+  }
+
   /// Validates a stablecoin mint amount against the protocol max.
   ///
   /// # Errors
