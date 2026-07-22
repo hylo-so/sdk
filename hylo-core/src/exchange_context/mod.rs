@@ -15,6 +15,8 @@ pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
+#[cfg(any(test, feature = "offchain"))]
+use crate::error::CoreError::{CollateralRatio, DestinationCollateral};
 use crate::error::CoreError::{
   DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
   RebalanceBuySideTarget, RebalanceSellSideLiquidity,
@@ -35,6 +37,8 @@ use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
+#[cfg(any(test, feature = "offchain"))]
+use crate::util::max_scaled_input;
 
 /// Post-trade totals and collateral ratio from a fee projection.
 /// Totals feed the offchain marginal rate math.
@@ -370,7 +374,7 @@ pub trait ExchangeContext {
     max_mintable_stablecoin(
       target,
       self.total_collateral(),
-      self.collateral_usd_price().upper,
+      self.collateral_usd_price().lower,
       self.virtual_stablecoin_supply()?,
     )
   }
@@ -391,6 +395,46 @@ pub trait ExchangeContext {
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
     )
+  }
+
+  /// Largest collateral removal keeping the projected rebalance mode
+  /// out of Depeg: inverse of
+  /// [`projected_rebalance_mode`](ExchangeContext::projected_rebalance_mode)
+  /// over the collateral argument.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  /// * Current state already below the Depeg exit
+  #[cfg(any(test, feature = "offchain"))]
+  fn max_collateral_removal(&self) -> Result<UFix64<N9>, CoreError> {
+    let supply = self.virtual_stablecoin_supply()?;
+    if supply == UFix64::zero() {
+      Ok(self.total_collateral())
+    } else {
+      let atom = UFix64::new(1);
+      let last_depeg_cr = RebalanceMode::SellZone2
+        .active_range()
+        .start()?
+        .checked_sub(&atom)
+        .ok_or(CollateralRatio)?;
+      let min_collateral = supply
+        .checked_convert::<N9>()
+        .and_then(|supply| {
+          max_scaled_input(
+            last_depeg_cr,
+            self.collateral_usd_price().lower,
+            supply,
+          )
+        })
+        .and_then(|last_depeg_collateral| {
+          last_depeg_collateral.checked_add(&atom)
+        })
+        .ok_or(CollateralRatio)?;
+      self
+        .total_collateral()
+        .checked_sub(&min_collateral)
+        .ok_or(DestinationCollateral)
+    }
   }
 
   /// Validates a stablecoin mint amount against the protocol max.

@@ -123,8 +123,8 @@ impl Conversion {
     .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
   }
 
-  /// Largest token input converting to at most `cap` LST: inverse of
-  /// [`token_to_lst`](Self::token_to_lst).
+  /// Largest token input converting to at most `cap` LST.
+  /// Inverse of [`token_to_lst`](Self::token_to_lst).
   ///
   /// # Errors
   /// * Degenerate NAV
@@ -407,7 +407,7 @@ impl UsdcStablecoinConversion {
   /// Largest USDC deposit representable after `N9` normalization.
   #[cfg(any(test, feature = "offchain"))]
   #[must_use]
-  pub fn max_deposit() -> UFix64<N6> {
+  pub fn max_representable_deposit() -> UFix64<N6> {
     UFix64::<N9>::new(u64::MAX).convert()
   }
 

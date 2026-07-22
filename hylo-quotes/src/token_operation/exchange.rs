@@ -6,7 +6,6 @@ use hylo_core::conversion::UsdcStablecoinConversion;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
-use hylo_core::exchange_math::max_mintable_stablecoin;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::rebalance::mode::RebalanceMode;
@@ -23,23 +22,6 @@ use crate::token_operation::{
   OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
 use crate::{Local, LST};
-
-/// Maximum mintable stablecoin as projected by the mint fee curve,
-/// which prices collateral at the lower oracle bound.
-fn fee_curve_mintable(
-  context: &impl ExchangeContext,
-) -> Result<UFix64<N6>, CoreError> {
-  let target = context
-    .stablecoin_mint_threshold()
-    .checked_convert()
-    .ok_or(CoreError::MaxMintable)?;
-  max_mintable_stablecoin(
-    target,
-    context.total_collateral(),
-    context.collateral_usd_price().lower,
-    context.virtual_stablecoin_supply()?,
-  )
-}
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// Pause and harvest gates for LST-pair routes.
@@ -124,10 +106,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
       CoreError::OperationDisabled,
     )?;
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
-    let cap = self
-      .exchange_context
-      .max_mintable_stablecoin()?
-      .min(fee_curve_mintable(&self.exchange_context)?);
+    let cap = self.exchange_context.max_mintable_stablecoin()?;
     self
       .exchange_context
       .token_conversion(&lst_price)?
@@ -321,15 +300,19 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<XSOL, L>
       CoreError::OperationDisabled,
     )?;
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
-    let vault_cap = self
+    let removable_lst = lst_price.max_lst_for_sol(
+      self.exchange_context.max_collateral_removal()?,
+      self.exchange_context.clock.epoch(),
+    )?;
+    let collateral_cap = self
       .exchange_context
       .token_conversion(&lst_price)?
       .max_token_for_lst(
-        self.lst_vault_balance::<L>()?,
+        self.lst_vault_balance::<L>()?.min(removable_lst),
         self.exchange_context.levercoin_redeem_nav()?,
       )?;
     let supply_cap = self.exchange_context.levercoin_supply()?;
-    Ok(vault_cap.min(supply_cap))
+    Ok(collateral_cap.min(supply_cap))
   }
 }
 
@@ -438,14 +421,10 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
       self.exchange_context.stablecoin_mint_enabled(),
       CoreError::OperationDisabled,
     )?;
-    let swap_cap = self
+    self
       .exchange_context
       .swap_conversion()?
-      .max_lever_for_stable(
-        self.exchange_context.max_swappable_stablecoin()?,
-      )?;
-    let supply_cap = self.exchange_context.levercoin_supply()?;
-    Ok(swap_cap.min(supply_cap))
+      .max_lever_for_stable(self.exchange_context.max_swappable_stablecoin()?)
   }
 }
 
@@ -544,7 +523,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
 
   fn max_input(&self) -> Result<UFix64<N6>, CoreError> {
     self.usdc_pair_gates()?;
-    Ok(UsdcStablecoinConversion::max_deposit())
+    Ok(UsdcStablecoinConversion::max_representable_deposit())
   }
 }
 
@@ -649,7 +628,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
       CoreError::DrawdownNotRepaid,
     )?;
     gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
-    let cap = exo.max_mintable_stablecoin()?.min(fee_curve_mintable(exo)?);
+    let cap = exo.max_mintable_stablecoin()?;
     let mintable = exo
       .exo_conversion()
       .max_exo_for_token(cap, exo.stablecoin_nav()?)?;
@@ -830,10 +809,11 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       exo.rebalance_mode() != RebalanceMode::Depeg,
       CoreError::OperationDisabled,
     )?;
-    let vault_cap = exo
-      .exo_conversion()
-      .max_token_for_exo(exo.total_collateral, exo.levercoin_redeem_nav()?)?;
-    Ok(vault_cap.min(exo.levercoin_supply()?))
+    let collateral_cap = exo.exo_conversion().max_token_for_exo(
+      exo.total_collateral.min(exo.max_collateral_removal()?),
+      exo.levercoin_redeem_nav()?,
+    )?;
+    Ok(collateral_cap.min(exo.levercoin_supply()?))
   }
 }
 
@@ -940,10 +920,9 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
       CoreError::DrawdownNotRepaid,
     )?;
     gate(exo.stablecoin_mint_enabled(), CoreError::OperationDisabled)?;
-    let swap_cap = exo
+    exo
       .swap_conversion()?
-      .max_lever_for_stable(exo.max_swappable_stablecoin()?)?;
-    Ok(swap_cap.min(exo.levercoin_supply()?))
+      .max_lever_for_stable(exo.max_swappable_stablecoin()?)
   }
 }
 
