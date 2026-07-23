@@ -67,6 +67,10 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
 
   fn preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
+    gate(
+      self.sol_stablecoin_oracle_valid,
+      CoreError::PythOracleOutdated,
+    )?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.stablecoin_mint_enabled(),
@@ -140,7 +144,11 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
   type FeeExp = N9;
 
   fn preconditions(&self) -> Result<(), CoreError> {
-    self.lst_pair_gates()
+    self.lst_pair_gates()?;
+    gate(
+      self.sol_stablecoin_oracle_valid,
+      CoreError::PythOracleOutdated,
+    )
   }
 
   fn compute_output_ungated(
@@ -704,6 +712,10 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
   fn preconditions(&self) -> Result<(), CoreError> {
     self.btc_pair_gates()?;
     gate(
+      self.btc_stablecoin_oracle_valid,
+      CoreError::PythOracleOutdated,
+    )?;
+    gate(
       self.btc_pair_state.pool_drawdown.is_repaid(),
       CoreError::DrawdownNotRepaid,
     )?;
@@ -766,7 +778,11 @@ impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
   type FeeExp = N9;
 
   fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()
+    self.btc_pair_gates()?;
+    gate(
+      self.btc_stablecoin_oracle_valid,
+      CoreError::PythOracleOutdated,
+    )
   }
 
   fn compute_output_ungated(

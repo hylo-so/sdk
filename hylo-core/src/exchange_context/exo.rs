@@ -28,6 +28,7 @@ use crate::solana_clock::SolanaClock;
 use crate::virtual_stablecoin::VirtualStablecoin;
 
 /// Exchange context for exogenous collateral pairs.
+#[derive(Clone)]
 pub struct ExoExchangeContext<C> {
   pub clock: C,
   pub total_collateral: UFix64<N9>,

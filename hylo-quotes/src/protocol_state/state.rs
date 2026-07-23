@@ -3,8 +3,6 @@
 //! Contains the `ProtocolState` struct and its construction from protocol
 //! accounts.
 
-use std::sync::Arc;
-
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
@@ -20,7 +18,7 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::pyth::OracleConfig;
+use hylo_core::pyth::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
@@ -55,6 +53,22 @@ impl UsdcExchangeState {
   }
 }
 
+/// Whether a collateral feed is valid under the tighter stablecoin
+/// oracle window enforced by the mint/redeem handlers.
+#[must_use]
+pub fn stablecoin_oracle_valid<C: SolanaClock>(
+  clock: &C,
+  feed: &PriceUpdateV2,
+  interval_secs: u64,
+) -> bool {
+  validate_publish_time(
+    feed.price_message.publish_time,
+    interval_secs.div_ceil(ORACLE_DIVISOR),
+    clock.unix_timestamp(),
+  )
+  .is_ok()
+}
+
 /// [`ExoPair`] state not carried by the exchange context.
 #[derive(Clone)]
 pub struct BtcPairState {
@@ -79,6 +93,7 @@ impl TryFrom<&ExoPair> for BtcPairState {
 
 /// Complete snapshot of Hylo protocol state
 #[derive(Clone)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ProtocolState<C: SolanaClock> {
   /// Exchange context with all protocol parameters
   pub exchange_context: LstExchangeContext<C>,
@@ -111,7 +126,7 @@ pub struct ProtocolState<C: SolanaClock> {
   pub lst_swap_config: AssetSwapConfig,
 
   /// cbBTC exo exchange context
-  pub cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
+  pub cbbtc_exchange_context: ExoExchangeContext<C>,
 
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
@@ -142,6 +157,12 @@ pub struct ProtocolState<C: SolanaClock> {
 
   /// BTC pair gate state
   pub btc_pair_state: BtcPairState,
+
+  /// SOL/USD valid under the stablecoin oracle window
+  pub sol_stablecoin_oracle_valid: bool,
+
+  /// BTC/USD valid under the stablecoin oracle window
+  pub btc_stablecoin_oracle_valid: bool,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -161,13 +182,15 @@ impl<C: SolanaClock> ProtocolState<C> {
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
-    cbbtc_exchange_context: Arc<ExoExchangeContext<C>>,
+    cbbtc_exchange_context: ExoExchangeContext<C>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
     btc_pair_state: BtcPairState,
+    sol_stablecoin_oracle_valid: bool,
+    btc_stablecoin_oracle_valid: bool,
   ) -> Result<Self> {
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
@@ -195,6 +218,8 @@ impl<C: SolanaClock> ProtocolState<C> {
       jitosol_vault_balance,
       hylosol_vault_balance,
       btc_pair_state,
+      sol_stablecoin_oracle_valid,
+      btc_stablecoin_oracle_valid,
     })
   }
 
@@ -395,13 +420,13 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_exchange_context = Arc::new(build_cbbtc_exchange_context(
+    let cbbtc_exchange_context = build_cbbtc_exchange_context(
       clock.clone(),
       &accounts.cbbtc_exo_pair,
       &accounts.cbbtc_vault,
       &accounts.xbtc_mint,
       &accounts.btc_usd_pyth,
-    )?);
+    )?;
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =
@@ -418,6 +443,15 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let exo_pair =
       ExoPair::try_deserialize(&mut accounts.cbbtc_exo_pair.data.as_slice())?;
     let btc_pair_state = BtcPairState::try_from(&exo_pair)?;
+
+    let btc_usd = PriceUpdateV2::try_deserialize(
+      &mut accounts.btc_usd_pyth.data.as_slice(),
+    )
+    .context("BTC/USD Pyth deserialization")?;
+    let sol_stablecoin_oracle_valid =
+      stablecoin_oracle_valid(&clock, &sol_usd, hylo.oracle_interval_secs);
+    let btc_stablecoin_oracle_valid =
+      stablecoin_oracle_valid(&clock, &btc_usd, exo_pair.oracle_interval_secs);
 
     Self::build(
       clock,
@@ -437,6 +471,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       UFix64::new(jitosol_vault.amount),
       UFix64::new(hylosol_vault.amount),
       btc_pair_state,
+      sol_stablecoin_oracle_valid,
+      btc_stablecoin_oracle_valid,
     )
   }
 }

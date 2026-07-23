@@ -48,6 +48,9 @@ pub const USDC_USD: PythFeed = PythFeed {
   address: pubkey!("6HAuqASbHEh4w4REJEUUUCginTLfj1kwCh215ZLtMkrT"),
 };
 
+/// Divides oracle secs to a tighter tolerance.
+pub const ORACLE_DIVISOR: u64 = 4;
+
 #[derive(Copy, Clone)]
 pub struct OracleConfig {
   pub interval_secs: u64,
@@ -60,6 +63,14 @@ impl OracleConfig {
     OracleConfig {
       interval_secs,
       conf_tolerance,
+    }
+  }
+
+  #[must_use]
+  pub fn for_stablecoin(self) -> OracleConfig {
+    OracleConfig {
+      interval_secs: self.interval_secs.div_ceil(ORACLE_DIVISOR),
+      ..self
     }
   }
 }
@@ -137,7 +148,7 @@ fn validate_conf(
 
 /// Ensures the oracle's publish time is within the inclusive range:
 ///   `[clock_time - oracle_interval, clock_time]`
-fn validate_publish_time(
+pub fn validate_publish_time(
   publish_time: i64,
   oracle_interval: u64,
   clock_time: i64,
