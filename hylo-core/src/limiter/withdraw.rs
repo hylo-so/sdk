@@ -129,7 +129,7 @@ impl WithdrawalLimiter {
   /// # Errors
   /// * Numeric conversion
   /// * Ledger epoch greater than current epoch
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_withdrawal(
     &self,
     current_epoch: u64,

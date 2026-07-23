@@ -2,7 +2,7 @@ use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
 };
 use fix::prelude::*;
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use fix::typenum::Integer;
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,7 @@ use crate::error::CoreError::{
 use crate::rebalance::mode::RebalanceMode::{
   self, BuyZone1, BuyZone2, Depeg, Neutral, SellZone1, SellZone2,
 };
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
@@ -107,7 +107,7 @@ impl<Exp> FeeExtract<Exp> {
   ///
   /// # Errors
   /// * Fee at or above 100%
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_input<FeeExp>(
     fee: UFix64<FeeExp>,
     cap: UFix64<Exp>,

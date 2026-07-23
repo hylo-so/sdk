@@ -15,7 +15,7 @@ pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use crate::error::CoreError::{CollateralRatio, DestinationCollateral};
 use crate::error::CoreError::{
   DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
@@ -37,13 +37,12 @@ use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 
 /// Post-trade totals and collateral ratio from a fee projection.
 /// Totals feed the offchain marginal rate math.
-#[cfg_attr(not(feature = "offchain"), allow(dead_code))]
-pub(crate) struct ProjectedState {
+pub struct ProjectedState {
   pub total_collateral: UFix64<N9>,
   pub stablecoin_supply: UFix64<N6>,
   pub collateral_ratio: UFix64<N9>,
@@ -403,7 +402,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic overflow
   /// * Current state already below the Depeg exit
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   fn max_collateral_removal(&self) -> Result<UFix64<N9>, CoreError> {
     let supply = self.virtual_stablecoin_supply()?;
     if supply == UFix64::zero() {
@@ -440,7 +439,7 @@ pub trait ExchangeContext {
   ///
   /// # Errors
   /// * Arithmetic overflow
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   fn max_stablecoin_removal(&self) -> Result<UFix64<N6>, CoreError> {
     let min_supply = self
       .total_collateral()

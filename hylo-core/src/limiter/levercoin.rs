@@ -64,7 +64,7 @@ impl LevercoinMarketCapLimiter {
   ///
   /// # Errors
   /// * Zero levercoin NAV
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_token_out(&self) -> Result<UFix64<N6>, CoreError> {
     let max_supply = self
       .market_cap_limit

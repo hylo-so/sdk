@@ -63,7 +63,7 @@ impl DepositLimiter {
   ///
   /// # Errors
   /// * Numeric conversion
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_deposit(
     &self,
     pool_amount: UFix64<N6>,

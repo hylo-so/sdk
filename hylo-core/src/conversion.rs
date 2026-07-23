@@ -6,11 +6,11 @@ use crate::error::CoreError::{
   LeverToStable, LstToToken, LstToUsdc, StableToLever, TokenToLst, UsdcToLst,
 };
 use crate::pyth::PriceRange;
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 
 /// Inverse of the `N9` to `N6` truncation under a cap.
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 fn max_before_truncation(cap: UFix64<N6>) -> Option<UFix64<N9>> {
   cap
     .checked_add(&UFix64::new(1))
@@ -69,7 +69,7 @@ impl Conversion {
   ///
   /// # Errors
   /// * Degenerate NAV or price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_lst_for_token(
     &self,
     cap: UFix64<N6>,
@@ -86,7 +86,7 @@ impl Conversion {
   ///
   /// # Errors
   /// * Degenerate NAV or price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_representable_lst(
     &self,
     token_nav: UFix64<N9>,
@@ -125,7 +125,7 @@ impl Conversion {
   ///
   /// # Errors
   /// * Degenerate NAV
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_token_for_lst(
     &self,
     cap: UFix64<N9>,
@@ -186,7 +186,7 @@ impl SwapConversion {
   ///
   /// # Errors
   /// * Degenerate NAV
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_stable_for_lever(
     &self,
     cap: UFix64<N6>,
@@ -214,7 +214,7 @@ impl SwapConversion {
   ///
   /// # Errors
   /// * Degenerate NAV
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_lever_for_stable(
     &self,
     cap: UFix64<N6>,
@@ -284,7 +284,7 @@ impl ExoConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_exo_for_token(
     &self,
     cap: UFix64<N6>,
@@ -300,7 +300,7 @@ impl ExoConversion {
   ///
   /// # Errors
   /// * Degenerate NAV
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_token_for_exo(
     &self,
     cap: UFix64<N9>,
@@ -388,7 +388,7 @@ impl UsdcStablecoinConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_stablecoin_for_withdrawal(
     &self,
     cap: UFix64<N6>,
@@ -405,7 +405,7 @@ impl UsdcStablecoinConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_deposit_for_stablecoin(
     &self,
     cap: UFix64<N6>,
@@ -416,7 +416,7 @@ impl UsdcStablecoinConversion {
   }
 
   /// `N9` normalization frontier for USDC deposits.
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   #[must_use]
   pub fn max_representable_deposit() -> UFix64<N6> {
     UFix64::<N9>::new(u64::MAX).convert()
@@ -487,7 +487,7 @@ impl ExoRebalanceConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_collateral_for_usdc(
     &self,
     cap: UFix64<N6>,
@@ -526,7 +526,7 @@ impl ExoRebalanceConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_usdc_for_collateral(
     &self,
     cap: UFix64<N9>,
@@ -576,7 +576,7 @@ impl LstRebalanceConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_lst_for_usdc(
     &self,
     cap: UFix64<N6>,
@@ -606,7 +606,7 @@ impl LstRebalanceConversion {
   ///
   /// # Errors
   /// * Degenerate price
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_usdc_for_lst(
     &self,
     cap: UFix64<N9>,

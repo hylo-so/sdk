@@ -40,8 +40,8 @@ pub struct ExoExchangeContext<C> {
   stablecoin_mint_threshold: UFix64<N9>,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
-  pub(super) stablecoin_mint_fees: InterpolatedMintFees,
-  pub(super) stablecoin_redeem_fees: InterpolatedRedeemFees,
+  pub stablecoin_mint_fees: InterpolatedMintFees,
+  pub stablecoin_redeem_fees: InterpolatedRedeemFees,
   sell_curve_config: RebalanceCurveConfig,
   buy_curve_config: RebalanceCurveConfig,
   levercoin_market_cap_limit: UFix64<N9>,
@@ -163,7 +163,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   ///
   /// # Errors
   /// * Projection overflow or curve lookup
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn stablecoin_mint_fee_rate(
     &self,
     collateral_amount_in: UFix64<N9>,
@@ -175,7 +175,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   }
 
   /// Post-trade state used by the stablecoin mint fee projection.
-  pub(super) fn projected_mint_state(
+  pub fn projected_mint_state(
     &self,
     collateral_amount_in: UFix64<N9>,
   ) -> Result<ProjectedState, CoreError> {
@@ -219,7 +219,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   ///
   /// # Errors
   /// * Projection underflow or curve lookup
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn stablecoin_redeem_fee_rate(
     &self,
     collateral_amount_out: UFix64<N9>,
@@ -231,7 +231,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   }
 
   /// Post-trade state used by the stablecoin redeem fee projection.
-  pub(super) fn projected_redeem_state(
+  pub fn projected_redeem_state(
     &self,
     collateral_amount_out: UFix64<N9>,
   ) -> Result<ProjectedState, CoreError> {
@@ -345,7 +345,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   }
 
   /// Post-trade state used by the sell-side rebalance projection.
-  pub(super) fn projected_rebalance_sell_state(
+  pub fn projected_rebalance_sell_state(
     &self,
     usdc_usd_price: PriceRange<N9>,
     usdc_amount: UFix64<N9>,
@@ -421,7 +421,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   }
 
   /// Post-trade state used by the buy-side rebalance projection.
-  pub(super) fn projected_rebalance_buy_state(
+  pub fn projected_rebalance_buy_state(
     &self,
     collateral_amount: UFix64<N9>,
   ) -> Result<ProjectedState, CoreError> {

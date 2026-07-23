@@ -9,7 +9,7 @@ use crate::error::CoreError::{
   LstSolPriceEpochOrder, LstSolPriceOutdated, SolLstPriceConversion,
 };
 use crate::fees::controller::FeeExtract;
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 
 /// Captures the true LST price in SOL for the current epoch.
@@ -102,7 +102,7 @@ impl LstSolPrice {
   /// # Errors
   /// * Degenerate price
   /// * Price outdated
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_lst_for_sol(
     &self,
     cap: UFix64<N9>,
@@ -119,7 +119,7 @@ impl LstSolPrice {
   /// # Errors
   /// * Degenerate price
   /// * Price outdated
-  #[cfg(any(test, feature = "offchain"))]
+  #[cfg(feature = "offchain")]
   pub fn max_lst_for_lst(
     &self,
     cap: UFix64<N9>,

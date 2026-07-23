@@ -1,6 +1,6 @@
 use anchor_spl::token::Mint;
 use fix::prelude::*;
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use fix::typenum::Integer;
 
 use crate::error::CoreError;
@@ -11,8 +11,9 @@ use crate::error::CoreError::ExoAmountNormalization;
 /// ```txt
 /// x = ceil((cap + 1) * den / num) - 1
 /// ```
-#[cfg(any(test, feature = "offchain"))]
-pub(crate) fn max_scaled_input<Exp: Integer, RExp: Integer>(
+#[cfg(feature = "offchain")]
+#[must_use]
+pub fn max_scaled_input<Exp: Integer, RExp: Integer>(
   cap: UFix64<Exp>,
   num: UFix64<RExp>,
   den: UFix64<RExp>,

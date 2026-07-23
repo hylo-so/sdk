@@ -5,7 +5,7 @@ use crate::error::CoreError;
 use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
 use crate::fees::controller::FeeExtract;
 use crate::pyth::PriceRange;
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 
 /// Computes NAV for the earn pool's LP token.
@@ -49,7 +49,7 @@ fn lp_token_out_inner(
 ///
 /// # Errors
 /// * Zero NAV
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 pub fn max_token_for_lp_deposit(
   cap: UFix64<N6>,
   lp_token_nav: UFix64<N6>,
@@ -85,7 +85,7 @@ fn amount_token_to_withdraw_inner(
 ///
 /// # Errors
 /// * Zero pool amount
-#[cfg(any(test, feature = "offchain"))]
+#[cfg(feature = "offchain")]
 pub fn max_lp_token_for_withdrawal(
   cap: UFix64<N6>,
   lp_token_supply: UFix64<N6>,
