@@ -71,6 +71,21 @@ impl EarnPoolClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
+  /// Deprecates the levercoin pool via Squads proposal.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn deprecate_levercoin_pool(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::deprecate_levercoin_pool(squads.vault_pda());
+    let memo = build_memo("deprecate_levercoin_pool", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
   /// Updates the withdrawal fee.
   ///
   /// # Errors

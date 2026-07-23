@@ -807,13 +807,29 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_lst_virtual_stablecoin(
+  pub fn initialize_lst_virtual_stablecoin_direct(
     &self,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::initialize_lst_virtual_stablecoin(
       self.program.payer(),
     );
     Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Initializes the LST virtual stablecoin via Squads proposal.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_lst_virtual_stablecoin(
+    &self,
+    squads: &SquadsContext,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::initialize_lst_virtual_stablecoin(
+      squads.vault_pda(),
+    );
+    let memo = build_memo("initialize_lst_virtual_stablecoin", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
   /// Initializes the pool drawdown ledger for the LST pool.
