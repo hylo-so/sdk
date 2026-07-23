@@ -5,6 +5,8 @@ use crate::error::CoreError;
 use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
 use crate::fees::controller::FeeExtract;
 use crate::pyth::PriceRange;
+#[cfg(feature = "offchain")]
+use crate::util::max_scaled_input;
 
 /// Computes NAV for the earn pool's LP token.
 ///
@@ -43,6 +45,18 @@ fn lp_token_out_inner(
     .and_then(|amt| amt.mul_div_floor(UFix64::one(), lp_token_nav))
 }
 
+/// Inverse of [`lp_token_out`] under an LP token cap.
+///
+/// # Errors
+/// * Zero NAV
+#[cfg(feature = "offchain")]
+pub fn max_token_for_lp_deposit(
+  cap: UFix64<N6>,
+  lp_token_nav: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  max_scaled_input(cap, UFix64::one(), lp_token_nav).ok_or(LpTokenOut)
+}
+
 /// Computes amount of token to withdraw, given a user's LP equity in the pool.
 pub fn amount_token_to_withdraw(
   user_lp_token_amount: UFix64<N6>,
@@ -65,6 +79,19 @@ fn amount_token_to_withdraw_inner(
   (lp_token_supply != UFix64::zero())
     .then_some(user_lp_token_amount)
     .and_then(|amt| amt.mul_div_floor(pool_amount, lp_token_supply))
+}
+
+/// Inverse of [`amount_token_to_withdraw`] under a withdrawal cap.
+///
+/// # Errors
+/// * Zero pool amount
+#[cfg(feature = "offchain")]
+pub fn max_lp_token_for_withdrawal(
+  cap: UFix64<N6>,
+  lp_token_supply: UFix64<N6>,
+  pool_amount: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  max_scaled_input(cap, pool_amount, lp_token_supply).ok_or(TokenWithdraw)
 }
 
 /// Computes a stablecoin target based on levercoin in pool.

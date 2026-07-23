@@ -6,6 +6,8 @@
 
 mod exo;
 mod lst;
+#[cfg(feature = "offchain")]
+pub mod marginal;
 
 use fix::prelude::*;
 
@@ -13,6 +15,8 @@ pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
+#[cfg(feature = "offchain")]
+use crate::error::CoreError::{CollateralRatio, DestinationCollateral};
 use crate::error::CoreError::{
   DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
   RebalanceBuySideTarget, RebalanceSellSideLiquidity,
@@ -33,6 +37,16 @@ use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
+#[cfg(feature = "offchain")]
+use crate::util::max_scaled_input;
+
+/// Post-trade totals and collateral ratio from a fee projection.
+/// Totals feed the offchain marginal rate math.
+pub struct ProjectedState {
+  pub total_collateral: UFix64<N9>,
+  pub stablecoin_supply: UFix64<N6>,
+  pub collateral_ratio: UFix64<N9>,
+}
 
 /// Shared interface for exchange context implementations.
 pub trait ExchangeContext {
@@ -359,7 +373,7 @@ pub trait ExchangeContext {
     max_mintable_stablecoin(
       target,
       self.total_collateral(),
-      self.collateral_usd_price().upper,
+      self.collateral_usd_price().lower,
       self.virtual_stablecoin_supply()?,
     )
   }
@@ -379,6 +393,67 @@ pub trait ExchangeContext {
       target,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
+    )
+  }
+
+  /// Collateral removable before the projected rebalance mode reaches
+  /// [`RebalanceMode::Depeg`].
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  /// * Current state already below the Depeg exit
+  #[cfg(feature = "offchain")]
+  fn max_collateral_removal(&self) -> Result<UFix64<N9>, CoreError> {
+    let supply = self.virtual_stablecoin_supply()?;
+    if supply == UFix64::zero() {
+      Ok(self.total_collateral())
+    } else {
+      let atom = UFix64::new(1);
+      let last_depeg_cr = RebalanceMode::SellZone2
+        .active_range()
+        .start()?
+        .checked_sub(&atom)
+        .ok_or(CollateralRatio)?;
+      let min_collateral = supply
+        .checked_convert::<N9>()
+        .and_then(|supply| {
+          max_scaled_input(
+            last_depeg_cr,
+            self.collateral_usd_price().lower,
+            supply,
+          )
+        })
+        .and_then(|last_depeg_collateral| {
+          last_depeg_collateral.checked_add(&atom)
+        })
+        .ok_or(CollateralRatio)?;
+      self
+        .total_collateral()
+        .checked_sub(&min_collateral)
+        .ok_or(DestinationCollateral)
+    }
+  }
+
+  /// Stablecoin removable before the projected collateral ratio
+  /// overflows its representation.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  #[cfg(feature = "offchain")]
+  fn max_stablecoin_removal(&self) -> Result<UFix64<N6>, CoreError> {
+    let min_supply = self
+      .total_collateral()
+      .mul_div_ceil(
+        self.collateral_usd_price().lower,
+        UFix64::<N9>::new(u64::MAX),
+      )
+      .and_then(UFix64::checked_convert_ceil::<N6>)
+      .ok_or(CollateralRatio)?;
+    Ok(
+      self
+        .virtual_stablecoin_supply()?
+        .checked_sub(&min_supply)
+        .unwrap_or_default(),
     )
   }
 
@@ -442,17 +517,28 @@ pub trait ExchangeContext {
   /// * Projection overflow or mode-based fee lookup
   fn levercoin_to_stablecoin_fee(
     &self,
-    amount_stablecoin: UFix64<N6>,
+    amount_stablecoin_out: UFix64<N6>,
   ) -> Result<FeeExtract<N6>, CoreError> {
+    let rate = self.levercoin_to_stablecoin_fee_rate(amount_stablecoin_out)?;
+    FeeExtract::new(rate, amount_stablecoin_out)
+  }
+
+  /// Mode-based fee rate for the levercoin-to-stablecoin direction.
+  ///
+  /// # Errors
+  /// * Projection overflow or mode-based fee lookup
+  fn levercoin_to_stablecoin_fee_rate(
+    &self,
+    amount_stablecoin_out: UFix64<N6>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
-      .checked_add(&amount_stablecoin)
+      .checked_add(&amount_stablecoin_out)
       .ok_or(DestinationStablecoin)?;
     let projected =
       self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
     let mode = self.select_rebalance_mode_for_fees(projected);
-    let fee = self.levercoin_fees().convert_to_stablecoin_fee(mode)?;
-    FeeExtract::new(fee, amount_stablecoin)
+    self.levercoin_fees().convert_to_stablecoin_fee(mode)
   }
 
   /// Swap fee for stablecoin-to-levercoin direction.
@@ -461,16 +547,27 @@ pub trait ExchangeContext {
   /// * Projection underflow or mode-based fee lookup
   fn stablecoin_to_levercoin_fee(
     &self,
-    amount_stablecoin: UFix64<N6>,
+    amount_stablecoin_in: UFix64<N6>,
   ) -> Result<FeeExtract<N6>, CoreError> {
+    let rate = self.stablecoin_to_levercoin_fee_rate(amount_stablecoin_in)?;
+    FeeExtract::new(rate, amount_stablecoin_in)
+  }
+
+  /// Mode-based fee rate for the stablecoin-to-levercoin direction.
+  ///
+  /// # Errors
+  /// * Projection underflow or mode-based fee lookup
+  fn stablecoin_to_levercoin_fee_rate(
+    &self,
+    amount_stablecoin_in: UFix64<N6>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let new_stablecoin = self
       .virtual_stablecoin_supply()?
-      .checked_sub(&amount_stablecoin)
+      .checked_sub(&amount_stablecoin_in)
       .ok_or(DestinationStablecoin)?;
     let projected =
       self.projected_rebalance_mode(self.total_collateral(), new_stablecoin)?;
     let mode = self.select_rebalance_mode_for_fees(projected);
-    let fee = self.levercoin_fees().convert_from_stablecoin_fee(mode)?;
-    FeeExtract::new(fee, amount_stablecoin)
+    self.levercoin_fees().convert_from_stablecoin_fee(mode)
   }
 }

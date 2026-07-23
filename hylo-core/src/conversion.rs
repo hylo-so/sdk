@@ -6,6 +6,17 @@ use crate::error::CoreError::{
   LeverToStable, LstToToken, LstToUsdc, StableToLever, TokenToLst, UsdcToLst,
 };
 use crate::pyth::PriceRange;
+#[cfg(feature = "offchain")]
+use crate::util::max_scaled_input;
+
+/// Inverse of the `N9` to `N6` truncation under a cap.
+#[cfg(feature = "offchain")]
+fn max_before_truncation(cap: UFix64<N6>) -> Option<UFix64<N9>> {
+  cap
+    .checked_add(&UFix64::new(1))
+    .and_then(UFix64::checked_convert::<N9>)
+    .and_then(|bound| bound.checked_sub(&UFix64::new(1)))
+}
 
 /// Provides conversions between an LST and protocol tokens.
 pub struct Conversion {
@@ -54,6 +65,38 @@ impl Conversion {
       .map(UFix64::convert)
   }
 
+  /// Inverse of [`lst_to_token`](Self::lst_to_token) under a token cap.
+  ///
+  /// # Errors
+  /// * Degenerate NAV or price
+  #[cfg(feature = "offchain")]
+  pub fn max_lst_for_token(
+    &self,
+    cap: UFix64<N6>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let unconverted = max_before_truncation(cap).ok_or(LstToToken)?;
+    let sol =
+      max_scaled_input(unconverted, self.usd_sol_price.lower, token_nav)
+        .ok_or(LstToToken)?;
+    max_scaled_input(sol, self.lst_sol_price, UFix64::one()).ok_or(LstToToken)
+  }
+
+  /// Overflow frontier of [`lst_to_token`](Self::lst_to_token).
+  ///
+  /// # Errors
+  /// * Degenerate NAV or price
+  #[cfg(feature = "offchain")]
+  pub fn max_representable_lst(
+    &self,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let sol = UFix64::new(u64::MAX)
+      .mul_div_floor(token_nav, self.usd_sol_price.lower)
+      .ok_or(LstToToken)?;
+    max_scaled_input(sol, self.lst_sol_price, UFix64::one()).ok_or(LstToToken)
+  }
+
   /// Finds the conversion amount between a protocol tokens and an LST.
   ///   `TOKEN * NAV / ((USD/SOL) * (SOL/LST))`
   pub fn token_to_lst(
@@ -76,6 +119,24 @@ impl Conversion {
     .then_some(amount_token.convert::<N9>())
     .and_then(|amt| amt.mul_div_floor(token_nav, self.usd_sol_price.upper))
     .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol_price))
+  }
+
+  /// Inverse of [`token_to_lst`](Self::token_to_lst) under an LST cap.
+  ///
+  /// # Errors
+  /// * Degenerate NAV
+  #[cfg(feature = "offchain")]
+  pub fn max_token_for_lst(
+    &self,
+    cap: UFix64<N9>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let sol = max_scaled_input(cap, UFix64::one(), self.lst_sol_price)
+      .ok_or(TokenToLst)?;
+    let unconverted =
+      max_scaled_input(sol, token_nav, self.usd_sol_price.upper)
+        .ok_or(TokenToLst)?;
+    Ok(unconverted.convert::<N6>())
   }
 }
 
@@ -120,6 +181,22 @@ impl SwapConversion {
       .and_then(|usd| usd.mul_div_floor(UFix64::one(), levercoin_nav_upper))
   }
 
+  /// Inverse of [`stable_to_lever`](Self::stable_to_lever) under a
+  /// levercoin cap.
+  ///
+  /// # Errors
+  /// * Degenerate NAV
+  #[cfg(feature = "offchain")]
+  pub fn max_stable_for_lever(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let usd = max_scaled_input(cap, UFix64::one(), self.levercoin_nav.upper)
+      .ok_or(StableToLever)?;
+    max_scaled_input(usd, self.stablecoin_nav, UFix64::one())
+      .ok_or(StableToLever)
+  }
+
   pub fn lever_to_stable(
     &self,
     amount_lever: UFix64<N6>,
@@ -130,6 +207,22 @@ impl SwapConversion {
       self.stablecoin_nav,
     )
     .ok_or(LeverToStable)
+  }
+
+  /// Inverse of [`lever_to_stable`](Self::lever_to_stable) under a
+  /// stablecoin cap.
+  ///
+  /// # Errors
+  /// * Degenerate NAV
+  #[cfg(feature = "offchain")]
+  pub fn max_lever_for_stable(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let usd = max_scaled_input(cap, UFix64::one(), self.stablecoin_nav)
+      .ok_or(LeverToStable)?;
+    max_scaled_input(usd, self.levercoin_nav.lower, UFix64::one())
+      .ok_or(LeverToStable)
   }
 
   fn lever_to_stable_inner(
@@ -185,6 +278,38 @@ impl ExoConversion {
         amt.mul_div_floor(self.collateral_usd_price.lower, token_nav)
       })
       .and_then(UFix64::checked_convert::<N6>)
+  }
+
+  /// Inverse of [`exo_to_token`](Self::exo_to_token) under a token cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_exo_for_token(
+    &self,
+    cap: UFix64<N6>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let unconverted = max_before_truncation(cap).ok_or(ExoToToken)?;
+    max_scaled_input(unconverted, self.collateral_usd_price.lower, token_nav)
+      .ok_or(ExoToToken)
+  }
+
+  /// Inverse of [`token_to_exo`](Self::token_to_exo) under a
+  /// collateral cap.
+  ///
+  /// # Errors
+  /// * Degenerate NAV
+  #[cfg(feature = "offchain")]
+  pub fn max_token_for_exo(
+    &self,
+    cap: UFix64<N9>,
+    token_nav: UFix64<N9>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let unconverted =
+      max_scaled_input(cap, token_nav, self.collateral_usd_price.upper)
+        .ok_or(ExoFromToken)?;
+    Ok(unconverted.convert::<N6>())
   }
 
   /// Converts a protocol token amount to exogenous collateral.
@@ -257,6 +382,46 @@ impl UsdcStablecoinConversion {
       .ok_or(ExoFromToken)
   }
 
+  /// Inverse of
+  /// [`stablecoin_to_withdrawal`](Self::stablecoin_to_withdrawal) under
+  /// a USDC cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_stablecoin_for_withdrawal(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let withdrawal = max_before_truncation(cap).ok_or(ExoFromToken)?;
+    let normalized =
+      max_scaled_input(withdrawal, UFix64::one(), self.usdc_usd_price.upper)
+        .ok_or(ExoFromToken)?;
+    Ok(normalized.convert::<N6>())
+  }
+
+  /// Inverse of [`deposit_to_stablecoin`](Self::deposit_to_stablecoin)
+  /// under a stablecoin cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_deposit_for_stablecoin(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let unconverted = max_before_truncation(cap).ok_or(ExoToToken)?;
+    max_scaled_input(unconverted, self.usdc_usd_price.lower, UFix64::one())
+      .ok_or(ExoToToken)
+  }
+
+  /// `N9` normalization frontier for USDC deposits.
+  #[cfg(feature = "offchain")]
+  #[must_use]
+  pub fn max_representable_deposit() -> UFix64<N6> {
+    UFix64::<N9>::new(u64::MAX).convert()
+  }
+
   /// USDC withdrawal to stablecoin equivalent using upper bound.
   ///
   /// Used on buy-side collateral swaps to compute virtual stablecoins to burn
@@ -317,6 +482,21 @@ impl ExoRebalanceConversion {
       })
   }
 
+  /// Inverse of [`collateral_to_usdc`](Self::collateral_to_usdc) under
+  /// a USDC cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_collateral_for_usdc(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let usdc = max_before_truncation(cap).ok_or(ExoCollateralToUsdc)?;
+    max_scaled_input(usdc, self.collateral_usd_price, self.usdc_usd_price.upper)
+      .ok_or(ExoCollateralToUsdc)
+  }
+
   /// Converts USDC to exogenous collateral
   ///
   /// # Errors
@@ -339,6 +519,20 @@ impl ExoRebalanceConversion {
       .and_then(|amt| {
         amt.mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
       })
+  }
+
+  /// Inverse of [`usdc_to_collateral`](Self::usdc_to_collateral) under a
+  /// collateral cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_usdc_for_collateral(
+    &self,
+    cap: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    max_scaled_input(cap, self.usdc_usd_price.lower, self.collateral_usd_price)
+      .ok_or(ExoUsdcToCollateral)
   }
 }
 
@@ -378,6 +572,21 @@ impl LstRebalanceConversion {
       .ok_or(LstToUsdc)
   }
 
+  /// Inverse of [`lst_to_usdc`](Self::lst_to_usdc) under a USDC cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_lst_for_usdc(
+    &self,
+    cap: UFix64<N6>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let usdc = max_before_truncation(cap).ok_or(LstToUsdc)?;
+    let sol = max_scaled_input(usdc, self.sol_usd, self.usdc_usd.upper)
+      .ok_or(LstToUsdc)?;
+    max_scaled_input(sol, self.lst_sol, UFix64::one()).ok_or(LstToUsdc)
+  }
+
   /// Converts USDC to LST for buy-side rebalancing.
   ///
   /// # Errors
@@ -391,6 +600,20 @@ impl LstRebalanceConversion {
       .and_then(|amt| amt.mul_div_floor(self.usdc_usd.lower, self.sol_usd))
       .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
       .ok_or(UsdcToLst)
+  }
+
+  /// Inverse of [`usdc_to_lst`](Self::usdc_to_lst) under an LST cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  #[cfg(feature = "offchain")]
+  pub fn max_usdc_for_lst(
+    &self,
+    cap: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let sol =
+      max_scaled_input(cap, UFix64::one(), self.lst_sol).ok_or(UsdcToLst)?;
+    max_scaled_input(sol, self.usdc_usd.lower, self.sol_usd).ok_or(UsdcToLst)
   }
 }
 

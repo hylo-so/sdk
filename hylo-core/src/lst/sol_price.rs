@@ -9,6 +9,8 @@ use crate::error::CoreError::{
   LstSolPriceEpochOrder, LstSolPriceOutdated, SolLstPriceConversion,
 };
 use crate::fees::controller::FeeExtract;
+#[cfg(feature = "offchain")]
+use crate::util::max_scaled_input;
 
 /// Captures the true LST price in SOL for the current epoch.
 #[derive(
@@ -92,6 +94,41 @@ impl LstSolPrice {
       .mul_div_floor(amount_lst, UFix64::one())
       .ok_or(LstSolPriceConversion)?;
     Ok(sol)
+  }
+
+  /// Inverse of [`convert_lst_to_sol`](Self::convert_lst_to_sol) under
+  /// a SOL cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  /// * Price outdated
+  #[cfg(feature = "offchain")]
+  pub fn max_lst_for_sol(
+    &self,
+    cap: UFix64<N9>,
+    current_epoch: u64,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let lst_sol_price: UFix64<N9> = self.get_epoch_price(current_epoch)?;
+    max_scaled_input(cap, lst_sol_price, UFix64::one())
+      .ok_or(LstSolPriceConversion)
+  }
+
+  /// Inverse of [`convert_lst_amount`](Self::convert_lst_amount) under
+  /// an output cap.
+  ///
+  /// # Errors
+  /// * Degenerate price
+  /// * Price outdated
+  #[cfg(feature = "offchain")]
+  pub fn max_lst_for_lst(
+    &self,
+    cap: UFix64<N9>,
+    current_epoch: u64,
+    other: &LstSolPrice,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let in_price = self.get_epoch_price(current_epoch)?;
+    let out_price = other.get_epoch_price(current_epoch)?;
+    max_scaled_input(cap, in_price, out_price).ok_or(LstLstPriceConversion)
   }
 
   /// Converts a SOL amount to this LST.

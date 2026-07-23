@@ -136,6 +136,9 @@ pub enum CoreError {
   InterpOutOfDomain,
   #[msg("Arithmetic overflow during interpolation calculation.")]
   InterpArithmetic,
+  // `marginal`
+  #[msg("Marginal rate is non-finite or non-positive.")]
+  MarginalRateInvalid,
   // `fees::curve_controller`
   #[msg("Failed to convert collateral ratio from u64 to i64.")]
   CollateralRatioConversion,
@@ -230,4 +233,29 @@ pub enum CoreError {
   TokenAmountPrecision,
   #[msg("No LST header or stake pool found for mint.")]
   UnknownLstMint,
+  // gates
+  #[msg("Insufficient vault liquidity for requested output.")]
+  InsufficientLiquidity,
+  #[msg("Protocol is paused.")]
+  ProtocolPaused,
+  #[msg("Trading pair is paused.")]
+  PairPaused,
+  #[msg("Yield harvest has not run this epoch.")]
+  YieldHarvestNotRun,
+  #[msg("Borrow rate harvest has not run this epoch.")]
+  BorrowRateHarvestNotRun,
+  #[msg("Drawdown loss has not been repaid.")]
+  DrawdownNotRepaid,
+  #[msg("Levercoin market cap exceeded.")]
+  LevercoinMarketCapExceeded,
+  #[msg("Amount must be greater than zero.")]
+  ZeroAmount,
+  #[msg("Protocol account missing from RPC response.")]
+  ProtocolAccountNotFound,
+  #[msg("Rebalance swap input exceeds buy-side target.")]
+  RebalanceBuyTargetExceeded,
+  #[msg("Earn pool cannot absorb rebalance swap loss.")]
+  InsufficientEarnPoolLiquidity,
+  #[msg("Overflow while computing minimum input.")]
+  MinInputOverflow,
 }

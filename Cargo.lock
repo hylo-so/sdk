@@ -637,7 +637,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.13.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -912,6 +912,12 @@ dependencies = [
  "keccak-const",
  "sha2-const-stable",
 ]
+
+[[package]]
+name = "const_fn"
+version = "0.4.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413d67b29ef1021b4d60f4aa1e925ca031751e213832b4b1d588fae623c05c60"
 
 [[package]]
 name = "constant_time_eq"
@@ -1593,7 +1599,7 @@ checksum = "135b12329e5e3ce057a9f972339ea52bc954fe1e9358ef27f95e89716fbc5424"
 
 [[package]]
 name = "hylo-clients"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1619,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1636,9 +1642,9 @@ dependencies = [
 
 [[package]]
 name = "hylo-fix"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74185c5f481949e7b4363af2c8fd66da7d0467e779c24f542fd672f373b3bef9"
+checksum = "ef27049ab1246df4990a9e2ed6aa932981331e68935307e6f8e91ae8ba2cacc2"
 dependencies = [
  "anchor-lang",
  "anyhow",
@@ -1647,12 +1653,13 @@ dependencies = [
  "paste",
  "quote",
  "serde",
+ "typed_floats",
  "typenum",
 ]
 
 [[package]]
 name = "hylo-idl"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1666,7 +1673,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1702,7 +1709,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-quotes"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1753,7 +1760,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-stats"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -5861,6 +5868,29 @@ dependencies = [
  "url",
  "utf-8",
  "webpki-roots 0.24.0",
+]
+
+[[package]]
+name = "typed_floats"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "436de2fdc42c0f07890f4b51dcc90a468b0b12280f49caff1cf57ce2e646817c"
+dependencies = [
+ "const_fn",
+ "rustversion",
+ "typed_floats_macros",
+]
+
+[[package]]
+name = "typed_floats_macros"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da27e33675dd7bfc62c7ead8c36779f961815ababe717191d67b75c2356edc4f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.114",
 ]
 
 [[package]]

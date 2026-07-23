@@ -7,7 +7,7 @@ use hylo_idl::earn_pool::events::{UserDepositEvent, UserWithdrawEvent};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::simulated_operation::SimulatedOperation;
-use crate::token_operation::SwapOperationOutput;
+use crate::token_operation::{linear_rate, SwapOperationOutput};
 
 /// Deposit stablecoin.
 impl SimulatedOperation<HYUSD, SHYUSD> for RouterClient {
@@ -23,6 +23,7 @@ impl SimulatedOperation<HYUSD, SHYUSD> for RouterClient {
       fee_amount: UFix64::zero(),
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -45,6 +46,7 @@ impl SimulatedOperation<SHYUSD, HYUSD> for RouterClient {
       fee_amount,
       fee_mint: HYUSD::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }

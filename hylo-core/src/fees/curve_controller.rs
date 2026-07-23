@@ -26,6 +26,25 @@ pub trait InterpolatedFeeController<const RES: usize> {
   /// * Domain or arithmetic errors
   fn fee_inner(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError>;
 
+  /// Slope of the fee curve at the given collateral ratio.
+  /// Zero on the flat regions outside the curve domain.
+  ///
+  /// # Errors
+  /// * Domain or arithmetic errors
+  fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError>;
+
+  /// Fee rate for a collateral ratio from the underlying curve.
+  ///
+  /// # Errors
+  /// * CR conversion, domain, or fee conversion
+  fn fee_rate(&self, ucr: UFix64<N9>) -> Result<UFix64<N5>, CoreError> {
+    let cr = narrow_cr(ucr)?;
+    self
+      .fee_inner(cr)?
+      .narrow()
+      .ok_or(CoreError::InterpFeeConversion)
+  }
+
   /// Applies the interpolated fee to an input amount.
   ///
   /// # Errors
@@ -35,12 +54,7 @@ pub trait InterpolatedFeeController<const RES: usize> {
     ucr: UFix64<N9>,
     amount_in: UFix64<InExp>,
   ) -> Result<FeeExtract<InExp>, CoreError> {
-    let cr = narrow_cr(ucr)?;
-    let fee = self
-      .fee_inner(cr)?
-      .narrow()
-      .ok_or(CoreError::InterpFeeConversion)?;
-    FeeExtract::new(fee, amount_in)
+    FeeExtract::new(self.fee_rate(ucr)?, amount_in)
   }
 
   /// Minimum collateral ratio in the curve's domain.
@@ -81,6 +95,17 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
       interp.interpolate(cr)
     }
   }
+
+  fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
+    let interp = self.curve();
+    if cr < interp.x_min() {
+      Err(CoreError::NoValidStablecoinMintFee)
+    } else if cr > interp.x_max() || interp.is_saturated(cr)? {
+      Ok(IFix64::zero())
+    } else {
+      interp.derivative(cr)
+    }
+  }
 }
 
 #[derive(Clone)]
@@ -108,6 +133,15 @@ impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
       Ok(interp.y_max())
     } else {
       interp.interpolate(cr)
+    }
+  }
+
+  fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
+    let interp = self.curve();
+    if cr < interp.x_min() || cr > interp.x_max() || interp.is_saturated(cr)? {
+      Ok(IFix64::zero())
+    } else {
+      interp.derivative(cr)
     }
   }
 }
@@ -186,6 +220,26 @@ mod tests {
       ))
     })?;
     assert_conservation(&extract, amount, cr)
+  }
+
+  #[test]
+  fn redeem_slope_zero_where_fee_saturates() -> anyhow::Result<()> {
+    let fees = redeem_fees();
+    let cr = IFix64::<N5>::constant(299_999);
+    assert_eq!(fees.fee_inner(cr)?, fees.curve().y_max());
+    assert_eq!(fees.fee_slope(cr)?, IFix64::zero());
+    Ok(())
+  }
+
+  #[test]
+  fn mint_slope_zero_where_fee_pinned() -> anyhow::Result<()> {
+    let fees = mint_fees();
+    let pinned = IFix64::<N5>::constant(150_001);
+    assert_eq!(fees.fee_inner(pinned)?, fees.curve().y_min());
+    assert_eq!(fees.fee_slope(pinned)?, IFix64::zero());
+    let interior = IFix64::<N5>::constant(150_500);
+    assert!(fees.fee_slope(interior)? < IFix64::zero());
+    Ok(())
   }
 
   proptest! {

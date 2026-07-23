@@ -63,12 +63,42 @@ impl<Exp: Integer> LineSegment<'_, Exp> {
       .and_then(|d| x1.checked_sub(x0)?.mul_div_floor(y.checked_sub(y0)?, d))
       .and_then(|div| x0.checked_add(&div))
   }
+
+  /// Slope of this segment.
+  ///
+  /// ```txt
+  ///     y_1 - y_0
+  /// m = ---------
+  ///     x_1 - x_0
+  /// ```
+  #[must_use]
+  pub fn slope(&self) -> Option<IFix64<Exp>>
+  where
+    IFix64<Exp>: FixExt,
+  {
+    let Point { x: x0, y: y0 } = self.0;
+    let Point { x: x1, y: y1 } = self.1;
+    let rise = y1.checked_sub(y0)?;
+    let run = x1.checked_sub(x0)?;
+    rise.mul_div_ceil(IFix64::<Exp>::one(), run)
+  }
 }
 
 /// Piecewise linear interpolation over a fixed-size point array.
 #[derive(Debug, Clone)]
 pub struct FixInterp<const RES: usize, Exp: Integer> {
   points: [Point<Exp>; RES],
+}
+
+/// Errors if `value` falls outside `bounds`.
+fn check_bounds<Exp: Integer>(
+  bounds: RangeInclusive<IFix64<Exp>>,
+  value: IFix64<Exp>,
+) -> Result<(), CoreError> {
+  bounds
+    .contains(&value)
+    .then_some(())
+    .ok_or(CoreError::InterpOutOfDomain)
 }
 
 impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
@@ -125,6 +155,11 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
     self.points[RES - 1].y
   }
 
+  #[must_use]
+  pub fn range(&self) -> RangeInclusive<IFix64<Exp>> {
+    self.y_min()..=self.y_max()
+  }
+
   /// Interpolates to find y for a given x.
   ///
   /// # Errors
@@ -132,15 +167,9 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   /// * Input x is outside the valid domain.
   /// * Arithmetic overflow during calculation.
   pub fn interpolate(&self, x: IFix64<Exp>) -> Result<IFix64<Exp>, CoreError> {
-    (x >= self.x_min() && x <= self.x_max())
-      .then_some(())
-      .ok_or(CoreError::InterpOutOfDomain)?;
-    let part = self.points.partition_point(|p| p.x < x).max(1);
+    check_bounds(self.domain(), x)?;
     self
-      .points
-      .get(part - 1)
-      .zip(self.points.get(part))
-      .map(|(p0, p1)| LineSegment(p0, p1))
+      .segment_at(|p| p.x < x)
       .and_then(|seg| seg.lerp(x))
       .ok_or(CoreError::InterpArithmetic)
   }
@@ -155,17 +184,53 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
     &self,
     y: IFix64<Exp>,
   ) -> Result<IFix64<Exp>, CoreError> {
-    (y >= self.y_min() && y <= self.y_max())
-      .then_some(())
-      .ok_or(CoreError::InterpOutOfDomain)?;
-    let part = self.points.partition_point(|p| p.y < y).max(1);
+    check_bounds(self.range(), y)?;
+    self
+      .segment_at(|p| p.y < y)
+      .and_then(|seg| seg.inverse_lerp(y))
+      .ok_or(CoreError::InterpArithmetic)
+  }
+
+  /// Derivative of curve at `x`, or the slope of its containing line segment.
+  /// At a breakpoint, takes the segment to its left.
+  ///
+  /// # Errors
+  /// * `x` is outside the valid domain
+  /// * Arithmetic overflow
+  pub fn derivative(&self, x: IFix64<Exp>) -> Result<IFix64<Exp>, CoreError>
+  where
+    IFix64<Exp>: FixExt,
+  {
+    check_bounds(self.domain(), x)?;
+    self
+      .segment_at(|p| p.x < x)
+      .and_then(|seg| seg.slope())
+      .ok_or(CoreError::InterpArithmetic)
+  }
+
+  /// Whether the ceiling-rounded [`interpolate`](Self::interpolate) has
+  /// pinned the output at a boundary value, so the output is locally
+  /// flat even though the containing segment has slope.
+  ///
+  /// # Errors
+  /// * `x` is outside the valid domain
+  /// * Arithmetic overflow
+  pub fn is_saturated(&self, x: IFix64<Exp>) -> Result<bool, CoreError> {
+    let y = self.interpolate(x)?;
+    Ok(y == self.y_min() || y == self.y_max())
+  }
+
+  /// Segment whose endpoints straddle the partition by `below`.
+  fn segment_at(
+    &self,
+    below: impl Fn(&Point<Exp>) -> bool,
+  ) -> Option<LineSegment<'_, Exp>> {
+    let part = self.points.partition_point(below).max(1);
     self
       .points
       .get(part - 1)
       .zip(self.points.get(part))
       .map(|(p0, p1)| LineSegment(p0, p1))
-      .and_then(|seg| seg.inverse_lerp(y))
-      .ok_or(CoreError::InterpArithmetic)
   }
 }
 

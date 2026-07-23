@@ -8,7 +8,11 @@ homepage.workspace = true
 
 [features]
 default = []
-offchain = ["dep:hylo-idl", "dep:hylo-jupiter-amm-interface"]
+offchain = [
+  "dep:hylo-idl",
+  "dep:hylo-jupiter-amm-interface",
+  "hylo-fix/typed-floats",
+]
 shadow = ["hylo-idl?/shadow"]
 
 [dependencies]

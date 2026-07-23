@@ -2,7 +2,7 @@ use anchor_spl::token::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use super::ExchangeContext;
+use super::{ExchangeContext, ProjectedState};
 use crate::conversion::{
   ExoConversion, ExoRebalanceConversion, UsdcStablecoinConversion,
 };
@@ -28,6 +28,7 @@ use crate::solana_clock::SolanaClock;
 use crate::virtual_stablecoin::VirtualStablecoin;
 
 /// Exchange context for exogenous collateral pairs.
+#[derive(Clone)]
 pub struct ExoExchangeContext<C> {
   pub clock: C,
   pub total_collateral: UFix64<N9>,
@@ -39,8 +40,8 @@ pub struct ExoExchangeContext<C> {
   stablecoin_mint_threshold: UFix64<N9>,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
-  stablecoin_mint_fees: InterpolatedMintFees,
-  stablecoin_redeem_fees: InterpolatedRedeemFees,
+  pub stablecoin_mint_fees: InterpolatedMintFees,
+  pub stablecoin_redeem_fees: InterpolatedRedeemFees,
   sell_curve_config: RebalanceCurveConfig,
   buy_curve_config: RebalanceCurveConfig,
   levercoin_market_cap_limit: UFix64<N9>,
@@ -150,26 +151,54 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Projection overflow, interpolation, or fee extraction
   pub fn stablecoin_mint_fee(
     &self,
-    collateral_amount: UFix64<N9>,
+    collateral_amount_in: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
-    let new_total = self
+    let projected = self.projected_mint_state(collateral_amount_in)?;
+    self
+      .stablecoin_mint_fees
+      .apply_fee(projected.collateral_ratio, collateral_amount_in)
+  }
+
+  /// Stablecoin mint fee rate at the projected CR.
+  ///
+  /// # Errors
+  /// * Projection overflow or curve lookup
+  #[cfg(feature = "offchain")]
+  pub fn stablecoin_mint_fee_rate(
+    &self,
+    collateral_amount_in: UFix64<N9>,
+  ) -> Result<UFix64<N5>, CoreError> {
+    let projected = self.projected_mint_state(collateral_amount_in)?;
+    self
+      .stablecoin_mint_fees
+      .fee_rate(projected.collateral_ratio)
+  }
+
+  /// Post-trade state used by the stablecoin mint fee projection.
+  pub fn projected_mint_state(
+    &self,
+    collateral_amount_in: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
+    let total_collateral = self
       .total_collateral
-      .checked_add(&collateral_amount)
+      .checked_add(&collateral_amount_in)
       .ok_or(DestinationCollateral)?;
     let stablecoin_minted = self
       .exo_conversion()
-      .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
-    let new_stablecoin = stablecoin_minted
+      .exo_to_token(collateral_amount_in, self.stablecoin_nav()?)?;
+    let stablecoin_supply = stablecoin_minted
       .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(
-      new_total,
+    let collateral_ratio = collateral_ratio(
+      total_collateral,
       self.collateral_usd_price.lower,
-      new_stablecoin,
+      stablecoin_supply,
     )?;
-    self
-      .stablecoin_mint_fees
-      .apply_fee(projected_cr, collateral_amount)
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Stablecoin redeem fee via interpolated curve at projected CR.
@@ -178,27 +207,55 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Projection underflow, interpolation, or fee extraction
   pub fn stablecoin_redeem_fee(
     &self,
-    collateral_amount: UFix64<N9>,
+    collateral_amount_out: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
-    let new_total = self
+    let projected = self.projected_redeem_state(collateral_amount_out)?;
+    self
+      .stablecoin_redeem_fees
+      .apply_fee(projected.collateral_ratio, collateral_amount_out)
+  }
+
+  /// Stablecoin redeem fee rate at the projected CR.
+  ///
+  /// # Errors
+  /// * Projection underflow or curve lookup
+  #[cfg(feature = "offchain")]
+  pub fn stablecoin_redeem_fee_rate(
+    &self,
+    collateral_amount_out: UFix64<N9>,
+  ) -> Result<UFix64<N5>, CoreError> {
+    let projected = self.projected_redeem_state(collateral_amount_out)?;
+    self
+      .stablecoin_redeem_fees
+      .fee_rate(projected.collateral_ratio)
+  }
+
+  /// Post-trade state used by the stablecoin redeem fee projection.
+  pub fn projected_redeem_state(
+    &self,
+    collateral_amount_out: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
+    let total_collateral = self
       .total_collateral
-      .checked_sub(&collateral_amount)
+      .checked_sub(&collateral_amount_out)
       .ok_or(DestinationCollateral)?;
     let stablecoin_redeemed = self
       .exo_conversion()
-      .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
-    let new_stablecoin = self
+      .exo_to_token(collateral_amount_out, self.stablecoin_nav()?)?;
+    let stablecoin_supply = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(
-      new_total,
+    let collateral_ratio = collateral_ratio(
+      total_collateral,
       self.collateral_usd_price.lower,
-      new_stablecoin,
+      stablecoin_supply,
     )?;
-    self
-      .stablecoin_redeem_fees
-      .apply_fee(projected_cr, collateral_amount)
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Levercoin mint fee based on projected rebalance mode.
@@ -207,17 +264,28 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Projection overflow or mode-based fee lookup
   pub fn levercoin_mint_fee(
     &self,
-    collateral_amount: UFix64<N9>,
+    collateral_amount_in: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
+    let rate = self.levercoin_mint_fee_rate(collateral_amount_in)?;
+    FeeExtract::new(rate, collateral_amount_in)
+  }
+
+  /// Levercoin mint fee rate at the projected rebalance mode.
+  ///
+  /// # Errors
+  /// * Projection overflow or mode-based fee lookup
+  pub fn levercoin_mint_fee_rate(
+    &self,
+    collateral_amount_in: UFix64<N9>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let new_total = self
       .total_collateral
-      .checked_add(&collateral_amount)
+      .checked_add(&collateral_amount_in)
       .ok_or(DestinationCollateral)?;
     let projected = self
       .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
     let mode = self.select_rebalance_mode_for_fees(projected);
-    let fee = self.levercoin_fees.mint_fee(mode)?;
-    FeeExtract::new(fee, collateral_amount)
+    self.levercoin_fees.mint_fee(mode)
   }
 
   /// Levercoin redeem fee based on projected rebalance mode.
@@ -226,17 +294,28 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Projection underflow or mode-based fee lookup
   pub fn levercoin_redeem_fee(
     &self,
-    collateral_amount: UFix64<N9>,
+    collateral_amount_out: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
+    let rate = self.levercoin_redeem_fee_rate(collateral_amount_out)?;
+    FeeExtract::new(rate, collateral_amount_out)
+  }
+
+  /// Levercoin redeem fee rate at the projected rebalance mode.
+  ///
+  /// # Errors
+  /// * Projection underflow or mode-based fee lookup
+  pub fn levercoin_redeem_fee_rate(
+    &self,
+    collateral_amount_out: UFix64<N9>,
+  ) -> Result<UFix64<N4>, CoreError> {
     let new_total = self
       .total_collateral
-      .checked_sub(&collateral_amount)
+      .checked_sub(&collateral_amount_out)
       .ok_or(DestinationCollateral)?;
     let projected = self
       .projected_rebalance_mode(new_total, self.virtual_stablecoin_supply()?)?;
     let mode = self.select_rebalance_mode_for_fees(projected);
-    let fee = self.levercoin_fees.redeem_fee(mode)?;
-    FeeExtract::new(fee, collateral_amount)
+    self.levercoin_fees.redeem_fee(mode)
   }
 
   /// Builds conversion helper between exogenous collateral and token.
@@ -254,27 +333,44 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     usdc_usd_price: PriceRange<N9>,
     usdc_amount: UFix64<N9>,
   ) -> Result<ExoRebalanceConversion, CoreError> {
+    let projected =
+      self.projected_rebalance_sell_state(usdc_usd_price, usdc_amount)?;
+    let collateral_usd_price = self
+      .rebalance_sell_curve()?
+      .price(projected.collateral_ratio)?;
+    Ok(ExoRebalanceConversion::new(
+      collateral_usd_price,
+      usdc_usd_price,
+    ))
+  }
+
+  /// Post-trade state used by the sell-side rebalance projection.
+  pub fn projected_rebalance_sell_state(
+    &self,
+    usdc_usd_price: PriceRange<N9>,
+    usdc_amount: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
     let collateral_delta =
       ExoRebalanceConversion::new(spot_price, usdc_usd_price)
         .usdc_to_collateral(usdc_amount)?;
-    let new_total = self
+    let total_collateral = self
       .total_collateral
       .checked_sub(&collateral_delta)
       .ok_or(RebalanceAmountExceeded)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_delta, self.stablecoin_nav()?)?;
-    let new_stablecoin = self
+    let stablecoin_supply = self
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
-    let collateral_usd_price =
-      self.rebalance_sell_curve()?.price(projected_cr)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
+    let collateral_ratio =
+      collateral_ratio(total_collateral, spot_price, stablecoin_supply)?;
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Maximum USDC input for a sell-side rebalancing swap.
@@ -314,24 +410,39 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     usdc_usd_price: PriceRange<N9>,
     collateral_amount: UFix64<N9>,
   ) -> Result<ExoRebalanceConversion, CoreError> {
+    let projected = self.projected_rebalance_buy_state(collateral_amount)?;
+    let collateral_usd_price = self
+      .rebalance_buy_curve()?
+      .price(projected.collateral_ratio)?;
+    Ok(ExoRebalanceConversion::new(
+      collateral_usd_price,
+      usdc_usd_price,
+    ))
+  }
+
+  /// Post-trade state used by the buy-side rebalance projection.
+  pub fn projected_rebalance_buy_state(
+    &self,
+    collateral_amount: UFix64<N9>,
+  ) -> Result<ProjectedState, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
-    let new_total = self
+    let total_collateral = self
       .total_collateral
       .checked_add(&collateral_amount)
       .ok_or(DestinationCollateral)?;
     let stablecoin_delta = ExoConversion::spot(spot_price)
       .exo_to_token(collateral_amount, self.stablecoin_nav()?)?;
-    let new_stablecoin = self
+    let stablecoin_supply = self
       .virtual_stablecoin_supply()?
       .checked_add(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
-    let projected_cr = collateral_ratio(new_total, spot_price, new_stablecoin)?;
-    let curve = self.rebalance_buy_curve()?;
-    let collateral_usd_price = curve.price(projected_cr)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
+    let collateral_ratio =
+      collateral_ratio(total_collateral, spot_price, stablecoin_supply)?;
+    Ok(ProjectedState {
+      total_collateral,
+      stablecoin_supply,
+      collateral_ratio,
+    })
   }
 
   /// Builds the levercoin market cap limiter from exchange inputs.

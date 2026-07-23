@@ -59,6 +59,22 @@ impl LevercoinMarketCapLimiter {
     levercoin_market_cap(target_supply, self.levercoin_nav)
   }
 
+  /// Mint headroom under the market cap limit; inverse of
+  /// [`levercoin_market_cap`].
+  ///
+  /// # Errors
+  /// * Zero levercoin NAV
+  #[cfg(feature = "offchain")]
+  pub fn max_token_out(&self) -> Result<UFix64<N6>, CoreError> {
+    let max_supply = self
+      .market_cap_limit
+      .div_floor(self.levercoin_nav)
+      .and_then(UFix64::checked_convert::<N6>)
+      .ok_or(LevercoinMarketCapArithmetic)?;
+    let headroom = max_supply.checked_sub(&self.levercoin_supply);
+    Ok(headroom.unwrap_or_default())
+  }
+
   /// Checks given mint amount against configured market cap limit.
   ///
   /// # Errors

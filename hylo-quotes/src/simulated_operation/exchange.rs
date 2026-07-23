@@ -16,7 +16,7 @@ use hylo_idl::tokens::{TokenMint, CBBTC, HYUSD, USDC, XBTC, XSOL};
 
 use crate::simulated_operation::SimulatedOperation;
 use crate::token_operation::{
-  LstSwapOperationOutput, MintOperationOutput, OperationOutput,
+  linear_rate, LstSwapOperationOutput, MintOperationOutput, OperationOutput,
   RedeemOperationOutput, SwapOperationOutput,
 };
 use crate::{Local, LST};
@@ -42,6 +42,7 @@ impl<L: LST + Local> SimulatedOperation<L, HYUSD> for RouterClient {
       fee_amount,
       fee_mint: L::MINT,
       fee_base,
+      marginal_rate: linear_rate(fee_base, out_amount)?,
     })
   }
 }
@@ -66,6 +67,7 @@ impl<L: LST + Local> SimulatedOperation<HYUSD, L> for RouterClient {
       fee_amount,
       fee_mint: L::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -91,6 +93,7 @@ impl<L: LST + Local> SimulatedOperation<L, XSOL> for RouterClient {
       fee_amount,
       fee_mint: L::MINT,
       fee_base,
+      marginal_rate: linear_rate(fee_base, out_amount)?,
     })
   }
 }
@@ -115,6 +118,7 @@ impl<L: LST + Local> SimulatedOperation<XSOL, L> for RouterClient {
       fee_amount,
       fee_mint: L::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -139,6 +143,7 @@ impl SimulatedOperation<HYUSD, XSOL> for RouterClient {
       fee_amount,
       fee_mint: HYUSD::MINT,
       fee_base,
+      marginal_rate: linear_rate(fee_base, out_amount)?,
     })
   }
 }
@@ -163,6 +168,7 @@ impl SimulatedOperation<XSOL, HYUSD> for RouterClient {
       fee_amount,
       fee_mint: HYUSD::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -186,6 +192,7 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
       fee_amount,
       fee_mint: L1::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -215,6 +222,7 @@ impl SimulatedOperation<USDC, HYUSD> for RouterClient {
       fee_amount,
       fee_mint: USDC::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -243,6 +251,7 @@ impl SimulatedOperation<HYUSD, USDC> for RouterClient {
       fee_amount,
       fee_mint: HYUSD::MINT,
       fee_base,
+      marginal_rate: linear_rate(fee_base, usdc_withdrawn)?,
     })
   }
 }
@@ -270,6 +279,7 @@ impl SimulatedOperation<CBBTC, HYUSD> for RouterClient {
       fee_amount,
       fee_mint: CBBTC::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -298,6 +308,7 @@ impl SimulatedOperation<HYUSD, CBBTC> for RouterClient {
       fee_amount,
       fee_mint: CBBTC::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -325,6 +336,7 @@ impl SimulatedOperation<CBBTC, XBTC> for RouterClient {
       fee_amount,
       fee_mint: CBBTC::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -353,6 +365,7 @@ impl SimulatedOperation<XBTC, CBBTC> for RouterClient {
       fee_amount,
       fee_mint: CBBTC::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -377,6 +390,7 @@ impl SimulatedOperation<HYUSD, XBTC> for RouterClient {
       fee_amount,
       fee_mint: HYUSD::MINT,
       fee_base,
+      marginal_rate: linear_rate(fee_base, out_amount)?,
     })
   }
 }
@@ -400,6 +414,7 @@ impl<L: LST + Local> SimulatedOperation<L, USDC> for RouterClient {
       fee_amount: UFix64::zero(),
       fee_mint: L::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -423,6 +438,7 @@ impl<L: LST + Local> SimulatedOperation<USDC, L> for RouterClient {
       fee_amount: UFix64::zero(),
       fee_mint: USDC::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -450,6 +466,7 @@ impl SimulatedOperation<CBBTC, USDC> for RouterClient {
       fee_amount: UFix64::zero(),
       fee_mint: CBBTC::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -477,6 +494,7 @@ impl SimulatedOperation<USDC, CBBTC> for RouterClient {
       fee_amount: UFix64::zero(),
       fee_mint: USDC::MINT,
       fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }
@@ -501,6 +519,7 @@ impl SimulatedOperation<XBTC, HYUSD> for RouterClient {
       fee_amount,
       fee_mint: HYUSD::MINT,
       fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
     })
   }
 }

@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use std::sync::Arc;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
@@ -15,11 +14,14 @@ use hylo_core::idl::tokens::{
 use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
-use hylo_quotes::protocol_state::{ProtocolState, UsdcExchangeState};
+use hylo_quotes::protocol_state::{
+  stablecoin_oracle_valid, BtcPairState, ProtocolState, UsdcExchangeState,
+};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
@@ -34,6 +36,29 @@ where
   clock: ClockRef,
   state: Option<ProtocolState<ClockRef>>,
   _phantom: PhantomData<(IN, OUT)>,
+}
+
+/// Builds the USDC exchange state from a Jupiter account snapshot.
+fn usdc_state(
+  clock: &ClockRef,
+  usdc_pair: &UsdcPair,
+  usdc_usd: &PriceUpdateV2,
+  usdc_vault: &TokenAccount,
+) -> Result<UsdcExchangeState> {
+  let usdc_oracle_config = OracleConfig::new(
+    usdc_pair.oracle_interval_secs,
+    usdc_pair.oracle_conf_tolerance.try_into()?,
+  );
+  let usdc_oracle = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
+  let virtual_stablecoin: VirtualStablecoin =
+    usdc_pair.virtual_stablecoin.into();
+  Ok(UsdcExchangeState {
+    usdc_usd_price: usdc_oracle.price_range()?,
+    swap_fee: usdc_pair.swap_fee.try_into()?,
+    paused: usdc_pair.paused,
+    vault_balance: UFix64::new(usdc_vault.amount),
+    virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+  })
 }
 
 impl<IN: TokenMint, OUT: TokenMint> Clone for HyloJupiterPair<IN, OUT> {
@@ -731,7 +756,6 @@ where
       SOL_USD.address,
       SHYUSD::MINT,
       pda::HYUSD_POOL,
-      pda::XSOL_POOL,
       pda::POOL_CONFIG,
       pda::exo_pair(CBBTC::MINT),
       pda::exo_vault(CBBTC::MINT),
@@ -739,6 +763,9 @@ where
       pda::BTC_USD_PYTH_FEED,
       pda::USDC_PAIR,
       pda::USDC_USD_PYTH_FEED,
+      pda::lst_vault(JITOSOL::MINT),
+      pda::lst_vault(HYLOSOL::MINT),
+      pda::usdc_vault(USDC::MINT),
     ]
   }
 
@@ -758,8 +785,6 @@ where
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
-    let xsol_pool: TokenAccount =
-      account_map_get(account_map, &pda::XSOL_POOL)?;
     let pool_config: PoolConfig =
       account_map_get(account_map, &pda::POOL_CONFIG)?;
 
@@ -773,6 +798,12 @@ where
     let btc_usd: PriceUpdateV2 =
       account_map_get(account_map, &pda::BTC_USD_PYTH_FEED)?;
     let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
+    let jitosol_vault: TokenAccount =
+      account_map_get(account_map, &pda::lst_vault(JITOSOL::MINT))?;
+    let hylosol_vault: TokenAccount =
+      account_map_get(account_map, &pda::lst_vault(HYLOSOL::MINT))?;
+    let usdc_vault: TokenAccount =
+      account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
     let usdc_usd: PriceUpdateV2 =
       account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
     let exo_oracle_config = OracleConfig::new(
@@ -782,34 +813,23 @@ where
     let total_collateral = UFix64::<N8>::new(cbbtc_vault.amount)
       .checked_convert()
       .context("cbBTC vault N8->N9 overflow")?;
-    let cbbtc_exchange_context = Arc::new(
-      ExoExchangeContext::load(
-        self.clock.clone(),
-        total_collateral,
-        exo_pair.stablecoin_mint_threshold.try_into()?,
-        exo_oracle_config,
-        exo_pair.levercoin_fees.into(),
-        &btc_usd,
-        exo_pair.virtual_stablecoin.into(),
-        Some(&xbtc_mint),
-        exo_pair.sell_curve_config.into(),
-        exo_pair.buy_curve_config.into(),
-        exo_pair.levercoin_market_cap_limit.try_into()?,
-      )
-      .context("ExoExchangeContext::load")?,
-    );
+    let cbbtc_exchange_context = ExoExchangeContext::load(
+      self.clock.clone(),
+      total_collateral,
+      exo_pair.stablecoin_mint_threshold.try_into()?,
+      exo_oracle_config,
+      exo_pair.levercoin_fees.into(),
+      &btc_usd,
+      exo_pair.virtual_stablecoin.into(),
+      Some(&xbtc_mint),
+      exo_pair.sell_curve_config.into(),
+      exo_pair.buy_curve_config.into(),
+      exo_pair.levercoin_market_cap_limit.try_into()?,
+    )
+    .context("ExoExchangeContext::load")?;
 
-    // USDC exchange state
-    let usdc_oracle_config = OracleConfig::new(
-      usdc_pair.oracle_interval_secs,
-      usdc_pair.oracle_conf_tolerance.try_into()?,
-    );
-    let usdc_oracle =
-      query_pyth_oracle(&self.clock, &usdc_usd, usdc_oracle_config)?;
-    let usdc_exchange_state = UsdcExchangeState {
-      usdc_usd_price: usdc_oracle.price_range()?,
-      swap_fee: usdc_pair.swap_fee.try_into()?,
-    };
+    let usdc_exchange_state =
+      usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;
 
     // Stake pools
     let jitosol_pool_state = account_map
@@ -823,6 +843,14 @@ where
     let hylosol_stake_pool =
       SplStakePool::from_bytes(&hylosol_pool_state.data)?;
 
+    let sol_stablecoin_oracle_valid =
+      stablecoin_oracle_valid(&self.clock, &sol_usd, hylo.oracle_interval_secs);
+    let btc_stablecoin_oracle_valid = stablecoin_oracle_valid(
+      &self.clock,
+      &btc_usd,
+      exo_pair.oracle_interval_secs,
+    );
+
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
       &hylo,
@@ -833,12 +861,16 @@ where
       shyusd_mint,
       pool_config,
       hyusd_pool,
-      xsol_pool,
       &sol_usd,
       cbbtc_exchange_context,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
+      UFix64::new(jitosol_vault.amount),
+      UFix64::new(hylosol_vault.amount),
+      BtcPairState::try_from(&exo_pair)?,
+      sol_stablecoin_oracle_valid,
+      btc_stablecoin_oracle_valid,
     )?);
 
     Ok(())

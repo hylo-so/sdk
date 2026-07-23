@@ -26,8 +26,9 @@ pub struct DepositLimiter {
 }
 
 impl DepositLimiter {
-  #[cfg(test)]
-  fn new(limit: UFixValue64) -> DepositLimiter {
+  #[cfg(any(test, feature = "offchain"))]
+  #[must_use]
+  pub fn new(limit: UFixValue64) -> DepositLimiter {
     DepositLimiter { limit }
   }
 
@@ -56,6 +57,19 @@ impl DepositLimiter {
   /// * Numeric conversion
   pub fn limit(&self) -> Result<UFix64<N6>, CoreError> {
     Ok(self.limit.try_into()?)
+  }
+
+  /// Remaining deposit headroom at the current pool balance.
+  ///
+  /// # Errors
+  /// * Numeric conversion
+  #[cfg(feature = "offchain")]
+  pub fn max_deposit(
+    &self,
+    pool_amount: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let max = self.limit()?.checked_sub(&pool_amount);
+    Ok(max.unwrap_or_default())
   }
 
   /// Validates incoming deposit against limit.

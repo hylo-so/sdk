@@ -1,5 +1,7 @@
 use crate::borrow_rate::BorrowRateConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
+use crate::limiter::deposit::DepositLimiter;
+use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
@@ -70,6 +72,16 @@ impl From<hylo_idl::exchange::types::HarvestCache> for HarvestCache {
 impl From<hylo_idl::exchange::types::VirtualStablecoin> for VirtualStablecoin {
   fn from(
     idl: hylo_idl::exchange::types::VirtualStablecoin,
+  ) -> VirtualStablecoin {
+    VirtualStablecoin {
+      supply: idl.supply.into(),
+    }
+  }
+}
+
+impl From<hylo_idl::earn_pool::types::VirtualStablecoin> for VirtualStablecoin {
+  fn from(
+    idl: hylo_idl::earn_pool::types::VirtualStablecoin,
   ) -> VirtualStablecoin {
     VirtualStablecoin {
       supply: idl.supply.into(),
@@ -161,6 +173,24 @@ impl From<SlippageConfig> for hylo_idl::earn_pool::types::SlippageConfig {
   fn from(val: SlippageConfig) -> Self {
     let exchange_sc: hylo_idl::exchange::types::SlippageConfig = val.into();
     exchange_sc.into()
+  }
+}
+
+impl From<hylo_idl::earn_pool::types::DepositLimiter> for DepositLimiter {
+  fn from(idl: hylo_idl::earn_pool::types::DepositLimiter) -> DepositLimiter {
+    DepositLimiter::new(idl.limit.into())
+  }
+}
+
+impl From<hylo_idl::earn_pool::types::WithdrawalLimiter> for WithdrawalLimiter {
+  fn from(
+    idl: hylo_idl::earn_pool::types::WithdrawalLimiter,
+  ) -> WithdrawalLimiter {
+    WithdrawalLimiter::new(
+      idl.limit.into(),
+      idl.withdrawal_ledger.into(),
+      idl.epoch,
+    )
   }
 }
 

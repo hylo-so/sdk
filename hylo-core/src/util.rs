@@ -1,8 +1,30 @@
 use anchor_spl::token::Mint;
 use fix::prelude::*;
+#[cfg(feature = "offchain")]
+use fix::typenum::Integer;
 
 use crate::error::CoreError;
 use crate::error::CoreError::ExoAmountNormalization;
+
+/// Largest `x` with `floor(x * num / den) <= cap`.
+///
+/// ```txt
+/// x = ceil((cap + 1) * den / num) - 1
+/// ```
+#[cfg(feature = "offchain")]
+#[must_use]
+pub fn max_scaled_input<Exp: Integer, RExp: Integer>(
+  cap: UFix64<Exp>,
+  num: UFix64<RExp>,
+  den: UFix64<RExp>,
+) -> Option<UFix64<Exp>> {
+  let atom = UFix64::new(1);
+  (num != UFix64::zero())
+    .then_some(cap)
+    .and_then(|cap| cap.checked_add(&atom))
+    .and_then(|first_output_over| first_output_over.mul_div_ceil(den, num))
+    .and_then(|first_input_over| first_input_over.checked_sub(&atom))
+}
 
 /// Bridges runtime mint decimals to typed `UFix64<N9>`.
 ///

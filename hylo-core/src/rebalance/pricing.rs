@@ -139,6 +139,13 @@ pub trait RebalancePriceController {
   /// * Domain or arithmetic errors.
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError>;
 
+  /// Slope of the price curve at the given CR.
+  /// Zero on the flat region outside the active domain.
+  ///
+  /// # Errors
+  /// * CR conversion, domain, or arithmetic
+  fn price_slope(&self, ucr: UFix64<N9>) -> Result<IFix64<N9>, CoreError>;
+
   /// Collateral price at the given CR.
   ///
   /// # Errors
@@ -237,6 +244,18 @@ impl RebalancePriceController for SellPriceCurve {
     }
   }
 
+  fn price_slope(&self, ucr: UFix64<N9>) -> Result<IFix64<N9>, CoreError> {
+    let cr = narrow(ucr)?;
+    let interp = self.curve();
+    if cr < interp.x_min() {
+      Ok(IFix64::zero())
+    } else if cr > interp.x_max() {
+      Err(CoreError::RebalanceOutOfDomain)
+    } else {
+      interp.derivative(cr)
+    }
+  }
+
   fn validate(self) -> Result<SellPriceCurve, CoreError> {
     let interp = self.curve();
     (interp.y_min() > IFix64::zero() && interp.y_min() < interp.y_max())
@@ -300,6 +319,18 @@ impl RebalancePriceController for BuyPriceCurve {
       Ok(interp.y_max())
     } else {
       interp.interpolate(cr)
+    }
+  }
+
+  fn price_slope(&self, ucr: UFix64<N9>) -> Result<IFix64<N9>, CoreError> {
+    let cr = narrow(ucr)?;
+    let interp = self.curve();
+    if cr < interp.x_min() {
+      Err(CoreError::RebalanceOutOfDomain)
+    } else if cr > interp.x_max() {
+      Ok(IFix64::zero())
+    } else {
+      interp.derivative(cr)
     }
   }
 
