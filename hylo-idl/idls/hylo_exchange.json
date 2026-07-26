@@ -2,7 +2,7 @@
   "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn",
   "metadata": {
     "name": "hylo_exchange",
-    "version": "1.0.0",
+    "version": "2.0.2",
     "spec": "0.1.0",
     "description": "Hylo Exchange Program"
   },
@@ -19455,191 +19455,126 @@
     },
     {
       "code": 6023,
-      "name": "YieldHarvestHasNotRun",
-      "msg": "Yield harvest has not yet occurred during this epoch."
-    },
-    {
-      "code": 6024,
-      "name": "ZeroRedeem",
-      "msg": "Cannot withdraw amount of 0 in a redemption action."
-    },
-    {
-      "code": 6025,
-      "name": "ZeroMint",
-      "msg": "Cannot deposit amount of 0 in a minting action."
-    },
-    {
-      "code": 6026,
-      "name": "ZeroSwap",
-      "msg": "Cannot swap amount of 0."
-    },
-    {
-      "code": 6027,
       "name": "IdentitySwap",
       "msg": "Cannot swap from an asset to itself."
     },
     {
-      "code": 6028,
+      "code": 6024,
       "name": "ExoAmountDecimals",
       "msg": "Incorrect decimals assumption for given collateral mint."
     },
     {
-      "code": 6029,
+      "code": 6025,
       "name": "ExoAmountUpConversion",
       "msg": "Unable to upconvert amount to desired exponent."
     },
     {
-      "code": 6030,
+      "code": 6026,
       "name": "ExoOracleInvalid",
       "msg": "Oracle for exo collateral does not match given feed_id."
     },
     {
-      "code": 6031,
-      "name": "BorrowRateHarvestHasNotRun",
-      "msg": "Borrow rate harvest has not yet occurred during this epoch."
-    },
-    {
-      "code": 6032,
+      "code": 6027,
       "name": "BorrowRateHarvestAlreadyRun",
       "msg": "Borrow rate harvest has already occurred during this epoch."
     },
     {
-      "code": 6033,
+      "code": 6028,
       "name": "BorrowRateHarvestEpochUnderflow",
       "msg": "Underflow while computing elapsed epochs for borrow rate harvest."
     },
     {
-      "code": 6034,
+      "code": 6029,
       "name": "LstVirtualStablecoinAlreadyInitialized",
       "msg": "Virtual stablecoin already initialized for LSTs."
     },
     {
-      "code": 6035,
+      "code": 6030,
       "name": "AdminNoop",
       "msg": "Cannot update configuration with identical value."
     },
     {
-      "code": 6036,
-      "name": "InsufficientLiquidity",
-      "msg": "Insufficient liquidity to complete swap."
-    },
-    {
-      "code": 6037,
-      "name": "RebalanceBuyTarget",
-      "msg": "Collateral amount exceeds rebalancing buy target."
-    },
-    {
-      "code": 6038,
-      "name": "ProtocolPaused",
-      "msg": "Protocol operations have been paused by admin."
-    },
-    {
-      "code": 6039,
-      "name": "LstPairPaused",
-      "msg": "Trading for the LST pair has been paused by admin."
-    },
-    {
-      "code": 6040,
-      "name": "ExoPairPaused",
-      "msg": "Trading for this exo pair has been paused by admin."
-    },
-    {
-      "code": 6041,
-      "name": "UsdcPairPaused",
-      "msg": "Trading with USDC has been paused by admin."
-    },
-    {
-      "code": 6042,
+      "code": 6031,
       "name": "RebalanceSellInactive",
       "msg": "Sell-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6043,
+      "code": 6032,
       "name": "RebalanceBuyInactive",
       "msg": "Buy-side rebalancing is inactive at current collateral ratio."
     },
     {
-      "code": 6044,
+      "code": 6033,
       "name": "ExoMintNotInAllowlist",
       "msg": "Mint is not in the exogenous collateral allowlist."
     },
     {
-      "code": 6045,
+      "code": 6034,
       "name": "AddressChangeExpired",
       "msg": "Address change proposal has expired."
     },
     {
-      "code": 6046,
+      "code": 6035,
       "name": "AddressChangeTtlInvalid",
       "msg": "Address change proposal's TTL not in configured range."
     },
     {
-      "code": 6047,
+      "code": 6036,
       "name": "AddressChangeNotApproved",
       "msg": "Address change proposal has not been approved."
     },
     {
-      "code": 6048,
+      "code": 6037,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
     },
     {
-      "code": 6049,
+      "code": 6038,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
     },
     {
-      "code": 6050,
+      "code": 6039,
       "name": "TokenAmountPrecisionError",
       "msg": "Failed while converting precision for a token amount."
     },
     {
-      "code": 6051,
+      "code": 6040,
       "name": "SettleVirtualStablecoinUnderflow",
       "msg": "Underflow while computing virtual stablecoin delta."
     },
     {
-      "code": 6052,
+      "code": 6041,
       "name": "SettleVirtualStablecoinConversion",
       "msg": "Underflow while converting TVL to stablecoin."
     },
     {
-      "code": 6053,
+      "code": 6042,
       "name": "SettleVirtualStablecoinNoop",
       "msg": "Virtual stablecoin settlement noop: nothing to drawdown or repay."
     },
     {
-      "code": 6054,
+      "code": 6043,
       "name": "SettleRebalancePnlDisabled",
       "msg": "Rebalance PnL settlement disabled in Depeg mode."
     },
     {
-      "code": 6055,
-      "name": "DrawdownNotRepaid",
-      "msg": "Operation disabled until pool drawdown is repaid."
-    },
-    {
-      "code": 6056,
+      "code": 6044,
       "name": "LstStakePoolNotSupported",
       "msg": "LST stake pool is not supported."
     },
     {
-      "code": 6057,
-      "name": "InsufficientEarnPoolLiquidity",
-      "msg": "Earn pool does not have enough liquidity to absorb rebalance loss."
-    },
-    {
-      "code": 6058,
+      "code": 6045,
       "name": "ExoGenesisConstraints",
       "msg": "Exo pair genesis mint constraints not met."
     },
     {
-      "code": 6059,
+      "code": 6046,
       "name": "ExoGenesisCollateralRatio",
       "msg": "Error or constraint not met for collateral ratio for genesis."
     },
     {
-      "code": 6060,
+      "code": 6047,
       "name": "ExoPairZeroVirtualStablecoin",
       "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
     }

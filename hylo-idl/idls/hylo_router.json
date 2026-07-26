@@ -2,7 +2,7 @@
   "address": "hyRouTRDAgn65xyyJ3L5c4k5SFmSdr3NxDV8Euzjy3f",
   "metadata": {
     "name": "hylo_router",
-    "version": "1.0.0",
+    "version": "2.0.2",
     "spec": "0.1.0",
     "description": "Hylo Router Program"
   },
