@@ -2,7 +2,7 @@
   "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ",
   "metadata": {
     "name": "hylo_earn_pool",
-    "version": "1.0.0",
+    "version": "2.0.2",
     "spec": "0.1.0",
     "description": "Hylo Earn Pool Program"
   },
