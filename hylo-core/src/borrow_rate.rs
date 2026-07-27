@@ -26,8 +26,8 @@ pub struct BorrowRateConfig {
   pub fee: UFixValue64,
 }
 
-/// Maximum per-epoch rate (~10% annualized at 182 epochs/year)
-const MAX_RATE: UFix64<N9> = UFix64::constant(600_000);
+/// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
+const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
 
 /// Maximum fee exacted against borrow rate
 const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
@@ -157,7 +157,7 @@ mod tests {
   #[test]
   fn validate_neg_high_rate() {
     let config = BorrowRateConfig::new(
-      UFix64::<N9>::new(600_001).into(),
+      UFix64::<N9>::new(1_648_353).into(),
       UFix64::<N4>::new(500).into(),
     );
     assert_eq!(config.validate(), Err(BorrowRateValidation));
