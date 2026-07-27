@@ -2,7 +2,7 @@
   "address": "hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ",
   "metadata": {
     "name": "hylo_exchange",
-    "version": "2.0.2",
+    "version": "2.0.5",
     "spec": "0.1.0",
     "description": "Hylo Exchange Program"
   },
