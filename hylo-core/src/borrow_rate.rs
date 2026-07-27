@@ -30,7 +30,7 @@ pub struct BorrowRateConfig {
 const MAX_RATE: UFix64<N9> = UFix64::constant(600_000);
 
 /// Maximum fee exacted against borrow rate
-const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
+const MAX_FEE: UFix64<N4> = UFix64::constant(3_000);
 
 impl BorrowRateConfig {
   #[must_use]
