@@ -122,3 +122,10 @@ impl TokenMint for HYPE {
   type Exp = N9;
   const MINT: Pubkey = pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
 }
+
+pub struct USTB;
+
+impl TokenMint for USTB {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("CCz3SGVziFeLYk2xfEstkiqJfYkjaSWb2GCABYsVcjo2");
+}
