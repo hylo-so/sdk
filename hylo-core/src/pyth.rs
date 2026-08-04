@@ -48,6 +48,14 @@ pub const USDC_USD: PythFeed = PythFeed {
   address: pubkey!("6HAuqASbHEh4w4REJEUUUCginTLfj1kwCh215ZLtMkrT"),
 };
 
+pub const USTB_USD: PythFeed = PythFeed {
+  feed_id: [
+    222, 167, 142, 221, 16, 205, 122, 228, 82, 76, 193, 116, 66, 22, 120, 135,
+    70, 48, 102, 35, 188, 53, 83, 1, 78, 234, 182, 6, 40, 96, 121, 93,
+  ],
+  address: pubkey!("FawNuE6ZmYJjHeYfsQGmmqrNNabWL5wfDTX9vrzroW2S"),
+};
+
 /// Divides oracle secs to a tighter tolerance.
 pub const ORACLE_DIVISOR: u64 = 4;
 
