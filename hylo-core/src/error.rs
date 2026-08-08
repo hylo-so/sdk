@@ -260,4 +260,9 @@ pub enum CoreError {
   MinInputOverflow,
   #[msg("No exo pair found for mint.")]
   UnknownExoMint,
+  // `par_tolerance`
+  #[msg("Par tolerance not in valid range.")]
+  InvalidParTolerance,
+  #[msg("Spot price deviates from par beyond configured tolerance.")]
+  ParToleranceExceeded,
 }
