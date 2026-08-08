@@ -10,7 +10,6 @@ use crate::error::CoreError;
 use crate::fees::controller::FeeController;
 use crate::fees::curve_controller::{narrow_cr, InterpolatedFeeController};
 use crate::lst::sol_price::LstSolPrice;
-use crate::pyth::PriceRange;
 use crate::rebalance::pricing::RebalancePriceController;
 use crate::solana_clock::SolanaClock;
 
@@ -113,14 +112,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// Marginal USDC output per collateral input.
   ///
   /// ```txt
-  /// usdc_out(x) = x * curve_price(cr(x)) / usdc_usd_upper
+  /// usdc_out(x) = x * curve_price(cr(x))
   /// ```
   ///
   /// # Errors
   /// * Projection, curve, NAV, or marginal rate failure
   pub fn rebalance_buy_marginal(
     &self,
-    usdc_usd_price: PriceRange<N9>,
     collateral_amount: UFix64<N9>,
   ) -> Result<f64, CoreError> {
     let projected = self.projected_rebalance_buy_state(collateral_amount)?;
@@ -129,7 +127,6 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let curve_slope = curve.price_slope(projected.collateral_ratio)?.to_f64();
     let collateral_spot = positive(self.collateral_oracle_price().spot)?;
     let nav = positive(self.stablecoin_nav()?)?;
-    let usdc_usd_upper = positive(usdc_usd_price.upper)?;
 
     // total_collateral(x) = vault + x => d = 1
     // stablecoin_supply(x) = supply + x * collateral_spot / nav
@@ -149,38 +146,34 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
     let d_curve_price = chain_rule(curve_slope, d_cr);
 
-    // usdc_out'(x) = (curve_price + x * d_curve_price) / usdc_usd_upper
-    let marginal = (curve_price + collateral_amount.to_f64() * d_curve_price)
-      / usdc_usd_upper.get();
+    // usdc_out'(x) = curve_price + x * d_curve_price
+    let marginal = curve_price + collateral_amount.to_f64() * d_curve_price;
     positive_rate(marginal)
   }
 
   /// Marginal collateral output per USDC input.
   ///
   /// ```txt
-  /// collateral_out(x) = x * usdc_usd_lower / curve_price(cr(x))
+  /// collateral_out(x) = x / curve_price(cr(x))
   /// ```
   ///
   /// # Errors
   /// * Projection, curve, NAV, or marginal rate failure
   pub fn rebalance_sell_marginal(
     &self,
-    usdc_usd_price: PriceRange<N9>,
-    usdc_amount: UFix64<N9>,
+    usdc_amount: UFix64<N6>,
   ) -> Result<f64, CoreError> {
-    let projected =
-      self.projected_rebalance_sell_state(usdc_usd_price, usdc_amount)?;
+    let projected = self.projected_rebalance_sell_state(usdc_amount)?;
     let curve = self.rebalance_sell_curve()?;
     let curve_price = positive(curve.price(projected.collateral_ratio)?)?;
     let curve_slope = curve.price_slope(projected.collateral_ratio)?.to_f64();
     let collateral_spot = positive(self.collateral_oracle_price().spot)?;
     let nav = positive(self.stablecoin_nav()?)?;
-    let usdc_usd_lower = positive(usdc_usd_price.lower)?;
 
-    // total_collateral(x) = vault - x * usdc_usd_lower / collateral_spot
-    // stablecoin_supply(x) = supply - x * usdc_usd_lower / nav
-    let d_total_collateral = -(usdc_usd_lower.get() / collateral_spot.get());
-    let d_stablecoin_supply = -(usdc_usd_lower.get() / nav.get());
+    // total_collateral(x) = vault - x / collateral_spot
+    // stablecoin_supply(x) = supply - x / nav
+    let d_total_collateral = -collateral_spot.get().recip();
+    let d_stablecoin_supply = -nav.get().recip();
 
     // cr(x) = total_collateral * collateral_spot / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * collateral_spot / S^2
@@ -195,11 +188,11 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
     let d_curve_price = chain_rule(curve_slope, d_cr);
 
-    //                      usdc_usd_lower   usdc_usd_lower * x * d_curve_price
-    // collateral_out'(x) = -------------- - ----------------------------------
-    //                        curve_price              curve_price^2
-    let left = usdc_usd_lower.get() / curve_price.get();
-    let right = usdc_usd_lower.get() * usdc_amount.to_f64() * d_curve_price
+    //                           1        x * d_curve_price
+    // collateral_out'(x) = ----------- - -----------------
+    //                      curve_price     curve_price^2
+    let left = curve_price.get().recip();
+    let right = usdc_amount.to_f64() * d_curve_price
       / (curve_price.get() * curve_price.get());
     positive_rate(left - right)
   }
@@ -354,7 +347,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// Marginal USDC output per LST input.
   ///
   /// ```txt
-  /// usdc_out(x) = x * lst_sol * curve_price(cr(x)) / usdc_usd_upper
+  /// usdc_out(x) = x * lst_sol * curve_price(cr(x))
   /// ```
   ///
   /// # Errors
@@ -362,7 +355,6 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn rebalance_buy_marginal(
     &self,
     lst_sol_price: &LstSolPrice,
-    usdc_usd_price: PriceRange<N9>,
     lst_amount: UFix64<N9>,
   ) -> Result<f64, CoreError> {
     let projected =
@@ -373,7 +365,6 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
     let sol_spot = positive(self.collateral_oracle_price().spot)?;
     let nav = positive(self.stablecoin_nav()?)?;
-    let usdc_usd_upper = positive(usdc_usd_price.upper)?;
 
     // total_collateral(x) = total_sol + x * lst_sol (vault counts SOL)
     // stablecoin_supply(x) = supply + x * lst_sol * sol_spot / nav
@@ -393,19 +384,16 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
     let d_curve_price = chain_rule(curve_slope, d_cr);
 
-    //                lst_sol * (curve_price + x * d_curve_price)
-    // usdc_out'(x) = --------------------------------------------
-    //                               usdc_usd_upper
-    let marginal = lst_sol.get()
-      * (curve_price + lst_amount.to_f64() * d_curve_price)
-      / usdc_usd_upper.get();
+    // usdc_out'(x) = lst_sol * (curve_price + x * d_curve_price)
+    let marginal =
+      lst_sol.get() * (curve_price + lst_amount.to_f64() * d_curve_price);
     positive_rate(marginal)
   }
 
   /// Marginal LST output per USDC input.
   ///
   /// ```txt
-  /// lst_out(x) = x * usdc_usd_lower / (curve_price(cr(x)) * lst_sol)
+  /// lst_out(x) = x / (curve_price(cr(x)) * lst_sol)
   /// ```
   ///
   /// # Errors
@@ -413,26 +401,21 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn rebalance_sell_marginal(
     &self,
     lst_sol_price: &LstSolPrice,
-    usdc_usd_price: PriceRange<N9>,
-    usdc_amount: UFix64<N9>,
+    usdc_amount: UFix64<N6>,
   ) -> Result<f64, CoreError> {
-    let projected = self.projected_rebalance_sell_state(
-      lst_sol_price,
-      usdc_usd_price,
-      usdc_amount,
-    )?;
+    let projected =
+      self.projected_rebalance_sell_state(lst_sol_price, usdc_amount)?;
     let curve = self.rebalance_sell_curve()?;
     let curve_price = positive(curve.price(projected.collateral_ratio)?)?;
     let curve_slope = curve.price_slope(projected.collateral_ratio)?.to_f64();
     let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
     let sol_spot = positive(self.collateral_oracle_price().spot)?;
     let nav = positive(self.stablecoin_nav()?)?;
-    let usdc_usd_lower = positive(usdc_usd_price.lower)?;
 
-    // total_collateral(x) = total_sol - x * usdc_usd_lower / sol_spot
-    // stablecoin_supply(x) = supply - x * usdc_usd_lower / nav
-    let d_total_collateral = -(usdc_usd_lower.get() / sol_spot.get());
-    let d_stablecoin_supply = -(usdc_usd_lower.get() / nav.get());
+    // total_collateral(x) = total_sol - x / sol_spot
+    // stablecoin_supply(x) = supply - x / nav
+    let d_total_collateral = -sol_spot.get().recip();
+    let d_stablecoin_supply = -nav.get().recip();
 
     // cr(x) = total_collateral * sol_spot / stablecoin_supply
     // cr'(x) = (d_C * S - C * d_S) * sol_spot / S^2
@@ -447,11 +430,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     // d curve_price(cr(x)) = curve_price'(cr) * cr'(x)
     let d_curve_price = chain_rule(curve_slope, d_cr);
 
-    //                  usdc_usd_lower       usdc_usd_lower * x * d_curve_price
-    // lst_out'(x) = --------------------- - ----------------------------------
-    //               curve_price * lst_sol        curve_price^2 * lst_sol
-    let left = usdc_usd_lower.get() / (curve_price.get() * lst_sol.get());
-    let right = usdc_usd_lower.get() * usdc_amount.to_f64() * d_curve_price
+    //                        1                    x * d_curve_price
+    // lst_out'(x) = --------------------- - ----------------------------
+    //               curve_price * lst_sol    curve_price^2 * lst_sol
+    let left = (curve_price.get() * lst_sol.get()).recip();
+    let right = usdc_amount.to_f64() * d_curve_price
       / (curve_price.get() * curve_price.get() * lst_sol.get());
     positive_rate(left - right)
   }

@@ -2,8 +2,8 @@ use fix::prelude::*;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  ExoCollateralToUsdc, ExoFromToken, ExoToToken, ExoUsdcToCollateral,
-  LeverToStable, LstToToken, LstToUsdc, StableToLever, TokenToLst, UsdcToLst,
+  ExoFromToken, ExoToToken, LeverToStable, LstToToken, StableToLever,
+  TokenToLst,
 };
 use crate::pyth::PriceRange;
 #[cfg(feature = "offchain")]
@@ -338,285 +338,6 @@ impl ExoConversion {
   }
 }
 
-/// Directional conversion between USDC and stablecoin amounts.
-pub struct UsdcStablecoinConversion {
-  pub usdc_usd_price: PriceRange<N9>,
-}
-
-impl UsdcStablecoinConversion {
-  #[must_use]
-  pub fn new(usdc_usd_price: PriceRange<N9>) -> UsdcStablecoinConversion {
-    UsdcStablecoinConversion { usdc_usd_price }
-  }
-
-  /// USDC deposit to stablecoin amount using lower bound.
-  ///
-  /// Used for USDC to stablecoin swaps and sell-side collateral swaps to
-  /// compute virtual stablecoins to mint when USDC enters the vault.
-  ///
-  /// # Errors
-  /// * Arithmetic overflow or precision conversion
-  pub fn deposit_to_stablecoin(
-    &self,
-    usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N6>, CoreError> {
-    usdc_amount
-      .mul_div_floor(self.usdc_usd_price.lower, UFix64::one())
-      .and_then(UFix64::checked_convert)
-      .ok_or(ExoToToken)
-  }
-
-  /// Stablecoin to USDC withdrawal amount using upper bound.
-  /// Used on when user redeems stablecoin to USDC.
-  ///
-  /// # Errors
-  /// * Arithmetic overflow or precision conversion
-  pub fn stablecoin_to_withdrawal(
-    &self,
-    stablecoin_amount: UFix64<N6>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    (self.usdc_usd_price.upper != UFix64::zero())
-      .then_some(stablecoin_amount)
-      .and_then(UFix64::checked_convert::<N9>)
-      .and_then(|a| a.mul_div_floor(UFix64::one(), self.usdc_usd_price.upper))
-      .ok_or(ExoFromToken)
-  }
-
-  /// Inverse of
-  /// [`stablecoin_to_withdrawal`](Self::stablecoin_to_withdrawal) under
-  /// a USDC cap.
-  ///
-  /// # Errors
-  /// * Degenerate price
-  #[cfg(feature = "offchain")]
-  pub fn max_stablecoin_for_withdrawal(
-    &self,
-    cap: UFix64<N6>,
-  ) -> Result<UFix64<N6>, CoreError> {
-    let withdrawal = max_before_truncation(cap).ok_or(ExoFromToken)?;
-    let normalized =
-      max_scaled_input(withdrawal, UFix64::one(), self.usdc_usd_price.upper)
-        .ok_or(ExoFromToken)?;
-    Ok(normalized.convert::<N6>())
-  }
-
-  /// Inverse of [`deposit_to_stablecoin`](Self::deposit_to_stablecoin)
-  /// under a stablecoin cap.
-  ///
-  /// # Errors
-  /// * Degenerate price
-  #[cfg(feature = "offchain")]
-  pub fn max_deposit_for_stablecoin(
-    &self,
-    cap: UFix64<N6>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    let unconverted = max_before_truncation(cap).ok_or(ExoToToken)?;
-    max_scaled_input(unconverted, self.usdc_usd_price.lower, UFix64::one())
-      .ok_or(ExoToToken)
-  }
-
-  /// `N9` normalization frontier for USDC deposits.
-  #[cfg(feature = "offchain")]
-  #[must_use]
-  pub fn max_representable_deposit() -> UFix64<N6> {
-    UFix64::<N9>::new(u64::MAX).convert()
-  }
-
-  /// USDC withdrawal to stablecoin equivalent using upper bound.
-  ///
-  /// Used on buy-side collateral swaps to compute virtual stablecoins to burn
-  /// when USDC leaves the vault.
-  ///
-  /// # Errors
-  /// * Arithmetic overflow or precision conversion
-  pub fn withdrawal_to_stablecoin(
-    &self,
-    usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N6>, CoreError> {
-    usdc_amount
-      .mul_div_floor(self.usdc_usd_price.upper, UFix64::one())
-      .and_then(UFix64::checked_convert)
-      .ok_or(ExoToToken)
-  }
-}
-
-/// Conversions between exogenous collateral and USDC via oracle prices.
-pub struct ExoRebalanceConversion {
-  collateral_usd_price: UFix64<N9>,
-  usdc_usd_price: PriceRange<N9>,
-}
-
-impl ExoRebalanceConversion {
-  #[must_use]
-  pub fn new(
-    collateral_usd_price: UFix64<N9>,
-    usdc_usd_price: PriceRange<N9>,
-  ) -> ExoRebalanceConversion {
-    ExoRebalanceConversion {
-      collateral_usd_price,
-      usdc_usd_price,
-    }
-  }
-
-  /// Converts exogenous collateral to USDC
-  ///
-  /// # Errors
-  /// * Arithmetic failure
-  pub fn collateral_to_usdc(
-    &self,
-    collateral_amount: UFix64<N9>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    self
-      .collateral_to_usdc_inner(collateral_amount)
-      .ok_or(ExoCollateralToUsdc)
-  }
-
-  fn collateral_to_usdc_inner(
-    &self,
-    collateral_amount: UFix64<N9>,
-  ) -> Option<UFix64<N9>> {
-    (self.usdc_usd_price.upper != UFix64::zero())
-      .then_some(collateral_amount)
-      .and_then(|amt| {
-        amt.mul_div_floor(self.collateral_usd_price, self.usdc_usd_price.upper)
-      })
-  }
-
-  /// Inverse of [`collateral_to_usdc`](Self::collateral_to_usdc) under
-  /// a USDC cap.
-  ///
-  /// # Errors
-  /// * Degenerate price
-  #[cfg(feature = "offchain")]
-  pub fn max_collateral_for_usdc(
-    &self,
-    cap: UFix64<N6>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    let usdc = max_before_truncation(cap).ok_or(ExoCollateralToUsdc)?;
-    max_scaled_input(usdc, self.collateral_usd_price, self.usdc_usd_price.upper)
-      .ok_or(ExoCollateralToUsdc)
-  }
-
-  /// Converts USDC to exogenous collateral
-  ///
-  /// # Errors
-  /// * Arithmetic failure
-  pub fn usdc_to_collateral(
-    &self,
-    usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    self
-      .usdc_to_collateral_inner(usdc_amount)
-      .ok_or(ExoUsdcToCollateral)
-  }
-
-  fn usdc_to_collateral_inner(
-    &self,
-    usdc_amount: UFix64<N9>,
-  ) -> Option<UFix64<N9>> {
-    (self.collateral_usd_price != UFix64::zero())
-      .then_some(usdc_amount)
-      .and_then(|amt| {
-        amt.mul_div_floor(self.usdc_usd_price.lower, self.collateral_usd_price)
-      })
-  }
-
-  /// Inverse of [`usdc_to_collateral`](Self::usdc_to_collateral) under a
-  /// collateral cap.
-  ///
-  /// # Errors
-  /// * Degenerate price
-  #[cfg(feature = "offchain")]
-  pub fn max_usdc_for_collateral(
-    &self,
-    cap: UFix64<N9>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    max_scaled_input(cap, self.usdc_usd_price.lower, self.collateral_usd_price)
-      .ok_or(ExoUsdcToCollateral)
-  }
-}
-
-/// Conversions between LST and USDC via SOL for rebalancing.
-pub struct LstRebalanceConversion {
-  lst_sol: UFix64<N9>,
-  sol_usd: UFix64<N9>,
-  usdc_usd: PriceRange<N9>,
-}
-
-impl LstRebalanceConversion {
-  #[must_use]
-  pub fn new(
-    lst_sol: UFix64<N9>,
-    sol_usd: UFix64<N9>,
-    usdc_usd: PriceRange<N9>,
-  ) -> LstRebalanceConversion {
-    LstRebalanceConversion {
-      lst_sol,
-      sol_usd,
-      usdc_usd,
-    }
-  }
-
-  /// Converts LST to USDC for sell-side rebalancing.
-  ///
-  /// # Errors
-  /// * Arithmetic failure
-  pub fn lst_to_usdc(
-    &self,
-    lst_amount: UFix64<N9>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    (self.usdc_usd.upper != UFix64::zero())
-      .then_some(lst_amount)
-      .and_then(|amt| amt.mul_div_floor(self.lst_sol, UFix64::one()))
-      .and_then(|sol| sol.mul_div_floor(self.sol_usd, self.usdc_usd.upper))
-      .ok_or(LstToUsdc)
-  }
-
-  /// Inverse of [`lst_to_usdc`](Self::lst_to_usdc) under a USDC cap.
-  ///
-  /// # Errors
-  /// * Degenerate price
-  #[cfg(feature = "offchain")]
-  pub fn max_lst_for_usdc(
-    &self,
-    cap: UFix64<N6>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    let usdc = max_before_truncation(cap).ok_or(LstToUsdc)?;
-    let sol = max_scaled_input(usdc, self.sol_usd, self.usdc_usd.upper)
-      .ok_or(LstToUsdc)?;
-    max_scaled_input(sol, self.lst_sol, UFix64::one()).ok_or(LstToUsdc)
-  }
-
-  /// Converts USDC to LST for buy-side rebalancing.
-  ///
-  /// # Errors
-  /// * Arithmetic failure
-  pub fn usdc_to_lst(
-    &self,
-    usdc_amount: UFix64<N9>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    (self.sol_usd != UFix64::zero() && self.lst_sol != UFix64::zero())
-      .then_some(usdc_amount)
-      .and_then(|amt| amt.mul_div_floor(self.usdc_usd.lower, self.sol_usd))
-      .and_then(|sol| sol.mul_div_floor(UFix64::one(), self.lst_sol))
-      .ok_or(UsdcToLst)
-  }
-
-  /// Inverse of [`usdc_to_lst`](Self::usdc_to_lst) under an LST cap.
-  ///
-  /// # Errors
-  /// * Degenerate price
-  #[cfg(feature = "offchain")]
-  pub fn max_usdc_for_lst(
-    &self,
-    cap: UFix64<N9>,
-  ) -> Result<UFix64<N9>, CoreError> {
-    let sol =
-      max_scaled_input(cap, UFix64::one(), self.lst_sol).ok_or(UsdcToLst)?;
-    max_scaled_input(sol, self.usdc_usd.lower, self.sol_usd).ok_or(UsdcToLst)
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use proptest::prelude::*;
@@ -769,20 +490,6 @@ mod tests {
       );
     }
 
-    /// `usdc_to_lst(lst_to_usdc(x)) <= x`.
-    #[test]
-    fn lst_rebalance_roundtrip_favors_protocol(
-      amount_lst in lst_amount(),
-      lst_sol in lst_sol_price(),
-      sol_usd in usd_sol_price(),
-      usdc_usd in dollar_centered_price_range(),
-    ) {
-      let conv = LstRebalanceConversion::new(lst_sol, sol_usd, usdc_usd);
-      let usdc = conv.lst_to_usdc(amount_lst)?;
-      let back = conv.usdc_to_lst(usdc)?;
-      prop_assert!(back <= amount_lst);
-    }
-
     /// `lever_to_stable(stable_to_lever(x)) <= x`.
     #[test]
     fn swap_conversion_stable_roundtrip_favors_protocol(
@@ -796,58 +503,14 @@ mod tests {
       prop_assert!(back <= amount_stable);
     }
   }
-
-  const UNDERPEGGED_USDC: PriceRange<N9> = PriceRange {
-    lower: UFix64::constant(997_000_000),
-    upper: UFix64::constant(999_000_000),
-  };
-
-  const COLLATERAL_PRICE: UFix64<N9> = UFix64::constant(148_370_000_000);
-
-  #[test]
-  fn exo_rebalance_collateral_to_usdc() -> Result<(), CoreError> {
-    let conv = ExoRebalanceConversion::new(COLLATERAL_PRICE, UNDERPEGGED_USDC);
-    let usdc = conv.collateral_to_usdc(UFix64::new(10_000_000_000))?;
-    assert_eq!(usdc, UFix64::new(1_485_185_185_185));
-    Ok(())
-  }
-
-  #[test]
-  fn exo_rebalance_usdc_to_collateral() -> Result<(), CoreError> {
-    let conv = ExoRebalanceConversion::new(COLLATERAL_PRICE, UNDERPEGGED_USDC);
-    let coll = conv.usdc_to_collateral(UFix64::new(1_500_000_000_000))?;
-    assert_eq!(coll, UFix64::new(10_079_530_902));
-    Ok(())
-  }
-
-  const LST_SOL: UFix64<N9> = UFix64::constant(1_136_000_000);
-  const SOL_USD: UFix64<N9> = UFix64::constant(171_030_000_000);
-
-  #[test]
-  fn lst_rebalance_lst_to_usdc() -> Result<(), CoreError> {
-    let conv = LstRebalanceConversion::new(LST_SOL, SOL_USD, UNDERPEGGED_USDC);
-    let usdc = conv.lst_to_usdc(UFix64::new(10_000_000_000))?;
-    assert_eq!(usdc, UFix64::new(1_944_845_645_645));
-    Ok(())
-  }
-
-  #[test]
-  fn lst_rebalance_usdc_to_lst() -> Result<(), CoreError> {
-    let conv = LstRebalanceConversion::new(LST_SOL, SOL_USD, UNDERPEGGED_USDC);
-    let lst = conv.usdc_to_lst(UFix64::new(200_000_000_000))?;
-    assert_eq!(lst, UFix64::new(1_026_300_467));
-    Ok(())
-  }
 }
 
 #[cfg(kani)]
 mod proofs {
   use fix::prelude::*;
 
-  use crate::conversion::{Conversion, ExoConversion, ExoRebalanceConversion};
-  use crate::kani_generators::{
-    dollar_centered_price_range, narrow_price_range, narrow_ufix64,
-  };
+  use crate::conversion::{Conversion, ExoConversion};
+  use crate::kani_generators::{narrow_price_range, narrow_ufix64};
 
   /// `token_to_lst(lst_to_token(x)) <= x`.
   #[kani::proof]
@@ -874,21 +537,6 @@ mod proofs {
       conv
         .exo_to_token_inner(amount, token_nav)
         .and_then(|t| conv.token_to_exo_inner(t, token_nav))
-    });
-    assert!(back.is_none_or(|b| b <= amount));
-  }
-
-  /// `usdc_to_collateral(collateral_to_usdc(x)) <= x`.
-  #[kani::proof]
-  fn exo_rebalance_roundtrip_favors_protocol() {
-    let amount: UFix64<N9> = narrow_ufix64();
-    let collateral_usd_price = UFix64::<N9>::one();
-    let back = dollar_centered_price_range().and_then(|usdc_usd_price| {
-      let conv =
-        ExoRebalanceConversion::new(collateral_usd_price, usdc_usd_price);
-      conv
-        .collateral_to_usdc_inner(amount)
-        .and_then(|u| conv.usdc_to_collateral_inner(u))
     });
     assert!(back.is_none_or(|b| b <= amount));
   }

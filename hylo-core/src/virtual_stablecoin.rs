@@ -12,6 +12,16 @@ use crate::error::CoreError::{
 /// Stablecoin sent to the exchange's dead address at genesis.
 pub const SUPPLY_FLOOR: UFix64<N6> = UFix64::constant(100_000);
 
+/// Headroom left in the supply counter before it overflows.
+///
+/// # Errors
+/// * Underflow
+pub fn max_mintable(supply: UFix64<N6>) -> Result<UFix64<N6>, CoreError> {
+  UFix64::new(u64::MAX)
+    .checked_sub(&supply)
+    .ok_or(MintOverflow)
+}
+
 /// Computes the supply after burning `amount`, requiring the result to
 /// stay at or above `limit`.
 ///

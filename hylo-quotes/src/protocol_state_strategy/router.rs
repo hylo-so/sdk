@@ -91,7 +91,7 @@ state_quote!(JITOSOL, HYLOSOL, N9, ExecutableQuote<N9, N9, N9>);
 state_quote!(HYLOSOL, JITOSOL, N9, ExecutableQuote<N9, N9, N9>);
 
 // `mint_stablecoin_usdc`
-state_quote!(USDC, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
+state_quote!(USDC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `redeem_stablecoin_usdc`
 state_quote!(HYUSD, USDC, N6, ExecutableQuote<N6, N6, N6>);
