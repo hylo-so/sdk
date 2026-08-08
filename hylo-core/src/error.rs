@@ -258,4 +258,9 @@ pub enum CoreError {
   InsufficientEarnPoolLiquidity,
   #[msg("Overflow while computing minimum input.")]
   MinInputOverflow,
+  // `par_tolerance`
+  #[msg("Par tolerance not in valid range.")]
+  InvalidParTolerance,
+  #[msg("Spot price deviates from par beyond configured tolerance.")]
+  ParToleranceExceeded,
 }
