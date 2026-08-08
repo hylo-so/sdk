@@ -2,7 +2,6 @@
 
 use fix::prelude::*;
 use hylo_core::calculus::positive_rate;
-use hylo_core::conversion::UsdcStablecoinConversion;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
@@ -11,7 +10,9 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
+use hylo_core::virtual_stablecoin::{
+  max_mintable, validate_burn, SUPPLY_FLOOR,
+};
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, USDC, XBTC, XSOL,
 };
@@ -590,7 +591,7 @@ impl<L1: LST + Local, L2: LST + Local, C: SolanaClock> TokenOperation<L1, L2>
 }
 
 impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
-  type FeeExp = N9;
+  type FeeExp = N6;
 
   fn preconditions(&self) -> Result<(), CoreError> {
     self.usdc_pair_gates()
@@ -599,46 +600,34 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   fn compute_output_ungated(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N9>, CoreError> {
+  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let usdc_in: UFix64<N9> = in_amount
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = FeeExtract::new(usdc_state.swap_fee, usdc_in)?;
-    let out_amount = usdc_state
-      .conversion()
-      .deposit_to_stablecoin(amount_remaining)?;
+    } = FeeExtract::new(usdc_state.swap_fee, in_amount)?;
 
-    // stablecoin_out(x) = x * (1 - fee) * usdc_usd_lower
-    let marginal_rate = positive_rate(
-      (1.0 - usdc_state.swap_fee.to_f64())
-        * usdc_state.usdc_usd_price.lower.to_f64(),
-    )?;
+    // stablecoin_out(x) = x * (1 - fee)
+    let marginal_rate = positive_rate(1.0 - usdc_state.swap_fee.to_f64())?;
     Ok(OperationOutput {
       in_amount,
-      out_amount,
+      out_amount: amount_remaining,
       fee_amount: fees_extracted,
       fee_mint: USDC::MINT,
-      fee_base: usdc_in,
+      fee_base: in_amount,
       marginal_rate,
     })
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    Ok(UsdcStablecoinConversion::max_representable_deposit())
+    let usdc_state = self.usdc_exchange_state();
+    let headroom = max_mintable(usdc_state.virtual_stablecoin_supply)?;
+    FeeExtract::max_input(usdc_state.swap_fee, headroom)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let max_zero_usdc = usdc_state
-      .conversion()
-      .max_deposit_for_stablecoin(UFix64::zero())?;
-    let max_zero_in =
-      FeeExtract::max_input(usdc_state.swap_fee, max_zero_usdc)?;
-    past_zero(max_zero_in.convert::<N6>())
+    past_zero(FeeExtract::max_input(usdc_state.swap_fee, UFix64::zero())?)
   }
 }
 
@@ -662,25 +651,16 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       amount_remaining <= usdc_state.virtual_stablecoin_supply,
       CoreError::BurnUnderflow,
     )?;
-    let usdc_out = usdc_state
-      .conversion()
-      .stablecoin_to_withdrawal(amount_remaining)?;
-    let out_amount: UFix64<N6> = usdc_out
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
-      out_amount <= usdc_state.vault_balance,
+      amount_remaining <= usdc_state.vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
 
-    // usdc_out(x) = x * (1 - fee) / usdc_usd_upper
-    let marginal_rate = positive_rate(
-      (1.0 - usdc_state.swap_fee.to_f64())
-        / usdc_state.usdc_usd_price.upper.to_f64(),
-    )?;
+    // usdc_out(x) = x * (1 - fee)
+    let marginal_rate = positive_rate(1.0 - usdc_state.swap_fee.to_f64())?;
     Ok(OperationOutput {
       in_amount,
-      out_amount,
+      out_amount: amount_remaining,
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
@@ -690,19 +670,15 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let vault_cap = usdc_state
-      .conversion()
-      .max_stablecoin_for_withdrawal(usdc_state.vault_balance)?;
-    let remaining = vault_cap.min(usdc_state.virtual_stablecoin_supply);
+    let remaining = usdc_state
+      .vault_balance
+      .min(usdc_state.virtual_stablecoin_supply);
     FeeExtract::max_input(usdc_state.swap_fee, remaining)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let max_zero_hyusd = usdc_state
-      .conversion()
-      .max_stablecoin_for_withdrawal(UFix64::zero())?;
-    past_zero(FeeExtract::max_input(usdc_state.swap_fee, max_zero_hyusd)?)
+    past_zero(FeeExtract::max_input(usdc_state.swap_fee, UFix64::zero())?)
   }
 }
 
@@ -1176,36 +1152,26 @@ impl<C: SolanaClock> ProtocolState<C> {
       in_amount <= buy_target,
       CoreError::RebalanceBuyTargetExceeded,
     )?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let conversion = self
       .exchange_context
-      .rebalance_buy_conversion(&adjusted, usdc_price, in_amount)?;
-    let usdc_out: UFix64<N9> = conversion.lst_to_usdc(in_amount)?;
-    let out_amount = usdc_out
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+      .rebalance_buy_conversion(&adjusted, in_amount)?;
+    let out_amount = conversion.lst_to_token(in_amount, UFix64::one())?;
     gate(
       out_amount <= self.usdc_exchange_state().vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
-    let stablecoin_moved = self
-      .usdc_exchange_state()
-      .conversion()
-      .withdrawal_to_stablecoin(usdc_out)?;
     gate(
-      stablecoin_moved <= self.usdc_exchange_state().virtual_stablecoin_supply,
+      out_amount <= self.usdc_exchange_state().virtual_stablecoin_supply,
       CoreError::BurnUnderflow,
     )?;
-    let pnl = self.exchange_context.rebalance_pnl_buy_side(
-      &lst_price,
-      in_amount,
-      stablecoin_moved,
-    )?;
+    let pnl = self
+      .exchange_context
+      .rebalance_pnl_buy_side(&lst_price, in_amount, out_amount)?;
     self.validate_pnl_settlement(&self.exchange_context, SUPPLY_FLOOR, pnl)?;
     let marginal_rate = atom_rate::<N9, N6>(
       self
         .exchange_context
-        .rebalance_buy_marginal(&adjusted, usdc_price, in_amount)?,
+        .rebalance_buy_marginal(&adjusted, in_amount)?,
     );
     Ok(OperationOutput {
       in_amount,
@@ -1222,41 +1188,30 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
-    let normalized: UFix64<N9> = in_amount
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
     let header = self.lst_header::<L>()?;
     let lst_price: LstSolPrice = header.price_sol.into();
     let rebalance_fee = header.rebalance_fee.try_into()?;
     let true_price = self.stake_pool::<L>()?.true_price()?;
     let adjusted = true_price.adjust_price(rebalance_fee)?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let max_usdc_in = self.exchange_context.max_rebalance_sell_usdc(
       *self.stake_pool::<L>()?,
       rebalance_fee,
       self.lst_vault_balance::<L>()?,
-      usdc_price,
       SUPPLY_FLOOR,
     )?;
-    gate(normalized <= max_usdc_in, CoreError::InsufficientLiquidity)?;
+    gate(in_amount <= max_usdc_in, CoreError::InsufficientLiquidity)?;
     let conversion = self
       .exchange_context
-      .rebalance_sell_conversion(&adjusted, usdc_price, normalized)?;
-    let out_amount = conversion.usdc_to_lst(normalized)?;
-    let stablecoin_moved = self
-      .usdc_exchange_state()
-      .conversion()
-      .deposit_to_stablecoin(normalized)?;
-    let pnl = self.exchange_context.rebalance_pnl_sell_side(
-      &lst_price,
-      out_amount,
-      stablecoin_moved,
-    )?;
+      .rebalance_sell_conversion(&adjusted, in_amount)?;
+    let out_amount = conversion.token_to_lst(in_amount, UFix64::one())?;
+    let pnl = self
+      .exchange_context
+      .rebalance_pnl_sell_side(&lst_price, out_amount, in_amount)?;
     self.validate_pnl_settlement(&self.exchange_context, SUPPLY_FLOOR, pnl)?;
     let marginal_rate = atom_rate::<N6, N9>(
       self
         .exchange_context
-        .rebalance_sell_marginal(&adjusted, usdc_price, normalized)?,
+        .rebalance_sell_marginal(&adjusted, in_amount)?,
     );
     Ok(OperationOutput {
       in_amount,
@@ -1280,11 +1235,13 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.exchange_context.rebalance_buy_target()?,
       epoch,
     )?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let vault_cap = self
       .exchange_context
-      .rebalance_buy_conversion(&adjusted, usdc_price, buy_target)?
-      .max_lst_for_usdc(self.usdc_exchange_state().vault_balance)?;
+      .rebalance_buy_conversion(&adjusted, buy_target)?
+      .max_lst_for_token(
+        self.usdc_exchange_state().vault_balance,
+        UFix64::one(),
+      )?;
     Ok(buy_target.min(vault_cap))
   }
 
@@ -1293,14 +1250,12 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let header = self.lst_header::<L>()?;
-    let max_usdc_in = self.exchange_context.max_rebalance_sell_usdc(
+    self.exchange_context.max_rebalance_sell_usdc(
       *self.stake_pool::<L>()?,
       header.rebalance_fee.try_into()?,
       self.lst_vault_balance::<L>()?,
-      self.usdc_exchange_state().usdc_usd_price,
       SUPPLY_FLOOR,
-    )?;
-    Ok(max_usdc_in.convert::<N6>())
+    )
   }
 
   /// Input floor for the rebalance buy leg.
@@ -1310,13 +1265,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     let header = self.lst_header::<L>()?;
     let true_price = self.stake_pool::<L>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let conversion = self.exchange_context.rebalance_buy_conversion(
-      &adjusted,
-      usdc_price,
-      UFix64::new(1),
-    )?;
-    past_zero(conversion.max_lst_for_usdc(UFix64::zero())?)
+    let conversion = self
+      .exchange_context
+      .rebalance_buy_conversion(&adjusted, UFix64::new(1))?;
+    past_zero(conversion.max_lst_for_token(UFix64::zero(), UFix64::one())?)
   }
 
   /// Input floor for the rebalance sell leg.
@@ -1326,14 +1278,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     let header = self.lst_header::<L>()?;
     let true_price = self.stake_pool::<L>()?.true_price()?;
     let adjusted = true_price.adjust_price(header.rebalance_fee.try_into()?)?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let conversion = self.exchange_context.rebalance_sell_conversion(
-      &adjusted,
-      usdc_price,
-      UFix64::new(1),
-    )?;
-    let max_zero_usdc = conversion.max_usdc_for_lst(UFix64::zero())?;
-    past_zero(max_zero_usdc.convert::<N6>())
+    let conversion = self
+      .exchange_context
+      .rebalance_sell_conversion(&adjusted, UFix64::new(1))?;
+    past_zero(conversion.max_token_for_lst(UFix64::zero(), UFix64::one())?)
   }
 }
 
@@ -1458,25 +1406,17 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
       normalized <= exo.rebalance_buy_target()?,
       CoreError::RebalanceBuyTargetExceeded,
     )?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let conversion = exo.rebalance_buy_conversion(usdc_price, normalized)?;
-    let usdc_out: UFix64<N9> = conversion.collateral_to_usdc(normalized)?;
-    let out_amount = usdc_out
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+    let conversion = exo.rebalance_buy_conversion(normalized)?;
+    let out_amount = conversion.exo_to_token(normalized, UFix64::one())?;
     gate(
       out_amount <= self.usdc_exchange_state().vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
-    let stablecoin_moved = self
-      .usdc_exchange_state()
-      .conversion()
-      .withdrawal_to_stablecoin(usdc_out)?;
     gate(
-      stablecoin_moved <= self.usdc_exchange_state().virtual_stablecoin_supply,
+      out_amount <= self.usdc_exchange_state().virtual_stablecoin_supply,
       CoreError::BurnUnderflow,
     )?;
-    let pnl = exo.rebalance_pnl_buy_side(normalized, stablecoin_moved)?;
+    let pnl = exo.rebalance_pnl_buy_side(normalized, out_amount)?;
     self.validate_pnl_settlement(exo, btc_pair.supply_floor, pnl)?;
     Ok(OperationOutput {
       in_amount,
@@ -1485,7 +1425,7 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
       fee_mint: CBBTC::MINT,
       fee_base: in_amount,
       marginal_rate: atom_rate::<N8, N6>(
-        exo.rebalance_buy_marginal(usdc_price, normalized)?,
+        exo.rebalance_buy_marginal(normalized)?,
       ),
     })
   }
@@ -1493,19 +1433,20 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
   fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let buy_target = exo.rebalance_buy_target()?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let vault_cap = exo
-      .rebalance_buy_conversion(usdc_price, buy_target)?
-      .max_collateral_for_usdc(self.usdc_exchange_state().vault_balance)?;
+      .rebalance_buy_conversion(buy_target)?
+      .max_exo_for_token(
+        self.usdc_exchange_state().vault_balance,
+        UFix64::one(),
+      )?;
     Ok(buy_target.min(vault_cap).convert::<N8>())
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let max_zero_exo = exo
-      .rebalance_buy_conversion(usdc_price, UFix64::new(1))?
-      .max_collateral_for_usdc(UFix64::zero())?;
+      .rebalance_buy_conversion(UFix64::new(1))?
+      .max_exo_for_token(UFix64::zero(), UFix64::one())?;
     past_zero(max_zero_exo.convert::<N8>())
   }
 }
@@ -1532,24 +1473,14 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
   ) -> Result<OperationOutput<N6, N8, N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
     let btc_pair = &self.btc_pair_state;
-    let normalized: UFix64<N9> = in_amount
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let max_usdc_in =
-      exo.max_rebalance_sell_usdc(usdc_price, btc_pair.supply_floor)?;
-    gate(normalized <= max_usdc_in, CoreError::InsufficientLiquidity)?;
-    let conversion = exo.rebalance_sell_conversion(usdc_price, normalized)?;
-    let collateral_out: UFix64<N9> =
-      conversion.usdc_to_collateral(normalized)?;
+    let max_usdc_in = exo.max_rebalance_sell_usdc(btc_pair.supply_floor)?;
+    gate(in_amount <= max_usdc_in, CoreError::InsufficientLiquidity)?;
+    let conversion = exo.rebalance_sell_conversion(in_amount)?;
+    let collateral_out = conversion.token_to_exo(in_amount, UFix64::one())?;
     let out_amount = collateral_out
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
-    let stablecoin_moved = self
-      .usdc_exchange_state()
-      .conversion()
-      .deposit_to_stablecoin(normalized)?;
-    let pnl = exo.rebalance_pnl_sell_side(collateral_out, stablecoin_moved)?;
+    let pnl = exo.rebalance_pnl_sell_side(collateral_out, in_amount)?;
     self.validate_pnl_settlement(exo, btc_pair.supply_floor, pnl)?;
     Ok(OperationOutput {
       in_amount,
@@ -1558,26 +1489,23 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
       fee_mint: USDC::MINT,
       fee_base: in_amount,
       marginal_rate: atom_rate::<N6, N8>(
-        exo.rebalance_sell_marginal(usdc_price, normalized)?,
+        exo.rebalance_sell_marginal(in_amount)?,
       ),
     })
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let max_usdc_in = exo.max_rebalance_sell_usdc(
-      self.usdc_exchange_state().usdc_usd_price,
-      self.btc_pair_state.supply_floor,
-    )?;
-    Ok(max_usdc_in.convert::<N6>())
+    self
+      .cbbtc_exchange_context()
+      .max_rebalance_sell_usdc(self.btc_pair_state.supply_floor)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let exo = self.cbbtc_exchange_context();
-    let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let max_zero_usdc = exo
-      .rebalance_sell_conversion(usdc_price, UFix64::new(1))?
-      .max_usdc_for_collateral(max_zero_n8()?)?;
-    past_zero(max_zero_usdc.convert::<N6>())
+    past_zero(
+      exo
+        .rebalance_sell_conversion(UFix64::new(1))?
+        .max_token_for_exo(max_zero_n8()?, UFix64::one())?,
+    )
   }
 }

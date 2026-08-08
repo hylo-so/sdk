@@ -49,11 +49,10 @@ fn usdc_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_oracle = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
+  query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
   Ok(UsdcExchangeState {
-    usdc_usd_price: usdc_oracle.price_range()?,
     swap_fee: usdc_pair.swap_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
