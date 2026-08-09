@@ -25,7 +25,7 @@ pub const MAX_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1_000_000);
   Eq,
 )]
 pub struct ParTolerance {
-  tolerance: UFixValue64,
+  pub tolerance: UFixValue64,
 }
 
 impl ParTolerance {
