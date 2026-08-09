@@ -12,7 +12,7 @@ const MIN_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1);
 pub const MAX_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1_000_000);
 
 /// Par tolerance must be in `[MIN, MAX]`.
-pub fn validate_par_tolerance(
+fn validate_par_tolerance(
   tolerance: UFixValue64,
 ) -> Result<UFixValue64, CoreError> {
   if (MIN_PAR_TOLERANCE..=MAX_PAR_TOLERANCE).contains(&tolerance.try_into()?) {
@@ -36,7 +36,7 @@ pub fn validate_par_tolerance(
   Eq,
 )]
 pub struct ParTolerance {
-  pub tolerance: UFixValue64,
+  tolerance: UFixValue64,
 }
 
 impl ParTolerance {
