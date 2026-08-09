@@ -7,9 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::error::CoreError;
 use crate::error::CoreError::{InvalidParTolerance, ParToleranceExceeded};
 
-const MIN_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1);
-/// $0.001
-pub const MAX_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1_000_000);
+const MIN_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(10_000);
+const MAX_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1_000_000);
 
 /// Maximum distance from par at which an asset settles at face value.
 #[derive(
