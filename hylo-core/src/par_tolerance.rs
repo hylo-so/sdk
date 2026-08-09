@@ -1,4 +1,8 @@
+use anchor_lang::prelude::{
+  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+};
 use fix::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
 use crate::error::CoreError::{InvalidParTolerance, ParToleranceExceeded};
@@ -19,21 +23,37 @@ pub fn validate_par_tolerance(
 }
 
 /// Maximum distance from par at which an asset settles at face value.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(
+  Debug,
+  Clone,
+  Copy,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Serialize,
+  Deserialize,
+  PartialEq,
+  Eq,
+)]
 pub struct ParTolerance {
-  tolerance: UFix64<N9>,
+  pub tolerance: UFixValue64,
 }
 
 impl ParTolerance {
   pub fn new(tolerance: UFixValue64) -> Result<ParTolerance, CoreError> {
     Ok(ParTolerance {
-      tolerance: validate_par_tolerance(tolerance)?.try_into()?,
+      tolerance: validate_par_tolerance(tolerance)?,
     })
+  }
+
+  /// Lifts serialized tolerance to `UFix64`.
+  pub fn tolerance(&self) -> Result<UFix64<N9>, CoreError> {
+    Ok(self.tolerance.try_into()?)
   }
 
   /// Checks `|1 - spot|` against the tolerance.
   pub fn validate_spot(&self, spot: UFix64<N9>) -> Result<(), CoreError> {
-    if spot.abs_diff(&UFix64::one()) <= self.tolerance {
+    if spot.abs_diff(&UFix64::one()) <= self.tolerance()? {
       Ok(())
     } else {
       Err(ParToleranceExceeded)
