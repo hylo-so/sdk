@@ -3,8 +3,20 @@ use fix::prelude::*;
 use crate::error::CoreError;
 use crate::error::CoreError::{InvalidParTolerance, ParToleranceExceeded};
 
+const MIN_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1);
 /// $0.001
 pub const MAX_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1_000_000);
+
+/// Par tolerance must be in `[MIN, MAX]`.
+pub fn validate_par_tolerance(
+  tolerance: UFixValue64,
+) -> Result<UFixValue64, CoreError> {
+  if (MIN_PAR_TOLERANCE..=MAX_PAR_TOLERANCE).contains(&tolerance.try_into()?) {
+    Ok(tolerance)
+  } else {
+    Err(InvalidParTolerance)
+  }
+}
 
 /// Maximum distance from par at which an asset settles at face value.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -14,18 +26,9 @@ pub struct ParTolerance {
 
 impl ParTolerance {
   pub fn new(tolerance: UFixValue64) -> Result<ParTolerance, CoreError> {
-    let tolerance = tolerance.try_into()?;
-    ParTolerance::validate_tolerance(tolerance)?;
-    Ok(ParTolerance { tolerance })
-  }
-
-  /// Par tolerance must be in `(0, MAX_PAR_TOLERANCE]`.
-  pub fn validate_tolerance(tolerance: UFix64<N9>) -> Result<(), CoreError> {
-    if tolerance > UFix64::zero() && tolerance <= MAX_PAR_TOLERANCE {
-      Ok(())
-    } else {
-      Err(InvalidParTolerance)
-    }
+    Ok(ParTolerance {
+      tolerance: validate_par_tolerance(tolerance)?.try_into()?,
+    })
   }
 
   /// Checks `|1 - spot|` against the tolerance.
