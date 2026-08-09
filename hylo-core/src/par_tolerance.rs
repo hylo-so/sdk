@@ -11,17 +11,6 @@ const MIN_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1);
 /// $0.001
 pub const MAX_PAR_TOLERANCE: UFix64<N9> = UFix64::constant(1_000_000);
 
-/// Par tolerance must be in `[MIN, MAX]`.
-fn validate_par_tolerance(
-  tolerance: UFixValue64,
-) -> Result<UFixValue64, CoreError> {
-  if (MIN_PAR_TOLERANCE..=MAX_PAR_TOLERANCE).contains(&tolerance.try_into()?) {
-    Ok(tolerance)
-  } else {
-    Err(InvalidParTolerance)
-  }
-}
-
 /// Maximum distance from par at which an asset settles at face value.
 #[derive(
   Debug,
@@ -40,10 +29,18 @@ pub struct ParTolerance {
 }
 
 impl ParTolerance {
-  pub fn new(tolerance: UFixValue64) -> Result<ParTolerance, CoreError> {
-    Ok(ParTolerance {
-      tolerance: validate_par_tolerance(tolerance)?,
-    })
+  fn new(tolerance: UFixValue64) -> ParTolerance {
+    ParTolerance { tolerance }
+  }
+
+  /// Par tolerance must be in `[MIN, MAX]`.
+  pub fn validated(tolerance: UFixValue64) -> Result<ParTolerance, CoreError> {
+    if (MIN_PAR_TOLERANCE..=MAX_PAR_TOLERANCE).contains(&tolerance.try_into()?)
+    {
+      Ok(ParTolerance::new(tolerance))
+    } else {
+      Err(InvalidParTolerance)
+    }
   }
 
   /// Lifts serialized tolerance to `UFix64`.
@@ -67,7 +64,7 @@ mod tests {
 
   #[test]
   fn band_is_symmetric_and_inclusive() -> Result<(), CoreError> {
-    let par_tolerance = ParTolerance::new(UFixValue64::new(500_000, -9))?;
+    let par_tolerance = ParTolerance::validated(UFixValue64::new(500_000, -9))?;
     par_tolerance.validate_spot(UFix64::new(999_500_000))?;
     par_tolerance.validate_spot(UFix64::new(1_000_500_000))?;
     let under = par_tolerance.validate_spot(UFix64::new(999_499_999));
@@ -79,8 +76,8 @@ mod tests {
 
   #[test]
   fn reject_out_of_range_tolerance() {
-    let zero = ParTolerance::new(UFixValue64::new(0, -9));
-    let over = ParTolerance::new(UFixValue64::new(1_000_001, -9));
+    let zero = ParTolerance::validated(UFixValue64::new(0, -9));
+    let over = ParTolerance::validated(UFixValue64::new(1_000_001, -9));
     assert_eq!(zero.err(), Some(InvalidParTolerance));
     assert_eq!(over.err(), Some(InvalidParTolerance));
   }
