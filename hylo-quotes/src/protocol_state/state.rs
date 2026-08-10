@@ -17,6 +17,7 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
+use hylo_core::par_tolerance::ParTolerance;
 use hylo_core::pyth::{
   query_pyth_oracle, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
 };
@@ -40,6 +41,10 @@ pub struct UsdcExchangeState {
   pub vault_balance: UFix64<N6>,
   /// Virtual stablecoin supply for the USDC pair
   pub virtual_stablecoin_supply: UFix64<N6>,
+  /// USDC/USD spot price, gated against par
+  pub usdc_usd_spot: UFix64<N9>,
+  /// Tolerated distance from par for the USDC pair
+  pub par_tolerance: ParTolerance,
 }
 
 /// Whether a collateral feed is valid under the tighter stablecoin
@@ -386,7 +391,7 @@ fn build_usdc_exchange_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
+  let usdc_oracle = query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
 
@@ -398,6 +403,8 @@ fn build_usdc_exchange_state(
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+    usdc_usd_spot: usdc_oracle.spot,
+    par_tolerance: usdc_pair.par_tolerance.into(),
   })
 }
 

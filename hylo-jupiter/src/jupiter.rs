@@ -51,7 +51,7 @@ fn usdc_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
+  let usdc_oracle = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
   Ok(UsdcExchangeState {
@@ -59,6 +59,8 @@ fn usdc_state(
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+    usdc_usd_spot: usdc_oracle.spot,
+    par_tolerance: usdc_pair.par_tolerance.into(),
   })
 }
 

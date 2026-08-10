@@ -49,10 +49,14 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// Pause gates for USDC-pair routes.
+  /// Pause and par gates for routes touching the USDC vault.
   fn usdc_pair_gates(&self) -> Result<(), CoreError> {
+    let usdc_state = self.usdc_exchange_state();
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)
+    gate(!usdc_state.paused, CoreError::PairPaused)?;
+    usdc_state
+      .par_tolerance
+      .validate_spot(usdc_state.usdc_usd_spot)
   }
 }
 
@@ -1181,7 +1185,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   /// State gates shared by the LST rebalance buy routes.
   fn rebalance_buy_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
-    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    self.usdc_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.rebalance_buy_active(),
@@ -1192,7 +1196,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   /// State gates shared by the LST rebalance sell routes.
   fn rebalance_sell_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
-    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    self.usdc_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.rebalance_sell_active(),
@@ -1448,8 +1452,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
+    self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
-    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.rebalance_buy_active(),
@@ -1541,8 +1545,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
+    self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
-    gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.rebalance_sell_active(),
