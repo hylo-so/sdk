@@ -111,24 +111,6 @@ simulation_quote!(USDC, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
 // `redeem_stablecoin_usdc`
 simulation_quote!(HYUSD, USDC, N6, ExecutableQuote<N6, N6, N6>);
 
-// `mint_stablecoin_exo`
-simulation_quote!(CBBTC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-
-// `redeem_stablecoin_exo`
-simulation_quote!(HYUSD, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
-
-// `mint_levercoin_exo`
-simulation_quote!(CBBTC, XBTC, N9, ExecutableQuote<N8, N6, N9>);
-
-// `redeem_levercoin_exo`
-simulation_quote!(XBTC, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
-
-// `convert_stable_to_lever_exo`
-simulation_quote!(HYUSD, XBTC, N6, ExecutableQuote<N6, N6, N6>);
-
-// `convert_lever_to_stable_exo`
-simulation_quote!(XBTC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-
 // `swap_lst_to_usdc`
 simulation_quote!(JITOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
 simulation_quote!(HYLOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
@@ -138,10 +120,6 @@ simulation_quote!(USDC, JITOSOL, N6, ExecutableQuote<N6, N9, N6>);
 simulation_quote!(USDC, HYLOSOL, N6, ExecutableQuote<N6, N9, N6>);
 
 // `swap_exo_to_usdc`
-simulation_quote!(CBBTC, USDC, N8, ExecutableQuote<N8, N6, N8>);
-
-// `swap_usdc_to_exo`
-simulation_quote!(USDC, CBBTC, N6, ExecutableQuote<N6, N8, N6>);
 
 // `user_deposit`
 simulation_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
@@ -149,46 +127,22 @@ simulation_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 // `user_withdraw`
 simulation_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
-simulation_quote!(HYPE, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
-simulation_quote!(HYUSD, HYPE, N9, ExecutableQuote<N6, N9, N9>);
-simulation_quote!(HYPE, XHYPE, N9, ExecutableQuote<N9, N6, N9>);
-simulation_quote!(XHYPE, HYPE, N9, ExecutableQuote<N6, N9, N9>);
-simulation_quote!(HYUSD, XHYPE, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(XHYPE, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(HYPE, USDC, N9, ExecutableQuote<N9, N6, N9>);
-simulation_quote!(USDC, HYPE, N6, ExecutableQuote<N6, N9, N6>);
+macro_rules! exo_simulation_quotes {
+  ($exo:ident, $lever:ident, $exp:ty) => {
+    simulation_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
+    simulation_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+    simulation_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
+    simulation_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+    simulation_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
+    simulation_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+    simulation_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
+    simulation_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+  };
+}
 
-simulation_quote!(ZEC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-simulation_quote!(HYUSD, ZEC, N9, ExecutableQuote<N6, N8, N9>);
-simulation_quote!(ZEC, XZEC, N9, ExecutableQuote<N8, N6, N9>);
-simulation_quote!(XZEC, ZEC, N9, ExecutableQuote<N6, N8, N9>);
-simulation_quote!(HYUSD, XZEC, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(XZEC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(ZEC, USDC, N8, ExecutableQuote<N8, N6, N8>);
-simulation_quote!(USDC, ZEC, N6, ExecutableQuote<N6, N8, N6>);
-
-simulation_quote!(PST, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
-simulation_quote!(HYUSD, PST, N9, ExecutableQuote<N6, N6, N9>);
-simulation_quote!(PST, XPST, N9, ExecutableQuote<N6, N6, N9>);
-simulation_quote!(XPST, PST, N9, ExecutableQuote<N6, N6, N9>);
-simulation_quote!(HYUSD, XPST, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(XPST, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(PST, USDC, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(USDC, PST, N6, ExecutableQuote<N6, N6, N6>);
-
-simulation_quote!(ONYC, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
-simulation_quote!(HYUSD, ONYC, N9, ExecutableQuote<N6, N9, N9>);
-simulation_quote!(ONYC, XONYC, N9, ExecutableQuote<N9, N6, N9>);
-simulation_quote!(XONYC, ONYC, N9, ExecutableQuote<N6, N9, N9>);
-simulation_quote!(HYUSD, XONYC, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(XONYC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(ONYC, USDC, N9, ExecutableQuote<N9, N6, N9>);
-simulation_quote!(USDC, ONYC, N6, ExecutableQuote<N6, N9, N6>);
-simulation_quote!(WETH, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-simulation_quote!(HYUSD, WETH, N9, ExecutableQuote<N6, N8, N9>);
-simulation_quote!(WETH, XETH, N9, ExecutableQuote<N8, N6, N9>);
-simulation_quote!(XETH, WETH, N9, ExecutableQuote<N6, N8, N9>);
-simulation_quote!(HYUSD, XETH, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(XETH, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-simulation_quote!(WETH, USDC, N8, ExecutableQuote<N8, N6, N8>);
-simulation_quote!(USDC, WETH, N6, ExecutableQuote<N6, N8, N6>);
+exo_simulation_quotes!(CBBTC, XBTC, N8);
+exo_simulation_quotes!(HYPE, XHYPE, N9);
+exo_simulation_quotes!(ZEC, XZEC, N8);
+exo_simulation_quotes!(PST, XPST, N6);
+exo_simulation_quotes!(ONYC, XONYC, N9);
+exo_simulation_quotes!(WETH, XETH, N8);

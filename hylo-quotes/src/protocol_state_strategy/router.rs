@@ -95,24 +95,6 @@ state_quote!(USDC, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
 // `redeem_stablecoin_usdc`
 state_quote!(HYUSD, USDC, N6, ExecutableQuote<N6, N6, N6>);
 
-// `mint_stablecoin_exo`
-state_quote!(CBBTC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-
-// `redeem_stablecoin_exo`
-state_quote!(HYUSD, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
-
-// `mint_levercoin_exo`
-state_quote!(CBBTC, XBTC, N9, ExecutableQuote<N8, N6, N9>);
-
-// `redeem_levercoin_exo`
-state_quote!(XBTC, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
-
-// `convert_stable_to_lever_exo`
-state_quote!(HYUSD, XBTC, N6, ExecutableQuote<N6, N6, N6>);
-
-// `convert_lever_to_stable_exo`
-state_quote!(XBTC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-
 // `swap_lst_to_usdc`
 state_quote!(JITOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
 state_quote!(HYLOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
@@ -122,10 +104,6 @@ state_quote!(USDC, JITOSOL, N6, ExecutableQuote<N6, N9, N6>);
 state_quote!(USDC, HYLOSOL, N6, ExecutableQuote<N6, N9, N6>);
 
 // `swap_exo_to_usdc`
-state_quote!(CBBTC, USDC, N8, ExecutableQuote<N8, N6, N8>);
-
-// `swap_usdc_to_exo`
-state_quote!(USDC, CBBTC, N6, ExecutableQuote<N6, N8, N6>);
 
 // `user_deposit`
 state_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
@@ -133,46 +111,22 @@ state_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 // `user_withdraw`
 state_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
-state_quote!(HYPE, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
-state_quote!(HYUSD, HYPE, N9, ExecutableQuote<N6, N9, N9>);
-state_quote!(HYPE, XHYPE, N9, ExecutableQuote<N9, N6, N9>);
-state_quote!(XHYPE, HYPE, N9, ExecutableQuote<N6, N9, N9>);
-state_quote!(HYUSD, XHYPE, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(XHYPE, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(HYPE, USDC, N9, ExecutableQuote<N9, N6, N9>);
-state_quote!(USDC, HYPE, N6, ExecutableQuote<N6, N9, N6>);
+macro_rules! exo_state_quotes {
+  ($exo:ident, $lever:ident, $exp:ty) => {
+    state_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
+    state_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+    state_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
+    state_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+    state_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
+    state_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+    state_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
+    state_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+  };
+}
 
-state_quote!(ZEC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-state_quote!(HYUSD, ZEC, N9, ExecutableQuote<N6, N8, N9>);
-state_quote!(ZEC, XZEC, N9, ExecutableQuote<N8, N6, N9>);
-state_quote!(XZEC, ZEC, N9, ExecutableQuote<N6, N8, N9>);
-state_quote!(HYUSD, XZEC, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(XZEC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(ZEC, USDC, N8, ExecutableQuote<N8, N6, N8>);
-state_quote!(USDC, ZEC, N6, ExecutableQuote<N6, N8, N6>);
-
-state_quote!(PST, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
-state_quote!(HYUSD, PST, N9, ExecutableQuote<N6, N6, N9>);
-state_quote!(PST, XPST, N9, ExecutableQuote<N6, N6, N9>);
-state_quote!(XPST, PST, N9, ExecutableQuote<N6, N6, N9>);
-state_quote!(HYUSD, XPST, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(XPST, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(PST, USDC, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(USDC, PST, N6, ExecutableQuote<N6, N6, N6>);
-
-state_quote!(ONYC, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
-state_quote!(HYUSD, ONYC, N9, ExecutableQuote<N6, N9, N9>);
-state_quote!(ONYC, XONYC, N9, ExecutableQuote<N9, N6, N9>);
-state_quote!(XONYC, ONYC, N9, ExecutableQuote<N6, N9, N9>);
-state_quote!(HYUSD, XONYC, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(XONYC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(ONYC, USDC, N9, ExecutableQuote<N9, N6, N9>);
-state_quote!(USDC, ONYC, N6, ExecutableQuote<N6, N9, N6>);
-state_quote!(WETH, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-state_quote!(HYUSD, WETH, N9, ExecutableQuote<N6, N8, N9>);
-state_quote!(WETH, XETH, N9, ExecutableQuote<N8, N6, N9>);
-state_quote!(XETH, WETH, N9, ExecutableQuote<N6, N8, N9>);
-state_quote!(HYUSD, XETH, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(XETH, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-state_quote!(WETH, USDC, N8, ExecutableQuote<N8, N6, N8>);
-state_quote!(USDC, WETH, N6, ExecutableQuote<N6, N8, N6>);
+exo_state_quotes!(CBBTC, XBTC, N8);
+exo_state_quotes!(HYPE, XHYPE, N9);
+exo_state_quotes!(ZEC, XZEC, N8);
+exo_state_quotes!(PST, XPST, N6);
+exo_state_quotes!(ONYC, XONYC, N9);
+exo_state_quotes!(WETH, XETH, N8);
