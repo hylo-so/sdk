@@ -11,7 +11,8 @@ use hylo_clients::router_client::{
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
-  CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
+  XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::simulated_operation::SimulatedOperationExt;
@@ -110,24 +111,6 @@ simulation_quote!(USDC, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
 // `redeem_stablecoin_usdc`
 simulation_quote!(HYUSD, USDC, N6, ExecutableQuote<N6, N6, N6>);
 
-// `mint_stablecoin_exo`
-simulation_quote!(CBBTC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
-
-// `redeem_stablecoin_exo`
-simulation_quote!(HYUSD, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
-
-// `mint_levercoin_exo`
-simulation_quote!(CBBTC, XBTC, N9, ExecutableQuote<N8, N6, N9>);
-
-// `redeem_levercoin_exo`
-simulation_quote!(XBTC, CBBTC, N9, ExecutableQuote<N6, N8, N9>);
-
-// `convert_stable_to_lever_exo`
-simulation_quote!(HYUSD, XBTC, N6, ExecutableQuote<N6, N6, N6>);
-
-// `convert_lever_to_stable_exo`
-simulation_quote!(XBTC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-
 // `swap_lst_to_usdc`
 simulation_quote!(JITOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
 simulation_quote!(HYLOSOL, USDC, N9, ExecutableQuote<N9, N6, N9>);
@@ -137,13 +120,29 @@ simulation_quote!(USDC, JITOSOL, N6, ExecutableQuote<N6, N9, N6>);
 simulation_quote!(USDC, HYLOSOL, N6, ExecutableQuote<N6, N9, N6>);
 
 // `swap_exo_to_usdc`
-simulation_quote!(CBBTC, USDC, N8, ExecutableQuote<N8, N6, N8>);
-
-// `swap_usdc_to_exo`
-simulation_quote!(USDC, CBBTC, N6, ExecutableQuote<N6, N8, N6>);
 
 // `user_deposit`
 simulation_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `user_withdraw`
 simulation_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+
+macro_rules! exo_simulation_quotes {
+  ($exo:ident, $lever:ident, $exp:ty) => {
+    simulation_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
+    simulation_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+    simulation_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
+    simulation_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+    simulation_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
+    simulation_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+    simulation_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
+    simulation_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+  };
+}
+
+exo_simulation_quotes!(CBBTC, XBTC, N8);
+exo_simulation_quotes!(HYPE, XHYPE, N9);
+exo_simulation_quotes!(ZEC, XZEC, N8);
+exo_simulation_quotes!(PST, XPST, N6);
+exo_simulation_quotes!(ONYC, XONYC, N9);
+exo_simulation_quotes!(WETH, XETH, N8);

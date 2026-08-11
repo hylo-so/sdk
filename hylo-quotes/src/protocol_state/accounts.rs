@@ -7,9 +7,10 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_core::error::CoreError;
+use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
-  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
 use serde::{Deserialize, Serialize};
 
@@ -115,7 +116,7 @@ impl ProtocolAccounts {
     pda::exo_pair(CBBTC::MINT),
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
+    CBBTC::FEED.address,
     pda::USDC_PAIR,
     pda::USDC_USD_PYTH_FEED,
     JITOSOL::POOL_STATE,
@@ -145,16 +146,16 @@ impl ProtocolAccounts {
     ]
   }
 
-  /// Pubkey subset for the isolated cbBTC exchange context.
+  /// Pubkey subset for one isolated exo pair.
   ///
-  /// Order: exo pair, vault, levercoin mint, BTC/USD feed, clock.
+  /// Order: exo pair, vault, levercoin mint, collateral/USD feed, clock.
   #[must_use]
-  pub const fn cbbtc_pubkeys() -> [Pubkey; 5] {
+  pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 5] {
     [
-      pda::exo_pair(CBBTC::MINT),
-      pda::exo_vault(CBBTC::MINT),
-      pda::exo_levercoin_mint(CBBTC::MINT),
-      pda::BTC_USD_PYTH_FEED,
+      pda::exo_pair(E::MINT),
+      pda::exo_vault(E::MINT),
+      pda::exo_levercoin_mint(E::MINT),
+      E::FEED.address,
       sysvar::clock::ID,
     ]
   }

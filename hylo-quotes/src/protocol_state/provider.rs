@@ -9,15 +9,19 @@ use anchor_lang::AccountDeserialize;
 use anchor_spl::token::Mint;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
+use fix::prelude::UFix64;
+use fix::util::FixExt;
+use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::idl::exchange::accounts::Hylo;
+use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_idl::tokens::Exo;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{
-  build_cbbtc_exchange_context, build_lst_exchange_context, ProtocolAccounts,
-  ProtocolState,
+  build_exo_pair_state, build_lst_exchange_context, ExoPairState,
+  ProtocolAccounts, ProtocolState,
 };
 
 /// Trait for fetching protocol state from a data source
@@ -81,26 +85,39 @@ impl RpcStateProvider {
     build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)
   }
 
-  /// Fetch the isolated cbBTC exchange context.
+  /// Fetch the isolated pair state for exo collateral `E`.
   ///
   /// # Errors
   /// Returns error if the fetch or deserialization fails.
-  pub async fn fetch_cbbtc_context(&self) -> Result<ExoExchangeContext<Clock>> {
-    let pubkeys = ProtocolAccounts::cbbtc_pubkeys();
+  pub async fn fetch_exo_pair<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<ExoPairState<Clock>>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let pubkeys = ProtocolAccounts::exo_pubkeys::<E>();
     let data = self
       .rpc_client
       .get_multiple_accounts(&pubkeys)
       .await
-      .map_err(|e| anyhow!("Failed to fetch cbBTC accounts from RPC: {e}"))?;
-    let (exo_pair, vault, xbtc_mint, btc_usd, clock) = match data.as_slice() {
-      [Some(exo_pair), Some(vault), Some(xbtc_mint), Some(btc_usd), Some(clock)] => {
-        Ok((exo_pair, vault, xbtc_mint, btc_usd, clock))
+      .map_err(|e| anyhow!("Failed to fetch exo accounts from RPC: {e}"))?;
+    let (exo_pair, vault, levercoin_mint, collateral_usd, clock) = match data
+      .as_slice()
+    {
+      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_usd), Some(clock)] => {
+        Ok((exo_pair, vault, levercoin_mint, collateral_usd, clock))
       }
-      _ => Err(anyhow!("Missing cbBTC account")),
+      _ => Err(anyhow!("Missing exo account")),
     }?;
     let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-    build_cbbtc_exchange_context(clock, exo_pair, vault, xbtc_mint, btc_usd)
+    build_exo_pair_state::<E>(
+      clock,
+      exo_pair,
+      vault,
+      levercoin_mint,
+      collateral_usd,
+    )
   }
 }
 

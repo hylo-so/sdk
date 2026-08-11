@@ -5,6 +5,6 @@ mod state;
 pub use accounts::ProtocolAccounts;
 pub use provider::{RpcStateProvider, StateProvider};
 pub use state::{
-  build_cbbtc_exchange_context, build_lst_exchange_context,
-  stablecoin_oracle_valid, BtcPairState, ProtocolState, UsdcExchangeState,
+  build_exo_pair_state, build_lst_exchange_context, stablecoin_oracle_valid,
+  ExoPairState, ProtocolState, UsdcExchangeState,
 };

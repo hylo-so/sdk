@@ -2,7 +2,8 @@
 
 use anyhow::Result;
 use hylo_idl::tokens::{
-  CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
+  XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use super::{InstructionBuilderExt, RouterArgs, RouterClient};
@@ -64,24 +65,6 @@ router_transaction_data!(USDC, HYUSD);
 // `redeem_stablecoin_usdc`
 router_transaction_data!(HYUSD, USDC);
 
-// `mint_stablecoin_exo`
-router_transaction_data!(CBBTC, HYUSD);
-
-// `redeem_stablecoin_exo`
-router_transaction_data!(HYUSD, CBBTC);
-
-// `mint_levercoin_exo`
-router_transaction_data!(CBBTC, XBTC);
-
-// `redeem_levercoin_exo`
-router_transaction_data!(XBTC, CBBTC);
-
-// `convert_stable_to_lever_exo`
-router_transaction_data!(HYUSD, XBTC);
-
-// `convert_lever_to_stable_exo`
-router_transaction_data!(XBTC, HYUSD);
-
 // `swap_lst_to_usdc`
 router_transaction_data!(JITOSOL, USDC);
 router_transaction_data!(HYLOSOL, USDC);
@@ -90,14 +73,28 @@ router_transaction_data!(HYLOSOL, USDC);
 router_transaction_data!(USDC, JITOSOL);
 router_transaction_data!(USDC, HYLOSOL);
 
-// `swap_exo_to_usdc`
-router_transaction_data!(CBBTC, USDC);
-
-// `swap_usdc_to_exo`
-router_transaction_data!(USDC, CBBTC);
-
 // `user_deposit`
 router_transaction_data!(HYUSD, SHYUSD);
 
 // `user_withdraw`
 router_transaction_data!(SHYUSD, HYUSD);
+
+macro_rules! exo_router_transaction_data {
+  ($exo:ident, $lever:ident) => {
+    router_transaction_data!($exo, HYUSD);
+    router_transaction_data!(HYUSD, $exo);
+    router_transaction_data!($exo, $lever);
+    router_transaction_data!($lever, $exo);
+    router_transaction_data!(HYUSD, $lever);
+    router_transaction_data!($lever, HYUSD);
+    router_transaction_data!($exo, USDC);
+    router_transaction_data!(USDC, $exo);
+  };
+}
+
+exo_router_transaction_data!(CBBTC, XBTC);
+exo_router_transaction_data!(HYPE, XHYPE);
+exo_router_transaction_data!(ZEC, XZEC);
+exo_router_transaction_data!(PST, XPST);
+exo_router_transaction_data!(ONYC, XONYC);
+exo_router_transaction_data!(WETH, XETH);

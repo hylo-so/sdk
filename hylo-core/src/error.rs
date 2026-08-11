@@ -258,4 +258,6 @@ pub enum CoreError {
   InsufficientEarnPoolLiquidity,
   #[msg("Overflow while computing minimum input.")]
   MinInputOverflow,
+  #[msg("No exo pair found for mint.")]
+  UnknownExoMint,
 }

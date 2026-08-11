@@ -98,7 +98,7 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::{UFix64, UFixValue64};
 use fix::typenum::Integer;
-use hylo_idl::tokens::{HYLOSOL, JITOSOL};
+use hylo_idl::tokens::{CBBTC, HYLOSOL, HYPE, JITOSOL, ONYC, PST, WETH, ZEC};
 
 pub mod prelude;
 pub mod protocol_state;
@@ -189,3 +189,11 @@ pub enum ComputeUnitStrategy {
 pub(crate) trait Local {}
 impl Local for JITOSOL {}
 impl Local for HYLOSOL {}
+
+pub(crate) trait LocalExo {}
+impl LocalExo for CBBTC {}
+impl LocalExo for ZEC {}
+impl LocalExo for ONYC {}
+impl LocalExo for HYPE {}
+impl LocalExo for PST {}
+impl LocalExo for WETH {}

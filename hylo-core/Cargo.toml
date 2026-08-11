@@ -19,6 +19,7 @@ shadow = ["hylo-idl?/shadow"]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 hylo-fix.workspace = true
+const-crypto.workspace = true
 hylo-idl = { workspace = true, optional = true }
 hylo-jupiter-amm-interface = { workspace = true, optional = true }
 itertools.workspace = true

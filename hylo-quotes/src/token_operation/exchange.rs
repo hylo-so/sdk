@@ -8,12 +8,14 @@ use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
+use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, USDC, XBTC, XSOL,
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
+  XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::protocol_state::ProtocolState;
@@ -21,7 +23,7 @@ use crate::token_operation::{
   atom_rate, gate, past_zero, LstSwapOperationOutput, MintOperationOutput,
   OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
-use crate::{Local, LST};
+use crate::{Local, LocalExo, LST};
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// Pause and harvest gates for LST-pair routes.
@@ -34,13 +36,13 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// Pause and harvest gates for BTC-pair routes.
-  fn btc_pair_gates(&self) -> Result<(), CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  /// Pause, harvest, and oracle-binding gates for an exo pair's routes.
+  fn exo_pair_gates<E: Exo>(&self) -> Result<(), CoreError> {
+    let pair = self.exo_pair::<E>()?;
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.btc_pair_state.paused, CoreError::PairPaused)?;
+    gate(!pair.paused, CoreError::PairPaused)?;
     gate(
-      self.btc_pair_state.borrow_rate_harvest_epoch == exo.clock.epoch(),
+      pair.borrow_rate_harvest_epoch == pair.context.clock.epoch(),
       CoreError::BorrowRateHarvestNotRun,
     )
   }
@@ -52,20 +54,19 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 }
 
-/// Largest `N9` amount that truncates to zero in `N8`.
-fn max_zero_n8() -> Result<UFix64<N9>, CoreError> {
-  UFix64::<N8>::new(1)
+/// Largest `N9` amount that truncates to zero in `E`'s precision.
+fn max_zero_exo<E: Exo>() -> Result<UFix64<N9>, CoreError>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  UFix64::<E::Exp>::new(1)
     .checked_convert::<N9>()
     .and_then(|atom| atom.checked_sub(&UFix64::new(1)))
     .ok_or(CoreError::TokenAmountPrecision)
 }
 
-impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
-  for ProtocolState<C>
-{
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
+impl<C: SolanaClock> ProtocolState<C> {
+  fn mint_stablecoin_lst_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     gate(
       self.sol_stablecoin_oracle_valid,
@@ -78,7 +79,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     )
   }
 
-  fn compute_output_ungated(
+  fn mint_stablecoin_lst_quote<L: LST + Local>(
     &self,
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput, CoreError> {
@@ -113,7 +114,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+  fn mint_stablecoin_lst_max_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N9>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let cap = self.exchange_context.max_mintable_stablecoin()?;
     self
@@ -122,7 +125,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
       .max_lst_for_token(cap, self.exchange_context.stablecoin_nav()?)
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+  fn mint_stablecoin_lst_min_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N9>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let max_zero_lst = self
       .exchange_context
@@ -136,14 +141,8 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
       .stablecoin_mint_fee_rate(&lst_price, max_zero_lst)?;
     past_zero(FeeExtract::max_input(fee_rate, max_zero_lst)?)
   }
-}
 
-impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
-  for ProtocolState<C>
-{
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
+  fn redeem_stablecoin_lst_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     gate(
       self.sol_stablecoin_oracle_valid,
@@ -151,9 +150,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     )
   }
 
-  fn compute_output_ungated(
+  fn redeem_stablecoin_lst_quote<L: LST + Local>(
     &self,
-    in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
+    in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput, CoreError> {
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -192,7 +191,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+  fn redeem_stablecoin_lst_max_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let vault_cap = self
       .exchange_context
@@ -208,7 +209,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     Ok(vault_cap.min(supply_cap.unwrap_or_default()))
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+  fn redeem_stablecoin_lst_min_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let fee_rate = self
       .exchange_context
@@ -706,32 +709,33 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   }
 }
 
-impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+impl<C: SolanaClock> ProtocolState<C> {
+  fn mint_stablecoin_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
     gate(
-      self.btc_stablecoin_oracle_valid,
+      pair.stablecoin_oracle_valid(),
       CoreError::PythOracleOutdated,
     )?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().stablecoin_mint_enabled(),
+      pair.context.stablecoin_mint_enabled(),
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn mint_stablecoin_exo_quote<E: Exo + PythOracle>(
     &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let collateral_n9: UFix64<N9> = in_amount
-      .checked_convert()
+      .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     let FeeExtract {
       fees_extracted,
@@ -746,127 +750,156 @@ impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
-      fee_mint: CBBTC::MINT,
+      fee_mint: E::MINT,
       fee_base: collateral_n9,
-      marginal_rate: atom_rate::<N8, N6>(
+      marginal_rate: atom_rate::<E::Exp, N6>(
         exo.stablecoin_mint_marginal(collateral_n9)?,
       ),
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn mint_stablecoin_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let cap = exo.max_mintable_stablecoin()?;
     let mintable = exo
       .exo_conversion()
       .max_exo_for_token(cap, exo.stablecoin_nav()?)?;
-    Ok(mintable.convert::<N8>())
+    mintable
+      .checked_convert::<E::Exp>()
+      .ok_or(CoreError::TokenAmountPrecision)
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let max_zero_exo = exo
+  fn mint_stablecoin_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
+    let max_zero_collateral = exo
       .exo_conversion()
       .max_exo_for_token(UFix64::zero(), exo.stablecoin_nav()?)?;
-    let fee_rate = exo.stablecoin_mint_fee_rate(max_zero_exo)?;
-    let max_zero_in = FeeExtract::max_input(fee_rate, max_zero_exo)?;
-    past_zero(max_zero_in.convert::<N8>())
+    let fee_rate = exo.stablecoin_mint_fee_rate(max_zero_collateral)?;
+    let max_zero_in =
+      FeeExtract::<N9>::max_input::<N5>(fee_rate, max_zero_collateral)?;
+    past_zero(
+      max_zero_in
+        .checked_convert::<E::Exp>()
+        .ok_or(CoreError::TokenAmountPrecision)?,
+    )
   }
-}
 
-impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+  fn redeem_stablecoin_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
     gate(
-      self.btc_stablecoin_oracle_valid,
+      self.exo_pair::<E>()?.stablecoin_oracle_valid(),
       CoreError::PythOracleOutdated,
     )
   }
 
-  fn compute_output_ungated(
+  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let btc_pair = &self.btc_pair_state;
-    let stablecoin_nav = exo.stablecoin_nav()?;
-    let collateral_out = exo
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let pair = self.exo_pair::<E>()?;
+    let stablecoin_nav = pair.context.stablecoin_nav()?;
+    let collateral_out = pair
+      .context
       .exo_conversion()
       .token_to_exo(in_amount, stablecoin_nav)?;
     gate(
-      collateral_out <= exo.total_collateral,
+      collateral_out <= pair.context.total_collateral,
       CoreError::InsufficientLiquidity,
     )?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = exo.stablecoin_redeem_fee(collateral_out)?;
+    } = pair.context.stablecoin_redeem_fee(collateral_out)?;
     validate_burn(
-      exo.virtual_stablecoin_supply()?,
+      pair.context.virtual_stablecoin_supply()?,
       in_amount,
-      btc_pair.supply_floor,
+      pair.supply_floor,
     )?;
-    let out_amount: UFix64<N8> = amount_remaining
+    let out_amount: UFix64<E::Exp> = amount_remaining
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
-      fee_mint: CBBTC::MINT,
+      fee_mint: E::MINT,
       fee_base: collateral_out,
-      marginal_rate: atom_rate::<N6, N8>(
-        exo.stablecoin_redeem_marginal(in_amount)?,
+      marginal_rate: atom_rate::<N6, E::Exp>(
+        pair.context.stablecoin_redeem_marginal(in_amount)?,
       ),
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let vault_cap = exo
-      .exo_conversion()
-      .max_token_for_exo(exo.total_collateral, exo.stablecoin_nav()?)?;
-    let supply_cap = exo
+  fn redeem_stablecoin_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let pair = self.exo_pair::<E>()?;
+    let vault_cap = pair.context.exo_conversion().max_token_for_exo(
+      pair.context.total_collateral,
+      pair.context.stablecoin_nav()?,
+    )?;
+    let supply_cap = pair
+      .context
       .virtual_stablecoin_supply()?
-      .checked_sub(&self.btc_pair_state.supply_floor);
+      .checked_sub(&pair.supply_floor);
     Ok(vault_cap.min(supply_cap.unwrap_or_default()))
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn redeem_stablecoin_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let fee_rate = exo.stablecoin_redeem_fee_rate(UFix64::zero())?;
-    let max_zero_exo = FeeExtract::max_input(fee_rate, max_zero_n8()?)?;
+    let max_zero_collateral =
+      FeeExtract::<N9>::max_input::<N5>(fee_rate, max_zero_exo::<E>()?)?;
     let max_zero_hyusd = exo
       .exo_conversion()
-      .max_token_for_exo(max_zero_exo, exo.stablecoin_nav()?)?;
+      .max_token_for_exo(max_zero_collateral, exo.stablecoin_nav()?)?;
     past_zero(max_zero_hyusd)
   }
 }
 
-impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+impl<C: SolanaClock> ProtocolState<C> {
+  fn mint_levercoin_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().levercoin_mint_enabled(),
+      pair.context.levercoin_mint_enabled(),
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn mint_levercoin_exo_quote<E: Exo + PythOracle>(
     &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let collateral_in: UFix64<N9> = in_amount
-      .checked_convert()
+      .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     let FeeExtract {
       fees_extracted,
@@ -883,55 +916,71 @@ impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
-      fee_mint: CBBTC::MINT,
+      fee_mint: E::MINT,
       fee_base: collateral_in,
-      marginal_rate: atom_rate::<N8, N6>(
+      marginal_rate: atom_rate::<E::Exp, N6>(
         exo.levercoin_mint_marginal(collateral_in)?,
       ),
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn mint_levercoin_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let headroom = exo.levercoin_market_cap_limiter()?.max_token_out()?;
     let remaining = exo
       .exo_conversion()
       .max_exo_for_token(headroom, exo.levercoin_mint_nav()?)?;
     let fee_rate = exo.levercoin_mint_fee_rate(remaining)?;
-    FeeExtract::max_input(fee_rate, remaining).map(UFix64::convert::<N8>)
+    FeeExtract::<N9>::max_input::<N4>(fee_rate, remaining)?
+      .checked_convert::<E::Exp>()
+      .ok_or(CoreError::TokenAmountPrecision)
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let max_zero_exo = exo
+  fn mint_levercoin_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
+    let max_zero_collateral = exo
       .exo_conversion()
       .max_exo_for_token(UFix64::zero(), exo.levercoin_mint_nav()?)?;
-    let fee_rate = exo.levercoin_mint_fee_rate(max_zero_exo)?;
-    let max_zero_in = FeeExtract::max_input(fee_rate, max_zero_exo)?;
-    past_zero(max_zero_in.convert::<N8>())
+    let fee_rate = exo.levercoin_mint_fee_rate(max_zero_collateral)?;
+    let max_zero_in =
+      FeeExtract::<N9>::max_input::<N4>(fee_rate, max_zero_collateral)?;
+    past_zero(
+      max_zero_in
+        .checked_convert::<E::Exp>()
+        .ok_or(CoreError::TokenAmountPrecision)?,
+    )
   }
-}
 
-impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+  fn redeem_levercoin_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().rebalance_mode() != RebalanceMode::Depeg,
+      pair.context.rebalance_mode() != RebalanceMode::Depeg,
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn redeem_levercoin_exo_quote<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     gate(
       in_amount <= exo.levercoin_supply()?,
       CoreError::InsufficientLiquidity,
@@ -948,23 +997,25 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
       fees_extracted,
       amount_remaining,
     } = exo.levercoin_redeem_fee(collateral_out)?;
-    let out_amount: UFix64<N8> = amount_remaining
+    let out_amount: UFix64<E::Exp> = amount_remaining
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: fees_extracted,
-      fee_mint: CBBTC::MINT,
+      fee_mint: E::MINT,
       fee_base: collateral_out,
-      marginal_rate: atom_rate::<N6, N8>(
+      marginal_rate: atom_rate::<N6, E::Exp>(
         exo.levercoin_redeem_marginal(in_amount)?,
       ),
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn redeem_levercoin_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let exo = &self.exo_pair::<E>()?.context;
     let collateral_cap = exo.exo_conversion().max_token_for_exo(
       exo.total_collateral.min(exo.max_collateral_removal()?),
       exo.levercoin_redeem_nav()?,
@@ -972,51 +1023,57 @@ impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
     Ok(collateral_cap.min(exo.levercoin_supply()?))
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn redeem_levercoin_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let fee_rate = exo.levercoin_redeem_fee_rate(UFix64::zero())?;
-    let max_zero_exo = FeeExtract::max_input(fee_rate, max_zero_n8()?)?;
-    let max_zero_xbtc = exo
+    let max_zero_collateral =
+      FeeExtract::<N9>::max_input::<N4>(fee_rate, max_zero_exo::<E>()?)?;
+    let max_zero_levercoin = exo
       .exo_conversion()
-      .max_token_for_exo(max_zero_exo, exo.levercoin_redeem_nav()?)?;
-    past_zero(max_zero_xbtc)
+      .max_token_for_exo(max_zero_collateral, exo.levercoin_redeem_nav()?)?;
+    past_zero(max_zero_levercoin)
   }
 }
 
-impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+impl<C: SolanaClock> ProtocolState<C> {
+  fn convert_stable_to_lever_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().levercoin_mint_enabled(),
+      pair.context.levercoin_mint_enabled(),
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn convert_stable_to_lever_exo_quote<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let btc_pair = &self.btc_pair_state;
+    let pair = self.exo_pair::<E>()?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = exo.stablecoin_to_levercoin_fee(in_amount)?;
-    let out_amount =
-      exo.swap_conversion()?.stable_to_lever(amount_remaining)?;
-    exo
+    } = pair.context.stablecoin_to_levercoin_fee(in_amount)?;
+    let out_amount = pair
+      .context
+      .swap_conversion()?
+      .stable_to_lever(amount_remaining)?;
+    pair
+      .context
       .levercoin_market_cap_limiter()?
       .validate_token_out(out_amount)?;
     validate_burn(
-      exo.virtual_stablecoin_supply()?,
+      pair.context.virtual_stablecoin_supply()?,
       amount_remaining,
-      btc_pair.supply_floor,
+      pair.supply_floor,
     )?;
     Ok(OperationOutput {
       in_amount,
@@ -1024,55 +1081,58 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-      marginal_rate: exo.stablecoin_to_levercoin_marginal(in_amount)?,
+      marginal_rate: pair
+        .context
+        .stablecoin_to_levercoin_marginal(in_amount)?,
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let market_cap = exo.swap_conversion()?.max_stable_for_lever(
-      exo.levercoin_market_cap_limiter()?.max_token_out()?,
+  fn convert_stable_to_lever_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let pair = self.exo_pair::<E>()?;
+    let market_cap = pair.context.swap_conversion()?.max_stable_for_lever(
+      pair
+        .context
+        .levercoin_market_cap_limiter()?
+        .max_token_out()?,
     )?;
-    let supply = exo.virtual_stablecoin_supply()?;
-    let burn_cap = supply
-      .checked_sub(&self.btc_pair_state.supply_floor)
-      .unwrap_or_default();
+    let supply = pair.context.virtual_stablecoin_supply()?;
+    let burn_cap = supply.checked_sub(&pair.supply_floor).unwrap_or_default();
     let remaining = market_cap.min(burn_cap);
-    let fee_rate = exo.stablecoin_to_levercoin_fee_rate(remaining)?;
-    let projectable = exo.max_stablecoin_removal()?;
+    let fee_rate = pair.context.stablecoin_to_levercoin_fee_rate(remaining)?;
+    let projectable = pair.context.max_stablecoin_removal()?;
     Ok(FeeExtract::max_input(fee_rate, remaining)?.min(projectable))
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn convert_stable_to_lever_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let exo = &self.exo_pair::<E>()?.context;
     let max_zero_hyusd = exo
       .swap_conversion()?
       .max_stable_for_lever(UFix64::zero())?;
     let fee_rate = exo.stablecoin_to_levercoin_fee_rate(max_zero_hyusd)?;
     past_zero(FeeExtract::max_input(fee_rate, max_zero_hyusd)?)
   }
-}
 
-impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+  fn convert_lever_to_stable_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().stablecoin_mint_enabled(),
+      pair.context.stablecoin_mint_enabled(),
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn convert_lever_to_stable_exo_quote<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+    let exo = &self.exo_pair::<E>()?.context;
     gate(
       in_amount <= exo.levercoin_supply()?,
       CoreError::InsufficientLiquidity,
@@ -1093,15 +1153,19 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn convert_lever_to_stable_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let exo = &self.exo_pair::<E>()?.context;
     exo
       .swap_conversion()?
       .max_lever_for_stable(exo.max_swappable_stablecoin()?)
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn convert_lever_to_stable_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let exo = &self.exo_pair::<E>()?.context;
     let fee_rate = exo.levercoin_to_stablecoin_fee_rate(UFix64::zero())?;
     let max_zero_hyusd = FeeExtract::max_input(fee_rate, UFix64::zero())?;
     past_zero(
@@ -1181,8 +1245,8 @@ impl<C: SolanaClock> ProtocolState<C> {
       .exchange_context
       .rebalance_buy_conversion(&adjusted, usdc_price, in_amount)?;
     let usdc_out: UFix64<N9> = conversion.lst_to_usdc(in_amount)?;
-    let out_amount = usdc_out
-      .checked_convert()
+    let out_amount: UFix64<N6> = usdc_out
+      .checked_convert::<N6>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
       out_amount <= self.usdc_exchange_state().vault_balance,
@@ -1223,7 +1287,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N9, N6>, CoreError> {
     let normalized: UFix64<N9> = in_amount
-      .checked_convert()
+      .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     let header = self.lst_header::<L>()?;
     let lst_price: LstSolPrice = header.price_sol.into();
@@ -1429,40 +1493,43 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
   }
 }
 
-impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
-  type FeeExp = N8;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+impl<C: SolanaClock> ProtocolState<C> {
+  /// State gates for the exo-to-USDC rebalance buy routes.
+  fn swap_exo_to_usdc_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().rebalance_buy_active(),
+      pair.context.rebalance_buy_active(),
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn swap_exo_to_usdc_quote<E: Exo + PythOracle>(
     &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let btc_pair = &self.btc_pair_state;
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let pair = self.exo_pair::<E>()?;
     let normalized: UFix64<N9> = in_amount
-      .checked_convert()
+      .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
-      normalized <= exo.rebalance_buy_target()?,
+      normalized <= pair.context.rebalance_buy_target()?,
       CoreError::RebalanceBuyTargetExceeded,
     )?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let conversion = exo.rebalance_buy_conversion(usdc_price, normalized)?;
+    let conversion = pair
+      .context
+      .rebalance_buy_conversion(usdc_price, normalized)?;
     let usdc_out: UFix64<N9> = conversion.collateral_to_usdc(normalized)?;
-    let out_amount = usdc_out
-      .checked_convert()
+    let out_amount: UFix64<N6> = usdc_out
+      .checked_convert::<N6>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
       out_amount <= self.usdc_exchange_state().vault_balance,
@@ -1476,70 +1543,93 @@ impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
       stablecoin_moved <= self.usdc_exchange_state().virtual_stablecoin_supply,
       CoreError::BurnUnderflow,
     )?;
-    let pnl = exo.rebalance_pnl_buy_side(normalized, stablecoin_moved)?;
-    self.validate_pnl_settlement(exo, btc_pair.supply_floor, pnl)?;
+    let pnl = pair
+      .context
+      .rebalance_pnl_buy_side(normalized, stablecoin_moved)?;
+    self.validate_pnl_settlement(&pair.context, pair.supply_floor, pnl)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: UFix64::zero(),
-      fee_mint: CBBTC::MINT,
+      fee_mint: E::MINT,
       fee_base: in_amount,
-      marginal_rate: atom_rate::<N8, N6>(
-        exo.rebalance_buy_marginal(usdc_price, normalized)?,
+      marginal_rate: atom_rate::<E::Exp, N6>(
+        pair
+          .context
+          .rebalance_buy_marginal(usdc_price, normalized)?,
       ),
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn swap_exo_to_usdc_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let buy_target = exo.rebalance_buy_target()?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let vault_cap = exo
       .rebalance_buy_conversion(usdc_price, buy_target)?
       .max_collateral_for_usdc(self.usdc_exchange_state().vault_balance)?;
-    Ok(buy_target.min(vault_cap).convert::<N8>())
+    buy_target
+      .min(vault_cap)
+      .checked_convert::<E::Exp>()
+      .ok_or(CoreError::TokenAmountPrecision)
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn swap_exo_to_usdc_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<E::Exp>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let max_zero_exo = exo
+    let max_zero_collateral = exo
       .rebalance_buy_conversion(usdc_price, UFix64::new(1))?
       .max_collateral_for_usdc(UFix64::zero())?;
-    past_zero(max_zero_exo.convert::<N8>())
+    past_zero(
+      max_zero_collateral
+        .checked_convert::<E::Exp>()
+        .ok_or(CoreError::TokenAmountPrecision)?,
+    )
   }
-}
 
-impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.btc_pair_gates()?;
+  /// State gates for the USDC-to-exo rebalance sell routes.
+  fn swap_usdc_to_exo_preconditions<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<(), CoreError> {
+    self.exo_pair_gates::<E>()?;
+    let pair = self.exo_pair::<E>()?;
     gate(!self.usdc_exchange_state().paused, CoreError::PairPaused)?;
+    gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.btc_pair_state.pool_drawdown.is_repaid(),
-      CoreError::DrawdownNotRepaid,
-    )?;
-    gate(
-      self.cbbtc_exchange_context().rebalance_sell_active(),
+      pair.context.rebalance_sell_active(),
       CoreError::OperationDisabled,
     )
   }
 
-  fn compute_output_ungated(
+  fn swap_usdc_to_exo_quote<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let btc_pair = &self.btc_pair_state;
+  ) -> Result<OperationOutput<N6, E::Exp, N6>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let pair = self.exo_pair::<E>()?;
     let normalized: UFix64<N9> = in_amount
-      .checked_convert()
+      .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let max_usdc_in =
-      exo.max_rebalance_sell_usdc(usdc_price, btc_pair.supply_floor)?;
+    let max_usdc_in = pair
+      .context
+      .max_rebalance_sell_usdc(usdc_price, pair.supply_floor)?;
     gate(normalized <= max_usdc_in, CoreError::InsufficientLiquidity)?;
-    let conversion = exo.rebalance_sell_conversion(usdc_price, normalized)?;
+    let conversion = pair
+      .context
+      .rebalance_sell_conversion(usdc_price, normalized)?;
     let collateral_out: UFix64<N9> =
       conversion.usdc_to_collateral(normalized)?;
     let out_amount = collateral_out
@@ -1549,35 +1639,349 @@ impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
       .usdc_exchange_state()
       .conversion()
       .deposit_to_stablecoin(normalized)?;
-    let pnl = exo.rebalance_pnl_sell_side(collateral_out, stablecoin_moved)?;
-    self.validate_pnl_settlement(exo, btc_pair.supply_floor, pnl)?;
+    let pnl = pair
+      .context
+      .rebalance_pnl_sell_side(collateral_out, stablecoin_moved)?;
+    self.validate_pnl_settlement(&pair.context, pair.supply_floor, pnl)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
       fee_amount: UFix64::zero(),
       fee_mint: USDC::MINT,
       fee_base: in_amount,
-      marginal_rate: atom_rate::<N6, N8>(
-        exo.rebalance_sell_marginal(usdc_price, normalized)?,
+      marginal_rate: atom_rate::<N6, E::Exp>(
+        pair
+          .context
+          .rebalance_sell_marginal(usdc_price, normalized)?,
       ),
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
-    let max_usdc_in = exo.max_rebalance_sell_usdc(
+  fn swap_usdc_to_exo_max_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let pair = self.exo_pair::<E>()?;
+    let max_usdc_in = pair.context.max_rebalance_sell_usdc(
       self.usdc_exchange_state().usdc_usd_price,
-      self.btc_pair_state.supply_floor,
+      pair.supply_floor,
     )?;
     Ok(max_usdc_in.convert::<N6>())
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let exo = self.cbbtc_exchange_context();
+  fn swap_usdc_to_exo_min_input<E: Exo + PythOracle>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let exo = &self.exo_pair::<E>()?.context;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
     let max_zero_usdc = exo
       .rebalance_sell_conversion(usdc_price, UFix64::new(1))?
-      .max_usdc_for_collateral(max_zero_n8()?)?;
+      .max_usdc_for_collateral(max_zero_exo::<E>()?)?;
     past_zero(max_zero_usdc.convert::<N6>())
   }
 }
+
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, HYUSD>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.mint_stablecoin_exo_preconditions::<E>()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, N9>, CoreError> {
+    self.mint_stablecoin_exo_quote::<E>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.mint_stablecoin_exo_max_input::<E>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.mint_stablecoin_exo_min_input::<E>()
+  }
+}
+
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<HYUSD, E>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.redeem_stablecoin_exo_preconditions::<E>()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError> {
+    self.redeem_stablecoin_exo_quote::<E>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_exo_max_input::<E>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_exo_min_input::<E>()
+  }
+}
+
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, USDC>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  type FeeExp = E::Exp;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.swap_exo_to_usdc_preconditions::<E>()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, E::Exp>, CoreError> {
+    self.swap_exo_to_usdc_quote::<E>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.swap_exo_to_usdc_max_input::<E>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.swap_exo_to_usdc_min_input::<E>()
+  }
+}
+
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<USDC, E>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  type FeeExp = N6;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.swap_usdc_to_exo_preconditions::<E>()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, E::Exp, N6>, CoreError> {
+    self.swap_usdc_to_exo_quote::<E>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.swap_usdc_to_exo_max_input::<E>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.swap_usdc_to_exo_min_input::<E>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<JITOSOL, HYUSD> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.mint_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N9>,
+  ) -> Result<MintOperationOutput, CoreError> {
+    self.mint_stablecoin_lst_quote::<JITOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_max_input::<JITOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_min_input::<JITOSOL>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<HYLOSOL, HYUSD> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.mint_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N9>,
+  ) -> Result<MintOperationOutput, CoreError> {
+    self.mint_stablecoin_lst_quote::<HYLOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_max_input::<HYLOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_min_input::<HYLOSOL>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<HYUSD, JITOSOL> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.redeem_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    self.redeem_stablecoin_lst_quote::<JITOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_max_input::<JITOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_min_input::<JITOSOL>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<HYUSD, HYLOSOL> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.redeem_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    self.redeem_stablecoin_lst_quote::<HYLOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_max_input::<HYLOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_min_input::<HYLOSOL>()
+  }
+}
+
+macro_rules! exo_levercoin_ops {
+  ($exo:ident, $lever:ident, $exp:ty) => {
+    impl<C: SolanaClock> TokenOperation<$exo, $lever> for ProtocolState<C> {
+      type FeeExp = N9;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.mint_levercoin_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<$exp>,
+      ) -> Result<OperationOutput<$exp, N6, N9>, CoreError> {
+        self.mint_levercoin_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<$exp>, CoreError> {
+        self.mint_levercoin_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<$exp>, CoreError> {
+        self.mint_levercoin_exo_min_input::<$exo>()
+      }
+    }
+
+    impl<C: SolanaClock> TokenOperation<$lever, $exo> for ProtocolState<C> {
+      type FeeExp = N9;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.redeem_levercoin_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<N6>,
+      ) -> Result<OperationOutput<N6, $exp, N9>, CoreError> {
+        self.redeem_levercoin_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.redeem_levercoin_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.redeem_levercoin_exo_min_input::<$exo>()
+      }
+    }
+
+    impl<C: SolanaClock> TokenOperation<HYUSD, $lever> for ProtocolState<C> {
+      type FeeExp = N6;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.convert_stable_to_lever_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<N6>,
+      ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
+        self.convert_stable_to_lever_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_stable_to_lever_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_stable_to_lever_exo_min_input::<$exo>()
+      }
+    }
+
+    impl<C: SolanaClock> TokenOperation<$lever, HYUSD> for ProtocolState<C> {
+      type FeeExp = N6;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.convert_lever_to_stable_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<N6>,
+      ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
+        self.convert_lever_to_stable_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_lever_to_stable_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_lever_to_stable_exo_min_input::<$exo>()
+      }
+    }
+  };
+}
+
+exo_levercoin_ops!(CBBTC, XBTC, N8);
+exo_levercoin_ops!(HYPE, XHYPE, N9);
+exo_levercoin_ops!(ZEC, XZEC, N8);
+exo_levercoin_ops!(PST, XPST, N6);
+exo_levercoin_ops!(ONYC, XONYC, N9);
+exo_levercoin_ops!(WETH, XETH, N8);

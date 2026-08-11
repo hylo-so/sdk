@@ -10,18 +10,29 @@ pub trait TokenMint {
   const MINT: Pubkey;
 }
 
-pub trait StakePool: TokenMint<Exp = N9> {
-  const POOL_STATE: Pubkey;
-}
-
 pub struct HYUSD;
+pub struct SHYUSD;
+pub struct XSOL;
+pub struct JITOSOL;
+pub struct HYLOSOL;
+pub struct USDC;
+pub struct CBBTC;
+pub struct XBTC;
+pub struct ZEC;
+pub struct XZEC;
+pub struct ONYC;
+pub struct XONYC;
+pub struct HYPE;
+pub struct XHYPE;
+pub struct PST;
+pub struct XPST;
+pub struct WETH;
+pub struct XETH;
 
 impl TokenMint for HYUSD {
   type Exp = N6;
   const MINT: Pubkey = pda::mint(exchange::ID, exchange::constants::HYUSD);
 }
-
-pub struct SHYUSD;
 
 impl TokenMint for SHYUSD {
   type Exp = N6;
@@ -29,18 +40,88 @@ impl TokenMint for SHYUSD {
     pda::mint(earn_pool::ID, earn_pool::constants::STAKED_HYUSD);
 }
 
-pub struct XSOL;
-
 impl TokenMint for XSOL {
   type Exp = N6;
   const MINT: Pubkey = pda::mint(exchange::ID, exchange::constants::XSOL);
 }
 
-pub struct JITOSOL;
-
 impl TokenMint for JITOSOL {
   type Exp = N9;
   const MINT: Pubkey = pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
+}
+
+impl TokenMint for HYLOSOL {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
+}
+
+impl TokenMint for USDC {
+  type Exp = N6;
+  const MINT: Pubkey = USDC_MINT;
+}
+
+impl TokenMint for CBBTC {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
+}
+
+impl TokenMint for XBTC {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(CBBTC::MINT);
+}
+
+impl TokenMint for ZEC {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS");
+}
+
+impl TokenMint for XZEC {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(ZEC::MINT);
+}
+
+impl TokenMint for ONYC {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5");
+}
+
+impl TokenMint for XONYC {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(ONYC::MINT);
+}
+
+impl TokenMint for HYPE {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
+}
+
+impl TokenMint for XHYPE {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(HYPE::MINT);
+}
+
+impl TokenMint for PST {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw");
+}
+
+impl TokenMint for XPST {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(PST::MINT);
+}
+
+impl TokenMint for WETH {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs");
+}
+
+impl TokenMint for XETH {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(WETH::MINT);
+}
+
+pub trait StakePool: TokenMint<Exp = N9> {
+  const POOL_STATE: Pubkey;
 }
 
 impl StakePool for JITOSOL {
@@ -48,77 +129,17 @@ impl StakePool for JITOSOL {
     pubkey!("Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb");
 }
 
-pub struct HYLOSOL;
-
-impl TokenMint for HYLOSOL {
-  type Exp = N9;
-  const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
-}
-
 impl StakePool for HYLOSOL {
   const POOL_STATE: Pubkey =
     pubkey!("hy1oDeVCVRDGkxS26qLVDvRhDpZGfWJ6w9AMvwMegwL");
 }
 
-pub struct USDC;
+/// Exogenous collateral backing an `ExoPair`.
+pub trait Exo: TokenMint {}
 
-impl TokenMint for USDC {
-  type Exp = N6;
-  const MINT: Pubkey = USDC_MINT;
-}
-
-pub struct CBBTC;
-
-impl TokenMint for CBBTC {
-  type Exp = N8;
-  const MINT: Pubkey = pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
-}
-
-pub struct XBTC;
-
-impl TokenMint for XBTC {
-  type Exp = N6;
-  const MINT: Pubkey = pda::exo_levercoin_mint(CBBTC::MINT);
-}
-
-pub struct SPYX;
-
-impl TokenMint for SPYX {
-  type Exp = N8;
-  const MINT: Pubkey = pubkey!("XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W");
-}
-
-pub struct ZEC;
-
-impl TokenMint for ZEC {
-  type Exp = N8;
-  const MINT: Pubkey = pubkey!("A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS");
-}
-
-pub struct XAUT0;
-
-impl TokenMint for XAUT0 {
-  type Exp = N6;
-  const MINT: Pubkey = pubkey!("AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P");
-}
-
-pub struct ONYC;
-
-impl TokenMint for ONYC {
-  type Exp = N9;
-  const MINT: Pubkey = pubkey!("5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5");
-}
-
-pub struct JLP;
-
-impl TokenMint for JLP {
-  type Exp = N6;
-  const MINT: Pubkey = pubkey!("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4");
-}
-
-pub struct HYPE;
-
-impl TokenMint for HYPE {
-  type Exp = N9;
-  const MINT: Pubkey = pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
-}
+impl Exo for CBBTC {}
+impl Exo for ZEC {}
+impl Exo for ONYC {}
+impl Exo for HYPE {}
+impl Exo for PST {}
+impl Exo for WETH {}
