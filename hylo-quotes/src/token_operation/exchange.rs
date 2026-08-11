@@ -7,7 +7,6 @@ use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
-use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
@@ -717,9 +716,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  fn mint_stablecoin_exo_preconditions<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<(), CoreError> {
+  fn mint_stablecoin_exo_preconditions<E: Exo>(&self) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
     gate(
@@ -733,7 +730,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn mint_stablecoin_exo_quote<E: Exo + PythOracle>(
+  fn mint_stablecoin_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<E::Exp>,
   ) -> Result<OperationOutput<E::Exp, N6, N9>, CoreError>
@@ -765,7 +762,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn mint_stablecoin_exo_max_input<E: Exo + PythOracle>(
+  fn mint_stablecoin_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<E::Exp>, CoreError>
   where
@@ -781,7 +778,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       .ok_or(CoreError::TokenAmountPrecision)
   }
 
-  fn mint_stablecoin_exo_min_input<E: Exo + PythOracle>(
+  fn mint_stablecoin_exo_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<E::Exp>, CoreError>
   where
@@ -801,7 +798,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_stablecoin_exo_preconditions<E: Exo + PythOracle>(
+  fn redeem_stablecoin_exo_preconditions<E: Exo>(
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
@@ -832,7 +829,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(collateral_out)
   }
 
-  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+  fn redeem_stablecoin_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
@@ -865,7 +862,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn redeem_stablecoin_exo_max_input<E: Exo + PythOracle>(
+  fn redeem_stablecoin_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let pair = self.exo_pair::<E>()?;
@@ -882,7 +879,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(vault_cap.min(supply_cap).min(domain_cap))
   }
 
-  fn redeem_stablecoin_exo_min_input<E: Exo + PythOracle>(
+  fn redeem_stablecoin_exo_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError>
   where
@@ -900,9 +897,7 @@ impl<C: SolanaClock> ProtocolState<C> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  fn mint_levercoin_exo_preconditions<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<(), CoreError> {
+  fn mint_levercoin_exo_preconditions<E: Exo>(&self) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
@@ -912,7 +907,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn mint_levercoin_exo_quote<E: Exo + PythOracle>(
+  fn mint_levercoin_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<E::Exp>,
   ) -> Result<OperationOutput<E::Exp, N6, N9>, CoreError>
@@ -946,7 +941,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn mint_levercoin_exo_max_input<E: Exo + PythOracle>(
+  fn mint_levercoin_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<E::Exp>, CoreError>
   where
@@ -963,7 +958,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       .ok_or(CoreError::TokenAmountPrecision)
   }
 
-  fn mint_levercoin_exo_min_input<E: Exo + PythOracle>(
+  fn mint_levercoin_exo_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<E::Exp>, CoreError>
   where
@@ -983,7 +978,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_levercoin_exo_preconditions<E: Exo + PythOracle>(
+  fn redeem_levercoin_exo_preconditions<E: Exo>(
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
@@ -995,7 +990,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_levercoin_exo_quote<E: Exo + PythOracle>(
+  fn redeem_levercoin_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
@@ -1034,7 +1029,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn redeem_levercoin_exo_max_input<E: Exo + PythOracle>(
+  fn redeem_levercoin_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let exo = &self.exo_pair::<E>()?.context;
@@ -1045,7 +1040,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(collateral_cap.min(exo.levercoin_supply()?))
   }
 
-  fn redeem_levercoin_exo_min_input<E: Exo + PythOracle>(
+  fn redeem_levercoin_exo_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError>
   where
@@ -1063,7 +1058,7 @@ impl<C: SolanaClock> ProtocolState<C> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  fn convert_stable_to_lever_exo_preconditions<E: Exo + PythOracle>(
+  fn convert_stable_to_lever_exo_preconditions<E: Exo>(
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
@@ -1075,7 +1070,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn convert_stable_to_lever_exo_quote<E: Exo + PythOracle>(
+  fn convert_stable_to_lever_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
@@ -1109,7 +1104,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn convert_stable_to_lever_exo_max_input<E: Exo + PythOracle>(
+  fn convert_stable_to_lever_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let pair = self.exo_pair::<E>()?;
@@ -1127,7 +1122,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(FeeExtract::max_input(fee_rate, remaining)?.min(projectable))
   }
 
-  fn convert_stable_to_lever_exo_min_input<E: Exo + PythOracle>(
+  fn convert_stable_to_lever_exo_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let exo = &self.exo_pair::<E>()?.context;
@@ -1138,7 +1133,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     past_zero(FeeExtract::max_input(fee_rate, max_zero_hyusd)?)
   }
 
-  fn convert_lever_to_stable_exo_preconditions<E: Exo + PythOracle>(
+  fn convert_lever_to_stable_exo_preconditions<E: Exo>(
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
@@ -1150,7 +1145,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn convert_lever_to_stable_exo_quote<E: Exo + PythOracle>(
+  fn convert_lever_to_stable_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
@@ -1175,7 +1170,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn convert_lever_to_stable_exo_max_input<E: Exo + PythOracle>(
+  fn convert_lever_to_stable_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let exo = &self.exo_pair::<E>()?.context;
@@ -1184,7 +1179,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       .max_lever_for_stable(exo.max_swappable_stablecoin()?)
   }
 
-  fn convert_lever_to_stable_exo_min_input<E: Exo + PythOracle>(
+  fn convert_lever_to_stable_exo_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let exo = &self.exo_pair::<E>()?.context;
@@ -1494,9 +1489,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYLOSOL> for ProtocolState<C> {
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// State gates for the exo-to-USDC rebalance buy routes.
-  fn swap_exo_to_usdc_preconditions<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<(), CoreError> {
+  fn swap_exo_to_usdc_preconditions<E: Exo>(&self) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
@@ -1511,7 +1504,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn swap_exo_to_usdc_quote<E: Exo + PythOracle>(
+  fn swap_exo_to_usdc_quote<E: Exo>(
     &self,
     in_amount: UFix64<E::Exp>,
   ) -> Result<OperationOutput<E::Exp, N6, E::Exp>, CoreError>
@@ -1553,7 +1546,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn swap_exo_to_usdc_max_input<E: Exo + PythOracle>(
+  fn swap_exo_to_usdc_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<E::Exp>, CoreError>
   where
@@ -1570,7 +1563,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       .ok_or(CoreError::TokenAmountPrecision)
   }
 
-  fn swap_exo_to_usdc_min_input<E: Exo + PythOracle>(
+  fn swap_exo_to_usdc_min_input<E: Exo>(
     &self,
   ) -> Result<UFix64<E::Exp>, CoreError>
   where
@@ -1588,9 +1581,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 
   /// State gates for the USDC-to-exo rebalance sell routes.
-  fn swap_usdc_to_exo_preconditions<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<(), CoreError> {
+  fn swap_usdc_to_exo_preconditions<E: Exo>(&self) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
@@ -1605,7 +1596,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn swap_usdc_to_exo_quote<E: Exo + PythOracle>(
+  fn swap_usdc_to_exo_quote<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, E::Exp, N6>, CoreError>
@@ -1638,16 +1629,14 @@ impl<C: SolanaClock> ProtocolState<C> {
     })
   }
 
-  fn swap_usdc_to_exo_max_input<E: Exo + PythOracle>(
+  fn swap_usdc_to_exo_max_input<E: Exo>(
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let pair = self.exo_pair::<E>()?;
     pair.context.max_rebalance_sell_usdc(pair.supply_floor)
   }
 
-  fn swap_usdc_to_exo_min_input<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<UFix64<N6>, CoreError>
+  fn swap_usdc_to_exo_min_input<E: Exo>(&self) -> Result<UFix64<N6>, CoreError>
   where
     UFix64<E::Exp>: FixExt,
   {
@@ -1660,7 +1649,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 }
 
-impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, HYUSD>
+impl<E: Exo + LocalExo, C: SolanaClock> TokenOperation<E, HYUSD>
   for ProtocolState<C>
 where
   UFix64<E::Exp>: FixExt,
@@ -1687,8 +1676,7 @@ where
   }
 }
 
-impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> FeeBase<HYUSD, E>
-  for ProtocolState<C>
+impl<E: Exo + LocalExo, C: SolanaClock> FeeBase<HYUSD, E> for ProtocolState<C>
 where
   UFix64<E::Exp>: FixExt,
 {
@@ -1697,7 +1685,7 @@ where
   }
 }
 
-impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<HYUSD, E>
+impl<E: Exo + LocalExo, C: SolanaClock> TokenOperation<HYUSD, E>
   for ProtocolState<C>
 where
   UFix64<E::Exp>: FixExt,
@@ -1724,7 +1712,7 @@ where
   }
 }
 
-impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, USDC>
+impl<E: Exo + LocalExo, C: SolanaClock> TokenOperation<E, USDC>
   for ProtocolState<C>
 where
   UFix64<E::Exp>: FixExt,
@@ -1751,7 +1739,7 @@ where
   }
 }
 
-impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<USDC, E>
+impl<E: Exo + LocalExo, C: SolanaClock> TokenOperation<USDC, E>
   for ProtocolState<C>
 where
   UFix64<E::Exp>: FixExt,

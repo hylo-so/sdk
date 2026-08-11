@@ -32,7 +32,7 @@ use crate::exchange_math::{
 use crate::fees::controller::{FeeExtract, LevercoinFees};
 use crate::fees::curve_controller::cr_from_curve;
 use crate::fees::curves::REDEEM_MAX_CR;
-use crate::pyth::{OraclePrice, PriceRange};
+use crate::oracle::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
   max_buyable_collateral, max_sellable_collateral, midpoint,
 };

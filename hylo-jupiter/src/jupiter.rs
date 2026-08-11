@@ -12,21 +12,32 @@ use hylo_core::idl::tokens::{
 };
 use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig, PythOracle, SOL_USD};
+use hylo_core::oracle::{query_hylo_oracle, OracleConfig};
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
+use hylo_oracle_types::OracleObservation;
 use hylo_quotes::protocol_state::{
   build_exo_pair_state, ProtocolState, UsdcExchangeState,
 };
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
 use crate::util::{
   account_map_get, keyed_account, quote, validate_swap_params,
 };
+
+/// Source-neutral observation account for a supported exogenous collateral.
+fn exo_usd_observation(collateral_mint: Pubkey) -> Result<Pubkey> {
+  match collateral_mint {
+    CBBTC::MINT => Ok(pda::BTC_USD_OBSERVATION),
+    HYPE::MINT => Ok(pda::HYPE_USD_OBSERVATION),
+    _ => Err(anyhow!(
+      "no oracle observation configured for exo collateral"
+    )),
+  }
+}
 
 /// Bidirectional single-pair Jupiter AMM client.
 pub struct HyloJupiterPair<IN, OUT>
@@ -43,14 +54,14 @@ where
 fn usdc_state(
   clock: &ClockRef,
   usdc_pair: &UsdcPair,
-  usdc_usd: &PriceUpdateV2,
+  usdc_usd: &OracleObservation,
   usdc_vault: &TokenAccount,
 ) -> Result<UsdcExchangeState> {
   let usdc_oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_oracle = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
+  let usdc_oracle = query_hylo_oracle(clock, usdc_usd, usdc_oracle_config)?;
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
   Ok(UsdcExchangeState {
@@ -527,12 +538,12 @@ macro_rules! exo_pair_configs {
           ($exo::MINT, USDC::MINT) => Ok(account_metas::swap_exo_to_usdc(
             user,
             $exo::MINT,
-            $exo::FEED.address,
+            exo_usd_observation($exo::MINT)?,
           )),
           (USDC::MINT, $exo::MINT) => Ok(account_metas::swap_usdc_to_exo(
             user,
             $exo::MINT,
-            $exo::FEED.address,
+            exo_usd_observation($exo::MINT)?,
           )),
           _ => Err(anyhow!("Invalid mint pair")),
         }
@@ -568,13 +579,13 @@ macro_rules! exo_pair_configs {
           ($exo::MINT, HYUSD::MINT) => Ok(account_metas::mint_stablecoin_exo(
             user,
             $exo::MINT,
-            $exo::FEED.address,
+            exo_usd_observation($exo::MINT)?,
           )),
           (HYUSD::MINT, $exo::MINT) => {
             Ok(account_metas::redeem_stablecoin_exo(
               user,
               $exo::MINT,
-              $exo::FEED.address,
+              exo_usd_observation($exo::MINT)?,
             ))
           }
           _ => Err(anyhow!("Invalid mint pair")),
@@ -611,13 +622,13 @@ macro_rules! exo_pair_configs {
           ($exo::MINT, $lever::MINT) => Ok(account_metas::mint_levercoin_exo(
             user,
             $exo::MINT,
-            $exo::FEED.address,
+            exo_usd_observation($exo::MINT)?,
           )),
           ($lever::MINT, $exo::MINT) => {
             Ok(account_metas::redeem_levercoin_exo(
               user,
               $exo::MINT,
-              $exo::FEED.address,
+              exo_usd_observation($exo::MINT)?,
             ))
           }
           _ => Err(anyhow!("Invalid mint pair")),
@@ -655,14 +666,14 @@ macro_rules! exo_pair_configs {
             Ok(account_metas::convert_stable_to_lever_exo(
               user,
               $exo::MINT,
-              $exo::FEED.address,
+              exo_usd_observation($exo::MINT)?,
             ))
           }
           ($lever::MINT, HYUSD::MINT) => {
             Ok(account_metas::convert_lever_to_stable_exo(
               user,
               $exo::MINT,
-              $exo::FEED.address,
+              exo_usd_observation($exo::MINT)?,
             ))
           }
           _ => Err(anyhow!("Invalid mint pair")),
@@ -720,20 +731,20 @@ where
       pda::lst_header(HYLOSOL::MINT),
       JITOSOL::POOL_STATE,
       HYLOSOL::POOL_STATE,
-      SOL_USD.address,
+      pda::SOL_USD_OBSERVATION,
       SHYUSD::MINT,
       pda::HYUSD_POOL,
       pda::POOL_CONFIG,
       pda::exo_pair(CBBTC::MINT),
       pda::exo_vault(CBBTC::MINT),
       pda::exo_levercoin_mint(CBBTC::MINT),
-      CBBTC::FEED.address,
+      pda::BTC_USD_OBSERVATION,
       pda::exo_pair(HYPE::MINT),
       pda::exo_vault(HYPE::MINT),
       pda::exo_levercoin_mint(HYPE::MINT),
-      HYPE::FEED.address,
+      pda::HYPE_USD_OBSERVATION,
       pda::USDC_PAIR,
-      pda::USDC_USD_PYTH_FEED,
+      pda::USDC_USD_OBSERVATION,
       pda::lst_vault(JITOSOL::MINT),
       pda::lst_vault(HYLOSOL::MINT),
       pda::usdc_vault(USDC::MINT),
@@ -749,8 +760,8 @@ where
       account_map_get(account_map, &pda::lst_header(JITOSOL::MINT))?;
     let hylosol_header: LstHeader =
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
-    let sol_usd: PriceUpdateV2 =
-      account_map_get(account_map, &SOL_USD.address)?;
+    let sol_usd: OracleObservation =
+      account_map_get(account_map, &pda::SOL_USD_OBSERVATION)?;
 
     // Earn pool
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
@@ -765,14 +776,14 @@ where
       keyed_account(account_map, &pda::exo_pair(CBBTC::MINT))?,
       keyed_account(account_map, &pda::exo_vault(CBBTC::MINT))?,
       keyed_account(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?,
-      keyed_account(account_map, &CBBTC::FEED.address)?,
+      keyed_account(account_map, &pda::BTC_USD_OBSERVATION)?,
     )?;
     let hype_pair = build_exo_pair_state::<HYPE, ClockRef>(
       self.clock.clone(),
       keyed_account(account_map, &pda::exo_pair(HYPE::MINT))?,
       keyed_account(account_map, &pda::exo_vault(HYPE::MINT))?,
       keyed_account(account_map, &pda::exo_levercoin_mint(HYPE::MINT))?,
-      keyed_account(account_map, &HYPE::FEED.address)?,
+      keyed_account(account_map, &pda::HYPE_USD_OBSERVATION)?,
     )?;
 
     let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
@@ -782,8 +793,8 @@ where
       account_map_get(account_map, &pda::lst_vault(HYLOSOL::MINT))?;
     let usdc_vault: TokenAccount =
       account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
-    let usdc_usd: PriceUpdateV2 =
-      account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
+    let usdc_usd: OracleObservation =
+      account_map_get(account_map, &pda::USDC_USD_OBSERVATION)?;
 
     let usdc_exchange_state =
       usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;

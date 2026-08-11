@@ -8,7 +8,7 @@ homepage.workspace = true
 include = ["idls/", "src/"]
 
 [features]
-shadow = []
+shadow = ["hylo-oracle-types/shadow"]
 
 [[bin]]
 name = "lut-accounts"
@@ -20,9 +20,13 @@ anchor-spl.workspace = true
 anyhow.workspace = true
 const-crypto.workspace = true
 hylo-fix.workspace = true
+hylo-oracle-types.workspace = true
 mpl-token-metadata.workspace = true
 solana-address-lookup-table-interface.workspace = true
 solana-loader-v3-interface.workspace = true
+
+[dev-dependencies]
+hex-literal.workspace = true
 
 [lints]
 workspace = true

@@ -4,6 +4,7 @@ members = [
     "hylo-core",
     "hylo-idl",
     "hylo-jupiter",
+    "hylo-oracle-types",
     "hylo-quotes",
     "hylo-stats",
 ]
@@ -25,11 +26,13 @@ base64 = "0.22.1"
 const-crypto = "0.3.0"
 bincode = "1.3.3"
 futures = "0.3.31"
+hex-literal = "0.4.1"
 hylo-clients = { version = "2.6.0", path = "hylo-clients" }
 hylo-core = { version = "2.6.0", path = "hylo-core" }
 hylo-fix = "0.8.0"
 hylo-idl = { version = "2.6.0", path = "hylo-idl" }
 hylo-jupiter = { version = "2.6.0", path = "hylo-jupiter" }
+hylo-oracle-types = { version = "2.6.0", path = "hylo-oracle-types" }
 hylo-quotes = { version = "2.6.0", path = "hylo-quotes" }
 hylo-stats = { version = "2.6.0", path = "hylo-stats" }
 itertools = "0.14.0"
@@ -37,6 +40,7 @@ hylo-jupiter-amm-interface = "0.6.0"
 more-asserts = "0.3.1"
 mpl-token-metadata = "5.1.1"
 proptest = "1.5.0"
+pyth-lazer-protocol = "0.46.0"
 pyth-solana-receiver-sdk = { version = "=1.2.0", features = ["pro-compatible"] }
 rust_decimal = "1.37.2"
 serde = "1.0.225"
@@ -48,6 +52,7 @@ test-context = "0.3.0"
 thiserror = "2.0.18"
 solana-loader-v3-interface = "5.0.0"
 solana-transaction-status-client-types = "=2.3.13"
+static_assertions = "1.1.0"
 hylo-squads-multisig = "2.1.0"
 tokio = "1.36.0"
 tokio-test = "0.4"

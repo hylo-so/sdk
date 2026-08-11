@@ -4,7 +4,7 @@ use crate::conversion::SwapConversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{LpTokenNav, LpTokenOut, TokenWithdraw};
 use crate::fees::controller::FeeExtract;
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 #[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 

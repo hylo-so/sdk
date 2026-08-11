@@ -1,0 +1,709 @@
+{
+  "address": "hyorViHghDYU4Yd15DZFHDQXJBtzXqVHuypcvN3Gj7t",
+  "metadata": {
+    "name": "hylo_oracle",
+    "version": "2.0.5",
+    "spec": "0.1.0",
+    "description": "Hylo Oracle Program"
+  },
+  "instructions": [
+    {
+      "name": "init_observation",
+      "docs": [
+        "Create and seed an observation account for a registered feed."
+      ],
+      "discriminator": [
+        9,
+        145,
+        87,
+        68,
+        96,
+        56,
+        189,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "observation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pyth_price"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "mirror_pyth_core_prices",
+      "docs": [
+        "Mirror a batch of on-chain Pyth Core prices into their observations."
+      ],
+      "discriminator": [
+        150,
+        142,
+        174,
+        219,
+        35,
+        46,
+        127,
+        209
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_pyth_lazer_prices",
+      "docs": [
+        "Verify one signed Pyth Lazer batch and store each feed's observation."
+      ],
+      "discriminator": [
+        220,
+        122,
+        224,
+        27,
+        81,
+        230,
+        183,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pyth_lazer_program",
+          "address": "pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt"
+        },
+        {
+          "name": "pyth_lazer_storage",
+          "docs": [
+            "data."
+          ],
+          "address": "3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL"
+        },
+        {
+          "name": "pyth_lazer_treasury",
+          "docs": [
+            "`has_one`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "docs": [
+            "loader."
+          ],
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "channel_id",
+          "type": "u8"
+        },
+        {
+          "name": "message_data",
+          "type": "bytes"
+        },
+        {
+          "name": "ed25519_instruction_index",
+          "type": "u16"
+        },
+        {
+          "name": "signature_index",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "OracleObservation",
+      "discriminator": [
+        176,
+        75,
+        202,
+        9,
+        47,
+        238,
+        222,
+        254
+      ]
+    },
+    {
+      "name": "PriceUpdateV2",
+      "discriminator": [
+        34,
+        241,
+        35,
+        99,
+        157,
+        126,
+        244,
+        205
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ObservationUpdated",
+      "discriminator": [
+        15,
+        113,
+        103,
+        34,
+        143,
+        217,
+        244,
+        35
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "PriceNotPositive",
+      "msg": "Observation price is not positive."
+    },
+    {
+      "code": 6001,
+      "name": "ConfidenceNotPositive",
+      "msg": "Observation confidence is not positive."
+    },
+    {
+      "code": 6002,
+      "name": "ExponentOutOfRange",
+      "msg": "Observation exponent is out of range."
+    },
+    {
+      "code": 6003,
+      "name": "TimestampInvalid",
+      "msg": "Observation timestamp is not a valid timestamp."
+    },
+    {
+      "code": 6004,
+      "name": "TimestampTooFarInFuture",
+      "msg": "Observation timestamp is too far in the future."
+    },
+    {
+      "code": 6005,
+      "name": "TimestampOrderInvalid",
+      "msg": "Lazer feed update timestamp is after the envelope timestamp."
+    },
+    {
+      "code": 6006,
+      "name": "PythCorePartialVerification",
+      "msg": "Pyth Core update is not fully verified."
+    },
+    {
+      "code": 6007,
+      "name": "PythCoreFeedMismatch",
+      "msg": "Pyth Core update feed id does not match the requested feed."
+    },
+    {
+      "code": 6008,
+      "name": "PythVerifyInstructionDidNotSerialize",
+      "msg": "Pyth Lazer verify_message instruction did not serialize."
+    },
+    {
+      "code": 6009,
+      "name": "MissingPythReturnData",
+      "msg": "Pyth Lazer verifier did not set return data."
+    },
+    {
+      "code": 6010,
+      "name": "UnexpectedPythReturnProgram",
+      "msg": "Pyth Lazer verifier return data came from an unexpected program."
+    },
+    {
+      "code": 6011,
+      "name": "InvalidPythReturnData",
+      "msg": "Pyth Lazer verifier return data could not be decoded."
+    },
+    {
+      "code": 6012,
+      "name": "InvalidLazerPayload",
+      "msg": "Verified Lazer payload could not be decoded."
+    },
+    {
+      "code": 6013,
+      "name": "UnexpectedLazerChannel",
+      "msg": "Verified Lazer payload used an unexpected channel."
+    },
+    {
+      "code": 6014,
+      "name": "MissingLazerPrice",
+      "msg": "Verified Lazer feed is missing price."
+    },
+    {
+      "code": 6015,
+      "name": "MissingLazerExponent",
+      "msg": "Verified Lazer feed is missing exponent."
+    },
+    {
+      "code": 6016,
+      "name": "MissingLazerConfidence",
+      "msg": "Verified Lazer feed is missing confidence."
+    },
+    {
+      "code": 6017,
+      "name": "InvalidLazerConfidence",
+      "msg": "Verified Lazer feed has invalid confidence."
+    },
+    {
+      "code": 6018,
+      "name": "MissingLazerFeedUpdateTimestamp",
+      "msg": "Verified Lazer feed is missing feed update timestamp."
+    },
+    {
+      "code": 6019,
+      "name": "DuplicateLazerProperty",
+      "msg": "Verified Lazer feed contained a required property more than once."
+    },
+    {
+      "code": 6020,
+      "name": "UnknownFeed",
+      "msg": "Feed id is not present in the feed registry."
+    },
+    {
+      "code": 6021,
+      "name": "UnknownLazerFeed",
+      "msg": "Verified Lazer feed and channel are not in the feed registry."
+    },
+    {
+      "code": 6022,
+      "name": "ObservationAccountMismatch",
+      "msg": "Observation account does not match its feed's PDA identity."
+    },
+    {
+      "code": 6023,
+      "name": "RemainingAccountsMismatch",
+      "msg": "Remaining account count does not match the batch payload."
+    }
+  ],
+  "types": [
+    {
+      "name": "ObservationUpdated",
+      "docs": [
+        "Emitted whenever an observation records a newer price, from any source."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          },
+          {
+            "name": "source",
+            "type": {
+              "defined": {
+                "name": "OracleSource"
+              }
+            }
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
+          },
+          {
+            "name": "price_timestamp_us",
+            "type": "u64"
+          },
+          {
+            "name": "posted_slot",
+            "type": "u64"
+          },
+          {
+            "name": "observation",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleObservation",
+      "docs": [
+        "Normalized latest price for one feed; facts within bounds. The",
+        "price/exponent/confidence layout mirrors Pyth's `PriceFeedMessage` field for",
+        "field (raw ints sharing one exponent) rather than `UFixValue64`, because",
+        "this is a source-neutral facts record; typed conversion is the consumer's",
+        "job. Populated iff `price_timestamp_us != 0`. Consumers gate freshness on",
+        "`price_timestamp_us` (the price-determination time, not `posted_slot`),",
+        "confidence on `confidence`, and must pin the account by PDA address."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "source",
+            "type": {
+              "defined": {
+                "name": "OracleSource"
+              }
+            }
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
+          },
+          {
+            "name": "price_timestamp_us",
+            "type": "u64"
+          },
+          {
+            "name": "posted_slot",
+            "type": "u64"
+          },
+          {
+            "name": "posted_unix_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleSource",
+      "docs": [
+        "Price source backing an observation. New sources append here."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PythCore"
+          },
+          {
+            "name": "PythLazer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceFeedMessage",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "docs": [
+              "`FeedId` but avoid the type alias because of compatibility issues with Anchor's `idl-build` feature."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "conf",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i32"
+          },
+          {
+            "name": "publish_time",
+            "docs": [
+              "The timestamp of this price update in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "prev_publish_time",
+            "docs": [
+              "The timestamp of the previous price update. This field is intended to allow users to",
+              "identify the single unique price update for any moment in time:",
+              "for any time t, the unique update is the one such that prev_publish_time < t <= publish_time.",
+              "",
+              "Note that there may not be such an update while we are migrating to the new message-sending logic,",
+              "as some price updates on pythnet may not be sent to other chains (because the message-sending",
+              "logic may not have triggered). We can solve this problem by making the message-sending mandatory",
+              "(which we can do once publishers have migrated over).",
+              "",
+              "Additionally, this field may be equal to publish_time if the message is sent on a slot where",
+              "where the aggregation was unsuccesful. This problem will go away once all publishers have",
+              "migrated over to a recent version of pyth-agent."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "ema_price",
+            "type": "i64"
+          },
+          {
+            "name": "ema_conf",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceUpdateV2",
+      "docs": [
+        "A price update account. This account is used by the Pyth Receiver program to store a verified price update from a Pyth price feed.",
+        "It contains:",
+        "- `write_authority`: The write authority for this account. This authority can close this account to reclaim rent or update the account to contain a different price update.",
+        "- `verification_level`: The [`VerificationLevel`] of this price update. This represents how many Wormhole guardian signatures have been verified for this price update.",
+        "- `price_message`: The actual price update.",
+        "- `posted_slot`: The slot at which this price update was posted."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "write_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "verification_level",
+            "type": {
+              "defined": {
+                "name": "VerificationLevel"
+              }
+            }
+          },
+          {
+            "name": "price_message",
+            "type": {
+              "defined": {
+                "name": "PriceFeedMessage"
+              }
+            }
+          },
+          {
+            "name": "posted_slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VerificationLevel",
+      "docs": [
+        "Pyth price updates are bridged to all blockchains via Wormhole.",
+        "Using the price updates on another chain requires verifying the signatures of the Wormhole guardians.",
+        "The usual process is to check the signatures for two thirds of the total number of guardians, but this can be cumbersome on Solana because of the transaction size limits,",
+        "so we also allow for partial verification.",
+        "",
+        "This enum represents how much a price update has been verified:",
+        "- If `Full`, we have verified the signatures for two thirds of the current guardians.",
+        "- If `Partial`, only `num_signatures` guardian signatures have been checked.",
+        "",
+        "# Warning",
+        "Using partially verified price updates is dangerous, as it lowers the threshold of guardians that need to collude to produce a malicious price update."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Partial",
+            "fields": [
+              {
+                "name": "num_signatures",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "Full"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "MAX_FUTURE_SKEW_SECS",
+      "type": "u64",
+      "value": "5"
+    }
+  ]
+}
