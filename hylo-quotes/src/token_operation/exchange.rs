@@ -1737,98 +1737,6 @@ where
   }
 }
 
-impl<C: SolanaClock> TokenOperation<CBBTC, XBTC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_levercoin_exo_preconditions::<CBBTC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
-    self.mint_levercoin_exo_quote::<CBBTC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_levercoin_exo_max_input::<CBBTC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_levercoin_exo_min_input::<CBBTC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XBTC, CBBTC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_levercoin_exo_preconditions::<CBBTC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
-    self.redeem_levercoin_exo_quote::<CBBTC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_max_input::<CBBTC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_min_input::<CBBTC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<HYUSD, XBTC> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_stable_to_lever_exo_preconditions::<CBBTC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_stable_to_lever_exo_quote::<CBBTC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_max_input::<CBBTC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_min_input::<CBBTC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_lever_to_stable_exo_preconditions::<CBBTC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_lever_to_stable_exo_quote::<CBBTC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_max_input::<CBBTC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_min_input::<CBBTC>()
-  }
-}
-
 impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, USDC>
   for ProtocolState<C>
 where
@@ -1975,462 +1883,105 @@ impl<C: SolanaClock> TokenOperation<HYUSD, HYLOSOL> for ProtocolState<C> {
   }
 }
 
-impl<C: SolanaClock> TokenOperation<HYPE, XHYPE> for ProtocolState<C> {
-  type FeeExp = N9;
+macro_rules! exo_levercoin_ops {
+  ($exo:ident, $lever:ident, $exp:ty) => {
+    impl<C: SolanaClock> TokenOperation<$exo, $lever> for ProtocolState<C> {
+      type FeeExp = N9;
 
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_levercoin_exo_preconditions::<HYPE>()
-  }
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.mint_levercoin_exo_preconditions::<$exo>()
+      }
 
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N9>,
-  ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
-    self.mint_levercoin_exo_quote::<HYPE>(in_amount)
-  }
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<$exp>,
+      ) -> Result<OperationOutput<$exp, N6, N9>, CoreError> {
+        self.mint_levercoin_exo_quote::<$exo>(in_amount)
+      }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
-    self.mint_levercoin_exo_max_input::<HYPE>()
-  }
+      fn max_input_ungated(&self) -> Result<UFix64<$exp>, CoreError> {
+        self.mint_levercoin_exo_max_input::<$exo>()
+      }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
-    self.mint_levercoin_exo_min_input::<HYPE>()
-  }
+      fn min_input_ungated(&self) -> Result<UFix64<$exp>, CoreError> {
+        self.mint_levercoin_exo_min_input::<$exo>()
+      }
+    }
+
+    impl<C: SolanaClock> TokenOperation<$lever, $exo> for ProtocolState<C> {
+      type FeeExp = N9;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.redeem_levercoin_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<N6>,
+      ) -> Result<OperationOutput<N6, $exp, N9>, CoreError> {
+        self.redeem_levercoin_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.redeem_levercoin_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.redeem_levercoin_exo_min_input::<$exo>()
+      }
+    }
+
+    impl<C: SolanaClock> TokenOperation<HYUSD, $lever> for ProtocolState<C> {
+      type FeeExp = N6;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.convert_stable_to_lever_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<N6>,
+      ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
+        self.convert_stable_to_lever_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_stable_to_lever_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_stable_to_lever_exo_min_input::<$exo>()
+      }
+    }
+
+    impl<C: SolanaClock> TokenOperation<$lever, HYUSD> for ProtocolState<C> {
+      type FeeExp = N6;
+
+      fn preconditions(&self) -> Result<(), CoreError> {
+        self.convert_lever_to_stable_exo_preconditions::<$exo>()
+      }
+
+      fn compute_output_ungated(
+        &self,
+        in_amount: UFix64<N6>,
+      ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
+        self.convert_lever_to_stable_exo_quote::<$exo>(in_amount)
+      }
+
+      fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_lever_to_stable_exo_max_input::<$exo>()
+      }
+
+      fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+        self.convert_lever_to_stable_exo_min_input::<$exo>()
+      }
+    }
+  };
 }
 
-impl<C: SolanaClock> TokenOperation<XHYPE, HYPE> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_levercoin_exo_preconditions::<HYPE>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N9, N9>, CoreError> {
-    self.redeem_levercoin_exo_quote::<HYPE>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_max_input::<HYPE>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_min_input::<HYPE>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<HYUSD, XHYPE> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_stable_to_lever_exo_preconditions::<HYPE>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_stable_to_lever_exo_quote::<HYPE>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_max_input::<HYPE>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_min_input::<HYPE>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XHYPE, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_lever_to_stable_exo_preconditions::<HYPE>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_lever_to_stable_exo_quote::<HYPE>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_max_input::<HYPE>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_min_input::<HYPE>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<ZEC, XZEC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_levercoin_exo_preconditions::<ZEC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
-    self.mint_levercoin_exo_quote::<ZEC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_levercoin_exo_max_input::<ZEC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_levercoin_exo_min_input::<ZEC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XZEC, ZEC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_levercoin_exo_preconditions::<ZEC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
-    self.redeem_levercoin_exo_quote::<ZEC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_max_input::<ZEC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_min_input::<ZEC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<HYUSD, XZEC> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_stable_to_lever_exo_preconditions::<ZEC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_stable_to_lever_exo_quote::<ZEC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_max_input::<ZEC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_min_input::<ZEC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XZEC, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_lever_to_stable_exo_preconditions::<ZEC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_lever_to_stable_exo_quote::<ZEC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_max_input::<ZEC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_min_input::<ZEC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<PST, XPST> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_levercoin_exo_preconditions::<PST>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N9>, CoreError> {
-    self.mint_levercoin_exo_quote::<PST>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.mint_levercoin_exo_max_input::<PST>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.mint_levercoin_exo_min_input::<PST>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XPST, PST> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_levercoin_exo_preconditions::<PST>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N9>, CoreError> {
-    self.redeem_levercoin_exo_quote::<PST>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_max_input::<PST>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_min_input::<PST>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<HYUSD, XPST> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_stable_to_lever_exo_preconditions::<PST>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_stable_to_lever_exo_quote::<PST>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_max_input::<PST>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_min_input::<PST>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XPST, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_lever_to_stable_exo_preconditions::<PST>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_lever_to_stable_exo_quote::<PST>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_max_input::<PST>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_min_input::<PST>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<ONYC, XONYC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_levercoin_exo_preconditions::<ONYC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N9>,
-  ) -> Result<OperationOutput<N9, N6, N9>, CoreError> {
-    self.mint_levercoin_exo_quote::<ONYC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
-    self.mint_levercoin_exo_max_input::<ONYC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
-    self.mint_levercoin_exo_min_input::<ONYC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XONYC, ONYC> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_levercoin_exo_preconditions::<ONYC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N9, N9>, CoreError> {
-    self.redeem_levercoin_exo_quote::<ONYC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_max_input::<ONYC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_min_input::<ONYC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<HYUSD, XONYC> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_stable_to_lever_exo_preconditions::<ONYC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_stable_to_lever_exo_quote::<ONYC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_max_input::<ONYC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_min_input::<ONYC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XONYC, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_lever_to_stable_exo_preconditions::<ONYC>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_lever_to_stable_exo_quote::<ONYC>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_max_input::<ONYC>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_min_input::<ONYC>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<WETH, XETH> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_levercoin_exo_preconditions::<WETH>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
-    self.mint_levercoin_exo_quote::<WETH>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_levercoin_exo_max_input::<WETH>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_levercoin_exo_min_input::<WETH>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XETH, WETH> for ProtocolState<C> {
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_levercoin_exo_preconditions::<WETH>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
-    self.redeem_levercoin_exo_quote::<WETH>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_max_input::<WETH>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_levercoin_exo_min_input::<WETH>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<HYUSD, XETH> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_stable_to_lever_exo_preconditions::<WETH>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_stable_to_lever_exo_quote::<WETH>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_max_input::<WETH>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_stable_to_lever_exo_min_input::<WETH>()
-  }
-}
-
-impl<C: SolanaClock> TokenOperation<XETH, HYUSD> for ProtocolState<C> {
-  type FeeExp = N6;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
-    self.convert_lever_to_stable_exo_preconditions::<WETH>()
-  }
-
-  fn compute_output_ungated(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    self.convert_lever_to_stable_exo_quote::<WETH>(in_amount)
-  }
-
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_max_input::<WETH>()
-  }
-
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.convert_lever_to_stable_exo_min_input::<WETH>()
-  }
-}
+exo_levercoin_ops!(CBBTC, XBTC, N8);
+exo_levercoin_ops!(HYPE, XHYPE, N9);
+exo_levercoin_ops!(ZEC, XZEC, N8);
+exo_levercoin_ops!(PST, XPST, N6);
+exo_levercoin_ops!(ONYC, XONYC, N9);
+exo_levercoin_ops!(WETH, XETH, N8);
