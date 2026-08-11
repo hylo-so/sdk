@@ -14,8 +14,8 @@ use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
 use hylo_idl::tokens::{
-  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC,
-  XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, XBTC,
+  XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::protocol_state::ProtocolState;
