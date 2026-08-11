@@ -1,0 +1,25 @@
+[package]
+name = "hylo-oracle-types"
+version.workspace = true
+edition.workspace = true
+description = "Shared on-chain contract for hylo-oracle observations."
+license.workspace = true
+homepage.workspace = true
+
+[features]
+default = []
+# Switches the owner program id to the shadow oracle deployment.
+shadow = []
+# Exposes the `OracleObservation` `Default` impl to downstream test builds.
+test-support = []
+
+[dependencies]
+anchor-lang.workspace = true
+hex-literal.workspace = true
+static_assertions.workspace = true
+
+[dev-dependencies]
+pyth-lazer-protocol.workspace = true
+
+[lints]
+workspace = true
