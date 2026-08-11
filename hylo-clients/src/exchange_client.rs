@@ -223,22 +223,6 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Updates the SOL/USD oracle address.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_sol_usd_oracle(
-    &self,
-    squads: &SquadsContext,
-    args: &args::UpdateSolUsdOracle,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::update_sol_usd_oracle(squads.vault_pda(), args);
-    let memo = build_memo("update_sol_usd_oracle", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
   /// Updates the LST swap fee.
   ///
   /// # Errors
@@ -603,26 +587,6 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the oracle for an exo collateral.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_exo_oracle(
-    &self,
-    squads: &SquadsContext,
-    collateral_mint: Pubkey,
-    args: &args::UpdateExoOracle,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_exo_oracle(
-      squads.vault_pda(),
-      collateral_mint,
-      args,
-    );
-    let memo = build_memo("update_exo_oracle", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
   /// Updates the oracle confidence tolerance for an exo collateral.
   ///
   /// # Errors
@@ -773,12 +737,11 @@ impl ExchangeClient {
   pub fn initialize_usdc(
     &self,
     squads: &SquadsContext,
-    usdc_usd_pyth_feed: Pubkey,
     args: &args::InitializeUsdc,
   ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::initialize_usdc(
       squads.vault_pda(),
-      usdc_usd_pyth_feed,
+      pda::USDC_USD_OBSERVATION,
       args,
     );
     let memo = build_memo("initialize_usdc", &instruction);
@@ -792,12 +755,11 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub fn initialize_usdc_direct(
     &self,
-    usdc_usd_pyth_feed: Pubkey,
     args: &args::InitializeUsdc,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::initialize_usdc(
       self.program.payer(),
-      usdc_usd_pyth_feed,
+      pda::USDC_USD_OBSERVATION,
       args,
     );
     Ok(VersionedTransactionData::one(instruction))
@@ -873,13 +835,13 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     collateral_mint: Pubkey,
-    exo_usd_pyth_feed: Pubkey,
+    exo_usd_oracle: Pubkey,
     args: &args::RegisterExo,
   ) -> Result<SquadsTransactionData> {
     let instruction = instruction_builders::register_exo(
       squads.vault_pda(),
       collateral_mint,
-      exo_usd_pyth_feed,
+      exo_usd_oracle,
       args,
     );
     let memo = build_memo("register_exo", &instruction);
@@ -898,7 +860,7 @@ impl ExchangeClient {
     &self,
     squads: &SquadsContext,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_oracle: Pubkey,
     args: &args::GenesisMintExo,
   ) -> Result<SquadsTransactionData> {
     let vault = squads.vault_pda();
@@ -909,7 +871,7 @@ impl ExchangeClient {
     let instruction = instruction_builders::genesis_mint_exo(
       vault,
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_oracle,
       args,
     );
     let memo = build_memo("genesis_mint_exo", &instruction);
@@ -944,11 +906,11 @@ impl ExchangeClient {
   pub fn harvest_borrow_rate(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_oracle: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::harvest_borrow_rate(
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_oracle,
     );
     Ok(VersionedTransactionData::one(instruction))
   }
@@ -971,11 +933,11 @@ impl ExchangeClient {
   pub fn settle_virtual_stablecoin_exo(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_oracle: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::settle_virtual_stablecoin_exo(
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_oracle,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

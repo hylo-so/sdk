@@ -57,8 +57,8 @@ pub struct ProtocolAccounts {
   /// HYUSD earn pool token account
   pub hyusd_pool: Account,
 
-  /// Pyth SOL/USD price feed
-  pub sol_usd_pyth: Account,
+  /// SOL/USD observation (hylo-oracle)
+  pub sol_usd_observation: Account,
 
   /// Solana clock sysvar
   pub clock: Account,
@@ -72,14 +72,14 @@ pub struct ProtocolAccounts {
   /// xBTC levercoin mint
   pub xbtc_mint: Account,
 
-  /// Pyth BTC/USD price feed
-  pub btc_usd_pyth: Account,
+  /// BTC/USD observation (hylo-oracle)
+  pub btc_usd_observation: Account,
 
   /// `UsdcPair` PDA
   pub usdc_pair: Account,
 
-  /// Pyth USDC/USD price feed
-  pub usdc_usd_pyth: Account,
+  /// USDC/USD observation (hylo-oracle)
+  pub usdc_usd_observation: Account,
 
   /// `JitoSOL` SPL stake pool state
   pub jitosol_pool_state: Account,
@@ -110,14 +110,14 @@ impl ProtocolAccounts {
     XSOL::MINT,
     pda::POOL_CONFIG,
     pda::HYUSD_POOL,
-    hylo_core::pyth::SOL_USD.address,
+    pda::SOL_USD_OBSERVATION,
     sysvar::clock::ID,
     pda::exo_pair(CBBTC::MINT),
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
     pda::USDC_PAIR,
-    pda::USDC_USD_PYTH_FEED,
+    pda::USDC_USD_OBSERVATION,
     JITOSOL::POOL_STATE,
     HYLOSOL::POOL_STATE,
     pda::lst_vault(JITOSOL::MINT),
@@ -134,27 +134,27 @@ impl ProtocolAccounts {
 
   /// Pubkey subset for the isolated LST exchange context.
   ///
-  /// Order: Hylo, xSOL mint, SOL/USD feed, clock.
+  /// Order: Hylo, xSOL mint, SOL/USD observation, clock.
   #[must_use]
   pub const fn lst_pubkeys() -> [Pubkey; 4] {
     [
       pda::HYLO,
       XSOL::MINT,
-      hylo_core::pyth::SOL_USD.address,
+      pda::SOL_USD_OBSERVATION,
       sysvar::clock::ID,
     ]
   }
 
   /// Pubkey subset for the isolated cbBTC exchange context.
   ///
-  /// Order: exo pair, vault, levercoin mint, BTC/USD feed, clock.
+  /// Order: exo pair, vault, levercoin mint, BTC/USD observation, clock.
   #[must_use]
   pub const fn cbbtc_pubkeys() -> [Pubkey; 5] {
     [
       pda::exo_pair(CBBTC::MINT),
       pda::exo_vault(CBBTC::MINT),
       pda::exo_levercoin_mint(CBBTC::MINT),
-      pda::BTC_USD_PYTH_FEED,
+      pda::BTC_USD_OBSERVATION,
       sysvar::clock::ID,
     ]
   }
@@ -189,14 +189,22 @@ impl ProtocolAccounts {
       xsol_mint: fetched_account(accounts, 5, "XSOL mint")?,
       pool_config: fetched_account(accounts, 6, "Pool config")?,
       hyusd_pool: fetched_account(accounts, 7, "HYUSD pool")?,
-      sol_usd_pyth: fetched_account(accounts, 8, "SOL/USD Pyth feed")?,
+      sol_usd_observation: fetched_account(accounts, 8, "SOL/USD observation")?,
       clock: fetched_account(accounts, 9, "Clock sysvar")?,
       cbbtc_exo_pair: fetched_account(accounts, 10, "cbBTC ExoPair")?,
       cbbtc_vault: fetched_account(accounts, 11, "cbBTC vault")?,
       xbtc_mint: fetched_account(accounts, 12, "xBTC mint")?,
-      btc_usd_pyth: fetched_account(accounts, 13, "BTC/USD Pyth feed")?,
+      btc_usd_observation: fetched_account(
+        accounts,
+        13,
+        "BTC/USD observation",
+      )?,
       usdc_pair: fetched_account(accounts, 14, "UsdcPair")?,
-      usdc_usd_pyth: fetched_account(accounts, 15, "USDC/USD Pyth feed")?,
+      usdc_usd_observation: fetched_account(
+        accounts,
+        15,
+        "USDC/USD observation",
+      )?,
       jitosol_pool_state: fetched_account(accounts, 16, "JitoSOL pool state")?,
       hylosol_pool_state: fetched_account(accounts, 17, "hyloSOL pool state")?,
       jitosol_vault: fetched_account(accounts, 18, "JitoSOL vault")?,

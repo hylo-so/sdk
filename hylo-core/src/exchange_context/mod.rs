@@ -29,7 +29,7 @@ use crate::exchange_math::{
   next_levercoin_redeem_nav, total_value_locked,
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
-use crate::pyth::{OraclePrice, PriceRange};
+use crate::oracle::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
   max_buyable_collateral, max_sellable_collateral, midpoint,
 };

@@ -5,7 +5,7 @@ use crate::error::CoreError::{
   ExoCollateralToUsdc, ExoFromToken, ExoToToken, ExoUsdcToCollateral,
   LeverToStable, LstToToken, LstToUsdc, StableToLever, TokenToLst, UsdcToLst,
 };
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 #[cfg(feature = "offchain")]
 use crate::util::max_scaled_input;
 

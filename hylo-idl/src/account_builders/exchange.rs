@@ -36,7 +36,7 @@ pub fn mint_stablecoin_lst(
     user_stablecoin_ta: pda::hyusd_ata(user),
     lst_mint,
     stablecoin_mint: HYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -59,7 +59,7 @@ pub fn mint_levercoin_lst(user: Pubkey, lst_mint: Pubkey) -> MintLevercoinLst {
     user_levercoin_ta: pda::xsol_ata(user),
     lst_mint,
     levercoin_mint: XSOL::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -84,7 +84,7 @@ pub fn redeem_stablecoin_lst(
     user_lst_ta: pda::ata(user, lst_mint),
     stablecoin_mint: HYUSD::MINT,
     lst_mint,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -109,7 +109,7 @@ pub fn redeem_levercoin_lst(
     user_lst_ta: pda::ata(user, lst_mint),
     levercoin_mint: XSOL::MINT,
     lst_mint,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -122,7 +122,7 @@ pub fn convert_stable_to_lever_lst(user: Pubkey) -> ConvertStableToLeverLst {
   ConvertStableToLeverLst {
     user,
     hylo: pda::HYLO,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     stablecoin_mint: HYUSD::MINT,
     stablecoin_auth: pda::HYUSD_AUTH,
     fee_auth: pda::fee_auth(HYUSD::MINT),
@@ -143,7 +143,7 @@ pub fn convert_lever_to_stable_lst(user: Pubkey) -> ConvertLeverToStableLst {
   ConvertLeverToStableLst {
     user,
     hylo: pda::HYLO,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     stablecoin_mint: HYUSD::MINT,
     stablecoin_auth: pda::HYUSD_AUTH,
     fee_auth: pda::fee_auth(HYUSD::MINT),
@@ -163,7 +163,7 @@ pub fn convert_lever_to_stable_lst(user: Pubkey) -> ConvertLeverToStableLst {
 pub fn register_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  exo_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> RegisterExo {
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
   let vault_auth = pda::exo_vault_auth(collateral_mint);
@@ -180,7 +180,7 @@ pub fn register_exo(
     fee_auth,
     fee_vault: pda::ata(fee_auth, collateral_mint),
     levercoin_metadata: pda::metadata(levercoin_mint),
-    exo_usd_pyth_feed,
+    collateral_usd_oracle,
     metadata_program: mpl_token_metadata::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
@@ -196,7 +196,7 @@ pub fn register_exo(
 pub fn mint_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> MintLevercoinExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
@@ -214,7 +214,7 @@ pub fn mint_levercoin_exo(
     user_levercoin_ta: pda::ata(user, levercoin_mint),
     collateral_mint,
     levercoin_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -226,7 +226,7 @@ pub fn mint_levercoin_exo(
 pub fn mint_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> MintStablecoinExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
@@ -243,7 +243,7 @@ pub fn mint_stablecoin_exo(
     user_stablecoin_ta: pda::hyusd_ata(user),
     collateral_mint,
     stablecoin_mint: HYUSD::MINT,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -255,7 +255,7 @@ pub fn mint_stablecoin_exo(
 pub fn redeem_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> RedeemLevercoinExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
@@ -272,7 +272,7 @@ pub fn redeem_levercoin_exo(
     user_collateral_ta: pda::ata(user, collateral_mint),
     collateral_mint,
     levercoin_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -284,7 +284,7 @@ pub fn redeem_levercoin_exo(
 pub fn redeem_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> RedeemStablecoinExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let fee_auth = pda::fee_auth(collateral_mint);
@@ -300,7 +300,7 @@ pub fn redeem_stablecoin_exo(
     user_collateral_ta: pda::ata(user, collateral_mint),
     collateral_mint,
     stablecoin_mint: HYUSD::MINT,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -311,7 +311,7 @@ pub fn redeem_stablecoin_exo(
 pub fn genesis_mint_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> GenesisMintExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
@@ -330,7 +330,7 @@ pub fn genesis_mint_exo(
     collateral_mint,
     levercoin_mint,
     stablecoin_mint: HYUSD::MINT,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -340,7 +340,7 @@ pub fn genesis_mint_exo(
 #[must_use]
 pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> HarvestBorrowRate {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
@@ -358,7 +358,7 @@ pub fn harvest_borrow_rate(
     collateral_mint,
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     hylo_earn_pool: earn_pool::ID,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -371,7 +371,7 @@ pub fn harvest_borrow_rate(
 pub fn convert_lever_to_stable_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> ConvertLeverToStableExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
@@ -390,7 +390,7 @@ pub fn convert_lever_to_stable_exo(
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -402,7 +402,7 @@ pub fn convert_lever_to_stable_exo(
 pub fn convert_stable_to_lever_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> ConvertStableToLeverExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
@@ -421,7 +421,7 @@ pub fn convert_stable_to_lever_exo(
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -490,7 +490,7 @@ pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
     pool_auth: pda::POOL_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,
     stablecoin_mint: HYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -501,7 +501,7 @@ pub fn settle_virtual_stablecoin_lst() -> SettleVirtualStablecoinLst {
 #[must_use]
 pub fn settle_virtual_stablecoin_exo(
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> SettleVirtualStablecoinExo {
   SettleVirtualStablecoinExo {
     hylo: pda::HYLO,
@@ -515,7 +515,7 @@ pub fn settle_virtual_stablecoin_exo(
     collateral_vault: pda::exo_vault(collateral_mint),
     collateral_mint,
     stablecoin_mint: HYUSD::MINT,
-    collateral_usd_pyth_feed,
+    collateral_usd_oracle,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -527,7 +527,7 @@ pub fn settle_virtual_stablecoin_exo(
 pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> SwapExoToUsdc {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
@@ -551,8 +551,8 @@ pub fn swap_exo_to_usdc(
     usdc_mint: USDC::MINT,
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
-    collateral_usd_pyth_feed,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    collateral_usd_oracle,
+    usdc_usd_oracle: pda::USDC_USD_OBSERVATION,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -564,7 +564,7 @@ pub fn swap_exo_to_usdc(
 pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_oracle: Pubkey,
 ) -> SwapUsdcToExo {
   let vault_auth = pda::exo_vault_auth(collateral_mint);
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
@@ -588,8 +588,8 @@ pub fn swap_usdc_to_exo(
     usdc_mint: USDC::MINT,
     stablecoin_mint: HYUSD::MINT,
     levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
-    collateral_usd_pyth_feed,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    collateral_usd_oracle,
+    usdc_usd_oracle: pda::USDC_USD_OBSERVATION,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -624,8 +624,8 @@ pub fn swap_lst_to_usdc(
     lst_mint,
     usdc_mint: USDC::MINT,
     stablecoin_mint: HYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
+    usdc_usd_oracle: pda::USDC_USD_OBSERVATION,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -660,8 +660,8 @@ pub fn swap_usdc_to_lst(
     lst_mint,
     usdc_mint: USDC::MINT,
     stablecoin_mint: HYUSD::MINT,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    sol_usd_oracle: pda::SOL_USD_OBSERVATION,
+    usdc_usd_oracle: pda::USDC_USD_OBSERVATION,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -673,7 +673,7 @@ pub fn swap_usdc_to_lst(
 #[must_use]
 pub fn initialize_usdc(
   admin: Pubkey,
-  usdc_usd_pyth_feed: Pubkey,
+  usdc_usd_oracle: Pubkey,
 ) -> InitializeUsdc {
   let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
   let usdc_fee_auth = pda::fee_auth(USDC::MINT);
@@ -686,7 +686,7 @@ pub fn initialize_usdc(
     usdc_collateral_vault: pda::ata(usdc_vault_auth, USDC::MINT),
     usdc_fee_vault: pda::ata(usdc_fee_auth, USDC::MINT),
     usdc_mint: USDC::MINT,
-    usdc_usd_pyth_feed,
+    usdc_usd_oracle,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
     system_program: system_program::ID,
@@ -715,7 +715,7 @@ pub fn mint_stablecoin_usdc(user: Pubkey) -> MintStablecoinUsdc {
     user_usdc_ta: pda::usdc_ata(user),
     stablecoin_mint: HYUSD::MINT,
     usdc_mint: USDC::MINT,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    usdc_usd_oracle: pda::USDC_USD_OBSERVATION,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -742,7 +742,7 @@ pub fn redeem_stablecoin_usdc(user: Pubkey) -> RedeemStablecoinUsdc {
     user_usdc_ta: pda::usdc_ata(user),
     stablecoin_mint: HYUSD::MINT,
     usdc_mint: USDC::MINT,
-    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    usdc_usd_oracle: pda::USDC_USD_OBSERVATION,
     token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,

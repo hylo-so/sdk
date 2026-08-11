@@ -17,7 +17,7 @@ pub mod idl_type_bridge;
 pub mod kani_generators;
 pub mod limiter;
 pub mod lst;
-pub mod pyth;
+pub mod oracle;
 pub mod rebalance;
 pub mod slippage_config;
 pub mod solana_clock;

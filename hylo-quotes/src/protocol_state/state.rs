@@ -18,12 +18,12 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::pyth::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
+use hylo_core::oracle::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{TokenMint, HYLOSOL, JITOSOL};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_oracle_types::OracleObservation;
 
 use crate::protocol_state::ProtocolAccounts;
 use crate::LST;
@@ -32,7 +32,7 @@ use crate::LST;
 #[derive(Clone)]
 pub struct UsdcExchangeState {
   /// USDC/USD oracle price range
-  pub usdc_usd_price: hylo_core::pyth::PriceRange<N9>,
+  pub usdc_usd_price: hylo_core::oracle::PriceRange<N9>,
   /// Swap fee extracted on USDC operations
   pub swap_fee: UFix64<N4>,
   /// USDC pair pause flag
@@ -58,15 +58,20 @@ impl UsdcExchangeState {
 #[must_use]
 pub fn stablecoin_oracle_valid<C: SolanaClock>(
   clock: &C,
-  feed: &PriceUpdateV2,
+  observation: &OracleObservation,
   interval_secs: u64,
 ) -> bool {
-  validate_publish_time(
-    feed.price_message.publish_time,
-    interval_secs.div_ceil(ORACLE_DIVISOR),
-    clock.unix_timestamp(),
+  i64::try_from(
+    observation.price_timestamp_us / hylo_oracle_types::MICROS_PER_SECOND,
   )
-  .is_ok()
+  .is_ok_and(|publish_time_secs| {
+    validate_publish_time(
+      publish_time_secs,
+      interval_secs.div_ceil(ORACLE_DIVISOR),
+      clock.unix_timestamp(),
+    )
+    .is_ok()
+  })
 }
 
 /// [`ExoPair`] state not carried by the exchange context.
@@ -181,7 +186,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     shyusd_mint: Mint,
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
-    sol_usd: &PriceUpdateV2,
+    sol_usd: &OracleObservation,
     cbbtc_exchange_context: ExoExchangeContext<C>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
@@ -278,7 +283,7 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
   clock: C,
   hylo: &Hylo,
   xsol_mint: &Mint,
-  sol_usd: &PriceUpdateV2,
+  sol_usd: &OracleObservation,
 ) -> Result<LstExchangeContext<C>> {
   let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
   let oracle_config = OracleConfig::new(
@@ -315,8 +320,9 @@ pub fn build_cbbtc_exchange_context(
   let exo_pair = ExoPair::try_deserialize(&mut exo_pair.data.as_slice())?;
   let vault = TokenAccount::try_deserialize(&mut vault.data.as_slice())?;
   let xbtc_mint = Mint::try_deserialize(&mut xbtc_mint.data.as_slice())?;
-  let btc_usd = PriceUpdateV2::try_deserialize(&mut btc_usd.data.as_slice())
-    .context("BTC/USD Pyth deserialization")?;
+  let btc_usd =
+    OracleObservation::try_deserialize(&mut btc_usd.data.as_slice())
+      .context("BTC/USD observation deserialization")?;
 
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -355,16 +361,17 @@ fn build_usdc_exchange_state(
 ) -> Result<UsdcExchangeState> {
   let usdc_pair =
     UsdcPair::try_deserialize(&mut accounts.usdc_pair.data.as_slice())?;
-  let usdc_usd =
-    PriceUpdateV2::try_deserialize(&mut accounts.usdc_usd_pyth.data.as_slice())
-      .context("USDC/USD Pyth deserialization")?;
+  let usdc_usd = OracleObservation::try_deserialize(
+    &mut accounts.usdc_usd_observation.data.as_slice(),
+  )
+  .context("USDC/USD observation deserialization")?;
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
   let usdc_oracle =
-    hylo_core::pyth::query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
+    hylo_core::oracle::query_hylo_oracle(clock, &usdc_usd, oracle_config)?;
   let usdc_usd_price = usdc_oracle.price_range()?;
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
@@ -412,10 +419,10 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hyusd_pool =
       TokenAccount::try_deserialize(&mut accounts.hyusd_pool.data.as_slice())?;
 
-    let sol_usd = PriceUpdateV2::try_deserialize(
-      &mut accounts.sol_usd_pyth.data.as_slice(),
+    let sol_usd = OracleObservation::try_deserialize(
+      &mut accounts.sol_usd_observation.data.as_slice(),
     )
-    .context("SOL/USD Pyth deserialization")?;
+    .context("SOL/USD observation deserialization")?;
 
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
@@ -425,7 +432,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       &accounts.cbbtc_exo_pair,
       &accounts.cbbtc_vault,
       &accounts.xbtc_mint,
-      &accounts.btc_usd_pyth,
+      &accounts.btc_usd_observation,
     )?;
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
@@ -444,10 +451,10 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       ExoPair::try_deserialize(&mut accounts.cbbtc_exo_pair.data.as_slice())?;
     let btc_pair_state = BtcPairState::try_from(&exo_pair)?;
 
-    let btc_usd = PriceUpdateV2::try_deserialize(
-      &mut accounts.btc_usd_pyth.data.as_slice(),
+    let btc_usd = OracleObservation::try_deserialize(
+      &mut accounts.btc_usd_observation.data.as_slice(),
     )
-    .context("BTC/USD Pyth deserialization")?;
+    .context("BTC/USD observation deserialization")?;
     let sol_stablecoin_oracle_valid =
       stablecoin_oracle_valid(&clock, &sol_usd, hylo.oracle_interval_secs);
     let btc_stablecoin_oracle_valid =

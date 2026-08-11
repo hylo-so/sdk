@@ -3402,7 +3402,7 @@
             }
           },
           {
-            "name": "sol_usd_oracle",
+            "name": "_deprecated_sol_usd_oracle",
             "type": "pubkey"
           },
           {

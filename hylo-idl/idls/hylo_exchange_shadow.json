@@ -793,7 +793,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -890,7 +890,71 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "stablecoin_mint",
@@ -1572,7 +1636,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -1669,7 +1733,71 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "stablecoin_mint",
@@ -2246,7 +2374,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -2806,7 +2934,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "hylo_earn_pool",
@@ -3162,7 +3290,71 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "hylo_earn_pool",
@@ -4224,7 +4416,71 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -4661,7 +4917,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -5070,7 +5326,71 @@
           ]
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -5485,7 +5805,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -5895,7 +6215,71 @@
           ]
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -6419,7 +6803,71 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -7313,7 +7761,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -7697,7 +8145,71 @@
           "name": "lst_mint"
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -8087,7 +8599,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -8472,7 +8984,71 @@
           "name": "lst_mint"
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -8996,7 +9572,71 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -9416,7 +10056,7 @@
           "writable": true
         },
         {
-          "name": "exo_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "metadata_program",
@@ -9472,15 +10112,6 @@
         }
       ],
       "args": [
-        {
-          "name": "oracle_feed_id",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
         {
           "name": "oracle_interval_secs",
           "type": "u64"
@@ -10427,7 +11058,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
           "name": "token_program",
@@ -10786,7 +11417,71 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -11516,10 +12211,74 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -12264,10 +13023,74 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -13452,10 +14275,138 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -14139,10 +15090,138 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -14883,10 +15962,74 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_oracle"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -15570,10 +16713,138 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  0,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_oracle",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  0
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "token_program",
@@ -16458,118 +17729,6 @@
       "returns": {
         "defined": {
           "name": "UpdateLevercoinMarketCapLimitEvent"
-        }
-      }
-    },
-    {
-      "name": "update_exo_oracle",
-      "discriminator": [
-        83,
-        34,
-        52,
-        101,
-        213,
-        59,
-        178,
-        111
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "exo_pair",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  120,
-                  111,
-                  95,
-                  112,
-                  97,
-                  105,
-                  114
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "collateral_mint",
-          "relations": [
-            "exo_pair"
-          ]
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_oracle",
-          "type": "pubkey"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateOracleAddressEvent"
         }
       }
     },
@@ -17833,88 +18992,6 @@
       }
     },
     {
-      "name": "update_sol_usd_oracle",
-      "discriminator": [
-        95,
-        236,
-        18,
-        102,
-        201,
-        114,
-        89,
-        54
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "hylo",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  121,
-                  108,
-                  111
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "new_oracle",
-          "type": "pubkey"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "UpdateOracleAddressEvent"
-        }
-      }
-    },
-    {
       "name": "update_usdc_oracle_conf_tolerance",
       "discriminator": [
         135,
@@ -18672,16 +19749,16 @@
       ]
     },
     {
-      "name": "PriceUpdateV2",
+      "name": "OracleObservation",
       "discriminator": [
-        34,
-        241,
-        35,
-        99,
-        157,
-        126,
-        244,
-        205
+        176,
+        75,
+        202,
+        9,
+        47,
+        238,
+        222,
+        254
       ]
     },
     {
@@ -19233,19 +20310,6 @@
       ]
     },
     {
-      "name": "UpdateOracleAddressEvent",
-      "discriminator": [
-        28,
-        247,
-        140,
-        128,
-        156,
-        178,
-        148,
-        53
-      ]
-    },
-    {
       "name": "UpdateOracleConfEvent",
       "discriminator": [
         190,
@@ -19470,8 +20534,8 @@
     },
     {
       "code": 6026,
-      "name": "ExoOracleInvalid",
-      "msg": "Oracle for exo collateral does not match given feed_id."
+      "name": "ObservationMismatch",
+      "msg": "Observation account does not match the collateral's oracle feed."
     },
     {
       "code": 6027,
@@ -19577,6 +20641,11 @@
       "code": 6047,
       "name": "ExoPairZeroVirtualStablecoin",
       "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
+    },
+    {
+      "code": 6048,
+      "name": "UnknownFeed",
+      "msg": "Collateral has no oracle feed in the exchange registry."
     }
   ],
   "types": [
@@ -19981,11 +21050,11 @@
             "type": "u8"
           },
           {
-            "name": "oracle",
+            "name": "_deprecated_oracle",
             "type": "pubkey"
           },
           {
-            "name": "oracle_feed_id",
+            "name": "_deprecated_oracle_feed_id",
             "type": {
               "array": [
                 "u8",
@@ -20458,7 +21527,7 @@
             }
           },
           {
-            "name": "sol_usd_oracle",
+            "name": "_deprecated_sol_usd_oracle",
             "type": "pubkey"
           },
           {
@@ -21021,6 +22090,68 @@
       }
     },
     {
+      "name": "OracleObservation",
+      "docs": [
+        "Normalized latest price for one feed; facts within bounds. The",
+        "price/exponent/confidence layout mirrors Pyth's `PriceFeedMessage` field for",
+        "field (raw ints sharing one exponent) rather than `UFixValue64`, because",
+        "this is a source-neutral facts record; typed conversion is the consumer's",
+        "job. Populated iff `price_timestamp_us != 0`. Consumers gate freshness on",
+        "`price_timestamp_us` (the price-determination time, not `posted_slot`),",
+        "confidence on `confidence`, and must pin the account by PDA address."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "source",
+            "type": {
+              "defined": {
+                "name": "OracleSource"
+              }
+            }
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
+          },
+          {
+            "name": "price_timestamp_us",
+            "type": "u64"
+          },
+          {
+            "name": "posted_slot",
+            "type": "u64"
+          },
+          {
+            "name": "posted_unix_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "OraclePriceEvent",
       "docs": [
         "Serializable oracle price for event emission."
@@ -21048,6 +22179,23 @@
       }
     },
     {
+      "name": "OracleSource",
+      "docs": [
+        "Price source backing an observation. New sources append here."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PythCore"
+          },
+          {
+            "name": "PythLazer"
+          }
+        ]
+      }
+    },
+    {
       "name": "PauseEvent",
       "type": {
         "kind": "struct"
@@ -21068,114 +22216,6 @@
                 "name": "VirtualStablecoin"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceFeedMessage",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "feed_id",
-            "docs": [
-              "`FeedId` but avoid the type alias because of compatibility issues with Anchor's `idl-build` feature."
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "price",
-            "type": "i64"
-          },
-          {
-            "name": "conf",
-            "type": "u64"
-          },
-          {
-            "name": "exponent",
-            "type": "i32"
-          },
-          {
-            "name": "publish_time",
-            "docs": [
-              "The timestamp of this price update in seconds"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "prev_publish_time",
-            "docs": [
-              "The timestamp of the previous price update. This field is intended to allow users to",
-              "identify the single unique price update for any moment in time:",
-              "for any time t, the unique update is the one such that prev_publish_time < t <= publish_time.",
-              "",
-              "Note that there may not be such an update while we are migrating to the new message-sending logic,",
-              "as some price updates on pythnet may not be sent to other chains (because the message-sending",
-              "logic may not have triggered). We can solve this problem by making the message-sending mandatory",
-              "(which we can do once publishers have migrated over).",
-              "",
-              "Additionally, this field may be equal to publish_time if the message is sent on a slot where",
-              "where the aggregation was unsuccesful. This problem will go away once all publishers have",
-              "migrated over to a recent version of pyth-agent."
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "ema_price",
-            "type": "i64"
-          },
-          {
-            "name": "ema_conf",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceUpdateV2",
-      "docs": [
-        "A price update account. This account is used by the Pyth Receiver program to store a verified price update from a Pyth price feed.",
-        "It contains:",
-        "- `write_authority`: The write authority for this account. This authority can close this account to reclaim rent or update the account to contain a different price update.",
-        "- `verification_level`: The [`VerificationLevel`] of this price update. This represents how many Wormhole guardian signatures have been verified for this price update.",
-        "- `price_message`: The actual price update.",
-        "- `posted_slot`: The slot at which this price update was posted."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "write_authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "verification_level",
-            "type": {
-              "defined": {
-                "name": "VerificationLevel"
-              }
-            }
-          },
-          {
-            "name": "price_message",
-            "type": {
-              "defined": {
-                "name": "PriceFeedMessage"
-              }
-            }
-          },
-          {
-            "name": "posted_slot",
-            "type": "u64"
           }
         ]
       }
@@ -22277,22 +23317,6 @@
       }
     },
     {
-      "name": "UpdateOracleAddressEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_oracle",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_oracle",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdateOracleConfEvent",
       "type": {
         "kind": "struct",
@@ -22481,39 +23505,6 @@
                 127
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "VerificationLevel",
-      "docs": [
-        "Pyth price updates are bridged to all blockchains via Wormhole.",
-        "Using the price updates on another chain requires verifying the signatures of the Wormhole guardians.",
-        "The usual process is to check the signatures for two thirds of the total number of guardians, but this can be cumbersome on Solana because of the transaction size limits,",
-        "so we also allow for partial verification.",
-        "",
-        "This enum represents how much a price update has been verified:",
-        "- If `Full`, we have verified the signatures for two thirds of the current guardians.",
-        "- If `Partial`, only `num_signatures` guardian signatures have been checked.",
-        "",
-        "# Warning",
-        "Using partially verified price updates is dangerous, as it lowers the threshold of guardians that need to collude to produce a malicious price update."
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Partial",
-            "fields": [
-              {
-                "name": "num_signatures",
-                "type": "u8"
-              }
-            ]
-          },
-          {
-            "name": "Full"
           }
         ]
       }

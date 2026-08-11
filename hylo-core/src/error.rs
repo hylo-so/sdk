@@ -38,21 +38,23 @@ pub enum CoreError {
   LstLstPriceConversion,
   // `pyth`
   #[msg("Oracle confidence interval is too wide.")]
-  PythOracleConfidence,
+  OracleConfidence,
   #[msg("Oracle exponent is out of range.")]
-  PythOracleExponent,
+  OracleExponent,
   #[msg("Oracle yielded a negative price which can't be unsigned.")]
-  PythOracleNegativePrice,
+  OracleNegativePrice,
   #[msg("Oracle time is negative.")]
-  PythOracleNegativeTime,
-  #[msg("Oracle did not yield a price within the configured age window.")]
-  PythOracleOutdated,
+  OracleNegativeTime,
+  #[msg("Oracle price timestamp is outside the freshness window.")]
+  OracleOutdated,
   #[msg("Oracle price is out of range.")]
-  PythOraclePriceRange,
+  OraclePriceRange,
+  // Retained (unused since the source-neutral migration; validation moved to
+  // the oracle program) to avoid renumbering the discriminants below.
   #[msg("Oracle publish slot greater than current slot.")]
-  PythOracleSlotInvalid,
+  OracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
-  PythOracleVerificationLevel,
+  OracleVerificationLevel,
   // `nav`
   #[msg("Overflow while computing collateral ratio.")]
   CollateralRatio,

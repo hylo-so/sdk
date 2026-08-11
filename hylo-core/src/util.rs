@@ -114,7 +114,7 @@ pub mod proptest {
   use proptest::prelude::*;
 
   use crate::exchange_math::collateral_ratio;
-  use crate::pyth::PriceRange;
+  use crate::oracle::PriceRange;
 
   /// Represents a possible state of the protocol, collateral, and tokens.
   /// Always holds the Hylo invariant: `ns * ps = nx * px + nh * ph`.

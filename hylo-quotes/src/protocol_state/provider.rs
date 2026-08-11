@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
 use hylo_core::idl::exchange::accounts::Hylo;
 use hylo_core::solana_clock::SolanaClock;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_oracle_types::OracleObservation;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{
@@ -74,8 +74,9 @@ impl RpcStateProvider {
     }?;
     let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
     let xsol_mint = Mint::try_deserialize(&mut xsol_mint.data.as_slice())?;
-    let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())
-      .context("SOL/USD Pyth deserialization")?;
+    let sol_usd =
+      OracleObservation::try_deserialize(&mut sol_usd.data.as_slice())
+        .context("SOL/USD observation deserialization")?;
     let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
     build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)

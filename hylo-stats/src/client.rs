@@ -14,12 +14,12 @@ use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig};
+use hylo_core::oracle::{query_hylo_oracle, OracleConfig};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_idl::pda;
 use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_oracle_types::OracleObservation;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::earn_pool_stats::compute_stats;
@@ -51,8 +51,8 @@ pub struct StatsAccounts {
   pub exo_collateral_mint: Mint,
   pub exo_vault: TokenAccount,
   pub exo_levercoin_mint: Mint,
-  pub btc_usd: PriceUpdateV2,
-  pub sol_usd: PriceUpdateV2,
+  pub btc_usd: OracleObservation,
+  pub sol_usd: OracleObservation,
   pub clock: Clock,
 }
 
@@ -76,8 +76,8 @@ impl StatsAccounts {
     CBBTC::MINT,
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
-    pda::SOL_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
+    pda::SOL_USD_OBSERVATION,
     sysvar::clock::ID,
   ];
 
@@ -119,10 +119,10 @@ impl StatsAccounts {
       exo_levercoin_mint: Mint::try_deserialize(
         &mut accounts[12].data.as_slice(),
       )?,
-      btc_usd: PriceUpdateV2::try_deserialize(
+      btc_usd: OracleObservation::try_deserialize(
         &mut accounts[13].data.as_slice(),
       )?,
-      sol_usd: PriceUpdateV2::try_deserialize(
+      sol_usd: OracleObservation::try_deserialize(
         &mut accounts[14].data.as_slice(),
       )?,
       clock: bincode::deserialize(&accounts[15].data)
@@ -226,7 +226,7 @@ fn exo_levercoin_market_cap(
   collateral_mint: &Mint,
   exo_vault: &TokenAccount,
   levercoin_mint: &Mint,
-  collateral_usd: &PriceUpdateV2,
+  collateral_usd: &OracleObservation,
 ) -> Result<UFix64<N9>> {
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -297,7 +297,7 @@ pub fn build_stats_inputs(
     accounts.hylo.oracle_conf_tolerance.try_into()?,
   );
   let sol_usd_spot =
-    query_pyth_oracle(&accounts.clock, &accounts.sol_usd, oracle_config)?.spot;
+    query_hylo_oracle(&accounts.clock, &accounts.sol_usd, oracle_config)?.spot;
 
   let levercoin_market_cap = exo_levercoin_market_cap(
     &accounts.clock,

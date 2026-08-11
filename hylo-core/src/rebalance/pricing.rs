@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
 use crate::fees::interp::{FixInterp, Point};
-use crate::pyth::OraclePrice;
+use crate::oracle::OraclePrice;
 use crate::rebalance::mode::RebalanceMode;
 
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(1);
@@ -349,7 +349,7 @@ mod tests {
 
   use super::*;
   use crate::error::CoreError;
-  use crate::pyth::OraclePrice;
+  use crate::oracle::OraclePrice;
 
   const ORACLE: OraclePrice = OraclePrice {
     spot: UFix64::constant(146_401_109_370),

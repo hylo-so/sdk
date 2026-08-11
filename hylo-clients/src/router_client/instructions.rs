@@ -141,7 +141,7 @@ router_instruction!(CBBTC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
   account_builders::mint_stablecoin_exo(
     user,
     CBBTC::MINT,
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
   )
 });
 
@@ -150,7 +150,7 @@ router_instruction!(HYUSD, CBBTC, BASE_LOOKUP_TABLES, CBBTC::MINT, |user| {
   account_builders::redeem_stablecoin_exo(
     user,
     CBBTC::MINT,
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
   )
 });
 
@@ -163,7 +163,7 @@ router_instruction!(
   |user| account_builders::mint_levercoin_exo(
     user,
     CBBTC::MINT,
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
   )
 );
 
@@ -172,7 +172,7 @@ router_instruction!(XBTC, CBBTC, BASE_LOOKUP_TABLES, CBBTC::MINT, |user| {
   account_builders::redeem_levercoin_exo(
     user,
     CBBTC::MINT,
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
   )
 });
 
@@ -185,7 +185,7 @@ router_instruction!(
   |user| account_builders::convert_stable_to_lever_exo(
     user,
     CBBTC::MINT,
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
   )
 );
 
@@ -194,7 +194,7 @@ router_instruction!(XBTC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
   account_builders::convert_lever_to_stable_exo(
     user,
     CBBTC::MINT,
-    pda::BTC_USD_PYTH_FEED,
+    pda::BTC_USD_OBSERVATION,
   )
 });
 
@@ -216,12 +216,20 @@ router_instruction!(USDC, HYLOSOL, LST_LOOKUP_TABLES, HYLOSOL::MINT, |user| {
 
 // `swap_exo_to_usdc`
 router_instruction!(CBBTC, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
-  account_builders::swap_exo_to_usdc(user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED)
+  account_builders::swap_exo_to_usdc(
+    user,
+    CBBTC::MINT,
+    pda::BTC_USD_OBSERVATION,
+  )
 });
 
 // `swap_usdc_to_exo`
 router_instruction!(USDC, CBBTC, BASE_LOOKUP_TABLES, CBBTC::MINT, |user| {
-  account_builders::swap_usdc_to_exo(user, CBBTC::MINT, pda::BTC_USD_PYTH_FEED)
+  account_builders::swap_usdc_to_exo(
+    user,
+    CBBTC::MINT,
+    pda::BTC_USD_OBSERVATION,
+  )
 });
 
 // `user_deposit`
