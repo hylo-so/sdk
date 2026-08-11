@@ -20,7 +20,7 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  stablecoin_oracle_valid, BtcPairState, ProtocolState, UsdcExchangeState,
+  stablecoin_oracle_valid, ExoPairState, ProtocolState, UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
@@ -850,6 +850,11 @@ where
       &btc_usd,
       exo_pair.oracle_interval_secs,
     );
+    let cbbtc_pair = ExoPairState::new(
+      &exo_pair,
+      cbbtc_exchange_context,
+      btc_stablecoin_oracle_valid,
+    )?;
 
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
@@ -862,15 +867,13 @@ where
       pool_config,
       hyusd_pool,
       &sol_usd,
-      cbbtc_exchange_context,
+      cbbtc_pair,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
       UFix64::new(jitosol_vault.amount),
       UFix64::new(hylosol_vault.amount),
-      BtcPairState::try_from(&exo_pair)?,
       sol_stablecoin_oracle_valid,
-      btc_stablecoin_oracle_valid,
     )?);
 
     Ok(())
