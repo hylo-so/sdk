@@ -5,7 +5,8 @@ pub use anchor_lang::prelude::Pubkey;
 pub use anyhow::Result;
 pub use fix::prelude::*;
 pub use hylo_core::idl::tokens::{
-  CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, XBTC, XHYPE,
+  XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 pub use crate::earn_pool_client::EarnPoolClient;

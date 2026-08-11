@@ -3,7 +3,8 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC,
+  XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::protocol_state::ProtocolState;
@@ -129,4 +130,36 @@ runtime_quote_strategies! {
   (XBTC, CBBTC, Operation::RedeemLevercoinExo, "Redeem xBTC for cbBTC"),
   (HYUSD, XBTC, Operation::ConvertStableToLeverExo, "Convert hyUSD to xBTC"),
   (XBTC, HYUSD, Operation::ConvertLeverToStableExo, "Convert xBTC to hyUSD"),
+  (HYPE, HYUSD, Operation::MintStablecoinExo, "Mint hyUSD with HYPE"),
+  (HYUSD, HYPE, Operation::RedeemStablecoinExo, "Redeem hyUSD for HYPE"),
+  (HYPE, XHYPE, Operation::MintLevercoinExo, "Mint xHYPE with HYPE"),
+  (XHYPE, HYPE, Operation::RedeemLevercoinExo, "Redeem xHYPE for HYPE"),
+  (HYUSD, XHYPE, Operation::ConvertStableToLeverExo, "Convert hyUSD to xHYPE"),
+  (XHYPE, HYUSD, Operation::ConvertLeverToStableExo, "Convert xHYPE to hyUSD"),
+  (HYPE, USDC, Operation::SwapExoToUsdc, "Swap HYPE for USDC"),
+  (USDC, HYPE, Operation::SwapUsdcToExo, "Swap USDC for HYPE"),
+  (ZEC, HYUSD, Operation::MintStablecoinExo, "Mint hyUSD with ZEC"),
+  (HYUSD, ZEC, Operation::RedeemStablecoinExo, "Redeem hyUSD for ZEC"),
+  (ZEC, XZEC, Operation::MintLevercoinExo, "Mint xZEC with ZEC"),
+  (XZEC, ZEC, Operation::RedeemLevercoinExo, "Redeem xZEC for ZEC"),
+  (HYUSD, XZEC, Operation::ConvertStableToLeverExo, "Convert hyUSD to xZEC"),
+  (XZEC, HYUSD, Operation::ConvertLeverToStableExo, "Convert xZEC to hyUSD"),
+  (ZEC, USDC, Operation::SwapExoToUsdc, "Swap ZEC for USDC"),
+  (USDC, ZEC, Operation::SwapUsdcToExo, "Swap USDC for ZEC"),
+  (PST, HYUSD, Operation::MintStablecoinExo, "Mint hyUSD with PST"),
+  (HYUSD, PST, Operation::RedeemStablecoinExo, "Redeem hyUSD for PST"),
+  (PST, XPST, Operation::MintLevercoinExo, "Mint xPST with PST"),
+  (XPST, PST, Operation::RedeemLevercoinExo, "Redeem xPST for PST"),
+  (HYUSD, XPST, Operation::ConvertStableToLeverExo, "Convert hyUSD to xPST"),
+  (XPST, HYUSD, Operation::ConvertLeverToStableExo, "Convert xPST to hyUSD"),
+  (PST, USDC, Operation::SwapExoToUsdc, "Swap PST for USDC"),
+  (USDC, PST, Operation::SwapUsdcToExo, "Swap USDC for PST"),
+  (ONYC, HYUSD, Operation::MintStablecoinExo, "Mint hyUSD with ONYC"),
+  (HYUSD, ONYC, Operation::RedeemStablecoinExo, "Redeem hyUSD for ONYC"),
+  (ONYC, XONYC, Operation::MintLevercoinExo, "Mint xONYC with ONYC"),
+  (XONYC, ONYC, Operation::RedeemLevercoinExo, "Redeem xONYC for ONYC"),
+  (HYUSD, XONYC, Operation::ConvertStableToLeverExo, "Convert hyUSD to xONYC"),
+  (XONYC, HYUSD, Operation::ConvertLeverToStableExo, "Convert xONYC to hyUSD"),
+  (ONYC, USDC, Operation::SwapExoToUsdc, "Swap ONYC for USDC"),
+  (USDC, ONYC, Operation::SwapUsdcToExo, "Swap USDC for ONYC"),
 }

@@ -8,7 +8,8 @@ pub use anyhow::Result;
 pub use fix::prelude::*;
 // Token types
 pub use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC,
+  XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 // Protocol state

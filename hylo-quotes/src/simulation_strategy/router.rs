@@ -11,7 +11,8 @@ use hylo_clients::router_client::{
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
-  CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, XBTC, XHYPE,
+  XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::simulated_operation::SimulatedOperationExt;
@@ -147,3 +148,39 @@ simulation_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 // `user_withdraw`
 simulation_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+
+simulation_quote!(HYPE, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(HYUSD, HYPE, N9, ExecutableQuote<N6, N9, N9>);
+simulation_quote!(HYPE, XHYPE, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(XHYPE, HYPE, N9, ExecutableQuote<N6, N9, N9>);
+simulation_quote!(HYUSD, XHYPE, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(XHYPE, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(HYPE, USDC, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(USDC, HYPE, N6, ExecutableQuote<N6, N9, N6>);
+
+simulation_quote!(ZEC, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
+simulation_quote!(HYUSD, ZEC, N9, ExecutableQuote<N6, N8, N9>);
+simulation_quote!(ZEC, XZEC, N9, ExecutableQuote<N8, N6, N9>);
+simulation_quote!(XZEC, ZEC, N9, ExecutableQuote<N6, N8, N9>);
+simulation_quote!(HYUSD, XZEC, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(XZEC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(ZEC, USDC, N8, ExecutableQuote<N8, N6, N8>);
+simulation_quote!(USDC, ZEC, N6, ExecutableQuote<N6, N8, N6>);
+
+simulation_quote!(PST, HYUSD, N9, ExecutableQuote<N6, N6, N9>);
+simulation_quote!(HYUSD, PST, N9, ExecutableQuote<N6, N6, N9>);
+simulation_quote!(PST, XPST, N9, ExecutableQuote<N6, N6, N9>);
+simulation_quote!(XPST, PST, N9, ExecutableQuote<N6, N6, N9>);
+simulation_quote!(HYUSD, XPST, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(XPST, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(PST, USDC, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(USDC, PST, N6, ExecutableQuote<N6, N6, N6>);
+
+simulation_quote!(ONYC, HYUSD, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(HYUSD, ONYC, N9, ExecutableQuote<N6, N9, N9>);
+simulation_quote!(ONYC, XONYC, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(XONYC, ONYC, N9, ExecutableQuote<N6, N9, N9>);
+simulation_quote!(HYUSD, XONYC, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(XONYC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(ONYC, USDC, N9, ExecutableQuote<N9, N6, N9>);
+simulation_quote!(USDC, ONYC, N6, ExecutableQuote<N6, N9, N6>);

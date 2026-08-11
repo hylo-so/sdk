@@ -2,7 +2,8 @@
 
 use anyhow::Result;
 use hylo_idl::tokens::{
-  CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, XBTC, XHYPE,
+  XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use super::{InstructionBuilderExt, RouterArgs, RouterClient};
@@ -101,3 +102,39 @@ router_transaction_data!(HYUSD, SHYUSD);
 
 // `user_withdraw`
 router_transaction_data!(SHYUSD, HYUSD);
+
+router_transaction_data!(HYPE, HYUSD);
+router_transaction_data!(HYUSD, HYPE);
+router_transaction_data!(HYPE, XHYPE);
+router_transaction_data!(XHYPE, HYPE);
+router_transaction_data!(HYUSD, XHYPE);
+router_transaction_data!(XHYPE, HYUSD);
+router_transaction_data!(HYPE, USDC);
+router_transaction_data!(USDC, HYPE);
+
+router_transaction_data!(ZEC, HYUSD);
+router_transaction_data!(HYUSD, ZEC);
+router_transaction_data!(ZEC, XZEC);
+router_transaction_data!(XZEC, ZEC);
+router_transaction_data!(HYUSD, XZEC);
+router_transaction_data!(XZEC, HYUSD);
+router_transaction_data!(ZEC, USDC);
+router_transaction_data!(USDC, ZEC);
+
+router_transaction_data!(PST, HYUSD);
+router_transaction_data!(HYUSD, PST);
+router_transaction_data!(PST, XPST);
+router_transaction_data!(XPST, PST);
+router_transaction_data!(HYUSD, XPST);
+router_transaction_data!(XPST, HYUSD);
+router_transaction_data!(PST, USDC);
+router_transaction_data!(USDC, PST);
+
+router_transaction_data!(ONYC, HYUSD);
+router_transaction_data!(HYUSD, ONYC);
+router_transaction_data!(ONYC, XONYC);
+router_transaction_data!(XONYC, ONYC);
+router_transaction_data!(HYUSD, XONYC);
+router_transaction_data!(XONYC, HYUSD);
+router_transaction_data!(ONYC, USDC);
+router_transaction_data!(USDC, ONYC);

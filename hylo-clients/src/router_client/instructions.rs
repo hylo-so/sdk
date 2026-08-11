@@ -4,6 +4,7 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::ToAccountMetas;
 use anyhow::Result;
+use hylo_core::pyth::PythOracle;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
@@ -11,8 +12,8 @@ use hylo_idl::pda;
 use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route;
 use hylo_idl::tokens::{
-  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC,
-  XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
+  SHYUSD, USDC, XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use super::{InstructionBuilder, RouterArgs, RouterClient};
@@ -232,4 +233,164 @@ router_instruction!(HYUSD, SHYUSD, BASE_LOOKUP_TABLES, SHYUSD::MINT, |user| {
 // `user_withdraw`
 router_instruction!(SHYUSD, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
   ep_account_builders::withdraw(user)
+});
+
+router_instruction!(HYPE, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::mint_stablecoin_exo(user, HYPE::MINT, HYPE::FEED.address)
+});
+
+router_instruction!(HYUSD, HYPE, BASE_LOOKUP_TABLES, HYPE::MINT, |user| {
+  account_builders::redeem_stablecoin_exo(user, HYPE::MINT, HYPE::FEED.address)
+});
+
+router_instruction!(HYPE, XHYPE, BASE_LOOKUP_TABLES, XHYPE::MINT, |user| {
+  account_builders::mint_levercoin_exo(user, HYPE::MINT, HYPE::FEED.address)
+});
+
+router_instruction!(XHYPE, HYPE, BASE_LOOKUP_TABLES, HYPE::MINT, |user| {
+  account_builders::redeem_levercoin_exo(user, HYPE::MINT, HYPE::FEED.address)
+});
+
+router_instruction!(HYUSD, XHYPE, BASE_LOOKUP_TABLES, XHYPE::MINT, |user| {
+  account_builders::convert_stable_to_lever_exo(
+    user,
+    HYPE::MINT,
+    HYPE::FEED.address,
+  )
+});
+
+router_instruction!(XHYPE, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::convert_lever_to_stable_exo(
+    user,
+    HYPE::MINT,
+    HYPE::FEED.address,
+  )
+});
+
+router_instruction!(HYPE, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_exo_to_usdc(user, HYPE::MINT, HYPE::FEED.address)
+});
+
+router_instruction!(USDC, HYPE, BASE_LOOKUP_TABLES, HYPE::MINT, |user| {
+  account_builders::swap_usdc_to_exo(user, HYPE::MINT, HYPE::FEED.address)
+});
+
+router_instruction!(ZEC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::mint_stablecoin_exo(user, ZEC::MINT, ZEC::FEED.address)
+});
+
+router_instruction!(HYUSD, ZEC, BASE_LOOKUP_TABLES, ZEC::MINT, |user| {
+  account_builders::redeem_stablecoin_exo(user, ZEC::MINT, ZEC::FEED.address)
+});
+
+router_instruction!(ZEC, XZEC, BASE_LOOKUP_TABLES, XZEC::MINT, |user| {
+  account_builders::mint_levercoin_exo(user, ZEC::MINT, ZEC::FEED.address)
+});
+
+router_instruction!(XZEC, ZEC, BASE_LOOKUP_TABLES, ZEC::MINT, |user| {
+  account_builders::redeem_levercoin_exo(user, ZEC::MINT, ZEC::FEED.address)
+});
+
+router_instruction!(HYUSD, XZEC, BASE_LOOKUP_TABLES, XZEC::MINT, |user| {
+  account_builders::convert_stable_to_lever_exo(
+    user,
+    ZEC::MINT,
+    ZEC::FEED.address,
+  )
+});
+
+router_instruction!(XZEC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::convert_lever_to_stable_exo(
+    user,
+    ZEC::MINT,
+    ZEC::FEED.address,
+  )
+});
+
+router_instruction!(ZEC, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_exo_to_usdc(user, ZEC::MINT, ZEC::FEED.address)
+});
+
+router_instruction!(USDC, ZEC, BASE_LOOKUP_TABLES, ZEC::MINT, |user| {
+  account_builders::swap_usdc_to_exo(user, ZEC::MINT, ZEC::FEED.address)
+});
+
+router_instruction!(PST, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::mint_stablecoin_exo(user, PST::MINT, PST::FEED.address)
+});
+
+router_instruction!(HYUSD, PST, BASE_LOOKUP_TABLES, PST::MINT, |user| {
+  account_builders::redeem_stablecoin_exo(user, PST::MINT, PST::FEED.address)
+});
+
+router_instruction!(PST, XPST, BASE_LOOKUP_TABLES, XPST::MINT, |user| {
+  account_builders::mint_levercoin_exo(user, PST::MINT, PST::FEED.address)
+});
+
+router_instruction!(XPST, PST, BASE_LOOKUP_TABLES, PST::MINT, |user| {
+  account_builders::redeem_levercoin_exo(user, PST::MINT, PST::FEED.address)
+});
+
+router_instruction!(HYUSD, XPST, BASE_LOOKUP_TABLES, XPST::MINT, |user| {
+  account_builders::convert_stable_to_lever_exo(
+    user,
+    PST::MINT,
+    PST::FEED.address,
+  )
+});
+
+router_instruction!(XPST, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::convert_lever_to_stable_exo(
+    user,
+    PST::MINT,
+    PST::FEED.address,
+  )
+});
+
+router_instruction!(PST, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_exo_to_usdc(user, PST::MINT, PST::FEED.address)
+});
+
+router_instruction!(USDC, PST, BASE_LOOKUP_TABLES, PST::MINT, |user| {
+  account_builders::swap_usdc_to_exo(user, PST::MINT, PST::FEED.address)
+});
+
+router_instruction!(ONYC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::mint_stablecoin_exo(user, ONYC::MINT, ONYC::FEED.address)
+});
+
+router_instruction!(HYUSD, ONYC, BASE_LOOKUP_TABLES, ONYC::MINT, |user| {
+  account_builders::redeem_stablecoin_exo(user, ONYC::MINT, ONYC::FEED.address)
+});
+
+router_instruction!(ONYC, XONYC, BASE_LOOKUP_TABLES, XONYC::MINT, |user| {
+  account_builders::mint_levercoin_exo(user, ONYC::MINT, ONYC::FEED.address)
+});
+
+router_instruction!(XONYC, ONYC, BASE_LOOKUP_TABLES, ONYC::MINT, |user| {
+  account_builders::redeem_levercoin_exo(user, ONYC::MINT, ONYC::FEED.address)
+});
+
+router_instruction!(HYUSD, XONYC, BASE_LOOKUP_TABLES, XONYC::MINT, |user| {
+  account_builders::convert_stable_to_lever_exo(
+    user,
+    ONYC::MINT,
+    ONYC::FEED.address,
+  )
+});
+
+router_instruction!(XONYC, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::convert_lever_to_stable_exo(
+    user,
+    ONYC::MINT,
+    ONYC::FEED.address,
+  )
+});
+
+router_instruction!(ONYC, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_exo_to_usdc(user, ONYC::MINT, ONYC::FEED.address)
+});
+
+router_instruction!(USDC, ONYC, BASE_LOOKUP_TABLES, ONYC::MINT, |user| {
+  account_builders::swap_usdc_to_exo(user, ONYC::MINT, ONYC::FEED.address)
 });
