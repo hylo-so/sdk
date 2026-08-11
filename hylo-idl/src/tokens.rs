@@ -5,74 +5,108 @@ use fix::typenum::Integer;
 
 use crate::{earn_pool, exchange, pda};
 
-macro_rules! token {
-  ($name:ident, $exp:ty, $mint:expr) => {
-    pub struct $name;
-
-    impl TokenMint for $name {
-      type Exp = $exp;
-      const MINT: Pubkey = $mint;
-    }
-  };
-}
-
 pub trait TokenMint {
   type Exp: Integer;
   const MINT: Pubkey;
 }
 
-token!(
-  HYUSD,
-  N6,
-  pda::mint(exchange::ID, exchange::constants::HYUSD)
-);
-token!(
-  SHYUSD,
-  N6,
-  pda::mint(earn_pool::ID, earn_pool::constants::STAKED_HYUSD)
-);
-token!(XSOL, N6, pda::mint(exchange::ID, exchange::constants::XSOL));
-token!(
-  JITOSOL,
-  N9,
-  pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn")
-);
-token!(
-  HYLOSOL,
-  N9,
-  pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT")
-);
-token!(USDC, N6, USDC_MINT);
-token!(
-  CBBTC,
-  N8,
-  pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij")
-);
-token!(XBTC, N6, pda::exo_levercoin_mint(CBBTC::MINT));
-token!(
-  ZEC,
-  N8,
-  pubkey!("A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS")
-);
-token!(XZEC, N6, pda::exo_levercoin_mint(ZEC::MINT));
-token!(
-  ONYC,
-  N9,
-  pubkey!("5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5")
-);
-token!(XONYC, N6, pda::exo_levercoin_mint(ONYC::MINT));
-token!(
-  HYPE,
-  N9,
-  pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g")
-);
-token!(XHYPE, N6, pda::exo_levercoin_mint(HYPE::MINT));
-token!(
-  PST,
-  N6,
-  pubkey!("59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw")
-);
-token!(XPST, N6, pda::exo_levercoin_mint(PST::MINT));
+pub struct HYUSD;
+pub struct SHYUSD;
+pub struct XSOL;
+pub struct JITOSOL;
+pub struct HYLOSOL;
+pub struct USDC;
+pub struct CBBTC;
+pub struct XBTC;
+pub struct ZEC;
+pub struct XZEC;
+pub struct ONYC;
+pub struct XONYC;
+pub struct HYPE;
+pub struct XHYPE;
+pub struct PST;
+pub struct XPST;
+
+impl TokenMint for HYUSD {
+  type Exp = N6;
+  const MINT: Pubkey = pda::mint(exchange::ID, exchange::constants::HYUSD);
+}
+
+impl TokenMint for SHYUSD {
+  type Exp = N6;
+  const MINT: Pubkey =
+    pda::mint(earn_pool::ID, earn_pool::constants::STAKED_HYUSD);
+}
+
+impl TokenMint for XSOL {
+  type Exp = N6;
+  const MINT: Pubkey = pda::mint(exchange::ID, exchange::constants::XSOL);
+}
+
+impl TokenMint for JITOSOL {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
+}
+
+impl TokenMint for HYLOSOL {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
+}
+
+impl TokenMint for USDC {
+  type Exp = N6;
+  const MINT: Pubkey = USDC_MINT;
+}
+
+impl TokenMint for CBBTC {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
+}
+
+impl TokenMint for XBTC {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(CBBTC::MINT);
+}
+
+impl TokenMint for ZEC {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS");
+}
+
+impl TokenMint for XZEC {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(ZEC::MINT);
+}
+
+impl TokenMint for ONYC {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5");
+}
+
+impl TokenMint for XONYC {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(ONYC::MINT);
+}
+
+impl TokenMint for HYPE {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
+}
+
+impl TokenMint for XHYPE {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(HYPE::MINT);
+}
+
+impl TokenMint for PST {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw");
+}
+
+impl TokenMint for XPST {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(PST::MINT);
+}
 
 pub trait StakePool: TokenMint<Exp = N9> {
   const POOL_STATE: Pubkey;
