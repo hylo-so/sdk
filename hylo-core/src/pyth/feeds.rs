@@ -105,7 +105,6 @@ mod tests {
 
   use super::*;
 
-  /// Addresses confirmed live onchain when the feed ids were recorded.
   #[test]
   fn feed_addresses_derive_known_accounts() {
     assert_eq!(
