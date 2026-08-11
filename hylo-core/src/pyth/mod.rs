@@ -1,5 +1,3 @@
-//! Pyth oracle validation and feed definitions.
-
 mod feeds;
 mod oracle;
 

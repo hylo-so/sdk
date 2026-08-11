@@ -1,5 +1,3 @@
-//! Oracle price validation and querying.
-
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use pyth_solana_receiver_sdk::price_update::{

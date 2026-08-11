@@ -1,5 +1,3 @@
-//! Pyth feed identifiers and their price update accounts.
-
 use anchor_lang::prelude::Pubkey;
 use const_crypto::ed25519;
 #[cfg(feature = "offchain")]
