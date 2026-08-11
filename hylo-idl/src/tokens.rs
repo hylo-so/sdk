@@ -15,8 +15,6 @@ pub trait StakePool: TokenMint<Exp = N9> {
 }
 
 /// Exogenous collateral backing an `ExoPair`.
-///
-/// Decimals must not exceed nine; the exchange normalizes collateral to `N9`.
 pub trait Exo: TokenMint {}
 
 pub struct HYUSD;
@@ -79,20 +77,11 @@ impl TokenMint for CBBTC {
   const MINT: Pubkey = pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
 }
 
-impl Exo for CBBTC {}
-
 pub struct XBTC;
 
 impl TokenMint for XBTC {
   type Exp = N6;
   const MINT: Pubkey = pda::exo_levercoin_mint(CBBTC::MINT);
-}
-
-pub struct SPYX;
-
-impl TokenMint for SPYX {
-  type Exp = N8;
-  const MINT: Pubkey = pubkey!("XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W");
 }
 
 pub struct ZEC;
@@ -102,20 +91,11 @@ impl TokenMint for ZEC {
   const MINT: Pubkey = pubkey!("A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS");
 }
 
-impl Exo for ZEC {}
-
 pub struct XZEC;
 
 impl TokenMint for XZEC {
   type Exp = N6;
   const MINT: Pubkey = pda::exo_levercoin_mint(ZEC::MINT);
-}
-
-pub struct XAUT0;
-
-impl TokenMint for XAUT0 {
-  type Exp = N6;
-  const MINT: Pubkey = pubkey!("AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P");
 }
 
 pub struct ONYC;
@@ -125,20 +105,11 @@ impl TokenMint for ONYC {
   const MINT: Pubkey = pubkey!("5Y8NV33Vv7WbnLfq3zBcKSdYPrk7g2KoiQoe7M2tcxp5");
 }
 
-impl Exo for ONYC {}
-
 pub struct XONYC;
 
 impl TokenMint for XONYC {
   type Exp = N6;
   const MINT: Pubkey = pda::exo_levercoin_mint(ONYC::MINT);
-}
-
-pub struct JLP;
-
-impl TokenMint for JLP {
-  type Exp = N6;
-  const MINT: Pubkey = pubkey!("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4");
 }
 
 pub struct HYPE;
@@ -147,8 +118,6 @@ impl TokenMint for HYPE {
   type Exp = N9;
   const MINT: Pubkey = pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
 }
-
-impl Exo for HYPE {}
 
 pub struct XHYPE;
 
@@ -164,11 +133,15 @@ impl TokenMint for PST {
   const MINT: Pubkey = pubkey!("59obFNBzyTBGowrkif5uK7ojS58vsuWz3ZCvg6tfZAGw");
 }
 
-impl Exo for PST {}
-
 pub struct XPST;
 
 impl TokenMint for XPST {
   type Exp = N6;
   const MINT: Pubkey = pda::exo_levercoin_mint(PST::MINT);
 }
+
+impl Exo for CBBTC {}
+impl Exo for ZEC {}
+impl Exo for ONYC {}
+impl Exo for HYPE {}
+impl Exo for PST {}

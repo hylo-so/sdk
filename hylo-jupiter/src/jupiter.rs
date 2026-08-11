@@ -845,15 +845,10 @@ where
 
     let sol_stablecoin_oracle_valid =
       stablecoin_oracle_valid(&self.clock, &sol_usd, hylo.oracle_interval_secs);
-    let btc_stablecoin_oracle_valid = stablecoin_oracle_valid(
-      &self.clock,
-      &btc_usd,
-      exo_pair.oracle_interval_secs,
-    );
     let cbbtc_pair = ExoPairState::new(
       &exo_pair,
       cbbtc_exchange_context,
-      btc_stablecoin_oracle_valid,
+      btc_usd.price_message.publish_time,
     )?;
 
     self.state = Some(ProtocolState::build(

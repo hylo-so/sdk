@@ -260,6 +260,4 @@ pub enum CoreError {
   MinInputOverflow,
   #[msg("No exo pair found for mint.")]
   UnknownExoMint,
-  #[msg("Exo pair oracle does not match the expected Pyth feed.")]
-  ExoOracleMismatch,
 }

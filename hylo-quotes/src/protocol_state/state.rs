@@ -5,7 +5,6 @@
 
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
-use anchor_lang::prelude::Pubkey;
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
@@ -78,10 +77,8 @@ pub struct ExoPairState<C: SolanaClock> {
   pub pool_drawdown: PoolDrawdown,
   pub borrow_rate_harvest_epoch: u64,
   pub supply_floor: UFix64<N6>,
-  /// Feed the pair is configured against, checked by the route gates.
-  pub oracle: Pubkey,
-  /// Collateral feed valid under the tighter stablecoin oracle window.
-  pub stablecoin_oracle_valid: bool,
+  pub oracle_publish_time: i64,
+  pub oracle_interval_secs: u64,
 }
 
 impl<C: SolanaClock> ExoPairState<C> {
@@ -92,7 +89,7 @@ impl<C: SolanaClock> ExoPairState<C> {
   pub fn new(
     exo_pair: &ExoPair,
     context: ExoExchangeContext<C>,
-    stablecoin_oracle_valid: bool,
+    oracle_publish_time: i64,
   ) -> Result<ExoPairState<C>> {
     Ok(ExoPairState {
       context,
@@ -100,9 +97,21 @@ impl<C: SolanaClock> ExoPairState<C> {
       pool_drawdown: exo_pair.pool_drawdown.into(),
       borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
       supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle: exo_pair.oracle,
-      stablecoin_oracle_valid,
+      oracle_publish_time,
+      oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
+  }
+
+  /// Whether the collateral feed is valid under the tighter stablecoin
+  /// oracle window.
+  #[must_use]
+  pub fn stablecoin_oracle_valid(&self) -> bool {
+    validate_publish_time(
+      self.oracle_publish_time,
+      self.oracle_interval_secs.div_ceil(ORACLE_DIVISOR),
+      self.context.clock.unix_timestamp(),
+    )
+    .is_ok()
   }
 }
 
@@ -346,11 +355,7 @@ where
     .checked_convert::<N9>()
     .ok_or_else(|| anyhow!("exo vault amount overflows N9"))?;
 
-  let stablecoin_oracle_valid = stablecoin_oracle_valid(
-    &clock,
-    &collateral_usd,
-    exo_pair.oracle_interval_secs,
-  );
+  let oracle_publish_time = collateral_usd.price_message.publish_time;
   let context = ExoExchangeContext::load(
     clock,
     total_collateral,
@@ -365,7 +370,7 @@ where
     exo_pair.levercoin_market_cap_limit.try_into()?,
   )
   .context("ExoExchangeContext::load")?;
-  ExoPairState::new(&exo_pair, context, stablecoin_oracle_valid)
+  ExoPairState::new(&exo_pair, context, oracle_publish_time)
 }
 
 /// Builds USDC exchange state from protocol accounts.

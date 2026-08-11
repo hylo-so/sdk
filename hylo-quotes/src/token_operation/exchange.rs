@@ -36,11 +36,10 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 
   /// Pause, harvest, and oracle-binding gates for an exo pair's routes.
-  fn exo_pair_gates<E: Exo + PythOracle>(&self) -> Result<(), CoreError> {
+  fn exo_pair_gates<E: Exo>(&self) -> Result<(), CoreError> {
     let pair = self.exo_pair::<E>()?;
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!pair.paused, CoreError::PairPaused)?;
-    gate(pair.oracle == E::FEED.address, CoreError::ExoOracleMismatch)?;
     gate(
       pair.borrow_rate_harvest_epoch == pair.context.clock.epoch(),
       CoreError::BorrowRateHarvestNotRun,
@@ -712,13 +711,15 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  /// State gates for the exo stablecoin mint routes.
   fn mint_stablecoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
-    gate(pair.stablecoin_oracle_valid, CoreError::PythOracleOutdated)?;
+    gate(
+      pair.stablecoin_oracle_valid(),
+      CoreError::PythOracleOutdated,
+    )?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.stablecoin_mint_enabled(),
@@ -794,13 +795,12 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// State gates for the exo stablecoin redeem routes.
   fn redeem_stablecoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     gate(
-      self.exo_pair::<E>()?.stablecoin_oracle_valid,
+      self.exo_pair::<E>()?.stablecoin_oracle_valid(),
       CoreError::PythOracleOutdated,
     )
   }
@@ -813,21 +813,21 @@ impl<C: SolanaClock> ProtocolState<C> {
     UFix64<E::Exp>: FixExt,
   {
     let pair = self.exo_pair::<E>()?;
-    let exo = &pair.context;
-    let stablecoin_nav = exo.stablecoin_nav()?;
-    let collateral_out = exo
+    let stablecoin_nav = pair.context.stablecoin_nav()?;
+    let collateral_out = pair
+      .context
       .exo_conversion()
       .token_to_exo(in_amount, stablecoin_nav)?;
     gate(
-      collateral_out <= exo.total_collateral,
+      collateral_out <= pair.context.total_collateral,
       CoreError::InsufficientLiquidity,
     )?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = exo.stablecoin_redeem_fee(collateral_out)?;
+    } = pair.context.stablecoin_redeem_fee(collateral_out)?;
     validate_burn(
-      exo.virtual_stablecoin_supply()?,
+      pair.context.virtual_stablecoin_supply()?,
       in_amount,
       pair.supply_floor,
     )?;
@@ -841,7 +841,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       fee_mint: E::MINT,
       fee_base: collateral_out,
       marginal_rate: atom_rate::<N6, E::Exp>(
-        exo.stablecoin_redeem_marginal(in_amount)?,
+        pair.context.stablecoin_redeem_marginal(in_amount)?,
       ),
     })
   }
@@ -850,11 +850,12 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let pair = self.exo_pair::<E>()?;
-    let exo = &pair.context;
-    let vault_cap = exo
-      .exo_conversion()
-      .max_token_for_exo(exo.total_collateral, exo.stablecoin_nav()?)?;
-    let supply_cap = exo
+    let vault_cap = pair.context.exo_conversion().max_token_for_exo(
+      pair.context.total_collateral,
+      pair.context.stablecoin_nav()?,
+    )?;
+    let supply_cap = pair
+      .context
       .virtual_stablecoin_supply()?
       .checked_sub(&pair.supply_floor);
     Ok(vault_cap.min(supply_cap.unwrap_or_default()))
@@ -878,7 +879,6 @@ impl<C: SolanaClock> ProtocolState<C> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  /// State gates for the exo levercoin mint routes.
   fn mint_levercoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
@@ -962,7 +962,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// State gates for the exo levercoin redeem routes.
   fn redeem_levercoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
@@ -1043,7 +1042,6 @@ impl<C: SolanaClock> ProtocolState<C> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  /// State gates for the exo stable-to-lever convert routes.
   fn convert_stable_to_lever_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
@@ -1061,18 +1059,20 @@ impl<C: SolanaClock> ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
     let pair = self.exo_pair::<E>()?;
-    let exo = &pair.context;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = exo.stablecoin_to_levercoin_fee(in_amount)?;
-    let out_amount =
-      exo.swap_conversion()?.stable_to_lever(amount_remaining)?;
-    exo
+    } = pair.context.stablecoin_to_levercoin_fee(in_amount)?;
+    let out_amount = pair
+      .context
+      .swap_conversion()?
+      .stable_to_lever(amount_remaining)?;
+    pair
+      .context
       .levercoin_market_cap_limiter()?
       .validate_token_out(out_amount)?;
     validate_burn(
-      exo.virtual_stablecoin_supply()?,
+      pair.context.virtual_stablecoin_supply()?,
       amount_remaining,
       pair.supply_floor,
     )?;
@@ -1082,7 +1082,9 @@ impl<C: SolanaClock> ProtocolState<C> {
       fee_amount: fees_extracted,
       fee_mint: HYUSD::MINT,
       fee_base: in_amount,
-      marginal_rate: exo.stablecoin_to_levercoin_marginal(in_amount)?,
+      marginal_rate: pair
+        .context
+        .stablecoin_to_levercoin_marginal(in_amount)?,
     })
   }
 
@@ -1090,15 +1092,17 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
   ) -> Result<UFix64<N6>, CoreError> {
     let pair = self.exo_pair::<E>()?;
-    let exo = &pair.context;
-    let market_cap = exo.swap_conversion()?.max_stable_for_lever(
-      exo.levercoin_market_cap_limiter()?.max_token_out()?,
+    let market_cap = pair.context.swap_conversion()?.max_stable_for_lever(
+      pair
+        .context
+        .levercoin_market_cap_limiter()?
+        .max_token_out()?,
     )?;
-    let supply = exo.virtual_stablecoin_supply()?;
+    let supply = pair.context.virtual_stablecoin_supply()?;
     let burn_cap = supply.checked_sub(&pair.supply_floor).unwrap_or_default();
     let remaining = market_cap.min(burn_cap);
-    let fee_rate = exo.stablecoin_to_levercoin_fee_rate(remaining)?;
-    let projectable = exo.max_stablecoin_removal()?;
+    let fee_rate = pair.context.stablecoin_to_levercoin_fee_rate(remaining)?;
+    let projectable = pair.context.max_stablecoin_removal()?;
     Ok(FeeExtract::max_input(fee_rate, remaining)?.min(projectable))
   }
 
@@ -1113,7 +1117,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     past_zero(FeeExtract::max_input(fee_rate, max_zero_hyusd)?)
   }
 
-  /// State gates for the exo lever-to-stable convert routes.
   fn convert_lever_to_stable_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
@@ -1514,16 +1517,17 @@ impl<C: SolanaClock> ProtocolState<C> {
     UFix64<E::Exp>: FixExt,
   {
     let pair = self.exo_pair::<E>()?;
-    let exo = &pair.context;
     let normalized: UFix64<N9> = in_amount
       .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
-      normalized <= exo.rebalance_buy_target()?,
+      normalized <= pair.context.rebalance_buy_target()?,
       CoreError::RebalanceBuyTargetExceeded,
     )?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let conversion = exo.rebalance_buy_conversion(usdc_price, normalized)?;
+    let conversion = pair
+      .context
+      .rebalance_buy_conversion(usdc_price, normalized)?;
     let usdc_out: UFix64<N9> = conversion.collateral_to_usdc(normalized)?;
     let out_amount: UFix64<N6> = usdc_out
       .checked_convert::<N6>()
@@ -1540,8 +1544,10 @@ impl<C: SolanaClock> ProtocolState<C> {
       stablecoin_moved <= self.usdc_exchange_state().virtual_stablecoin_supply,
       CoreError::BurnUnderflow,
     )?;
-    let pnl = exo.rebalance_pnl_buy_side(normalized, stablecoin_moved)?;
-    self.validate_pnl_settlement(exo, pair.supply_floor, pnl)?;
+    let pnl = pair
+      .context
+      .rebalance_pnl_buy_side(normalized, stablecoin_moved)?;
+    self.validate_pnl_settlement(&pair.context, pair.supply_floor, pnl)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -1549,7 +1555,9 @@ impl<C: SolanaClock> ProtocolState<C> {
       fee_mint: E::MINT,
       fee_base: in_amount,
       marginal_rate: atom_rate::<E::Exp, N6>(
-        exo.rebalance_buy_marginal(usdc_price, normalized)?,
+        pair
+          .context
+          .rebalance_buy_marginal(usdc_price, normalized)?,
       ),
     })
   }
@@ -1612,15 +1620,17 @@ impl<C: SolanaClock> ProtocolState<C> {
     UFix64<E::Exp>: FixExt,
   {
     let pair = self.exo_pair::<E>()?;
-    let exo = &pair.context;
     let normalized: UFix64<N9> = in_amount
       .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?;
     let usdc_price = self.usdc_exchange_state().usdc_usd_price;
-    let max_usdc_in =
-      exo.max_rebalance_sell_usdc(usdc_price, pair.supply_floor)?;
+    let max_usdc_in = pair
+      .context
+      .max_rebalance_sell_usdc(usdc_price, pair.supply_floor)?;
     gate(normalized <= max_usdc_in, CoreError::InsufficientLiquidity)?;
-    let conversion = exo.rebalance_sell_conversion(usdc_price, normalized)?;
+    let conversion = pair
+      .context
+      .rebalance_sell_conversion(usdc_price, normalized)?;
     let collateral_out: UFix64<N9> =
       conversion.usdc_to_collateral(normalized)?;
     let out_amount = collateral_out
@@ -1630,8 +1640,10 @@ impl<C: SolanaClock> ProtocolState<C> {
       .usdc_exchange_state()
       .conversion()
       .deposit_to_stablecoin(normalized)?;
-    let pnl = exo.rebalance_pnl_sell_side(collateral_out, stablecoin_moved)?;
-    self.validate_pnl_settlement(exo, pair.supply_floor, pnl)?;
+    let pnl = pair
+      .context
+      .rebalance_pnl_sell_side(collateral_out, stablecoin_moved)?;
+    self.validate_pnl_settlement(&pair.context, pair.supply_floor, pnl)?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
@@ -1639,7 +1651,9 @@ impl<C: SolanaClock> ProtocolState<C> {
       fee_mint: USDC::MINT,
       fee_base: in_amount,
       marginal_rate: atom_rate::<N6, E::Exp>(
-        exo.rebalance_sell_marginal(usdc_price, normalized)?,
+        pair
+          .context
+          .rebalance_sell_marginal(usdc_price, normalized)?,
       ),
     })
   }
