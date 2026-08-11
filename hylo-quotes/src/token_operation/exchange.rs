@@ -22,7 +22,7 @@ use crate::token_operation::{
   atom_rate, gate, past_zero, LstSwapOperationOutput, MintOperationOutput,
   OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
 };
-use crate::{Local, LST};
+use crate::{Local, LocalExo, LST};
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// Pause and harvest gates for LST-pair routes.
@@ -64,12 +64,8 @@ where
     .ok_or(CoreError::TokenAmountPrecision)
 }
 
-impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
-  for ProtocolState<C>
-{
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
+impl<C: SolanaClock> ProtocolState<C> {
+  fn mint_stablecoin_lst_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     gate(
       self.sol_stablecoin_oracle_valid,
@@ -82,7 +78,7 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     )
   }
 
-  fn compute_output_ungated(
+  fn mint_stablecoin_lst_quote<L: LST + Local>(
     &self,
     in_amount: UFix64<N9>,
   ) -> Result<MintOperationOutput, CoreError> {
@@ -117,7 +113,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+  fn mint_stablecoin_lst_max_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N9>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let cap = self.exchange_context.max_mintable_stablecoin()?;
     self
@@ -126,7 +124,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
       .max_lst_for_token(cap, self.exchange_context.stablecoin_nav()?)
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+  fn mint_stablecoin_lst_min_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N9>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let max_zero_lst = self
       .exchange_context
@@ -140,14 +140,8 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<L, HYUSD>
       .stablecoin_mint_fee_rate(&lst_price, max_zero_lst)?;
     past_zero(FeeExtract::max_input(fee_rate, max_zero_lst)?)
   }
-}
 
-impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
-  for ProtocolState<C>
-{
-  type FeeExp = N9;
-
-  fn preconditions(&self) -> Result<(), CoreError> {
+  fn redeem_stablecoin_lst_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     gate(
       self.sol_stablecoin_oracle_valid,
@@ -155,9 +149,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     )
   }
 
-  fn compute_output_ungated(
+  fn redeem_stablecoin_lst_quote<L: LST + Local>(
     &self,
-    in_amount: UFix64<<HYUSD as TokenMint>::Exp>,
+    in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput, CoreError> {
     let lst_header = self.lst_header::<L>()?;
     let lst_price = lst_header.price_sol.into();
@@ -196,7 +190,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     })
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+  fn redeem_stablecoin_lst_max_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let vault_cap = self
       .exchange_context
@@ -212,7 +208,9 @@ impl<L: LST + Local, C: SolanaClock> TokenOperation<HYUSD, L>
     Ok(vault_cap.min(supply_cap.unwrap_or_default()))
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+  fn redeem_stablecoin_lst_min_input<L: LST + Local>(
+    &self,
+  ) -> Result<UFix64<N6>, CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let fee_rate = self
       .exchange_context
@@ -1684,49 +1682,57 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 }
 
-impl<C: SolanaClock> TokenOperation<CBBTC, HYUSD> for ProtocolState<C> {
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, HYUSD>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
   type FeeExp = N9;
 
   fn preconditions(&self) -> Result<(), CoreError> {
-    self.mint_stablecoin_exo_preconditions::<CBBTC>()
+    self.mint_stablecoin_exo_preconditions::<E>()
   }
 
   fn compute_output_ungated(
     &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N9>, CoreError> {
-    self.mint_stablecoin_exo_quote::<CBBTC>(in_amount)
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, N9>, CoreError> {
+    self.mint_stablecoin_exo_quote::<E>(in_amount)
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_stablecoin_exo_max_input::<CBBTC>()
+  fn max_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.mint_stablecoin_exo_max_input::<E>()
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.mint_stablecoin_exo_min_input::<CBBTC>()
+  fn min_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.mint_stablecoin_exo_min_input::<E>()
   }
 }
 
-impl<C: SolanaClock> TokenOperation<HYUSD, CBBTC> for ProtocolState<C> {
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<HYUSD, E>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
   type FeeExp = N9;
 
   fn preconditions(&self) -> Result<(), CoreError> {
-    self.redeem_stablecoin_exo_preconditions::<CBBTC>()
+    self.redeem_stablecoin_exo_preconditions::<E>()
   }
 
   fn compute_output_ungated(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N9>, CoreError> {
-    self.redeem_stablecoin_exo_quote::<CBBTC>(in_amount)
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError> {
+    self.redeem_stablecoin_exo_quote::<E>(in_amount)
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_stablecoin_exo_max_input::<CBBTC>()
+    self.redeem_stablecoin_exo_max_input::<E>()
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.redeem_stablecoin_exo_min_input::<CBBTC>()
+    self.redeem_stablecoin_exo_min_input::<E>()
   }
 }
 
@@ -1822,48 +1828,148 @@ impl<C: SolanaClock> TokenOperation<XBTC, HYUSD> for ProtocolState<C> {
   }
 }
 
-impl<C: SolanaClock> TokenOperation<CBBTC, USDC> for ProtocolState<C> {
-  type FeeExp = N8;
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<E, USDC>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  type FeeExp = E::Exp;
 
   fn preconditions(&self) -> Result<(), CoreError> {
-    self.swap_exo_to_usdc_preconditions::<CBBTC>()
+    self.swap_exo_to_usdc_preconditions::<E>()
   }
 
   fn compute_output_ungated(
     &self,
-    in_amount: UFix64<N8>,
-  ) -> Result<OperationOutput<N8, N6, N8>, CoreError> {
-    self.swap_exo_to_usdc_quote::<CBBTC>(in_amount)
+    in_amount: UFix64<E::Exp>,
+  ) -> Result<OperationOutput<E::Exp, N6, E::Exp>, CoreError> {
+    self.swap_exo_to_usdc_quote::<E>(in_amount)
   }
 
-  fn max_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.swap_exo_to_usdc_max_input::<CBBTC>()
+  fn max_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.swap_exo_to_usdc_max_input::<E>()
   }
 
-  fn min_input_ungated(&self) -> Result<UFix64<N8>, CoreError> {
-    self.swap_exo_to_usdc_min_input::<CBBTC>()
+  fn min_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
+    self.swap_exo_to_usdc_min_input::<E>()
   }
 }
 
-impl<C: SolanaClock> TokenOperation<USDC, CBBTC> for ProtocolState<C> {
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> TokenOperation<USDC, E>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
   type FeeExp = N6;
 
   fn preconditions(&self) -> Result<(), CoreError> {
-    self.swap_usdc_to_exo_preconditions::<CBBTC>()
+    self.swap_usdc_to_exo_preconditions::<E>()
   }
 
   fn compute_output_ungated(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, N8, N6>, CoreError> {
-    self.swap_usdc_to_exo_quote::<CBBTC>(in_amount)
+  ) -> Result<OperationOutput<N6, E::Exp, N6>, CoreError> {
+    self.swap_usdc_to_exo_quote::<E>(in_amount)
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.swap_usdc_to_exo_max_input::<CBBTC>()
+    self.swap_usdc_to_exo_max_input::<E>()
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    self.swap_usdc_to_exo_min_input::<CBBTC>()
+    self.swap_usdc_to_exo_min_input::<E>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<JITOSOL, HYUSD> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.mint_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N9>,
+  ) -> Result<MintOperationOutput, CoreError> {
+    self.mint_stablecoin_lst_quote::<JITOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_max_input::<JITOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_min_input::<JITOSOL>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<HYLOSOL, HYUSD> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.mint_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N9>,
+  ) -> Result<MintOperationOutput, CoreError> {
+    self.mint_stablecoin_lst_quote::<HYLOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_max_input::<HYLOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N9>, CoreError> {
+    self.mint_stablecoin_lst_min_input::<HYLOSOL>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<HYUSD, JITOSOL> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.redeem_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    self.redeem_stablecoin_lst_quote::<JITOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_max_input::<JITOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_min_input::<JITOSOL>()
+  }
+}
+
+impl<C: SolanaClock> TokenOperation<HYUSD, HYLOSOL> for ProtocolState<C> {
+  type FeeExp = N9;
+
+  fn preconditions(&self) -> Result<(), CoreError> {
+    self.redeem_stablecoin_lst_preconditions()
+  }
+
+  fn compute_output_ungated(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    self.redeem_stablecoin_lst_quote::<HYLOSOL>(in_amount)
+  }
+
+  fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_max_input::<HYLOSOL>()
+  }
+
+  fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
+    self.redeem_stablecoin_lst_min_input::<HYLOSOL>()
   }
 }
