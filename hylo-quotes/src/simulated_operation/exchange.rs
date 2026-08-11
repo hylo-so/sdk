@@ -13,8 +13,8 @@ use hylo_idl::exchange::events::{
   SwapLstToUsdcEvent, SwapUsdcToExoEvent, SwapUsdcToLstEvent,
 };
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYPE, HYUSD, ONYC, PST, USDC, XBTC, XHYPE, XONYC, XPST,
-  XSOL, XZEC, ZEC,
+  TokenMint, CBBTC, HYPE, HYUSD, ONYC, PST, USDC, WETH, XBTC, XETH, XHYPE,
+  XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::simulated_operation::SimulatedOperation;
@@ -1364,6 +1364,218 @@ impl SimulatedOperation<USDC, ONYC> for RouterClient {
     let out_amount: UFix64<N9> = collateral_withdrawn
       .checked_convert()
       .context("N9->N9 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: UFix64::zero(),
+      fee_mint: USDC::MINT,
+      fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<WETH, HYUSD> for RouterClient {
+  type FeeExp = N9;
+  type Event = MintStablecoinExoEvent;
+
+  fn extract_output(
+    event: &MintStablecoinExoEvent,
+  ) -> Result<OperationOutput<N8, N6, N9>> {
+    let out_amount: UFix64<N6> = event.minted.try_into()?;
+    let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
+    let collateral_deposited: UFix64<N9> =
+      event.collateral_deposited.try_into()?;
+    let fee_base = collateral_deposited
+      .checked_add(&fee_amount)
+      .context("fee_base overflow")?;
+    let in_amount: UFix64<N8> =
+      fee_base.checked_convert().context("N9->N8 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount,
+      fee_mint: WETH::MINT,
+      fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<HYUSD, WETH> for RouterClient {
+  type FeeExp = N9;
+  type Event = RedeemStablecoinExoEvent;
+
+  fn extract_output(
+    event: &RedeemStablecoinExoEvent,
+  ) -> Result<OperationOutput<N6, N8, N9>> {
+    let in_amount: UFix64<N6> = event.redeemed.try_into()?;
+    let collateral_withdrawn: UFix64<N9> =
+      event.collateral_withdrawn.try_into()?;
+    let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
+    let fee_base = collateral_withdrawn
+      .checked_add(&fee_amount)
+      .context("fee_base overflow")?;
+    let out_amount: UFix64<N8> = collateral_withdrawn
+      .checked_convert()
+      .context("N9->N8 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount,
+      fee_mint: WETH::MINT,
+      fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<WETH, XETH> for RouterClient {
+  type FeeExp = N9;
+  type Event = MintLevercoinExoEvent;
+
+  fn extract_output(
+    event: &MintLevercoinExoEvent,
+  ) -> Result<OperationOutput<N8, N6, N9>> {
+    let out_amount: UFix64<N6> = event.minted.try_into()?;
+    let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
+    let collateral_deposited: UFix64<N9> =
+      event.collateral_deposited.try_into()?;
+    let fee_base = collateral_deposited
+      .checked_add(&fee_amount)
+      .context("fee_base overflow")?;
+    let in_amount: UFix64<N8> =
+      fee_base.checked_convert().context("N9->N8 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount,
+      fee_mint: WETH::MINT,
+      fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<XETH, WETH> for RouterClient {
+  type FeeExp = N9;
+  type Event = RedeemLevercoinExoEvent;
+
+  fn extract_output(
+    event: &RedeemLevercoinExoEvent,
+  ) -> Result<OperationOutput<N6, N8, N9>> {
+    let in_amount: UFix64<N6> = event.redeemed.try_into()?;
+    let collateral_withdrawn: UFix64<N9> =
+      event.collateral_withdrawn.try_into()?;
+    let fee_amount: UFix64<N9> = event.fees_deposited.try_into()?;
+    let fee_base = collateral_withdrawn
+      .checked_add(&fee_amount)
+      .context("fee_base overflow")?;
+    let out_amount: UFix64<N8> = collateral_withdrawn
+      .checked_convert()
+      .context("N9->N8 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount,
+      fee_mint: WETH::MINT,
+      fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<HYUSD, XETH> for RouterClient {
+  type FeeExp = N6;
+  type Event = ConvertStableToLeverExoEvent;
+
+  fn extract_output(
+    event: &ConvertStableToLeverExoEvent,
+  ) -> Result<SwapOperationOutput> {
+    let stablecoin_burned: UFix64<N6> = event.stablecoin_burned.try_into()?;
+    let out_amount: UFix64<N6> = event.levercoin_minted.try_into()?;
+    let fee_amount: UFix64<N6> = event.stablecoin_fees.try_into()?;
+    let fee_base = stablecoin_burned
+      .checked_add(&fee_amount)
+      .context("fee_base overflow")?;
+    Ok(SwapOperationOutput {
+      in_amount: fee_base,
+      out_amount,
+      fee_amount,
+      fee_mint: HYUSD::MINT,
+      fee_base,
+      marginal_rate: linear_rate(fee_base, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<XETH, HYUSD> for RouterClient {
+  type FeeExp = N6;
+  type Event = ConvertLeverToStableExoEvent;
+
+  fn extract_output(
+    event: &ConvertLeverToStableExoEvent,
+  ) -> Result<SwapOperationOutput> {
+    let in_amount: UFix64<N6> = event.levercoin_burned.try_into()?;
+    let out_amount: UFix64<N6> = event.stablecoin_minted_user.try_into()?;
+    let fee_amount: UFix64<N6> = event.stablecoin_minted_fees.try_into()?;
+    let fee_base = out_amount
+      .checked_add(&fee_amount)
+      .context("fee_base overflow")?;
+    Ok(SwapOperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount,
+      fee_mint: HYUSD::MINT,
+      fee_base,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<WETH, USDC> for RouterClient {
+  type FeeExp = N8;
+  type Event = SwapExoToUsdcEvent;
+
+  fn extract_output(
+    event: &SwapExoToUsdcEvent,
+  ) -> Result<OperationOutput<N8, N6, N8>> {
+    let collateral_deposited: UFix64<N9> =
+      event.collateral_deposited.try_into()?;
+    let in_amount: UFix64<N8> = collateral_deposited
+      .checked_convert()
+      .context("N9->N8 conversion")?;
+    let usdc_withdrawn: UFix64<N9> = event.usdc_withdrawn.try_into()?;
+    let out_amount: UFix64<N6> = usdc_withdrawn
+      .checked_convert()
+      .context("N9->N6 conversion")?;
+    Ok(OperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: UFix64::zero(),
+      fee_mint: WETH::MINT,
+      fee_base: in_amount,
+      marginal_rate: linear_rate(in_amount, out_amount)?,
+    })
+  }
+}
+
+impl SimulatedOperation<USDC, WETH> for RouterClient {
+  type FeeExp = N6;
+  type Event = SwapUsdcToExoEvent;
+
+  fn extract_output(
+    event: &SwapUsdcToExoEvent,
+  ) -> Result<OperationOutput<N6, N8, N6>> {
+    let usdc_deposited: UFix64<N9> = event.usdc_deposited.try_into()?;
+    let in_amount: UFix64<N6> = usdc_deposited
+      .checked_convert()
+      .context("N9->N6 conversion")?;
+    let collateral_withdrawn: UFix64<N9> =
+      event.collateral_withdrawn.try_into()?;
+    let out_amount: UFix64<N8> = collateral_withdrawn
+      .checked_convert()
+      .context("N9->N8 conversion")?;
     Ok(OperationOutput {
       in_amount,
       out_amount,

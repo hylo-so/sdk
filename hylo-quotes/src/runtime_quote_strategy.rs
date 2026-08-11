@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC,
-  XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
+  WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::protocol_state::ProtocolState;
@@ -162,4 +162,12 @@ runtime_quote_strategies! {
   (XONYC, HYUSD, Operation::ConvertLeverToStableExo, "Convert xONYC to hyUSD"),
   (ONYC, USDC, Operation::SwapExoToUsdc, "Swap ONYC for USDC"),
   (USDC, ONYC, Operation::SwapUsdcToExo, "Swap USDC for ONYC"),
+  (WETH, HYUSD, Operation::MintStablecoinExo, "Mint hyUSD with WETH"),
+  (HYUSD, WETH, Operation::RedeemStablecoinExo, "Redeem hyUSD for WETH"),
+  (WETH, XETH, Operation::MintLevercoinExo, "Mint xETH with WETH"),
+  (XETH, WETH, Operation::RedeemLevercoinExo, "Redeem xETH for WETH"),
+  (HYUSD, XETH, Operation::ConvertStableToLeverExo, "Convert hyUSD to xETH"),
+  (XETH, HYUSD, Operation::ConvertLeverToStableExo, "Convert xETH to hyUSD"),
+  (WETH, USDC, Operation::SwapExoToUsdc, "Swap WETH for USDC"),
+  (USDC, WETH, Operation::SwapUsdcToExo, "Swap USDC for WETH"),
 }

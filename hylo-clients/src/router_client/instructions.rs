@@ -13,7 +13,7 @@ use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route;
 use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
-  SHYUSD, USDC, XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
+  SHYUSD, USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use super::{InstructionBuilder, RouterArgs, RouterClient};
@@ -393,4 +393,44 @@ router_instruction!(ONYC, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
 
 router_instruction!(USDC, ONYC, BASE_LOOKUP_TABLES, ONYC::MINT, |user| {
   account_builders::swap_usdc_to_exo(user, ONYC::MINT, ONYC::FEED.address)
+});
+
+router_instruction!(WETH, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::mint_stablecoin_exo(user, WETH::MINT, WETH::FEED.address)
+});
+
+router_instruction!(HYUSD, WETH, BASE_LOOKUP_TABLES, WETH::MINT, |user| {
+  account_builders::redeem_stablecoin_exo(user, WETH::MINT, WETH::FEED.address)
+});
+
+router_instruction!(WETH, XETH, BASE_LOOKUP_TABLES, XETH::MINT, |user| {
+  account_builders::mint_levercoin_exo(user, WETH::MINT, WETH::FEED.address)
+});
+
+router_instruction!(XETH, WETH, BASE_LOOKUP_TABLES, WETH::MINT, |user| {
+  account_builders::redeem_levercoin_exo(user, WETH::MINT, WETH::FEED.address)
+});
+
+router_instruction!(HYUSD, XETH, BASE_LOOKUP_TABLES, XETH::MINT, |user| {
+  account_builders::convert_stable_to_lever_exo(
+    user,
+    WETH::MINT,
+    WETH::FEED.address,
+  )
+});
+
+router_instruction!(XETH, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
+  account_builders::convert_lever_to_stable_exo(
+    user,
+    WETH::MINT,
+    WETH::FEED.address,
+  )
+});
+
+router_instruction!(WETH, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
+  account_builders::swap_exo_to_usdc(user, WETH::MINT, WETH::FEED.address)
+});
+
+router_instruction!(USDC, WETH, BASE_LOOKUP_TABLES, WETH::MINT, |user| {
+  account_builders::swap_usdc_to_exo(user, WETH::MINT, WETH::FEED.address)
 });

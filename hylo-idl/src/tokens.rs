@@ -26,6 +26,8 @@ pub struct HYPE;
 pub struct XHYPE;
 pub struct PST;
 pub struct XPST;
+pub struct WETH;
+pub struct XETH;
 
 impl TokenMint for HYUSD {
   type Exp = N6;
@@ -108,6 +110,16 @@ impl TokenMint for XPST {
   const MINT: Pubkey = pda::exo_levercoin_mint(PST::MINT);
 }
 
+impl TokenMint for WETH {
+  type Exp = N8;
+  const MINT: Pubkey = pubkey!("7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs");
+}
+
+impl TokenMint for XETH {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(WETH::MINT);
+}
+
 pub trait StakePool: TokenMint<Exp = N9> {
   const POOL_STATE: Pubkey;
 }
@@ -130,3 +142,4 @@ impl Exo for ZEC {}
 impl Exo for ONYC {}
 impl Exo for HYPE {}
 impl Exo for PST {}
+impl Exo for WETH {}

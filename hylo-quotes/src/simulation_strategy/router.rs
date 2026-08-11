@@ -11,8 +11,8 @@ use hylo_clients::router_client::{
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
-  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, XBTC, XHYPE,
-  XONYC, XPST, XSOL, XZEC, ZEC,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
+  XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use crate::simulated_operation::SimulatedOperationExt;
@@ -184,3 +184,11 @@ simulation_quote!(HYUSD, XONYC, N6, ExecutableQuote<N6, N6, N6>);
 simulation_quote!(XONYC, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 simulation_quote!(ONYC, USDC, N9, ExecutableQuote<N9, N6, N9>);
 simulation_quote!(USDC, ONYC, N6, ExecutableQuote<N6, N9, N6>);
+simulation_quote!(WETH, HYUSD, N9, ExecutableQuote<N8, N6, N9>);
+simulation_quote!(HYUSD, WETH, N9, ExecutableQuote<N6, N8, N9>);
+simulation_quote!(WETH, XETH, N9, ExecutableQuote<N8, N6, N9>);
+simulation_quote!(XETH, WETH, N9, ExecutableQuote<N6, N8, N9>);
+simulation_quote!(HYUSD, XETH, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(XETH, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+simulation_quote!(WETH, USDC, N8, ExecutableQuote<N8, N6, N8>);
+simulation_quote!(USDC, WETH, N6, ExecutableQuote<N6, N8, N6>);

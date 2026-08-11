@@ -1,7 +1,7 @@
 use anchor_lang::prelude::Pubkey;
 use const_crypto::ed25519;
 #[cfg(feature = "offchain")]
-use hylo_idl::tokens::{TokenMint, CBBTC, HYPE, ONYC, PST, ZEC};
+use hylo_idl::tokens::{TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
 use pyth_solana_receiver_sdk::price_update::FeedId;
 use pyth_solana_receiver_sdk::PYTH_PUSH_ORACLE_ID;
 
@@ -68,6 +68,11 @@ pub const PST_USDC: PythFeed = PythFeed::new([
   24, 102, 193, 37, 118, 127, 70, 147, 54, 38, 224, 97, 10, 248, 77,
 ]);
 
+pub const ETH_USD: PythFeed = PythFeed::new([
+  255, 97, 73, 26, 147, 17, 18, 221, 241, 189, 129, 71, 205, 27, 100, 19, 117,
+  247, 159, 88, 37, 18, 109, 102, 84, 128, 135, 70, 52, 253, 10, 206,
+]);
+
 /// Associates a [`TokenMint`] with the Pyth feed pricing it.
 #[cfg(feature = "offchain")]
 pub trait PythOracle: TokenMint {
@@ -97,6 +102,11 @@ impl PythOracle for ONYC {
 #[cfg(feature = "offchain")]
 impl PythOracle for PST {
   const FEED: PythFeed = PST_USDC;
+}
+
+#[cfg(feature = "offchain")]
+impl PythOracle for WETH {
+  const FEED: PythFeed = ETH_USD;
 }
 
 #[cfg(test)]
@@ -134,6 +144,10 @@ mod tests {
     assert_eq!(
       PST_USDC.address,
       pubkey!("2r3AysmX5q9Jo6vznSrkwZxV1wqs9FNniUd8tf2n66oq")
+    );
+    assert_eq!(
+      ETH_USD.address,
+      pubkey!("7odryi4WfoMFHtv2eubdMgP1pqQMmdiXSK1N2tqZ2nRH")
     );
   }
 }

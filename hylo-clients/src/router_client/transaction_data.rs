@@ -2,8 +2,8 @@
 
 use anyhow::Result;
 use hylo_idl::tokens::{
-  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, XBTC, XHYPE,
-  XONYC, XPST, XSOL, XZEC, ZEC,
+  CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
+  XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 use super::{InstructionBuilderExt, RouterArgs, RouterClient};
@@ -138,3 +138,12 @@ router_transaction_data!(HYUSD, XONYC);
 router_transaction_data!(XONYC, HYUSD);
 router_transaction_data!(ONYC, USDC);
 router_transaction_data!(USDC, ONYC);
+
+router_transaction_data!(WETH, HYUSD);
+router_transaction_data!(HYUSD, WETH);
+router_transaction_data!(WETH, XETH);
+router_transaction_data!(XETH, WETH);
+router_transaction_data!(HYUSD, XETH);
+router_transaction_data!(XETH, HYUSD);
+router_transaction_data!(WETH, USDC);
+router_transaction_data!(USDC, WETH);

@@ -9,7 +9,7 @@ pub use fix::prelude::*;
 // Token types
 pub use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC,
-  XBTC, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
+  WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 
 // Protocol state
