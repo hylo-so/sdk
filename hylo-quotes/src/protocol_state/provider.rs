@@ -4,18 +4,20 @@
 
 use std::sync::Arc;
 
-use anchor_lang::prelude::Clock;
+use anchor_lang::prelude::{Clock, Pubkey};
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::Mint;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use fix::prelude::UFix64;
 use fix::util::FixExt;
+use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::idl::exchange::accounts::Hylo;
 use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::tokens::Exo;
+use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
+use hylo_idl::with_exo_pairs;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
@@ -120,6 +122,29 @@ impl RpcStateProvider {
     )
   }
 }
+
+macro_rules! exo_pair_dispatch {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    impl RpcStateProvider {
+      /// Fetches pair state for a collateral mint known only at runtime.
+      ///
+      /// # Errors
+      /// * [`CoreError::UnknownExoMint`] if the mint backs no exo pair
+      /// * Fetch or deserialization failure
+      pub async fn fetch_exo_pair_by_mint(
+        &self,
+        collateral_mint: Pubkey,
+      ) -> Result<ExoPairState<Clock>> {
+        match collateral_mint {
+          $(<$exo>::MINT => self.fetch_exo_pair::<$exo>().await,)+
+          _ => Err(CoreError::UnknownExoMint.into()),
+        }
+      }
+    }
+  };
+}
+
+with_exo_pairs!(exo_pair_dispatch);
 
 #[async_trait]
 impl StateProvider<Clock> for RpcStateProvider {
