@@ -137,7 +137,7 @@ impl StakePool for HYLOSOL {
 /// Exogenous collateral backing an `ExoPair`.
 pub trait Exo: TokenMint {}
 
-/// Calls `$cb` once with every exo pair, expanding at the call site.
+/// Calls `$cb` "shaper" macro once for every exo pair.
 ///
 /// ```ignore
 /// macro_rules! shaper {
