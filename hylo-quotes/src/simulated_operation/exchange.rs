@@ -12,11 +12,11 @@ use hylo_idl::exchange::events::{
   RedeemStablecoinUsdcEvent, SwapExoToUsdcEvent, SwapLstToLstEvent,
   SwapLstToUsdcEvent, SwapUsdcToExoEvent, SwapUsdcToLstEvent,
 };
-use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYPE, HYUSD, ONYC, PST, USDC, WETH, XBTC, XETH, XHYPE,
   XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use crate::simulated_operation::SimulatedOperation;
 use crate::token_operation::{
@@ -527,4 +527,4 @@ macro_rules! exo_simulated_ops {
   };
 }
 
-exo_pairs!(exo_simulated_ops);
+with_exo_pairs!(exo_simulated_ops);

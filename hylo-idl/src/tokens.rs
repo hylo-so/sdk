@@ -137,11 +137,27 @@ impl StakePool for HYLOSOL {
 /// Exogenous collateral backing an `ExoPair`.
 pub trait Exo: TokenMint {}
 
-/// Calls `$cb` with every exo pair as `(collateral, levercoin, collateral
-/// exponent)`. Callers shape the list into impls, patterns, or arrays, and
-/// bring the token types they reference into scope.
+/// The roster of exo pairs, handed to a macro that shapes it.
+///
+/// `macro_rules!` cannot expand into another macro's argument list, so the
+/// roster invokes the caller rather than returning to it. `$cb` is called
+/// once with every pair at once, as a comma-separated list of
+/// `(collateral, levercoin, collateral exponent)`, and matches it with:
+///
+/// ```ignore
+/// macro_rules! shaper {
+///   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => { ... };
+/// }
+///
+/// with_exo_pairs!(shaper);
+/// ```
+///
+/// The shaper's expansion lands wherever `with_exo_pairs!` was invoked, so
+/// it can produce impls, match patterns, or array elements. Fragments it
+/// ignores never have to resolve, but the ones it uses resolve in the
+/// invoking module — bring those token types into scope there.
 #[macro_export]
-macro_rules! exo_pairs {
+macro_rules! with_exo_pairs {
   ($cb:ident) => {
     $cb! {
       (CBBTC, XBTC, N8),
@@ -160,4 +176,4 @@ macro_rules! impl_exo {
   };
 }
 
-exo_pairs!(impl_exo);
+with_exo_pairs!(impl_exo);

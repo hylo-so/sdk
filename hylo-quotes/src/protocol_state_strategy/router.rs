@@ -9,11 +9,11 @@ use hylo_clients::router_client::{
 };
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
   XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use crate::protocol_state::StateProvider;
 use crate::protocol_state_strategy::ProtocolStateStrategy;
@@ -127,4 +127,4 @@ macro_rules! exo_state_quotes {
   };
 }
 
-exo_pairs!(exo_state_quotes);
+with_exo_pairs!(exo_state_quotes);

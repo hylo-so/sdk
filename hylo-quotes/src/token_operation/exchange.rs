@@ -13,11 +13,11 @@ use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
-use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
   XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
@@ -1980,4 +1980,4 @@ macro_rules! exo_levercoin_ops {
   };
 }
 
-exo_pairs!(exo_levercoin_ops);
+with_exo_pairs!(exo_levercoin_ops);
