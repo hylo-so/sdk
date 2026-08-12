@@ -10,6 +10,7 @@ use hylo_clients::router_client::{
 };
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
   XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
@@ -128,21 +129,18 @@ simulation_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 simulation_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 macro_rules! exo_simulation_quotes {
-  ($exo:ident, $lever:ident, $exp:ty) => {
-    simulation_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
-    simulation_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
-    simulation_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
-    simulation_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
-    simulation_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
-    simulation_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-    simulation_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
-    simulation_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(
+      simulation_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
+      simulation_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+      simulation_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
+      simulation_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+      simulation_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
+      simulation_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+      simulation_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
+      simulation_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+    )+
   };
 }
 
-exo_simulation_quotes!(CBBTC, XBTC, N8);
-exo_simulation_quotes!(HYPE, XHYPE, N9);
-exo_simulation_quotes!(ZEC, XZEC, N8);
-exo_simulation_quotes!(PST, XPST, N6);
-exo_simulation_quotes!(ONYC, XONYC, N9);
-exo_simulation_quotes!(WETH, XETH, N8);
+exo_pairs!(exo_simulation_quotes);

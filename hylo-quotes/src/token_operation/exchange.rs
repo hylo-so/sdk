@@ -13,6 +13,7 @@ use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
+use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
   XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
@@ -1884,8 +1885,8 @@ impl<C: SolanaClock> TokenOperation<HYUSD, HYLOSOL> for ProtocolState<C> {
 }
 
 macro_rules! exo_levercoin_ops {
-  ($exo:ident, $lever:ident, $exp:ty) => {
-    impl<C: SolanaClock> TokenOperation<$exo, $lever> for ProtocolState<C> {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(impl<C: SolanaClock> TokenOperation<$exo, $lever> for ProtocolState<C> {
       type FeeExp = N9;
 
       fn preconditions(&self) -> Result<(), CoreError> {
@@ -1975,13 +1976,8 @@ macro_rules! exo_levercoin_ops {
       fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
         self.convert_lever_to_stable_exo_min_input::<$exo>()
       }
-    }
+    })+
   };
 }
 
-exo_levercoin_ops!(CBBTC, XBTC, N8);
-exo_levercoin_ops!(HYPE, XHYPE, N9);
-exo_levercoin_ops!(ZEC, XZEC, N8);
-exo_levercoin_ops!(PST, XPST, N6);
-exo_levercoin_ops!(ONYC, XONYC, N9);
-exo_levercoin_ops!(WETH, XETH, N8);
+exo_pairs!(exo_levercoin_ops);

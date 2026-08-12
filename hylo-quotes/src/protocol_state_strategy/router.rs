@@ -9,6 +9,7 @@ use hylo_clients::router_client::{
 };
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
   XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
@@ -112,21 +113,18 @@ state_quote!(HYUSD, SHYUSD, N6, ExecutableQuote<N6, N6, N6>);
 state_quote!(SHYUSD, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
 
 macro_rules! exo_state_quotes {
-  ($exo:ident, $lever:ident, $exp:ty) => {
-    state_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
-    state_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
-    state_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
-    state_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
-    state_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
-    state_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
-    state_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
-    state_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(
+      state_quote!($exo, HYUSD, N9, ExecutableQuote<$exp, N6, N9>);
+      state_quote!(HYUSD, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+      state_quote!($exo, $lever, N9, ExecutableQuote<$exp, N6, N9>);
+      state_quote!($lever, $exo, N9, ExecutableQuote<N6, $exp, N9>);
+      state_quote!(HYUSD, $lever, N6, ExecutableQuote<N6, N6, N6>);
+      state_quote!($lever, HYUSD, N6, ExecutableQuote<N6, N6, N6>);
+      state_quote!($exo, USDC, $exp, ExecutableQuote<$exp, N6, $exp>);
+      state_quote!(USDC, $exo, N6, ExecutableQuote<N6, $exp, N6>);
+    )+
   };
 }
 
-exo_state_quotes!(CBBTC, XBTC, N8);
-exo_state_quotes!(HYPE, XHYPE, N9);
-exo_state_quotes!(ZEC, XZEC, N8);
-exo_state_quotes!(PST, XPST, N6);
-exo_state_quotes!(ONYC, XONYC, N9);
-exo_state_quotes!(WETH, XETH, N8);
+exo_pairs!(exo_state_quotes);

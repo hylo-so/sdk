@@ -8,6 +8,7 @@ use hylo_core::pyth::PythOracle;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
+use hylo_idl::exo_pairs;
 use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route;
 use hylo_idl::tokens::{
@@ -163,7 +164,8 @@ router_instruction!(SHYUSD, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
 });
 
 macro_rules! exo_router_instructions {
-  ($exo:ident, $lever:ident) => {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(
     router_instruction!($exo, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
       account_builders::mint_stablecoin_exo(
         user,
@@ -237,12 +239,8 @@ macro_rules! exo_router_instructions {
     router_instruction!(USDC, $exo, BASE_LOOKUP_TABLES, $exo::MINT, |user| {
       account_builders::swap_usdc_to_exo(user, $exo::MINT, $exo::FEED.address)
     });
+    )+
   };
 }
 
-exo_router_instructions!(CBBTC, XBTC);
-exo_router_instructions!(HYPE, XHYPE);
-exo_router_instructions!(ZEC, XZEC);
-exo_router_instructions!(PST, XPST);
-exo_router_instructions!(ONYC, XONYC);
-exo_router_instructions!(WETH, XETH);
+exo_pairs!(exo_router_instructions);

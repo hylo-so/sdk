@@ -137,9 +137,27 @@ impl StakePool for HYLOSOL {
 /// Exogenous collateral backing an `ExoPair`.
 pub trait Exo: TokenMint {}
 
-impl Exo for CBBTC {}
-impl Exo for ZEC {}
-impl Exo for ONYC {}
-impl Exo for HYPE {}
-impl Exo for PST {}
-impl Exo for WETH {}
+/// Calls `$cb` with every exo pair as `(collateral, levercoin, collateral
+/// exponent)`. Callers shape the list into impls, patterns, or arrays, and
+/// bring the token types they reference into scope.
+#[macro_export]
+macro_rules! exo_pairs {
+  ($cb:ident) => {
+    $cb! {
+      (CBBTC, XBTC, N8),
+      (HYPE, XHYPE, N9),
+      (ONYC, XONYC, N9),
+      (PST, XPST, N6),
+      (WETH, XETH, N8),
+      (ZEC, XZEC, N8),
+    }
+  };
+}
+
+macro_rules! impl_exo {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(impl Exo for $exo {})+
+  };
+}
+
+exo_pairs!(impl_exo);
