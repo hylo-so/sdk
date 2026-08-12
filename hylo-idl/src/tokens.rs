@@ -146,8 +146,6 @@ pub trait Exo: TokenMint {}
 ///
 /// with_exo_pairs!(shaper);
 /// ```
-///
-/// Token types the shaper uses must be in scope where it is invoked.
 #[macro_export]
 macro_rules! with_exo_pairs {
   ($cb:ident) => {
