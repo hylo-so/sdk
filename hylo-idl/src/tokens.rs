@@ -137,11 +137,19 @@ impl StakePool for HYLOSOL {
 /// Exogenous collateral backing an `ExoPair`.
 pub trait Exo: TokenMint {}
 
-/// Calls `$cb` with every exo pair as `(collateral, levercoin, collateral
-/// exponent)`. Callers shape the list into impls, patterns, or arrays, and
-/// bring the token types they reference into scope.
+/// Calls `$cb` once with every exo pair, expanding at the call site.
+///
+/// ```ignore
+/// macro_rules! shaper {
+///   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => { ... };
+/// }
+///
+/// with_exo_pairs!(shaper);
+/// ```
+///
+/// Token types the shaper uses must be in scope where it is invoked.
 #[macro_export]
-macro_rules! exo_pairs {
+macro_rules! with_exo_pairs {
   ($cb:ident) => {
     $cb! {
       (CBBTC, XBTC, N8),
@@ -160,4 +168,4 @@ macro_rules! impl_exo {
   };
 }
 
-exo_pairs!(impl_exo);
+with_exo_pairs!(impl_exo);

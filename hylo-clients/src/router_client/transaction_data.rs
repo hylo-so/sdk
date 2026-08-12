@@ -1,11 +1,11 @@
 //! [`BuildTransactionData`] impls for [`RouterClient`].
 
 use anyhow::Result;
-use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{
   CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
   XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use super::{InstructionBuilderExt, RouterArgs, RouterClient};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -95,4 +95,4 @@ macro_rules! exo_router_transaction_data {
   };
 }
 
-exo_pairs!(exo_router_transaction_data);
+with_exo_pairs!(exo_router_transaction_data);

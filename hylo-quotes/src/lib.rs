@@ -98,8 +98,8 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::{UFix64, UFixValue64};
 use fix::typenum::Integer;
-use hylo_idl::exo_pairs;
 use hylo_idl::tokens::{CBBTC, HYLOSOL, HYPE, JITOSOL, ONYC, PST, WETH, ZEC};
+use hylo_idl::with_exo_pairs;
 
 pub mod prelude;
 pub mod protocol_state;
@@ -199,4 +199,4 @@ macro_rules! impl_local_exo {
   };
 }
 
-exo_pairs!(impl_local_exo);
+with_exo_pairs!(impl_local_exo);

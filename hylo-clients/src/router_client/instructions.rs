@@ -8,13 +8,13 @@ use hylo_core::pyth::PythOracle;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
-use hylo_idl::exo_pairs;
 use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route;
 use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
   SHYUSD, USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use super::{InstructionBuilder, RouterArgs, RouterClient};
 use crate::util::{
@@ -243,4 +243,4 @@ macro_rules! exo_router_instructions {
   };
 }
 
-exo_pairs!(exo_router_instructions);
+with_exo_pairs!(exo_router_instructions);
