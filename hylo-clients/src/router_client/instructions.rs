@@ -14,6 +14,7 @@ use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
   SHYUSD, USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use super::{InstructionBuilder, RouterArgs, RouterClient};
 use crate::util::{
@@ -163,7 +164,8 @@ router_instruction!(SHYUSD, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
 });
 
 macro_rules! exo_router_instructions {
-  ($exo:ident, $lever:ident) => {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(
     router_instruction!($exo, HYUSD, BASE_LOOKUP_TABLES, HYUSD::MINT, |user| {
       account_builders::mint_stablecoin_exo(
         user,
@@ -237,12 +239,8 @@ macro_rules! exo_router_instructions {
     router_instruction!(USDC, $exo, BASE_LOOKUP_TABLES, $exo::MINT, |user| {
       account_builders::swap_usdc_to_exo(user, $exo::MINT, $exo::FEED.address)
     });
+    )+
   };
 }
 
-exo_router_instructions!(CBBTC, XBTC);
-exo_router_instructions!(HYPE, XHYPE);
-exo_router_instructions!(ZEC, XZEC);
-exo_router_instructions!(PST, XPST);
-exo_router_instructions!(ONYC, XONYC);
-exo_router_instructions!(WETH, XETH);
+with_exo_pairs!(exo_router_instructions);

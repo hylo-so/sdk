@@ -16,6 +16,7 @@ use hylo_idl::tokens::{
   TokenMint, CBBTC, HYPE, HYUSD, ONYC, PST, USDC, WETH, XBTC, XETH, XHYPE,
   XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use crate::simulated_operation::SimulatedOperation;
 use crate::token_operation::{
@@ -308,8 +309,8 @@ impl<L: LST + Local> SimulatedOperation<USDC, L> for RouterClient {
 }
 
 macro_rules! exo_simulated_ops {
-  ($exo:ident, $lever:ident, $exp:ty) => {
-    impl SimulatedOperation<$exo, HYUSD> for RouterClient {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(impl SimulatedOperation<$exo, HYUSD> for RouterClient {
       type FeeExp = N9;
       type Event = MintStablecoinExoEvent;
 
@@ -522,13 +523,8 @@ macro_rules! exo_simulated_ops {
           marginal_rate: linear_rate(in_amount, out_amount)?,
         })
       }
-    }
+    })+
   };
 }
 
-exo_simulated_ops!(CBBTC, XBTC, N8);
-exo_simulated_ops!(HYPE, XHYPE, N9);
-exo_simulated_ops!(ZEC, XZEC, N8);
-exo_simulated_ops!(PST, XPST, N6);
-exo_simulated_ops!(ONYC, XONYC, N9);
-exo_simulated_ops!(WETH, XETH, N8);
+with_exo_pairs!(exo_simulated_ops);

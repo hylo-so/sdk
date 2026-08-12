@@ -99,6 +99,7 @@ use anchor_lang::prelude::Pubkey;
 use fix::prelude::{UFix64, UFixValue64};
 use fix::typenum::Integer;
 use hylo_idl::tokens::{CBBTC, HYLOSOL, HYPE, JITOSOL, ONYC, PST, WETH, ZEC};
+use hylo_idl::with_exo_pairs;
 
 pub mod prelude;
 pub mod protocol_state;
@@ -191,9 +192,11 @@ impl Local for JITOSOL {}
 impl Local for HYLOSOL {}
 
 pub(crate) trait LocalExo {}
-impl LocalExo for CBBTC {}
-impl LocalExo for ZEC {}
-impl LocalExo for ONYC {}
-impl LocalExo for HYPE {}
-impl LocalExo for PST {}
-impl LocalExo for WETH {}
+
+macro_rules! impl_local_exo {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(impl LocalExo for $exo {})+
+  };
+}
+
+with_exo_pairs!(impl_local_exo);

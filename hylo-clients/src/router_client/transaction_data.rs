@@ -5,6 +5,7 @@ use hylo_idl::tokens::{
   CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD, USDC, WETH, XBTC,
   XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
+use hylo_idl::with_exo_pairs;
 
 use super::{InstructionBuilderExt, RouterArgs, RouterClient};
 use crate::program_client::{ProgramClient, VersionedTransactionData};
@@ -80,21 +81,18 @@ router_transaction_data!(HYUSD, SHYUSD);
 router_transaction_data!(SHYUSD, HYUSD);
 
 macro_rules! exo_router_transaction_data {
-  ($exo:ident, $lever:ident) => {
-    router_transaction_data!($exo, HYUSD);
-    router_transaction_data!(HYUSD, $exo);
-    router_transaction_data!($exo, $lever);
-    router_transaction_data!($lever, $exo);
-    router_transaction_data!(HYUSD, $lever);
-    router_transaction_data!($lever, HYUSD);
-    router_transaction_data!($exo, USDC);
-    router_transaction_data!(USDC, $exo);
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    $(
+      router_transaction_data!($exo, HYUSD);
+      router_transaction_data!(HYUSD, $exo);
+      router_transaction_data!($exo, $lever);
+      router_transaction_data!($lever, $exo);
+      router_transaction_data!(HYUSD, $lever);
+      router_transaction_data!($lever, HYUSD);
+      router_transaction_data!($exo, USDC);
+      router_transaction_data!(USDC, $exo);
+    )+
   };
 }
 
-exo_router_transaction_data!(CBBTC, XBTC);
-exo_router_transaction_data!(HYPE, XHYPE);
-exo_router_transaction_data!(ZEC, XZEC);
-exo_router_transaction_data!(PST, XPST);
-exo_router_transaction_data!(ONYC, XONYC);
-exo_router_transaction_data!(WETH, XETH);
+with_exo_pairs!(exo_router_transaction_data);
