@@ -5,6 +5,29 @@ use fix::typenum::Integer;
 
 use crate::{earn_pool, exchange, pda};
 
+/// Calls `$cb` "shaper" macro once for every exo pair.
+///
+/// ```ignore
+/// macro_rules! shaper {
+///   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => { ... };
+/// }
+///
+/// with_exo_pairs!(shaper);
+/// ```
+#[macro_export]
+macro_rules! with_exo_pairs {
+  ($cb:ident) => {
+    $cb! {
+      (CBBTC, XBTC, N8),
+      (HYPE, XHYPE, N9),
+      (ONYC, XONYC, N9),
+      (PST, XPST, N6),
+      (WETH, XETH, N8),
+      (ZEC, XZEC, N8),
+    }
+  };
+}
+
 pub trait TokenMint {
   type Exp: Integer;
   const MINT: Pubkey;
@@ -136,29 +159,6 @@ impl StakePool for HYLOSOL {
 
 /// Exogenous collateral backing an `ExoPair`.
 pub trait Exo: TokenMint {}
-
-/// Calls `$cb` "shaper" macro once for every exo pair.
-///
-/// ```ignore
-/// macro_rules! shaper {
-///   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => { ... };
-/// }
-///
-/// with_exo_pairs!(shaper);
-/// ```
-#[macro_export]
-macro_rules! with_exo_pairs {
-  ($cb:ident) => {
-    $cb! {
-      (CBBTC, XBTC, N8),
-      (HYPE, XHYPE, N9),
-      (ONYC, XONYC, N9),
-      (PST, XPST, N6),
-      (WETH, XETH, N8),
-      (ZEC, XZEC, N8),
-    }
-  };
-}
 
 macro_rules! impl_exo {
   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
