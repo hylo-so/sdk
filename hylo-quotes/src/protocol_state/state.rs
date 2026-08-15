@@ -22,10 +22,12 @@ use hylo_core::pyth::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYLOSOL, JITOSOL};
+use hylo_idl::tokens::{
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, JITOSOL, ONYC, PST, WETH, ZEC,
+};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use crate::protocol_state::ProtocolAccounts;
+use crate::protocol_state::{ExoPairAccounts, ProtocolAccounts};
 use crate::LST;
 
 /// USDC exchange state for stablecoin mint/redeem.
@@ -115,6 +117,31 @@ impl<C: SolanaClock> ExoPairState<C> {
   }
 }
 
+/// Selects the slot holding exo collateral `E` among the roster pairs.
+///
+/// cbBTC is always present; every other roster pair may be unregistered on
+/// chain, and an absent one reads as [`CoreError::UnknownExoMint`] without
+/// touching the slots that are filled. Generic over the slot type so the
+/// mint-to-slot mapping is exercisable without protocol data.
+fn exo_slot<'a, E: Exo, T>(
+  cbbtc: &'a T,
+  hype: Option<&'a T>,
+  onyc: Option<&'a T>,
+  pst: Option<&'a T>,
+  weth: Option<&'a T>,
+  zec: Option<&'a T>,
+) -> Result<&'a T, CoreError> {
+  match E::MINT {
+    CBBTC::MINT => Ok(cbbtc),
+    HYPE::MINT => hype.ok_or(CoreError::UnknownExoMint),
+    ONYC::MINT => onyc.ok_or(CoreError::UnknownExoMint),
+    PST::MINT => pst.ok_or(CoreError::UnknownExoMint),
+    WETH::MINT => weth.ok_or(CoreError::UnknownExoMint),
+    ZEC::MINT => zec.ok_or(CoreError::UnknownExoMint),
+    _ => Err(CoreError::UnknownExoMint),
+  }
+}
+
 /// Complete snapshot of Hylo protocol state
 #[derive(Clone)]
 #[allow(clippy::struct_excessive_bools)]
@@ -152,6 +179,21 @@ pub struct ProtocolState<C: SolanaClock> {
   /// cbBTC exo pair
   pub cbbtc_pair: ExoPairState<C>,
 
+  /// HYPE exo pair, absent unless its accounts loaded
+  pub hype_pair: Option<ExoPairState<C>>,
+
+  /// ONYC exo pair, absent unless its accounts loaded
+  pub onyc_pair: Option<ExoPairState<C>>,
+
+  /// PST exo pair, absent unless its accounts loaded
+  pub pst_pair: Option<ExoPairState<C>>,
+
+  /// WETH exo pair, absent unless its accounts loaded
+  pub weth_pair: Option<ExoPairState<C>>,
+
+  /// ZEC exo pair, absent unless its accounts loaded
+  pub zec_pair: Option<ExoPairState<C>>,
+
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
 
@@ -185,6 +227,10 @@ pub struct ProtocolState<C: SolanaClock> {
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// Build `ProtocolState` from deserialized accounts and a clock.
+  ///
+  /// Every exo pair other than cbBTC starts unset; fill the pair fields —
+  /// or go through [`ProtocolState::try_from`] on [`ProtocolAccounts`] — to
+  /// quote the rest of the roster.
   ///
   /// # Errors
   /// * Propagates errors from `ExchangeContext::load`.
@@ -224,6 +270,11 @@ impl<C: SolanaClock> ProtocolState<C> {
       fetched_at,
       lst_swap_config,
       cbbtc_pair,
+      hype_pair: None,
+      onyc_pair: None,
+      pst_pair: None,
+      weth_pair: None,
+      zec_pair: None,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -275,13 +326,21 @@ impl<C: SolanaClock> ProtocolState<C> {
 
   /// Selects the pair state for a registered exo collateral.
   ///
+  /// A roster collateral whose pair is unregistered on chain, or whose
+  /// accounts failed to load, reads as [`CoreError::UnknownExoMint`] here
+  /// and nowhere else: the pairs that did load stay quotable.
+  ///
   /// # Errors
   /// * Collateral has no registered pair in this snapshot
   pub fn exo_pair<E: Exo>(&self) -> Result<&ExoPairState<C>, CoreError> {
-    match E::MINT {
-      CBBTC::MINT => Ok(&self.cbbtc_pair),
-      _ => Err(CoreError::UnknownExoMint),
-    }
+    exo_slot::<E, ExoPairState<C>>(
+      &self.cbbtc_pair,
+      self.hype_pair.as_ref(),
+      self.onyc_pair.as_ref(),
+      self.pst_pair.as_ref(),
+      self.weth_pair.as_ref(),
+      self.zec_pair.as_ref(),
+    )
   }
 
   #[must_use]
@@ -373,6 +432,31 @@ where
   ExoPairState::new(&exo_pair, context, oracle_publish_time)
 }
 
+/// Builds the [`ExoPairState`] for collateral `E` from its optional accounts.
+///
+/// Yields `None` when the pair is unregistered, or when its accounts fail
+/// deserialization or oracle validation. That collateral alone then reports
+/// [`CoreError::UnknownExoMint`] from [`ProtocolState::exo_pair`], which is
+/// the normal case: most roster collaterals have no `ExoPair` on chain, and
+/// one of them must not cost the pairs that do exist their quotes.
+fn optional_exo_pair<E: Exo>(
+  clock: &Clock,
+  accounts: Option<&ExoPairAccounts>,
+) -> Option<ExoPairState<Clock>>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  let accounts = accounts?;
+  build_exo_pair_state::<E>(
+    clock.clone(),
+    &accounts.exo_pair,
+    &accounts.vault,
+    &accounts.levercoin_mint,
+    &accounts.collateral_usd_pyth,
+  )
+  .ok()
+}
+
 /// Builds USDC exchange state from protocol accounts.
 ///
 /// # Errors
@@ -455,6 +539,16 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       &accounts.xbtc_mint,
       &accounts.btc_usd_pyth,
     )?;
+    let hype_pair =
+      optional_exo_pair::<HYPE>(&clock, accounts.hype_pair_accounts.as_ref());
+    let onyc_pair =
+      optional_exo_pair::<ONYC>(&clock, accounts.onyc_pair_accounts.as_ref());
+    let pst_pair =
+      optional_exo_pair::<PST>(&clock, accounts.pst_pair_accounts.as_ref());
+    let weth_pair =
+      optional_exo_pair::<WETH>(&clock, accounts.weth_pair_accounts.as_ref());
+    let zec_pair =
+      optional_exo_pair::<ZEC>(&clock, accounts.zec_pair_accounts.as_ref());
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =
@@ -490,5 +584,87 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       UFix64::new(hylosol_vault.amount),
       sol_stablecoin_oracle_valid,
     )
+    .map(|state| ProtocolState {
+      hype_pair,
+      onyc_pair,
+      pst_pair,
+      weth_pair,
+      zec_pair,
+      ..state
+    })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// Reads `E`'s slot from a snapshot where every pair loaded, each marked
+  /// with its own value.
+  fn marked_slot<E: Exo>() -> Result<u8, CoreError> {
+    exo_slot::<E, u8>(&0, Some(&1), Some(&2), Some(&3), Some(&4), Some(&5))
+      .copied()
+  }
+
+  /// Reads `E`'s slot from the partial snapshot the protocol actually
+  /// returns today: cbBTC and one other pair registered, the rest not.
+  fn partial_slot<E: Exo>() -> Result<u8, CoreError> {
+    exo_slot::<E, u8>(&0, None, None, None, None, Some(&5)).copied()
+  }
+
+  /// Accounts carrying no data, as a pair that fails to deserialize would.
+  fn unloadable_accounts() -> ExoPairAccounts {
+    ExoPairAccounts {
+      exo_pair: Account::default(),
+      vault: Account::default(),
+      levercoin_mint: Account::default(),
+      collateral_usd_pyth: Account::default(),
+    }
+  }
+
+  #[test]
+  fn each_roster_pair_reads_its_own_slot() -> Result<(), CoreError> {
+    assert_eq!(marked_slot::<CBBTC>()?, 0);
+    assert_eq!(marked_slot::<HYPE>()?, 1);
+    assert_eq!(marked_slot::<ONYC>()?, 2);
+    assert_eq!(marked_slot::<PST>()?, 3);
+    assert_eq!(marked_slot::<WETH>()?, 4);
+    assert_eq!(marked_slot::<ZEC>()?, 5);
+    Ok(())
+  }
+
+  #[test]
+  fn an_unregistered_pair_costs_only_its_own_routes() {
+    assert_eq!(partial_slot::<CBBTC>().ok(), Some(0));
+    assert_eq!(partial_slot::<ZEC>().ok(), Some(5));
+    assert!(matches!(
+      partial_slot::<HYPE>(),
+      Err(CoreError::UnknownExoMint)
+    ));
+    assert!(matches!(
+      partial_slot::<ONYC>(),
+      Err(CoreError::UnknownExoMint)
+    ));
+    assert!(matches!(
+      partial_slot::<PST>(),
+      Err(CoreError::UnknownExoMint)
+    ));
+    assert!(matches!(
+      partial_slot::<WETH>(),
+      Err(CoreError::UnknownExoMint)
+    ));
+  }
+
+  #[test]
+  fn absent_accounts_leave_the_pair_unset() {
+    assert!(optional_exo_pair::<HYPE>(&Clock::default(), None).is_none());
+  }
+
+  #[test]
+  fn unloadable_accounts_leave_the_pair_unset() {
+    let accounts = unloadable_accounts();
+    assert!(
+      optional_exo_pair::<HYPE>(&Clock::default(), Some(&accounts)).is_none()
+    );
   }
 }

@@ -8,11 +8,20 @@ use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_core::error::CoreError;
 use hylo_core::pyth::PythOracle;
-use hylo_idl::pda;
 use hylo_idl::tokens::{
-  Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
+  SHYUSD, USDC, WETH, XSOL, ZEC,
 };
+use hylo_idl::{pda, with_exo_pairs};
 use serde::{Deserialize, Serialize};
+
+/// Protocol accounts fetched ahead of the appended exo pair windows.
+///
+/// Indices `0..21` are the fetch order shipped in 2.2.2 and never move.
+const BASE_ACCOUNTS: usize = 21;
+
+/// Accounts fetched per exo pair: pair PDA, vault, levercoin mint, feed.
+const EXO_WINDOW_LEN: usize = 4;
 
 /// Extracts the fetched account at `index`, named `name` in errors.
 ///
@@ -29,6 +38,56 @@ fn fetched_account(
     .cloned()
     .ok_or(CoreError::ProtocolAccountNotFound)
     .with_context(|| format!("{name} not found"))
+}
+
+/// Position of `pubkey` in [`ProtocolAccounts::PUBKEYS`].
+fn pubkey_index(pubkey: &Pubkey) -> Option<usize> {
+  ProtocolAccounts::PUBKEYS
+    .iter()
+    .position(|key| key == pubkey)
+}
+
+/// Reads the four-account window of exo collateral `E` from a fetch response.
+///
+/// Yields `None` unless the whole window came back, which is the ordinary
+/// case: most roster collaterals have no `ExoPair` registered on chain, and
+/// an unregistered one must never fail the fetch for the pairs that do
+/// exist.
+fn exo_pair_accounts<E: Exo + PythOracle>(
+  accounts: &[Option<Account>],
+) -> Option<ExoPairAccounts> {
+  let base = pubkey_index(&pda::exo_pair(E::MINT))?;
+  match accounts.get(base..base + EXO_WINDOW_LEN)? {
+    [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_usd_pyth)] => {
+      Some(ExoPairAccounts {
+        exo_pair: exo_pair.clone(),
+        vault: vault.clone(),
+        levercoin_mint: levercoin_mint.clone(),
+        collateral_usd_pyth: collateral_usd_pyth.clone(),
+      })
+    }
+    _ => None,
+  }
+}
+
+/// The four accounts backing one exo pair.
+///
+/// Groups what the cbBTC fields of [`ProtocolAccounts`] hold flat, so a
+/// collateral whose pair is unregistered is absent as a whole rather than
+/// half-loaded.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExoPairAccounts {
+  /// `ExoPair` PDA
+  pub exo_pair: Account,
+
+  /// Collateral vault token account
+  pub vault: Account,
+
+  /// Levercoin mint
+  pub levercoin_mint: Account,
+
+  /// Pyth collateral/USD price feed
+  pub collateral_usd_pyth: Account,
 }
 
 /// Type-safe collection of protocol state accounts
@@ -96,36 +155,95 @@ pub struct ProtocolAccounts {
 
   /// USDC collateral vault token account
   pub usdc_vault: Account,
+
+  /// HYPE exo pair accounts, absent unless the pair is registered on chain
+  #[serde(default)]
+  pub hype_pair_accounts: Option<ExoPairAccounts>,
+
+  /// ONYC exo pair accounts, absent unless the pair is registered on chain
+  #[serde(default)]
+  pub onyc_pair_accounts: Option<ExoPairAccounts>,
+
+  /// PST exo pair accounts, absent unless the pair is registered on chain
+  #[serde(default)]
+  pub pst_pair_accounts: Option<ExoPairAccounts>,
+
+  /// WETH exo pair accounts, absent unless the pair is registered on chain
+  #[serde(default)]
+  pub weth_pair_accounts: Option<ExoPairAccounts>,
+
+  /// ZEC exo pair accounts, absent unless the pair is registered on chain
+  #[serde(default)]
+  pub zec_pair_accounts: Option<ExoPairAccounts>,
 }
 
-impl ProtocolAccounts {
-  /// Protocol account pubkeys in RPC fetch order.
-  ///
-  /// This order matches the struct field order.
-  pub const PUBKEYS: [Pubkey; 21] = [
-    pda::HYLO,
-    pda::lst_header(JITOSOL::MINT),
-    pda::lst_header(HYLOSOL::MINT),
-    HYUSD::MINT,
-    SHYUSD::MINT,
-    XSOL::MINT,
-    pda::POOL_CONFIG,
-    pda::HYUSD_POOL,
-    hylo_core::pyth::SOL_USD.address,
-    sysvar::clock::ID,
-    pda::exo_pair(CBBTC::MINT),
-    pda::exo_vault(CBBTC::MINT),
-    pda::exo_levercoin_mint(CBBTC::MINT),
-    CBBTC::FEED.address,
-    pda::USDC_PAIR,
-    pda::USDC_USD_PYTH_FEED,
-    JITOSOL::POOL_STATE,
-    HYLOSOL::POOL_STATE,
-    pda::lst_vault(JITOSOL::MINT),
-    pda::lst_vault(HYLOSOL::MINT),
-    pda::usdc_vault(USDC::MINT),
-  ];
+/// Builds [`ProtocolAccounts::PUBKEYS`] from the exo pair roster.
+///
+/// cbBTC keeps the window it has always held at indices `10..14`, so every
+/// index of the 2.2.2 array is preserved; the remaining roster pairs append
+/// their windows after the base accounts, in roster order. Requesting a
+/// window whose `ExoPair` is not registered on chain is harmless: the
+/// accounts come back empty and [`ProtocolAccounts::from_fetched`] leaves
+/// that pair unset.
+macro_rules! protocol_pubkeys {
+  (
+    (CBBTC, $cbbtc_lever:ident, $cbbtc_exp:ty),
+    $(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?
+  ) => {
+    /// Roster exo pairs whose windows append after the base accounts.
+    const APPENDED_PAIRS: usize = [$(<$exo>::MINT),+].len();
 
+    impl ProtocolAccounts {
+      /// Protocol account pubkeys in RPC fetch order.
+      ///
+      /// The first [`BASE_ACCOUNTS`] entries match the struct field order
+      /// through `usdc_vault` and keep the indices they had in 2.2.2. Each
+      /// remaining roster pair then appends a four-account window — pair
+      /// PDA, vault, levercoin mint, collateral/USD feed — in the order the
+      /// `with_exo_pairs!` roster lists them.
+      pub const PUBKEYS: [Pubkey;
+        BASE_ACCOUNTS + EXO_WINDOW_LEN * APPENDED_PAIRS] = [
+        pda::HYLO,
+        pda::lst_header(JITOSOL::MINT),
+        pda::lst_header(HYLOSOL::MINT),
+        HYUSD::MINT,
+        SHYUSD::MINT,
+        XSOL::MINT,
+        pda::POOL_CONFIG,
+        pda::HYUSD_POOL,
+        hylo_core::pyth::SOL_USD.address,
+        sysvar::clock::ID,
+        pda::exo_pair(CBBTC::MINT),
+        pda::exo_vault(CBBTC::MINT),
+        pda::exo_levercoin_mint(CBBTC::MINT),
+        CBBTC::FEED.address,
+        pda::USDC_PAIR,
+        pda::USDC_USD_PYTH_FEED,
+        JITOSOL::POOL_STATE,
+        HYLOSOL::POOL_STATE,
+        pda::lst_vault(JITOSOL::MINT),
+        pda::lst_vault(HYLOSOL::MINT),
+        pda::usdc_vault(USDC::MINT),
+        $(
+          pda::exo_pair(<$exo>::MINT),
+          pda::exo_vault(<$exo>::MINT),
+          pda::exo_levercoin_mint(<$exo>::MINT),
+          <$exo>::FEED.address,
+        )+
+      ];
+    }
+  };
+  ($($roster:tt)*) => {
+    compile_error!(
+      "cbBTC must stay first in `with_exo_pairs!`: `ProtocolAccounts::PUBKEYS` \
+       pins its window to indices 10..14"
+    );
+  };
+}
+
+with_exo_pairs!(protocol_pubkeys);
+
+impl ProtocolAccounts {
   /// Get the list of account pubkeys in the order expected by RPC
   #[deprecated(since = "2.1.0", note = "use `ProtocolAccounts::PUBKEYS`")]
   #[must_use]
@@ -169,9 +287,13 @@ impl ProtocolAccounts {
 
   /// Build from RPC-fetched accounts in [`ProtocolAccounts::PUBKEYS`] order.
   ///
+  /// The appended exo pair windows are the tolerant part of the response: a
+  /// pair missing any of its four accounts is left unset instead of failing
+  /// the build, so an unregistered collateral costs only its own routes.
+  ///
   /// # Errors
   /// * Account count differs from [`ProtocolAccounts::PUBKEYS`] length
-  /// * Any account is missing
+  /// * Any base account is missing
   pub fn from_fetched(
     accounts: &[Option<Account>],
   ) -> Result<ProtocolAccounts> {
@@ -203,6 +325,11 @@ impl ProtocolAccounts {
       jitosol_vault: fetched_account(accounts, 18, "JitoSOL vault")?,
       hylosol_vault: fetched_account(accounts, 19, "hyloSOL vault")?,
       usdc_vault: fetched_account(accounts, 20, "USDC vault")?,
+      hype_pair_accounts: exo_pair_accounts::<HYPE>(accounts),
+      onyc_pair_accounts: exo_pair_accounts::<ONYC>(accounts),
+      pst_pair_accounts: exo_pair_accounts::<PST>(accounts),
+      weth_pair_accounts: exo_pair_accounts::<WETH>(accounts),
+      zec_pair_accounts: exo_pair_accounts::<ZEC>(accounts),
     })
   }
 
@@ -261,5 +388,150 @@ impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
   ) -> Result<ProtocolAccounts> {
     ProtocolAccounts::validate(pubkeys, accounts)?;
     ProtocolAccounts::from_fetched(accounts)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// The fetch order published in 2.2.2, which no release may renumber.
+  const BASE_PUBKEYS: [Pubkey; BASE_ACCOUNTS] = [
+    pda::HYLO,
+    pda::lst_header(JITOSOL::MINT),
+    pda::lst_header(HYLOSOL::MINT),
+    HYUSD::MINT,
+    SHYUSD::MINT,
+    XSOL::MINT,
+    pda::POOL_CONFIG,
+    pda::HYUSD_POOL,
+    hylo_core::pyth::SOL_USD.address,
+    sysvar::clock::ID,
+    pda::exo_pair(CBBTC::MINT),
+    pda::exo_vault(CBBTC::MINT),
+    pda::exo_levercoin_mint(CBBTC::MINT),
+    CBBTC::FEED.address,
+    pda::USDC_PAIR,
+    pda::USDC_USD_PYTH_FEED,
+    JITOSOL::POOL_STATE,
+    HYLOSOL::POOL_STATE,
+    pda::lst_vault(JITOSOL::MINT),
+    pda::lst_vault(HYLOSOL::MINT),
+    pda::usdc_vault(USDC::MINT),
+  ];
+
+  /// Collateral mint and Pyth feed of each appended window, in fetch order.
+  const APPENDED_WINDOWS: [(Pubkey, Pubkey); APPENDED_PAIRS] = [
+    (HYPE::MINT, HYPE::FEED.address),
+    (ONYC::MINT, ONYC::FEED.address),
+    (PST::MINT, PST::FEED.address),
+    (WETH::MINT, WETH::FEED.address),
+    (ZEC::MINT, ZEC::FEED.address),
+  ];
+
+  /// A fetch response in which every requested account exists.
+  fn all_present() -> Vec<Option<Account>> {
+    vec![Some(Account::default()); ProtocolAccounts::PUBKEYS.len()]
+  }
+
+  /// The mainnet-shaped response: cbBTC is the only registered exo pair, so
+  /// every appended window comes back empty.
+  fn base_only() -> Vec<Option<Account>> {
+    (0..ProtocolAccounts::PUBKEYS.len())
+      .map(|i| (i < BASE_ACCOUNTS).then(Account::default))
+      .collect()
+  }
+
+  /// First index of the window fetched for `collateral_mint`.
+  fn window_base(collateral_mint: Pubkey) -> Result<usize> {
+    pubkey_index(&pda::exo_pair(collateral_mint))
+      .context("collateral has no window in PUBKEYS")
+  }
+
+  #[test]
+  fn base_pubkeys_keep_their_indices() {
+    assert_eq!(ProtocolAccounts::PUBKEYS[..BASE_ACCOUNTS], BASE_PUBKEYS);
+    assert_eq!(
+      ProtocolAccounts::PUBKEYS.len(),
+      BASE_ACCOUNTS + EXO_WINDOW_LEN * APPENDED_PAIRS
+    );
+  }
+
+  #[test]
+  fn cbbtc_window_stays_within_the_base() -> Result<()> {
+    assert_eq!(window_base(CBBTC::MINT)?, 10);
+    Ok(())
+  }
+
+  #[test]
+  fn roster_windows_append_in_order() {
+    APPENDED_WINDOWS.iter().enumerate().for_each(
+      |(i, (collateral_mint, feed))| {
+        let base = BASE_ACCOUNTS + EXO_WINDOW_LEN * i;
+        assert_eq!(
+          ProtocolAccounts::PUBKEYS[base],
+          pda::exo_pair(*collateral_mint)
+        );
+        assert_eq!(
+          ProtocolAccounts::PUBKEYS[base + 1],
+          pda::exo_vault(*collateral_mint)
+        );
+        assert_eq!(
+          ProtocolAccounts::PUBKEYS[base + 2],
+          pda::exo_levercoin_mint(*collateral_mint)
+        );
+        assert_eq!(ProtocolAccounts::PUBKEYS[base + 3], *feed);
+      },
+    );
+  }
+
+  #[test]
+  fn appended_window_matches_the_isolated_fetch() -> Result<()> {
+    let base = window_base(HYPE::MINT)?;
+    let isolated = ProtocolAccounts::exo_pubkeys::<HYPE>();
+    assert_eq!(
+      ProtocolAccounts::PUBKEYS[base..base + EXO_WINDOW_LEN],
+      isolated[..EXO_WINDOW_LEN]
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn every_registered_window_is_read() -> Result<()> {
+    let accounts = ProtocolAccounts::from_fetched(&all_present())?;
+    assert!(accounts.hype_pair_accounts.is_some());
+    assert!(accounts.onyc_pair_accounts.is_some());
+    assert!(accounts.pst_pair_accounts.is_some());
+    assert!(accounts.weth_pair_accounts.is_some());
+    assert!(accounts.zec_pair_accounts.is_some());
+    Ok(())
+  }
+
+  #[test]
+  fn unregistered_pairs_do_not_fail_the_fetch() -> Result<()> {
+    let accounts = ProtocolAccounts::from_fetched(&base_only())?;
+    assert!(accounts.hype_pair_accounts.is_none());
+    assert!(accounts.onyc_pair_accounts.is_none());
+    assert!(accounts.pst_pair_accounts.is_none());
+    assert!(accounts.weth_pair_accounts.is_none());
+    assert!(accounts.zec_pair_accounts.is_none());
+    Ok(())
+  }
+
+  #[test]
+  fn partial_window_is_dropped_whole() -> Result<()> {
+    let mut fetched = all_present();
+    fetched[window_base(ZEC::MINT)? + 1] = None;
+    let accounts = ProtocolAccounts::from_fetched(&fetched)?;
+    assert!(accounts.zec_pair_accounts.is_none());
+    assert!(accounts.weth_pair_accounts.is_some());
+    Ok(())
+  }
+
+  #[test]
+  fn missing_base_account_still_fails() {
+    let mut fetched = all_present();
+    fetched[BASE_ACCOUNTS - 1] = None;
+    assert!(ProtocolAccounts::from_fetched(&fetched).is_err());
   }
 }
