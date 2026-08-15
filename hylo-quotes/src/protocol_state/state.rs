@@ -3,8 +3,11 @@
 //! Contains the `ProtocolState` struct and its construction from protocol
 //! accounts.
 
+use std::collections::BTreeMap;
+
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
+use anchor_lang::prelude::Pubkey;
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
@@ -22,10 +25,13 @@ use hylo_core::pyth::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYLOSOL, JITOSOL};
+use hylo_idl::tokens::{
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, JITOSOL, ONYC, PST, WETH, ZEC,
+};
+use hylo_idl::with_exo_pairs;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use crate::protocol_state::ProtocolAccounts;
+use crate::protocol_state::{ExoAccounts, ProtocolAccounts};
 use crate::LST;
 
 /// USDC exchange state for stablecoin mint/redeem.
@@ -149,8 +155,13 @@ pub struct ProtocolState<C: SolanaClock> {
   /// LST swap configuration
   pub lst_swap_config: AssetSwapConfig,
 
-  /// cbBTC exo pair
-  pub cbbtc_pair: ExoPairState<C>,
+  /// Quotable exo pairs, keyed by collateral mint.
+  ///
+  /// A roster collateral is absent when its pair is unregistered on chain or
+  /// when its accounts failed to load; either way it is not quotable from
+  /// this snapshot. Compare against [`ProtocolAccounts::exo_pairs`] to tell
+  /// the two apart.
+  pub exo_pairs: BTreeMap<Pubkey, ExoPairState<C>>,
 
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
@@ -200,7 +211,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
-    cbbtc_pair: ExoPairState<C>,
+    exo_pairs: BTreeMap<Pubkey, ExoPairState<C>>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
@@ -223,7 +234,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       hyusd_pool,
       fetched_at,
       lst_swap_config,
-      cbbtc_pair,
+      exo_pairs,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -278,10 +289,27 @@ impl<C: SolanaClock> ProtocolState<C> {
   /// # Errors
   /// * Collateral has no registered pair in this snapshot
   pub fn exo_pair<E: Exo>(&self) -> Result<&ExoPairState<C>, CoreError> {
-    match E::MINT {
-      CBBTC::MINT => Ok(&self.cbbtc_pair),
-      _ => Err(CoreError::UnknownExoMint),
-    }
+    self.exo_pair_by_mint(E::MINT)
+  }
+
+  /// Selects the pair state for a collateral known only at runtime.
+  ///
+  /// # Errors
+  /// * Collateral has no registered pair in this snapshot
+  pub fn exo_pair_by_mint(
+    &self,
+    collateral_mint: Pubkey,
+  ) -> Result<&ExoPairState<C>, CoreError> {
+    self
+      .exo_pairs
+      .get(&collateral_mint)
+      .ok_or(CoreError::UnknownExoMint)
+  }
+
+  /// Collateral mints quotable from this snapshot.
+  #[must_use]
+  pub fn exo_collateral_mints(&self) -> Vec<Pubkey> {
+    self.exo_pairs.keys().copied().collect()
   }
 
   #[must_use]
@@ -373,6 +401,43 @@ where
   ExoPairState::new(&exo_pair, context, oracle_publish_time)
 }
 
+/// Generates the collateral-mint dispatch that loads each fetched exo pair
+/// with its own typed [`build_exo_pair_state`].
+macro_rules! exo_pair_states {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    /// Builds pair state for every exo collateral in `exo_accounts`.
+    ///
+    /// A collateral is dropped from the result when its accounts fail to
+    /// deserialize or its oracle fails validation. Failures are per-pair on
+    /// purpose: a stale feed on one collateral must not take down quoting
+    /// for the others, and a pair absent here is exactly a pair that cannot
+    /// be quoted.
+    fn build_exo_pairs(
+      clock: &Clock,
+      exo_accounts: &[ExoAccounts],
+    ) -> BTreeMap<Pubkey, ExoPairState<Clock>> {
+      exo_accounts
+        .iter()
+        .filter_map(|exo| {
+          let pair = match exo.collateral_mint {
+            $(<$exo>::MINT => build_exo_pair_state::<$exo>(
+              clock.clone(),
+              &exo.exo_pair,
+              &exo.vault,
+              &exo.levercoin_mint,
+              &exo.collateral_usd_pyth,
+            ),)+
+            _ => Err(CoreError::UnknownExoMint.into()),
+          };
+          pair.ok().map(|pair| (exo.collateral_mint, pair))
+        })
+        .collect()
+    }
+  };
+}
+
+with_exo_pairs!(exo_pair_states);
+
 /// Builds USDC exchange state from protocol accounts.
 ///
 /// # Errors
@@ -448,13 +513,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_pair = build_exo_pair_state::<CBBTC>(
-      clock.clone(),
-      &accounts.cbbtc_exo_pair,
-      &accounts.cbbtc_vault,
-      &accounts.xbtc_mint,
-      &accounts.btc_usd_pyth,
-    )?;
+    let exo_pairs = build_exo_pairs(&clock, &accounts.exo_pairs);
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =
@@ -482,7 +541,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      cbbtc_pair,
+      exo_pairs,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -490,5 +549,37 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       UFix64::new(hylosol_vault.amount),
       sol_stablecoin_oracle_valid,
     )
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// Exo accounts that exist on chain but hold no deserializable data.
+  fn unloadable(collateral_mint: Pubkey) -> ExoAccounts {
+    ExoAccounts {
+      collateral_mint,
+      exo_pair: Account::default(),
+      vault: Account::default(),
+      levercoin_mint: Account::default(),
+      collateral_usd_pyth: Account::default(),
+    }
+  }
+
+  #[test]
+  fn unloadable_pair_is_dropped_not_raised() {
+    let pairs = build_exo_pairs(
+      &Clock::default(),
+      &[unloadable(ProtocolAccounts::EXO_MINTS[0])],
+    );
+    assert!(pairs.is_empty());
+  }
+
+  #[test]
+  fn collateral_outside_the_roster_is_dropped() {
+    let pairs =
+      build_exo_pairs(&Clock::default(), &[unloadable(Pubkey::new_unique())]);
+    assert!(pairs.is_empty());
   }
 }

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use anchor_lang::prelude::Pubkey;
@@ -845,11 +846,16 @@ where
 
     let sol_stablecoin_oracle_valid =
       stablecoin_oracle_valid(&self.clock, &sol_usd, hylo.oracle_interval_secs);
-    let cbbtc_pair = ExoPairState::new(
-      &exo_pair,
-      cbbtc_exchange_context,
-      btc_usd.price_message.publish_time,
-    )?;
+    // Jupiter registers cbBTC pairs only, so the snapshot carries the one
+    // exo pair its routes can reach.
+    let exo_pairs = BTreeMap::from([(
+      CBBTC::MINT,
+      ExoPairState::new(
+        &exo_pair,
+        cbbtc_exchange_context,
+        btc_usd.price_message.publish_time,
+      )?,
+    )]);
 
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
@@ -862,7 +868,7 @@ where
       pool_config,
       hyusd_pool,
       &sol_usd,
-      cbbtc_pair,
+      exo_pairs,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,

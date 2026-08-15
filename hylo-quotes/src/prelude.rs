@@ -14,7 +14,8 @@ pub use hylo_idl::tokens::{
 
 // Protocol state
 pub use crate::protocol_state::{
-  ProtocolAccounts, ProtocolState, RpcStateProvider, StateProvider,
+  ExoAccounts, ExoPairState, ProtocolAccounts, ProtocolState, RpcStateProvider,
+  StateProvider,
 };
 // SimulatedOperation (event extraction)
 pub use crate::simulated_operation::{
