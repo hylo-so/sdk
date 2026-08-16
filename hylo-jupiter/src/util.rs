@@ -1,3 +1,4 @@
+use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Context, Result};
@@ -73,6 +74,19 @@ where
 {
   let op = state.output::<IN, OUT>(UFix64::new(amount))?;
   operation_to_quote(op)
+}
+
+/// Finds a raw account in Jupiter's `AccountMap`.
+///
+/// # Errors
+/// * Account not found in map
+pub fn keyed_account<'a>(
+  account_map: &'a AccountMap,
+  key: &Pubkey,
+) -> Result<&'a Account> {
+  account_map
+    .get(key)
+    .ok_or_else(|| anyhow!("Account not found {key}"))
 }
 
 /// Finds and deserializes an account in Jupiter's `AccountMap`.

@@ -326,13 +326,13 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
 /// # Errors
 /// * Deserialization or context-load failure
 /// * Collateral vault balance overflows `N9`
-pub fn build_exo_pair_state<E: Exo>(
-  clock: Clock,
+pub fn build_exo_pair_state<E: Exo, C: SolanaClock>(
+  clock: C,
   exo_pair: &Account,
   vault: &Account,
   levercoin_mint: &Account,
   collateral_usd: &Account,
-) -> Result<ExoPairState<Clock>>
+) -> Result<ExoPairState<C>>
 where
   UFix64<E::Exp>: FixExt,
 {
@@ -448,7 +448,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_pair = build_exo_pair_state::<CBBTC>(
+    let cbbtc_pair = build_exo_pair_state::<CBBTC, _>(
       clock.clone(),
       &accounts.cbbtc_exo_pair,
       &accounts.cbbtc_vault,
