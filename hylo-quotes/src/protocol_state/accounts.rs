@@ -10,7 +10,8 @@ use hylo_core::error::CoreError;
 use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
-  Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD,
+  USDC, XSOL,
 };
 use serde::{Deserialize, Serialize};
 
@@ -96,13 +97,25 @@ pub struct ProtocolAccounts {
 
   /// USDC collateral vault token account
   pub usdc_vault: Account,
+
+  /// HYPE `ExoPair` PDA
+  pub hype_exo_pair: Account,
+
+  /// HYPE collateral vault token account
+  pub hype_vault: Account,
+
+  /// xHYPE levercoin mint
+  pub xhype_mint: Account,
+
+  /// Pyth HYPE/USD price feed
+  pub hype_usd_pyth: Account,
 }
 
 impl ProtocolAccounts {
   /// Protocol account pubkeys in RPC fetch order.
   ///
   /// This order matches the struct field order.
-  pub const PUBKEYS: [Pubkey; 21] = [
+  pub const PUBKEYS: [Pubkey; 25] = [
     pda::HYLO,
     pda::lst_header(JITOSOL::MINT),
     pda::lst_header(HYLOSOL::MINT),
@@ -124,6 +137,10 @@ impl ProtocolAccounts {
     pda::lst_vault(JITOSOL::MINT),
     pda::lst_vault(HYLOSOL::MINT),
     pda::usdc_vault(USDC::MINT),
+    pda::exo_pair(HYPE::MINT),
+    pda::exo_vault(HYPE::MINT),
+    pda::exo_levercoin_mint(HYPE::MINT),
+    HYPE::FEED.address,
   ];
 
   /// Get the list of account pubkeys in the order expected by RPC
@@ -203,6 +220,10 @@ impl ProtocolAccounts {
       jitosol_vault: fetched_account(accounts, 18, "JitoSOL vault")?,
       hylosol_vault: fetched_account(accounts, 19, "hyloSOL vault")?,
       usdc_vault: fetched_account(accounts, 20, "USDC vault")?,
+      hype_exo_pair: fetched_account(accounts, 21, "HYPE ExoPair")?,
+      hype_vault: fetched_account(accounts, 22, "HYPE vault")?,
+      xhype_mint: fetched_account(accounts, 23, "xHYPE mint")?,
+      hype_usd_pyth: fetched_account(accounts, 24, "HYPE/USD Pyth feed")?,
     })
   }
 

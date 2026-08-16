@@ -22,7 +22,7 @@ use hylo_core::pyth::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYLOSOL, JITOSOL};
+use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYLOSOL, HYPE, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::ProtocolAccounts;
@@ -152,6 +152,9 @@ pub struct ProtocolState<C: SolanaClock> {
   /// cbBTC exo pair
   pub cbbtc_pair: ExoPairState<C>,
 
+  /// HYPE exo pair
+  pub hype_pair: ExoPairState<C>,
+
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
 
@@ -201,6 +204,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     hyusd_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
     cbbtc_pair: ExoPairState<C>,
+    hype_pair: ExoPairState<C>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
@@ -224,6 +228,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       fetched_at,
       lst_swap_config,
       cbbtc_pair,
+      hype_pair,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -280,6 +285,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   pub fn exo_pair<E: Exo>(&self) -> Result<&ExoPairState<C>, CoreError> {
     match E::MINT {
       CBBTC::MINT => Ok(&self.cbbtc_pair),
+      HYPE::MINT => Ok(&self.hype_pair),
       _ => Err(CoreError::UnknownExoMint),
     }
   }
@@ -455,6 +461,13 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       &accounts.xbtc_mint,
       &accounts.btc_usd_pyth,
     )?;
+    let hype_pair = build_exo_pair_state::<HYPE, _>(
+      clock.clone(),
+      &accounts.hype_exo_pair,
+      &accounts.hype_vault,
+      &accounts.xhype_mint,
+      &accounts.hype_usd_pyth,
+    )?;
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =
@@ -483,6 +496,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       hyusd_pool,
       &sol_usd,
       cbbtc_pair,
+      hype_pair,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
