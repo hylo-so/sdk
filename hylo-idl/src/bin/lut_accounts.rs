@@ -9,8 +9,8 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token;
 use hylo_idl::tokens::{
-  StakePool, TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC,
-  XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
+  XBTC, XHYPE, XSOL,
 };
 use hylo_idl::{earn_pool, exchange, pda};
 
@@ -27,6 +27,8 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   HYLOSOL::MINT,
   USDC::MINT,
   CBBTC::MINT,
+  HYPE::MINT,
+  XHYPE::MINT,
   // Global PDAs
   pda::HYLO,
   pda::POOL_CONFIG,
@@ -49,6 +51,7 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   // Oracle feeds
   pda::SOL_USD_PYTH_FEED,
   pda::USDC_USD_PYTH_FEED,
+  pda::BTC_USD_PYTH_FEED,
   // JITOSOL accounts
   pda::fee_auth(JITOSOL::MINT),
   pda::lst_vault_auth(JITOSOL::MINT),
@@ -78,6 +81,13 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   pda::fee_auth(CBBTC::MINT),
   pda::ata(pda::exo_vault_auth(CBBTC::MINT), CBBTC::MINT),
   pda::ata(pda::fee_auth(CBBTC::MINT), CBBTC::MINT),
+  // HYPE/EXO accounts
+  pda::exo_pair(HYPE::MINT),
+  pda::exo_vault_auth(HYPE::MINT),
+  pda::mint_auth(XHYPE::MINT),
+  pda::fee_auth(HYPE::MINT),
+  pda::ata(pda::exo_vault_auth(HYPE::MINT), HYPE::MINT),
+  pda::ata(pda::fee_auth(HYPE::MINT), HYPE::MINT),
   // Standard programs
   token::ID,
   mpl_token_metadata::ID,
