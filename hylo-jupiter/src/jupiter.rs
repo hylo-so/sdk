@@ -759,14 +759,14 @@ where
       account_map_get(account_map, &pda::POOL_CONFIG)?;
 
     // Exo pairs
-    let cbbtc_pair = build_exo_pair_state::<CBBTC, _>(
+    let cbbtc_pair = build_exo_pair_state::<CBBTC, ClockRef>(
       self.clock.clone(),
       keyed_account(account_map, &pda::exo_pair(CBBTC::MINT))?,
       keyed_account(account_map, &pda::exo_vault(CBBTC::MINT))?,
       keyed_account(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?,
       keyed_account(account_map, &CBBTC::FEED.address)?,
     )?;
-    let hype_pair = build_exo_pair_state::<HYPE, _>(
+    let hype_pair = build_exo_pair_state::<HYPE, ClockRef>(
       self.clock.clone(),
       keyed_account(account_map, &pda::exo_pair(HYPE::MINT))?,
       keyed_account(account_map, &pda::exo_vault(HYPE::MINT))?,

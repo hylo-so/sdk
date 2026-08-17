@@ -113,7 +113,7 @@ impl RpcStateProvider {
     }?;
     let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-    build_exo_pair_state::<E, _>(
+    build_exo_pair_state::<E, Clock>(
       clock,
       exo_pair,
       vault,

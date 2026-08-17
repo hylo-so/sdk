@@ -454,14 +454,14 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
 
-    let cbbtc_pair = build_exo_pair_state::<CBBTC, _>(
+    let cbbtc_pair = build_exo_pair_state::<CBBTC, Clock>(
       clock.clone(),
       &accounts.cbbtc_exo_pair,
       &accounts.cbbtc_vault,
       &accounts.xbtc_mint,
       &accounts.btc_usd_pyth,
     )?;
-    let hype_pair = build_exo_pair_state::<HYPE, _>(
+    let hype_pair = build_exo_pair_state::<HYPE, Clock>(
       clock.clone(),
       &accounts.hype_exo_pair,
       &accounts.hype_vault,
