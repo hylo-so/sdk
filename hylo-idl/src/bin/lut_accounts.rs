@@ -74,14 +74,14 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   pda::fee_auth(USDC::MINT),
   pda::ata(pda::usdc_vault_auth(USDC::MINT), USDC::MINT),
   pda::ata(pda::fee_auth(USDC::MINT), USDC::MINT),
-  // CBBTC/EXO accounts
+  // CBBTC accounts
   pda::exo_pair(CBBTC::MINT),
   pda::exo_vault_auth(CBBTC::MINT),
   pda::mint_auth(XBTC::MINT),
   pda::fee_auth(CBBTC::MINT),
   pda::ata(pda::exo_vault_auth(CBBTC::MINT), CBBTC::MINT),
   pda::ata(pda::fee_auth(CBBTC::MINT), CBBTC::MINT),
-  // HYPE/EXO accounts
+  // HYPE accounts
   pda::exo_pair(HYPE::MINT),
   pda::exo_vault_auth(HYPE::MINT),
   pda::mint_auth(XHYPE::MINT),
