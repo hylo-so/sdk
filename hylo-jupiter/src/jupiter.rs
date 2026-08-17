@@ -102,6 +102,18 @@ pub trait PairConfig<IN: TokenMint, OUT: TokenMint> {
   ) -> Result<SwapAndAccountMetas>;
 }
 
+/// Quotes both directions of the `$in`/`$out` pair.
+macro_rules! pair_quote {
+  ($in:ident, $out:ident, $state:expr, $amount:expr, $in_mint:expr,
+   $out_mint:expr) => {
+    match ($in_mint, $out_mint) {
+      ($in::MINT, $out::MINT) => quote::<$in, $out>($state, $amount),
+      ($out::MINT, $in::MINT) => quote::<$out, $in>($state, $amount),
+      _ => Err(anyhow!("Invalid mint pair")),
+    }
+  };
+}
+
 impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
   fn program_id() -> Pubkey {
     exchange::ID
@@ -119,11 +131,7 @@ impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, HYUSD::MINT) => quote::<JITOSOL, HYUSD>(state, amount),
-      (HYUSD::MINT, JITOSOL::MINT) => quote::<HYUSD, JITOSOL>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(JITOSOL, HYUSD, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -160,11 +168,7 @@ impl PairConfig<HYLOSOL, HYUSD> for HyloJupiterPair<HYLOSOL, HYUSD> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (HYLOSOL::MINT, HYUSD::MINT) => quote::<HYLOSOL, HYUSD>(state, amount),
-      (HYUSD::MINT, HYLOSOL::MINT) => quote::<HYUSD, HYLOSOL>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(HYLOSOL, HYUSD, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -201,11 +205,7 @@ impl PairConfig<JITOSOL, XSOL> for HyloJupiterPair<JITOSOL, XSOL> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, XSOL::MINT) => quote::<JITOSOL, XSOL>(state, amount),
-      (XSOL::MINT, JITOSOL::MINT) => quote::<XSOL, JITOSOL>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(JITOSOL, XSOL, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -242,11 +242,7 @@ impl PairConfig<HYLOSOL, XSOL> for HyloJupiterPair<HYLOSOL, XSOL> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (HYLOSOL::MINT, XSOL::MINT) => quote::<HYLOSOL, XSOL>(state, amount),
-      (XSOL::MINT, HYLOSOL::MINT) => quote::<XSOL, HYLOSOL>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(HYLOSOL, XSOL, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -283,11 +279,7 @@ impl PairConfig<HYUSD, XSOL> for HyloJupiterPair<HYUSD, XSOL> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (HYUSD::MINT, XSOL::MINT) => quote::<HYUSD, XSOL>(state, amount),
-      (XSOL::MINT, HYUSD::MINT) => quote::<XSOL, HYUSD>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(HYUSD, XSOL, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -324,11 +316,7 @@ impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (HYUSD::MINT, SHYUSD::MINT) => quote::<HYUSD, SHYUSD>(state, amount),
-      (SHYUSD::MINT, HYUSD::MINT) => quote::<SHYUSD, HYUSD>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(HYUSD, SHYUSD, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -363,15 +351,7 @@ impl PairConfig<JITOSOL, HYLOSOL> for HyloJupiterPair<JITOSOL, HYLOSOL> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, HYLOSOL::MINT) => {
-        quote::<JITOSOL, HYLOSOL>(state, amount)
-      }
-      (HYLOSOL::MINT, JITOSOL::MINT) => {
-        quote::<HYLOSOL, JITOSOL>(state, amount)
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(JITOSOL, HYLOSOL, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -412,11 +392,7 @@ impl PairConfig<JITOSOL, USDC> for HyloJupiterPair<JITOSOL, USDC> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, USDC::MINT) => quote::<JITOSOL, USDC>(state, amount),
-      (USDC::MINT, JITOSOL::MINT) => quote::<USDC, JITOSOL>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(JITOSOL, USDC, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -457,11 +433,7 @@ impl PairConfig<HYLOSOL, USDC> for HyloJupiterPair<HYLOSOL, USDC> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (HYLOSOL::MINT, USDC::MINT) => quote::<HYLOSOL, USDC>(state, amount),
-      (USDC::MINT, HYLOSOL::MINT) => quote::<USDC, HYLOSOL>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(HYLOSOL, USDC, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -502,11 +474,7 @@ impl PairConfig<USDC, HYUSD> for HyloJupiterPair<USDC, HYUSD> {
     input_mint: Pubkey,
     output_mint: Pubkey,
   ) -> Result<Quote> {
-    match (input_mint, output_mint) {
-      (USDC::MINT, HYUSD::MINT) => quote::<USDC, HYUSD>(state, amount),
-      (HYUSD::MINT, USDC::MINT) => quote::<HYUSD, USDC>(state, amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
+    pair_quote!(USDC, HYUSD, state, amount, input_mint, output_mint)
   }
 
   fn build_account_metas(
@@ -546,11 +514,7 @@ macro_rules! exo_pair_configs {
         input_mint: Pubkey,
         output_mint: Pubkey,
       ) -> Result<Quote> {
-        match (input_mint, output_mint) {
-          ($exo::MINT, USDC::MINT) => quote::<$exo, USDC>(state, amount),
-          (USDC::MINT, $exo::MINT) => quote::<USDC, $exo>(state, amount),
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
+        pair_quote!($exo, USDC, state, amount, input_mint, output_mint)
       }
 
       fn build_account_metas(
@@ -591,11 +555,7 @@ macro_rules! exo_pair_configs {
         input_mint: Pubkey,
         output_mint: Pubkey,
       ) -> Result<Quote> {
-        match (input_mint, output_mint) {
-          ($exo::MINT, HYUSD::MINT) => quote::<$exo, HYUSD>(state, amount),
-          (HYUSD::MINT, $exo::MINT) => quote::<HYUSD, $exo>(state, amount),
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
+        pair_quote!($exo, HYUSD, state, amount, input_mint, output_mint)
       }
 
       fn build_account_metas(
@@ -638,11 +598,7 @@ macro_rules! exo_pair_configs {
         input_mint: Pubkey,
         output_mint: Pubkey,
       ) -> Result<Quote> {
-        match (input_mint, output_mint) {
-          ($exo::MINT, $lever::MINT) => quote::<$exo, $lever>(state, amount),
-          ($lever::MINT, $exo::MINT) => quote::<$lever, $exo>(state, amount),
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
+        pair_quote!($exo, $lever, state, amount, input_mint, output_mint)
       }
 
       fn build_account_metas(
@@ -685,11 +641,7 @@ macro_rules! exo_pair_configs {
         input_mint: Pubkey,
         output_mint: Pubkey,
       ) -> Result<Quote> {
-        match (input_mint, output_mint) {
-          (HYUSD::MINT, $lever::MINT) => quote::<HYUSD, $lever>(state, amount),
-          ($lever::MINT, HYUSD::MINT) => quote::<$lever, HYUSD>(state, amount),
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
+        pair_quote!(HYUSD, $lever, state, amount, input_mint, output_mint)
       }
 
       fn build_account_metas(
