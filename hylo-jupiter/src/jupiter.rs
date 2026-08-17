@@ -526,8 +526,7 @@ impl PairConfig<USDC, HYUSD> for HyloJupiterPair<USDC, HYUSD> {
   }
 }
 
-/// Generates the four [`PairConfig`] impls routing exo collateral `$exo` and
-/// its levercoin `$lever`.
+/// [`PairConfig`] impls for an exo collateral and its levercoin.
 macro_rules! exo_pair_configs {
   ($exo:ident, $lever:ident) => {
     impl PairConfig<$exo, USDC> for HyloJupiterPair<$exo, USDC> {
