@@ -98,10 +98,7 @@ pub fn account_map_get<A: AccountDeserialize>(
   account_map: &AccountMap,
   key: &Pubkey,
 ) -> Result<A> {
-  let account = account_map
-    .get(key)
-    .ok_or_else(|| anyhow!("Account not found {key}"))?;
-  let mut bytes = account.data.as_slice();
+  let mut bytes = keyed_account(account_map, key)?.data.as_slice();
   let out = A::try_deserialize(&mut bytes)?;
   Ok(out)
 }

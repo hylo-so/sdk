@@ -788,14 +788,10 @@ where
       usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;
 
     // Stake pools
-    let jitosol_pool_state = account_map
-      .get(&JITOSOL::POOL_STATE)
-      .context("JitoSOL pool state not found")?;
+    let jitosol_pool_state = keyed_account(account_map, &JITOSOL::POOL_STATE)?;
     let jitosol_stake_pool =
       SplStakePool::from_bytes(&jitosol_pool_state.data)?;
-    let hylosol_pool_state = account_map
-      .get(&HYLOSOL::POOL_STATE)
-      .context("hyloSOL pool state not found")?;
+    let hylosol_pool_state = keyed_account(account_map, &HYLOSOL::POOL_STATE)?;
     let hylosol_stake_pool =
       SplStakePool::from_bytes(&hylosol_pool_state.data)?;
 
