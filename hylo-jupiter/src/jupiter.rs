@@ -3,12 +3,12 @@ use std::marker::PhantomData;
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
-use fix::prelude::{FixExt, UFix64};
+use fix::prelude::UFix64;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::tokens::{
-  Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD,
-  USDC, XBTC, XHYPE, XSOL,
+  StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
+  XBTC, XHYPE, XSOL,
 };
 use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::lst::stake_pool::SplStakePool;
@@ -19,7 +19,7 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  build_exo_pair_state, stablecoin_oracle_valid, ExoPairState, ProtocolState,
+  build_exo_pair_state, stablecoin_oracle_valid, ProtocolState,
   UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -38,25 +38,6 @@ where
   clock: ClockRef,
   state: Option<ProtocolState<ClockRef>>,
   _phantom: PhantomData<(IN, OUT)>,
-}
-
-/// Builds the [`ExoPairState`] for collateral `E` from a Jupiter account
-/// snapshot.
-fn exo_pair_state<E>(
-  account_map: &AccountMap,
-  clock: &ClockRef,
-) -> Result<ExoPairState<ClockRef>>
-where
-  E: Exo + PythOracle,
-  UFix64<E::Exp>: FixExt,
-{
-  build_exo_pair_state::<E, _>(
-    clock.clone(),
-    keyed_account(account_map, &pda::exo_pair(E::MINT))?,
-    keyed_account(account_map, &pda::exo_vault(E::MINT))?,
-    keyed_account(account_map, &pda::exo_levercoin_mint(E::MINT))?,
-    keyed_account(account_map, &E::FEED.address)?,
-  )
 }
 
 /// Builds the USDC exchange state from a Jupiter account snapshot.
@@ -827,8 +808,20 @@ where
       account_map_get(account_map, &pda::POOL_CONFIG)?;
 
     // Exo pairs
-    let cbbtc_pair = exo_pair_state::<CBBTC>(account_map, &self.clock)?;
-    let hype_pair = exo_pair_state::<HYPE>(account_map, &self.clock)?;
+    let cbbtc_pair = build_exo_pair_state::<CBBTC, _>(
+      self.clock.clone(),
+      keyed_account(account_map, &pda::exo_pair(CBBTC::MINT))?,
+      keyed_account(account_map, &pda::exo_vault(CBBTC::MINT))?,
+      keyed_account(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?,
+      keyed_account(account_map, &CBBTC::FEED.address)?,
+    )?;
+    let hype_pair = build_exo_pair_state::<HYPE, _>(
+      self.clock.clone(),
+      keyed_account(account_map, &pda::exo_pair(HYPE::MINT))?,
+      keyed_account(account_map, &pda::exo_vault(HYPE::MINT))?,
+      keyed_account(account_map, &pda::exo_levercoin_mint(HYPE::MINT))?,
+      keyed_account(account_map, &HYPE::FEED.address)?,
+    )?;
 
     let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
     let jitosol_vault: TokenAccount =
