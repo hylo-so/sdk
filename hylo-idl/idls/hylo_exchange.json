@@ -11585,12 +11585,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapExoToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_exo_to_usdc_all",
@@ -12329,12 +12324,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapExoToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_lst_to_lst",
@@ -13521,12 +13511,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapLstToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_lst_to_usdc_all",
@@ -14204,12 +14189,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapLstToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_usdc_to_exo",
@@ -14952,12 +14932,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapUsdcToExoEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_usdc_to_lst",
@@ -15639,12 +15614,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapUsdcToLstEvent"
-        }
-      }
+      ]
     },
     {
       "name": "unpause_exo_pair",
