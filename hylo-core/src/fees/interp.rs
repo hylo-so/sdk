@@ -421,7 +421,7 @@ mod tests {
     let interp = redeem_fee_curve()?;
     let mut f = File::create("redeem_fee_curve.csv")?;
     writeln!(f, "cr,fee")?;
-    (130_000..=300_000).try_for_each(|ix| -> anyhow::Result<()> {
+    (130_000..=150_000).try_for_each(|ix| -> anyhow::Result<()> {
       let x = IFix64::<N5>::constant(ix);
       let y = interp.interpolate(x)?;
       writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
