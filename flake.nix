@@ -29,7 +29,7 @@
           };
 
           devShells.default = mkShell {
-            packages = [ rustStable evcxr ]
+            packages = [ rustStable evcxr cargo-semver-checks ]
               ++ builtins.attrValues shellTools;
             buildInputs = sharedBuildInputs;
           };
