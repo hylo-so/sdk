@@ -32,8 +32,6 @@ pub fn narrow_ufix64<Exp: Integer>() -> UFix64<Exp> {
   v
 }
 
-/// Zero confidence is admitted so the degenerate spot range where
-/// `lower == upper` is covered.
 #[must_use]
 pub fn narrow_price_range<Exp: Integer>() -> Option<PriceRange<Exp>> {
   let price: UFix64<Exp> = narrow_ufix64();
