@@ -1043,6 +1043,25 @@ pub fn update_usdc_oracle_conf_tolerance(
 }
 
 #[must_use]
+pub fn update_par_tolerance(
+  admin: Pubkey,
+  args: &args::UpdateParTolerance,
+) -> Instruction {
+  let accounts = accounts::UpdateParTolerance {
+    admin,
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn update_usdc_oracle_interval(
   admin: Pubkey,
   args: &args::UpdateUsdcOracleInterval,

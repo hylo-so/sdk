@@ -10,7 +10,6 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
-use hylo_core::conversion::UsdcStablecoinConversion;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
 use hylo_core::fees::controller::LevercoinFees;
@@ -18,7 +17,10 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::pyth::{validate_publish_time, OracleConfig, ORACLE_DIVISOR};
+use hylo_core::par_tolerance::ParTolerance;
+use hylo_core::pyth::{
+  query_pyth_oracle, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
+};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
@@ -31,8 +33,6 @@ use crate::LST;
 /// USDC exchange state for stablecoin mint/redeem.
 #[derive(Clone)]
 pub struct UsdcExchangeState {
-  /// USDC/USD oracle price range
-  pub usdc_usd_price: hylo_core::pyth::PriceRange<N9>,
   /// Swap fee extracted on USDC operations
   pub swap_fee: UFix64<N4>,
   /// USDC pair pause flag
@@ -41,16 +41,10 @@ pub struct UsdcExchangeState {
   pub vault_balance: UFix64<N6>,
   /// Virtual stablecoin supply for the USDC pair
   pub virtual_stablecoin_supply: UFix64<N6>,
-}
-
-impl UsdcExchangeState {
-  /// Builds the USDC stablecoin conversion from stored price range.
-  #[must_use]
-  pub fn conversion(&self) -> UsdcStablecoinConversion {
-    UsdcStablecoinConversion {
-      usdc_usd_price: self.usdc_usd_price,
-    }
-  }
+  /// USDC/USD spot price, gated against par
+  pub usdc_usd_spot: UFix64<N9>,
+  /// Tolerated distance from par for the USDC pair
+  pub par_tolerance: ParTolerance,
 }
 
 /// Whether a collateral feed is valid under the tighter stablecoin
@@ -397,9 +391,7 @@ fn build_usdc_exchange_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_oracle =
-    hylo_core::pyth::query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
-  let usdc_usd_price = usdc_oracle.price_range()?;
+  let usdc_oracle = query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
 
@@ -407,11 +399,12 @@ fn build_usdc_exchange_state(
     usdc_pair.virtual_stablecoin.into();
 
   Ok(UsdcExchangeState {
-    usdc_usd_price,
     swap_fee: usdc_pair.swap_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+    usdc_usd_spot: usdc_oracle.spot,
+    par_tolerance: usdc_pair.par_tolerance.into(),
   })
 }
 

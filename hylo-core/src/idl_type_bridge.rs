@@ -4,6 +4,7 @@ use crate::limiter::deposit::DepositLimiter;
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
+use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
 use crate::rebalance::pricing::RebalanceCurveConfig;
@@ -85,6 +86,14 @@ impl From<hylo_idl::earn_pool::types::VirtualStablecoin> for VirtualStablecoin {
   ) -> VirtualStablecoin {
     VirtualStablecoin {
       supply: idl.supply.into(),
+    }
+  }
+}
+
+impl From<hylo_idl::exchange::types::ParTolerance> for ParTolerance {
+  fn from(idl: hylo_idl::exchange::types::ParTolerance) -> ParTolerance {
+    ParTolerance {
+      tolerance: idl.tolerance.into(),
     }
   }
 }

@@ -4291,6 +4291,14 @@
               "name": "UFixValue64"
             }
           }
+        },
+        {
+          "name": "par_tolerance",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
         }
       ],
       "returns": {
@@ -11577,12 +11585,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapExoToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_exo_to_usdc_all",
@@ -12321,12 +12324,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapExoToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_lst_to_lst",
@@ -13513,12 +13511,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapLstToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_lst_to_usdc_all",
@@ -14196,12 +14189,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapLstToUsdcEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_usdc_to_exo",
@@ -14944,12 +14932,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapUsdcToExoEvent"
-        }
-      }
+      ]
     },
     {
       "name": "swap_usdc_to_lst",
@@ -15631,12 +15614,7 @@
             }
           }
         }
-      ],
-      "returns": {
-        "defined": {
-          "name": "SwapUsdcToLstEvent"
-        }
-      }
+      ]
     },
     {
       "name": "unpause_exo_pair",
@@ -17833,6 +17811,113 @@
       }
     },
     {
+      "name": "update_par_tolerance",
+      "discriminator": [
+        71,
+        55,
+        189,
+        45,
+        248,
+        52,
+        32,
+        172
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_par_tolerance",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateParToleranceEvent"
+        }
+      }
+    },
+    {
       "name": "update_sol_usd_oracle",
       "discriminator": [
         95,
@@ -19272,6 +19357,19 @@
       ]
     },
     {
+      "name": "UpdateParToleranceEvent",
+      "discriminator": [
+        13,
+        28,
+        13,
+        209,
+        214,
+        57,
+        197,
+        161
+      ]
+    },
+    {
       "name": "UpdateRebalanceCurveConfigEvent",
       "discriminator": [
         91,
@@ -20577,6 +20675,14 @@
                 "name": "UFixValue64"
               }
             }
+          },
+          {
+            "name": "par_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           }
         ]
       }
@@ -21002,14 +21108,6 @@
             }
           },
           {
-            "name": "usdc_usd_price",
-            "type": {
-              "defined": {
-                "name": "OraclePriceEvent"
-              }
-            }
-          },
-          {
             "name": "virtual_stablecoin_supply",
             "type": {
               "defined": {
@@ -21038,6 +21136,25 @@
           },
           {
             "name": "conf",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ParTolerance",
+      "docs": [
+        "Maximum distance from par at which an asset settles at face value."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tolerance",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -21543,14 +21660,6 @@
             }
           },
           {
-            "name": "usdc_usd_price",
-            "type": {
-              "defined": {
-                "name": "OraclePriceEvent"
-              }
-            }
-          },
-          {
             "name": "virtual_stablecoin_supply",
             "type": {
               "defined": {
@@ -21905,14 +22014,6 @@
                 "name": "UFixValue64"
               }
             }
-          },
-          {
-            "name": "usdc_usd_price",
-            "type": {
-              "defined": {
-                "name": "OraclePriceEvent"
-              }
-            }
           }
         ]
       }
@@ -21989,14 +22090,6 @@
                 "name": "UFixValue64"
               }
             }
-          },
-          {
-            "name": "usdc_usd_price",
-            "type": {
-              "defined": {
-                "name": "OraclePriceEvent"
-              }
-            }
           }
         ]
       }
@@ -22015,14 +22108,6 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "usdc_usd_price",
-            "type": {
-              "defined": {
-                "name": "OraclePriceEvent"
               }
             }
           },
@@ -22059,14 +22144,6 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "usdc_usd_price",
-            "type": {
-              "defined": {
-                "name": "OraclePriceEvent"
               }
             }
           },
@@ -22333,6 +22410,30 @@
       }
     },
     {
+      "name": "UpdateParToleranceEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_par_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_par_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateRebalanceCurveConfigEvent",
       "type": {
         "kind": "struct",
@@ -22474,11 +22575,19 @@
             "type": "bool"
           },
           {
+            "name": "par_tolerance",
+            "type": {
+              "defined": {
+                "name": "ParTolerance"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                127
+                118
               ]
             }
           }

@@ -110,18 +110,18 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
 
 #[derive(Clone)]
 pub struct InterpolatedRedeemFees {
-  curve: FixInterp<20, N5>,
+  curve: FixInterp<11, N5>,
 }
 
 impl InterpolatedRedeemFees {
   #[must_use]
-  pub fn new(curve: FixInterp<20, N5>) -> InterpolatedRedeemFees {
+  pub fn new(curve: FixInterp<11, N5>) -> InterpolatedRedeemFees {
     InterpolatedRedeemFees { curve }
   }
 }
 
-impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
-  fn curve(&self) -> &FixInterp<20, N5> {
+impl InterpolatedFeeController<11> for InterpolatedRedeemFees {
+  fn curve(&self) -> &FixInterp<11, N5> {
     &self.curve
   }
 
