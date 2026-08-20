@@ -20,7 +20,7 @@
             extensions = [ "rust-analyzer" "rust-src" ];
           };
           shellTools =
-            import ./shell-tools.nix { inherit writeShellApplication; };
+            import ./shell-tools.nix { inherit writeShellApplication curl jq gnused; };
         in {
           devShells.nightly = mkShell {
             packages = [ rust-bin.nightly.latest.default cargo-udeps ]

@@ -1,4 +1,4 @@
-{ writeShellApplication }: {
+{ writeShellApplication, curl, jq, gnused }: {
   lint = writeShellApplication {
     name = "lint";
     text = ''
@@ -47,13 +47,18 @@
 
   publish = writeShellApplication {
     name = "publish";
+    runtimeInputs = [ curl jq gnused ];
     text = ''
+      local_version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml)
+      published_version=$(curl -sf -A hylo-sdk-publish \
+        https://crates.io/api/v1/crates/hylo-core \
+        | jq -r '.crate.max_version')
+      if [ "$local_version" = "$published_version" ]; then
+        echo "Version $local_version already on crates.io. Skipping publish."
+        exit 0
+      fi
       nix develop --command bash -c '
         set -euo pipefail
-        if ! cargo workspaces changed --error-on-empty >/dev/null 2>&1; then
-          echo "No changes detected. Skipping publish."
-          exit 0
-        fi
         cargo build --release
         cargo doc --workspace --no-deps
         cargo publish --package hylo-idl
