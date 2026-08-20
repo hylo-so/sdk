@@ -4273,7 +4273,15 @@
       ],
       "args": [
         {
-          "name": "swap_fee",
+          "name": "mint_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "redeem_fee",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -18142,7 +18150,7 @@
       ],
       "returns": {
         "defined": {
-          "name": "UpdateSwapFeeEvent"
+          "name": "UpdateFeeEvent"
         }
       }
     },
@@ -18504,6 +18512,113 @@
       }
     },
     {
+      "name": "update_usdc_mint_fee",
+      "discriminator": [
+        128,
+        125,
+        81,
+        38,
+        132,
+        39,
+        28,
+        56
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_mint_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateFeeEvent"
+        }
+      }
+    },
+    {
       "name": "update_usdc_oracle_conf_tolerance",
       "discriminator": [
         135,
@@ -18714,16 +18829,16 @@
       }
     },
     {
-      "name": "update_usdc_swap_fee",
+      "name": "update_usdc_redeem_fee",
       "discriminator": [
-        221,
-        134,
-        217,
-        81,
-        225,
-        152,
-        3,
-        28
+        88,
+        181,
+        23,
+        199,
+        213,
+        123,
+        102,
+        112
       ],
       "accounts": [
         {
@@ -18806,7 +18921,7 @@
       ],
       "args": [
         {
-          "name": "new_swap_fee",
+          "name": "new_redeem_fee",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -18816,7 +18931,7 @@
       ],
       "returns": {
         "defined": {
-          "name": "UpdateSwapFeeEvent"
+          "name": "UpdateFeeEvent"
         }
       }
     },
@@ -19783,6 +19898,19 @@
       ]
     },
     {
+      "name": "UpdateFeeEvent",
+      "discriminator": [
+        79,
+        79,
+        188,
+        14,
+        247,
+        41,
+        59,
+        187
+      ]
+    },
+    {
       "name": "UpdateLevercoinFeesEvent",
       "discriminator": [
         84,
@@ -19910,19 +20038,6 @@
         9,
         211,
         62
-      ]
-    },
-    {
-      "name": "UpdateSwapFeeEvent",
-      "discriminator": [
-        159,
-        123,
-        206,
-        118,
-        29,
-        64,
-        135,
-        59
       ]
     },
     {
@@ -21174,7 +21289,15 @@
             "type": "u8"
           },
           {
-            "name": "swap_fee",
+            "name": "mint_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "redeem_fee",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -22813,6 +22936,30 @@
       }
     },
     {
+      "name": "UpdateFeeEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateLevercoinFeesEvent",
       "type": {
         "kind": "struct",
@@ -23039,30 +23186,6 @@
       }
     },
     {
-      "name": "UpdateSwapFeeEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "old_swap_fee",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "new_swap_fee",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "UpdateYieldHarvestConfigEvent",
       "type": {
         "kind": "struct",
@@ -23100,7 +23223,7 @@
             "type": "u8"
           },
           {
-            "name": "swap_fee",
+            "name": "mint_fee",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -23140,11 +23263,19 @@
             }
           },
           {
+            "name": "redeem_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                118
+                109
               ]
             }
           }

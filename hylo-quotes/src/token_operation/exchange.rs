@@ -613,10 +613,10 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = FeeExtract::new(usdc_state.swap_fee, in_amount)?;
+    } = FeeExtract::new(usdc_state.mint_fee, in_amount)?;
 
     // stablecoin_out(x) = x * (1 - fee)
-    let marginal_rate = positive_rate(1.0 - usdc_state.swap_fee.to_f64())?;
+    let marginal_rate = positive_rate(1.0 - usdc_state.mint_fee.to_f64())?;
     Ok(OperationOutput {
       in_amount,
       out_amount: amount_remaining,
@@ -630,12 +630,12 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
     let headroom = max_mintable(usdc_state.virtual_stablecoin_supply)?;
-    FeeExtract::max_input(usdc_state.swap_fee, headroom)
+    FeeExtract::max_input(usdc_state.mint_fee, headroom)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    past_zero(FeeExtract::max_input(usdc_state.swap_fee, UFix64::zero())?)
+    past_zero(FeeExtract::max_input(usdc_state.mint_fee, UFix64::zero())?)
   }
 }
 
@@ -654,7 +654,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     let FeeExtract {
       fees_extracted,
       amount_remaining,
-    } = FeeExtract::new(usdc_state.swap_fee, in_amount)?;
+    } = FeeExtract::new(usdc_state.redeem_fee, in_amount)?;
     gate(
       amount_remaining <= usdc_state.virtual_stablecoin_supply,
       CoreError::BurnUnderflow,
@@ -665,7 +665,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     )?;
 
     // usdc_out(x) = x * (1 - fee)
-    let marginal_rate = positive_rate(1.0 - usdc_state.swap_fee.to_f64())?;
+    let marginal_rate = positive_rate(1.0 - usdc_state.redeem_fee.to_f64())?;
     Ok(OperationOutput {
       in_amount,
       out_amount: amount_remaining,
@@ -681,12 +681,15 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     let remaining = usdc_state
       .vault_balance
       .min(usdc_state.virtual_stablecoin_supply);
-    FeeExtract::max_input(usdc_state.swap_fee, remaining)
+    FeeExtract::max_input(usdc_state.redeem_fee, remaining)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    past_zero(FeeExtract::max_input(usdc_state.swap_fee, UFix64::zero())?)
+    past_zero(FeeExtract::max_input(
+      usdc_state.redeem_fee,
+      UFix64::zero(),
+    )?)
   }
 }
 

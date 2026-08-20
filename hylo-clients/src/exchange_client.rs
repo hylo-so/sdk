@@ -547,18 +547,34 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the USDC swap fee.
+  /// Updates the USDC mint fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_usdc_swap_fee(
+  pub fn update_usdc_mint_fee(
     &self,
     squads: &SquadsContext,
-    args: &args::UpdateUsdcSwapFee,
+    args: &args::UpdateUsdcMintFee,
   ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_usdc_swap_fee(squads.vault_pda(), args);
-    let memo = build_memo("update_usdc_swap_fee", &instruction);
+      instruction_builders::update_usdc_mint_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_usdc_mint_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Updates the USDC redeem fee.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_usdc_redeem_fee(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateUsdcRedeemFee,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_usdc_redeem_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_usdc_redeem_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
