@@ -33,8 +33,10 @@ use crate::LST;
 /// USDC exchange state for stablecoin mint/redeem.
 #[derive(Clone)]
 pub struct UsdcExchangeState {
-  /// Swap fee extracted on USDC operations
-  pub swap_fee: UFix64<N4>,
+  /// Fee extracted when minting stablecoin from USDC
+  pub mint_fee: UFix64<N4>,
+  /// Fee extracted when redeeming stablecoin to USDC
+  pub redeem_fee: UFix64<N4>,
   /// USDC pair pause flag
   pub paused: bool,
   /// USDC collateral vault balance
@@ -399,7 +401,8 @@ fn build_usdc_exchange_state(
     usdc_pair.virtual_stablecoin.into();
 
   Ok(UsdcExchangeState {
-    swap_fee: usdc_pair.swap_fee.try_into()?,
+    mint_fee: usdc_pair.mint_fee.try_into()?,
+    redeem_fee: usdc_pair.redeem_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin_supply: virtual_stablecoin.supply()?,

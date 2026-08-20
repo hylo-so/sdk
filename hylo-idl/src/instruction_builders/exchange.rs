@@ -295,6 +295,17 @@ pub fn settle_virtual_stablecoin_lst() -> Instruction {
 }
 
 #[must_use]
+pub fn settle_virtual_stablecoin_usdc() -> Instruction {
+  let accounts = account_builders::settle_virtual_stablecoin_usdc();
+  let args = args::SettleVirtualStablecoinUsdc {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn settle_virtual_stablecoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
@@ -1081,11 +1092,30 @@ pub fn update_usdc_oracle_interval(
 }
 
 #[must_use]
-pub fn update_usdc_swap_fee(
+pub fn update_usdc_mint_fee(
   admin: Pubkey,
-  args: &args::UpdateUsdcSwapFee,
+  args: &args::UpdateUsdcMintFee,
 ) -> Instruction {
-  let accounts = accounts::UpdateUsdcSwapFee {
+  let accounts = accounts::UpdateUsdcMintFee {
+    admin,
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_usdc_redeem_fee(
+  admin: Pubkey,
+  args: &args::UpdateUsdcRedeemFee,
+) -> Instruction {
+  let accounts = accounts::UpdateUsdcRedeemFee {
     admin,
     hylo: pda::HYLO,
     usdc_pair: pda::USDC_PAIR,
