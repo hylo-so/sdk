@@ -89,6 +89,8 @@ pub enum CoreError {
   NoValidLevercoinRedeemFee,
   #[msg("No valid mint fee: projected CR below mint fee curve domain.")]
   NoValidStablecoinMintFee,
+  #[msg("No valid redeem fee: projected CR above redeem fee curve domain.")]
+  NoValidStablecoinRedeemFee,
   #[msg("No valid fee for swap due to SellZone2 or Depeg.")]
   NoValidSwapFee,
   #[msg("Fees cannot exceed configured maximum.")]
