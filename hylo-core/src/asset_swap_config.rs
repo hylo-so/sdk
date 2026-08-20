@@ -17,7 +17,6 @@ impl AssetSwapConfig {
     serialized_fee: UFixValue64,
   ) -> Result<AssetSwapConfig, CoreError> {
     let fee = serialized_fee.try_into()?;
-    Self::validate_fee(fee)?;
     Ok(AssetSwapConfig { fee })
   }
 
@@ -29,9 +28,11 @@ impl AssetSwapConfig {
     FeeExtract::new(self.fee, amount)
   }
 
-  pub fn validate_fee(fee: UFix64<N4>) -> Result<(), CoreError> {
-    if fee > UFix64::zero() && fee <= MAX_FEE {
-      Ok(())
+  /// Swap fee must be in `(0, MAX]`.
+  pub fn validate_fee(fee: UFixValue64) -> Result<UFixValue64, CoreError> {
+    let bps: UFix64<N4> = fee.try_into()?;
+    if bps > UFix64::zero() && bps <= MAX_FEE {
+      Ok(fee)
     } else {
       Err(InvalidFees)
     }
@@ -54,15 +55,15 @@ mod tests {
 
   #[test]
   fn reject_out_of_range_fee() {
-    let zero = AssetSwapConfig::new(UFixValue64::new(0, -4));
-    let one = AssetSwapConfig::new(UFixValue64::new(10000, -4));
+    let zero = AssetSwapConfig::validate_fee(UFixValue64::new(0, -4));
+    let one = AssetSwapConfig::validate_fee(UFixValue64::new(10000, -4));
     assert_eq!(zero.err(), Some(InvalidFees));
     assert_eq!(one.err(), Some(InvalidFees));
   }
 
   #[test]
   fn reject_wrong_exp() {
-    let result = AssetSwapConfig::new(UFixValue64::new(200, -2));
+    let result = AssetSwapConfig::validate_fee(UFixValue64::new(200, -2));
     assert!(result.is_err());
   }
 }
