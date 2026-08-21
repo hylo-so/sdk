@@ -10964,33 +10964,6 @@
           }
         },
         {
-          "name": "settlement_auth",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  101,
-                  116,
-                  116,
-                  108,
-                  101,
-                  109,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104
-                ]
-              }
-            ]
-          }
-        },
-        {
           "name": "stablecoin_mint_auth",
           "pda": {
             "seeds": [
@@ -11311,10 +11284,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "earn_pool",
-          "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
         {
           "name": "event_authority",
@@ -20307,6 +20276,11 @@
       "code": 6047,
       "name": "ExoPairZeroVirtualStablecoin",
       "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
+    },
+    {
+      "code": 6048,
+      "name": "VirtualStablecoinExceedsVault",
+      "msg": "Virtual stablecoin supply exceeds USDC vault balance."
     }
   ],
   "types": [
@@ -22573,14 +22547,6 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "stablecoin_burned",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
           {
             "name": "stablecoin_minted",
             "type": {
