@@ -531,7 +531,6 @@ pub fn settle_virtual_stablecoin_usdc() -> SettleVirtualStablecoinUsdc {
     hylo: pda::HYLO,
     usdc_pair: pda::USDC_PAIR,
     pool_config: pda::POOL_CONFIG,
-    settlement_auth: pda::SETTLEMENT_AUTH,
     stablecoin_mint_auth: pda::HYUSD_AUTH,
     pool_auth: pda::POOL_AUTH,
     usdc_vault_auth,
@@ -541,7 +540,6 @@ pub fn settle_virtual_stablecoin_usdc() -> SettleVirtualStablecoinUsdc {
     stablecoin_mint: HYUSD::MINT,
     usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
     token_program: token::ID,
-    earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
