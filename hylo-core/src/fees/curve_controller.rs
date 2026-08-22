@@ -110,18 +110,18 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
 
 #[derive(Clone)]
 pub struct InterpolatedRedeemFees {
-  curve: FixInterp<20, N5>,
+  curve: FixInterp<11, N5>,
 }
 
 impl InterpolatedRedeemFees {
   #[must_use]
-  pub fn new(curve: FixInterp<20, N5>) -> InterpolatedRedeemFees {
+  pub fn new(curve: FixInterp<11, N5>) -> InterpolatedRedeemFees {
     InterpolatedRedeemFees { curve }
   }
 }
 
-impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
-  fn curve(&self) -> &FixInterp<20, N5> {
+impl InterpolatedFeeController<11> for InterpolatedRedeemFees {
+  fn curve(&self) -> &FixInterp<11, N5> {
     &self.curve
   }
 
@@ -130,7 +130,7 @@ impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
     if cr < interp.x_min() {
       Ok(interp.y_min())
     } else if cr > interp.x_max() {
-      Ok(interp.y_max())
+      Err(CoreError::NoValidStablecoinRedeemFee)
     } else {
       interp.interpolate(cr)
     }
@@ -138,7 +138,9 @@ impl InterpolatedFeeController<20> for InterpolatedRedeemFees {
 
   fn fee_slope(&self, cr: IFix64<N5>) -> Result<IFix64<N5>, CoreError> {
     let interp = self.curve();
-    if cr < interp.x_min() || cr > interp.x_max() || interp.is_saturated(cr)? {
+    if cr > interp.x_max() {
+      Err(CoreError::NoValidStablecoinRedeemFee)
+    } else if cr < interp.x_min() || interp.is_saturated(cr)? {
       Ok(IFix64::zero())
     } else {
       interp.derivative(cr)
@@ -159,6 +161,10 @@ mod tests {
 
   fn collateral_ratio() -> BoxedStrategy<UFix64<N9>> {
     (0u64..4_000_000_000u64).prop_map(UFix64::new).boxed()
+  }
+
+  fn redeem_domain_collateral_ratio() -> BoxedStrategy<UFix64<N9>> {
+    (0u64..=1_500_000_000u64).prop_map(UFix64::new).boxed()
   }
 
   fn mint_fees() -> InterpolatedMintFees {
@@ -214,20 +220,43 @@ mod tests {
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = redeem_fees();
-    let extract = fees.apply_fee(cr, amount).map_err(|e| {
-      TestCaseError::fail(format!(
-        "Redeem fee should always work at CR {cr:?}: {e}"
-      ))
-    })?;
-    assert_conservation(&extract, amount, cr)
+    let cr_n5 = narrow_cr(cr)
+      .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
+    match fees.apply_fee(cr, amount) {
+      Ok(extract) => assert_conservation(&extract, amount, cr),
+      Err(e) => {
+        prop_assert!(
+          cr_n5 > fees.curve().x_max()
+            && e == CoreError::NoValidStablecoinRedeemFee,
+          "Redeem fee rejected in-domain CR {:?}: {}",
+          cr,
+          e,
+        );
+        Ok(())
+      }
+    }
   }
 
   #[test]
-  fn redeem_slope_zero_where_fee_saturates() -> anyhow::Result<()> {
+  fn redeem_fee_rejected_above_curve_domain() -> anyhow::Result<()> {
     let fees = redeem_fees();
-    let cr = IFix64::<N5>::constant(299_999);
+    let cr = IFix64::<N5>::constant(150_001);
+    assert_eq!(
+      fees.fee_inner(cr).err(),
+      Some(CoreError::NoValidStablecoinRedeemFee)
+    );
+    assert_eq!(
+      fees.fee_slope(cr).err(),
+      Some(CoreError::NoValidStablecoinRedeemFee)
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn redeem_fee_maximal_at_domain_edge() -> anyhow::Result<()> {
+    let fees = redeem_fees();
+    let cr = IFix64::<N5>::constant(150_000);
     assert_eq!(fees.fee_inner(cr)?, fees.curve().y_max());
-    assert_eq!(fees.fee_slope(cr)?, IFix64::zero());
     Ok(())
   }
 
@@ -305,8 +334,8 @@ mod tests {
 
     #[test]
     fn redeem_fee_increases_with_cr(
-      cr_a in collateral_ratio(),
-      cr_b in collateral_ratio(),
+      cr_a in redeem_domain_collateral_ratio(),
+      cr_b in redeem_domain_collateral_ratio(),
       amount in lst_amount(),
     ) {
       let (cr_high, cr_low) = if cr_a > cr_b {
@@ -317,18 +346,18 @@ mod tests {
       prop_assume!(cr_high > cr_low);
 
       let fees = redeem_fees();
-      let high = fees.apply_fee(cr_high, amount).map_err(|e| {
-        TestCaseError::fail(format!("at {cr_high:?}: {e}"))
-      })?;
-      let low = fees.apply_fee(cr_low, amount).map_err(|e| {
-        TestCaseError::fail(format!("at {cr_low:?}: {e}"))
-      })?;
-
-      prop_assert!(
-        high.fees_extracted >= low.fees_extracted,
-        "fee({cr_high:?}) = {:?} < fee({cr_low:?}) = {:?}",
-        high.fees_extracted, low.fees_extracted,
-      );
+      if let (Ok(high), Ok(low)) = (
+        fees.apply_fee(cr_high, amount),
+        fees.apply_fee(cr_low, amount),
+      ) {
+        prop_assert!(
+          high.fees_extracted >= low.fees_extracted,
+          "fee({cr_high:?}) = {:?} < fee({cr_low:?}) = {:?}",
+          high.fees_extracted, low.fees_extracted,
+        );
+      } else {
+        Err(TestCaseError::reject("CR above redeem curve domain"))?;
+      }
     }
   }
 }

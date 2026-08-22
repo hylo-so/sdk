@@ -10,9 +10,10 @@ use crate::exchange::client::accounts::{
   MintLevercoinExo, MintLevercoinLst, MintStablecoinExo, MintStablecoinLst,
   MintStablecoinUsdc, RedeemLevercoinExo, RedeemLevercoinLst,
   RedeemStablecoinExo, RedeemStablecoinLst, RedeemStablecoinUsdc, RegisterExo,
-  SettleVirtualStablecoinExo, SettleVirtualStablecoinLst, SwapExoToUsdc,
-  SwapLstToLst, SwapLstToUsdc, SwapUsdcToExo, SwapUsdcToLst,
-  UpdateExoLevercoinMarketCapLimit, UpdateLstRebalanceFee, WithdrawFees,
+  SettleVirtualStablecoinExo, SettleVirtualStablecoinLst,
+  SettleVirtualStablecoinUsdc, SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc,
+  SwapUsdcToExo, SwapUsdcToLst, UpdateExoLevercoinMarketCapLimit,
+  UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{earn_pool, exchange, pda};
@@ -518,6 +519,27 @@ pub fn settle_virtual_stablecoin_exo(
     collateral_usd_pyth_feed,
     token_program: token::ID,
     earn_pool: earn_pool::ID,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn settle_virtual_stablecoin_usdc() -> SettleVirtualStablecoinUsdc {
+  let usdc_vault_auth = pda::usdc_vault_auth(USDC::MINT);
+  SettleVirtualStablecoinUsdc {
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    pool_config: pda::POOL_CONFIG,
+    stablecoin_mint_auth: pda::HYUSD_AUTH,
+    pool_auth: pda::POOL_AUTH,
+    usdc_vault_auth,
+    usdc_collateral_vault: pda::ata(usdc_vault_auth, USDC::MINT),
+    stablecoin_pool: pda::HYUSD_POOL,
+    usdc_mint: USDC::MINT,
+    stablecoin_mint: HYUSD::MINT,
+    usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
+    token_program: token::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }

@@ -94,5 +94,7 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
 ];
 
 fn main() {
-  LUT_ACCOUNTS.iter().for_each(|key| println!("{key}"));
+  for key in LUT_ACCOUNTS {
+    println!("{key}");
+  }
 }

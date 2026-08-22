@@ -1,4 +1,4 @@
-{ writeShellApplication }: {
+{ writeShellApplication, curl, jq, gnused }: {
   lint = writeShellApplication {
     name = "lint";
     text = ''
@@ -47,22 +47,34 @@
 
   publish = writeShellApplication {
     name = "publish";
+    runtimeInputs = [ curl jq gnused ];
     text = ''
+      local_version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml)
+      missing=()
+      for crate in hylo-idl hylo-core hylo-clients hylo-stats \
+        hylo-quotes hylo-jupiter; do
+        published=$(curl -sf -A hylo-sdk-publish \
+          "https://crates.io/api/v1/crates/$crate" \
+          | jq -r '.crate.max_version')
+        if [ "$local_version" = "$published" ]; then
+          echo "$crate $local_version already on crates.io. Skipping."
+        else
+          missing+=("$crate")
+        fi
+      done
+      if [ "''${#missing[@]}" -eq 0 ]; then
+        echo "All crates at $local_version. Nothing to publish."
+        exit 0
+      fi
+      # shellcheck disable=SC2016
       nix develop --command bash -c '
         set -euo pipefail
-        if ! cargo workspaces changed --error-on-empty >/dev/null 2>&1; then
-          echo "No changes detected. Skipping publish."
-          exit 0
-        fi
         cargo build --release
         cargo doc --workspace --no-deps
-        cargo publish --package hylo-idl
-        cargo publish --package hylo-core
-        cargo publish --package hylo-clients
-        cargo publish --package hylo-stats
-        cargo publish --package hylo-quotes
-        cargo publish --package hylo-jupiter
-      '
+        for crate in "$@"; do
+          cargo publish --package "$crate"
+        done
+      ' publish-missing "''${missing[@]}"
     '';
   };
 }

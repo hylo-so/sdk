@@ -17,7 +17,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: Check SDK version
@@ -34,15 +34,15 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: actions/github-script@v8
       with:
         script: |
           core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL);
           core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN);
     - uses: DeterminateSystems/nix-installer-action@main
-    - uses: DeterminateSystems/magic-nix-cache-action@v13
-    - uses: mozilla-actions/sccache-action@v0.0.9
+    - uses: DeterminateSystems/magic-nix-cache-action@v14
+    - uses: mozilla-actions/sccache-action@v0.0.11
     - run: nix run .#lint
     - run: nix run .#build
     - run: nix run .#test-cargo
@@ -59,8 +59,8 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: DeterminateSystems/nix-installer-action@main
-    - uses: DeterminateSystems/magic-nix-cache-action@v13
-    - uses: mozilla-actions/sccache-action@v0.0.9
+    - uses: DeterminateSystems/magic-nix-cache-action@v14
+    - uses: mozilla-actions/sccache-action@v0.0.11
     - run: nix run .#publish

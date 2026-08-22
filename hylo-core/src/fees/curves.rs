@@ -25,7 +25,7 @@ pub fn mint_fee_curve() -> Result<FixInterp<21, N5>, CoreError> {
 ///
 /// # Errors
 /// * Curve validation
-pub fn redeem_fee_curve() -> Result<FixInterp<20, N5>, CoreError> {
+pub fn redeem_fee_curve() -> Result<FixInterp<11, N5>, CoreError> {
   FixInterp::from_points(*REDEEM_FEE_LN)
 }
 
@@ -58,7 +58,7 @@ generate_curve!(
 
 generate_curve!(
   REDEEM_FEE_LN,
-  20,
+  11,
   N5,
   (130_000, 0),
   (132_000, 45),
@@ -71,13 +71,4 @@ generate_curve!(
   (143_000, 162),
   (145_000, 174),
   (150_000, 200),
-  (155_000, 212),
-  (160_000, 221),
-  (166_000, 230),
-  (172_000, 238),
-  (187_000, 252),
-  (207_000, 265),
-  (232_000, 278),
-  (263_000, 289),
-  (300_000, 300),
 );

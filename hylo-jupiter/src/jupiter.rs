@@ -55,11 +55,13 @@ fn usdc_state(
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
   Ok(UsdcExchangeState {
-    usdc_usd_price: usdc_oracle.price_range()?,
-    swap_fee: usdc_pair.swap_fee.try_into()?,
+    mint_fee: usdc_pair.mint_fee.try_into()?,
+    redeem_fee: usdc_pair.redeem_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+    usdc_usd_spot: usdc_oracle.spot,
+    par_tolerance: usdc_pair.par_tolerance.into(),
   })
 }
 

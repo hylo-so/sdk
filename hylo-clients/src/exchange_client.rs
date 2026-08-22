@@ -547,18 +547,50 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the USDC swap fee.
+  /// Updates the USDC mint fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_usdc_swap_fee(
+  pub fn update_usdc_mint_fee(
     &self,
     squads: &SquadsContext,
-    args: &args::UpdateUsdcSwapFee,
+    args: &args::UpdateUsdcMintFee,
   ) -> Result<SquadsTransactionData> {
     let instruction =
-      instruction_builders::update_usdc_swap_fee(squads.vault_pda(), args);
-    let memo = build_memo("update_usdc_swap_fee", &instruction);
+      instruction_builders::update_usdc_mint_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_usdc_mint_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Updates the USDC redeem fee.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_usdc_redeem_fee(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateUsdcRedeemFee,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_usdc_redeem_fee(squads.vault_pda(), args);
+    let memo = build_memo("update_usdc_redeem_fee", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Updates the USDC par tolerance.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_par_tolerance(
+    &self,
+    squads: &SquadsContext,
+    args: &args::UpdateParTolerance,
+  ) -> Result<SquadsTransactionData> {
+    let instruction =
+      instruction_builders::update_par_tolerance(squads.vault_pda(), args);
+    let memo = build_memo("update_par_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
@@ -961,6 +993,17 @@ impl ExchangeClient {
     &self,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::settle_virtual_stablecoin_lst();
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Settles the USDC virtual stablecoin against the earn pool.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn settle_virtual_stablecoin_usdc(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::settle_virtual_stablecoin_usdc();
     Ok(VersionedTransactionData::one(instruction))
   }
 

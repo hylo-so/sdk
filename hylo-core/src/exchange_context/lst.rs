@@ -3,9 +3,7 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{ExchangeContext, ProjectedState};
-use crate::conversion::{
-  Conversion, LstRebalanceConversion, UsdcStablecoinConversion,
-};
+use crate::conversion::Conversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
@@ -399,37 +397,27 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn rebalance_sell_conversion(
     &self,
     lst_sol_price: &LstSolPrice,
-    usdc_usd_price: PriceRange<N9>,
-    usdc_amount: UFix64<N9>,
-  ) -> Result<LstRebalanceConversion, CoreError> {
+    usdc_amount: UFix64<N6>,
+  ) -> Result<Conversion, CoreError> {
     let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
-    let projected = self.projected_rebalance_sell_state(
-      lst_sol_price,
-      usdc_usd_price,
-      usdc_amount,
-    )?;
+    let projected =
+      self.projected_rebalance_sell_state(lst_sol_price, usdc_amount)?;
     let sol_usd_price = self
       .rebalance_sell_curve()?
       .price(projected.collateral_ratio)?;
-    Ok(LstRebalanceConversion::new(
-      lst_sol,
-      sol_usd_price,
-      usdc_usd_price,
-    ))
+    Ok(Conversion::spot(sol_usd_price, lst_sol))
   }
 
   /// Post-trade state used by the sell-side rebalance projection.
   pub fn projected_rebalance_sell_state(
     &self,
     lst_sol_price: &LstSolPrice,
-    usdc_usd_price: PriceRange<N9>,
-    usdc_amount: UFix64<N9>,
+    usdc_amount: UFix64<N6>,
   ) -> Result<ProjectedState, CoreError> {
     let sol_spot_price = self.collateral_oracle_price().spot;
     let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
-    let lst_delta =
-      LstRebalanceConversion::new(lst_sol, sol_spot_price, usdc_usd_price)
-        .usdc_to_lst(usdc_amount)?;
+    let lst_delta = Conversion::spot(sol_spot_price, lst_sol)
+      .token_to_lst(usdc_amount, UFix64::one())?;
     let sol_delta =
       lst_sol_price.convert_lst_to_sol(lst_delta, self.clock.epoch())?;
     let total_collateral = self
@@ -462,9 +450,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     stake_pool: SplStakePool,
     rebalance_fee: UFix64<N5>,
     lst_vault_balance: UFix64<N9>,
-    usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
-  ) -> Result<UFix64<N9>, CoreError> {
+  ) -> Result<UFix64<N6>, CoreError> {
     // Sellable total collateral as LST capped by vault balance
     let true_price = stake_pool.true_price()?;
     let adjusted_price = true_price.adjust_price(rebalance_fee)?;
@@ -475,17 +462,13 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     // Convert to USDC at spot
     let lst_sol = adjusted_price.get_epoch_price(self.clock.epoch())?;
     let sol_spot_price = self.collateral_oracle_price().spot;
-    let usdc_in_raw =
-      LstRebalanceConversion::new(lst_sol, sol_spot_price, usdc_usd_price)
-        .lst_to_usdc(sellable_lst)?;
+    let usdc_in_raw = Conversion::spot(sol_spot_price, lst_sol)
+      .lst_to_token(sellable_lst, UFix64::one())?;
 
-    // Virtual stablecoin at or above the floor converted to USDC
-    let max_burnable_stablecoin = self
+    let usdc_limit = self
       .virtual_stablecoin_supply()?
       .checked_sub(&virtual_stablecoin_supply_floor)
       .ok_or(VirtualStablecoinBurnLimit)?;
-    let usdc_limit = UsdcStablecoinConversion::new(usdc_usd_price)
-      .stablecoin_to_withdrawal(max_burnable_stablecoin)?;
 
     Ok(usdc_in_raw.min(usdc_limit))
   }
@@ -497,20 +480,15 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   pub fn rebalance_buy_conversion(
     &self,
     lst_sol_price: &LstSolPrice,
-    usdc_usd_price: PriceRange<N9>,
     lst_amount: UFix64<N9>,
-  ) -> Result<LstRebalanceConversion, CoreError> {
+  ) -> Result<Conversion, CoreError> {
     let lst_sol = lst_sol_price.get_epoch_price(self.clock.epoch())?;
     let projected =
       self.projected_rebalance_buy_state(lst_sol_price, lst_amount)?;
     let sol_usd_price = self
       .rebalance_buy_curve()?
       .price(projected.collateral_ratio)?;
-    Ok(LstRebalanceConversion::new(
-      lst_sol,
-      sol_usd_price,
-      usdc_usd_price,
-    ))
+    Ok(Conversion::spot(sol_usd_price, lst_sol))
   }
 
   /// Post-trade state used by the buy-side rebalance projection.

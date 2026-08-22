@@ -3,9 +3,7 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{ExchangeContext, ProjectedState};
-use crate::conversion::{
-  ExoConversion, ExoRebalanceConversion, UsdcStablecoinConversion,
-};
+use crate::conversion::ExoConversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
@@ -330,30 +328,23 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Curve setup, pricing, or projection overflow
   pub fn rebalance_sell_conversion(
     &self,
-    usdc_usd_price: PriceRange<N9>,
-    usdc_amount: UFix64<N9>,
-  ) -> Result<ExoRebalanceConversion, CoreError> {
-    let projected =
-      self.projected_rebalance_sell_state(usdc_usd_price, usdc_amount)?;
+    usdc_amount: UFix64<N6>,
+  ) -> Result<ExoConversion, CoreError> {
+    let projected = self.projected_rebalance_sell_state(usdc_amount)?;
     let collateral_usd_price = self
       .rebalance_sell_curve()?
       .price(projected.collateral_ratio)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
+    Ok(ExoConversion::spot(collateral_usd_price))
   }
 
   /// Post-trade state used by the sell-side rebalance projection.
   pub fn projected_rebalance_sell_state(
     &self,
-    usdc_usd_price: PriceRange<N9>,
-    usdc_amount: UFix64<N9>,
+    usdc_amount: UFix64<N6>,
   ) -> Result<ProjectedState, CoreError> {
     let spot_price = self.collateral_oracle_price().spot;
-    let collateral_delta =
-      ExoRebalanceConversion::new(spot_price, usdc_usd_price)
-        .usdc_to_collateral(usdc_amount)?;
+    let collateral_delta = ExoConversion::spot(spot_price)
+      .token_to_exo(usdc_amount, UFix64::one())?;
     let total_collateral = self
       .total_collateral
       .checked_sub(&collateral_delta)
@@ -380,23 +371,19 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Arithmetic overflow
   pub fn max_rebalance_sell_usdc(
     &self,
-    usdc_usd_price: PriceRange<N9>,
     virtual_stablecoin_supply_floor: UFix64<N6>,
-  ) -> Result<UFix64<N9>, CoreError> {
+  ) -> Result<UFix64<N6>, CoreError> {
     // Collateral the protocol can sell, priced as USDC at spot
     let sellable_collateral =
       self.rebalance_sell_liquidity()?.min(self.total_collateral);
     let spot_price = self.collateral_oracle_price().spot;
-    let conversion = ExoRebalanceConversion::new(spot_price, usdc_usd_price);
-    let usdc_in_raw = conversion.collateral_to_usdc(sellable_collateral)?;
+    let usdc_in_raw = ExoConversion::spot(spot_price)
+      .exo_to_token(sellable_collateral, UFix64::one())?;
 
-    // Virtual stablecoin at or above the floor converted to USDC
-    let virtual_stablecoin_supply = self.virtual_stablecoin_supply()?;
-    let max_burnable_stablecoin = virtual_stablecoin_supply
+    let usdc_limit = self
+      .virtual_stablecoin_supply()?
       .checked_sub(&virtual_stablecoin_supply_floor)
       .ok_or(VirtualStablecoinBurnLimit)?;
-    let usdc_limit = UsdcStablecoinConversion::new(usdc_usd_price)
-      .stablecoin_to_withdrawal(max_burnable_stablecoin)?;
 
     Ok(usdc_in_raw.min(usdc_limit))
   }
@@ -407,17 +394,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// * Curve setup, pricing, or projection overflow
   pub fn rebalance_buy_conversion(
     &self,
-    usdc_usd_price: PriceRange<N9>,
     collateral_amount: UFix64<N9>,
-  ) -> Result<ExoRebalanceConversion, CoreError> {
+  ) -> Result<ExoConversion, CoreError> {
     let projected = self.projected_rebalance_buy_state(collateral_amount)?;
     let collateral_usd_price = self
       .rebalance_buy_curve()?
       .price(projected.collateral_ratio)?;
-    Ok(ExoRebalanceConversion::new(
-      collateral_usd_price,
-      usdc_usd_price,
-    ))
+    Ok(ExoConversion::spot(collateral_usd_price))
   }
 
   /// Post-trade state used by the buy-side rebalance projection.
