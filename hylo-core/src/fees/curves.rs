@@ -29,6 +29,10 @@ pub fn redeem_fee_curve() -> Result<FixInterp<11, N5>, CoreError> {
   FixInterp::from_points(*REDEEM_FEE_LN)
 }
 
+/// Highest collateral ratio quoting a stablecoin redeem fee.
+pub const REDEEM_MAX_CR: IFix64<N5> =
+  FixInterp::from_points_unchecked(*REDEEM_FEE_LN).x_max();
+
 generate_curve!(
   MINT_FEE_INV,
   21,

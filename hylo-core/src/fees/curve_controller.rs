@@ -14,14 +14,13 @@ pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>, CoreError> {
     .ok_or(CoreError::CollateralRatioConversion)
 }
 
-/// Inverse of [`narrow_cr`], for feeding curve domain bounds back into
-/// `N9` CR arithmetic.
+/// Upconvert CR from `N5` signed to `N9` unsigned. Inverse of [`narrow_cr`].
 ///
 /// # Errors
-/// * `CollateralRatioConversion` on a negative bound or `u64` overflow.
+/// * `CollateralRatioConversion` on a negative CR or `u64` overflow.
 pub fn widen_cr(cr: IFix64<N5>) -> Result<UFix64<N9>, CoreError> {
   cr.narrow::<u64>()
-    .map(Fix::convert::<N9>)
+    .map(UFix64::convert::<N9>)
     .ok_or(CoreError::CollateralRatioConversion)
 }
 
@@ -66,16 +65,6 @@ pub trait InterpolatedFeeController<const RES: usize> {
     amount_in: UFix64<InExp>,
   ) -> Result<FeeExtract<InExp>, CoreError> {
     FeeExtract::new(self.fee_rate(ucr)?, amount_in)
-  }
-
-  /// Minimum collateral ratio in the curve's domain.
-  fn cr_floor(&self) -> Result<UFix64<N2>, CoreError> {
-    self
-      .curve()
-      .x_min()
-      .narrow()
-      .and_then(UFix64::checked_convert::<N2>)
-      .ok_or(CoreError::InterpFeeConversion)
   }
 }
 

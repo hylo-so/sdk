@@ -139,27 +139,20 @@ fn max_swappable_stablecoin_inner(
     .and_then(UFix64::checked_convert::<N6>)
 }
 
-/// Computes the maximum amount of stablecoin redeemable against
-/// collateral before the projected CR exceeds `max_collateral_ratio`.
-///
-/// Redeeming `s` stablecoin removes `s * nav` USD of collateral and burns
-/// `s` from the supply, so the projected CR is:
+/// Computes how much stablecoin can be redeemed against collateral before
+/// the projected collateral ratio exceeds the given maximum.
 ///
 /// ```txt
-/// cr(s) = (tvl - s * nav) / (supply - s)
+///                    max_collateral_ratio * supply - tvl
+/// max_redeemable = --------------------------------------
+///                     max_collateral_ratio - nav
 /// ```
 ///
-/// CR rises with `s` whenever `max_cr > nav`, and solving
-/// `cr(s) <= max_cr` gives:
+/// Zero once the current CR is already above the maximum, and the full
+/// supply when redemption cannot raise the CR through it.
 ///
-/// ```txt
-/// max_redeemable = (max_cr * supply - tvl) / (max_cr - nav)
-/// ```
-///
-/// Returns zero when the current CR already exceeds `max_collateral_ratio`
-/// and the full supply when `max_cr <= nav`, where redemption cannot raise
-/// the CR through the ceiling. Rounding is conservative: the result always
-/// projects at or below `max_collateral_ratio`.
+/// # Errors
+/// * Arithmetic overflow
 pub fn max_redeemable_stablecoin(
   max_collateral_ratio: UFix64<N9>,
   total_value_locked: UFix64<N9>,
@@ -185,17 +178,14 @@ fn max_redeemable_stablecoin_inner(
     .checked_convert::<N9>()?
     .mul_div_floor(max_collateral_ratio, UFix64::one())?;
   match max_collateral_ratio.checked_sub(&stablecoin_nav) {
-    None => Some(stablecoin_supply),
-    Some(headroom_rate) if headroom_rate == UFix64::zero() => {
-      Some(stablecoin_supply)
-    }
-    Some(headroom_rate) => ceiling_supply
+    Some(headroom_rate) if headroom_rate > UFix64::zero() => ceiling_supply
       .checked_sub(&total_value_locked)
       .map_or(Some(UFix64::zero()), |headroom| {
         headroom
           .mul_div_floor(UFix64::one(), headroom_rate)?
           .checked_convert::<N6>()
       }),
+    _ => Some(stablecoin_supply),
   }
 }
 
@@ -487,8 +477,6 @@ mod tests {
     Ok(())
   }
 
-  /// CR 1.4 with a 1.5 ceiling: redeeming 200 of 1000 hyUSD projects
-  /// exactly to the ceiling — `(1400 - 200) / (1000 - 200) = 1.5`.
   #[test]
   fn max_redeemable_stablecoin_normal() -> Result<(), CoreError> {
     let ceiling = UFix64::<N9>::new(1_500_000_000);
@@ -500,7 +488,6 @@ mod tests {
     Ok(())
   }
 
-  /// Current CR already above the ceiling: nothing is redeemable.
   #[test]
   fn max_redeemable_stablecoin_above_ceiling() -> Result<(), CoreError> {
     let ceiling = UFix64::<N9>::new(1_500_000_000);
@@ -512,8 +499,6 @@ mod tests {
     Ok(())
   }
 
-  /// Ceiling at or below NAV: redemption cannot raise CR through it, so
-  /// the whole supply is redeemable.
   #[test]
   fn max_redeemable_stablecoin_unconstrained() -> Result<(), CoreError> {
     let ceiling = UFix64::<N9>::new(900_000_000);

@@ -23,15 +23,18 @@ use crate::error::CoreError::{
   RequestedStablecoinOverMaxMintable, VirtualStablecoinOverhang,
   VirtualStablecoinSurplus,
 };
+#[cfg(feature = "offchain")]
+use crate::exchange_math::max_redeemable_stablecoin;
 use crate::exchange_math::{
   collateral_ratio, depeg_stablecoin_nav, levercoin_market_cap,
-  max_mintable_stablecoin, max_redeemable_stablecoin, max_swappable_stablecoin,
-  next_levercoin_mint_nav, next_levercoin_redeem_nav, total_value_locked,
+  max_mintable_stablecoin, max_swappable_stablecoin, next_levercoin_mint_nav,
+  next_levercoin_redeem_nav, total_value_locked,
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
-use crate::fees::curve_controller::{
-  widen_cr, InterpolatedFeeController, InterpolatedRedeemFees,
-};
+#[cfg(feature = "offchain")]
+use crate::fees::curve_controller::widen_cr;
+#[cfg(feature = "offchain")]
+use crate::fees::curves::REDEEM_MAX_CR;
 use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
   max_buyable_collateral, max_sellable_collateral, midpoint,
@@ -232,29 +235,6 @@ pub trait ExchangeContext {
   /// Levercoin fee configuration.
   fn levercoin_fees(&self) -> &LevercoinFees;
 
-  /// Interpolated stablecoin redeem fee curve.
-  fn stablecoin_redeem_fees(&self) -> &InterpolatedRedeemFees;
-
-  /// Largest stablecoin redemption whose projected CR stays inside the
-  /// redeem fee curve domain, mirroring the rejection
-  /// [`InterpolatedRedeemFees`] applies to quotes. Zero when the current
-  /// CR is already above the domain, where every redemption is rejected.
-  ///
-  /// # Errors
-  /// * CR conversion or arithmetic overflow
-  #[cfg(feature = "offchain")]
-  fn max_stablecoin_redeemable_in_fee_domain(
-    &self,
-  ) -> Result<UFix64<N6>, CoreError> {
-    let ceiling = widen_cr(self.stablecoin_redeem_fees().curve().x_max())?;
-    max_redeemable_stablecoin(
-      ceiling,
-      self.total_value_locked()?,
-      self.virtual_stablecoin_supply()?,
-      self.stablecoin_nav()?,
-    )
-  }
-
   /// TVL in USD.
   ///
   /// # Errors
@@ -401,6 +381,21 @@ pub trait ExchangeContext {
       self.total_collateral(),
       self.collateral_usd_price().lower,
       self.virtual_stablecoin_supply()?,
+    )
+  }
+
+  /// Maximum redeemable stablecoin before the projected collateral ratio
+  /// leaves the redeem fee curve domain. Zero once already above it.
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  #[cfg(feature = "offchain")]
+  fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
+    max_redeemable_stablecoin(
+      widen_cr(REDEEM_MAX_CR)?,
+      self.total_value_locked()?,
+      self.virtual_stablecoin_supply()?,
+      self.stablecoin_nav()?,
     )
   }
 
