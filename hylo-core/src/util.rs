@@ -11,6 +11,18 @@ use crate::error::CoreError::ExoAmountNormalization;
 /// ```txt
 /// x = ceil((cap + 1) * den / num) - 1
 /// ```
+///
+/// Saturates at `u64::MAX`. `mul_div_ceil` computes the inverse exactly
+/// and returns `None` only when the result exceeds `u64` — and inverting
+/// divides by `num / den`, so a ratio below one scales `cap` up past
+/// `u64::MAX` whenever `cap` is already near it. Such a bound is unbounded
+/// in practice: every representable `x` satisfies the constraint, so the
+/// answer is the largest representable input. Likewise a `cap` of
+/// `u64::MAX` itself.
+///
+/// `None` is reserved for the constraint having no solution: `num == 0`
+/// leaves it undefined, and `den == 0` admits no positive input. Those are
+/// domain errors and must not be reported as an unbounded input.
 #[cfg(feature = "offchain")]
 #[must_use]
 pub fn max_scaled_input<Exp: Integer, RExp: Integer>(
@@ -19,11 +31,17 @@ pub fn max_scaled_input<Exp: Integer, RExp: Integer>(
   den: UFix64<RExp>,
 ) -> Option<UFix64<Exp>> {
   let atom = UFix64::new(1);
+  let unbounded = UFix64::new(u64::MAX);
   (num != UFix64::zero())
-    .then_some(cap)
-    .and_then(|cap| cap.checked_add(&atom))
-    .and_then(|first_output_over| first_output_over.mul_div_ceil(den, num))
-    .and_then(|first_input_over| first_input_over.checked_sub(&atom))
+    .then(|| {
+      cap
+        .checked_add(&atom)
+        .and_then(|first_output_over| first_output_over.mul_div_ceil(den, num))
+        .map_or(Some(unbounded), |first_input_over| {
+          first_input_over.checked_sub(&atom)
+        })
+    })
+    .flatten()
 }
 
 /// Bridges runtime mint decimals to typed `UFix64<N9>`.
@@ -272,7 +290,8 @@ mod tests {
   use proptest::prelude::*;
 
   use super::{
-    denormalize_mint_exp, denormalize_mint_exp_ceil, normalize_mint_exp,
+    denormalize_mint_exp, denormalize_mint_exp_ceil, max_scaled_input,
+    normalize_mint_exp,
   };
   use crate::asset_swap_config::AssetSwapConfig;
   use crate::error::CoreError::SlippageExceeded;
@@ -296,6 +315,45 @@ mod tests {
   fn one_nano() {
     let one = Nano::<u64>::one();
     assert_eq!("1000000000x10^-9", format!("{one:?}"));
+  }
+
+  /// An unbounded cap inverts past `u64::MAX` and must saturate rather
+  /// than fail. This is the virtual stablecoin mint headroom, which is
+  /// `u64::MAX - supply`.
+  #[test]
+  fn max_scaled_input_saturates_on_unbounded_cap() {
+    let kept = UFix64::<N4>::one() - UFix64::<N4>::new(1);
+    let bound =
+      max_scaled_input(UFix64::<N6>::new(u64::MAX), kept, UFix64::one());
+    assert_eq!(bound, Some(UFix64::<N6>::new(u64::MAX)));
+  }
+
+  /// The production path: 1bps USDC mint fee against full headroom.
+  #[test]
+  fn max_input_saturates_on_unbounded_cap() {
+    let one_bps = UFix64::<N4>::new(1);
+    let bound = FeeExtract::max_input(one_bps, UFix64::<N6>::new(u64::MAX));
+    assert_eq!(bound, Ok(UFix64::<N6>::new(u64::MAX)));
+  }
+
+  /// Saturation must not disturb caps that invert within range.
+  #[test]
+  fn max_scaled_input_exact_within_range() {
+    let half = UFix64::<N4>::new(5000);
+    let bound =
+      max_scaled_input(UFix64::<N6>::new(100), half, UFix64::<N4>::one());
+    assert_eq!(bound, Some(UFix64::<N6>::new(201)));
+  }
+
+  /// `None` is reserved for the undefined case.
+  #[test]
+  fn max_scaled_input_none_on_zero_num() {
+    let bound = max_scaled_input(
+      UFix64::<N6>::new(100),
+      UFix64::<N4>::zero(),
+      UFix64::one(),
+    );
+    assert_eq!(bound, None);
   }
 
   #[test]
