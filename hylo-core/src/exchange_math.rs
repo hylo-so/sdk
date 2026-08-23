@@ -2,8 +2,8 @@ use fix::prelude::*;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  CollateralRatio, LevercoinMarketCapArithmetic, MaxMintable, MaxSwappable,
-  StablecoinNav, TargetCollateralRatioTooLow, TotalValueLocked,
+  CollateralRatio, LevercoinMarketCapArithmetic, MaxMintable, MaxRedeemable,
+  MaxSwappable, StablecoinNav, TargetCollateralRatioTooLow, TotalValueLocked,
 };
 use crate::pyth::PriceRange;
 
@@ -137,6 +137,66 @@ fn max_swappable_stablecoin_inner(
     .checked_div(&target_collateral_ratio)
     .and_then(|l| l.checked_sub(&stablecoin_supply.checked_convert()?))
     .and_then(UFix64::checked_convert::<N6>)
+}
+
+/// Computes the maximum amount of stablecoin redeemable against
+/// collateral before the projected CR exceeds `max_collateral_ratio`.
+///
+/// Redeeming `s` stablecoin removes `s * nav` USD of collateral and burns
+/// `s` from the supply, so the projected CR is:
+///
+/// ```txt
+/// cr(s) = (tvl - s * nav) / (supply - s)
+/// ```
+///
+/// CR rises with `s` whenever `max_cr > nav`, and solving
+/// `cr(s) <= max_cr` gives:
+///
+/// ```txt
+/// max_redeemable = (max_cr * supply - tvl) / (max_cr - nav)
+/// ```
+///
+/// Returns zero when the current CR already exceeds `max_collateral_ratio`
+/// and the full supply when `max_cr <= nav`, where redemption cannot raise
+/// the CR through the ceiling. Rounding is conservative: the result always
+/// projects at or below `max_collateral_ratio`.
+pub fn max_redeemable_stablecoin(
+  max_collateral_ratio: UFix64<N9>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
+) -> Result<UFix64<N6>, CoreError> {
+  max_redeemable_stablecoin_inner(
+    max_collateral_ratio,
+    total_value_locked,
+    stablecoin_supply,
+    stablecoin_nav,
+  )
+  .ok_or(MaxRedeemable)
+}
+
+fn max_redeemable_stablecoin_inner(
+  max_collateral_ratio: UFix64<N9>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+  stablecoin_nav: UFix64<N9>,
+) -> Option<UFix64<N6>> {
+  let ceiling_supply = stablecoin_supply
+    .checked_convert::<N9>()?
+    .mul_div_floor(max_collateral_ratio, UFix64::one())?;
+  match max_collateral_ratio.checked_sub(&stablecoin_nav) {
+    None => Some(stablecoin_supply),
+    Some(headroom_rate) if headroom_rate == UFix64::zero() => {
+      Some(stablecoin_supply)
+    }
+    Some(headroom_rate) => ceiling_supply
+      .checked_sub(&total_value_locked)
+      .map_or(Some(UFix64::zero()), |headroom| {
+        headroom
+          .mul_div_floor(UFix64::one(), headroom_rate)?
+          .checked_convert::<N6>()
+      }),
+  }
 }
 
 /// Computes upper bound of levercoin NAV for minting.
@@ -424,6 +484,44 @@ mod tests {
       lever_supply,
     );
     assert_eq!(Some(UFix64::new(1000)), levercoin_nav);
+    Ok(())
+  }
+
+  /// CR 1.4 with a 1.5 ceiling: redeeming 200 of 1000 hyUSD projects
+  /// exactly to the ceiling — `(1400 - 200) / (1000 - 200) = 1.5`.
+  #[test]
+  fn max_redeemable_stablecoin_normal() -> Result<(), CoreError> {
+    let ceiling = UFix64::<N9>::new(1_500_000_000);
+    let tvl = UFix64::<N9>::new(1_400_000_000_000);
+    let supply = UFix64::<N6>::new(1_000_000_000);
+    let nav = UFix64::<N9>::new(1_000_000_000);
+    let got = max_redeemable_stablecoin(ceiling, tvl, supply, nav)?;
+    assert_eq!(UFix64::new(200_000_000), got);
+    Ok(())
+  }
+
+  /// Current CR already above the ceiling: nothing is redeemable.
+  #[test]
+  fn max_redeemable_stablecoin_above_ceiling() -> Result<(), CoreError> {
+    let ceiling = UFix64::<N9>::new(1_500_000_000);
+    let tvl = UFix64::<N9>::new(1_600_000_000_000);
+    let supply = UFix64::<N6>::new(1_000_000_000);
+    let nav = UFix64::<N9>::new(1_000_000_000);
+    let got = max_redeemable_stablecoin(ceiling, tvl, supply, nav)?;
+    assert_eq!(UFix64::zero(), got);
+    Ok(())
+  }
+
+  /// Ceiling at or below NAV: redemption cannot raise CR through it, so
+  /// the whole supply is redeemable.
+  #[test]
+  fn max_redeemable_stablecoin_unconstrained() -> Result<(), CoreError> {
+    let ceiling = UFix64::<N9>::new(900_000_000);
+    let tvl = UFix64::<N9>::new(1_400_000_000_000);
+    let supply = UFix64::<N6>::new(1_000_000_000);
+    let nav = UFix64::<N9>::new(1_000_000_000);
+    let got = max_redeemable_stablecoin(ceiling, tvl, supply, nav)?;
+    assert_eq!(supply, got);
     Ok(())
   }
 

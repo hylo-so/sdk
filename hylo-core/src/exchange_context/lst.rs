@@ -51,6 +51,10 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.total_sol
   }
 
+  fn stablecoin_redeem_fees(&self) -> &InterpolatedRedeemFees {
+    &self.stablecoin_redeem_fees
+  }
+
   fn collateral_usd_price(&self) -> PriceRange<N9> {
     self.sol_usd_price
   }

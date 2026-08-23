@@ -267,4 +267,7 @@ pub enum CoreError {
   InvalidParTolerance,
   #[msg("Spot price deviates from par beyond configured tolerance.")]
   ParToleranceExceeded,
+  // `exchange_math`
+  #[msg("Arithmetic error while computing max redeemable stablecoin.")]
+  MaxRedeemable,
 }
