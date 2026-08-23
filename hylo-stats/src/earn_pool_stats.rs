@@ -187,10 +187,14 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
     shyusd_supply: inputs.shyusd_supply,
     current_epoch: inputs.current_epoch,
     epochs_per_year: inputs.epochs_per_year,
+    effective_epochs_per_year: inputs.effective_epochs_per_year,
     lst_harvest,
     exo_stats,
     last_epoch_yield_rate,
-    naive_apy: annualize_with(last_epoch_yield_rate, inputs.epochs_per_year),
+    naive_apy: annualize_with(
+      last_epoch_yield_rate,
+      inputs.effective_epochs_per_year,
+    ),
     projected_lst_inflow,
     projected_exo_inflow,
     outstanding_drawdown: inputs.outstanding_drawdown,
@@ -264,6 +268,7 @@ mod tests {
       sol_usd_spot: UFix64::<N9>::new(150_000_000_000),
       outstanding_drawdown: UFix64::zero(),
       epochs_per_year: 182.0,
+      effective_epochs_per_year: 182.0,
     }
   }
 
@@ -301,6 +306,7 @@ mod tests {
   fn compute_stats_uses_given_basis() -> Result<()> {
     let mut input = inputs();
     input.epochs_per_year = 100.0;
+    input.effective_epochs_per_year = 100.0;
     let stats = compute_stats(&input)?;
     assert!((stats.epochs_per_year - 100.0).abs() < f64::EPSILON);
     let expected = annualize_with(stats.last_epoch_yield_rate, 100.0);
@@ -425,6 +431,21 @@ mod tests {
     input.exo_snapshots[0].harvest_cache = cache_at(800, 200_000_000, 0);
     let stats = compute_stats(&input)?;
     assert_eq!(stats.last_epoch_yield_rate, UFix64::zero());
+    Ok(())
+  }
+
+  /// A harvest recorded at epoch H earned in H-1, so the two APYs annualize
+  /// on different bases whenever epoch length changed between them.
+  #[test]
+  fn naive_and_projected_use_their_own_bases() -> Result<()> {
+    let mut input = inputs();
+    input.epochs_per_year = 199.1;
+    input.effective_epochs_per_year = 175.5;
+    let stats = compute_stats(&input)?;
+    let naive = annualize_with(stats.last_epoch_yield_rate, 175.5);
+    let projected = annualize_with(stats.projected_epoch_rate, 199.1);
+    assert!((stats.naive_apy - naive).abs() < f64::EPSILON);
+    assert!((stats.projected_apy - projected).abs() < f64::EPSILON);
     Ok(())
   }
 

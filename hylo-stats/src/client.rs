@@ -253,9 +253,23 @@ impl StatsClient {
     let keys = StatsAccounts::keys(&exo_pairs);
     let fetched = self.rpc.get_multiple_accounts(&keys).await?;
     let accounts = StatsAccounts::from_fetched(fetched, &exo_pairs)?;
-    let epochs_per_year =
-      self.measure_epochs_per_year(accounts.clock.epoch).await?;
-    compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
+    // A harvest recorded at epoch H pays the yield EARNED in H-1, so the
+    // two APYs annualize over different epochs whenever epoch length
+    // changed between them. They coincide once the harvest has run in the
+    // current epoch, which is the common case.
+    let current_epoch = accounts.clock.epoch;
+    let earned_epoch = last_harvest_earned_epoch(&accounts);
+    let epochs_per_year = self.measure_epochs_per_year(current_epoch).await?;
+    let effective_epochs_per_year = if earned_epoch == current_epoch - 1 {
+      epochs_per_year
+    } else {
+      self.measure_epoch_duration(earned_epoch).await?
+    };
+    compute_stats(&build_stats_inputs(
+      &accounts,
+      epochs_per_year,
+      effective_epochs_per_year,
+    )?)
   }
 
   /// Discovers every registered exo pair from its onchain [`ExoPair`]
@@ -303,17 +317,27 @@ impl StatsClient {
   ///
   /// # Errors
   /// * RPC failure, missing boundary blocks, or non-positive duration
-  #[allow(clippy::cast_precision_loss)]
   pub async fn measure_epochs_per_year(
     &self,
     current_epoch: u64,
   ) -> Result<f64> {
     let prev_epoch = current_epoch.checked_sub(1).ok_or(NoPreviousEpoch)?;
+    self.measure_epoch_duration(prev_epoch).await
+  }
+
+  /// Measures `epoch`'s exact wall-clock duration from block times at its
+  /// own boundary slots, returning epochs per year. The epoch must be
+  /// complete.
+  ///
+  /// # Errors
+  /// * RPC failure, missing boundary blocks, or non-positive duration
+  #[allow(clippy::cast_precision_loss)]
+  pub async fn measure_epoch_duration(&self, epoch: u64) -> Result<f64> {
     let schedule = self.rpc.get_epoch_schedule().await?;
-    let start_prev = schedule.get_first_slot_in_epoch(prev_epoch);
-    let start_curr = schedule.get_first_slot_in_epoch(current_epoch);
-    let t0 = self.block_time_at_or_after(start_prev).await?;
-    let t1 = self.block_time_at_or_after(start_curr).await?;
+    let start = schedule.get_first_slot_in_epoch(epoch);
+    let end = schedule.get_first_slot_in_epoch(epoch.saturating_add(1));
+    let t0 = self.block_time_at_or_after(start).await?;
+    let t1 = self.block_time_at_or_after(end).await?;
     let duration = t1
       .checked_sub(t0)
       .filter(|d| *d > 0)
@@ -362,6 +386,18 @@ fn exo_levercoin_market_cap(
   Ok(market_cap)
 }
 
+/// The epoch whose yield the most recent harvest paid out. A harvest
+/// recorded at epoch H sweeps rewards credited at the start of H, which
+/// accrued during H-1.
+fn last_harvest_earned_epoch(accounts: &StatsAccounts) -> u64 {
+  accounts
+    .exo_pairs
+    .iter()
+    .map(|exo| exo.pair.borrow_rate_harvest_cache.epoch)
+    .fold(accounts.hylo.yield_harvest_cache.epoch, u64::max)
+    .saturating_sub(1)
+}
+
 /// Sums outstanding pool drawdown across the LST pair and every exo pair.
 fn total_outstanding_drawdown(
   hylo: &Hylo,
@@ -407,6 +443,7 @@ fn lst_position(
 pub fn build_stats_inputs(
   accounts: &StatsAccounts,
   epochs_per_year: f64,
+  effective_epochs_per_year: f64,
 ) -> Result<StatsInputs> {
   let oracle_config = OracleConfig::new(
     accounts.hylo.oracle_interval_secs,
@@ -459,6 +496,7 @@ pub fn build_stats_inputs(
     sol_usd_spot,
     outstanding_drawdown,
     epochs_per_year,
+    effective_epochs_per_year,
   })
 }
 
