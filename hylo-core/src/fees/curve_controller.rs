@@ -14,11 +14,11 @@ pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>, CoreError> {
     .ok_or(CoreError::CollateralRatioConversion)
 }
 
-/// Upconvert CR from `N5` signed to `N9` unsigned. Inverse of [`narrow_cr`].
+/// Reads a CR out of curve coordinates. Inverse of [`narrow_cr`].
 ///
 /// # Errors
-/// * `CollateralRatioConversion` on a negative CR or `u64` overflow.
-pub fn widen_cr(cr: IFix64<N5>) -> Result<UFix64<N9>, CoreError> {
+/// * `CollateralRatioConversion` on a negative CR.
+pub fn cr_from_curve(cr: IFix64<N5>) -> Result<UFix64<N9>, CoreError> {
   cr.narrow::<u64>()
     .map(UFix64::convert::<N9>)
     .ok_or(CoreError::CollateralRatioConversion)

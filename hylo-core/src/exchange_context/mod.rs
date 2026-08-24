@@ -32,7 +32,7 @@ use crate::exchange_math::{
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
 #[cfg(feature = "offchain")]
-use crate::fees::curve_controller::widen_cr;
+use crate::fees::curve_controller::cr_from_curve;
 #[cfg(feature = "offchain")]
 use crate::fees::curves::REDEEM_MAX_CR;
 use crate::pyth::{OraclePrice, PriceRange};
@@ -392,7 +392,7 @@ pub trait ExchangeContext {
   #[cfg(feature = "offchain")]
   fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     max_redeemable_stablecoin(
-      widen_cr(REDEEM_MAX_CR)?,
+      cr_from_curve(REDEEM_MAX_CR)?,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
       self.stablecoin_nav()?,
