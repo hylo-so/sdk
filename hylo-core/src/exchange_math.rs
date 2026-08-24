@@ -174,16 +174,14 @@ fn max_redeemable_stablecoin_inner(
   stablecoin_supply: UFix64<N6>,
   stablecoin_nav: UFix64<N9>,
 ) -> Option<UFix64<N6>> {
-  let ceiling_supply = stablecoin_supply
-    .checked_convert::<N9>()?
-    .mul_div_floor(max_collateral_ratio, UFix64::one())?;
+  let ceiling_supply =
+    stablecoin_supply.mul_div_floor(max_collateral_ratio, UFix64::one())?;
+  let tvl = total_value_locked.checked_convert_ceil::<N6>()?;
   match max_collateral_ratio.checked_sub(&stablecoin_nav) {
     Some(headroom_rate) if headroom_rate > UFix64::zero() => ceiling_supply
-      .checked_sub(&total_value_locked)
+      .checked_sub(&tvl)
       .map_or(Some(UFix64::zero()), |headroom| {
-        headroom
-          .mul_div_floor(UFix64::one(), headroom_rate)?
-          .checked_convert::<N6>()
+        headroom.mul_div_floor(UFix64::one(), headroom_rate)
       }),
     _ => Some(stablecoin_supply),
   }
