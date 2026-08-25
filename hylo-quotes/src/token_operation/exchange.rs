@@ -58,6 +58,14 @@ impl<C: SolanaClock> ProtocolState<C> {
       .par_tolerance
       .validate_spot(usdc_state.usdc_usd_spot)
   }
+
+  /// USDC the vault can pay out against the virtual stablecoin supply.
+  fn usdc_redeemable(&self) -> UFix64<N6> {
+    let usdc_state = self.usdc_exchange_state();
+    usdc_state
+      .vault_balance
+      .min(usdc_state.virtual_stablecoin_supply)
+  }
 }
 
 /// Largest `N9` amount that truncates to zero in `E`'s precision.
@@ -211,8 +219,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     let supply_cap = self
       .exchange_context
       .virtual_stablecoin_supply()?
-      .checked_sub(&SUPPLY_FLOOR);
-    Ok(vault_cap.min(supply_cap.unwrap_or_default()))
+      .checked_sub(&SUPPLY_FLOOR)
+      .ok_or(CoreError::VirtualStablecoinBurnLimit)?;
+    let domain_cap = self.exchange_context.max_redeemable_stablecoin()?;
+    Ok(vault_cap.min(supply_cap).min(domain_cap))
   }
 
   fn redeem_stablecoin_lst_min_input<L: LST + Local>(
@@ -677,11 +687,8 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
-    let remaining = usdc_state
-      .vault_balance
-      .min(usdc_state.virtual_stablecoin_supply);
-    FeeExtract::max_input(usdc_state.redeem_fee, remaining)
+    let redeem_fee = self.usdc_exchange_state().redeem_fee;
+    FeeExtract::max_input(redeem_fee, self.usdc_redeemable())
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
@@ -840,8 +847,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     let supply_cap = pair
       .context
       .virtual_stablecoin_supply()?
-      .checked_sub(&pair.supply_floor);
-    Ok(vault_cap.min(supply_cap.unwrap_or_default()))
+      .checked_sub(&pair.supply_floor)
+      .ok_or(CoreError::VirtualStablecoinBurnLimit)?;
+    let domain_cap = pair.context.max_redeemable_stablecoin()?;
+    Ok(vault_cap.min(supply_cap).min(domain_cap))
   }
 
   fn redeem_stablecoin_exo_min_input<E: Exo + PythOracle>(
@@ -1307,14 +1316,11 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.exchange_context.rebalance_buy_target()?,
       epoch,
     )?;
-    let vault_cap = self
+    let input_cap = self
       .exchange_context
-      .rebalance_buy_conversion(&adjusted, buy_target)?
-      .max_lst_for_token(
-        self.usdc_exchange_state().vault_balance,
-        UFix64::one(),
-      )?;
-    Ok(buy_target.min(vault_cap))
+      .rebalance_buy_conversion(&adjusted, UFix64::zero())?
+      .max_lst_for_token(self.usdc_redeemable(), UFix64::one())?;
+    Ok(buy_target.min(input_cap))
   }
 
   /// Input ceiling for the rebalance sell leg.
@@ -1514,14 +1520,11 @@ impl<C: SolanaClock> ProtocolState<C> {
   {
     let exo = &self.exo_pair::<E>()?.context;
     let buy_target = exo.rebalance_buy_target()?;
-    let vault_cap = exo
-      .rebalance_buy_conversion(buy_target)?
-      .max_exo_for_token(
-        self.usdc_exchange_state().vault_balance,
-        UFix64::<N9>::one(),
-      )?;
+    let input_cap = exo
+      .rebalance_buy_conversion(UFix64::zero())?
+      .max_exo_for_token(self.usdc_redeemable(), UFix64::<N9>::one())?;
     buy_target
-      .min(vault_cap)
+      .min(input_cap)
       .checked_convert::<E::Exp>()
       .ok_or(CoreError::TokenAmountPrecision)
   }

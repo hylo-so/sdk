@@ -14,6 +14,16 @@ pub fn narrow_cr(cr: UFix64<N9>) -> Result<IFix64<N5>, CoreError> {
     .ok_or(CoreError::CollateralRatioConversion)
 }
 
+/// Reads a CR out of curve coordinates. Inverse of [`narrow_cr`].
+///
+/// # Errors
+/// * `CollateralRatioConversion` on a negative CR.
+pub fn cr_from_curve(cr: IFix64<N5>) -> Result<UFix64<N9>, CoreError> {
+  cr.narrow::<u64>()
+    .map(UFix64::convert::<N9>)
+    .ok_or(CoreError::CollateralRatioConversion)
+}
+
 /// Interpolated fee curve controller.
 /// Implementors define boundary behavior via `fee_inner`.
 pub trait InterpolatedFeeController<const RES: usize> {
@@ -55,16 +65,6 @@ pub trait InterpolatedFeeController<const RES: usize> {
     amount_in: UFix64<InExp>,
   ) -> Result<FeeExtract<InExp>, CoreError> {
     FeeExtract::new(self.fee_rate(ucr)?, amount_in)
-  }
-
-  /// Minimum collateral ratio in the curve's domain.
-  fn cr_floor(&self) -> Result<UFix64<N2>, CoreError> {
-    self
-      .curve()
-      .x_min()
-      .narrow()
-      .and_then(UFix64::checked_convert::<N2>)
-      .ok_or(CoreError::InterpFeeConversion)
   }
 }
 
