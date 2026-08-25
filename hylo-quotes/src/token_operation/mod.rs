@@ -100,14 +100,19 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     self.compute_output_ungated(amount_in)
   }
 
-  /// Input ceiling the protocol accepts for this route in the current
-  /// state.
+  /// Largest executable input for the route in the current state.
   ///
   /// # Errors
   /// * Route gated in current state or underlying arithmetic
+  /// * Ceiling below [`Self::min_input_ungated`]
   fn max_input(&self) -> Result<UFix64<IN::Exp>, CoreError> {
     self.preconditions()?;
-    self.max_input_ungated()
+    let max = self.max_input_ungated()?;
+    gate(
+      self.min_input_ungated()? <= max,
+      CoreError::MinInputExceedsMax,
+    )?;
+    Ok(max)
   }
 
   /// Smallest input the route turns into output in the current state.

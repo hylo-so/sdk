@@ -270,4 +270,6 @@ pub enum CoreError {
   // `exchange_math`
   #[msg("Arithmetic error while computing max redeemable stablecoin.")]
   MaxRedeemable,
+  #[msg("Minimum input exceeds maximum input for this route.")]
+  MinInputExceedsMax,
 }
