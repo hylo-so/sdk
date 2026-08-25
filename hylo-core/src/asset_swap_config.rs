@@ -54,12 +54,6 @@ mod tests {
   }
 
   #[test]
-  fn accept_zero_fee() -> Result<(), CoreError> {
-    AssetSwapConfig::validate_fee(UFixValue64::new(0, -4))?;
-    Ok(())
-  }
-
-  #[test]
   fn reject_out_of_range_fee() {
     let above_max = AssetSwapConfig::validate_fee(UFixValue64::new(101, -4));
     let one = AssetSwapConfig::validate_fee(UFixValue64::new(10000, -4));

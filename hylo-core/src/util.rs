@@ -11,10 +11,6 @@ use crate::error::CoreError::ExoAmountNormalization;
 /// ```txt
 /// x = ceil((cap + 1) * den / num) - 1
 /// ```
-///
-/// Saturates at `u64::MAX` when the inverse leaves `u64`, where every
-/// representable input satisfies the constraint. `None` means the
-/// constraint has no solution.
 #[cfg(feature = "offchain")]
 #[must_use]
 pub fn max_scaled_input<Exp: Integer, RExp: Integer>(

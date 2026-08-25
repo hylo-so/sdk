@@ -139,17 +139,14 @@ fn max_swappable_stablecoin_inner(
     .and_then(UFix64::checked_convert::<N6>)
 }
 
-/// Computes how much stablecoin can be redeemed against collateral before
-/// the projected collateral ratio exceeds the given maximum.
+/// Stablecoin redeemable before the projected collateral ratio exceeds the
+/// given maximum.
 ///
 /// ```txt
 ///                    max_collateral_ratio * supply - tvl
 /// max_redeemable = --------------------------------------
 ///                     max_collateral_ratio - nav
 /// ```
-///
-/// Zero once the current CR is already above the maximum, and the full
-/// supply when redemption cannot raise the CR through it.
 ///
 /// # Errors
 /// * Arithmetic overflow
