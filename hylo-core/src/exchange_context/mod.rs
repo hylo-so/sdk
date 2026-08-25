@@ -23,17 +23,13 @@ use crate::error::CoreError::{
   RequestedStablecoinOverMaxMintable, VirtualStablecoinOverhang,
   VirtualStablecoinSurplus,
 };
-#[cfg(feature = "offchain")]
-use crate::exchange_math::max_redeemable_stablecoin;
 use crate::exchange_math::{
   collateral_ratio, depeg_stablecoin_nav, levercoin_market_cap,
-  max_mintable_stablecoin, max_swappable_stablecoin, next_levercoin_mint_nav,
-  next_levercoin_redeem_nav, total_value_locked,
+  max_mintable_stablecoin, max_redeemable_stablecoin, max_swappable_stablecoin,
+  next_levercoin_mint_nav, next_levercoin_redeem_nav, total_value_locked,
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
-#[cfg(feature = "offchain")]
 use crate::fees::curve_controller::cr_from_curve;
-#[cfg(feature = "offchain")]
 use crate::fees::curves::REDEEM_MAX_CR;
 use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
@@ -389,7 +385,6 @@ pub trait ExchangeContext {
   ///
   /// # Errors
   /// * Arithmetic overflow
-  #[cfg(feature = "offchain")]
   fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     max_redeemable_stablecoin(
       cr_from_curve(REDEEM_MAX_CR)?,
