@@ -219,13 +219,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     let supply_cap = self
       .exchange_context
       .virtual_stablecoin_supply()?
-      .checked_sub(&SUPPLY_FLOOR);
+      .checked_sub(&SUPPLY_FLOOR)
+      .ok_or(CoreError::VirtualStablecoinBurnLimit)?;
     let domain_cap = self.exchange_context.max_redeemable_stablecoin()?;
-    Ok(
-      vault_cap
-        .min(supply_cap.unwrap_or_default())
-        .min(domain_cap),
-    )
+    Ok(vault_cap.min(supply_cap).min(domain_cap))
   }
 
   fn redeem_stablecoin_lst_min_input<L: LST + Local>(
@@ -850,13 +847,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     let supply_cap = pair
       .context
       .virtual_stablecoin_supply()?
-      .checked_sub(&pair.supply_floor);
+      .checked_sub(&pair.supply_floor)
+      .ok_or(CoreError::VirtualStablecoinBurnLimit)?;
     let domain_cap = pair.context.max_redeemable_stablecoin()?;
-    Ok(
-      vault_cap
-        .min(supply_cap.unwrap_or_default())
-        .min(domain_cap),
-    )
+    Ok(vault_cap.min(supply_cap).min(domain_cap))
   }
 
   fn redeem_stablecoin_exo_min_input<E: Exo + PythOracle>(
