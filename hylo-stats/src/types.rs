@@ -7,11 +7,15 @@ use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
 /// Snapshot of one harvest stream from its onchain [`HarvestCache`]:
 /// the most recent harvest's epoch, the hyUSD it deposited into the
-/// pool, and staleness (no harvest yet for the current epoch).
+/// pool, the pool it deposited into, and staleness (no harvest yet for
+/// the current epoch).
 #[derive(Debug, Clone, Copy)]
 pub struct RealizedHarvest {
   pub epoch: u64,
   pub hyusd_to_pool: UFix64<N6>,
+  /// Pool balance before this harvest deposited into it, from
+  /// `HarvestCache::stability_pool_cap`.
+  pub pool_balance_before: UFix64<N6>,
   pub is_stale: bool,
 }
 

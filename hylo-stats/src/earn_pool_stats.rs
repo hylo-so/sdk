@@ -42,6 +42,7 @@ fn realized(
   Ok(RealizedHarvest {
     epoch: harvest_cache.epoch,
     hyusd_to_pool: harvest_cache.stablecoin_to_pool.try_into()?,
+    pool_balance_before: harvest_cache.stability_pool_cap.try_into()?,
     is_stale: harvest_cache.is_stale(current_epoch),
   })
 }
@@ -62,24 +63,48 @@ fn exo_snapshot_stats(
 }
 
 /// Realized per-epoch yield rate: harvests at the most recent
-/// harvested epoch across all streams, summed over the pool.
+/// harvested epoch, over the pool they were deposited into.
+///
+/// Streams harvest sequentially, so each `pool_balance_before` is the
+/// previous stream's plus its deposit; the smallest is the pool before
+/// the first harvest, making the rate the NAV step it produced. A zero
+/// balance (never harvested) is skipped, not read as an empty pool.
+///
+/// ```txt
+///                          sum(hyusd_to_pool)
+/// realized_rate = -----------------------------------
+///                  min(pool_balance_before) over streams
+/// ```
+///
+/// # Errors
+/// * Arithmetic overflow
 fn realized_yield_rate(
   lst_harvest: &RealizedHarvest,
   exo_stats: &[ExoStats],
-  pool_balance: UFix64<N6>,
 ) -> Result<UFix64<N9>> {
   let last_harvest_epoch = exo_stats
     .iter()
     .map(|stats| stats.harvest.epoch)
     .fold(lst_harvest.epoch, u64::max);
-  let realized_total = std::iter::once(lst_harvest)
-    .chain(exo_stats.iter().map(|stats| &stats.harvest))
-    .filter(|harvest| harvest.epoch == last_harvest_epoch)
+  let harvested = || {
+    std::iter::once(lst_harvest)
+      .chain(exo_stats.iter().map(|stats| &stats.harvest))
+      .filter(|harvest| harvest.epoch == last_harvest_epoch)
+  };
+  let realized_total = harvested()
     .try_fold(UFix64::zero(), |acc: UFix64<N6>, harvest| {
       acc.checked_add(&harvest.hyusd_to_pool)
     })
     .ok_or(RealizedYieldOverflow)?;
-  epoch_yield_rate(realized_total, pool_balance)
+  let pool_before = harvested()
+    .map(|harvest| harvest.pool_balance_before)
+    .filter(|balance| *balance != UFix64::zero())
+    .fold(None::<UFix64<N6>>, |acc, balance| match acc {
+      Some(smallest) if smallest <= balance => Some(smallest),
+      _ => Some(balance),
+    })
+    .unwrap_or_else(UFix64::zero);
+  epoch_yield_rate(realized_total, pool_before)
 }
 
 /// Sum of projected next-epoch hyUSD inflows across LST positions.
@@ -142,8 +167,7 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
     .iter()
     .map(|snapshot| exo_snapshot_stats(snapshot, inputs.current_epoch))
     .collect::<Result<Vec<ExoStats>>>()?;
-  let last_epoch_yield_rate =
-    realized_yield_rate(&lst_harvest, &exo_stats, inputs.pool_balance)?;
+  let last_epoch_yield_rate = realized_yield_rate(&lst_harvest, &exo_stats)?;
   let projected_lst_inflow = projected_lst_total(
     &inputs.lst_positions,
     inputs.sol_usd_spot,
@@ -184,10 +208,22 @@ mod tests {
   use super::*;
   use crate::types::{ExoSnapshot, LstPosition};
 
+  /// 1,000,000 hyUSD: the fixture pool every harvest deposits into.
+  const POOL_BITS: u64 = 1_000_000_000_000;
+
   fn cache(epoch: u64, to_pool_bits: u64) -> HarvestCache {
+    cache_at(epoch, to_pool_bits, POOL_BITS)
+  }
+
+  /// A harvest that deposited into a pool of `pool_before_bits`.
+  fn cache_at(
+    epoch: u64,
+    to_pool_bits: u64,
+    pool_before_bits: u64,
+  ) -> HarvestCache {
     HarvestCache {
       epoch,
-      stability_pool_cap: UFix64::<N6>::zero().into(),
+      stability_pool_cap: UFix64::<N6>::new(pool_before_bits).into(),
       stablecoin_to_pool: UFix64::<N6>::new(to_pool_bits).into(),
     }
   }
@@ -341,6 +377,54 @@ mod tests {
     let stats = compute_stats(&input)?;
     assert_eq!(stats.projected_epoch_rate, UFix64::zero());
     assert!(stats.projected_apy.abs() < f64::EPSILON);
+    Ok(())
+  }
+
+  /// Regression: dividing by the live pool made a fixed harvest sag on
+  /// every recompute as deposits arrived.
+  #[test]
+  fn realized_rate_is_unaffected_by_later_deposits() -> Result<()> {
+    let before = compute_stats(&inputs())?;
+    let mut grown = inputs();
+    grown.pool_balance = UFix64::<N6>::new(1_200_000_000_000);
+    let after = compute_stats(&grown)?;
+    assert_eq!(after.last_epoch_yield_rate, before.last_epoch_yield_rate);
+    assert!((after.naive_apy - before.naive_apy).abs() < f64::EPSILON);
+    // The projection is forward-looking, so it does follow the live pool
+    assert!(after.projected_epoch_rate < before.projected_epoch_rate);
+    Ok(())
+  }
+
+  #[test]
+  fn realized_rate_uses_the_pool_before_the_first_harvest() -> Result<()> {
+    let mut input = inputs();
+    // exo harvests first into 1,000,000, then LST into 1,000,200
+    input.lst_harvest_cache = cache_at(800, 1_000_000_000, 1_000_200_000_000);
+    input.exo_snapshots[0].harvest_cache =
+      cache_at(800, 200_000_000, POOL_BITS);
+    let stats = compute_stats(&input)?;
+    // (1,000 + 200) / 1,000,000 = 0.12% per epoch, not over 1,000,200
+    assert_eq!(stats.last_epoch_yield_rate, UFix64::<N9>::new(1_200_000));
+    Ok(())
+  }
+
+  #[test]
+  fn realized_rate_ignores_a_never_harvested_stream_pool() -> Result<()> {
+    let mut input = inputs();
+    // A never-harvested stream carries a zero cap
+    input.exo_snapshots[0].harvest_cache = cache_at(800, 0, 0);
+    let stats = compute_stats(&input)?;
+    assert_eq!(stats.last_epoch_yield_rate, UFix64::<N9>::new(1_000_000));
+    Ok(())
+  }
+
+  #[test]
+  fn realized_rate_is_zero_when_no_stream_has_a_pool() -> Result<()> {
+    let mut input = inputs();
+    input.lst_harvest_cache = cache_at(800, 1_000_000_000, 0);
+    input.exo_snapshots[0].harvest_cache = cache_at(800, 200_000_000, 0);
+    let stats = compute_stats(&input)?;
+    assert_eq!(stats.last_epoch_yield_rate, UFix64::zero());
     Ok(())
   }
 

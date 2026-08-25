@@ -2,15 +2,17 @@
 
 use std::sync::Arc;
 
+use anchor_client::solana_account_decoder::UiAccountEncoding;
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::Clock;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
-use anchor_lang::AccountDeserialize;
+use anchor_lang::{AccountDeserialize, Discriminator};
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
+use hylo_core::idl::exchange;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
@@ -18,9 +20,15 @@ use hylo_core::pyth::{query_pyth_oracle, OracleConfig};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_idl::pda;
-use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
+use hylo_idl::tokens::{StakePool, TokenMint, HYLOSOL, JITOSOL, SHYUSD};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use solana_rpc_client_api::config::{
+  RpcAccountInfoConfig, RpcProgramAccountsConfig,
+};
+use solana_rpc_client_api::filter::{
+  Memcmp, MemcmpEncodedBytes, RpcFilterType,
+};
 
 use crate::earn_pool_stats::compute_stats;
 use crate::earn_pool_yield_math::lst_epoch_growth;
@@ -34,8 +42,54 @@ use crate::types::{EarnPoolStats, ExoSnapshot, LstPosition, StatsInputs};
 /// Seconds in a Julian year.
 const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 
-/// Deserialized onchain accounts backing one stats fetch, in
-/// [`StatsAccounts::KEYS`] order.
+/// Keys of one exo pair's accounts, discovered from its onchain
+/// [`ExoPair`]. The pair carries its own collateral mint and oracle, so
+/// a newly registered pair needs no constant added here.
+#[derive(Clone, Copy, Debug)]
+pub struct ExoPairKeys {
+  pub pair: Pubkey,
+  pub collateral_mint: Pubkey,
+  pub oracle: Pubkey,
+}
+
+impl ExoPairKeys {
+  /// Accounts fetched per exo pair, in [`ExoPairKeys::keys`] order.
+  pub const COUNT: usize = 5;
+
+  #[must_use]
+  pub fn new(pair: &ExoPair) -> ExoPairKeys {
+    ExoPairKeys {
+      pair: pda::exo_pair(pair.collateral_mint),
+      collateral_mint: pair.collateral_mint,
+      oracle: pair.oracle,
+    }
+  }
+
+  #[must_use]
+  pub fn keys(&self) -> [Pubkey; ExoPairKeys::COUNT] {
+    [
+      self.pair,
+      self.collateral_mint,
+      pda::exo_vault(self.collateral_mint),
+      pda::exo_levercoin_mint(self.collateral_mint),
+      self.oracle,
+    ]
+  }
+}
+
+/// One exo pair's deserialized accounts.
+#[derive(Clone)]
+pub struct ExoPairAccounts {
+  pub pair: ExoPair,
+  pub collateral_mint: Mint,
+  pub vault: TokenAccount,
+  pub levercoin_mint: Mint,
+  pub collateral_usd: PriceUpdateV2,
+}
+
+/// Deserialized onchain accounts backing one stats fetch: a fixed
+/// prefix in [`StatsAccounts::FIXED_KEYS`] order, then
+/// [`ExoPairKeys::COUNT`] accounts per discovered exo pair.
 #[derive(Clone)]
 pub struct StatsAccounts {
   pub hylo: Hylo,
@@ -47,22 +101,18 @@ pub struct StatsAccounts {
   pub hylosol_pool_state: SplStakePool,
   pub hyusd_pool: TokenAccount,
   pub shyusd_mint: Mint,
-  pub exo_pair: ExoPair,
-  pub exo_collateral_mint: Mint,
-  pub exo_vault: TokenAccount,
-  pub exo_levercoin_mint: Mint,
-  pub btc_usd: PriceUpdateV2,
   pub sol_usd: PriceUpdateV2,
   pub clock: Clock,
+  pub exo_pairs: Vec<ExoPairAccounts>,
 }
 
 impl StatsAccounts {
-  /// Number of accounts fetched for [`EarnPoolStats`].
-  pub const COUNT: usize = 16;
+  /// Accounts fetched regardless of how many exo pairs exist.
+  pub const FIXED_COUNT: usize = 11;
 
-  /// Account keys required for [`EarnPoolStats`], in fetch order —
-  /// the same order [`StatsAccounts::from_fetched`] deserializes.
-  pub const KEYS: [Pubkey; StatsAccounts::COUNT] = [
+  /// Keys that do not depend on the registered exo pairs, in fetch
+  /// order — the same order [`StatsAccounts::from_fetched`] reads.
+  pub const FIXED_KEYS: [Pubkey; StatsAccounts::FIXED_COUNT] = [
     pda::HYLO,
     pda::lst_header(JITOSOL::MINT),
     pda::lst_header(HYLOSOL::MINT),
@@ -72,23 +122,52 @@ impl StatsAccounts {
     HYLOSOL::POOL_STATE,
     pda::HYUSD_POOL,
     SHYUSD::MINT,
-    pda::exo_pair(CBBTC::MINT),
-    CBBTC::MINT,
-    pda::exo_vault(CBBTC::MINT),
-    pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
     pda::SOL_USD_PYTH_FEED,
     sysvar::clock::ID,
   ];
+
+  /// Full fetch list: the fixed prefix followed by each pair's accounts.
+  #[must_use]
+  pub fn keys(exo_pairs: &[ExoPairKeys]) -> Vec<Pubkey> {
+    StatsAccounts::FIXED_KEYS
+      .into_iter()
+      .chain(exo_pairs.iter().flat_map(ExoPairKeys::keys))
+      .collect()
+  }
+
+  /// Number of accounts fetched for `exo_pairs` registered pairs.
+  #[must_use]
+  pub fn count(exo_pairs: usize) -> usize {
+    StatsAccounts::FIXED_COUNT + exo_pairs * ExoPairKeys::COUNT
+  }
 
   /// Deserializes a fetched account list, erroring with the keys of
   /// any missing accounts.
   ///
   /// # Errors
   /// * Missing account, count mismatch, or deserialization failure
-  pub fn from_fetched(fetched: Vec<Option<Account>>) -> Result<StatsAccounts> {
-    StatsAccounts::validate(&fetched)?;
+  pub fn from_fetched(
+    fetched: Vec<Option<Account>>,
+    exo_pairs: &[ExoPairKeys],
+  ) -> Result<StatsAccounts> {
+    StatsAccounts::validate(&fetched, exo_pairs)?;
     let accounts = fetched.into_iter().flatten().collect::<Vec<Account>>();
+    let exo_pairs = accounts[StatsAccounts::FIXED_COUNT..]
+      .chunks_exact(ExoPairKeys::COUNT)
+      .map(|chunk| {
+        Ok(ExoPairAccounts {
+          pair: ExoPair::try_deserialize(&mut chunk[0].data.as_slice())?,
+          collateral_mint: Mint::try_deserialize(
+            &mut chunk[1].data.as_slice(),
+          )?,
+          vault: TokenAccount::try_deserialize(&mut chunk[2].data.as_slice())?,
+          levercoin_mint: Mint::try_deserialize(&mut chunk[3].data.as_slice())?,
+          collateral_usd: PriceUpdateV2::try_deserialize(
+            &mut chunk[4].data.as_slice(),
+          )?,
+        })
+      })
+      .collect::<Result<Vec<ExoPairAccounts>>>()?;
     Ok(StatsAccounts {
       hylo: Hylo::try_deserialize(&mut accounts[0].data.as_slice())?,
       jitosol_header: LstHeader::try_deserialize(
@@ -109,40 +188,32 @@ impl StatsAccounts {
         &mut accounts[7].data.as_slice(),
       )?,
       shyusd_mint: Mint::try_deserialize(&mut accounts[8].data.as_slice())?,
-      exo_pair: ExoPair::try_deserialize(&mut accounts[9].data.as_slice())?,
-      exo_collateral_mint: Mint::try_deserialize(
-        &mut accounts[10].data.as_slice(),
-      )?,
-      exo_vault: TokenAccount::try_deserialize(
-        &mut accounts[11].data.as_slice(),
-      )?,
-      exo_levercoin_mint: Mint::try_deserialize(
-        &mut accounts[12].data.as_slice(),
-      )?,
-      btc_usd: PriceUpdateV2::try_deserialize(
-        &mut accounts[13].data.as_slice(),
-      )?,
       sol_usd: PriceUpdateV2::try_deserialize(
-        &mut accounts[14].data.as_slice(),
+        &mut accounts[9].data.as_slice(),
       )?,
-      clock: bincode::deserialize(&accounts[15].data)
+      clock: bincode::deserialize(&accounts[10].data)
         .map_err(ClockDeserialize)?,
+      exo_pairs,
     })
   }
 
-  /// Checks the fetched list has [`StatsAccounts::COUNT`] entries and
-  /// no missing accounts.
-  fn validate(fetched: &[Option<Account>]) -> Result<()> {
-    let missing = StatsAccounts::KEYS
-      .iter()
+  /// Checks the fetched list is the expected length for `exo_pairs`
+  /// and has no missing accounts.
+  fn validate(
+    fetched: &[Option<Account>],
+    exo_pairs: &[ExoPairKeys],
+  ) -> Result<()> {
+    let expected = StatsAccounts::count(exo_pairs.len());
+    let missing = StatsAccounts::keys(exo_pairs)
+      .into_iter()
       .zip(fetched)
       .filter(|(_, account)| account.is_none())
-      .map(|(key, _)| *key)
+      .map(|(key, _)| key)
       .collect::<Vec<Pubkey>>();
-    if fetched.len() != StatsAccounts::COUNT {
+    if fetched.len() != expected {
       Err(
         AccountCountMismatch {
-          expected: StatsAccounts::COUNT,
+          expected,
           actual: fetched.len(),
         }
         .into(),
@@ -178,11 +249,52 @@ impl StatsClient {
   /// * Epoch duration measurement failure
   /// * Arithmetic overflow in yield math
   pub async fn earn_pool_stats(&self) -> Result<EarnPoolStats> {
-    let fetched = self.rpc.get_multiple_accounts(&StatsAccounts::KEYS).await?;
-    let accounts = StatsAccounts::from_fetched(fetched)?;
+    let exo_pairs = self.discover_exo_pairs().await?;
+    let keys = StatsAccounts::keys(&exo_pairs);
+    let fetched = self.rpc.get_multiple_accounts(&keys).await?;
+    let accounts = StatsAccounts::from_fetched(fetched, &exo_pairs)?;
     let epochs_per_year =
       self.measure_epochs_per_year(accounts.clock.epoch).await?;
     compute_stats(&build_stats_inputs(&accounts, epochs_per_year)?)
+  }
+
+  /// Discovers every registered exo pair from its onchain [`ExoPair`]
+  /// account, so a newly registered collateral is picked up without a
+  /// code change.
+  ///
+  /// Only the keys are taken from this call; the pair data itself is
+  /// re-read in the main `get_multiple_accounts` batch so every value
+  /// feeding the stats comes from one slot-consistent snapshot.
+  ///
+  /// # Errors
+  /// * RPC fetch or deserialization failure
+  pub async fn discover_exo_pairs(&self) -> Result<Vec<ExoPairKeys>> {
+    let config = RpcProgramAccountsConfig {
+      filters: Some(vec![RpcFilterType::Memcmp(Memcmp::new(
+        0,
+        MemcmpEncodedBytes::Bytes(ExoPair::DISCRIMINATOR.to_vec()),
+      ))]),
+      account_config: RpcAccountInfoConfig {
+        encoding: Some(UiAccountEncoding::Base64),
+        ..RpcAccountInfoConfig::default()
+      },
+      ..RpcProgramAccountsConfig::default()
+    };
+    let found = self
+      .rpc
+      .get_program_accounts_with_config(&exchange::ID, config)
+      .await?;
+    let mut pairs = found
+      .iter()
+      .map(|(_, account)| {
+        let pair = ExoPair::try_deserialize(&mut account.data.as_slice())?;
+        Ok(ExoPairKeys::new(&pair))
+      })
+      .collect::<Result<Vec<ExoPairKeys>>>()?;
+    // getProgramAccounts order is unspecified; keep the fetch list and
+    // the resulting stats stable across runs.
+    pairs.sort_by_key(|pair| pair.collateral_mint.to_bytes());
+    Ok(pairs)
   }
 
   /// Measures the last completed epoch's exact wall-clock duration
@@ -250,18 +362,22 @@ fn exo_levercoin_market_cap(
   Ok(market_cap)
 }
 
-/// Sums outstanding pool drawdown across the LST pair and cbBTC exo pair.
+/// Sums outstanding pool drawdown across the LST pair and every exo pair.
 fn total_outstanding_drawdown(
   hylo: &Hylo,
-  exo_pair: &ExoPair,
+  exo_pairs: &[ExoPairAccounts],
 ) -> Result<UFix64<N6>> {
   let hylo_drawdown: PoolDrawdown = hylo.pool_drawdown.into();
-  let exo_drawdown: PoolDrawdown = exo_pair.pool_drawdown.into();
-  Ok(
-    hylo_drawdown
-      .outstanding()?
-      .checked_add(&exo_drawdown.outstanding()?)
-      .ok_or(PoolDrawdownOverflow)?,
+  exo_pairs.iter().try_fold(
+    hylo_drawdown.outstanding()?,
+    |acc, exo| -> Result<UFix64<N6>> {
+      let drawdown: PoolDrawdown = exo.pair.pool_drawdown.into();
+      Ok(
+        acc
+          .checked_add(&drawdown.outstanding()?)
+          .ok_or(PoolDrawdownOverflow)?,
+      )
+    },
   )
 }
 
@@ -299,16 +415,27 @@ pub fn build_stats_inputs(
   let sol_usd_spot =
     query_pyth_oracle(&accounts.clock, &accounts.sol_usd, oracle_config)?.spot;
 
-  let levercoin_market_cap = exo_levercoin_market_cap(
-    &accounts.clock,
-    &accounts.exo_pair,
-    &accounts.exo_collateral_mint,
-    &accounts.exo_vault,
-    &accounts.exo_levercoin_mint,
-    &accounts.btc_usd,
-  )?;
+  let exo_snapshots = accounts
+    .exo_pairs
+    .iter()
+    .map(|exo| {
+      Ok(ExoSnapshot {
+        collateral_mint: exo.pair.collateral_mint,
+        harvest_cache: exo.pair.borrow_rate_harvest_cache.into(),
+        borrow_rate_config: exo.pair.borrow_rate_config.into(),
+        levercoin_market_cap: exo_levercoin_market_cap(
+          &accounts.clock,
+          &exo.pair,
+          &exo.collateral_mint,
+          &exo.vault,
+          &exo.levercoin_mint,
+          &exo.collateral_usd,
+        )?,
+      })
+    })
+    .collect::<Result<Vec<ExoSnapshot>>>()?;
   let outstanding_drawdown =
-    total_outstanding_drawdown(&accounts.hylo, &accounts.exo_pair)?;
+    total_outstanding_drawdown(&accounts.hylo, &accounts.exo_pairs)?;
 
   Ok(StatsInputs {
     current_epoch: accounts.clock.epoch,
@@ -328,12 +455,7 @@ pub fn build_stats_inputs(
         &accounts.hylosol_pool_state,
       )?,
     ],
-    exo_snapshots: vec![ExoSnapshot {
-      collateral_mint: CBBTC::MINT,
-      harvest_cache: accounts.exo_pair.borrow_rate_harvest_cache.into(),
-      borrow_rate_config: accounts.exo_pair.borrow_rate_config.into(),
-      levercoin_market_cap,
-    }],
+    exo_snapshots,
     sol_usd_spot,
     outstanding_drawdown,
     epochs_per_year,
@@ -346,11 +468,43 @@ mod tests {
 
   #[test]
   fn stats_account_keys_order() {
-    assert_eq!(StatsAccounts::KEYS[0], hylo_idl::pda::HYLO);
-    assert_eq!(StatsAccounts::KEYS[7], hylo_idl::pda::HYUSD_POOL);
+    assert_eq!(StatsAccounts::FIXED_KEYS[0], hylo_idl::pda::HYLO);
+    assert_eq!(StatsAccounts::FIXED_KEYS[7], hylo_idl::pda::HYUSD_POOL);
     assert_eq!(
-      StatsAccounts::KEYS[StatsAccounts::COUNT - 1],
+      StatsAccounts::FIXED_KEYS[StatsAccounts::FIXED_COUNT - 1],
       anchor_lang::solana_program::sysvar::clock::ID
     );
+  }
+
+  #[test]
+  fn keys_grow_by_five_per_exo_pair() {
+    let pair = ExoPairKeys {
+      pair: Pubkey::new_unique(),
+      collateral_mint: Pubkey::new_unique(),
+      oracle: Pubkey::new_unique(),
+    };
+    assert_eq!(StatsAccounts::keys(&[]).len(), StatsAccounts::FIXED_COUNT);
+    assert_eq!(StatsAccounts::keys(&[pair]).len(), StatsAccounts::count(1));
+    assert_eq!(
+      StatsAccounts::keys(&[pair, pair]).len(),
+      StatsAccounts::FIXED_COUNT + 2 * ExoPairKeys::COUNT
+    );
+  }
+
+  /// The pair's own oracle is fetched, so a new collateral needs no
+  /// feed constant added to this crate.
+  #[test]
+  fn exo_pair_keys_use_the_pairs_own_oracle() {
+    let oracle = Pubkey::new_unique();
+    let collateral_mint = Pubkey::new_unique();
+    let keys = ExoPairKeys {
+      pair: hylo_idl::pda::exo_pair(collateral_mint),
+      collateral_mint,
+      oracle,
+    }
+    .keys();
+    assert_eq!(keys[1], collateral_mint);
+    assert_eq!(keys[2], hylo_idl::pda::exo_vault(collateral_mint));
+    assert_eq!(keys[4], oracle);
   }
 }

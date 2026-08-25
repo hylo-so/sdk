@@ -1773,6 +1773,7 @@ dependencies = [
  "hylo-idl",
  "pyth-solana-receiver-sdk",
  "solana-rpc-client",
+ "solana-rpc-client-api",
  "thiserror 2.0.18",
  "tokio",
 ]
