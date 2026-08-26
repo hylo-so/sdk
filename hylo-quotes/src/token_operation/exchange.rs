@@ -1198,6 +1198,10 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn rebalance_buy_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     self.usdc_pair_gates()?;
+    gate(
+      self.sol_stablecoin_oracle_valid,
+      CoreError::PythOracleOutdated,
+    )?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.rebalance_buy_active(),
@@ -1209,6 +1213,10 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn rebalance_sell_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     self.usdc_pair_gates()?;
+    gate(
+      self.sol_stablecoin_oracle_valid,
+      CoreError::PythOracleOutdated,
+    )?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       self.exchange_context.rebalance_sell_active(),
@@ -1463,6 +1471,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.exo_pair_gates::<E>()?;
     self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
+    gate(
+      pair.stablecoin_oracle_valid(),
+      CoreError::PythOracleOutdated,
+    )?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.rebalance_buy_active(),
@@ -1553,6 +1565,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.exo_pair_gates::<E>()?;
     self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
+    gate(
+      pair.stablecoin_oracle_valid(),
+      CoreError::PythOracleOutdated,
+    )?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.rebalance_sell_active(),
