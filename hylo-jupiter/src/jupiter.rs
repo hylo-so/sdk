@@ -19,8 +19,7 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  build_exo_pair_state, stablecoin_oracle_valid, ProtocolState,
-  UsdcExchangeState,
+  build_exo_pair_state, ProtocolState, UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
@@ -797,8 +796,6 @@ where
     let hylosol_stake_pool =
       SplStakePool::from_bytes(&hylosol_pool_state.data)?;
 
-    let sol_stablecoin_oracle_valid =
-      stablecoin_oracle_valid(&self.clock, &sol_usd, hylo.oracle_interval_secs);
     self.state = Some(ProtocolState::build(
       self.clock.clone(),
       &hylo,
@@ -817,7 +814,6 @@ where
       hylosol_stake_pool,
       UFix64::new(jitosol_vault.amount),
       UFix64::new(hylosol_vault.amount),
-      sol_stablecoin_oracle_valid,
     )?);
 
     Ok(())
