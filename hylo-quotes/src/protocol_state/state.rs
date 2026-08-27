@@ -41,8 +41,8 @@ pub struct UsdcExchangeState {
   pub paused: bool,
   /// USDC collateral vault balance
   pub vault_balance: UFix64<N6>,
-  /// Virtual stablecoin supply for the USDC pair
-  pub virtual_stablecoin_supply: UFix64<N6>,
+  /// Virtual stablecoin counter for the USDC pair
+  pub virtual_stablecoin: VirtualStablecoin,
   /// USDC/USD spot price, gated against par
   pub usdc_usd_spot: UFix64<N9>,
   /// Tolerated distance from par for the USDC pair
@@ -414,7 +414,7 @@ fn build_usdc_exchange_state(
     redeem_fee: usdc_pair.redeem_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
-    virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+    virtual_stablecoin,
     usdc_usd_spot: usdc_oracle.spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
   })

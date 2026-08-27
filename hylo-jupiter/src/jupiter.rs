@@ -58,7 +58,7 @@ fn usdc_state(
     redeem_fee: usdc_pair.redeem_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
-    virtual_stablecoin_supply: virtual_stablecoin.supply()?,
+    virtual_stablecoin,
     usdc_usd_spot: usdc_oracle.spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
   })
