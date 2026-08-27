@@ -11,7 +11,9 @@ use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
+use hylo_core::virtual_stablecoin::{
+  max_mintable, validate_burn, SUPPLY_FLOOR,
+};
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
   XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
@@ -639,8 +641,12 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let headroom = usdc_state.virtual_stablecoin.max_mintable()?;
-    FeeExtract::max_input(usdc_state.mint_fee, headroom)
+    let counter_headroom = usdc_state.virtual_stablecoin.max_mintable()?;
+    let mint_headroom = max_mintable(UFix64::new(self.hyusd_mint.supply))?;
+    FeeExtract::max_input(
+      usdc_state.mint_fee,
+      counter_headroom.min(mint_headroom),
+    )
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
