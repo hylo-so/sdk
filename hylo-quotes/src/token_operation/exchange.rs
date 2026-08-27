@@ -707,7 +707,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
     gate(
-      pair.stablecoin_oracle_valid(),
+      pair.collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
@@ -790,7 +790,9 @@ impl<C: SolanaClock> ProtocolState<C> {
   ) -> Result<(), CoreError> {
     self.exo_pair_gates::<E>()?;
     gate(
-      self.exo_pair::<E>()?.stablecoin_oracle_valid(),
+      self
+        .exo_pair::<E>()?
+        .collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )
   }
@@ -1472,7 +1474,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
     gate(
-      pair.stablecoin_oracle_valid(),
+      pair.collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
@@ -1566,7 +1568,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
     gate(
-      pair.stablecoin_oracle_valid(),
+      pair.collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;

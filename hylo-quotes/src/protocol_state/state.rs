@@ -98,10 +98,9 @@ impl<C: SolanaClock> ExoPairState<C> {
     })
   }
 
-  /// Whether the collateral feed is valid under the tighter stablecoin
-  /// oracle window.
+  /// Tests this pair's collateral feed against the stablecoin oracle window.
   #[must_use]
-  pub fn stablecoin_oracle_valid(&self) -> bool {
+  pub fn collateral_usd_in_stablecoin_oracle_window(&self) -> bool {
     validate_publish_time(
       self.oracle_publish_time,
       self.oracle_interval_secs.div_ceil(ORACLE_DIVISOR),
