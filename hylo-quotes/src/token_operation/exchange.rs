@@ -11,9 +11,7 @@ use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::virtual_stablecoin::{
-  max_mintable, validate_burn, SUPPLY_FLOOR,
-};
+use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
   XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
@@ -60,11 +58,13 @@ impl<C: SolanaClock> ProtocolState<C> {
   }
 
   /// USDC the vault can pay out against the virtual stablecoin supply.
-  fn usdc_redeemable(&self) -> UFix64<N6> {
+  fn usdc_redeemable(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    usdc_state
-      .vault_balance
-      .min(usdc_state.virtual_stablecoin_supply)
+    Ok(
+      usdc_state
+        .vault_balance
+        .min(usdc_state.virtual_stablecoin.supply()?),
+    )
   }
 }
 
@@ -639,7 +639,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let headroom = max_mintable(usdc_state.virtual_stablecoin_supply)?;
+    let headroom = usdc_state.virtual_stablecoin.max_mintable()?;
     FeeExtract::max_input(usdc_state.mint_fee, headroom)
   }
 
@@ -666,7 +666,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
       amount_remaining,
     } = FeeExtract::new(usdc_state.redeem_fee, in_amount)?;
     gate(
-      amount_remaining <= usdc_state.virtual_stablecoin_supply,
+      amount_remaining <= usdc_state.virtual_stablecoin.supply()?,
       CoreError::BurnUnderflow,
     )?;
     gate(
@@ -688,7 +688,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     let redeem_fee = self.usdc_exchange_state().redeem_fee;
-    FeeExtract::max_input(redeem_fee, self.usdc_redeemable())
+    FeeExtract::max_input(redeem_fee, self.usdc_redeemable()?)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
@@ -1252,7 +1252,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       CoreError::InsufficientLiquidity,
     )?;
     gate(
-      out_amount <= self.usdc_exchange_state().virtual_stablecoin_supply,
+      out_amount <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
       CoreError::BurnUnderflow,
     )?;
     let pnl = self
@@ -1329,7 +1329,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let input_cap = self
       .exchange_context
       .rebalance_buy_conversion(&adjusted, UFix64::zero())?
-      .max_lst_for_token(self.usdc_redeemable(), UFix64::one())?;
+      .max_lst_for_token(self.usdc_redeemable()?, UFix64::one())?;
     Ok(buy_target.min(input_cap))
   }
 
@@ -1507,7 +1507,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       CoreError::InsufficientLiquidity,
     )?;
     gate(
-      out_amount <= self.usdc_exchange_state().virtual_stablecoin_supply,
+      out_amount <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
       CoreError::BurnUnderflow,
     )?;
     let pnl = pair
@@ -1536,7 +1536,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let buy_target = exo.rebalance_buy_target()?;
     let input_cap = exo
       .rebalance_buy_conversion(UFix64::zero())?
-      .max_exo_for_token(self.usdc_redeemable(), UFix64::<N9>::one())?;
+      .max_exo_for_token(self.usdc_redeemable()?, UFix64::<N9>::one())?;
     buy_target
       .min(input_cap)
       .checked_convert::<E::Exp>()

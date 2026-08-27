@@ -80,6 +80,15 @@ impl VirtualStablecoin {
     Ok(self.supply.try_into()?)
   }
 
+  /// Headroom left in this counter before it overflows.
+  ///
+  /// # Errors
+  /// * State validation
+  /// * Underflow
+  pub fn max_mintable(&self) -> Result<UFix64<N6>, CoreError> {
+    max_mintable(self.supply()?)
+  }
+
   /// Increases the supply of the virtual stablecoin.
   ///
   /// # Errors
