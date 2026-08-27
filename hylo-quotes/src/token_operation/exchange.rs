@@ -83,7 +83,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn mint_stablecoin_lst_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     gate(
-      self.sol_stablecoin_oracle_valid,
+      self.sol_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
@@ -159,7 +159,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn redeem_stablecoin_lst_preconditions(&self) -> Result<(), CoreError> {
     self.lst_pair_gates()?;
     gate(
-      self.sol_stablecoin_oracle_valid,
+      self.sol_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )
   }
@@ -1201,7 +1201,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.lst_pair_gates()?;
     self.usdc_pair_gates()?;
     gate(
-      self.sol_stablecoin_oracle_valid,
+      self.sol_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
@@ -1216,7 +1216,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.lst_pair_gates()?;
     self.usdc_pair_gates()?;
     gate(
-      self.sol_stablecoin_oracle_valid,
+      self.sol_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
     )?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;

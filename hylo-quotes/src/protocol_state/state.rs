@@ -49,18 +49,16 @@ pub struct UsdcExchangeState {
   pub par_tolerance: ParTolerance,
 }
 
-/// Whether a collateral feed is valid under the tighter stablecoin
-/// oracle window enforced by the mint/redeem handlers.
-#[must_use]
-pub fn stablecoin_oracle_valid<C: SolanaClock>(
-  clock: &C,
-  feed: &PriceUpdateV2,
+/// Tests a feed publish time against the tightened stablecoin oracle window.
+fn in_stablecoin_oracle_window(
+  publish_time: i64,
   interval_secs: u64,
+  now: i64,
 ) -> bool {
   validate_publish_time(
-    feed.price_message.publish_time,
+    publish_time,
     interval_secs.div_ceil(ORACLE_DIVISOR),
-    clock.unix_timestamp(),
+    now,
   )
   .is_ok()
 }
@@ -101,18 +99,16 @@ impl<C: SolanaClock> ExoPairState<C> {
   /// Tests this pair's collateral feed against the stablecoin oracle window.
   #[must_use]
   pub fn collateral_usd_in_stablecoin_oracle_window(&self) -> bool {
-    validate_publish_time(
+    in_stablecoin_oracle_window(
       self.oracle_publish_time,
-      self.oracle_interval_secs.div_ceil(ORACLE_DIVISOR),
+      self.oracle_interval_secs,
       self.context.clock.unix_timestamp(),
     )
-    .is_ok()
   }
 }
 
 /// Complete snapshot of Hylo protocol state
 #[derive(Clone)]
-#[allow(clippy::struct_excessive_bools)]
 pub struct ProtocolState<C: SolanaClock> {
   /// Exchange context with all protocol parameters
   pub exchange_context: LstExchangeContext<C>,
@@ -177,8 +173,11 @@ pub struct ProtocolState<C: SolanaClock> {
   /// `hyloSOL` collateral vault balance
   pub hylosol_vault_balance: UFix64<N9>,
 
-  /// SOL/USD valid under the stablecoin oracle window
-  pub sol_stablecoin_oracle_valid: bool,
+  /// SOL/USD oracle publish time
+  pub sol_usd_publish_time: i64,
+
+  /// Full oracle staleness interval
+  pub oracle_interval_secs: u64,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -205,8 +204,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     hylosol_stake_pool: SplStakePool,
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
-    sol_stablecoin_oracle_valid: bool,
   ) -> Result<Self> {
+    let sol_usd_publish_time = sol_usd.price_message.publish_time;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context =
@@ -233,8 +232,19 @@ impl<C: SolanaClock> ProtocolState<C> {
       yield_harvest_epoch: hylo.yield_harvest_cache.epoch,
       jitosol_vault_balance,
       hylosol_vault_balance,
-      sol_stablecoin_oracle_valid,
+      sol_usd_publish_time,
+      oracle_interval_secs: hylo.oracle_interval_secs,
     })
+  }
+
+  /// Tests the SOL/USD feed against the stablecoin oracle window.
+  #[must_use]
+  pub fn sol_usd_in_stablecoin_oracle_window(&self) -> bool {
+    in_stablecoin_oracle_window(
+      self.sol_usd_publish_time,
+      self.oracle_interval_secs,
+      self.exchange_context.clock.unix_timestamp(),
+    )
   }
 
   /// Selects an [`LstHeader`] field given a token implementing [`LST`].
@@ -476,9 +486,6 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hylosol_vault = TokenAccount::try_deserialize(
       &mut accounts.hylosol_vault.data.as_slice(),
     )?;
-    let sol_stablecoin_oracle_valid =
-      stablecoin_oracle_valid(&clock, &sol_usd, hylo.oracle_interval_secs);
-
     Self::build(
       clock,
       &hylo,
@@ -497,7 +504,6 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       hylosol_stake_pool,
       UFix64::new(jitosol_vault.amount),
       UFix64::new(hylosol_vault.amount),
-      sol_stablecoin_oracle_valid,
     )
   }
 }
