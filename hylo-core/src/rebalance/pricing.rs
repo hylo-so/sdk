@@ -118,7 +118,7 @@ fn markup(pct: UFix64<N9>) -> Result<UFix64<N9>, CoreError> {
 ///
 /// # Errors
 /// * Conversion overflow
-fn narrow(cr: UFix64<N9>) -> Result<IFix64<N9>, CoreError> {
+pub fn narrow(cr: UFix64<N9>) -> Result<IFix64<N9>, CoreError> {
   cr.narrow::<i64>()
     .ok_or(CoreError::RebalancePriceConversion)
 }
