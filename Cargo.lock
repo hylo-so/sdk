@@ -637,7 +637,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.12.3",
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -1643,16 +1643,15 @@ dependencies = [
 
 [[package]]
 name = "hylo-fix"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef27049ab1246df4990a9e2ed6aa932981331e68935307e6f8e91ae8ba2cacc2"
+checksum = "4026a27a20485d36c85099fcd47d63c3d3b1c2b884631d6ec174fa30bfa810cb"
 dependencies = [
  "anchor-lang",
  "anyhow",
  "muldiv",
  "num-traits",
  "paste",
- "quote",
  "serde",
  "typed_floats",
  "typenum",
