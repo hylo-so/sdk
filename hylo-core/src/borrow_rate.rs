@@ -24,8 +24,8 @@ use crate::rebalance::pricing::narrow;
   Deserialize,
 )]
 pub struct BorrowRateCurveConfig {
-  pub floor_bps: UFixValue64,
-  pub ceil_bps: UFixValue64,
+  pub floor_rate: UFixValue64,
+  pub ceil_rate: UFixValue64,
 }
 
 /// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
@@ -37,12 +37,12 @@ const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
 impl BorrowRateCurveConfig {
   #[must_use]
   pub fn new(
-    floor_bps: UFixValue64,
-    ceil_bps: UFixValue64,
+    floor_rate: UFixValue64,
+    ceil_rate: UFixValue64,
   ) -> BorrowRateCurveConfig {
     BorrowRateCurveConfig {
-      floor_bps,
-      ceil_bps,
+      floor_rate,
+      ceil_rate,
     }
   }
 
@@ -50,16 +50,16 @@ impl BorrowRateCurveConfig {
   ///
   /// # Errors
   /// * Invalid rate data
-  pub fn floor_bps(&self) -> Result<UFix64<N9>, CoreError> {
-    Ok(self.floor_bps.try_into()?)
+  pub fn floor_rate(&self) -> Result<UFix64<N9>, CoreError> {
+    Ok(self.floor_rate.try_into()?)
   }
 
   /// Maximum borrow rate.
   ///
   /// # Errors
   /// * Invalid rate data
-  pub fn ceil_bps(&self) -> Result<UFix64<N9>, CoreError> {
-    Ok(self.ceil_bps.try_into()?)
+  pub fn ceil_rate(&self) -> Result<UFix64<N9>, CoreError> {
+    Ok(self.ceil_rate.try_into()?)
   }
 
   /// Rate curve over CR: constant floor through the neutral zone,
@@ -80,8 +80,8 @@ impl BorrowRateCurveConfig {
       .active_range()
       .end()
       .and_then(narrow)?;
-    let floor_rate = self.floor_bps().and_then(narrow)?;
-    let ceil_rate = self.ceil_bps().and_then(narrow)?;
+    let floor_rate = self.floor_rate().and_then(narrow)?;
+    let ceil_rate = self.ceil_rate().and_then(narrow)?;
     FixInterp::from_points([
       Point::new(neutral_start, floor_rate),
       Point::new(buy_zone_1_start, floor_rate),
@@ -131,8 +131,8 @@ impl BorrowRateCurveConfig {
   /// * Floor exceeds ceiling
   /// * Ceiling exceeds maximum rate
   pub fn validate(&self) -> Result<BorrowRateCurveConfig, CoreError> {
-    let floor = self.floor_bps()?;
-    let ceil = self.ceil_bps()?;
+    let floor = self.floor_rate()?;
+    let ceil = self.ceil_rate()?;
     (floor <= ceil && ceil <= MAX_RATE)
       .then_some(*self)
       .ok_or(BorrowRateValidation)
