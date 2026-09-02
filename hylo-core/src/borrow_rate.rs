@@ -194,7 +194,9 @@ mod tests {
   fn rate_floor_through_neutral() -> Result<(), CoreError> {
     let config = test_config();
     let neutral = RebalanceMode::Neutral.active_range();
+    let neutral_mid = UFix64::<N9>::constant(1_500_000_000);
     assert_eq!(config.rate(neutral.start()?)?, FLOOR);
+    assert_eq!(config.rate(neutral_mid)?, FLOOR);
     assert_eq!(config.rate(neutral.end()?)?, FLOOR);
     Ok(())
   }
