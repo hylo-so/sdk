@@ -6,7 +6,9 @@ use fix::typenum::Z0;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
-use crate::error::CoreError::{BorrowRateApply, BorrowRateValidation};
+use crate::error::CoreError::{
+  BorrowRateApply, BorrowRateValidation, InterpFeeConversion,
+};
 use crate::fees::interp::{FixInterp, Point};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pricing::narrow;
@@ -103,7 +105,7 @@ impl BorrowRateCurveConfig {
     } else {
       interp.interpolate(cr)?
     };
-    rate.narrow().ok_or(BorrowRateApply)
+    rate.narrow().ok_or(InterpFeeConversion)
   }
 
   /// Applies the borrow rate at the given CR to an amount.
@@ -125,29 +127,31 @@ impl BorrowRateCurveConfig {
       .ok_or(BorrowRateApply)
   }
 
-  /// Floor and ceiling must satisfy `floor <= ceil <= MAX_RATE`.
+  /// Floor and ceiling must satisfy `0 < floor <= ceil <= MAX_RATE`.
   ///
   /// # Errors
-  /// * Floor exceeds ceiling
+  /// * Floor is zero or exceeds ceiling
   /// * Ceiling exceeds maximum rate
   pub fn validate(&self) -> Result<BorrowRateCurveConfig, CoreError> {
     let floor = self.floor_rate()?;
     let ceil = self.ceil_rate()?;
-    (floor <= ceil && ceil <= MAX_RATE)
+    (floor > UFix64::zero() && floor <= ceil && ceil <= MAX_RATE)
       .then_some(*self)
       .ok_or(BorrowRateValidation)
   }
 }
 
-/// Borrow rate fee must be in `[0, MAX_FEE]`.
+/// Borrow rate fee must be in `(0, MAX_FEE]`.
 ///
 /// # Errors
-/// * Fee exceeds maximum
+/// * Fee is zero or exceeds maximum
 pub fn validate_borrow_rate_fee(
   fee: UFixValue64,
 ) -> Result<UFixValue64, CoreError> {
   let bps: UFix64<N4> = fee.try_into()?;
-  (bps <= MAX_FEE).then_some(fee).ok_or(BorrowRateValidation)
+  (bps > UFix64::zero() && bps <= MAX_FEE)
+    .then_some(fee)
+    .ok_or(BorrowRateValidation)
 }
 
 #[cfg(test)]
@@ -158,9 +162,17 @@ mod tests {
 
   #[test]
   fn validate_fee_pos() -> Result<(), CoreError> {
-    validate_borrow_rate_fee(UFixValue64::new(0, -4))?;
+    validate_borrow_rate_fee(UFixValue64::new(1, -4))?;
     validate_borrow_rate_fee(UFixValue64::new(1_000, -4))?;
     Ok(())
+  }
+
+  #[test]
+  fn validate_fee_neg_zero() {
+    assert_eq!(
+      validate_borrow_rate_fee(UFixValue64::new(0, -4)),
+      Err(BorrowRateValidation)
+    );
   }
 
   #[test]
@@ -249,9 +261,17 @@ mod tests {
 
   #[test]
   fn validate_pos() -> Result<(), CoreError> {
-    config(UFix64::zero(), CEIL).validate()?;
+    config(FLOOR, CEIL).validate()?;
     config(FLOOR, FLOOR).validate()?;
     Ok(())
+  }
+
+  #[test]
+  fn validate_neg_zero_floor() {
+    assert_eq!(
+      config(UFix64::zero(), CEIL).validate(),
+      Err(BorrowRateValidation)
+    );
   }
 
   #[test]
