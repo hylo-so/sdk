@@ -9518,10 +9518,18 @@
           }
         },
         {
-          "name": "borrow_rate_config",
+          "name": "borrow_rate_curve_config",
           "type": {
             "defined": {
-              "name": "BorrowRateConfig"
+              "name": "BorrowRateCurveConfig"
+            }
+          }
+        },
+        {
+          "name": "borrow_rate_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
             }
           }
         },
@@ -16457,16 +16465,16 @@
       }
     },
     {
-      "name": "update_exo_borrow_rate",
+      "name": "update_exo_borrow_rate_curve",
       "discriminator": [
-        59,
-        37,
-        124,
-        162,
-        243,
-        215,
-        191,
-        193
+        27,
+        184,
+        25,
+        86,
+        139,
+        177,
+        15,
+        123
       ],
       "accounts": [
         {
@@ -16558,17 +16566,133 @@
       ],
       "args": [
         {
-          "name": "new_borrow_rate_config",
+          "name": "new_curve_config",
           "type": {
             "defined": {
-              "name": "BorrowRateConfig"
+              "name": "BorrowRateCurveConfig"
             }
           }
         }
       ],
       "returns": {
         "defined": {
-          "name": "UpdateExoBorrowRateEvent"
+          "name": "UpdateBorrowRateCurveConfigEvent"
+        }
+      }
+    },
+    {
+      "name": "update_exo_borrow_rate_fee",
+      "discriminator": [
+        93,
+        204,
+        52,
+        236,
+        107,
+        39,
+        6,
+        36
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_borrow_rate_fee",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateFeeEvent"
         }
       }
     },
@@ -19854,16 +19978,16 @@
       ]
     },
     {
-      "name": "UpdateExoBorrowRateEvent",
+      "name": "UpdateBorrowRateCurveConfigEvent",
       "discriminator": [
-        95,
-        179,
-        60,
-        3,
-        30,
-        213,
-        78,
-        250
+        202,
+        107,
+        241,
+        157,
+        215,
+        231,
+        0,
+        135
       ]
     },
     {
@@ -20378,7 +20502,7 @@
       }
     },
     {
-      "name": "BorrowRateConfig",
+      "name": "BorrowRateCurveConfig",
       "docs": [
         "Per-epoch borrow rate for exogenous collateral without native yield."
       ],
@@ -20386,7 +20510,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "rate",
+            "name": "floor_rate",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -20394,7 +20518,7 @@
             }
           },
           {
-            "name": "fee",
+            "name": "ceil_rate",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -20726,10 +20850,10 @@
             }
           },
           {
-            "name": "borrow_rate_config",
+            "name": "borrow_rate_curve_config",
             "type": {
               "defined": {
-                "name": "BorrowRateConfig"
+                "name": "BorrowRateCurveConfig"
               }
             }
           },
@@ -20766,7 +20890,7 @@
             }
           },
           {
-            "name": "_unused_1",
+            "name": "borrow_rate_fee",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -22329,10 +22453,10 @@
             }
           },
           {
-            "name": "borrow_rate",
+            "name": "borrow_rate_curve_config",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "BorrowRateCurveConfig"
               }
             }
           },
@@ -22878,23 +23002,23 @@
       }
     },
     {
-      "name": "UpdateExoBorrowRateEvent",
+      "name": "UpdateBorrowRateCurveConfigEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "old_borrow_rate_config",
+            "name": "old_curve_config",
             "type": {
               "defined": {
-                "name": "BorrowRateConfig"
+                "name": "BorrowRateCurveConfig"
               }
             }
           },
           {
-            "name": "new_borrow_rate_config",
+            "name": "new_curve_config",
             "type": {
               "defined": {
-                "name": "BorrowRateConfig"
+                "name": "BorrowRateCurveConfig"
               }
             }
           }

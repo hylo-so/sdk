@@ -1,3 +1,4 @@
+use crate::borrow_rate::BorrowRateCurveConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::limiter::deposit::DepositLimiter;
 use crate::limiter::withdraw::WithdrawalLimiter;
@@ -100,6 +101,16 @@ impl From<hylo_idl::exchange::types::ParTolerance> for ParTolerance {
 impl From<hylo_idl::exchange::types::PoolDrawdown> for PoolDrawdown {
   fn from(idl: hylo_idl::exchange::types::PoolDrawdown) -> PoolDrawdown {
     PoolDrawdown::new(idl.ledger.into())
+  }
+}
+
+impl From<hylo_idl::exchange::types::BorrowRateCurveConfig>
+  for BorrowRateCurveConfig
+{
+  fn from(
+    idl: hylo_idl::exchange::types::BorrowRateCurveConfig,
+  ) -> BorrowRateCurveConfig {
+    BorrowRateCurveConfig::new(idl.floor_rate.into(), idl.ceil_rate.into())
   }
 }
 
@@ -240,6 +251,17 @@ impl From<RebalanceCurveConfig>
     hylo_idl::exchange::types::RebalanceCurveConfig {
       floor_pct: val.floor_pct.into(),
       ceil_pct: val.ceil_pct.into(),
+    }
+  }
+}
+
+impl From<BorrowRateCurveConfig>
+  for hylo_idl::exchange::types::BorrowRateCurveConfig
+{
+  fn from(val: BorrowRateCurveConfig) -> Self {
+    hylo_idl::exchange::types::BorrowRateCurveConfig {
+      floor_rate: val.floor_rate.into(),
+      ceil_rate: val.ceil_rate.into(),
     }
   }
 }
