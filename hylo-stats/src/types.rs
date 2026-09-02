@@ -2,7 +2,7 @@
 
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::*;
-use hylo_core::borrow_rate::BorrowRateConfig;
+use hylo_core::borrow_rate::BorrowRateCurveConfig;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
 /// Snapshot of one harvest stream from its onchain [`HarvestCache`]:
@@ -28,7 +28,9 @@ pub struct LstPosition {
 pub struct ExoSnapshot {
   pub collateral_mint: Pubkey,
   pub harvest_cache: HarvestCache,
-  pub borrow_rate_config: BorrowRateConfig,
+  pub borrow_rate_curve_config: BorrowRateCurveConfig,
+  pub borrow_rate_fee: UFix64<N4>,
+  pub collateral_ratio: UFix64<N9>,
   pub levercoin_market_cap: UFix64<N9>,
 }
 

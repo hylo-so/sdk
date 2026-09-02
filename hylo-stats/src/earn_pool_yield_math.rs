@@ -3,7 +3,8 @@
 use anyhow::Result;
 use fix::prelude::*;
 use fix::typenum::Z0;
-use hylo_core::borrow_rate::BorrowRateConfig;
+use hylo_core::borrow_rate::BorrowRateCurveConfig;
+use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::yields::YieldHarvestConfig;
 
@@ -104,21 +105,28 @@ pub fn projected_lst_inflow(
 /// Projects next epoch's hyUSD inflow from the borrow-rate stream.
 ///
 /// ```txt
-/// inflow = levercoin_market_cap * rate * (1 - fee)
+/// inflow = levercoin_market_cap * rate(cr) * (1 - fee)
 /// ```
 ///
 /// # Errors
 /// * Arithmetic overflow
 /// * Invalid borrow rate config data
+/// * CR below the borrow rate curve domain
 pub fn projected_borrow_inflow(
   levercoin_market_cap: UFix64<N9>,
-  config: &BorrowRateConfig,
+  collateral_ratio: UFix64<N9>,
+  config: &BorrowRateCurveConfig,
+  fee: UFix64<N4>,
 ) -> Result<UFix64<N6>> {
   let gross = config
-    .apply_borrow_rate(levercoin_market_cap, UFix64::constant(1))?
+    .apply_borrow_rate(
+      levercoin_market_cap,
+      collateral_ratio,
+      UFix64::constant(1),
+    )?
     .checked_convert::<N6>()
     .ok_or(ProjectedInflow)?;
-  let extract = config.apply_fee(gross)?;
+  let extract = FeeExtract::new(fee, gross)?;
   Ok(extract.amount_remaining)
 }
 
@@ -136,8 +144,9 @@ pub fn apply_drawdown_offset(
 
 #[cfg(test)]
 mod tests {
-  use hylo_core::borrow_rate::BorrowRateConfig;
+  use hylo_core::borrow_rate::BorrowRateCurveConfig;
   use hylo_core::lst::sol_price::LstSolPrice;
+  use hylo_core::rebalance::mode::RebalanceMode;
   use hylo_core::yields::YieldHarvestConfig;
 
   use super::*;
@@ -254,15 +263,17 @@ mod tests {
 
   #[test]
   fn projected_borrow_inflow_basic() -> Result<()> {
-    // $1,000,000 market cap at 384,620e-9 per epoch, 5% fee:
+    // $1,000,000 market cap at 384,620e-9 floor rate per epoch, 5% fee:
     // $384.62 gross -> $365.389 to pool
-    let config = BorrowRateConfig::new(
+    let config = BorrowRateCurveConfig::new(
       UFix64::<N9>::new(384_620).into(),
-      UFix64::<N4>::new(500).into(),
+      UFix64::<N9>::new(1_648_352).into(),
     );
     let inflow = projected_borrow_inflow(
       UFix64::<N9>::new(1_000_000_000_000_000),
+      RebalanceMode::Neutral.active_range().start()?,
       &config,
+      UFix64::<N4>::new(500),
     )?;
     assert_eq!(inflow, UFix64::<N6>::new(365_389_000));
     Ok(())

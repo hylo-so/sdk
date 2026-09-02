@@ -56,7 +56,9 @@ fn exo_snapshot_stats(
     harvest: realized(&snapshot.harvest_cache, current_epoch)?,
     projected_inflow: projected_borrow_inflow(
       snapshot.levercoin_market_cap,
-      &snapshot.borrow_rate_config,
+      snapshot.collateral_ratio,
+      &snapshot.borrow_rate_curve_config,
+      snapshot.borrow_rate_fee,
     )?,
   })
 }
@@ -178,7 +180,7 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Pubkey;
-  use hylo_core::borrow_rate::BorrowRateConfig;
+  use hylo_core::borrow_rate::BorrowRateCurveConfig;
   use hylo_core::yields::YieldHarvestConfig;
 
   use super::*;
@@ -199,10 +201,12 @@ mod tests {
     ExoSnapshot {
       collateral_mint: Pubkey::new_unique(),
       harvest_cache,
-      borrow_rate_config: BorrowRateConfig::new(
+      borrow_rate_curve_config: BorrowRateCurveConfig::new(
         UFix64::<N9>::new(384_620).into(),
-        UFix64::<N4>::new(500).into(),
+        UFix64::<N9>::new(1_648_352).into(),
       ),
+      borrow_rate_fee: UFix64::<N4>::new(500),
+      collateral_ratio: UFix64::<N9>::new(1_500_000_000),
       levercoin_market_cap,
     }
   }
