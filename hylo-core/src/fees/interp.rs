@@ -17,6 +17,11 @@ pub struct Point<Exp: Integer> {
 
 impl<Exp: Integer> Point<Exp> {
   #[must_use]
+  pub const fn new(x: IFix64<Exp>, y: IFix64<Exp>) -> Point<Exp> {
+    Point { x, y }
+  }
+
+  #[must_use]
   pub const fn from_ints(x: i64, y: i64) -> Point<Exp> {
     Point {
       x: IFix64::constant(x),

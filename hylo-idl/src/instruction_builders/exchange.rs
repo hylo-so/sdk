@@ -810,12 +810,33 @@ pub fn update_yield_harvest_config(
 }
 
 #[must_use]
-pub fn update_exo_borrow_rate(
+pub fn update_exo_borrow_rate_curve(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::UpdateExoBorrowRate,
+  args: &args::UpdateExoBorrowRateCurve,
 ) -> Instruction {
-  let accounts = accounts::UpdateExoBorrowRate {
+  let accounts = accounts::UpdateExoBorrowRateCurve {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_borrow_rate_fee(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoBorrowRateFee,
+) -> Instruction {
+  let accounts = accounts::UpdateExoBorrowRateFee {
     admin,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),

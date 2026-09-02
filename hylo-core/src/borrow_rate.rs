@@ -6,8 +6,12 @@ use fix::typenum::Z0;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
-use crate::error::CoreError::{BorrowRateApply, BorrowRateValidation};
-use crate::fees::controller::FeeExtract;
+use crate::error::CoreError::{
+  BorrowRateApply, BorrowRateValidation, InterpFeeConversion,
+};
+use crate::fees::interp::{FixInterp, Point};
+use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::pricing::narrow;
 
 /// Per-epoch borrow rate for exogenous collateral without native yield.
 #[derive(
@@ -21,9 +25,9 @@ use crate::fees::controller::FeeExtract;
   Serialize,
   Deserialize,
 )]
-pub struct BorrowRateConfig {
-  pub rate: UFixValue64,
-  pub fee: UFixValue64,
+pub struct BorrowRateCurveConfig {
+  pub floor_rate: UFixValue64,
+  pub ceil_rate: UFixValue64,
 }
 
 /// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
@@ -32,152 +36,253 @@ const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
 /// Maximum fee exacted against borrow rate
 const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
 
-impl BorrowRateConfig {
+impl BorrowRateCurveConfig {
   #[must_use]
-  pub fn new(rate: UFixValue64, fee: UFixValue64) -> BorrowRateConfig {
-    BorrowRateConfig { rate, fee }
+  pub fn new(
+    floor_rate: UFixValue64,
+    ceil_rate: UFixValue64,
+  ) -> BorrowRateCurveConfig {
+    BorrowRateCurveConfig {
+      floor_rate,
+      ceil_rate,
+    }
   }
 
-  /// Per-epoch borrow rate.
+  /// Minimum borrow rate.
   ///
   /// # Errors
   /// * Invalid rate data
-  pub fn rate(&self) -> Result<UFix64<N9>, CoreError> {
-    Ok(self.rate.try_into()?)
+  pub fn floor_rate(&self) -> Result<UFix64<N9>, CoreError> {
+    Ok(self.floor_rate.try_into()?)
   }
 
-  /// Percentage of borrow rate harvest to divert to treasury.
+  /// Maximum borrow rate.
   ///
   /// # Errors
-  /// * Invalid fee data
-  pub fn fee(&self) -> Result<UFix64<N4>, CoreError> {
-    Ok(self.fee.try_into()?)
+  /// * Invalid rate data
+  pub fn ceil_rate(&self) -> Result<UFix64<N9>, CoreError> {
+    Ok(self.ceil_rate.try_into()?)
   }
 
-  /// Applies the borrow rate to a USD amount.
+  /// Rate curve over CR: constant floor through the neutral zone,
+  /// linear from floor to ceiling across buy zone 1.
+  ///
+  /// # Errors
+  /// * Conversion or curve construction
+  fn build_curve(&self) -> Result<FixInterp<3, N9>, CoreError> {
+    let neutral_start = RebalanceMode::Neutral
+      .active_range()
+      .start()
+      .and_then(narrow)?;
+    let buy_zone_1_start = RebalanceMode::BuyZone1
+      .active_range()
+      .start()
+      .and_then(narrow)?;
+    let buy_zone_1_end = RebalanceMode::BuyZone1
+      .active_range()
+      .end()
+      .and_then(narrow)?;
+    let floor_rate = self.floor_rate().and_then(narrow)?;
+    let ceil_rate = self.ceil_rate().and_then(narrow)?;
+    FixInterp::from_points([
+      Point::new(neutral_start, floor_rate),
+      Point::new(buy_zone_1_start, floor_rate),
+      Point::new(buy_zone_1_end, ceil_rate),
+    ])
+  }
+
+  /// Per-epoch borrow rate at the given CR.
+  /// Constant at the ceiling above the curve domain.
+  ///
+  /// # Errors
+  /// * CR below the curve domain
+  /// * Conversion or arithmetic
+  pub fn rate(&self, ucr: UFix64<N9>) -> Result<UFix64<N9>, CoreError> {
+    let interp = self.build_curve()?;
+    let cr = narrow(ucr)?;
+    let rate = if cr > interp.x_max() {
+      interp.y_max()
+    } else {
+      interp.interpolate(cr)?
+    };
+    rate.narrow().ok_or(InterpFeeConversion)
+  }
+
+  /// Applies the borrow rate at the given CR to an amount.
   /// Multiplies by elapsed epochs to cover missed harvests.
   ///
   /// # Errors
+  /// * CR below the curve domain
   /// * Arithmetic overflow
   pub fn apply_borrow_rate(
     &self,
     amount: UFix64<N9>,
+    cr: UFix64<N9>,
     elapsed_epochs: UFix64<Z0>,
   ) -> Result<UFix64<N9>, CoreError> {
-    let rate = self.rate()?;
+    let rate = self.rate(cr)?;
     amount
       .mul_div_floor(rate, UFix64::one())
       .and_then(|base| base.checked_mul(&elapsed_epochs))
       .ok_or(BorrowRateApply)
   }
 
-  /// Extracts treasury fee from the harvested borrow amount.
+  /// Floor and ceiling must satisfy `0 < floor <= ceil <= MAX_RATE`.
   ///
   /// # Errors
-  /// * Fee extraction arithmetic
-  pub fn apply_fee(
-    &self,
-    amount: UFix64<N6>,
-  ) -> Result<FeeExtract<N6>, CoreError> {
-    let fee = self.fee()?;
-    FeeExtract::new(fee, amount)
+  /// * Floor is zero or exceeds ceiling
+  /// * Ceiling exceeds maximum rate
+  pub fn validate(&self) -> Result<BorrowRateCurveConfig, CoreError> {
+    let floor = self.floor_rate()?;
+    let ceil = self.ceil_rate()?;
+    (floor > UFix64::zero() && floor <= ceil && ceil <= MAX_RATE)
+      .then_some(*self)
+      .ok_or(BorrowRateValidation)
   }
+}
 
-  /// # Errors
-  /// * Rate is zero or exceeds maximum
-  /// * Fee is zero or exceeds 100%
-  pub fn validate(&self) -> Result<BorrowRateConfig, CoreError> {
-    let rate = self.rate()?;
-    let fee = self.fee()?;
-    if rate > UFix64::zero()
-      && rate <= MAX_RATE
-      && fee > UFix64::zero()
-      && fee <= MAX_FEE
-    {
-      Ok(*self)
-    } else {
-      Err(BorrowRateValidation)
-    }
-  }
+/// Borrow rate fee must be in `(0, MAX_FEE]`.
+///
+/// # Errors
+/// * Fee is zero or exceeds maximum
+pub fn validate_borrow_rate_fee(
+  fee: UFixValue64,
+) -> Result<UFixValue64, CoreError> {
+  let bps: UFix64<N4> = fee.try_into()?;
+  (bps > UFix64::zero() && bps <= MAX_FEE)
+    .then_some(fee)
+    .ok_or(BorrowRateValidation)
 }
 
 #[cfg(test)]
 mod tests {
+  use more_asserts::{assert_gt, assert_lt};
+
   use super::*;
 
-  fn test_config() -> BorrowRateConfig {
-    let rate = UFix64::<N9>::new(384_620);
-    let fee = UFix64::<N4>::new(500);
-    BorrowRateConfig::new(rate.into(), fee.into())
+  #[test]
+  fn validate_fee_pos() -> Result<(), CoreError> {
+    validate_borrow_rate_fee(UFixValue64::new(1, -4))?;
+    validate_borrow_rate_fee(UFixValue64::new(1_000, -4))?;
+    Ok(())
+  }
+
+  #[test]
+  fn validate_fee_neg_zero() {
+    assert_eq!(
+      validate_borrow_rate_fee(UFixValue64::new(0, -4)),
+      Err(BorrowRateValidation)
+    );
+  }
+
+  #[test]
+  fn validate_fee_neg_high() {
+    assert_eq!(
+      validate_borrow_rate_fee(UFixValue64::new(1_001, -4)),
+      Err(BorrowRateValidation)
+    );
+  }
+
+  const FLOOR: UFix64<N9> = UFix64::constant(384_620);
+  const CEIL: UFix64<N9> = MAX_RATE;
+
+  fn config(floor: UFix64<N9>, ceil: UFix64<N9>) -> BorrowRateCurveConfig {
+    BorrowRateCurveConfig::new(floor.into(), ceil.into())
+  }
+
+  fn test_config() -> BorrowRateCurveConfig {
+    config(FLOOR, CEIL)
+  }
+
+  #[test]
+  fn rate_neg_below_neutral() -> Result<(), CoreError> {
+    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
+    let below = UFix64::new(neutral_start.bits - 1);
+    assert_eq!(test_config().rate(below), Err(CoreError::InterpOutOfDomain));
+    Ok(())
+  }
+
+  #[test]
+  fn rate_floor_through_neutral() -> Result<(), CoreError> {
+    let config = test_config();
+    let neutral = RebalanceMode::Neutral.active_range();
+    let neutral_mid = UFix64::<N9>::constant(1_500_000_000);
+    assert_eq!(config.rate(neutral.start()?)?, FLOOR);
+    assert_eq!(config.rate(neutral_mid)?, FLOOR);
+    assert_eq!(config.rate(neutral.end()?)?, FLOOR);
+    Ok(())
+  }
+
+  #[test]
+  fn rate_ramp_within_bounds() -> Result<(), CoreError> {
+    let buy_zone_1_start = RebalanceMode::BuyZone1.active_range().start()?;
+    let inside = UFix64::new(buy_zone_1_start.bits + 1);
+    let rate = test_config().rate(inside)?;
+    assert_gt!(rate, FLOOR);
+    assert_lt!(rate, CEIL);
+    Ok(())
+  }
+
+  #[test]
+  fn rate_ceil_saturates() -> Result<(), CoreError> {
+    let config = test_config();
+    let buy_zone_1_end = RebalanceMode::BuyZone1.active_range().end()?;
+    let above = UFix64::new(buy_zone_1_end.bits + 1);
+    assert_eq!(config.rate(buy_zone_1_end)?, CEIL);
+    assert_eq!(config.rate(above)?, CEIL);
+    Ok(())
   }
 
   #[test]
   fn apply_borrow_rate_7_percent_annual() -> Result<(), CoreError> {
-    let config = test_config();
+    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
-    let borrow = config.apply_borrow_rate(collateral, UFix64::constant(1))?;
+    let borrow = test_config().apply_borrow_rate(
+      collateral,
+      neutral_start,
+      UFix64::constant(1),
+    )?;
     assert_eq!(borrow, UFix64::new(384_620_000_000));
     Ok(())
   }
 
   #[test]
   fn apply_borrow_rate_multiple_epochs() -> Result<(), CoreError> {
-    let config = test_config();
+    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
     let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
-    let borrow = config.apply_borrow_rate(collateral, UFix64::constant(5))?;
+    let borrow = test_config().apply_borrow_rate(
+      collateral,
+      neutral_start,
+      UFix64::constant(5),
+    )?;
     assert_eq!(borrow, UFix64::new(2_374_197_509_495));
     Ok(())
   }
 
   #[test]
-  fn apply_fee_5_percent() -> Result<(), CoreError> {
-    let config = test_config();
-    let amount = UFix64::<N6>::new(384_620_000);
-    let extract = config.apply_fee(amount)?;
-    assert_eq!(extract.fees_extracted, UFix64::new(19_231_000));
-    assert_eq!(extract.amount_remaining, UFix64::new(365_389_000));
-    Ok(())
-  }
-
-  #[test]
   fn validate_pos() -> Result<(), CoreError> {
-    test_config().validate()?;
+    config(FLOOR, CEIL).validate()?;
+    config(FLOOR, FLOOR).validate()?;
     Ok(())
   }
 
   #[test]
-  fn validate_neg_zero_rate() {
-    let config = BorrowRateConfig::new(
-      UFix64::<N9>::zero().into(),
-      UFix64::<N4>::new(500).into(),
+  fn validate_neg_zero_floor() {
+    assert_eq!(
+      config(UFix64::zero(), CEIL).validate(),
+      Err(BorrowRateValidation)
     );
-    assert_eq!(config.validate(), Err(BorrowRateValidation));
   }
 
   #[test]
-  fn validate_neg_high_rate() {
-    let config = BorrowRateConfig::new(
-      UFix64::<N9>::new(1_648_353).into(),
-      UFix64::<N4>::new(500).into(),
-    );
-    assert_eq!(config.validate(), Err(BorrowRateValidation));
+  fn validate_neg_floor_above_ceil() {
+    let above = UFix64::new(FLOOR.bits + 1);
+    assert_eq!(config(above, FLOOR).validate(), Err(BorrowRateValidation));
   }
 
   #[test]
-  fn validate_neg_zero_fee() {
-    let config = BorrowRateConfig::new(
-      UFix64::<N9>::new(384_620).into(),
-      UFix64::<N4>::zero().into(),
-    );
-    assert_eq!(config.validate(), Err(BorrowRateValidation));
-  }
-
-  #[test]
-  fn validate_neg_high_fee() {
-    let config = BorrowRateConfig::new(
-      UFix64::<N9>::new(384_620).into(),
-      UFix64::<N4>::new(10_001).into(),
-    );
-    assert_eq!(config.validate(), Err(BorrowRateValidation));
+  fn validate_neg_high_ceil() {
+    let above = UFix64::new(CEIL.bits + 1);
+    assert_eq!(config(FLOOR, above).validate(), Err(BorrowRateValidation));
   }
 }

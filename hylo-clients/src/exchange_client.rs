@@ -615,22 +615,42 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Updates the borrow rate for an exo collateral.
+  /// Updates the borrow rate curve for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_borrow_rate(
+  pub fn update_exo_borrow_rate_curve(
     &self,
     squads: &SquadsContext,
     collateral_mint: Pubkey,
-    args: &args::UpdateExoBorrowRate,
+    args: &args::UpdateExoBorrowRateCurve,
   ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_exo_borrow_rate(
+    let instruction = instruction_builders::update_exo_borrow_rate_curve(
       squads.vault_pda(),
       collateral_mint,
       args,
     );
-    let memo = build_memo("update_exo_borrow_rate", &instruction);
+    let memo = build_memo("update_exo_borrow_rate_curve", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Updates the borrow rate fee for an exo collateral.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn update_exo_borrow_rate_fee(
+    &self,
+    squads: &SquadsContext,
+    collateral_mint: Pubkey,
+    args: &args::UpdateExoBorrowRateFee,
+  ) -> Result<SquadsTransactionData> {
+    let instruction = instruction_builders::update_exo_borrow_rate_fee(
+      squads.vault_pda(),
+      collateral_mint,
+      args,
+    );
+    let memo = build_memo("update_exo_borrow_rate_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
