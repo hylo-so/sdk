@@ -218,8 +218,8 @@ impl StatsClient {
   }
 }
 
-/// Values an exo pair's levercoin market cap for the borrow-rate
-/// projection. Mirrors hylo-quotes `build_cbbtc_exchange_context`.
+/// Loads an exo pair's exchange context for the borrow-rate projection.
+/// Mirrors hylo-quotes `build_cbbtc_exchange_context`.
 fn exo_exchange_context(
   clock: &Clock,
   exo_pair: &ExoPair,
