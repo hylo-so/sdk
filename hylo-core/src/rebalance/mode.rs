@@ -259,7 +259,7 @@ mod proofs {
 
   use fix::prelude::*;
 
-  use crate::collateral_ratio::CollateralRatio;
+  use crate::collateral_ratio::CR;
   use crate::kani_generators::any_ufix64;
   use crate::rebalance::mode::RebalanceMode;
 

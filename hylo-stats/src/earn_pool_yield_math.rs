@@ -4,7 +4,7 @@ use anyhow::Result;
 use fix::prelude::*;
 use fix::typenum::Z0;
 use hylo_core::borrow_rate::BorrowRateCurveConfig;
-use hylo_core::collateral_ratio::CR;
+use hylo_core::collateral_ratio::CollateralRatio;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::yields::YieldHarvestConfig;
@@ -115,14 +115,14 @@ pub fn projected_lst_inflow(
 /// * CR below the borrow rate curve domain
 pub fn projected_borrow_inflow(
   levercoin_market_cap: UFix64<N9>,
-  collateral_ratio: UFix64<N9>,
+  collateral_ratio: CollateralRatio,
   config: &BorrowRateCurveConfig,
   fee: UFix64<N4>,
 ) -> Result<UFix64<N6>> {
   let gross = config
     .apply_borrow_rate(
       levercoin_market_cap,
-      CR::finite(collateral_ratio),
+      collateral_ratio,
       UFix64::constant(1),
     )?
     .checked_convert::<N6>()
@@ -146,6 +146,7 @@ pub fn apply_drawdown_offset(
 #[cfg(test)]
 mod tests {
   use hylo_core::borrow_rate::BorrowRateCurveConfig;
+  use hylo_core::collateral_ratio::CR;
   use hylo_core::lst::sol_price::LstSolPrice;
   use hylo_core::rebalance::mode::RebalanceMode;
   use hylo_core::yields::YieldHarvestConfig;
@@ -272,7 +273,7 @@ mod tests {
     );
     let inflow = projected_borrow_inflow(
       UFix64::<N9>::new(1_000_000_000_000_000),
-      RebalanceMode::Neutral.active_range().start()?,
+      CR::finite(RebalanceMode::Neutral.active_range().start()?),
       &config,
       UFix64::<N4>::new(500),
     )?;
