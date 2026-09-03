@@ -89,7 +89,7 @@ impl CollateralRatio {
   /// Tests a finite lower bound, which `Infinite` always satisfies.
   #[must_use]
   pub fn at_least(self, bound: UFix64<N9>) -> bool {
-    self >= CollateralRatio::finite(bound)
+    self >= CR::finite(bound)
   }
 }
 
@@ -104,7 +104,7 @@ impl From<UFix64<N9>> for CollateralRatio {
     if cr == UFix64::new(u64::MAX) {
       CollateralRatio::Infinite
     } else {
-      CollateralRatio::finite(cr)
+      CR::finite(cr)
     }
   }
 }
@@ -129,15 +129,35 @@ mod tests {
   fn new_finite_ratio() -> Result<(), CoreError> {
     let supply = UFix64::<N6>::constant(1_000_000_000);
     let cr = CollateralRatio::new(COLLATERAL, PRICE, supply)?;
-    assert_eq!(cr, CollateralRatio::finite(UFix64::constant(2_000_000_000)));
+    assert_eq!(cr, CR::finite(UFix64::constant(2_000_000_000)));
+    Ok(())
+  }
+
+  #[test]
+  fn new_below_par() -> Result<(), CoreError> {
+    let total_collateral = UFix64::<N9>::new(8_217_712_567_008);
+    let price = UFix64::<N9>::new(137_704_920_000);
+    let supply = UFix64::<N6>::new(1_150_380_112_112);
+    let cr = CollateralRatio::new(total_collateral, price, supply)?;
+    assert_eq!(cr, CR::finite(UFix64::new(983_691_772)));
+    Ok(())
+  }
+
+  #[test]
+  fn new_above_par() -> Result<(), CoreError> {
+    let total_collateral = UFix64::<N9>::new(976_123_127_719);
+    let price = UFix64::<N9>::new(137_704_920_000);
+    let supply = UFix64::<N6>::new(97_411_342_200);
+    let cr = CollateralRatio::new(total_collateral, price, supply)?;
+    assert_eq!(cr, CR::finite(UFix64::new(1_379_890_207)));
     Ok(())
   }
 
   #[test]
   fn infinite_orders_above_every_finite() {
-    let max = CollateralRatio::finite(UFix64::new(u64::MAX));
+    let max = CR::finite(UFix64::new(u64::MAX));
     assert_lt!(max, CollateralRatio::Infinite);
-    assert_lt!(CollateralRatio::finite(UFix64::zero()), max);
+    assert_lt!(CR::finite(UFix64::zero()), max);
   }
 
   #[test]
@@ -149,14 +169,14 @@ mod tests {
 
   #[test]
   fn finite_beyond_signed_range_saturates() {
-    let cr = CollateralRatio::finite(UFix64::new(u64::MAX));
+    let cr = CR::finite(UFix64::new(u64::MAX));
     assert_eq!(cr.price_curve_x(), IFix64::new(i64::MAX));
     assert_lt!(cr.fee_curve_x(), IFix64::new(i64::MAX));
   }
 
   #[test]
   fn finite_in_range_converts_exactly() {
-    let cr = CollateralRatio::finite(UFix64::constant(1_500_000_000));
+    let cr = CR::finite(UFix64::constant(1_500_000_000));
     assert_eq!(cr.price_curve_x(), IFix64::constant(1_500_000_000));
     assert_eq!(cr.fee_curve_x(), IFix64::constant(150_000));
   }
@@ -170,7 +190,7 @@ mod tests {
 
   #[test]
   fn round_trip_finite() {
-    let cr = CollateralRatio::finite(UFix64::constant(1_500_000_000));
+    let cr = CR::finite(UFix64::constant(1_500_000_000));
     let raw: UFix64<N9> = cr.into();
     assert_eq!(raw, UFix64::constant(1_500_000_000));
     assert_eq!(CollateralRatio::from(raw), cr);
@@ -180,9 +200,7 @@ mod tests {
   fn at_least_finite_bound() {
     let bound = UFix64::<N9>::constant(1_350_000_000);
     assert!(CollateralRatio::Infinite.at_least(bound));
-    assert!(CollateralRatio::finite(bound).at_least(bound));
-    assert!(
-      !CollateralRatio::finite(UFix64::constant(1_200_000_000)).at_least(bound)
-    );
+    assert!(CR::finite(bound).at_least(bound));
+    assert!(!CR::finite(UFix64::constant(1_200_000_000)).at_least(bound));
   }
 }

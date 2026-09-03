@@ -193,9 +193,8 @@ mod tests {
 mod proofs {
   use fix::prelude::*;
 
-  use crate::exchange_math::{
-    collateral_ratio_inner, total_value_locked_inner,
-  };
+  use crate::collateral_ratio::CollateralRatio;
+  use crate::exchange_math::total_value_locked_inner;
   use crate::kani_generators::narrow_ufix64;
   use crate::rebalance::math::{
     max_buyable_collateral, max_sellable_collateral,
@@ -239,13 +238,16 @@ mod proofs {
         virtual_stablecoin.checked_sub(&usdc_proceeds)?;
       // Convergence is undefined if rebalance drains the pair
       kani::assume(remaining_virtual_stablecoin != UFix64::zero());
-      collateral_ratio_inner(
+      CollateralRatio::new(
         remaining_collateral,
         collateral_usd_price,
         remaining_virtual_stablecoin,
       )
+      .ok()
     });
-    assert!(post_sale_cr.is_none_or(|cr| cr <= target_cr));
+    assert!(
+      post_sale_cr.is_none_or(|cr| cr <= CollateralRatio::finite(target_cr))
+    );
   }
 
   /// Buying `max_buyable` drives CR to at least `target_cr`.
@@ -268,12 +270,13 @@ mod proofs {
         .and_then(UFix64::checked_convert)?;
       let post_buy_virtual_stablecoin =
         virtual_stablecoin.checked_add(&usdc_cost)?;
-      collateral_ratio_inner(
+      CollateralRatio::new(
         post_buy_collateral,
         collateral_usd_price,
         post_buy_virtual_stablecoin,
       )
+      .ok()
     });
-    assert!(post_buy_cr.is_none_or(|cr| cr >= target_cr));
+    assert!(post_buy_cr.is_none_or(|cr| cr.at_least(target_cr)));
   }
 }
