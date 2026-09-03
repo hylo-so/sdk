@@ -2,6 +2,7 @@ use fix::prelude::*;
 
 use super::controller::FeeExtract;
 use super::interp::FixInterp;
+use crate::collateral_ratio::CollateralRatio;
 use crate::error::CoreError;
 
 /// Downconvert CR from `N9` unsigned to `N5` signed for curve lookup.
@@ -46,11 +47,10 @@ pub trait InterpolatedFeeController<const RES: usize> {
   /// Fee rate for a collateral ratio from the underlying curve.
   ///
   /// # Errors
-  /// * CR conversion, domain, or fee conversion
-  fn fee_rate(&self, ucr: UFix64<N9>) -> Result<UFix64<N5>, CoreError> {
-    let cr = narrow_cr(ucr)?;
+  /// * Domain or fee conversion
+  fn fee_rate(&self, cr: CollateralRatio) -> Result<UFix64<N5>, CoreError> {
     self
-      .fee_inner(cr)?
+      .fee_inner(cr.fee_curve_x())?
       .narrow()
       .ok_or(CoreError::InterpFeeConversion)
   }
@@ -58,13 +58,13 @@ pub trait InterpolatedFeeController<const RES: usize> {
   /// Applies the interpolated fee to an input amount.
   ///
   /// # Errors
-  /// * CR conversion, domain, or fee extraction arithmetic
+  /// * Domain or fee extraction arithmetic
   fn apply_fee<InExp>(
     &self,
-    ucr: UFix64<N9>,
+    cr: CollateralRatio,
     amount_in: UFix64<InExp>,
   ) -> Result<FeeExtract<InExp>, CoreError> {
-    FeeExtract::new(self.fee_rate(ucr)?, amount_in)
+    FeeExtract::new(self.fee_rate(cr)?, amount_in)
   }
 }
 
@@ -155,16 +155,21 @@ mod tests {
   use proptest::test_runner::TestCaseResult;
 
   use super::*;
+  use crate::collateral_ratio::CR;
   use crate::error::CoreError;
   use crate::fees::curves::{MINT_FEE_INV, REDEEM_FEE_LN};
   use crate::util::proptest::*;
 
-  fn collateral_ratio() -> BoxedStrategy<UFix64<N9>> {
-    (0u64..4_000_000_000u64).prop_map(UFix64::new).boxed()
+  fn collateral_ratio() -> BoxedStrategy<CollateralRatio> {
+    (0u64..4_000_000_000u64)
+      .prop_map(|bits| CR::finite(UFix64::new(bits)))
+      .boxed()
   }
 
-  fn redeem_domain_collateral_ratio() -> BoxedStrategy<UFix64<N9>> {
-    (0u64..=1_500_000_000u64).prop_map(UFix64::new).boxed()
+  fn redeem_domain_collateral_ratio() -> BoxedStrategy<CollateralRatio> {
+    (0u64..=1_500_000_000u64)
+      .prop_map(|bits| CR::finite(UFix64::new(bits)))
+      .boxed()
   }
 
   fn mint_fees() -> InterpolatedMintFees {
@@ -180,7 +185,7 @@ mod tests {
   fn assert_conservation<Exp: Integer>(
     extract: &FeeExtract<Exp>,
     amount: UFix64<Exp>,
-    cr: UFix64<N9>,
+    cr: CollateralRatio,
   ) -> TestCaseResult {
     prop_assert_eq!(
       extract
@@ -194,12 +199,11 @@ mod tests {
   }
 
   fn assert_mint_fee<Exp: Integer>(
-    cr: UFix64<N9>,
+    cr: CollateralRatio,
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = mint_fees();
-    let cr_n5 = narrow_cr(cr)
-      .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
+    let cr_n5 = cr.fee_curve_x();
     match fees.apply_fee(cr, amount) {
       Ok(extract) => assert_conservation(&extract, amount, cr),
       Err(e) => {
@@ -216,12 +220,11 @@ mod tests {
   }
 
   fn assert_redeem_fee<Exp: Integer>(
-    cr: UFix64<N9>,
+    cr: CollateralRatio,
     amount: UFix64<Exp>,
   ) -> TestCaseResult {
     let fees = redeem_fees();
-    let cr_n5 = narrow_cr(cr)
-      .map_err(|e| TestCaseError::fail(format!("CR narrowing failed: {e}")))?;
+    let cr_n5 = cr.fee_curve_x();
     match fees.apply_fee(cr, amount) {
       Ok(extract) => assert_conservation(&extract, amount, cr),
       Err(e) => {

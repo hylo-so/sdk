@@ -13,10 +13,9 @@ use fix::prelude::*;
 
 pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
+use crate::collateral_ratio::CR;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
-#[cfg(feature = "offchain")]
-use crate::error::CoreError::{CollateralRatio, DestinationCollateral};
 use crate::error::CoreError::{
   DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
   RebalanceBuySideTarget, RebalanceSellSideLiquidity,
@@ -103,14 +102,14 @@ pub trait ExchangeContext {
   fn rebalance_sell_active(&self) -> bool {
     self
       .rebalance_sell_curve()
-      .is_ok_and(|c| c.is_active(self.collateral_ratio()))
+      .is_ok_and(|c| c.is_active(CR::finite(self.collateral_ratio())))
   }
 
   /// Returns true if buy-side rebalancing is active at the current CR.
   fn rebalance_buy_active(&self) -> bool {
     self
       .rebalance_buy_curve()
-      .is_ok_and(|c| c.is_active(self.collateral_ratio()))
+      .is_ok_and(|c| c.is_active(CR::finite(self.collateral_ratio())))
   }
 
   /// Available collateral liquidity to sell off for CR rebalancing.
@@ -338,7 +337,7 @@ pub trait ExchangeContext {
       self.collateral_usd_price().lower,
       new_stablecoin,
     )?;
-    Ok(RebalanceMode::from_cr(projected_cr))
+    Ok(RebalanceMode::from_cr(CR::finite(projected_cr)))
   }
 
   /// Returns the worse of current vs projected mode for fee
@@ -429,7 +428,7 @@ pub trait ExchangeContext {
         .active_range()
         .start()?
         .checked_sub(&atom)
-        .ok_or(CollateralRatio)?;
+        .ok_or(CoreError::CollateralRatio)?;
       let min_collateral = supply
         .checked_convert::<N9>()
         .and_then(|supply| {
@@ -442,11 +441,11 @@ pub trait ExchangeContext {
         .and_then(|last_depeg_collateral| {
           last_depeg_collateral.checked_add(&atom)
         })
-        .ok_or(CollateralRatio)?;
+        .ok_or(CoreError::CollateralRatio)?;
       self
         .total_collateral()
         .checked_sub(&min_collateral)
-        .ok_or(DestinationCollateral)
+        .ok_or(CoreError::DestinationCollateral)
     }
   }
 
@@ -464,7 +463,7 @@ pub trait ExchangeContext {
         UFix64::<N9>::new(u64::MAX),
       )
       .and_then(UFix64::checked_convert_ceil::<N6>)
-      .ok_or(CollateralRatio)?;
+      .ok_or(CoreError::CollateralRatio)?;
     Ok(
       self
         .virtual_stablecoin_supply()?

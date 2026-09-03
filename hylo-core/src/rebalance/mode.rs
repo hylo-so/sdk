@@ -6,6 +6,7 @@ use anchor_lang::prelude::{
 };
 use fix::prelude::*;
 
+use crate::collateral_ratio::CollateralRatio;
 use crate::error::CoreError;
 use crate::error::CoreError::{
   RangeUnexpectedBound, StablecoinMintThresholdInvalid,
@@ -128,17 +129,20 @@ impl RebalanceMode {
   }
 
   #[must_use]
-  pub fn from_cr(cr: UFix64<N9>) -> RebalanceMode {
-    [
-      RebalanceMode::Depeg,
-      RebalanceMode::SellZone2,
-      RebalanceMode::SellZone1,
-      RebalanceMode::Neutral,
-      RebalanceMode::BuyZone1,
-    ]
-    .into_iter()
-    .find(|mode| mode.active_range().contains(&cr))
-    .unwrap_or(RebalanceMode::BuyZone2)
+  pub fn from_cr(cr: CollateralRatio) -> RebalanceMode {
+    match cr {
+      CollateralRatio::Infinite => RebalanceMode::BuyZone2,
+      CollateralRatio::Finite(cr) => [
+        RebalanceMode::Depeg,
+        RebalanceMode::SellZone2,
+        RebalanceMode::SellZone1,
+        RebalanceMode::Neutral,
+        RebalanceMode::BuyZone1,
+      ]
+      .into_iter()
+      .find(|mode| mode.active_range().contains(&cr))
+      .unwrap_or(RebalanceMode::BuyZone2),
+    }
   }
 }
 
@@ -162,6 +166,7 @@ mod tests {
   use RebalanceMode::*;
 
   use super::*;
+  use crate::collateral_ratio::CR;
 
   #[test]
   fn mode_ordering() {
@@ -192,7 +197,10 @@ mod tests {
   fn from_cr_start_inclusive() {
     RebalanceMode::ALL.iter().for_each(|mode| {
       assert_eq!(
-        mode.active_range().start().map(RebalanceMode::from_cr),
+        mode
+          .active_range()
+          .start()
+          .map(|cr| RebalanceMode::from_cr(CR::finite(cr))),
         Ok(*mode),
       );
     });
@@ -203,16 +211,16 @@ mod tests {
     RebalanceMode::ALL.iter().for_each(|mode| {
       if let Ok(end) = mode.active_range().end() {
         let just_below = UFix64::new(end.bits - 1);
-        assert_ne!(RebalanceMode::from_cr(end), *mode);
-        assert_eq!(RebalanceMode::from_cr(just_below), *mode);
+        assert_ne!(RebalanceMode::from_cr(CR::finite(end)), *mode);
+        assert_eq!(RebalanceMode::from_cr(CR::finite(just_below)), *mode);
       }
     });
   }
 
   #[test]
   fn from_cr_extremes() {
-    assert_eq!(RebalanceMode::from_cr(UFix64::zero()), Depeg);
-    assert_eq!(RebalanceMode::from_cr(UFix64::new(u64::MAX)), BuyZone2);
+    assert_eq!(RebalanceMode::from_cr(CR::finite(UFix64::zero())), Depeg);
+    assert_eq!(RebalanceMode::from_cr(CollateralRatio::Infinite), BuyZone2);
   }
 
   #[test]
@@ -251,6 +259,7 @@ mod proofs {
 
   use fix::prelude::*;
 
+  use crate::collateral_ratio::CollateralRatio;
   use crate::kani_generators::any_ufix64;
   use crate::rebalance::mode::RebalanceMode;
 
@@ -258,7 +267,7 @@ mod proofs {
   #[kani::proof]
   fn from_cr_mode_contains_input() {
     let cr: UFix64<N9> = any_ufix64();
-    let mode = RebalanceMode::from_cr(cr);
+    let mode = RebalanceMode::from_cr(CR::finite(cr));
     assert!(mode.active_range().contains(&cr));
   }
 

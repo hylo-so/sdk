@@ -3,6 +3,7 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{ExchangeContext, ProjectedState};
+use crate::collateral_ratio::CR;
 use crate::conversion::ExoConversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{
@@ -123,7 +124,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_usd_price.lower,
       stablecoin_supply,
     )?;
-    let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
+    let rebalance_mode = RebalanceMode::from_cr(CR::finite(collateral_ratio));
     Ok(ExoExchangeContext {
       clock,
       total_collateral,
@@ -154,7 +155,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_mint_state(collateral_amount_in)?;
     self
       .stablecoin_mint_fees
-      .apply_fee(projected.collateral_ratio, collateral_amount_in)
+      .apply_fee(CR::finite(projected.collateral_ratio), collateral_amount_in)
   }
 
   /// Stablecoin mint fee rate at the projected CR.
@@ -169,7 +170,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_mint_state(collateral_amount_in)?;
     self
       .stablecoin_mint_fees
-      .fee_rate(projected.collateral_ratio)
+      .fee_rate(CR::finite(projected.collateral_ratio))
   }
 
   /// Post-trade state used by the stablecoin mint fee projection.
@@ -208,9 +209,10 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     collateral_amount_out: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
     let projected = self.projected_redeem_state(collateral_amount_out)?;
-    self
-      .stablecoin_redeem_fees
-      .apply_fee(projected.collateral_ratio, collateral_amount_out)
+    self.stablecoin_redeem_fees.apply_fee(
+      CR::finite(projected.collateral_ratio),
+      collateral_amount_out,
+    )
   }
 
   /// Stablecoin redeem fee rate at the projected CR.
@@ -225,7 +227,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_redeem_state(collateral_amount_out)?;
     self
       .stablecoin_redeem_fees
-      .fee_rate(projected.collateral_ratio)
+      .fee_rate(CR::finite(projected.collateral_ratio))
   }
 
   /// Post-trade state used by the stablecoin redeem fee projection.
@@ -333,7 +335,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_rebalance_sell_state(usdc_amount)?;
     let collateral_usd_price = self
       .rebalance_sell_curve()?
-      .price(projected.collateral_ratio)?;
+      .price(CR::finite(projected.collateral_ratio))?;
     Ok(ExoConversion::spot(collateral_usd_price))
   }
 
@@ -399,7 +401,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_rebalance_buy_state(collateral_amount)?;
     let collateral_usd_price = self
       .rebalance_buy_curve()?
-      .price(projected.collateral_ratio)?;
+      .price(CR::finite(projected.collateral_ratio))?;
     Ok(ExoConversion::spot(collateral_usd_price))
   }
 

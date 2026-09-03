@@ -4,6 +4,7 @@ use anyhow::Result;
 use fix::prelude::*;
 use fix::typenum::Z0;
 use hylo_core::borrow_rate::BorrowRateCurveConfig;
+use hylo_core::collateral_ratio::CR;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::yields::YieldHarvestConfig;
@@ -121,7 +122,7 @@ pub fn projected_borrow_inflow(
   let gross = config
     .apply_borrow_rate(
       levercoin_market_cap,
-      collateral_ratio,
+      CR::finite(collateral_ratio),
       UFix64::constant(1),
     )?
     .checked_convert::<N6>()

@@ -13,6 +13,7 @@ use anchor_lang::prelude::{
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::collateral_ratio::CollateralRatio;
 use crate::error::CoreError;
 use crate::fees::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
@@ -131,7 +132,7 @@ pub trait RebalancePriceController {
   fn curve(&self) -> &FixInterp<2, N9>;
 
   /// Whether the given CR falls within the active domain.
-  fn is_active(&self, ucr: UFix64<N9>) -> bool;
+  fn is_active(&self, cr: CollateralRatio) -> bool;
 
   /// Compute price for CR from underlying curve with boundary handling.
   ///
@@ -143,17 +144,16 @@ pub trait RebalancePriceController {
   /// Zero on the flat region outside the active domain.
   ///
   /// # Errors
-  /// * CR conversion, domain, or arithmetic
-  fn price_slope(&self, ucr: UFix64<N9>) -> Result<IFix64<N9>, CoreError>;
+  /// * Domain or arithmetic
+  fn price_slope(&self, cr: CollateralRatio) -> Result<IFix64<N9>, CoreError>;
 
   /// Collateral price at the given CR.
   ///
   /// # Errors
-  /// * CR conversion, domain, or arithmetic
-  fn price(&self, ucr: UFix64<N9>) -> Result<UFix64<N9>, CoreError> {
-    let cr = narrow(ucr)?;
+  /// * Domain, conversion, or arithmetic
+  fn price(&self, cr: CollateralRatio) -> Result<UFix64<N9>, CoreError> {
     self
-      .price_inner(cr)?
+      .price_inner(cr.price_curve_x())?
       .narrow()
       .ok_or(CoreError::RebalancePriceConversion)
   }
@@ -228,9 +228,9 @@ impl RebalancePriceController for SellPriceCurve {
     &self.curve
   }
 
-  fn is_active(&self, ucr: UFix64<N9>) -> bool {
+  fn is_active(&self, cr: CollateralRatio) -> bool {
     (RebalanceMode::SellZone2..RebalanceMode::Neutral)
-      .contains(&RebalanceMode::from_cr(ucr))
+      .contains(&RebalanceMode::from_cr(cr))
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError> {
@@ -244,15 +244,15 @@ impl RebalancePriceController for SellPriceCurve {
     }
   }
 
-  fn price_slope(&self, ucr: UFix64<N9>) -> Result<IFix64<N9>, CoreError> {
-    let cr = narrow(ucr)?;
+  fn price_slope(&self, cr: CollateralRatio) -> Result<IFix64<N9>, CoreError> {
+    let x = cr.price_curve_x();
     let interp = self.curve();
-    if cr < interp.x_min() {
+    if x < interp.x_min() {
       Ok(IFix64::zero())
-    } else if cr > interp.x_max() {
+    } else if x > interp.x_max() {
       Err(CoreError::RebalanceOutOfDomain)
     } else {
-      interp.derivative(cr)
+      interp.derivative(x)
     }
   }
 
@@ -307,8 +307,8 @@ impl RebalancePriceController for BuyPriceCurve {
     &self.curve
   }
 
-  fn is_active(&self, ucr: UFix64<N9>) -> bool {
-    RebalanceMode::from_cr(ucr) > RebalanceMode::Neutral
+  fn is_active(&self, cr: CollateralRatio) -> bool {
+    RebalanceMode::from_cr(cr) > RebalanceMode::Neutral
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError> {
@@ -322,15 +322,15 @@ impl RebalancePriceController for BuyPriceCurve {
     }
   }
 
-  fn price_slope(&self, ucr: UFix64<N9>) -> Result<IFix64<N9>, CoreError> {
-    let cr = narrow(ucr)?;
+  fn price_slope(&self, cr: CollateralRatio) -> Result<IFix64<N9>, CoreError> {
+    let x = cr.price_curve_x();
     let interp = self.curve();
-    if cr < interp.x_min() {
+    if x < interp.x_min() {
       Err(CoreError::RebalanceOutOfDomain)
-    } else if cr > interp.x_max() {
+    } else if x > interp.x_max() {
       Ok(IFix64::zero())
     } else {
-      interp.derivative(cr)
+      interp.derivative(x)
     }
   }
 
@@ -348,6 +348,7 @@ mod tests {
   use proptest::prelude::*;
 
   use super::*;
+  use crate::collateral_ratio::CR;
   use crate::error::CoreError;
   use crate::pyth::OraclePrice;
 
@@ -378,18 +379,18 @@ mod tests {
     },
   };
 
-  const UCR_1_00: UFix64<N9> = UFix64::constant(1_000_000_000);
-  const UCR_1_15: UFix64<N9> = UFix64::constant(1_150_000_000);
-  const UCR_1_20: UFix64<N9> = UFix64::constant(1_200_000_000);
-  const UCR_1_275: UFix64<N9> = UFix64::constant(1_275_000_000);
-  const UCR_1_35: UFix64<N9> = UFix64::constant(1_350_000_000);
-  const UCR_1_40: UFix64<N9> = UFix64::constant(1_400_000_000);
-  const UCR_1_60: UFix64<N9> = UFix64::constant(1_600_000_000);
-  const UCR_1_65: UFix64<N9> = UFix64::constant(1_650_000_000);
-  const UCR_1_70: UFix64<N9> = UFix64::constant(1_700_000_000);
-  const UCR_1_75: UFix64<N9> = UFix64::constant(1_750_000_000);
-  const UCR_1_80: UFix64<N9> = UFix64::constant(1_800_000_000);
-  const UCR_2_50: UFix64<N9> = UFix64::constant(2_500_000_000);
+  const CR_1_00: CollateralRatio = CR::finite(UFix64::constant(1_000_000_000));
+  const CR_1_15: CollateralRatio = CR::finite(UFix64::constant(1_150_000_000));
+  const CR_1_20: CollateralRatio = CR::finite(UFix64::constant(1_200_000_000));
+  const CR_1_275: CollateralRatio = CR::finite(UFix64::constant(1_275_000_000));
+  const CR_1_35: CollateralRatio = CR::finite(UFix64::constant(1_350_000_000));
+  const CR_1_40: CollateralRatio = CR::finite(UFix64::constant(1_400_000_000));
+  const CR_1_60: CollateralRatio = CR::finite(UFix64::constant(1_600_000_000));
+  const CR_1_65: CollateralRatio = CR::finite(UFix64::constant(1_650_000_000));
+  const CR_1_70: CollateralRatio = CR::finite(UFix64::constant(1_700_000_000));
+  const CR_1_75: CollateralRatio = CR::finite(UFix64::constant(1_750_000_000));
+  const CR_1_80: CollateralRatio = CR::finite(UFix64::constant(1_800_000_000));
+  const CR_2_50: CollateralRatio = CR::finite(UFix64::constant(2_500_000_000));
 
   #[test]
   fn sell_constructs() -> Result<(), CoreError> {
@@ -406,7 +407,7 @@ mod tests {
   #[test]
   fn sell_flat_below_domain() -> Result<(), CoreError> {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
-    assert_eq!(curve.price(UCR_1_00)?, curve.price(UCR_1_15)?);
+    assert_eq!(curve.price(CR_1_00)?, curve.price(CR_1_15)?);
     Ok(())
   }
 
@@ -414,7 +415,7 @@ mod tests {
   fn sell_inactive_above_domain() -> Result<(), CoreError> {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
     assert_eq!(
-      curve.price(UCR_1_40).err(),
+      curve.price(CR_1_40).err(),
       Some(CoreError::RebalanceOutOfDomain)
     );
     Ok(())
@@ -423,10 +424,10 @@ mod tests {
   #[test]
   fn sell_endpoints() -> Result<(), CoreError> {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
-    let at_floor = curve.price(UCR_1_20)?;
-    let at_ceil = curve.price(UCR_1_35)?;
+    let at_floor = curve.price(CR_1_20)?;
+    let at_ceil = curve.price(CR_1_35)?;
     assert_lt!(at_floor, at_ceil);
-    assert_eq!(at_floor, curve.price(UCR_1_00)?);
+    assert_eq!(at_floor, curve.price(CR_1_00)?);
     Ok(())
   }
 
@@ -434,7 +435,7 @@ mod tests {
   fn buy_inactive_below_domain() -> Result<(), CoreError> {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
     assert_eq!(
-      curve.price(UCR_1_60).err(),
+      curve.price(CR_1_60).err(),
       Some(CoreError::RebalanceOutOfDomain)
     );
     Ok(())
@@ -443,47 +444,73 @@ mod tests {
   #[test]
   fn buy_flat_above_domain() -> Result<(), CoreError> {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
-    assert_eq!(curve.price(UCR_1_80)?, curve.price(UCR_2_50)?);
+    assert_eq!(curve.price(CR_1_80)?, curve.price(CR_2_50)?);
+    Ok(())
+  }
+
+  #[test]
+  fn buy_flat_at_infinite_cr() -> Result<(), CoreError> {
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
+    assert!(curve.is_active(CollateralRatio::Infinite));
+    assert_eq!(
+      curve.price(CollateralRatio::Infinite)?,
+      curve.price(CR_2_50)?
+    );
+    assert_eq!(
+      curve.price_slope(CollateralRatio::Infinite)?,
+      IFix64::zero()
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn sell_inactive_at_infinite_cr() -> Result<(), CoreError> {
+    let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
+    assert!(!curve.is_active(CollateralRatio::Infinite));
+    assert_eq!(
+      curve.price(CollateralRatio::Infinite).err(),
+      Some(CoreError::RebalanceOutOfDomain)
+    );
     Ok(())
   }
 
   #[test]
   fn buy_endpoints() -> Result<(), CoreError> {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
-    let at_floor = curve.price(UCR_1_65)?;
-    let at_ceil = curve.price(UCR_1_75)?;
+    let at_floor = curve.price(CR_1_65)?;
+    let at_ceil = curve.price(CR_1_75)?;
     assert_lt!(at_floor, at_ceil);
-    assert_eq!(at_ceil, curve.price(UCR_2_50)?);
+    assert_eq!(at_ceil, curve.price(CR_2_50)?);
     Ok(())
   }
 
   #[test]
   fn sell_endpoint_values() -> Result<(), CoreError> {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
-    assert_eq!(curve.price(UCR_1_20)?, UFix64::constant(144_937_098_276));
-    assert_eq!(curve.price(UCR_1_35)?, UFix64::constant(147_133_114_917));
+    assert_eq!(curve.price(CR_1_20)?, UFix64::constant(144_937_098_276));
+    assert_eq!(curve.price(CR_1_35)?, UFix64::constant(147_133_114_917));
     Ok(())
   }
 
   #[test]
   fn buy_endpoint_values() -> Result<(), CoreError> {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
-    assert_eq!(curve.price(UCR_1_65)?, UFix64::constant(145_669_103_823));
-    assert_eq!(curve.price(UCR_1_75)?, UFix64::constant(147_865_120_464));
+    assert_eq!(curve.price(CR_1_65)?, UFix64::constant(145_669_103_823));
+    assert_eq!(curve.price(CR_1_75)?, UFix64::constant(147_865_120_464));
     Ok(())
   }
 
   #[test]
   fn sell_midpoint_value() -> Result<(), CoreError> {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
-    assert_eq!(curve.price(UCR_1_275)?, UFix64::constant(146_035_106_597));
+    assert_eq!(curve.price(CR_1_275)?, UFix64::constant(146_035_106_597));
     Ok(())
   }
 
   #[test]
   fn buy_midpoint_value() -> Result<(), CoreError> {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
-    assert_eq!(curve.price(UCR_1_70)?, UFix64::constant(146_767_112_144));
+    assert_eq!(curve.price(CR_1_70)?, UFix64::constant(146_767_112_144));
     Ok(())
   }
 
@@ -545,15 +572,15 @@ mod tests {
     );
   }
 
-  fn sell_cr() -> BoxedStrategy<UFix64<N9>> {
+  fn sell_cr() -> BoxedStrategy<CollateralRatio> {
     (1_000_000_000u64..1_350_000_000)
-      .prop_map(UFix64::new)
+      .prop_map(|bits| CR::finite(UFix64::new(bits)))
       .boxed()
   }
 
-  fn buy_cr() -> BoxedStrategy<UFix64<N9>> {
+  fn buy_cr() -> BoxedStrategy<CollateralRatio> {
     (1_650_000_000u64..4_000_000_000)
-      .prop_map(UFix64::new)
+      .prop_map(|bits| CR::finite(UFix64::new(bits)))
       .boxed()
   }
 
@@ -594,8 +621,8 @@ mod tests {
         let price = curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
-        prop_assert_eq!(curve.price(UCR_1_20)?, floor);
-        prop_assert_eq!(curve.price(UCR_1_35)?, ceil);
+        prop_assert_eq!(curve.price(CR_1_20)?, floor);
+        prop_assert_eq!(curve.price(CR_1_35)?, ceil);
         prop_assert!(price >= floor && price <= ceil);
       }
     }
@@ -613,8 +640,8 @@ mod tests {
         let price = curve
           .price(cr)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
-        prop_assert_eq!(curve.price(UCR_1_65)?, floor);
-        prop_assert_eq!(curve.price(UCR_1_75)?, ceil);
+        prop_assert_eq!(curve.price(CR_1_65)?, floor);
+        prop_assert_eq!(curve.price(CR_1_75)?, ceil);
         prop_assert!(price >= floor && price <= ceil);
       }
     }
