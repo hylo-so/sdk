@@ -194,7 +194,10 @@ mod tests {
 
     // Verify exchange context has valid data
     assert!(state.exchange_context.total_collateral() > UFix64::zero());
-    assert!(state.exchange_context.collateral_ratio() > UFix64::zero());
+    assert!(state
+      .exchange_context
+      .collateral_ratio()
+      .at_least(UFix64::one()));
     assert!(
       state.exchange_context.collateral_usd_price().lower > UFix64::zero()
     );

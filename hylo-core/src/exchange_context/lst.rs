@@ -3,14 +3,13 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{ExchangeContext, ProjectedState};
-use crate::collateral_ratio::CR;
+use crate::collateral_ratio::CollateralRatio;
 use crate::conversion::Conversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinNav,
   RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
 };
-use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
 use crate::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
@@ -37,7 +36,7 @@ pub struct LstExchangeContext<C> {
   pub sol_usd_price: PriceRange<N9>,
   virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
-  collateral_ratio: UFix64<N9>,
+  collateral_ratio: CollateralRatio,
   stablecoin_mint_threshold: UFix64<N9>,
   rebalance_mode: RebalanceMode,
   pub stablecoin_mint_fees: InterpolatedMintFees,
@@ -84,7 +83,7 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.rebalance_mode
   }
 
-  fn collateral_ratio(&self) -> UFix64<N9> {
+  fn collateral_ratio(&self) -> CollateralRatio {
     self.collateral_ratio
   }
 
@@ -121,8 +120,8 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let stablecoin_supply = virtual_stablecoin.supply()?;
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
-      collateral_ratio(total_sol, sol_usd_price.lower, stablecoin_supply)?;
-    let rebalance_mode = RebalanceMode::from_cr(CR::finite(collateral_ratio));
+      CollateralRatio::new(total_sol, sol_usd_price.lower, stablecoin_supply)?;
+    let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
     Ok(LstExchangeContext {
       clock,
       total_sol,
@@ -153,7 +152,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let projected = self.projected_mint_state(lst_sol_price, amount_lst_in)?;
     self
       .stablecoin_mint_fees
-      .apply_fee(CR::finite(projected.collateral_ratio), amount_lst_in)
+      .apply_fee(projected.collateral_ratio, amount_lst_in)
   }
 
   /// Post-trade state used by the stablecoin mint fee projection.
@@ -173,7 +172,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .lst_to_token(amount_lst_in, self.stablecoin_nav()?)?
       .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = collateral_ratio(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       self.sol_usd_price.lower,
       stablecoin_supply,
@@ -198,7 +197,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let projected = self.projected_mint_state(lst_sol_price, amount_lst_in)?;
     self
       .stablecoin_mint_fees
-      .fee_rate(CR::finite(projected.collateral_ratio))
+      .fee_rate(projected.collateral_ratio)
   }
 
   /// Stablecoin redeem fee via interpolated curve at projected CR.
@@ -214,7 +213,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       self.projected_redeem_state(lst_sol_price, amount_lst_out)?;
     self
       .stablecoin_redeem_fees
-      .apply_fee(CR::finite(projected.collateral_ratio), amount_lst_out)
+      .apply_fee(projected.collateral_ratio, amount_lst_out)
   }
 
   /// Stablecoin redeem fee rate at the projected CR.
@@ -231,7 +230,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       self.projected_redeem_state(lst_sol_price, amount_lst_out)?;
     self
       .stablecoin_redeem_fees
-      .fee_rate(CR::finite(projected.collateral_ratio))
+      .fee_rate(projected.collateral_ratio)
   }
 
   /// Post-trade state used by the stablecoin redeem fee projection.
@@ -253,7 +252,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = collateral_ratio(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       self.sol_usd_price.lower,
       stablecoin_supply,
@@ -405,7 +404,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       self.projected_rebalance_sell_state(lst_sol_price, usdc_amount)?;
     let sol_usd_price = self
       .rebalance_sell_curve()?
-      .price(CR::finite(projected.collateral_ratio))?;
+      .price(projected.collateral_ratio)?;
     Ok(Conversion::spot(sol_usd_price, lst_sol))
   }
 
@@ -431,8 +430,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio =
-      collateral_ratio(total_collateral, sol_spot_price, stablecoin_supply)?;
+    let collateral_ratio = CollateralRatio::new(
+      total_collateral,
+      sol_spot_price,
+      stablecoin_supply,
+    )?;
     Ok(ProjectedState {
       total_collateral,
       stablecoin_supply,
@@ -488,7 +490,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       self.projected_rebalance_buy_state(lst_sol_price, lst_amount)?;
     let sol_usd_price = self
       .rebalance_buy_curve()?
-      .price(CR::finite(projected.collateral_ratio))?;
+      .price(projected.collateral_ratio)?;
     Ok(Conversion::spot(sol_usd_price, lst_sol))
   }
 
@@ -514,7 +516,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .checked_add(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
     let collateral_ratio =
-      collateral_ratio(total_collateral, usd_sol_price, stablecoin_supply)?;
+      CollateralRatio::new(total_collateral, usd_sol_price, stablecoin_supply)?;
     Ok(ProjectedState {
       total_collateral,
       stablecoin_supply,

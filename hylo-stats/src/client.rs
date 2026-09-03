@@ -335,7 +335,7 @@ pub fn build_stats_inputs(
         .borrow_rate_curve_config
         .into(),
       borrow_rate_fee: accounts.exo_pair.borrow_rate_fee.try_into()?,
-      collateral_ratio: exo_context.collateral_ratio(),
+      collateral_ratio: exo_context.collateral_ratio().into(),
       levercoin_market_cap: exo_context.levercoin_market_cap()?,
     }],
     sol_usd_spot,

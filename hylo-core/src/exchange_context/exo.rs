@@ -3,14 +3,13 @@ use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use super::{ExchangeContext, ProjectedState};
-use crate::collateral_ratio::CR;
+use crate::collateral_ratio::CollateralRatio;
 use crate::conversion::ExoConversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
   RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
 };
-use crate::exchange_math::collateral_ratio;
 use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
 use crate::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
@@ -35,7 +34,7 @@ pub struct ExoExchangeContext<C> {
   pub collateral_usd_price: PriceRange<N9>,
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
-  collateral_ratio: UFix64<N9>,
+  collateral_ratio: CollateralRatio,
   stablecoin_mint_threshold: UFix64<N9>,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
@@ -83,7 +82,7 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.rebalance_mode
   }
 
-  fn collateral_ratio(&self) -> UFix64<N9> {
+  fn collateral_ratio(&self) -> CollateralRatio {
     self.collateral_ratio
   }
 
@@ -119,12 +118,12 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       InterpolatedRedeemFees::new(redeem_fee_curve()?);
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let stablecoin_supply = virtual_stablecoin.supply()?;
-    let collateral_ratio = collateral_ratio(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       collateral_usd_price.lower,
       stablecoin_supply,
     )?;
-    let rebalance_mode = RebalanceMode::from_cr(CR::finite(collateral_ratio));
+    let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
     Ok(ExoExchangeContext {
       clock,
       total_collateral,
@@ -155,7 +154,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_mint_state(collateral_amount_in)?;
     self
       .stablecoin_mint_fees
-      .apply_fee(CR::finite(projected.collateral_ratio), collateral_amount_in)
+      .apply_fee(projected.collateral_ratio, collateral_amount_in)
   }
 
   /// Stablecoin mint fee rate at the projected CR.
@@ -170,7 +169,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_mint_state(collateral_amount_in)?;
     self
       .stablecoin_mint_fees
-      .fee_rate(CR::finite(projected.collateral_ratio))
+      .fee_rate(projected.collateral_ratio)
   }
 
   /// Post-trade state used by the stablecoin mint fee projection.
@@ -188,7 +187,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let stablecoin_supply = stablecoin_minted
       .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = collateral_ratio(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       self.collateral_usd_price.lower,
       stablecoin_supply,
@@ -209,10 +208,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     collateral_amount_out: UFix64<N9>,
   ) -> Result<FeeExtract<N9>, CoreError> {
     let projected = self.projected_redeem_state(collateral_amount_out)?;
-    self.stablecoin_redeem_fees.apply_fee(
-      CR::finite(projected.collateral_ratio),
-      collateral_amount_out,
-    )
+    self
+      .stablecoin_redeem_fees
+      .apply_fee(projected.collateral_ratio, collateral_amount_out)
   }
 
   /// Stablecoin redeem fee rate at the projected CR.
@@ -227,7 +225,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_redeem_state(collateral_amount_out)?;
     self
       .stablecoin_redeem_fees
-      .fee_rate(CR::finite(projected.collateral_ratio))
+      .fee_rate(projected.collateral_ratio)
   }
 
   /// Post-trade state used by the stablecoin redeem fee projection.
@@ -246,7 +244,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = collateral_ratio(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       self.collateral_usd_price.lower,
       stablecoin_supply,
@@ -335,7 +333,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_rebalance_sell_state(usdc_amount)?;
     let collateral_usd_price = self
       .rebalance_sell_curve()?
-      .price(CR::finite(projected.collateral_ratio))?;
+      .price(projected.collateral_ratio)?;
     Ok(ExoConversion::spot(collateral_usd_price))
   }
 
@@ -358,7 +356,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .checked_sub(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
     let collateral_ratio =
-      collateral_ratio(total_collateral, spot_price, stablecoin_supply)?;
+      CollateralRatio::new(total_collateral, spot_price, stablecoin_supply)?;
     Ok(ProjectedState {
       total_collateral,
       stablecoin_supply,
@@ -401,7 +399,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let projected = self.projected_rebalance_buy_state(collateral_amount)?;
     let collateral_usd_price = self
       .rebalance_buy_curve()?
-      .price(CR::finite(projected.collateral_ratio))?;
+      .price(projected.collateral_ratio)?;
     Ok(ExoConversion::spot(collateral_usd_price))
   }
 
@@ -422,7 +420,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .checked_add(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
     let collateral_ratio =
-      collateral_ratio(total_collateral, spot_price, stablecoin_supply)?;
+      CollateralRatio::new(total_collateral, spot_price, stablecoin_supply)?;
     Ok(ProjectedState {
       total_collateral,
       stablecoin_supply,
