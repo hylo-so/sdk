@@ -162,13 +162,13 @@ mod tests {
 
   fn collateral_ratio() -> BoxedStrategy<CollateralRatio> {
     (0u64..4_000_000_000u64)
-      .prop_map(|bits| CR::finite(UFix64::new(bits)))
+      .prop_map(|bits| CR::Finite(UFix64::new(bits)))
       .boxed()
   }
 
   fn redeem_domain_collateral_ratio() -> BoxedStrategy<CollateralRatio> {
     (0u64..=1_500_000_000u64)
-      .prop_map(|bits| CR::finite(UFix64::new(bits)))
+      .prop_map(|bits| CR::Finite(UFix64::new(bits)))
       .boxed()
   }
 

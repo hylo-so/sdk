@@ -343,8 +343,11 @@ pub trait ExchangeContext {
     new_total: UFix64<N9>,
     new_stablecoin: UFix64<N6>,
   ) -> Result<RebalanceMode, CoreError> {
-    let projected_cr =
-      CR::new(new_total, self.collateral_usd_price().lower, new_stablecoin)?;
+    let projected_cr = CollateralRatio::new(
+      new_total,
+      self.collateral_usd_price().lower,
+      new_stablecoin,
+    )?;
     Ok(RebalanceMode::from_cr(projected_cr))
   }
 

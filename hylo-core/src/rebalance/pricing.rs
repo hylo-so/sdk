@@ -379,18 +379,18 @@ mod tests {
     },
   };
 
-  const CR_1_00: CR = CR::finite(UFix64::constant(1_000_000_000));
-  const CR_1_15: CR = CR::finite(UFix64::constant(1_150_000_000));
-  const CR_1_20: CR = CR::finite(UFix64::constant(1_200_000_000));
-  const CR_1_275: CR = CR::finite(UFix64::constant(1_275_000_000));
-  const CR_1_35: CR = CR::finite(UFix64::constant(1_350_000_000));
-  const CR_1_40: CR = CR::finite(UFix64::constant(1_400_000_000));
-  const CR_1_60: CR = CR::finite(UFix64::constant(1_600_000_000));
-  const CR_1_65: CR = CR::finite(UFix64::constant(1_650_000_000));
-  const CR_1_70: CR = CR::finite(UFix64::constant(1_700_000_000));
-  const CR_1_75: CR = CR::finite(UFix64::constant(1_750_000_000));
-  const CR_1_80: CR = CR::finite(UFix64::constant(1_800_000_000));
-  const CR_2_50: CR = CR::finite(UFix64::constant(2_500_000_000));
+  const CR_1_00: CR = CR::Finite(UFix64::constant(1_000_000_000));
+  const CR_1_15: CR = CR::Finite(UFix64::constant(1_150_000_000));
+  const CR_1_20: CR = CR::Finite(UFix64::constant(1_200_000_000));
+  const CR_1_275: CR = CR::Finite(UFix64::constant(1_275_000_000));
+  const CR_1_35: CR = CR::Finite(UFix64::constant(1_350_000_000));
+  const CR_1_40: CR = CR::Finite(UFix64::constant(1_400_000_000));
+  const CR_1_60: CR = CR::Finite(UFix64::constant(1_600_000_000));
+  const CR_1_65: CR = CR::Finite(UFix64::constant(1_650_000_000));
+  const CR_1_70: CR = CR::Finite(UFix64::constant(1_700_000_000));
+  const CR_1_75: CR = CR::Finite(UFix64::constant(1_750_000_000));
+  const CR_1_80: CR = CR::Finite(UFix64::constant(1_800_000_000));
+  const CR_2_50: CR = CR::Finite(UFix64::constant(2_500_000_000));
 
   #[test]
   fn sell_constructs() -> Result<(), CoreError> {
@@ -568,13 +568,13 @@ mod tests {
 
   fn sell_cr() -> BoxedStrategy<CollateralRatio> {
     (1_000_000_000u64..1_350_000_000)
-      .prop_map(|bits| CR::finite(UFix64::new(bits)))
+      .prop_map(|bits| CR::Finite(UFix64::new(bits)))
       .boxed()
   }
 
   fn buy_cr() -> BoxedStrategy<CollateralRatio> {
     (1_650_000_000u64..4_000_000_000)
-      .prop_map(|bits| CR::finite(UFix64::new(bits)))
+      .prop_map(|bits| CR::Finite(UFix64::new(bits)))
       .boxed()
   }
 

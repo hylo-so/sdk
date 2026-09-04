@@ -273,7 +273,7 @@ mod tests {
     );
     let inflow = projected_borrow_inflow(
       UFix64::<N9>::new(1_000_000_000_000_000),
-      CR::finite(RebalanceMode::Neutral.active_range().start()?),
+      CR::Finite(RebalanceMode::Neutral.active_range().start()?),
       &config,
       UFix64::<N4>::new(500),
     )?;

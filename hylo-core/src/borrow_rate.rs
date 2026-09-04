@@ -200,7 +200,7 @@ mod tests {
   #[test]
   fn rate_neg_below_neutral() -> Result<(), CoreError> {
     let neutral_start = RebalanceMode::Neutral.active_range().start()?;
-    let below = CR::finite(UFix64::new(neutral_start.bits - 1));
+    let below = CR::Finite(UFix64::new(neutral_start.bits - 1));
     assert_eq!(test_config().rate(below), Err(CoreError::InterpOutOfDomain));
     Ok(())
   }
@@ -209,17 +209,17 @@ mod tests {
   fn rate_floor_through_neutral() -> Result<(), CoreError> {
     let config = test_config();
     let neutral = RebalanceMode::Neutral.active_range();
-    let neutral_mid = CR::finite(UFix64::constant(1_500_000_000));
-    assert_eq!(config.rate(CR::finite(neutral.start()?))?, FLOOR);
+    let neutral_mid = CR::Finite(UFix64::constant(1_500_000_000));
+    assert_eq!(config.rate(CR::Finite(neutral.start()?))?, FLOOR);
     assert_eq!(config.rate(neutral_mid)?, FLOOR);
-    assert_eq!(config.rate(CR::finite(neutral.end()?))?, FLOOR);
+    assert_eq!(config.rate(CR::Finite(neutral.end()?))?, FLOOR);
     Ok(())
   }
 
   #[test]
   fn rate_ramp_within_bounds() -> Result<(), CoreError> {
     let buy_zone_1_start = RebalanceMode::BuyZone1.active_range().start()?;
-    let inside = CR::finite(UFix64::new(buy_zone_1_start.bits + 1));
+    let inside = CR::Finite(UFix64::new(buy_zone_1_start.bits + 1));
     let rate = test_config().rate(inside)?;
     assert_gt!(rate, FLOOR);
     assert_lt!(rate, CEIL);
@@ -230,8 +230,8 @@ mod tests {
   fn rate_ceil_saturates() -> Result<(), CoreError> {
     let config = test_config();
     let buy_zone_1_end = RebalanceMode::BuyZone1.active_range().end()?;
-    let above = CR::finite(UFix64::new(buy_zone_1_end.bits + 1));
-    assert_eq!(config.rate(CR::finite(buy_zone_1_end))?, CEIL);
+    let above = CR::Finite(UFix64::new(buy_zone_1_end.bits + 1));
+    assert_eq!(config.rate(CR::Finite(buy_zone_1_end))?, CEIL);
     assert_eq!(config.rate(above)?, CEIL);
     Ok(())
   }
@@ -248,7 +248,7 @@ mod tests {
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
     let borrow = test_config().apply_borrow_rate(
       collateral,
-      CR::finite(neutral_start),
+      CR::Finite(neutral_start),
       UFix64::constant(1),
     )?;
     assert_eq!(borrow, UFix64::new(384_620_000_000));
@@ -261,7 +261,7 @@ mod tests {
     let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
     let borrow = test_config().apply_borrow_rate(
       collateral,
-      CR::finite(neutral_start),
+      CR::Finite(neutral_start),
       UFix64::constant(5),
     )?;
     assert_eq!(borrow, UFix64::new(2_374_197_509_495));

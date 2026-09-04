@@ -200,7 +200,7 @@ mod tests {
         mode
           .active_range()
           .start()
-          .map(|cr| RebalanceMode::from_cr(CR::finite(cr))),
+          .map(|cr| RebalanceMode::from_cr(CR::Finite(cr))),
         Ok(*mode),
       );
     });
@@ -211,15 +211,15 @@ mod tests {
     RebalanceMode::ALL.iter().for_each(|mode| {
       if let Ok(end) = mode.active_range().end() {
         let just_below = UFix64::new(end.bits - 1);
-        assert_ne!(RebalanceMode::from_cr(CR::finite(end)), *mode);
-        assert_eq!(RebalanceMode::from_cr(CR::finite(just_below)), *mode);
+        assert_ne!(RebalanceMode::from_cr(CR::Finite(end)), *mode);
+        assert_eq!(RebalanceMode::from_cr(CR::Finite(just_below)), *mode);
       }
     });
   }
 
   #[test]
   fn from_cr_extremes() {
-    assert_eq!(RebalanceMode::from_cr(CR::finite(UFix64::zero())), Depeg);
+    assert_eq!(RebalanceMode::from_cr(CR::Finite(UFix64::zero())), Depeg);
     assert_eq!(RebalanceMode::from_cr(CR::Infinite), BuyZone2);
   }
 
@@ -267,7 +267,7 @@ mod proofs {
   #[kani::proof]
   fn from_cr_mode_contains_input() {
     let cr: UFix64<N9> = any_ufix64();
-    let mode = RebalanceMode::from_cr(CR::finite(cr));
+    let mode = RebalanceMode::from_cr(CR::Finite(cr));
     assert!(mode.active_range().contains(&cr));
   }
 

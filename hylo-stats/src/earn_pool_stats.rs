@@ -207,7 +207,7 @@ mod tests {
         UFix64::<N9>::new(1_648_352).into(),
       ),
       borrow_rate_fee: UFix64::<N4>::new(500),
-      collateral_ratio: CR::finite(UFix64::new(1_500_000_000)),
+      collateral_ratio: CR::Finite(UFix64::new(1_500_000_000)),
       levercoin_market_cap,
     }
   }

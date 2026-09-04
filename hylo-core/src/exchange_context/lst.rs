@@ -120,7 +120,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let stablecoin_supply = virtual_stablecoin.supply()?;
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
-      CR::new(total_sol, sol_usd_price.lower, stablecoin_supply)?;
+      CollateralRatio::new(total_sol, sol_usd_price.lower, stablecoin_supply)?;
     let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
     Ok(LstExchangeContext {
       clock,
@@ -172,7 +172,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .lst_to_token(amount_lst_in, self.stablecoin_nav()?)?
       .checked_add(&self.virtual_stablecoin_supply()?)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = CR::new(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       self.sol_usd_price.lower,
       stablecoin_supply,
@@ -252,7 +252,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_redeemed)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = CR::new(
+    let collateral_ratio = CollateralRatio::new(
       total_collateral,
       self.sol_usd_price.lower,
       stablecoin_supply,
@@ -430,8 +430,11 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .virtual_stablecoin_supply()?
       .checked_sub(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
-    let collateral_ratio =
-      CR::new(total_collateral, sol_spot_price, stablecoin_supply)?;
+    let collateral_ratio = CollateralRatio::new(
+      total_collateral,
+      sol_spot_price,
+      stablecoin_supply,
+    )?;
     Ok(ProjectedState {
       total_collateral,
       stablecoin_supply,
@@ -513,7 +516,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .checked_add(&stablecoin_delta)
       .ok_or(DestinationStablecoin)?;
     let collateral_ratio =
-      CR::new(total_collateral, usd_sol_price, stablecoin_supply)?;
+      CollateralRatio::new(total_collateral, usd_sol_price, stablecoin_supply)?;
     Ok(ProjectedState {
       total_collateral,
       stablecoin_supply,
