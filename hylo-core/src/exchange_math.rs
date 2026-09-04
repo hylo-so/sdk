@@ -2,43 +2,10 @@ use fix::prelude::*;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  CollateralRatio, LevercoinMarketCapArithmetic, MaxMintable, MaxRedeemable,
-  MaxSwappable, StablecoinNav, TargetCollateralRatioTooLow, TotalValueLocked,
+  LevercoinMarketCapArithmetic, MaxMintable, MaxRedeemable, MaxSwappable,
+  StablecoinNav, TargetCollateralRatioTooLow, TotalValueLocked,
 };
 use crate::pyth::PriceRange;
-
-/// Computes the current collateral ratio (CR) of the protocol.
-///   `CR = total_sol_usd / stablecoin_cap`
-///
-/// NB: If stablecoin supply is zero, returns `u64::MAX` to simulate infinity.
-pub fn collateral_ratio(
-  total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N9>,
-  amount_stablecoin: UFix64<N6>,
-) -> Result<UFix64<N9>, CoreError> {
-  collateral_ratio_inner(
-    total_collateral,
-    usd_collateral_price,
-    amount_stablecoin,
-  )
-  .ok_or(CollateralRatio)
-}
-
-pub(crate) fn collateral_ratio_inner(
-  total_collateral: UFix64<N9>,
-  usd_collateral_price: UFix64<N9>,
-  amount_stablecoin: UFix64<N6>,
-) -> Option<UFix64<N9>> {
-  if amount_stablecoin == UFix64::zero() {
-    Some(UFix64::new(u64::MAX))
-  } else {
-    amount_stablecoin
-      .checked_convert::<N9>()
-      .and_then(|stablecoin| {
-        total_collateral.mul_div_floor(usd_collateral_price, stablecoin)
-      })
-  }
-}
 
 /// Multiples total SOL by the given spot price to get TVL.
 pub fn total_value_locked(
@@ -271,6 +238,7 @@ mod tests {
   use proptest::prelude::*;
 
   use super::*;
+  use crate::collateral_ratio::CollateralRatio;
   use crate::eq_tolerance;
   use crate::error::CoreError::LevercoinNav;
   use crate::util::proptest::*;
@@ -295,10 +263,12 @@ mod tests {
             .and_then(|new_sol| new_sol.convert().checked_add(&total_sol))
             .expect("new_total");
           let new_stable = state.stablecoin_amount.checked_add(&max).expect("new_stable");
-          let new_cr = collateral_ratio(new_total_sol, state.usd_sol_price, new_stable)?;
+          let new_cr = CollateralRatio::new(new_total_sol, state.usd_sol_price, new_stable)?;
           // Checks new CR is within tolerance of 0.01
           prop_assert!(
-            eq_tolerance!(target, new_cr, N2, UFix64::new(1))
+            new_cr
+              .as_finite()
+              .is_some_and(|cr| eq_tolerance!(target, cr, N2, UFix64::new(1)))
           );
         }
       }
@@ -358,16 +328,6 @@ mod tests {
   }
 
   #[test]
-  fn collateral_ratio_low() -> Result<(), CoreError> {
-    let total_sol = UFix64::<N9>::new(8_217_712_567_008);
-    let usd_sol_price = UFix64::<N9>::new(137_704_920_000);
-    let amount_stablecoin = UFix64::<N6>::new(1_150_380_112_112);
-    let cr = collateral_ratio(total_sol, usd_sol_price, amount_stablecoin)?;
-    assert_eq!(UFix64::new(983_691_772), cr);
-    Ok(())
-  }
-
-  #[test]
   fn levercoin_market_cap_basic() -> Result<(), CoreError> {
     let supply = UFix64::<N6>::new(5_137_259_000_000);
     let nav = UFix64::<N9>::new(2_500_000_000);
@@ -384,16 +344,6 @@ mod tests {
       levercoin_market_cap(supply, nav).err(),
       Some(LevercoinMarketCapArithmetic)
     );
-  }
-
-  #[test]
-  fn collateral_ratio_high() -> Result<(), CoreError> {
-    let total_sol = UFix64::<N9>::new(976_123_127_719);
-    let usd_sol_price = UFix64::<N9>::new(137_704_920_000);
-    let amount_stablecoin = UFix64::<N6>::new(97_411_342_200);
-    let cr = collateral_ratio(total_sol, usd_sol_price, amount_stablecoin)?;
-    assert_eq!(UFix64::new(1_379_890_207), cr);
-    Ok(())
   }
 
   #[test]
@@ -427,8 +377,8 @@ mod tests {
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
     let cr =
-      collateral_ratio(total_sol, usd_sol_price.lower, amount_stablecoin)?;
-    assert!(cr < UFix64::one());
+      CollateralRatio::new(total_sol, usd_sol_price.lower, amount_stablecoin)?;
+    assert!(!cr.at_least(UFix64::one()));
 
     let stablecoin_nav =
       depeg_stablecoin_nav(total_sol, usd_sol_price.lower, amount_stablecoin)?;
@@ -454,8 +404,8 @@ mod tests {
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
     let cr =
-      collateral_ratio(total_sol, usd_sol_price.lower, amount_stablecoin)?;
-    assert!(cr < UFix64::one());
+      CollateralRatio::new(total_sol, usd_sol_price.lower, amount_stablecoin)?;
+    assert!(!cr.at_least(UFix64::one()));
 
     let stablecoin_nav =
       depeg_stablecoin_nav(total_sol, usd_sol_price.lower, amount_stablecoin)?;

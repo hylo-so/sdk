@@ -5,7 +5,8 @@
       nix develop .#nightly --command bash -c "
         set -euo pipefail
         cargo-fmt --check
-        cargo-clippy --check
+        cargo-clippy --check --all-targets --all-features
+        cargo-clippy --check --all-targets -p hylo-core --no-default-features
       "
     '';
   };
@@ -16,7 +17,8 @@
       nix develop .#nightly --command bash -c "
         set -euo pipefail
         cargo-fmt
-        cargo-clippy --fix
+        cargo-clippy --fix --all-targets --all-features
+        cargo-clippy --fix --all-targets -p hylo-core --no-default-features
       "
     '';
   };

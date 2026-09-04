@@ -181,6 +181,7 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
 mod tests {
   use anchor_lang::prelude::Pubkey;
   use hylo_core::borrow_rate::BorrowRateCurveConfig;
+  use hylo_core::collateral_ratio::CR;
   use hylo_core::yields::YieldHarvestConfig;
 
   use super::*;
@@ -206,7 +207,7 @@ mod tests {
         UFix64::<N9>::new(1_648_352).into(),
       ),
       borrow_rate_fee: UFix64::<N4>::new(500),
-      collateral_ratio: UFix64::<N9>::new(1_500_000_000),
+      collateral_ratio: CR::Finite(UFix64::new(1_500_000_000)),
       levercoin_market_cap,
     }
   }
@@ -233,6 +234,16 @@ mod tests {
       outstanding_drawdown: UFix64::zero(),
       epochs_per_year: 182.0,
     }
+  }
+
+  #[test]
+  fn compute_stats_survives_sell_zone_cr() -> Result<()> {
+    let mut input = inputs();
+    input.exo_snapshots[0].collateral_ratio =
+      CR::Finite(UFix64::new(1_200_000_000));
+    let stats = compute_stats(&input)?;
+    assert_eq!(stats.exo_stats[0].projected_inflow, UFix64::zero());
+    Ok(())
   }
 
   #[test]

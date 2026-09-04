@@ -8,7 +8,7 @@ use super::ExchangeContext;
 use crate::calculus::{chain_rule, positive, positive_rate, quotient_rule};
 use crate::error::CoreError;
 use crate::fees::controller::FeeController;
-use crate::fees::curve_controller::{narrow_cr, InterpolatedFeeController};
+use crate::fees::curve_controller::InterpolatedFeeController;
 use crate::lst::sol_price::LstSolPrice;
 use crate::rebalance::pricing::RebalancePriceController;
 use crate::solana_clock::SolanaClock;
@@ -27,7 +27,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     collateral_amount: UFix64<N9>,
   ) -> Result<f64, CoreError> {
     let projected = self.projected_mint_state(collateral_amount)?;
-    let cr = narrow_cr(projected.collateral_ratio)?;
+    let cr = projected.collateral_ratio.fee_curve_x();
     let fee = self.stablecoin_mint_fees.fee_inner(cr)?.to_f64();
     let fee_slope = self.stablecoin_mint_fees.fee_slope(cr)?.to_f64();
     let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
@@ -73,7 +73,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .exo_conversion()
       .token_to_exo(amount_stablecoin, self.stablecoin_nav()?)?;
     let projected = self.projected_redeem_state(collateral_out)?;
-    let cr = narrow_cr(projected.collateral_ratio)?;
+    let cr = projected.collateral_ratio.fee_curve_x();
     let fee = self.stablecoin_redeem_fees.fee_inner(cr)?.to_f64();
     let fee_slope = self.stablecoin_redeem_fees.fee_slope(cr)?.to_f64();
     let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
@@ -262,7 +262,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     amount_lst: UFix64<N9>,
   ) -> Result<f64, CoreError> {
     let projected = self.projected_mint_state(lst_sol_price, amount_lst)?;
-    let cr = narrow_cr(projected.collateral_ratio)?;
+    let cr = projected.collateral_ratio.fee_curve_x();
     let fee = self.stablecoin_mint_fees.fee_inner(cr)?.to_f64();
     let fee_slope = self.stablecoin_mint_fees.fee_slope(cr)?.to_f64();
     let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
@@ -310,7 +310,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .token_conversion(lst_sol_price)?
       .token_to_lst(amount_stablecoin, self.stablecoin_nav()?)?;
     let projected = self.projected_redeem_state(lst_sol_price, lst_out)?;
-    let cr = narrow_cr(projected.collateral_ratio)?;
+    let cr = projected.collateral_ratio.fee_curve_x();
     let fee = self.stablecoin_redeem_fees.fee_inner(cr)?.to_f64();
     let fee_slope = self.stablecoin_redeem_fees.fee_slope(cr)?.to_f64();
     let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;

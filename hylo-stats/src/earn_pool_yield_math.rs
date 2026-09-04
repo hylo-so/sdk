@@ -4,8 +4,10 @@ use anyhow::Result;
 use fix::prelude::*;
 use fix::typenum::Z0;
 use hylo_core::borrow_rate::BorrowRateCurveConfig;
+use hylo_core::collateral_ratio::CollateralRatio;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
+use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::yields::YieldHarvestConfig;
 
 use crate::error::StatsError::{
@@ -108,26 +110,32 @@ pub fn projected_lst_inflow(
 /// inflow = levercoin_market_cap * rate(cr) * (1 - fee)
 /// ```
 ///
+/// Yields zero below [`RebalanceMode::Neutral`], where the protocol
+/// records a no-op harvest.
+///
 /// # Errors
 /// * Arithmetic overflow
 /// * Invalid borrow rate config data
-/// * CR below the borrow rate curve domain
 pub fn projected_borrow_inflow(
   levercoin_market_cap: UFix64<N9>,
-  collateral_ratio: UFix64<N9>,
+  collateral_ratio: CollateralRatio,
   config: &BorrowRateCurveConfig,
   fee: UFix64<N4>,
 ) -> Result<UFix64<N6>> {
-  let gross = config
-    .apply_borrow_rate(
-      levercoin_market_cap,
-      collateral_ratio,
-      UFix64::constant(1),
-    )?
-    .checked_convert::<N6>()
-    .ok_or(ProjectedInflow)?;
-  let extract = FeeExtract::new(fee, gross)?;
-  Ok(extract.amount_remaining)
+  if RebalanceMode::from_cr(collateral_ratio) < RebalanceMode::Neutral {
+    Ok(UFix64::zero())
+  } else {
+    let gross = config
+      .apply_borrow_rate(
+        levercoin_market_cap,
+        collateral_ratio,
+        UFix64::constant(1),
+      )?
+      .checked_convert::<N6>()
+      .ok_or(ProjectedInflow)?;
+    let extract = FeeExtract::new(fee, gross)?;
+    Ok(extract.amount_remaining)
+  }
 }
 
 /// Subtracts outstanding pool drawdown from a projected inflow,
@@ -145,6 +153,7 @@ pub fn apply_drawdown_offset(
 #[cfg(test)]
 mod tests {
   use hylo_core::borrow_rate::BorrowRateCurveConfig;
+  use hylo_core::collateral_ratio::CR;
   use hylo_core::lst::sol_price::LstSolPrice;
   use hylo_core::rebalance::mode::RebalanceMode;
   use hylo_core::yields::YieldHarvestConfig;
@@ -271,12 +280,37 @@ mod tests {
     );
     let inflow = projected_borrow_inflow(
       UFix64::<N9>::new(1_000_000_000_000_000),
-      RebalanceMode::Neutral.active_range().start()?,
+      CR::Finite(RebalanceMode::Neutral.active_range().start()?),
       &config,
       UFix64::<N4>::new(500),
     )?;
     assert_eq!(inflow, UFix64::<N6>::new(365_389_000));
     Ok(())
+  }
+
+  #[test]
+  fn projected_borrow_inflow_zero_below_neutral() -> Result<()> {
+    let config = BorrowRateCurveConfig::new(
+      UFix64::<N9>::new(384_620).into(),
+      UFix64::<N9>::new(1_648_352).into(),
+    );
+    let market_cap = UFix64::<N9>::new(1_000_000_000_000_000);
+    let below_neutral = [
+      RebalanceMode::Depeg,
+      RebalanceMode::SellZone2,
+      RebalanceMode::SellZone1,
+    ];
+    below_neutral.iter().try_for_each(|mode| -> Result<()> {
+      let cr = CR::Finite(mode.active_range().start()?);
+      let inflow = projected_borrow_inflow(
+        market_cap,
+        cr,
+        &config,
+        UFix64::<N4>::new(500),
+      )?;
+      assert_eq!(inflow, UFix64::zero(), "nonzero inflow in {mode}");
+      Ok(())
+    })
   }
 
   #[test]

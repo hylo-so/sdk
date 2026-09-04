@@ -13,10 +13,11 @@ use fix::prelude::*;
 
 pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
+use crate::collateral_ratio::{CollateralRatio, CR};
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
 #[cfg(feature = "offchain")]
-use crate::error::CoreError::{CollateralRatio, DestinationCollateral};
+use crate::error::CoreError::CollateralRatioOverflow;
 use crate::error::CoreError::{
   DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
   RebalanceBuySideTarget, RebalanceSellSideLiquidity,
@@ -24,9 +25,9 @@ use crate::error::CoreError::{
   VirtualStablecoinSurplus,
 };
 use crate::exchange_math::{
-  collateral_ratio, depeg_stablecoin_nav, levercoin_market_cap,
-  max_mintable_stablecoin, max_redeemable_stablecoin, max_swappable_stablecoin,
-  next_levercoin_mint_nav, next_levercoin_redeem_nav, total_value_locked,
+  depeg_stablecoin_nav, levercoin_market_cap, max_mintable_stablecoin,
+  max_redeemable_stablecoin, max_swappable_stablecoin, next_levercoin_mint_nav,
+  next_levercoin_redeem_nav, total_value_locked,
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
 use crate::fees::curve_controller::cr_from_curve;
@@ -47,7 +48,7 @@ use crate::util::max_scaled_input;
 pub struct ProjectedState {
   pub total_collateral: UFix64<N9>,
   pub stablecoin_supply: UFix64<N6>,
-  pub collateral_ratio: UFix64<N9>,
+  pub collateral_ratio: CR,
 }
 
 /// Shared interface for exchange context implementations.
@@ -72,7 +73,9 @@ pub trait ExchangeContext {
 
   /// Confirm stablecoin mint capability based on configured normal mode CR.
   fn stablecoin_mint_enabled(&self) -> bool {
-    self.collateral_ratio() >= self.stablecoin_mint_threshold()
+    self
+      .collateral_ratio()
+      .at_least(self.stablecoin_mint_threshold())
   }
 
   /// Confirm levercoin mint capability; disabled only during Depeg.
@@ -160,7 +163,11 @@ pub trait ExchangeContext {
       RebalanceMode::BuyZone1 => {
         let spot = self.collateral_oracle_price().spot;
         let cr_spot = self.rebalance_buy_curve()?.cr_at_price(spot)?;
-        midpoint(self.collateral_ratio(), cr_spot).ok_or(RebalanceBuySideTarget)
+        self
+          .collateral_ratio()
+          .as_finite()
+          .and_then(|cr| midpoint(cr, cr_spot))
+          .ok_or(RebalanceBuySideTarget)
       }
       _ => Err(RebalanceBuySideTarget),
     }
@@ -194,7 +201,10 @@ pub trait ExchangeContext {
       RebalanceMode::SellZone1 => {
         let spot = self.collateral_oracle_price().spot;
         let cr_spot = self.rebalance_sell_curve()?.cr_at_price(spot)?;
-        midpoint(self.collateral_ratio(), cr_spot)
+        self
+          .collateral_ratio()
+          .as_finite()
+          .and_then(|cr| midpoint(cr, cr_spot))
           .ok_or(RebalanceSellSideLiquidity)
       }
       _ => Err(RebalanceSellSideLiquidity),
@@ -226,7 +236,7 @@ pub trait ExchangeContext {
   fn rebalance_mode(&self) -> RebalanceMode;
 
   /// Cached collateral ratio, computed at construction.
-  fn collateral_ratio(&self) -> UFix64<N9>;
+  fn collateral_ratio(&self) -> CollateralRatio;
 
   /// Levercoin fee configuration.
   fn levercoin_fees(&self) -> &LevercoinFees;
@@ -333,7 +343,7 @@ pub trait ExchangeContext {
     new_total: UFix64<N9>,
     new_stablecoin: UFix64<N6>,
   ) -> Result<RebalanceMode, CoreError> {
-    let projected_cr = collateral_ratio(
+    let projected_cr = CollateralRatio::new(
       new_total,
       self.collateral_usd_price().lower,
       new_stablecoin,
@@ -429,7 +439,7 @@ pub trait ExchangeContext {
         .active_range()
         .start()?
         .checked_sub(&atom)
-        .ok_or(CollateralRatio)?;
+        .ok_or(CollateralRatioOverflow)?;
       let min_collateral = supply
         .checked_convert::<N9>()
         .and_then(|supply| {
@@ -442,11 +452,11 @@ pub trait ExchangeContext {
         .and_then(|last_depeg_collateral| {
           last_depeg_collateral.checked_add(&atom)
         })
-        .ok_or(CollateralRatio)?;
+        .ok_or(CollateralRatioOverflow)?;
       self
         .total_collateral()
         .checked_sub(&min_collateral)
-        .ok_or(DestinationCollateral)
+        .ok_or(CoreError::DestinationCollateral)
     }
   }
 
@@ -464,7 +474,7 @@ pub trait ExchangeContext {
         UFix64::<N9>::new(u64::MAX),
       )
       .and_then(UFix64::checked_convert_ceil::<N6>)
-      .ok_or(CollateralRatio)?;
+      .ok_or(CollateralRatioOverflow)?;
     Ok(
       self
         .virtual_stablecoin_supply()?

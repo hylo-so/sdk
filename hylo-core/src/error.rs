@@ -55,7 +55,7 @@ pub enum CoreError {
   PythOracleVerificationLevel,
   // `nav`
   #[msg("Overflow while computing collateral ratio.")]
-  CollateralRatio,
+  CollateralRatioOverflow,
   #[msg("Arithmetic error while computing max mintable stablecoin.")]
   MaxMintable,
   #[msg("Arithmetic error while computing max swappable stablecoin.")]
