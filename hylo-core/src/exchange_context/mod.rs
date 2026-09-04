@@ -17,8 +17,8 @@ use crate::collateral_ratio::CollateralRatio;
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
-  RebalanceBuySideTarget, RebalanceSellSideLiquidity,
+  CollateralRatioOverflow, DestinationStablecoin, LevercoinNav, MaxMintable,
+  MaxSwappable, RebalanceBuySideTarget, RebalanceSellSideLiquidity,
   RequestedStablecoinOverMaxMintable, VirtualStablecoinOverhang,
   VirtualStablecoinSurplus,
 };
@@ -437,7 +437,7 @@ pub trait ExchangeContext {
         .active_range()
         .start()?
         .checked_sub(&atom)
-        .ok_or(CoreError::CollateralRatio)?;
+        .ok_or(CollateralRatioOverflow)?;
       let min_collateral = supply
         .checked_convert::<N9>()
         .and_then(|supply| {
@@ -450,7 +450,7 @@ pub trait ExchangeContext {
         .and_then(|last_depeg_collateral| {
           last_depeg_collateral.checked_add(&atom)
         })
-        .ok_or(CoreError::CollateralRatio)?;
+        .ok_or(CollateralRatioOverflow)?;
       self
         .total_collateral()
         .checked_sub(&min_collateral)
@@ -472,7 +472,7 @@ pub trait ExchangeContext {
         UFix64::<N9>::new(u64::MAX),
       )
       .and_then(UFix64::checked_convert_ceil::<N6>)
-      .ok_or(CoreError::CollateralRatio)?;
+      .ok_or(CollateralRatioOverflow)?;
     Ok(
       self
         .virtual_stablecoin_supply()?

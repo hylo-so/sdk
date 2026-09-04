@@ -1,7 +1,7 @@
 use fix::prelude::*;
 
 use crate::error::CoreError;
-use crate::error::CoreError::CollateralRatio as CollateralRatioOverflow;
+use crate::error::CoreError::CollateralRatioOverflow;
 
 /// Ratio of collateral value to stablecoin supply.
 ///
