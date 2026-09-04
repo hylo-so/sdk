@@ -238,7 +238,7 @@ mod tests {
   use proptest::prelude::*;
 
   use super::*;
-  use crate::collateral_ratio::CollateralRatio;
+  use crate::collateral_ratio::CR;
   use crate::eq_tolerance;
   use crate::error::CoreError::LevercoinNav;
   use crate::util::proptest::*;
@@ -263,7 +263,7 @@ mod tests {
             .and_then(|new_sol| new_sol.convert().checked_add(&total_sol))
             .expect("new_total");
           let new_stable = state.stablecoin_amount.checked_add(&max).expect("new_stable");
-          let new_cr = CollateralRatio::new(new_total_sol, state.usd_sol_price, new_stable)?;
+          let new_cr = CR::new(new_total_sol, state.usd_sol_price, new_stable)?;
           // Checks new CR is within tolerance of 0.01
           prop_assert!(
             new_cr
@@ -376,8 +376,7 @@ mod tests {
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
-    let cr =
-      CollateralRatio::new(total_sol, usd_sol_price.lower, amount_stablecoin)?;
+    let cr = CR::new(total_sol, usd_sol_price.lower, amount_stablecoin)?;
     assert!(!cr.at_least(UFix64::one()));
 
     let stablecoin_nav =
@@ -403,8 +402,7 @@ mod tests {
     let amount_stablecoin = UFix64::<N6>::new(210_000_000);
     let lever_supply = UFix64::<N6>::new(1_000_000);
 
-    let cr =
-      CollateralRatio::new(total_sol, usd_sol_price.lower, amount_stablecoin)?;
+    let cr = CR::new(total_sol, usd_sol_price.lower, amount_stablecoin)?;
     assert!(!cr.at_least(UFix64::one()));
 
     let stablecoin_nav =

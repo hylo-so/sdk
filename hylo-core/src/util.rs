@@ -118,7 +118,7 @@ pub mod proptest {
   use fix::prelude::*;
   use proptest::prelude::*;
 
-  use crate::collateral_ratio::CollateralRatio;
+  use crate::collateral_ratio::CR;
   use crate::pyth::PriceRange;
 
   /// Represents a possible state of the protocol, collateral, and tokens.
@@ -149,7 +149,7 @@ pub mod proptest {
 
     #[must_use]
     pub fn next_target_collateral_ratio(&self) -> Option<UFix64<N9>> {
-      let current = CollateralRatio::new(
+      let current = CR::new(
         self.total_sol()?,
         self.usd_sol_price,
         self.stablecoin_amount,

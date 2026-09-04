@@ -13,12 +13,14 @@ use fix::prelude::*;
 
 pub use self::exo::ExoExchangeContext;
 pub use self::lst::LstExchangeContext;
-use crate::collateral_ratio::CollateralRatio;
+use crate::collateral_ratio::{CollateralRatio, CR};
 use crate::conversion::SwapConversion;
 use crate::error::CoreError;
+#[cfg(feature = "offchain")]
+use crate::error::CoreError::CollateralRatioOverflow;
 use crate::error::CoreError::{
-  CollateralRatioOverflow, DestinationStablecoin, LevercoinNav, MaxMintable,
-  MaxSwappable, RebalanceBuySideTarget, RebalanceSellSideLiquidity,
+  DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
+  RebalanceBuySideTarget, RebalanceSellSideLiquidity,
   RequestedStablecoinOverMaxMintable, VirtualStablecoinOverhang,
   VirtualStablecoinSurplus,
 };
@@ -46,7 +48,7 @@ use crate::util::max_scaled_input;
 pub struct ProjectedState {
   pub total_collateral: UFix64<N9>,
   pub stablecoin_supply: UFix64<N6>,
-  pub collateral_ratio: CollateralRatio,
+  pub collateral_ratio: CR,
 }
 
 /// Shared interface for exchange context implementations.
@@ -341,11 +343,8 @@ pub trait ExchangeContext {
     new_total: UFix64<N9>,
     new_stablecoin: UFix64<N6>,
   ) -> Result<RebalanceMode, CoreError> {
-    let projected_cr = CollateralRatio::new(
-      new_total,
-      self.collateral_usd_price().lower,
-      new_stablecoin,
-    )?;
+    let projected_cr =
+      CR::new(new_total, self.collateral_usd_price().lower, new_stablecoin)?;
     Ok(RebalanceMode::from_cr(projected_cr))
   }
 

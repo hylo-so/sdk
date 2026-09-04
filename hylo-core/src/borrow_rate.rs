@@ -238,7 +238,7 @@ mod tests {
 
   #[test]
   fn rate_ceil_at_infinite_cr() -> Result<(), CoreError> {
-    assert_eq!(test_config().rate(CollateralRatio::Infinite)?, CEIL);
+    assert_eq!(test_config().rate(CR::Infinite)?, CEIL);
     Ok(())
   }
 

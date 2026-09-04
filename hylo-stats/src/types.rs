@@ -3,7 +3,7 @@
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::*;
 use hylo_core::borrow_rate::BorrowRateCurveConfig;
-use hylo_core::collateral_ratio::CollateralRatio;
+use hylo_core::collateral_ratio::CR;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
 /// Snapshot of one harvest stream from its onchain [`HarvestCache`]:
@@ -31,7 +31,7 @@ pub struct ExoSnapshot {
   pub harvest_cache: HarvestCache,
   pub borrow_rate_curve_config: BorrowRateCurveConfig,
   pub borrow_rate_fee: UFix64<N4>,
-  pub collateral_ratio: CollateralRatio,
+  pub collateral_ratio: CR,
   pub levercoin_market_cap: UFix64<N9>,
 }
 

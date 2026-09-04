@@ -379,18 +379,18 @@ mod tests {
     },
   };
 
-  const CR_1_00: CollateralRatio = CR::finite(UFix64::constant(1_000_000_000));
-  const CR_1_15: CollateralRatio = CR::finite(UFix64::constant(1_150_000_000));
-  const CR_1_20: CollateralRatio = CR::finite(UFix64::constant(1_200_000_000));
-  const CR_1_275: CollateralRatio = CR::finite(UFix64::constant(1_275_000_000));
-  const CR_1_35: CollateralRatio = CR::finite(UFix64::constant(1_350_000_000));
-  const CR_1_40: CollateralRatio = CR::finite(UFix64::constant(1_400_000_000));
-  const CR_1_60: CollateralRatio = CR::finite(UFix64::constant(1_600_000_000));
-  const CR_1_65: CollateralRatio = CR::finite(UFix64::constant(1_650_000_000));
-  const CR_1_70: CollateralRatio = CR::finite(UFix64::constant(1_700_000_000));
-  const CR_1_75: CollateralRatio = CR::finite(UFix64::constant(1_750_000_000));
-  const CR_1_80: CollateralRatio = CR::finite(UFix64::constant(1_800_000_000));
-  const CR_2_50: CollateralRatio = CR::finite(UFix64::constant(2_500_000_000));
+  const CR_1_00: CR = CR::finite(UFix64::constant(1_000_000_000));
+  const CR_1_15: CR = CR::finite(UFix64::constant(1_150_000_000));
+  const CR_1_20: CR = CR::finite(UFix64::constant(1_200_000_000));
+  const CR_1_275: CR = CR::finite(UFix64::constant(1_275_000_000));
+  const CR_1_35: CR = CR::finite(UFix64::constant(1_350_000_000));
+  const CR_1_40: CR = CR::finite(UFix64::constant(1_400_000_000));
+  const CR_1_60: CR = CR::finite(UFix64::constant(1_600_000_000));
+  const CR_1_65: CR = CR::finite(UFix64::constant(1_650_000_000));
+  const CR_1_70: CR = CR::finite(UFix64::constant(1_700_000_000));
+  const CR_1_75: CR = CR::finite(UFix64::constant(1_750_000_000));
+  const CR_1_80: CR = CR::finite(UFix64::constant(1_800_000_000));
+  const CR_2_50: CR = CR::finite(UFix64::constant(2_500_000_000));
 
   #[test]
   fn sell_constructs() -> Result<(), CoreError> {
@@ -451,24 +451,18 @@ mod tests {
   #[test]
   fn buy_flat_at_infinite_cr() -> Result<(), CoreError> {
     let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG)?;
-    assert!(curve.is_active(CollateralRatio::Infinite));
-    assert_eq!(
-      curve.price(CollateralRatio::Infinite)?,
-      curve.price(CR_2_50)?
-    );
-    assert_eq!(
-      curve.price_slope(CollateralRatio::Infinite)?,
-      IFix64::zero()
-    );
+    assert!(curve.is_active(CR::Infinite));
+    assert_eq!(curve.price(CR::Infinite)?, curve.price(CR_2_50)?);
+    assert_eq!(curve.price_slope(CR::Infinite)?, IFix64::zero());
     Ok(())
   }
 
   #[test]
   fn sell_inactive_at_infinite_cr() -> Result<(), CoreError> {
     let curve = SellPriceCurve::new(ORACLE, &SELL_CONFIG)?;
-    assert!(!curve.is_active(CollateralRatio::Infinite));
+    assert!(!curve.is_active(CR::Infinite));
     assert_eq!(
-      curve.price(CollateralRatio::Infinite).err(),
+      curve.price(CR::Infinite).err(),
       Some(CoreError::RebalanceOutOfDomain)
     );
     Ok(())

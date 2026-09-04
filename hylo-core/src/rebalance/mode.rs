@@ -6,7 +6,7 @@ use anchor_lang::prelude::{
 };
 use fix::prelude::*;
 
-use crate::collateral_ratio::CollateralRatio;
+use crate::collateral_ratio::{CollateralRatio, CR};
 use crate::error::CoreError;
 use crate::error::CoreError::{
   RangeUnexpectedBound, StablecoinMintThresholdInvalid,
@@ -131,8 +131,8 @@ impl RebalanceMode {
   #[must_use]
   pub fn from_cr(cr: CollateralRatio) -> RebalanceMode {
     match cr {
-      CollateralRatio::Infinite => RebalanceMode::BuyZone2,
-      CollateralRatio::Finite(cr) => [
+      CR::Infinite => RebalanceMode::BuyZone2,
+      CR::Finite(cr) => [
         RebalanceMode::Depeg,
         RebalanceMode::SellZone2,
         RebalanceMode::SellZone1,
@@ -220,7 +220,7 @@ mod tests {
   #[test]
   fn from_cr_extremes() {
     assert_eq!(RebalanceMode::from_cr(CR::finite(UFix64::zero())), Depeg);
-    assert_eq!(RebalanceMode::from_cr(CollateralRatio::Infinite), BuyZone2);
+    assert_eq!(RebalanceMode::from_cr(CR::Infinite), BuyZone2);
   }
 
   #[test]
