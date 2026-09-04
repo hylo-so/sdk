@@ -237,6 +237,16 @@ mod tests {
   }
 
   #[test]
+  fn compute_stats_survives_sell_zone_cr() -> Result<()> {
+    let mut input = inputs();
+    input.exo_snapshots[0].collateral_ratio =
+      CR::Finite(UFix64::new(1_200_000_000));
+    let stats = compute_stats(&input)?;
+    assert_eq!(stats.exo_stats[0].projected_inflow, UFix64::zero());
+    Ok(())
+  }
+
+  #[test]
   fn annualize_compounds() {
     // 0.1% per epoch over 182 epochs ~= 19.95% APY
     let apy = annualize(UFix64::<N9>::new(1_000_000));
