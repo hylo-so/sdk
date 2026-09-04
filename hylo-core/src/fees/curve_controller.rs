@@ -241,7 +241,7 @@ mod tests {
   }
 
   #[test]
-  fn redeem_fee_rejected_above_curve_domain() -> anyhow::Result<()> {
+  fn redeem_fee_rejected_above_curve_domain() {
     let fees = redeem_fees();
     let cr = IFix64::<N5>::constant(150_001);
     assert_eq!(
@@ -252,7 +252,6 @@ mod tests {
       fees.fee_slope(cr).err(),
       Some(CoreError::NoValidStablecoinRedeemFee)
     );
-    Ok(())
   }
 
   #[test]
