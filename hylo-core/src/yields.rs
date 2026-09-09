@@ -5,13 +5,14 @@ use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
-use crate::error::CoreError::{
-  YieldHarvestAllocation, YieldHarvestConfigValidation,
-};
+use crate::error::CoreError::YieldHarvestConfigValidation;
 use crate::fees::controller::FeeExtract;
 
 /// 1000 bps (10%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
+
+/// 5x
+const MAX_CEIL_MULT: UFix64<N4> = UFix64::constant(50_000);
 
 /// Captures yield harvest configuration as two basis point values:
 #[derive(
@@ -26,40 +27,35 @@ const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
   Deserialize,
 )]
 pub struct YieldHarvestConfig {
-  pub allocation: UFixValue64,
+  pub ceil_mult: UFixValue64,
   pub fee: UFixValue64,
 }
 
 impl YieldHarvestConfig {
   pub fn init(
     &mut self,
-    allocation: UFixValue64,
+    ceil_mult: UFixValue64,
     fee: UFixValue64,
   ) -> Result<(), CoreError> {
-    self.allocation = allocation;
+    self.ceil_mult = ceil_mult;
     self.fee = fee;
     Ok(())
   }
 
+  /// Baseline multiple
+  #[must_use]
+  pub const fn floor_mult(&self) -> UFix64<N4> {
+    UFix64::one()
+  }
+
   /// Percentage of accrued yield to qualify for harvest
-  pub fn allocation(&self) -> Result<UFix64<N4>, CoreError> {
-    Ok(self.allocation.try_into()?)
+  pub fn ceil_mult(&self) -> Result<UFix64<N4>, CoreError> {
+    Ok(self.ceil_mult.try_into()?)
   }
 
   /// Percentage of harvest allocation to divert to treasury
   pub fn fee(&self) -> Result<UFix64<N4>, CoreError> {
     Ok(self.fee.try_into()?)
-  }
-
-  /// Multiplies allocation bps by amount of harvestable stablecoin.
-  pub fn apply_allocation(
-    &self,
-    stablecoin: UFix64<N6>,
-  ) -> Result<UFix64<N6>, CoreError> {
-    let allocation = self.allocation()?;
-    stablecoin
-      .mul_div_floor(allocation, UFix64::one())
-      .ok_or(YieldHarvestAllocation)
   }
 
   /// Applies configuration to the given amount of stablecoin to harvest.
@@ -72,21 +68,13 @@ impl YieldHarvestConfig {
     Ok(extract)
   }
 
-  fn is_valid(fee: UFix64<N4>, allocation: UFix64<N4>) -> bool {
-    let fee_valid = (UFix64::new(1)..=MAX_FEE).contains(&fee);
-    let allocation_valid =
-      (UFix64::new(1)..=UFix64::one()).contains(&allocation);
-    fee_valid && allocation_valid
-  }
-
-  pub fn validate(&self) -> Result<Self, CoreError> {
+  pub fn validate(&self) -> Result<YieldHarvestConfig, CoreError> {
     let fee: UFix64<N4> = self.fee.try_into()?;
-    let allocation: UFix64<N4> = self.allocation.try_into()?;
-    if YieldHarvestConfig::is_valid(fee, allocation) {
-      Ok(*self)
-    } else {
-      Err(YieldHarvestConfigValidation)
-    }
+    let ceil_mult: UFix64<N4> = self.ceil_mult.try_into()?;
+    ((UFix64::new(1)..=MAX_FEE).contains(&fee)
+      && (UFix64::one()..=MAX_CEIL_MULT).contains(&ceil_mult))
+    .then_some(*self)
+    .ok_or(YieldHarvestConfigValidation)
   }
 }
 

@@ -122,8 +122,8 @@ pub enum CoreError {
   // `yields`
   #[msg("Yield harvest configuration percentages failed validation.")]
   YieldHarvestConfigValidation,
-  #[msg("Arithmetic error while computing yield harvest allocation.")]
-  YieldHarvestAllocation,
+  #[msg("Arithmetic error while applying yield harvest multiplier.")]
+  YieldHarvestMultiplier,
   // `virtual_stablecoin`
   #[msg("Overflow while minting virtual stablecoin.")]
   MintOverflow,
