@@ -68,13 +68,16 @@ impl YieldHarvestConfig {
     Ok(extract)
   }
 
+  /// Ensures `fee <= MAX_FEE` and `ceil_mult` in `[1, MAX_CEIL_MULT]`.
+  ///
+  /// # Errors
+  /// * Bound violation
   pub fn validate(&self) -> Result<YieldHarvestConfig, CoreError> {
     let fee: UFix64<N4> = self.fee.try_into()?;
     let ceil_mult: UFix64<N4> = self.ceil_mult.try_into()?;
-    ((UFix64::new(1)..=MAX_FEE).contains(&fee)
-      && (UFix64::one()..=MAX_CEIL_MULT).contains(&ceil_mult))
-    .then_some(*self)
-    .ok_or(YieldHarvestConfigValidation)
+    (fee <= MAX_FEE && (UFix64::one()..=MAX_CEIL_MULT).contains(&ceil_mult))
+      .then_some(*self)
+      .ok_or(YieldHarvestConfigValidation)
   }
 }
 
