@@ -157,3 +157,57 @@ impl HarvestCache {
     self.epoch < current_epoch
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::collateral_ratio::CR;
+  use crate::rebalance::mode::RebalanceMode;
+
+  const ONE: UFix64<N9> = UFix64::constant(1_000_000_000);
+  const TWO: UFix64<N9> = UFix64::constant(2_000_000_000);
+  const FEE: UFix64<N4> = UFix64::constant(500);
+
+  fn config(ceil_mult: UFix64<N9>) -> YieldHarvestConfig {
+    YieldHarvestConfig {
+      ceil_mult: ceil_mult.into(),
+      fee: FEE.into(),
+    }
+  }
+
+  #[test]
+  fn validate_pos() -> Result<(), CoreError> {
+    config(ONE).validate()?;
+    config(MAX_CEIL_MULT).validate()?;
+    Ok(())
+  }
+
+  #[test]
+  fn validate_neg_bounds() {
+    let below = UFix64::new(ONE.bits - 1);
+    let above = UFix64::new(MAX_CEIL_MULT.bits + 1);
+    assert_eq!(config(below).validate(), Err(YieldHarvestConfigValidation));
+    assert_eq!(config(above).validate(), Err(YieldHarvestConfigValidation));
+  }
+
+  #[test]
+  fn multiple_shape() -> Result<(), CoreError> {
+    let config = config(TWO);
+    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
+    let buy_zone_1_end = RebalanceMode::BuyZone1.active_range().end()?;
+    let below = CR::Finite(UFix64::new(neutral_start.bits - 1));
+    assert_eq!(config.multiple(below), Err(CoreError::InterpOutOfDomain));
+    assert_eq!(config.multiple(CR::Finite(neutral_start))?, ONE);
+    assert_eq!(config.multiple(CR::Finite(buy_zone_1_end))?, TWO);
+    assert_eq!(config.multiple(CR::Infinite)?, TWO);
+    Ok(())
+  }
+
+  #[test]
+  fn apply_multiple_at_ceil() -> Result<(), CoreError> {
+    let sol_in = UFix64::<N9>::new(1_234_567_890_123);
+    let sol_out = config(TWO).apply_multiple(sol_in, CR::Infinite)?;
+    assert_eq!(sol_out, UFix64::new(2_469_135_780_246));
+    Ok(())
+  }
+}
