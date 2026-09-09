@@ -89,10 +89,8 @@ impl InterpolatedFeeController<21> for InterpolatedMintFees {
     let interp = self.curve();
     if cr < interp.x_min() {
       Err(CoreError::NoValidStablecoinMintFee)
-    } else if cr > interp.x_max() {
-      Ok(interp.y_max())
     } else {
-      interp.interpolate(cr)
+      interp.saturating_interpolate(cr)
     }
   }
 

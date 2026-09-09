@@ -65,33 +65,6 @@ impl BorrowRateCurveConfig {
     Ok(self.ceil_rate.try_into()?)
   }
 
-  /// Rate curve over CR: constant floor through the neutral zone,
-  /// linear from floor to ceiling across buy zone 1.
-  ///
-  /// # Errors
-  /// * Conversion or curve construction
-  fn build_curve(&self) -> Result<FixInterp<3, N9>, CoreError> {
-    let neutral_start = RebalanceMode::Neutral
-      .active_range()
-      .start()
-      .and_then(narrow)?;
-    let buy_zone_1_start = RebalanceMode::BuyZone1
-      .active_range()
-      .start()
-      .and_then(narrow)?;
-    let buy_zone_1_end = RebalanceMode::BuyZone1
-      .active_range()
-      .end()
-      .and_then(narrow)?;
-    let floor_rate = self.floor_rate().and_then(narrow)?;
-    let ceil_rate = self.ceil_rate().and_then(narrow)?;
-    FixInterp::from_points([
-      Point::new(neutral_start, floor_rate),
-      Point::new(buy_zone_1_start, floor_rate),
-      Point::new(buy_zone_1_end, ceil_rate),
-    ])
-  }
-
   /// Per-epoch borrow rate at the given CR.
   /// Constant at the ceiling above the curve domain, including
   /// [`CollateralRatio::Infinite`].
@@ -100,14 +73,8 @@ impl BorrowRateCurveConfig {
   /// * CR below the curve domain
   /// * Conversion or arithmetic
   pub fn rate(&self, cr: CollateralRatio) -> Result<UFix64<N9>, CoreError> {
-    let interp = self.build_curve()?;
-    let x = cr.price_curve_x();
-    let rate = if x > interp.x_max() {
-      interp.y_max()
-    } else {
-      interp.interpolate(x)?
-    };
-    rate.narrow().ok_or(InterpFeeConversion)
+    let curve = buy_zone_curve(self.floor_rate()?, self.ceil_rate()?)?;
+    saturating_apply_curve(&curve, cr)
   }
 
   /// Applies the borrow rate at the given CR to an amount.
@@ -154,6 +121,53 @@ pub fn validate_borrow_rate_fee(
   (bps > UFix64::zero() && bps <= MAX_FEE)
     .then_some(fee)
     .ok_or(BorrowRateValidation)
+}
+
+/// Builds the curve over CR with knots at the start of the neutral zone,
+/// the start of buy zone 1, and the end of buy zone 1. The first two
+/// knots carry `floor`, the last carries `ceil`.
+///
+/// # Errors
+/// * Conversion or curve construction
+pub fn buy_zone_curve(
+  floor: UFix64<N9>,
+  ceil: UFix64<N9>,
+) -> Result<FixInterp<3, N9>, CoreError> {
+  let neutral_start = RebalanceMode::Neutral
+    .active_range()
+    .start()
+    .and_then(narrow)?;
+  let buy_zone_1_start = RebalanceMode::BuyZone1
+    .active_range()
+    .start()
+    .and_then(narrow)?;
+  let buy_zone_1_end = RebalanceMode::BuyZone1
+    .active_range()
+    .end()
+    .and_then(narrow)?;
+  let floor = narrow(floor)?;
+  let ceil = narrow(ceil)?;
+  FixInterp::from_points([
+    Point::new(neutral_start, floor),
+    Point::new(buy_zone_1_start, floor),
+    Point::new(buy_zone_1_end, ceil),
+  ])
+}
+
+/// Applies the curve at the given CR. Saturates at `y_max` above the
+/// curve domain, including [`CollateralRatio::Infinite`].
+///
+/// # Errors
+/// * CR below the curve domain
+/// * Conversion or arithmetic
+pub fn saturating_apply_curve(
+  curve: &FixInterp<3, N9>,
+  cr: CollateralRatio,
+) -> Result<UFix64<N9>, CoreError> {
+  curve
+    .saturating_interpolate(cr.price_curve_x())?
+    .narrow()
+    .ok_or(InterpFeeConversion)
 }
 
 #[cfg(test)]
