@@ -85,7 +85,7 @@ impl YieldHarvestConfig {
     saturating_apply_curve(&curve, cr)
   }
 
-  /// Scales `amount` by the multiplier at the given CR.
+  /// Scales `amount` by the multiplier at the given CR, rounding up.
   ///
   /// # Errors
   /// * CR below the curve domain
@@ -96,9 +96,7 @@ impl YieldHarvestConfig {
     cr: CollateralRatio,
   ) -> Result<UFix64<N9>, CoreError> {
     let multiple = self.multiple(cr)?;
-    amount
-      .mul_div_floor(multiple, UFix64::one())
-      .ok_or(YieldHarvestMultiplier)
+    amount.mul_ceil(multiple).ok_or(YieldHarvestMultiplier)
   }
 
   /// Ensures `fee <= MAX_FEE` and `ceil_mult` in `[1, MAX_CEIL_MULT]`.
