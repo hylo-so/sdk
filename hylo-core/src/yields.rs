@@ -4,15 +4,19 @@ use anchor_lang::prelude::{
 use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::borrow_rate::{buy_zone_curve, saturating_apply_curve};
+use crate::collateral_ratio::CollateralRatio;
 use crate::error::CoreError;
-use crate::error::CoreError::YieldHarvestConfigValidation;
+use crate::error::CoreError::{
+  YieldHarvestConfigValidation, YieldHarvestMultiplier,
+};
 use crate::fees::controller::FeeExtract;
 
 /// 1000 bps (10%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 
 /// 5x
-const MAX_CEIL_MULT: UFix64<N4> = UFix64::constant(50_000);
+const MAX_CEIL_MULT: UFix64<N9> = UFix64::constant(5_000_000_000);
 
 /// Captures yield harvest configuration as two basis point values:
 #[derive(
@@ -42,14 +46,17 @@ impl YieldHarvestConfig {
     Ok(())
   }
 
-  /// Baseline multiple
+  /// Multiplier through the neutral zone.
   #[must_use]
-  pub const fn floor_mult(&self) -> UFix64<N4> {
+  pub const fn floor_mult(&self) -> UFix64<N9> {
     UFix64::one()
   }
 
-  /// Percentage of accrued yield to qualify for harvest
-  pub fn ceil_mult(&self) -> Result<UFix64<N4>, CoreError> {
+  /// Multiplier at and above the end of buy zone 1.
+  ///
+  /// # Errors
+  /// * Invalid multiplier data
+  pub fn ceil_mult(&self) -> Result<UFix64<N9>, CoreError> {
     Ok(self.ceil_mult.try_into()?)
   }
 
@@ -68,13 +75,39 @@ impl YieldHarvestConfig {
     Ok(extract)
   }
 
+  /// Multiplier at the given CR.
+  ///
+  /// # Errors
+  /// * CR below the curve domain
+  /// * Conversion or arithmetic
+  pub fn multiple(&self, cr: CollateralRatio) -> Result<UFix64<N9>, CoreError> {
+    let curve = buy_zone_curve(self.floor_mult(), self.ceil_mult()?)?;
+    saturating_apply_curve(&curve, cr)
+  }
+
+  /// Scales `amount` by the multiplier at the given CR.
+  ///
+  /// # Errors
+  /// * CR below the curve domain
+  /// * Arithmetic overflow
+  pub fn apply_multiple(
+    &self,
+    amount: UFix64<N9>,
+    cr: CollateralRatio,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let multiple = self.multiple(cr)?;
+    amount
+      .mul_div_floor(multiple, UFix64::one())
+      .ok_or(YieldHarvestMultiplier)
+  }
+
   /// Ensures `fee <= MAX_FEE` and `ceil_mult` in `[1, MAX_CEIL_MULT]`.
   ///
   /// # Errors
   /// * Bound violation
   pub fn validate(&self) -> Result<YieldHarvestConfig, CoreError> {
     let fee: UFix64<N4> = self.fee.try_into()?;
-    let ceil_mult: UFix64<N4> = self.ceil_mult.try_into()?;
+    let ceil_mult = self.ceil_mult()?;
     (fee <= MAX_FEE && (UFix64::one()..=MAX_CEIL_MULT).contains(&ceil_mult))
       .then_some(*self)
       .ok_or(YieldHarvestConfigValidation)
