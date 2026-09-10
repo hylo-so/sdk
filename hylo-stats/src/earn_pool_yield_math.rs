@@ -81,9 +81,11 @@ pub fn lst_epoch_growth(
 /// Projects next epoch's hyUSD inflow to the pool from one LST.
 ///
 /// ```txt
-/// inflow = lst_sol_value * epoch_growth * sol_usd_spot
-///          * allocation * (1 - fee)
+/// inflow = lst_sol_value * epoch_growth * multiple(cr) * sol_usd_spot
+///          * (1 - fee)
 /// ```
+///
+/// Returns zero below [`RebalanceMode::Neutral`].
 ///
 /// # Errors
 /// * Arithmetic overflow
@@ -91,17 +93,24 @@ pub fn lst_epoch_growth(
 pub fn projected_lst_inflow(
   lst_sol_value: UFix64<N9>,
   epoch_growth: UFix64<N9>,
+  collateral_ratio: CollateralRatio,
   sol_usd_spot: UFix64<N9>,
   config: &YieldHarvestConfig,
 ) -> Result<UFix64<N6>> {
-  let usd_yield = lst_sol_value
-    .mul_div_floor(epoch_growth, UFix64::one())
-    .and_then(|sol| sol.mul_div_floor(sol_usd_spot, UFix64::one()))
-    .and_then(UFix64::checked_convert::<N6>)
-    .ok_or(ProjectedInflow)?;
-  let allocated = config.apply_allocation(usd_yield)?;
-  let extract = config.apply_fee(allocated)?;
-  Ok(extract.amount_remaining)
+  if RebalanceMode::from_cr(collateral_ratio) < RebalanceMode::Neutral {
+    Ok(UFix64::zero())
+  } else {
+    let sol_yield = lst_sol_value
+      .mul_floor(epoch_growth)
+      .ok_or(ProjectedInflow)?;
+    let usd_yield = config
+      .apply_multiple(sol_yield, collateral_ratio)?
+      .mul_floor(sol_usd_spot)
+      .and_then(UFix64::checked_convert::<N6>)
+      .ok_or(ProjectedInflow)?;
+    let extract = config.apply_fee(usd_yield)?;
+    Ok(extract.amount_remaining)
+  }
 }
 
 /// Projects next epoch's hyUSD inflow from the borrow-rate stream.
@@ -224,37 +233,52 @@ mod tests {
     Ok(())
   }
 
-  fn harvest_config(allocation_bps: u64, fee_bps: u64) -> YieldHarvestConfig {
+  fn harvest_config(ceil_mult: u64, fee_bps: u64) -> YieldHarvestConfig {
     YieldHarvestConfig {
-      allocation: UFix64::<N4>::new(allocation_bps).into(),
+      ceil_mult: UFix64::<N9>::new(ceil_mult).into(),
       fee: UFix64::<N4>::new(fee_bps).into(),
     }
   }
 
   #[test]
-  fn projected_lst_inflow_full_allocation() -> Result<()> {
+  fn projected_lst_inflow_neutral() -> Result<()> {
     // 100,000 SOL at 0.05%/epoch growth, SOL at $150:
-    // 50 SOL * 150 = $7,500; 100% allocation, 10% fee -> $6,750
+    // 50 SOL * 150 = $7,500; 1x in neutral, 10% fee -> $6,750
     let inflow = projected_lst_inflow(
       UFix64::<N9>::new(100_000_000_000_000),
       UFix64::<N9>::new(500_000),
+      CR::Finite(RebalanceMode::Neutral.active_range().start()?),
       UFix64::<N9>::new(150_000_000_000),
-      &harvest_config(10_000, 1_000),
+      &harvest_config(2_000_000_000, 1_000),
     )?;
     assert_eq!(inflow, UFix64::<N6>::new(6_750_000_000));
     Ok(())
   }
 
   #[test]
-  fn projected_lst_inflow_partial_allocation() -> Result<()> {
-    // Same yield, 80% allocation, 10% fee -> 7,500 * 0.8 * 0.9 = $5,400
+  fn projected_lst_inflow_at_ceil() -> Result<()> {
+    // Same yield at 2x ceiling, 10% fee -> 7,500 * 2 * 0.9 = $13,500
     let inflow = projected_lst_inflow(
       UFix64::<N9>::new(100_000_000_000_000),
       UFix64::<N9>::new(500_000),
+      CR::Infinite,
       UFix64::<N9>::new(150_000_000_000),
-      &harvest_config(8_000, 1_000),
+      &harvest_config(2_000_000_000, 1_000),
     )?;
-    assert_eq!(inflow, UFix64::<N6>::new(5_400_000_000));
+    assert_eq!(inflow, UFix64::<N6>::new(13_500_000_000));
+    Ok(())
+  }
+
+  #[test]
+  fn projected_lst_inflow_zero_below_neutral() -> Result<()> {
+    let inflow = projected_lst_inflow(
+      UFix64::<N9>::new(100_000_000_000_000),
+      UFix64::<N9>::new(500_000),
+      CR::Finite(UFix64::new(1_200_000_000)),
+      UFix64::<N9>::new(150_000_000_000),
+      &harvest_config(2_000_000_000, 1_000),
+    )?;
+    assert_eq!(inflow, UFix64::zero());
     Ok(())
   }
 
@@ -263,8 +287,9 @@ mod tests {
     let inflow = projected_lst_inflow(
       UFix64::<N9>::new(100_000_000_000_000),
       UFix64::zero(),
+      CR::Infinite,
       UFix64::<N9>::new(150_000_000_000),
-      &harvest_config(10_000, 1_000),
+      &harvest_config(1_000_000_000, 1_000),
     )?;
     assert_eq!(inflow, UFix64::zero());
     Ok(())

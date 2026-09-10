@@ -21122,6 +21122,14 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "raw_sol_appreciation",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "total_sol_harvested",
             "type": {
               "defined": {
@@ -23457,7 +23465,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "allocation",
+            "name": "ceil_mult",
             "type": {
               "defined": {
                 "name": "UFixValue64"

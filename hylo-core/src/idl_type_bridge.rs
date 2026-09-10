@@ -54,7 +54,7 @@ impl From<hylo_idl::exchange::types::YieldHarvestConfig>
 {
   fn from(idl: hylo_idl::exchange::types::YieldHarvestConfig) -> Self {
     YieldHarvestConfig {
-      allocation: idl.allocation.into(),
+      ceil_mult: idl.ceil_mult.into(),
       fee: idl.fee.into(),
     }
   }
@@ -238,7 +238,7 @@ impl From<YieldHarvestConfig>
 {
   fn from(val: YieldHarvestConfig) -> Self {
     hylo_idl::exchange::types::YieldHarvestConfig {
-      allocation: val.allocation.into(),
+      ceil_mult: val.ceil_mult.into(),
       fee: val.fee.into(),
     }
   }

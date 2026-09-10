@@ -44,6 +44,7 @@ pub struct StatsInputs {
   pub shyusd_supply: UFix64<N6>,
   pub lst_harvest_cache: HarvestCache,
   pub harvest_config: YieldHarvestConfig,
+  pub lst_collateral_ratio: CR,
   pub lst_positions: Vec<LstPosition>,
   pub exo_snapshots: Vec<ExoSnapshot>,
   pub sol_usd_spot: UFix64<N9>,

@@ -75,7 +75,7 @@ impl YieldHarvestConfig {
     Ok(extract)
   }
 
-  /// Multiplier at the given CR.
+  /// Computes the harvest multiplier at the given CR.
   ///
   /// # Errors
   /// * CR below the curve domain

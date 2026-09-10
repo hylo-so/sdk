@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use fix::prelude::*;
+use hylo_core::collateral_ratio::CR;
 use hylo_core::earn_pool_math::lp_token_nav;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
@@ -87,6 +88,7 @@ fn realized_yield_rate(
 /// Sum of projected next-epoch hyUSD inflows across LST positions.
 fn projected_lst_total(
   lst_positions: &[LstPosition],
+  collateral_ratio: CR,
   sol_usd_spot: UFix64<N9>,
   harvest_config: &YieldHarvestConfig,
 ) -> Result<UFix64<N6>> {
@@ -96,6 +98,7 @@ fn projected_lst_total(
       let inflow = projected_lst_inflow(
         position.sol_value,
         position.epoch_growth,
+        collateral_ratio,
         sol_usd_spot,
         harvest_config,
       )?;
@@ -148,6 +151,7 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
     realized_yield_rate(&lst_harvest, &exo_stats, inputs.pool_balance)?;
   let projected_lst_inflow = projected_lst_total(
     &inputs.lst_positions,
+    inputs.lst_collateral_ratio,
     inputs.sol_usd_spot,
     &inputs.harvest_config,
   )?;
@@ -181,7 +185,6 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
 mod tests {
   use anchor_lang::prelude::Pubkey;
   use hylo_core::borrow_rate::BorrowRateCurveConfig;
-  use hylo_core::collateral_ratio::CR;
   use hylo_core::yields::YieldHarvestConfig;
 
   use super::*;
@@ -219,9 +222,10 @@ mod tests {
       shyusd_supply: UFix64::<N6>::new(950_000_000_000),
       lst_harvest_cache: cache(800, 1_000_000_000),
       harvest_config: YieldHarvestConfig {
-        allocation: UFix64::<N4>::new(10_000).into(),
+        ceil_mult: UFix64::<N9>::new(1_000_000_000).into(),
         fee: UFix64::<N4>::new(1_000).into(),
       },
+      lst_collateral_ratio: CR::Finite(UFix64::new(1_500_000_000)),
       lst_positions: vec![LstPosition {
         sol_value: UFix64::<N9>::new(100_000_000_000_000),
         epoch_growth: UFix64::<N9>::new(500_000),
