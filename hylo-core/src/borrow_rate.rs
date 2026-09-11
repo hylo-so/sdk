@@ -37,9 +37,8 @@ const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
 /// Maximum fee exacted against borrow rate
 const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
 
-/// Builds the curve over CR with knots at the start of the neutral zone,
-/// the start of buy zone 1, and the end of buy zone 1. The first two
-/// knots carry `floor`, the last carries `ceil`.
+/// Builds a curve over CR: constant at `floor` through the neutral zone,
+/// linear from `floor` to `ceil` across buy zone 1.
 ///
 /// # Errors
 /// * Conversion or curve construction
