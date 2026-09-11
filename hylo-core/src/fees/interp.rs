@@ -182,7 +182,6 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
   /// Interpolates at `x`, saturating at `y_max` above the domain.
   ///
   /// # Errors
-  ///
   /// * Input x is below the valid domain.
   /// * Arithmetic overflow during calculation.
   pub fn saturating_interpolate(
