@@ -3932,7 +3932,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "allocation",
+            "name": "ceil_mult",
             "type": {
               "defined": {
                 "name": "UFixValue64"

@@ -315,10 +315,8 @@ impl RebalancePriceController for BuyPriceCurve {
     let interp = self.curve();
     if cr < interp.x_min() {
       Err(CoreError::RebalanceOutOfDomain)
-    } else if cr > interp.x_max() {
-      Ok(interp.y_max())
     } else {
-      interp.interpolate(cr)
+      interp.saturating_interpolate(cr)
     }
   }
 

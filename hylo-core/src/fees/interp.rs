@@ -179,6 +179,22 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
       .ok_or(CoreError::InterpArithmetic)
   }
 
+  /// Interpolates at `x`, saturating at `y_max` above the domain.
+  ///
+  /// # Errors
+  /// * Input x is below the valid domain.
+  /// * Arithmetic overflow during calculation.
+  pub fn saturating_interpolate(
+    &self,
+    x: IFix64<Exp>,
+  ) -> Result<IFix64<Exp>, CoreError> {
+    if x > self.x_max() {
+      Ok(self.y_max())
+    } else {
+      self.interpolate(x)
+    }
+  }
+
   /// Inverse of [`interpolate`](Self::interpolate): the approximate `x`
   /// for the given `y`.
   ///
