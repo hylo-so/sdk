@@ -21122,14 +21122,6 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "raw_sol_appreciation",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
             "name": "total_sol_harvested",
             "type": {
               "defined": {
@@ -21166,6 +21158,14 @@
             "type": {
               "defined": {
                 "name": "OraclePriceEvent"
+              }
+            }
+          },
+          {
+            "name": "raw_sol_appreciation",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
               }
             }
           }
