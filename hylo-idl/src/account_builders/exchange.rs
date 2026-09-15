@@ -16,7 +16,7 @@ use crate::exchange::client::accounts::{
   UpdateLstRebalanceFee, WithdrawFees,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
-use crate::{earn_pool, exchange, pda};
+use crate::{earn_pool, exchange, pda, router};
 
 /// Builds account context for stablecoin mint (LST -> hyUSD).
 #[must_use]
@@ -182,6 +182,8 @@ pub fn register_exo(
     fee_vault: pda::ata(fee_auth, collateral_mint),
     levercoin_metadata: pda::metadata(levercoin_mint),
     exo_usd_pyth_feed,
+    exo_registry: pda::EXO_REGISTRY,
+    hylo_router_event_authority: pda::ROUTER_EVENT_AUTHORITY,
     metadata_program: mpl_token_metadata::ID,
     token_program: token::ID,
     associated_token_program: associated_token::ID,
@@ -189,6 +191,7 @@ pub fn register_exo(
     system_program: system_program::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
+    hylo_router: router::ID,
   }
 }
 
