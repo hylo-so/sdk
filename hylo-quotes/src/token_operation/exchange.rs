@@ -112,6 +112,13 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// The EXO context is normalized to `N9`; this converts only the external
   /// collateral atoms using the mint decimals captured with the registry entry.
+  ///
+  /// # Errors
+  ///
+  /// Returns an error when the route is not registered, is gated, lacks
+  /// liquidity, or fails protocol arithmetic.
+  #[allow(clippy::too_many_arguments)]
+  #[allow(clippy::too_many_lines)]
   pub fn runtime_exo_quote(
     &self,
     collateral_mint: Pubkey,
@@ -141,7 +148,7 @@ impl<C: SolanaClock> ProtocolState<C> {
           fees_extracted,
           amount_remaining,
         } = pair.context.stablecoin_mint_fee(input)?;
-        let output: Fix<u64, typenum::UInt<typenum::UInt<typenum::UInt<typenum::UInt<typenum::UTerm, typenum::B1>, typenum::B0>, typenum::B1>, typenum::B0>, typenum::NInt<typenum::UInt<typenum::UInt<typenum::UInt<typenum::UTerm, typenum::B1>, typenum::B1>, typenum::B0>>> = pair
+        let output = pair
           .context
           .exo_conversion()
           .exo_to_token(amount_remaining, pair.context.stablecoin_nav()?)?;

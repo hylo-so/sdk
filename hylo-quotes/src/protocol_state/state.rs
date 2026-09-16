@@ -249,6 +249,70 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
+  /// Build a core protocol snapshot.
+  ///
+  /// # Errors
+  ///
+  /// Returns an error if the core exchange context or a required protocol
+  /// conversion cannot be constructed from the supplied accounts.
+  #[allow(clippy::too_many_arguments)]
+  pub fn build_base(
+    clock: C,
+    hylo: &Hylo,
+    jitosol_header: LstHeader,
+    hylosol_header: LstHeader,
+    hyusd_mint: Mint,
+    xsol_mint: Mint,
+    shyusd_mint: Mint,
+    pool_config: PoolConfig,
+    hyusd_pool: TokenAccount,
+    sol_usd: &PriceUpdateV2,
+    usdc_exchange_state: UsdcExchangeState,
+    jitosol_stake_pool: SplStakePool,
+    hylosol_stake_pool: SplStakePool,
+    jitosol_vault_balance: UFix64<N9>,
+    hylosol_vault_balance: UFix64<N9>,
+  ) -> Result<Self> {
+    Self::build_from_exo_pairs(
+      clock,
+      hylo,
+      jitosol_header,
+      hylosol_header,
+      hyusd_mint,
+      xsol_mint,
+      shyusd_mint,
+      pool_config,
+      hyusd_pool,
+      sol_usd,
+      HashMap::new(),
+      usdc_exchange_state,
+      jitosol_stake_pool,
+      hylosol_stake_pool,
+      jitosol_vault_balance,
+      hylosol_vault_balance,
+    )
+  }
+
+  /// Replaces this snapshot's EXO state from the currently loaded registry.
+  ///
+  /// # Errors
+  ///
+  /// Returns an error if registry entries and account groups do not match,
+  /// or if an EXO pair cannot be constructed from the supplied accounts.
+  pub fn replace_exo_pairs_from_registry(
+    &mut self,
+    clock: &C,
+    exo_registry: &ExoRegistry,
+    exo_accounts: &[ExoAccounts],
+  ) -> Result<()>
+  where
+    C: Clone,
+  {
+    self.exo_pairs =
+      Self::exo_pairs_from_registry(clock, exo_registry, exo_accounts)?;
+    Ok(())
+  }
+
   fn exo_pairs_from_registry(
     clock: &C,
     exo_registry: &ExoRegistry,
