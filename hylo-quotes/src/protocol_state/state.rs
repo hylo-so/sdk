@@ -75,6 +75,7 @@ fn in_stablecoin_oracle_window(
 /// Everything a route needs from one registered [`ExoPair`].
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
+  pub collateral_mint_decimals: u8,
   pub context: ExoExchangeContext<C>,
   pub paused: bool,
   pub pool_drawdown: PoolDrawdown,
@@ -110,6 +111,7 @@ impl<C: SolanaClock> ExoPairState<C> {
     oracle_publish_time: i64,
   ) -> Result<ExoPairState<C>> {
     Ok(ExoPairState {
+      collateral_mint_decimals: 0,
       context,
       paused: exo_pair.paused,
       pool_drawdown: exo_pair.pool_drawdown.into(),
@@ -471,7 +473,7 @@ pub fn build_exo_pair_state_with_decimals<C: SolanaClock>(
   levercoin_mint: &Account,
   collateral_usd: &Account,
 ) -> Result<ExoPairState<C>> {
-  match decimals {
+  let mut pair = match decimals {
     2 => build_exo_pair_state_with_exp::<N2, C>(
       clock,
       exo_pair,
@@ -535,8 +537,12 @@ pub fn build_exo_pair_state_with_decimals<C: SolanaClock>(
       levercoin_mint,
       collateral_usd,
     ),
-    _ => Err(anyhow!("unsupported EXO collateral decimals: {decimals}")),
-  }
+    _ => {
+      return Err(anyhow!("unsupported EXO collateral decimals: {decimals}"))
+    }
+  }?;
+  pair.collateral_mint_decimals = decimals;
+  Ok(pair)
 }
 
 /// Builds an EXO pair state from a decoded registry account group.
@@ -549,7 +555,8 @@ pub fn build_exo_pair_state_from_accounts<C: SolanaClock>(
   clock: C,
   accounts: &ExoAccounts,
 ) -> Result<ExoPairState<C>> {
-  match accounts.collateral_mint.decimals {
+  let decimals = accounts.collateral_mint.decimals;
+  let mut pair = match decimals {
     2 => build_exo_pair_state_from_parts::<N2, C>(
       clock,
       &accounts.exo_pair,
@@ -613,8 +620,12 @@ pub fn build_exo_pair_state_from_accounts<C: SolanaClock>(
       &accounts.levercoin_mint,
       &accounts.oracle,
     ),
-    decimals => Err(anyhow!("unsupported EXO collateral decimals: {decimals}")),
-  }
+    _ => {
+      return Err(anyhow!("unsupported EXO collateral decimals: {decimals}"))
+    }
+  }?;
+  pair.collateral_mint_decimals = decimals;
+  Ok(pair)
 }
 
 fn build_exo_pair_state_with_exp<E: Integer, C: SolanaClock>(
