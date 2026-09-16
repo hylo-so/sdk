@@ -3,9 +3,8 @@
 mod earn_pool;
 mod exchange;
 
-pub use exchange::RuntimeExoQuote;
-
 use anchor_lang::prelude::Pubkey;
+pub use exchange::RuntimeExoQuote;
 use fix::prelude::{CheckedAdd, UFix64, N6, N9};
 use fix::typenum::Integer;
 use hylo_core::calculus::{positive, positive_rate};
