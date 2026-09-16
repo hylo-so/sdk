@@ -1,5 +1,6 @@
 //! `TokenOperation` implementations for exchange pairs.
 
+use anchor_lang::prelude::Pubkey;
 use fix::prelude::*;
 use hylo_core::calculus::positive_rate;
 use hylo_core::error::CoreError;
@@ -27,6 +28,51 @@ use crate::token_operation::{
 };
 use crate::{Local, LocalExo, LST};
 
+/// Type-erased EXO quote, expressed in the route mints' native atoms.
+#[derive(Clone, Copy, Debug)]
+pub struct RuntimeExoQuote {
+  pub in_amount: u64,
+  pub out_amount: u64,
+  pub fee_amount: u64,
+  pub fee_mint: Pubkey,
+  pub fee_base: u64,
+  pub marginal_rate: f64,
+}
+
+fn exo_atoms_to_n9(amount: u64, decimals: u8) -> Result<UFix64<N9>, CoreError> {
+  match decimals.cmp(&9) {
+    std::cmp::Ordering::Less => amount
+      .checked_mul(10_u64.pow(u32::from(9 - decimals)))
+      .map(UFix64::new)
+      .ok_or(CoreError::TokenAmountPrecision),
+    std::cmp::Ordering::Equal => Ok(UFix64::new(amount)),
+    std::cmp::Ordering::Greater => {
+      Ok(UFix64::new(amount / 10_u64.pow(u32::from(decimals - 9))))
+    }
+  }
+}
+
+fn n9_to_exo_atoms(amount: UFix64<N9>, decimals: u8) -> Result<u64, CoreError> {
+  match decimals.cmp(&9) {
+    std::cmp::Ordering::Less => {
+      Ok(amount.bits / 10_u64.pow(u32::from(9 - decimals)))
+    }
+    std::cmp::Ordering::Equal => Ok(amount.bits),
+    std::cmp::Ordering::Greater => amount
+      .bits
+      .checked_mul(10_u64.pow(u32::from(decimals - 9)))
+      .ok_or(CoreError::TokenAmountPrecision),
+  }
+}
+
+fn runtime_atom_rate(
+  rate: f64,
+  input_decimals: u8,
+  output_decimals: u8,
+) -> f64 {
+  rate * 10_f64.powi(i32::from(input_decimals) - i32::from(output_decimals))
+}
+
 impl<C: SolanaClock> ProtocolState<C> {
   /// Pause and harvest gates for LST-pair routes.
   fn lst_pair_gates(&self) -> Result<(), CoreError> {
@@ -47,6 +93,328 @@ impl<C: SolanaClock> ProtocolState<C> {
       pair.borrow_rate_harvest_epoch == pair.context.clock.epoch(),
       CoreError::BorrowRateHarvestNotRun,
     )
+  }
+
+  fn exo_pair_gates_by_mint(
+    &self,
+    collateral_mint: Pubkey,
+  ) -> Result<(), CoreError> {
+    let pair = self.exo_pair_by_mint(collateral_mint)?;
+    gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!pair.paused, CoreError::PairPaused)?;
+    gate(
+      pair.borrow_rate_harvest_epoch == pair.context.clock.epoch(),
+      CoreError::BorrowRateHarvestNotRun,
+    )
+  }
+
+  /// Quotes a registry-discovered EXO route without a compile-time token type.
+  ///
+  /// The EXO context is normalized to `N9`; this converts only the external
+  /// collateral atoms using the mint decimals captured with the registry entry.
+  pub fn runtime_exo_quote(
+    &self,
+    collateral_mint: Pubkey,
+    levercoin_mint: Pubkey,
+    input_mint: Pubkey,
+    output_mint: Pubkey,
+    amount: u64,
+  ) -> Result<RuntimeExoQuote, CoreError> {
+    let pair = self.exo_pair_by_mint(collateral_mint)?;
+    let decimals = pair.collateral_mint_decimals;
+    let collateral_in = || exo_atoms_to_n9(amount, decimals);
+    let collateral_out = |amount| n9_to_exo_atoms(amount, decimals);
+    let quote = match (input_mint, output_mint) {
+      (mint, HYUSD::MINT) if mint == collateral_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        gate(
+          pair.collateral_usd_in_stablecoin_oracle_window(),
+          CoreError::PythOracleOutdated,
+        )?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.stablecoin_mint_enabled(),
+          CoreError::OperationDisabled,
+        )?;
+        let input = collateral_in()?;
+        let FeeExtract {
+          fees_extracted,
+          amount_remaining,
+        } = pair.context.stablecoin_mint_fee(input)?;
+        let output: Fix<u64, typenum::UInt<typenum::UInt<typenum::UInt<typenum::UInt<typenum::UTerm, typenum::B1>, typenum::B0>, typenum::B1>, typenum::B0>, typenum::NInt<typenum::UInt<typenum::UInt<typenum::UInt<typenum::UTerm, typenum::B1>, typenum::B1>, typenum::B0>>> = pair
+          .context
+          .exo_conversion()
+          .exo_to_token(amount_remaining, pair.context.stablecoin_nav()?)?;
+        let output = pair.context.validate_stablecoin_amount(output)?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: output.bits,
+          fee_amount: fees_extracted.bits,
+          fee_mint: collateral_mint,
+          fee_base: input.bits,
+          marginal_rate: runtime_atom_rate(
+            pair.context.stablecoin_mint_marginal(input)?,
+            decimals,
+            6,
+          ),
+        }
+      }
+      (HYUSD::MINT, mint) if mint == collateral_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        gate(
+          pair.collateral_usd_in_stablecoin_oracle_window(),
+          CoreError::PythOracleOutdated,
+        )?;
+        let input = UFix64::<N6>::new(amount);
+        let collateral = pair
+          .context
+          .exo_conversion()
+          .token_to_exo(input, pair.context.stablecoin_nav()?)?;
+        gate(
+          collateral <= pair.context.total_collateral,
+          CoreError::InsufficientLiquidity,
+        )?;
+        let FeeExtract {
+          fees_extracted,
+          amount_remaining,
+        } = pair.context.stablecoin_redeem_fee(collateral)?;
+        validate_burn(
+          pair.context.virtual_stablecoin_supply()?,
+          input,
+          pair.supply_floor,
+        )?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: collateral_out(amount_remaining)?,
+          fee_amount: fees_extracted.bits,
+          fee_mint: collateral_mint,
+          fee_base: collateral.bits,
+          marginal_rate: runtime_atom_rate(
+            pair.context.stablecoin_redeem_marginal(input)?,
+            6,
+            decimals,
+          ),
+        }
+      }
+      (mint, out) if mint == collateral_mint && out == levercoin_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.levercoin_mint_enabled(),
+          CoreError::OperationDisabled,
+        )?;
+        let input = collateral_in()?;
+        let FeeExtract {
+          fees_extracted,
+          amount_remaining,
+        } = pair.context.levercoin_mint_fee(input)?;
+        let output = pair
+          .context
+          .exo_conversion()
+          .exo_to_token(amount_remaining, pair.context.levercoin_mint_nav()?)?;
+        pair
+          .context
+          .levercoin_market_cap_limiter()?
+          .validate_token_out(output)?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: output.bits,
+          fee_amount: fees_extracted.bits,
+          fee_mint: collateral_mint,
+          fee_base: input.bits,
+          marginal_rate: runtime_atom_rate(
+            pair.context.levercoin_mint_marginal(input)?,
+            decimals,
+            6,
+          ),
+        }
+      }
+      (mint, out) if mint == levercoin_mint && out == collateral_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.rebalance_mode() != RebalanceMode::Depeg,
+          CoreError::OperationDisabled,
+        )?;
+        let input = UFix64::<N6>::new(amount);
+        gate(
+          input <= pair.context.levercoin_supply()?,
+          CoreError::InsufficientLiquidity,
+        )?;
+        let collateral = pair
+          .context
+          .exo_conversion()
+          .token_to_exo(input, pair.context.levercoin_redeem_nav()?)?;
+        gate(
+          collateral <= pair.context.total_collateral,
+          CoreError::InsufficientLiquidity,
+        )?;
+        let FeeExtract {
+          fees_extracted,
+          amount_remaining,
+        } = pair.context.levercoin_redeem_fee(collateral)?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: collateral_out(amount_remaining)?,
+          fee_amount: fees_extracted.bits,
+          fee_mint: collateral_mint,
+          fee_base: collateral.bits,
+          marginal_rate: runtime_atom_rate(
+            pair.context.levercoin_redeem_marginal(input)?,
+            6,
+            decimals,
+          ),
+        }
+      }
+      (HYUSD::MINT, mint) if mint == levercoin_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.levercoin_mint_enabled(),
+          CoreError::OperationDisabled,
+        )?;
+        let input = UFix64::<N6>::new(amount);
+        let FeeExtract {
+          fees_extracted,
+          amount_remaining,
+        } = pair.context.stablecoin_to_levercoin_fee(input)?;
+        let output = pair
+          .context
+          .swap_conversion()?
+          .stable_to_lever(amount_remaining)?;
+        pair
+          .context
+          .levercoin_market_cap_limiter()?
+          .validate_token_out(output)?;
+        validate_burn(
+          pair.context.virtual_stablecoin_supply()?,
+          amount_remaining,
+          pair.supply_floor,
+        )?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: output.bits,
+          fee_amount: fees_extracted.bits,
+          fee_mint: HYUSD::MINT,
+          fee_base: input.bits,
+          marginal_rate: pair
+            .context
+            .stablecoin_to_levercoin_marginal(input)?,
+        }
+      }
+      (mint, HYUSD::MINT) if mint == levercoin_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.stablecoin_mint_enabled(),
+          CoreError::OperationDisabled,
+        )?;
+        let input = UFix64::<N6>::new(amount);
+        gate(
+          input <= pair.context.levercoin_supply()?,
+          CoreError::InsufficientLiquidity,
+        )?;
+        let total = pair.context.validate_stablecoin_swap_amount(
+          pair.context.swap_conversion()?.lever_to_stable(input)?,
+        )?;
+        let FeeExtract {
+          fees_extracted,
+          amount_remaining,
+        } = pair.context.levercoin_to_stablecoin_fee(total)?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: amount_remaining.bits,
+          fee_amount: fees_extracted.bits,
+          fee_mint: HYUSD::MINT,
+          fee_base: total.bits,
+          marginal_rate: pair
+            .context
+            .levercoin_to_stablecoin_marginal(input)?,
+        }
+      }
+      (mint, USDC::MINT) if mint == collateral_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        self.usdc_pair_gates()?;
+        gate(
+          pair.collateral_usd_in_stablecoin_oracle_window(),
+          CoreError::PythOracleOutdated,
+        )?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.rebalance_buy_active(),
+          CoreError::OperationDisabled,
+        )?;
+        let input = collateral_in()?;
+        gate(
+          input <= pair.context.rebalance_buy_target()?,
+          CoreError::RebalanceBuyTargetExceeded,
+        )?;
+        let output = pair
+          .context
+          .rebalance_buy_conversion(input)?
+          .exo_to_token(input, UFix64::<N9>::one())?;
+        gate(
+          output <= self.usdc_exchange_state().vault_balance,
+          CoreError::InsufficientLiquidity,
+        )?;
+        gate(
+          output <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
+          CoreError::BurnUnderflow,
+        )?;
+        let pnl = pair.context.rebalance_pnl_buy_side(input, output)?;
+        self.validate_pnl_settlement(&pair.context, pair.supply_floor, pnl)?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: output.bits,
+          fee_amount: 0,
+          fee_mint: collateral_mint,
+          fee_base: amount,
+          marginal_rate: runtime_atom_rate(
+            pair.context.rebalance_buy_marginal(input)?,
+            decimals,
+            6,
+          ),
+        }
+      }
+      (USDC::MINT, mint) if mint == collateral_mint => {
+        self.exo_pair_gates_by_mint(collateral_mint)?;
+        self.usdc_pair_gates()?;
+        gate(
+          pair.collateral_usd_in_stablecoin_oracle_window(),
+          CoreError::PythOracleOutdated,
+        )?;
+        gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
+        gate(
+          pair.context.rebalance_sell_active(),
+          CoreError::OperationDisabled,
+        )?;
+        let input = UFix64::<N6>::new(amount);
+        gate(
+          input <= pair.context.max_rebalance_sell_usdc(pair.supply_floor)?,
+          CoreError::InsufficientLiquidity,
+        )?;
+        let collateral = pair
+          .context
+          .rebalance_sell_conversion(input)?
+          .token_to_exo(input, UFix64::<N9>::one())?;
+        let pnl = pair.context.rebalance_pnl_sell_side(collateral, input)?;
+        self.validate_pnl_settlement(&pair.context, pair.supply_floor, pnl)?;
+        RuntimeExoQuote {
+          in_amount: amount,
+          out_amount: collateral_out(collateral)?,
+          fee_amount: 0,
+          fee_mint: USDC::MINT,
+          fee_base: amount,
+          marginal_rate: runtime_atom_rate(
+            pair.context.rebalance_sell_marginal(input)?,
+            6,
+            decimals,
+          ),
+        }
+      }
+      _ => return Err(CoreError::UnknownExoMint),
+    };
+    Ok(quote)
   }
 
   /// Pause and par gates for routes touching the USDC vault.
