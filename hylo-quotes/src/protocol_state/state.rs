@@ -333,7 +333,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   {
     let entries = exo_registry
       .entries
-      .get(..usize::from(exo_registry.len))
+      .get(..usize::from(exo_registry.current_size))
       .context("EXO registry length exceeds capacity")?;
     anyhow::ensure!(
       entries.len() == exo_accounts.len(),
@@ -865,7 +865,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
         .map_err(|error| anyhow!("EXO registry deserialization: {error}"))?;
     let entries = exo_registry
       .entries
-      .get(..usize::from(exo_registry.len))
+      .get(..usize::from(exo_registry.current_size))
       .context("EXO registry length exceeds capacity")?;
     let pair_accounts_len = entries.len() * 4;
     anyhow::ensure!(

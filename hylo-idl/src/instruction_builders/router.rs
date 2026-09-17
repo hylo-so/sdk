@@ -20,9 +20,12 @@ pub fn initialize_exo_registry(admin: Pubkey) -> Instruction {
 
 /// Registers a collateral/levercoin EXO pair with the router.
 #[must_use]
-pub fn register_exo(admin: Pubkey, collateral_mint: Pubkey) -> Instruction {
-  let accounts = account_builders::register_exo(admin, collateral_mint);
-  let args = args::RegisterExo {};
+pub fn register_exo_entry(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> Instruction {
+  let accounts = account_builders::register_exo_entry(admin, collateral_mint);
+  let args = args::RegisterExoEntry {};
   Instruction {
     program_id: router::ID,
     accounts: accounts.to_account_metas(None),

@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::system_program;
 
 use crate::router::client::accounts::{
-  InitializeExoRegistry, RegisterExo, Route,
+  InitializeExoRegistry, RegisterExoEntry, Route,
 };
 use crate::{pda, router};
 
@@ -19,13 +19,17 @@ pub fn initialize_exo_registry(admin: Pubkey) -> InitializeExoRegistry {
 
 /// Builds the account context for registering an EXO pair with the router.
 #[must_use]
-pub fn register_exo(admin: Pubkey, collateral_mint: Pubkey) -> RegisterExo {
-  RegisterExo {
+pub fn register_exo_entry(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> RegisterExoEntry {
+  RegisterExoEntry {
     admin,
     hylo: pda::HYLO,
     exo_registry: pda::EXO_REGISTRY,
     collateral_mint,
     levercoin_mint: pda::exo_levercoin_mint(collateral_mint),
+    exo_pair: pda::exo_pair(collateral_mint),
     event_authority: pda::ROUTER_EVENT_AUTHORITY,
     program: router::ID,
   }
