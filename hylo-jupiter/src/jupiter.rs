@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::Discriminator;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::UFix64;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::router::accounts::ExoRegistry;
+use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::idl::tokens::{
   StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
@@ -20,7 +20,9 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  ExoAccounts, ProtocolState, UsdcExchangeState,
+  exo_pubkeys_from_entries, exo_pyth_feed_by_mint, exo_registry_entries,
+  read_exo_registry, validate_exo_pair_oracle, ExoAccounts, ProtocolState,
+  UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use rust_decimal::Decimal;
@@ -36,12 +38,7 @@ use crate::util::{
 /// * Registry account is missing, malformed, or carries an invalid length.
 fn exo_registry(account_map: &AccountMap) -> Result<ExoRegistry> {
   let account = keyed_account(account_map, &pda::EXO_REGISTRY)?;
-  let data = account
-    .data
-    .get(ExoRegistry::DISCRIMINATOR.len()..)
-    .context("EXO registry discriminator missing")?;
-  bytemuck::try_pod_read_unaligned(data)
-    .map_err(|error| anyhow!("EXO registry deserialization: {error}"))
+  read_exo_registry(&account.data)
 }
 
 /// Shared, runtime-discovered state used by classic and EXO Jupiter AMMs.
@@ -678,8 +675,24 @@ where
 /// Registry-rooted Jupiter AMM for every currently registered EXO pair.
 pub struct HyloJupiterExo {
   snapshot: HyloJupiterSnapshot,
-  exo_entries: Vec<(Pubkey, Pubkey)>,
-  exo_oracles: Vec<(Pubkey, Pubkey)>,
+  exo_entries: Vec<ExoEntry>,
+  exo_account_keys: Vec<Pubkey>,
+}
+
+/// Tests whether `mint` is the entry's collateral or levercoin.
+fn owns_mint(entry: &ExoEntry, mint: Pubkey) -> bool {
+  entry.collateral_mint == mint || entry.levercoin_mint == mint
+}
+
+impl HyloJupiterExo {
+  /// Registry entry owning either mint of a route.
+  fn exo_entry_for(&self, mint_a: Pubkey, mint_b: Pubkey) -> Result<&ExoEntry> {
+    self
+      .exo_entries
+      .iter()
+      .find(|entry| owns_mint(entry, mint_a) || owns_mint(entry, mint_b))
+      .context("EXO route is not registered")
+  }
 }
 
 impl Clone for HyloJupiterExo {
@@ -687,7 +700,7 @@ impl Clone for HyloJupiterExo {
     HyloJupiterExo {
       snapshot: self.snapshot.clone(),
       exo_entries: self.exo_entries.clone(),
-      exo_oracles: self.exo_oracles.clone(),
+      exo_account_keys: self.exo_account_keys.clone(),
     }
   }
 }
@@ -703,7 +716,7 @@ impl Amm for HyloJupiterExo {
     Ok(HyloJupiterExo {
       snapshot: HyloJupiterSnapshot::new(amm_context.clock_ref.clone()),
       exo_entries: Vec::new(),
-      exo_oracles: Vec::new(),
+      exo_account_keys: Vec::new(),
     })
   }
 
@@ -726,7 +739,7 @@ impl Amm for HyloJupiterExo {
         self
           .exo_entries
           .iter()
-          .flat_map(|(collateral, levercoin)| [*collateral, *levercoin]),
+          .flat_map(|entry| [entry.collateral_mint, entry.levercoin_mint]),
       )
       .collect::<Vec<_>>();
     mints.sort_unstable();
@@ -737,52 +750,28 @@ impl Amm for HyloJupiterExo {
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
     let mut accounts = HyloJupiterSnapshot::accounts_to_update();
     accounts.push(pda::EXO_REGISTRY);
-    accounts.extend(self.exo_entries.iter().flat_map(
-      |(collateral, levercoin)| {
-        [
-          pda::exo_pair(*collateral),
-          pda::exo_vault(*collateral),
-          *levercoin,
-          *collateral,
-        ]
-      },
-    ));
-    accounts.extend(self.exo_oracles.iter().map(|(_, oracle)| *oracle));
+    accounts.extend(self.exo_account_keys.iter().copied());
     accounts
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     self.snapshot.update(account_map)?;
     let registry = exo_registry(account_map)?;
-    let entries = registry
-      .entries
-      .get(..usize::from(registry.current_size))
-      .context("EXO registry length exceeds capacity")?;
-    self.exo_entries = entries
-      .iter()
-      .map(|entry| (entry.collateral_mint, entry.levercoin_mint))
-      .collect();
-    self.exo_oracles = self
-      .exo_entries
-      .iter()
-      .filter_map(|(collateral, _)| {
-        account_map_get::<ExoPair>(account_map, &pda::exo_pair(*collateral))
-          .ok()
-          .map(|pair| (*collateral, pair.oracle))
-      })
-      .collect();
+    let entries = exo_registry_entries(&registry)?;
+    self.exo_account_keys = exo_pubkeys_from_entries(entries)?;
+    self.exo_entries = entries.to_vec();
     let exo_accounts = entries
       .iter()
       .filter_map(|entry| {
-        let oracle = self.exo_oracles.iter().find_map(|(mint, oracle)| {
-          (*mint == entry.collateral_mint).then_some(*oracle)
-        })?;
+        let exo_pair = account_map_get::<ExoPair>(
+          account_map,
+          &pda::exo_pair(entry.collateral_mint),
+        )
+        .ok()?;
+        validate_exo_pair_oracle(&exo_pair).ok()?;
         Some(ExoAccounts {
-          exo_pair: account_map_get(
-            account_map,
-            &pda::exo_pair(entry.collateral_mint),
-          )
-          .ok()?,
+          oracle: account_map_get(account_map, &exo_pair.oracle).ok()?,
+          exo_pair,
           vault: account_map_get(
             account_map,
             &pda::exo_vault(entry.collateral_mint),
@@ -792,7 +781,6 @@ impl Amm for HyloJupiterExo {
             .ok()?,
           collateral_mint: account_map_get(account_map, &entry.collateral_mint)
             .ok()?,
-          oracle: account_map_get(account_map, &oracle).ok()?,
         })
       })
       .collect::<Vec<_>>();
@@ -813,20 +801,10 @@ impl Amm for HyloJupiterExo {
 
   fn quote(&self, params: &QuoteParams) -> Result<Quote> {
     let state = self.snapshot.state.as_ref().context("`state` not set")?;
-    let (collateral, levercoin) = self
-      .exo_entries
-      .iter()
-      .find(|(collateral, levercoin)| {
-        *collateral == params.input_mint
-          || *collateral == params.output_mint
-          || *levercoin == params.input_mint
-          || *levercoin == params.output_mint
-      })
-      .copied()
-      .context("EXO route is not registered")?;
+    let entry = self.exo_entry_for(params.input_mint, params.output_mint)?;
     let quote = state.runtime_exo_quote(
-      collateral,
-      levercoin,
+      entry.collateral_mint,
+      entry.levercoin_mint,
       params.input_mint,
       params.output_mint,
       params.amount,
@@ -857,26 +835,11 @@ impl Amm for HyloJupiterExo {
       token_transfer_authority: user,
       ..
     } = validate_swap_params(p)?;
-    let (collateral, levercoin) = self
-      .exo_entries
-      .iter()
-      .find(|(collateral, levercoin)| {
-        (*source_mint == *collateral
-          && (matches!(*destination_mint, HYUSD::MINT | USDC::MINT)
-            || *destination_mint == *levercoin))
-          || (*destination_mint == *collateral
-            && (matches!(*source_mint, HYUSD::MINT | USDC::MINT)
-              || *source_mint == *levercoin))
-          || (*source_mint == HYUSD::MINT && *destination_mint == *levercoin)
-          || (*source_mint == *levercoin && *destination_mint == HYUSD::MINT)
-      })
-      .copied()
-      .context("EXO route is not registered")?;
-    let oracle = self
-      .exo_oracles
-      .iter()
-      .find_map(|(mint, oracle)| (*mint == collateral).then_some(*oracle))
-      .context("EXO route oracle is not loaded")?;
+    let ExoEntry {
+      collateral_mint: collateral,
+      levercoin_mint: levercoin,
+    } = *self.exo_entry_for(*source_mint, *destination_mint)?;
+    let oracle = exo_pyth_feed_by_mint(collateral)?.address;
 
     match (*source_mint, *destination_mint) {
       (mint, HYUSD::MINT) if mint == collateral => Ok(

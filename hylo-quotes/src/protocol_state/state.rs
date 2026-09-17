@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::{AccountDeserialize, Discriminator};
+use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::*;
@@ -32,7 +32,10 @@ use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-use crate::protocol_state::ProtocolAccounts;
+use crate::protocol_state::{
+  exo_registry_entries, read_exo_registry, validate_exo_pair_oracle,
+  ProtocolAccounts,
+};
 use crate::LST;
 
 /// USDC exchange state for stablecoin mint/redeem.
@@ -327,10 +330,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   where
     C: Clone,
   {
-    let entries = exo_registry
-      .entries
-      .get(..usize::from(exo_registry.current_size))
-      .context("EXO registry length exceeds capacity")?;
+    let entries = exo_registry_entries(exo_registry)?;
     anyhow::ensure!(
       entries.len() == exo_accounts.len(),
       "EXO registry has {} entries but {} account groups were loaded",
@@ -844,18 +844,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hylosol_vault = TokenAccount::try_deserialize(
       &mut accounts.hylosol_vault.data.as_slice(),
     )?;
-    let registry_data = accounts
-      .exo_registry
-      .data
-      .get(ExoRegistry::DISCRIMINATOR.len()..)
-      .context("EXO registry discriminator missing")?;
-    let exo_registry: ExoRegistry =
-      bytemuck::try_pod_read_unaligned(registry_data)
-        .map_err(|error| anyhow!("EXO registry deserialization: {error}"))?;
-    let entries = exo_registry
-      .entries
-      .get(..usize::from(exo_registry.current_size))
-      .context("EXO registry length exceeds capacity")?;
+    let exo_registry = read_exo_registry(&accounts.exo_registry.data)?;
+    let entries = exo_registry_entries(&exo_registry)?;
     let pair_accounts_len = entries.len() * 4;
     anyhow::ensure!(
       accounts.exo_accounts.len() == pair_accounts_len + entries.len(),
@@ -869,9 +859,11 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       .chunks_exact(4)
       .zip(oracle_accounts)
       .map(|(pair, oracle)| {
+        let exo_pair = ExoPair::try_deserialize(&mut pair[0].data.as_slice())
+          .context("EXO pair deserialization")?;
+        validate_exo_pair_oracle(&exo_pair)?;
         Ok(ExoAccounts {
-          exo_pair: ExoPair::try_deserialize(&mut pair[0].data.as_slice())
-            .context("EXO pair deserialization")?,
+          exo_pair,
           vault: TokenAccount::try_deserialize(&mut pair[1].data.as_slice())
             .context("EXO vault token account deserialization")?,
           levercoin_mint: Mint::try_deserialize(&mut pair[2].data.as_slice())

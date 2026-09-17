@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use anchor_lang::prelude::{Clock, Pubkey};
-use anchor_lang::{AccountDeserialize, Discriminator};
+use anchor_lang::AccountDeserialize;
 use anchor_spl::token::Mint;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -13,8 +13,7 @@ use fix::prelude::UFix64;
 use fix::util::FixExt;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
-use hylo_core::idl::exchange::accounts::{ExoPair, Hylo};
-use hylo_core::idl::router::accounts::ExoRegistry;
+use hylo_core::idl::exchange::accounts::Hylo;
 use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
@@ -23,8 +22,9 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{
-  build_exo_pair_state, build_lst_exchange_context, ExoPairState,
-  ProtocolAccounts, ProtocolState,
+  build_exo_pair_state, build_lst_exchange_context, exo_pubkeys_from_entries,
+  exo_registry_entries, read_exo_registry, ExoPairState, ProtocolAccounts,
+  ProtocolState,
 };
 
 /// Trait for fetching protocol state from a data source
@@ -150,62 +150,22 @@ with_exo_pairs!(exo_pair_dispatch);
 #[async_trait]
 impl StateProvider<Clock> for RpcStateProvider {
   async fn fetch_state(&self) -> Result<ProtocolState<Clock>> {
-    let mut account_data = self
+    let registry_account = self
       .rpc_client
-      .get_multiple_accounts(&ProtocolAccounts::PUBKEYS)
+      .get_account(&pda::EXO_REGISTRY)
+      .await
+      .map_err(|e| anyhow!("Failed to fetch EXO registry from RPC: {e}"))?;
+    let registry = read_exo_registry(&registry_account.data)?;
+    let exo_keys = exo_pubkeys_from_entries(exo_registry_entries(&registry)?)?;
+    let keys = ProtocolAccounts::PUBKEYS
+      .into_iter()
+      .chain(exo_keys)
+      .collect::<Vec<_>>();
+    let account_data = self
+      .rpc_client
+      .get_multiple_accounts(&keys)
       .await
       .map_err(|e| anyhow!("Failed to fetch accounts from RPC: {e}"))?;
-    let registry_account = account_data
-      .last()
-      .and_then(|account| account.as_ref())
-      .context("EXO registry not found")?;
-    let registry_data = registry_account
-      .data
-      .get(ExoRegistry::DISCRIMINATOR.len()..)
-      .context("EXO registry discriminator missing")?;
-    let registry: ExoRegistry = bytemuck::try_pod_read_unaligned(registry_data)
-      .map_err(|error| anyhow!("EXO registry deserialization: {error}"))?;
-    let entries = registry
-      .entries
-      .get(..usize::from(registry.current_size))
-      .context("EXO registry length exceeds capacity")?;
-    let pair_keys = entries
-      .iter()
-      .flat_map(|entry| {
-        [
-          pda::exo_pair(entry.collateral_mint),
-          pda::exo_vault(entry.collateral_mint),
-          entry.levercoin_mint,
-          entry.collateral_mint,
-        ]
-      })
-      .collect::<Vec<_>>();
-    let pair_accounts = self
-      .rpc_client
-      .get_multiple_accounts(&pair_keys)
-      .await
-      .map_err(|error| anyhow!("Failed to fetch EXO pair accounts: {error}"))?;
-    let oracle_keys = pair_accounts
-      .chunks_exact(4)
-      .map(|group| {
-        let pair = group
-          .first()
-          .and_then(Option::as_ref)
-          .context("EXO pair not found")?;
-        ExoPair::try_deserialize(&mut pair.data.as_slice())
-          .map(|pair| pair.oracle)
-          .context("EXO pair deserialization")
-      })
-      .collect::<Result<Vec<_>>>()?;
-    let oracle_accounts = self
-      .rpc_client
-      .get_multiple_accounts(&oracle_keys)
-      .await
-      .map_err(|error| {
-        anyhow!("Failed to fetch EXO oracle accounts: {error}")
-      })?;
-    account_data.extend(pair_accounts);
-    account_data.extend(oracle_accounts);
     let accounts = ProtocolAccounts::from_fetched(&account_data)?;
     ProtocolState::try_from(&accounts)
   }
