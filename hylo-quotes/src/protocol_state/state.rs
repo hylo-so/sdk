@@ -223,13 +223,16 @@ impl<C: SolanaClock> ProtocolState<C> {
     hylosol_stake_pool: SplStakePool,
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
-  ) -> Result<Self>
+  ) -> Result<ProtocolState<C>>
   where
     C: Clone,
   {
-    let exo_pairs =
-      Self::exo_pairs_from_registry(&clock, exo_registry, exo_accounts)?;
-    Self::build_from_exo_pairs(
+    let exo_pairs = ProtocolState::exo_pairs_from_registry(
+      &clock,
+      exo_registry,
+      exo_accounts,
+    )?;
+    ProtocolState::build_from_exo_pairs(
       clock,
       hylo,
       jitosol_header,
@@ -272,8 +275,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     hylosol_stake_pool: SplStakePool,
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
-  ) -> Result<Self> {
-    Self::build_from_exo_pairs(
+  ) -> Result<ProtocolState<C>> {
+    ProtocolState::build_from_exo_pairs(
       clock,
       hylo,
       jitosol_header,
@@ -308,8 +311,11 @@ impl<C: SolanaClock> ProtocolState<C> {
   where
     C: Clone,
   {
-    self.exo_pairs =
-      Self::exo_pairs_from_registry(clock, exo_registry, exo_accounts)?;
+    self.exo_pairs = ProtocolState::exo_pairs_from_registry(
+      clock,
+      exo_registry,
+      exo_accounts,
+    )?;
     Ok(())
   }
 
@@ -359,13 +365,13 @@ impl<C: SolanaClock> ProtocolState<C> {
     hylosol_stake_pool: SplStakePool,
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
-  ) -> Result<Self> {
+  ) -> Result<ProtocolState<C>> {
     let sol_usd_publish_time = sol_usd.price_message.publish_time;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context =
       build_lst_exchange_context(clock, hylo, &xsol_mint, sol_usd)?;
-    Ok(Self {
+    Ok(ProtocolState {
       exchange_context,
       jitosol_header,
       hylosol_header,

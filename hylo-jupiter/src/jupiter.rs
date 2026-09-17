@@ -52,8 +52,8 @@ struct HyloJupiterSnapshot {
 }
 
 impl HyloJupiterSnapshot {
-  fn new(clock: ClockRef) -> Self {
-    Self { clock, state: None }
+  fn new(clock: ClockRef) -> HyloJupiterSnapshot {
+    HyloJupiterSnapshot { clock, state: None }
   }
 }
 
@@ -684,7 +684,7 @@ pub struct HyloJupiterExo {
 
 impl Clone for HyloJupiterExo {
   fn clone(&self) -> Self {
-    Self {
+    HyloJupiterExo {
       snapshot: self.snapshot.clone(),
       exo_entries: self.exo_entries.clone(),
       exo_oracles: self.exo_oracles.clone(),
@@ -700,7 +700,7 @@ impl Amm for HyloJupiterExo {
   where
     Self: Sized,
   {
-    Ok(Self {
+    Ok(HyloJupiterExo {
       snapshot: HyloJupiterSnapshot::new(amm_context.clock_ref.clone()),
       exo_entries: Vec::new(),
       exo_oracles: Vec::new(),
