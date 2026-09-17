@@ -720,10 +720,15 @@ impl Amm for HyloJupiterExo {
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    let mut mints = vec![HYUSD::MINT, USDC::MINT];
-    for (collateral, levercoin) in &self.exo_entries {
-      mints.extend([*collateral, *levercoin]);
-    }
+    let mut mints = [HYUSD::MINT, USDC::MINT]
+      .into_iter()
+      .chain(
+        self
+          .exo_entries
+          .iter()
+          .flat_map(|(collateral, levercoin)| [*collateral, *levercoin]),
+      )
+      .collect::<Vec<_>>();
     mints.sort_unstable();
     mints.dedup();
     mints
@@ -911,6 +916,7 @@ impl Amm for HyloJupiterExo {
 mod tests {
   use anchor_lang::pubkey;
   use fix::prelude::*;
+  use futures::stream::{self, StreamExt, TryStreamExt};
   use hylo_clients::prelude::{
     RouterArgs, TransactionSyntax, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD,
     USDC, XBTC, XSOL,
@@ -1028,15 +1034,18 @@ mod tests {
       params: None,
     };
     let amm_context = load_amm_context(&client).await?;
-    let mut amm =
+    let amm =
       HyloJupiterExo::from_keyed_account(&jupiter_account, &amm_context)?;
     // Registry -> pair accounts -> oracle feeds.
-    for _ in 0..3 {
-      let account_map =
-        load_account_map(&client, &amm.get_accounts_to_update()).await?;
-      amm.update(&account_map)?;
-    }
-    Ok(amm)
+    stream::iter(0..3)
+      .map(Ok)
+      .try_fold(amm, |mut amm, _| async {
+        let account_map =
+          load_account_map(&client, &amm.get_accounts_to_update()).await?;
+        amm.update(&account_map)?;
+        Ok(amm)
+      })
+      .await
   }
 
   #[tokio::test]
