@@ -751,7 +751,7 @@ impl Amm for HyloJupiterExo {
     let registry = exo_registry(account_map)?;
     let entries = registry
       .entries
-      .get(..usize::from(registry.len))
+      .get(..usize::from(registry.current_size))
       .context("EXO registry length exceeds capacity")?;
     self.exo_entries = entries
       .iter()
