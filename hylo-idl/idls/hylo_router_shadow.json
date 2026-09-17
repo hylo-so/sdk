@@ -521,6 +521,11 @@
       "code": 6003,
       "name": "ExoAlreadyRegistered",
       "msg": "EXO pair is already registered."
+    },
+    {
+      "code": 6004,
+      "name": "AdminNoop",
+      "msg": "Admin instruction would have no effect."
     }
   ],
   "types": [
