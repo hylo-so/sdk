@@ -419,7 +419,7 @@ impl<C: SolanaClock> ProtocolState<C> {
           ),
         }
       }
-      _ => return Err(CoreError::UnknownExoMint),
+      _ => Err(CoreError::UnknownExoMint)?,
     };
     Ok(quote)
   }
