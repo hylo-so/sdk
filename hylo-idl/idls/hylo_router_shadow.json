@@ -114,16 +114,16 @@
       "args": []
     },
     {
-      "name": "register_exo",
+      "name": "register_exo_entry",
       "discriminator": [
-        255,
-        198,
-        39,
+        181,
+        72,
         217,
-        189,
-        131,
-        248,
-        73
+        192,
+        124,
+        174,
+        91,
+        76
       ],
       "accounts": [
         {
@@ -145,6 +145,67 @@
                   108,
                   111
                 ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                10,
+                127,
+                138,
+                63,
+                145,
+                8,
+                204,
+                241,
+                253,
+                44,
+                108,
+                99,
+                138,
+                68,
+                50,
+                102,
+                11,
+                220,
+                187,
+                198,
+                169,
+                73,
+                232,
+                46,
+                165,
+                84,
+                250,
+                191,
+                15,
+                36,
+                129,
+                195
+              ]
+            }
+          }
+        },
+        {
+          "name": "exo_pair",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
               }
             ],
             "program": {
@@ -316,7 +377,7 @@
       "args": [],
       "returns": {
         "defined": {
-          "name": "RegisterExoEvent"
+          "name": "RegisterExoEntryEvent"
         }
       }
     },
@@ -386,6 +447,19 @@
   ],
   "accounts": [
     {
+      "name": "ExoPair",
+      "discriminator": [
+        251,
+        244,
+        72,
+        181,
+        40,
+        119,
+        232,
+        48
+      ]
+    },
+    {
       "name": "ExoRegistry",
       "discriminator": [
         58,
@@ -414,16 +488,16 @@
   ],
   "events": [
     {
-      "name": "RegisterExoEvent",
+      "name": "RegisterExoEntryEvent",
       "discriminator": [
-        19,
-        251,
-        201,
-        170,
-        74,
-        201,
-        0,
-        249
+        27,
+        24,
+        183,
+        127,
+        40,
+        144,
+        30,
+        0
       ]
     }
   ],
@@ -440,23 +514,53 @@
     },
     {
       "code": 6002,
-      "name": "InvalidLevercoinMint",
-      "msg": "Levercoin mint key does not match derived key."
-    },
-    {
-      "code": 6003,
       "name": "ExoRegistryFull",
       "msg": "EXO registry is full."
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "ExoAlreadyRegistered",
       "msg": "EXO pair is already registered."
+    },
+    {
+      "code": 6004,
+      "name": "AdminNoop",
+      "msg": "Admin instruction would have no effect."
     }
   ],
   "types": [
     {
+      "name": "BorrowRateCurveConfig",
+      "docs": [
+        "Per-epoch borrow rate for exogenous collateral without native yield."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "ExoEntry",
+      "docs": [
+        "Collateral mint paired with its levercoin mint."
+      ],
       "serialization": "bytemuck",
       "repr": {
         "kind": "c"
@@ -476,7 +580,164 @@
       }
     },
     {
+      "name": "ExoPair",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "fee_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_mint_threshold",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_curve_config",
+            "type": {
+              "defined": {
+                "name": "BorrowRateCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "levercoin_market_cap_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin_supply_floor",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                91
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "ExoRegistry",
+      "docs": [
+        "Routable EXO collateral and levercoin mint pairs."
+      ],
       "serialization": "bytemuck",
       "repr": {
         "kind": "c"
@@ -485,7 +746,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "len",
+            "name": "current_size",
             "type": "u8"
           },
           {
@@ -494,6 +755,9 @@
           },
           {
             "name": "_pad",
+            "docs": [
+              "Pads the header to eight bytes."
+            ],
             "type": {
               "array": [
                 "u8",
@@ -849,14 +1113,10 @@
       }
     },
     {
-      "name": "RegisterExoEvent",
+      "name": "RegisterExoEntryEvent",
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "registry",
-            "type": "pubkey"
-          },
           {
             "name": "collateral_mint",
             "type": "pubkey"

@@ -167,7 +167,7 @@ impl StateProvider<Clock> for RpcStateProvider {
       .map_err(|error| anyhow!("EXO registry deserialization: {error}"))?;
     let entries = registry
       .entries
-      .get(..usize::from(registry.len))
+      .get(..usize::from(registry.current_size))
       .context("EXO registry length exceeds capacity")?;
     let pair_keys = entries
       .iter()

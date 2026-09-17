@@ -120,7 +120,7 @@ mod tests {
       && account.is_writable));
 
     let register =
-      router::instruction_builders::register_exo(admin, collateral_mint);
+      router::instruction_builders::register_exo_entry(admin, collateral_mint);
     assert_eq!(register.program_id, router::ID);
     assert!(register.accounts.iter().any(|account| account.pubkey
       == pda::EXO_REGISTRY
