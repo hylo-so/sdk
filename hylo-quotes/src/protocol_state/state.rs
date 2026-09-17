@@ -607,9 +607,7 @@ pub fn build_exo_pair_state_with_decimals<C: SolanaClock>(
       levercoin_mint,
       collateral_usd,
     ),
-    _ => {
-      return Err(anyhow!("unsupported EXO collateral decimals: {decimals}"))
-    }
+    _ => Err(anyhow!("unsupported EXO collateral decimals: {decimals}")),
   }?;
   pair.collateral_mint_decimals = decimals;
   Ok(pair)
@@ -690,9 +688,7 @@ pub fn build_exo_pair_state_from_accounts<C: SolanaClock>(
       &accounts.levercoin_mint,
       &accounts.oracle,
     ),
-    _ => {
-      return Err(anyhow!("unsupported EXO collateral decimals: {decimals}"))
-    }
+    _ => Err(anyhow!("unsupported EXO collateral decimals: {decimals}")),
   }?;
   pair.collateral_mint_decimals = decimals;
   Ok(pair)
