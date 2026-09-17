@@ -1682,6 +1682,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "bytemuck",
+ "futures",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
