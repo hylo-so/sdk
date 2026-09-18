@@ -7,7 +7,9 @@ use hylo_core::error::CoreError;
 use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::{PythFeed, PythOracle};
-use hylo_idl::tokens::{TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
+use hylo_idl::tokens::{
+  exo_role, ExoRole, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC,
+};
 use hylo_idl::{pda, with_exo_pairs};
 
 macro_rules! exo_pyth_feed_dispatch {
@@ -51,6 +53,32 @@ pub fn exo_registry_entries(registry: &ExoRegistry) -> Result<&[ExoEntry]> {
     .entries
     .get(..usize::from(registry.current_size))
     .context("Exo registry length exceeds capacity")
+}
+
+/// Entry whose collateral or levercoin is `mint_a` or `mint_b`.
+#[must_use]
+pub fn find_exo_entry(
+  entries: &[ExoEntry],
+  mint_a: Pubkey,
+  mint_b: Pubkey,
+) -> Option<&ExoEntry> {
+  entries.iter().find(|entry| {
+    [mint_a, mint_b].iter().any(|mint| {
+      *mint == entry.collateral_mint || *mint == entry.levercoin_mint
+    })
+  })
+}
+
+/// Role of `mint` in `entry`.
+///
+/// # Errors
+/// * Mint is not routable through the entry
+pub fn exo_entry_role(
+  entry: &ExoEntry,
+  mint: Pubkey,
+) -> Result<ExoRole, CoreError> {
+  exo_role(entry.collateral_mint, entry.levercoin_mint, mint)
+    .ok_or(CoreError::UnknownExoMint)
 }
 
 /// Five pubkeys per registry entry, in `ExoPairAccounts` field order.
