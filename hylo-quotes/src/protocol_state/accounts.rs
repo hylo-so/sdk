@@ -5,6 +5,7 @@ use std::convert::TryFrom;
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
+use anchor_lang::AccountDeserialize;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_core::error::CoreError;
 use hylo_core::pyth::PythOracle;
@@ -13,6 +14,17 @@ use hylo_idl::tokens::{
   Exo, StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
 use serde::{Deserialize, Serialize};
+
+use crate::protocol_state::ExoPairAccounts;
+
+/// Deserializes an Anchor account, named `name` in errors.
+pub(crate) fn decode<A: AccountDeserialize>(
+  account: &Account,
+  name: &str,
+) -> Result<A> {
+  A::try_deserialize(&mut account.data.as_slice())
+    .with_context(|| format!("{name} deserialization"))
+}
 
 /// Extracts the fetched account at `index`, named `name` in errors.
 ///
@@ -64,11 +76,11 @@ pub struct ProtocolAccounts {
   /// Solana clock sysvar
   pub clock: Account,
 
-  /// Canonical router-owned EXO registry
+  /// Canonical router-owned Exo registry
   pub exo_registry: Account,
 
-  /// Raw EXO accounts
-  pub exo_accounts: Vec<Account>,
+  /// Raw accounts per registry entry
+  pub exo_accounts: Vec<ExoPairAccounts>,
 
   /// `UsdcPair` PDA
   pub usdc_pair: Account,
@@ -139,13 +151,15 @@ impl ProtocolAccounts {
 
   /// Pubkey subset for one isolated exo pair.
   ///
-  /// Order: exo pair, vault, levercoin mint, collateral/USD feed, clock.
+  /// Order: exo pair, vault, levercoin mint, collateral mint, collateral/USD
+  /// feed, clock.
   #[must_use]
-  pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 5] {
+  pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 6] {
     [
       pda::exo_pair(E::MINT),
       pda::exo_vault(E::MINT),
       pda::exo_levercoin_mint(E::MINT),
+      E::MINT,
       E::FEED.address,
       sysvar::clock::ID,
     ]
@@ -172,11 +186,10 @@ impl ProtocolAccounts {
       ProtocolAccounts::PUBKEYS.len(),
       accounts.len()
     );
-    let exo_registry = fetched_account(accounts, 17, "EXO registry")?;
+    let exo_registry = fetched_account(accounts, 17, "Exo registry")?;
     let exo_accounts = accounts[18..]
-      .iter()
-      .enumerate()
-      .map(|(index, _)| fetched_account(accounts, index + 18, "EXO account"))
+      .chunks(5)
+      .map(ExoPairAccounts::from_fetched)
       .collect::<Result<Vec<_>>>()?;
     Ok(ProtocolAccounts {
       hylo: fetched_account(accounts, 0, "Hylo account")?,
