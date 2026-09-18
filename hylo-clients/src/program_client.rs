@@ -10,7 +10,7 @@ use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::{Client, Cluster, Program};
 use anchor_lang::prelude::AccountMeta;
 use anchor_lang::{AnchorDeserialize, Discriminator};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use base64::prelude::{Engine, BASE64_STANDARD};
 use itertools::Itertools;
 
@@ -236,6 +236,9 @@ pub trait ProgramClient: Sized {
     let result = rpc
       .simulate_transaction_with_config(tx, simulation_config())
       .await?;
+    if let Some(err) = &result.value.err {
+      bail!("Simulation failed: {err:?}")
+    }
     let (data, _) = result
       .value
       .return_data
