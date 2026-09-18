@@ -757,28 +757,25 @@ impl Amm for HyloJupiterExo {
     self.exo_entries = entries.to_vec();
     let exo_accounts = entries
       .iter()
-      .filter_map(|entry| {
-        let feed = exo_pyth_feed_by_mint(entry.collateral_mint).ok()?;
-        let account = |key: &Pubkey| keyed_account(account_map, key).ok();
+      .map(|entry| {
+        let feed = exo_pyth_feed_by_mint(entry.collateral_mint)?;
+        let account = |key: &Pubkey| keyed_account(account_map, key).cloned();
         let raw = ExoPairAccounts {
-          exo_pair: account(&pda::exo_pair(entry.collateral_mint))?.clone(),
-          vault: account(&pda::exo_vault(entry.collateral_mint))?.clone(),
-          levercoin_mint: account(&entry.levercoin_mint)?.clone(),
-          collateral_mint: account(&entry.collateral_mint)?.clone(),
-          oracle: account(&feed.address)?.clone(),
+          exo_pair: account(&pda::exo_pair(entry.collateral_mint))?,
+          vault: account(&pda::exo_vault(entry.collateral_mint))?,
+          levercoin_mint: account(&entry.levercoin_mint)?,
+          collateral_mint: account(&entry.collateral_mint)?,
+          oracle: account(&feed.address)?,
         };
-        ExoAccounts::parse(entry, &raw).ok()
+        ExoAccounts::parse(entry, &raw)
       })
-      .collect::<Vec<_>>();
-    if exo_accounts.len() == entries.len() {
-      self
-        .snapshot
-        .state
-        .as_mut()
-        .context("core state not set")?
-        .load_exo_pairs(&self.snapshot.clock, &exo_accounts)?;
-    }
-    Ok(())
+      .collect::<Result<Vec<_>>>()?;
+    self
+      .snapshot
+      .state
+      .as_mut()
+      .context("core state not set")?
+      .load_exo_pairs(&self.snapshot.clock, &exo_accounts)
   }
 
   fn quote(&self, params: &QuoteParams) -> Result<Quote> {
