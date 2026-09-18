@@ -180,7 +180,7 @@ mod tests {
   }
 
   #[tokio::test]
-  #[ignore = "requires lst_swap_fee on mainnet"]
+  #[ignore = "requires the Exo registry router on mainnet"]
   async fn test_fetch_state() {
     let rpc_client = build_test_rpc_client();
     let provider = RpcStateProvider::new(rpc_client);
