@@ -1,12 +1,10 @@
 //! Type-safe collection of protocol state accounts
 
-use std::convert::TryFrom;
-
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{ensure, Context, Result};
 use hylo_core::error::CoreError;
 use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
@@ -129,13 +127,6 @@ impl ProtocolAccounts {
     pda::EXO_REGISTRY,
   ];
 
-  /// Get the list of account pubkeys in the order expected by RPC
-  #[deprecated(since = "2.1.0", note = "use `ProtocolAccounts::PUBKEYS`")]
-  #[must_use]
-  pub fn pubkeys() -> Vec<Pubkey> {
-    ProtocolAccounts::PUBKEYS.to_vec()
-  }
-
   /// Pubkey subset for the isolated LST exchange context.
   ///
   /// Order: Hylo, xSOL mint, SOL/USD feed, clock.
@@ -165,29 +156,23 @@ impl ProtocolAccounts {
     ]
   }
 
-  /// Expected number of protocol accounts
-  #[deprecated(since = "2.1.0", note = "use `ProtocolAccounts::PUBKEYS.len()`")]
-  #[must_use]
-  pub const fn expected_count() -> usize {
-    ProtocolAccounts::PUBKEYS.len()
-  }
-
-  /// Build from RPC-fetched accounts in [`ProtocolAccounts::PUBKEYS`] order.
+  /// Build from RPC-fetched accounts in [`ProtocolAccounts::PUBKEYS`] order,
+  /// followed by five accounts per registry entry.
   ///
   /// # Errors
-  /// * Account count differs from [`ProtocolAccounts::PUBKEYS`] length
+  /// * Fewer accounts than [`ProtocolAccounts::PUBKEYS`]
   /// * Any account is missing
   pub fn from_fetched(
     accounts: &[Option<Account>],
   ) -> Result<ProtocolAccounts> {
+    const BASE: usize = ProtocolAccounts::PUBKEYS.len();
     ensure!(
-      accounts.len() >= ProtocolAccounts::PUBKEYS.len(),
-      "Expected at least {} accounts, got {}",
-      ProtocolAccounts::PUBKEYS.len(),
+      accounts.len() >= BASE,
+      "Expected at least {BASE} accounts, got {}",
       accounts.len()
     );
-    let exo_registry = fetched_account(accounts, 17, "Exo registry")?;
-    let exo_accounts = accounts[18..]
+    let exo_registry = fetched_account(accounts, BASE - 1, "Exo registry")?;
+    let exo_accounts = accounts[BASE..]
       .chunks(5)
       .map(ExoPairAccounts::from_fetched)
       .collect::<Result<Vec<_>>>()?;
@@ -212,62 +197,5 @@ impl ProtocolAccounts {
       hylosol_vault: fetched_account(accounts, 15, "hyloSOL vault")?,
       usdc_vault: fetched_account(accounts, 16, "USDC vault")?,
     })
-  }
-
-  /// Validate that pubkeys and accounts match expected protocol accounts
-  ///
-  /// Validates:
-  /// * Pubkeys and accounts have matching lengths
-  /// * We have the expected number of accounts
-  /// * Each pubkey matches the expected protocol account in order
-  ///
-  /// # Errors
-  /// Returns error if any validation fails
-  pub fn validate(
-    pubkeys: &[Pubkey],
-    accounts: &[Option<Account>],
-  ) -> Result<()> {
-    ensure!(
-      pubkeys.len() == accounts.len(),
-      "Mismatch: {} pubkeys but {} accounts",
-      pubkeys.len(),
-      accounts.len()
-    );
-
-    let expected_count = ProtocolAccounts::PUBKEYS.len();
-    ensure!(
-      pubkeys.len() == expected_count,
-      "Expected {} accounts, got {}",
-      expected_count,
-      pubkeys.len()
-    );
-
-    // Validate pubkeys match expected
-    let expected = ProtocolAccounts::PUBKEYS;
-    expected.iter().zip(pubkeys.iter()).enumerate().try_fold(
-      (),
-      |(), (i, (expected_pubkey, actual_pubkey))| {
-        if expected_pubkey == actual_pubkey {
-          Ok(())
-        } else {
-          Err(anyhow!(
-            "Account {i} mismatch: expected {expected_pubkey}, got \
-             {actual_pubkey}"
-          ))
-        }
-      },
-    )
-  }
-}
-
-/// Deprecated: use [`ProtocolAccounts::from_fetched`]. Removed in 3.0.
-impl TryFrom<(&[Pubkey], &[Option<Account>])> for ProtocolAccounts {
-  type Error = anyhow::Error;
-
-  fn try_from(
-    (pubkeys, accounts): (&[Pubkey], &[Option<Account>]),
-  ) -> Result<ProtocolAccounts> {
-    ProtocolAccounts::validate(pubkeys, accounts)?;
-    ProtocolAccounts::from_fetched(accounts)
   }
 }
