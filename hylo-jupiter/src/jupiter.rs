@@ -8,6 +8,9 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
+use hylo_core::idl::tokens::ExoRole::{
+  Collateral, Levercoin, Stablecoin, Usdc,
+};
 use hylo_core::idl::tokens::{
   StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
@@ -20,9 +23,9 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  exo_pubkeys_from_entries, exo_pyth_feed_by_mint, exo_registry_entries,
-  read_exo_registry, ExoAccounts, ExoPairAccounts, ProtocolState,
-  UsdcExchangeState,
+  exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
+  exo_registry_entries, find_exo_entry, read_exo_registry, ExoAccounts,
+  ExoPairAccounts, ProtocolState, UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use rust_decimal::Decimal;
@@ -679,18 +682,10 @@ pub struct HyloJupiterExo {
   exo_account_keys: Vec<Pubkey>,
 }
 
-/// Tests whether `mint` is the entry's collateral or levercoin.
-fn owns_mint(entry: &ExoEntry, mint: Pubkey) -> bool {
-  entry.collateral_mint == mint || entry.levercoin_mint == mint
-}
-
 impl HyloJupiterExo {
   /// Registry entry owning either mint of a route.
   fn exo_entry_for(&self, mint_a: Pubkey, mint_b: Pubkey) -> Result<&ExoEntry> {
-    self
-      .exo_entries
-      .iter()
-      .find(|entry| owns_mint(entry, mint_a) || owns_mint(entry, mint_b))
+    find_exo_entry(&self.exo_entries, mint_a, mint_b)
       .context("Exo route is not registered")
   }
 }
@@ -790,8 +785,7 @@ impl Amm for HyloJupiterExo {
     let state = self.snapshot.state.as_ref().context("`state` not set")?;
     let entry = self.exo_entry_for(params.input_mint, params.output_mint)?;
     let quote = state.runtime_exo_quote(
-      entry.collateral_mint,
-      entry.levercoin_mint,
+      entry,
       params.input_mint,
       params.output_mint,
       params.amount,
@@ -822,35 +816,36 @@ impl Amm for HyloJupiterExo {
       token_transfer_authority: user,
       ..
     } = validate_swap_params(p)?;
-    let ExoEntry {
-      collateral_mint: collateral,
-      levercoin_mint: levercoin,
-    } = *self.exo_entry_for(*source_mint, *destination_mint)?;
+    let entry = self.exo_entry_for(*source_mint, *destination_mint)?;
+    let collateral = entry.collateral_mint;
     let oracle = exo_pyth_feed_by_mint(collateral)?.address;
-
-    match (*source_mint, *destination_mint) {
-      (mint, HYUSD::MINT) if mint == collateral => Ok(
-        account_metas::mint_stablecoin_exo(*user, collateral, oracle),
-      ),
-      (HYUSD::MINT, mint) if mint == collateral => Ok(
-        account_metas::redeem_stablecoin_exo(*user, collateral, oracle),
-      ),
-      (mint, out) if mint == collateral && out == levercoin => {
+    let roles = (
+      exo_entry_role(entry, *source_mint)?,
+      exo_entry_role(entry, *destination_mint)?,
+    );
+    match roles {
+      (Collateral, Stablecoin) => Ok(account_metas::mint_stablecoin_exo(
+        *user, collateral, oracle,
+      )),
+      (Stablecoin, Collateral) => Ok(account_metas::redeem_stablecoin_exo(
+        *user, collateral, oracle,
+      )),
+      (Collateral, Levercoin) => {
         Ok(account_metas::mint_levercoin_exo(*user, collateral, oracle))
       }
-      (mint, out) if mint == levercoin && out == collateral => Ok(
-        account_metas::redeem_levercoin_exo(*user, collateral, oracle),
-      ),
-      (HYUSD::MINT, mint) if mint == levercoin => Ok(
+      (Levercoin, Collateral) => Ok(account_metas::redeem_levercoin_exo(
+        *user, collateral, oracle,
+      )),
+      (Stablecoin, Levercoin) => Ok(
         account_metas::convert_stable_to_lever_exo(*user, collateral, oracle),
       ),
-      (mint, HYUSD::MINT) if mint == levercoin => Ok(
+      (Levercoin, Stablecoin) => Ok(
         account_metas::convert_lever_to_stable_exo(*user, collateral, oracle),
       ),
-      (mint, USDC::MINT) if mint == collateral => {
+      (Collateral, Usdc) => {
         Ok(account_metas::swap_exo_to_usdc(*user, collateral, oracle))
       }
-      (USDC::MINT, mint) if mint == collateral => {
+      (Usdc, Collateral) => {
         Ok(account_metas::swap_usdc_to_exo(*user, collateral, oracle))
       }
       _ => Err(anyhow!("Invalid Exo mint pair")),

@@ -66,6 +66,7 @@ pub struct ExoAccounts {
 /// Everything a route needs from one registered [`ExoPair`].
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
+  pub collateral_mint: Pubkey,
   pub collateral_mint_decimals: u8,
   pub context: ExoExchangeContext<C>,
   pub paused: bool,
@@ -174,6 +175,7 @@ impl ExoAccounts {
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
+      collateral_mint: self.exo_pair.collateral_mint,
       collateral_mint_decimals: self.collateral_mint.decimals,
       context,
       paused: self.exo_pair.paused,
