@@ -5,21 +5,18 @@
 
 use std::collections::HashMap;
 
-use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::*;
-use fix::typenum::Integer;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::error::CoreError;
-use hylo_core::exchange_context::{ExoExchangeContext, LstExchangeContext};
+use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
-use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
-use hylo_core::idl::router::accounts::ExoRegistry;
+use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::par_tolerance::ParTolerance;
@@ -33,7 +30,7 @@ use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::{
-  exo_registry_entries, read_exo_registry, validate_exo_pair_oracle,
+  exo_registry_entries, read_exo_registry, ExoAccounts, ExoPairState,
   ProtocolAccounts,
 };
 use crate::LST;
@@ -58,7 +55,7 @@ pub struct UsdcExchangeState {
 }
 
 /// Tests a feed publish time against the tightened stablecoin oracle window.
-fn in_stablecoin_oracle_window(
+pub(crate) fn in_stablecoin_oracle_window(
   publish_time: i64,
   interval_secs: u64,
   now: i64,
@@ -69,67 +66,6 @@ fn in_stablecoin_oracle_window(
     now,
   )
   .is_ok()
-}
-
-/// Everything a route needs from one registered [`ExoPair`].
-#[derive(Clone)]
-pub struct ExoPairState<C: SolanaClock> {
-  pub collateral_mint_decimals: u8,
-  pub context: ExoExchangeContext<C>,
-  pub paused: bool,
-  pub pool_drawdown: PoolDrawdown,
-  pub borrow_rate_harvest_epoch: u64,
-  pub supply_floor: UFix64<N6>,
-  pub oracle_publish_time: i64,
-  pub oracle_interval_secs: u64,
-}
-
-/// Decoded account group for one EXO registry entry.
-#[derive(Clone)]
-pub struct ExoAccounts {
-  /// EXO pair configuration account.
-  pub exo_pair: ExoPair,
-  /// Collateral token vault.
-  pub vault: TokenAccount,
-  /// Levercoin mint.
-  pub levercoin_mint: Mint,
-  /// Collateral mint, used to select the fixed-point precision.
-  pub collateral_mint: Mint,
-  /// Collateral/USD Pyth price update.
-  pub oracle: PriceUpdateV2,
-}
-
-impl<C: SolanaClock> ExoPairState<C> {
-  /// Assembles pair state from its account and loaded context.
-  ///
-  /// # Errors
-  /// * Supply floor conversion
-  pub fn new(
-    exo_pair: &ExoPair,
-    context: ExoExchangeContext<C>,
-    oracle_publish_time: i64,
-  ) -> Result<ExoPairState<C>> {
-    Ok(ExoPairState {
-      collateral_mint_decimals: 0,
-      context,
-      paused: exo_pair.paused,
-      pool_drawdown: exo_pair.pool_drawdown.into(),
-      borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
-      supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle_publish_time,
-      oracle_interval_secs: exo_pair.oracle_interval_secs,
-    })
-  }
-
-  /// Tests this pair's collateral feed against the stablecoin oracle window.
-  #[must_use]
-  pub fn collateral_usd_in_stablecoin_oracle_window(&self) -> bool {
-    in_stablecoin_oracle_window(
-      self.oracle_publish_time,
-      self.oracle_interval_secs,
-      self.context.clock.unix_timestamp(),
-    )
-  }
 }
 
 /// Complete snapshot of Hylo protocol state
@@ -165,7 +101,7 @@ pub struct ProtocolState<C: SolanaClock> {
   /// LST swap configuration
   pub lst_swap_config: AssetSwapConfig,
 
-  /// Registered EXO pairs keyed by collateral mint
+  /// Registered Exo pairs keyed by collateral mint
   pub exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
 
   /// USDC exchange state
@@ -219,7 +155,6 @@ impl<C: SolanaClock> ProtocolState<C> {
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
-    exo_registry: &ExoRegistry,
     exo_accounts: &[ExoAccounts],
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
@@ -230,11 +165,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   where
     C: Clone,
   {
-    let exo_pairs = ProtocolState::exo_pairs_from_registry(
-      &clock,
-      exo_registry,
-      exo_accounts,
-    )?;
+    let exo_pairs =
+      ProtocolState::exo_pairs_from_accounts(&clock, exo_accounts)?;
     ProtocolState::build_from_exo_pairs(
       clock,
       hylo,
@@ -299,50 +231,35 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// Replaces this snapshot's EXO state from the currently loaded registry.
+  /// Loads Exo pair state from parsed accounts, dropping any prior pairs.
   ///
   /// # Errors
-  ///
-  /// Returns an error if registry entries and account groups do not match,
-  /// or if an EXO pair cannot be constructed from the supplied accounts.
-  pub fn replace_exo_pairs_from_registry(
+  /// * Pair state load
+  pub fn load_exo_pairs(
     &mut self,
     clock: &C,
-    exo_registry: &ExoRegistry,
     exo_accounts: &[ExoAccounts],
   ) -> Result<()>
   where
     C: Clone,
   {
-    self.exo_pairs = ProtocolState::exo_pairs_from_registry(
-      clock,
-      exo_registry,
-      exo_accounts,
-    )?;
+    self.exo_pairs =
+      ProtocolState::exo_pairs_from_accounts(clock, exo_accounts)?;
     Ok(())
   }
 
-  fn exo_pairs_from_registry(
+  fn exo_pairs_from_accounts(
     clock: &C,
-    exo_registry: &ExoRegistry,
     exo_accounts: &[ExoAccounts],
   ) -> Result<HashMap<Pubkey, ExoPairState<C>>>
   where
     C: Clone,
   {
-    let entries = exo_registry_entries(exo_registry)?;
-    anyhow::ensure!(
-      entries.len() == exo_accounts.len(),
-      "EXO registry has {} entries but {} account groups were loaded",
-      entries.len(),
-      exo_accounts.len(),
-    );
-    entries
+    exo_accounts
       .iter()
-      .zip(exo_accounts)
-      .map(|(entry, accounts)| {
-        let pair = build_exo_pair_state_from_accounts(clock.clone(), accounts)?;
-        Ok((entry.collateral_mint, pair))
+      .map(|accounts| {
+        let pair = accounts.pair_state(clock.clone())?;
+        Ok((accounts.collateral_mint(), pair))
       })
       .collect()
   }
@@ -451,7 +368,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.exo_pair_by_mint(E::MINT)
   }
 
-  /// Selects the pair state for a registered EXO collateral mint.
+  /// Selects the pair state for a registered Exo collateral mint.
   ///
   /// # Errors
   /// * Collateral has no registered pair in this snapshot.
@@ -500,260 +417,6 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
     hylo.lst_buy_curve_config.into(),
   )
   .context("LstExchangeContext::load")
-}
-
-/// Builds the [`ExoPairState`] for collateral `E` from protocol accounts.
-///
-/// # Errors
-/// * Deserialization or context-load failure
-/// * Collateral vault balance overflows `N9`
-pub fn build_exo_pair_state<E: Exo, C: SolanaClock>(
-  clock: C,
-  exo_pair: &Account,
-  vault: &Account,
-  levercoin_mint: &Account,
-  collateral_usd: &Account,
-) -> Result<ExoPairState<C>>
-where
-  UFix64<E::Exp>: FixExt,
-{
-  build_exo_pair_state_with_exp::<E::Exp, C>(
-    clock,
-    exo_pair,
-    vault,
-    levercoin_mint,
-    collateral_usd,
-  )
-}
-
-/// Builds an EXO pair state using the collateral mint's runtime decimals.
-///
-/// # Errors
-/// * Decimals outside the protocol's supported 2..=10 range.
-/// * Deserialization or context-load failure.
-pub fn build_exo_pair_state_with_decimals<C: SolanaClock>(
-  decimals: u8,
-  clock: C,
-  exo_pair: &Account,
-  vault: &Account,
-  levercoin_mint: &Account,
-  collateral_usd: &Account,
-) -> Result<ExoPairState<C>> {
-  let mut pair = match decimals {
-    2 => build_exo_pair_state_with_exp::<N2, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    3 => build_exo_pair_state_with_exp::<N3, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    4 => build_exo_pair_state_with_exp::<N4, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    5 => build_exo_pair_state_with_exp::<N5, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    6 => build_exo_pair_state_with_exp::<N6, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    7 => build_exo_pair_state_with_exp::<N7, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    8 => build_exo_pair_state_with_exp::<N8, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    9 => build_exo_pair_state_with_exp::<N9, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    10 => build_exo_pair_state_with_exp::<N10, C>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    ),
-    _ => Err(anyhow!("unsupported EXO collateral decimals: {decimals}")),
-  }?;
-  pair.collateral_mint_decimals = decimals;
-  Ok(pair)
-}
-
-/// Builds an EXO pair state from a decoded registry account group.
-///
-/// # Errors
-/// * Collateral mint decimals are outside the protocol's supported 2..=10
-///   range.
-/// * Context loading or fixed-point conversion fails.
-pub fn build_exo_pair_state_from_accounts<C: SolanaClock>(
-  clock: C,
-  accounts: &ExoAccounts,
-) -> Result<ExoPairState<C>> {
-  let decimals = accounts.collateral_mint.decimals;
-  let mut pair = match decimals {
-    2 => build_exo_pair_state_from_parts::<N2, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    3 => build_exo_pair_state_from_parts::<N3, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    4 => build_exo_pair_state_from_parts::<N4, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    5 => build_exo_pair_state_from_parts::<N5, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    6 => build_exo_pair_state_from_parts::<N6, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    7 => build_exo_pair_state_from_parts::<N7, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    8 => build_exo_pair_state_from_parts::<N8, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    9 => build_exo_pair_state_from_parts::<N9, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    10 => build_exo_pair_state_from_parts::<N10, C>(
-      clock,
-      &accounts.exo_pair,
-      &accounts.vault,
-      &accounts.levercoin_mint,
-      &accounts.oracle,
-    ),
-    _ => Err(anyhow!("unsupported EXO collateral decimals: {decimals}")),
-  }?;
-  pair.collateral_mint_decimals = decimals;
-  Ok(pair)
-}
-
-fn build_exo_pair_state_with_exp<E: Integer, C: SolanaClock>(
-  clock: C,
-  exo_pair: &Account,
-  vault: &Account,
-  levercoin_mint: &Account,
-  collateral_usd: &Account,
-) -> Result<ExoPairState<C>>
-where
-  UFix64<E>: FixExt,
-{
-  let exo_pair = ExoPair::try_deserialize(&mut exo_pair.data.as_slice())?;
-  let vault = TokenAccount::try_deserialize(&mut vault.data.as_slice())?;
-  let levercoin_mint =
-    Mint::try_deserialize(&mut levercoin_mint.data.as_slice())?;
-  let collateral_usd =
-    PriceUpdateV2::try_deserialize(&mut collateral_usd.data.as_slice())
-      .context("collateral/USD Pyth deserialization")?;
-
-  build_exo_pair_state_from_parts::<E, C>(
-    clock,
-    &exo_pair,
-    &vault,
-    &levercoin_mint,
-    &collateral_usd,
-  )
-}
-
-fn build_exo_pair_state_from_parts<E: Integer, C: SolanaClock>(
-  clock: C,
-  exo_pair: &ExoPair,
-  vault: &TokenAccount,
-  levercoin_mint: &Mint,
-  collateral_usd: &PriceUpdateV2,
-) -> Result<ExoPairState<C>>
-where
-  UFix64<E>: FixExt,
-{
-  let oracle_config = OracleConfig::new(
-    exo_pair.oracle_interval_secs,
-    exo_pair.oracle_conf_tolerance.try_into()?,
-  );
-  let virtual_stablecoin: VirtualStablecoin =
-    exo_pair.virtual_stablecoin.into();
-  let levercoin_fees: LevercoinFees = exo_pair.levercoin_fees.into();
-  let total_collateral: UFix64<N9> = UFix64::<E>::new(vault.amount)
-    .checked_convert::<N9>()
-    .ok_or_else(|| anyhow!("exo vault amount overflows N9"))?;
-
-  let oracle_publish_time = collateral_usd.price_message.publish_time;
-  let context = ExoExchangeContext::load(
-    clock,
-    total_collateral,
-    exo_pair.stablecoin_mint_threshold.try_into()?,
-    oracle_config,
-    levercoin_fees,
-    collateral_usd,
-    virtual_stablecoin,
-    Some(levercoin_mint),
-    exo_pair.sell_curve_config.into(),
-    exo_pair.buy_curve_config.into(),
-    exo_pair.levercoin_market_cap_limit.try_into()?,
-  )
-  .context("ExoExchangeContext::load")?;
-  ExoPairState::new(exo_pair, context, oracle_publish_time)
 }
 
 /// Builds USDC exchange state from protocol accounts.
@@ -846,34 +509,16 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     )?;
     let exo_registry = read_exo_registry(&accounts.exo_registry.data)?;
     let entries = exo_registry_entries(&exo_registry)?;
-    let pair_accounts_len = entries.len() * 4;
     anyhow::ensure!(
-      accounts.exo_accounts.len() == pair_accounts_len + entries.len(),
-      "EXO registry has {} entries but {} EXO accounts were fetched",
+      entries.len() == accounts.exo_accounts.len(),
+      "Exo registry has {} entries but {} pair account groups were fetched",
       entries.len(),
       accounts.exo_accounts.len(),
     );
-    let (pair_accounts, oracle_accounts) =
-      accounts.exo_accounts.split_at(pair_accounts_len);
-    let exo_pairs = pair_accounts
-      .chunks_exact(4)
-      .zip(oracle_accounts)
-      .map(|(pair, oracle)| {
-        let exo_pair = ExoPair::try_deserialize(&mut pair[0].data.as_slice())
-          .context("EXO pair deserialization")?;
-        validate_exo_pair_oracle(&exo_pair)?;
-        Ok(ExoAccounts {
-          exo_pair,
-          vault: TokenAccount::try_deserialize(&mut pair[1].data.as_slice())
-            .context("EXO vault token account deserialization")?,
-          levercoin_mint: Mint::try_deserialize(&mut pair[2].data.as_slice())
-            .context("EXO levercoin mint deserialization")?,
-          collateral_mint: Mint::try_deserialize(&mut pair[3].data.as_slice())
-            .context("EXO collateral mint deserialization")?,
-          oracle: PriceUpdateV2::try_deserialize(&mut oracle.data.as_slice())
-            .context("EXO collateral/USD Pyth deserialization")?,
-        })
-      })
+    let exo_pairs = entries
+      .iter()
+      .zip(&accounts.exo_accounts)
+      .map(|(entry, raw)| ExoAccounts::parse(entry, raw))
       .collect::<Result<Vec<_>>>()?;
     Self::build(
       clock,
@@ -886,7 +531,6 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      &exo_registry,
       &exo_pairs,
       usdc_exchange_state,
       jitosol_stake_pool,

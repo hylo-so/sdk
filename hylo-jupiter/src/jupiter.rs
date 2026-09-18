@@ -5,7 +5,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::UFix64;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
-use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
+use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::idl::tokens::{
@@ -21,7 +21,7 @@ use hylo_jupiter_amm_interface::{
 };
 use hylo_quotes::protocol_state::{
   exo_pubkeys_from_entries, exo_pyth_feed_by_mint, exo_registry_entries,
-  read_exo_registry, validate_exo_pair_oracle, ExoAccounts, ProtocolState,
+  read_exo_registry, ExoAccounts, ExoPairAccounts, ProtocolState,
   UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -32,7 +32,7 @@ use crate::util::{
   account_map_get, keyed_account, quote, validate_swap_params,
 };
 
-/// Reads the active EXO entries from the router-owned registry account.
+/// Reads the active Exo entries from the router-owned registry account.
 ///
 /// # Errors
 /// * Registry account is missing, malformed, or carries an invalid length.
@@ -41,7 +41,7 @@ fn exo_registry(account_map: &AccountMap) -> Result<ExoRegistry> {
   read_exo_registry(&account.data)
 }
 
-/// Shared, runtime-discovered state used by classic and EXO Jupiter AMMs.
+/// Shared, runtime-discovered state used by classic and Exo Jupiter AMMs.
 #[derive(Clone)]
 struct HyloJupiterSnapshot {
   clock: ClockRef,
@@ -672,7 +672,7 @@ where
   }
 }
 
-/// Registry-rooted Jupiter AMM for every currently registered EXO pair.
+/// Registry-rooted Jupiter AMM for every currently registered Exo pair.
 pub struct HyloJupiterExo {
   snapshot: HyloJupiterSnapshot,
   exo_entries: Vec<ExoEntry>,
@@ -691,7 +691,7 @@ impl HyloJupiterExo {
       .exo_entries
       .iter()
       .find(|entry| owns_mint(entry, mint_a) || owns_mint(entry, mint_b))
-      .context("EXO route is not registered")
+      .context("Exo route is not registered")
   }
 }
 
@@ -721,7 +721,7 @@ impl Amm for HyloJupiterExo {
   }
 
   fn label(&self) -> String {
-    "Hylo EXO Registry".to_owned()
+    "Hylo Exo Registry".to_owned()
   }
 
   fn program_id(&self) -> Pubkey {
@@ -763,25 +763,16 @@ impl Amm for HyloJupiterExo {
     let exo_accounts = entries
       .iter()
       .filter_map(|entry| {
-        let exo_pair = account_map_get::<ExoPair>(
-          account_map,
-          &pda::exo_pair(entry.collateral_mint),
-        )
-        .ok()?;
-        validate_exo_pair_oracle(&exo_pair).ok()?;
-        Some(ExoAccounts {
-          oracle: account_map_get(account_map, &exo_pair.oracle).ok()?,
-          exo_pair,
-          vault: account_map_get(
-            account_map,
-            &pda::exo_vault(entry.collateral_mint),
-          )
-          .ok()?,
-          levercoin_mint: account_map_get(account_map, &entry.levercoin_mint)
-            .ok()?,
-          collateral_mint: account_map_get(account_map, &entry.collateral_mint)
-            .ok()?,
-        })
+        let feed = exo_pyth_feed_by_mint(entry.collateral_mint).ok()?;
+        let account = |key: &Pubkey| keyed_account(account_map, key).ok();
+        let raw = ExoPairAccounts {
+          exo_pair: account(&pda::exo_pair(entry.collateral_mint))?.clone(),
+          vault: account(&pda::exo_vault(entry.collateral_mint))?.clone(),
+          levercoin_mint: account(&entry.levercoin_mint)?.clone(),
+          collateral_mint: account(&entry.collateral_mint)?.clone(),
+          oracle: account(&feed.address)?.clone(),
+        };
+        ExoAccounts::parse(entry, &raw).ok()
       })
       .collect::<Vec<_>>();
     if exo_accounts.len() == entries.len() {
@@ -790,11 +781,7 @@ impl Amm for HyloJupiterExo {
         .state
         .as_mut()
         .context("core state not set")?
-        .replace_exo_pairs_from_registry(
-          &self.snapshot.clock,
-          &registry,
-          &exo_accounts,
-        )?;
+        .load_exo_pairs(&self.snapshot.clock, &exo_accounts)?;
     }
     Ok(())
   }
@@ -814,7 +801,7 @@ impl Amm for HyloJupiterExo {
     } else {
       Decimal::from(quote.fee_amount)
         .checked_div(Decimal::from(quote.fee_base))
-        .context("EXO fee percentage overflow")?
+        .context("Exo fee percentage overflow")?
     };
     Ok(Quote {
       in_amount: quote.in_amount,
@@ -866,7 +853,7 @@ impl Amm for HyloJupiterExo {
       (USDC::MINT, mint) if mint == collateral => {
         Ok(account_metas::swap_usdc_to_exo(*user, collateral, oracle))
       }
-      _ => Err(anyhow!("Invalid EXO mint pair")),
+      _ => Err(anyhow!("Invalid Exo mint pair")),
     }
   }
 
