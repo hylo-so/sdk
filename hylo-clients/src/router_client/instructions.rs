@@ -54,7 +54,11 @@ macro_rules! router_instruction {
           slippage_config,
         }: RouterArgs,
       ) -> Result<Vec<Instruction>> {
-        let ata = user_ata_instruction(&$user, &$ata);
+        let ata = user_ata_instruction(
+          &$user,
+          &$ata,
+          &<$out as TokenMint>::TOKEN_PROGRAM,
+        );
         let accounts = $accts;
         let ix = route_instruction(
           <$in>::MINT,
@@ -171,6 +175,7 @@ macro_rules! exo_router_instructions {
         user,
         $exo::MINT,
         $exo::FEED.address,
+        $exo::TOKEN_PROGRAM,
       )
     });
 
@@ -184,6 +189,7 @@ macro_rules! exo_router_instructions {
           user,
           $exo::MINT,
           $exo::FEED.address,
+          $exo::TOKEN_PROGRAM,
         )
       }
     );
@@ -193,6 +199,7 @@ macro_rules! exo_router_instructions {
         user,
         $exo::MINT,
         $exo::FEED.address,
+        $exo::TOKEN_PROGRAM,
       )
     });
 
@@ -201,6 +208,7 @@ macro_rules! exo_router_instructions {
         user,
         $exo::MINT,
         $exo::FEED.address,
+        $exo::TOKEN_PROGRAM,
       )
     });
 
@@ -214,6 +222,7 @@ macro_rules! exo_router_instructions {
           user,
           $exo::MINT,
           $exo::FEED.address,
+          $exo::TOKEN_PROGRAM,
         )
       }
     );
@@ -228,16 +237,27 @@ macro_rules! exo_router_instructions {
           user,
           $exo::MINT,
           $exo::FEED.address,
+          $exo::TOKEN_PROGRAM,
         )
       }
     );
 
     router_instruction!($exo, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
-      account_builders::swap_exo_to_usdc(user, $exo::MINT, $exo::FEED.address)
+      account_builders::swap_exo_to_usdc(
+        user,
+        $exo::MINT,
+        $exo::FEED.address,
+        $exo::TOKEN_PROGRAM,
+      )
     });
 
     router_instruction!(USDC, $exo, BASE_LOOKUP_TABLES, $exo::MINT, |user| {
-      account_builders::swap_usdc_to_exo(user, $exo::MINT, $exo::FEED.address)
+      account_builders::swap_usdc_to_exo(
+        user,
+        $exo::MINT,
+        $exo::FEED.address,
+        $exo::TOKEN_PROGRAM,
+      )
     });
     )+
   };

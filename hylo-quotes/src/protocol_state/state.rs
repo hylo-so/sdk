@@ -6,7 +6,8 @@
 use anchor_client::solana_sdk::account::Account;
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::AccountDeserialize;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::Mint;
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
