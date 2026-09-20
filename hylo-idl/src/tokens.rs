@@ -1,6 +1,6 @@
 use anchor_lang::prelude::{pubkey, Pubkey};
 use anchor_spl::mint::USDC as USDC_MINT;
-use anchor_spl::token;
+use anchor_spl::{token, token_2022};
 use fix::prelude::{N6, N8, N9};
 use fix::typenum::Integer;
 
@@ -53,6 +53,10 @@ pub struct PST;
 pub struct XPST;
 pub struct WETH;
 pub struct XETH;
+pub struct SPCX;
+pub struct XSPCX;
+pub struct PAXG;
+pub struct XPAXG;
 
 impl TokenMint for HYUSD {
   type Exp = N6;
@@ -160,6 +164,30 @@ impl TokenMint for WETH {
 impl TokenMint for XETH {
   type Exp = N6;
   const MINT: Pubkey = pda::exo_levercoin_mint(WETH::MINT);
+  const TOKEN_PROGRAM: Pubkey = token::ID;
+}
+
+impl TokenMint for SPCX {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb");
+  const TOKEN_PROGRAM: Pubkey = token_2022::ID;
+}
+
+impl TokenMint for XSPCX {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(SPCX::MINT);
+  const TOKEN_PROGRAM: Pubkey = token::ID;
+}
+
+impl TokenMint for PAXG {
+  type Exp = N6;
+  const MINT: Pubkey = pubkey!("5GgRAEmv8ZxF2PR5hY72Qs5x1bnQ6UK2RbTPoqJ3wSwW");
+  const TOKEN_PROGRAM: Pubkey = token_2022::ID;
+}
+
+impl TokenMint for XPAXG {
+  type Exp = N6;
+  const MINT: Pubkey = pda::exo_levercoin_mint(PAXG::MINT);
   const TOKEN_PROGRAM: Pubkey = token::ID;
 }
 
