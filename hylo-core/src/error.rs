@@ -272,4 +272,11 @@ pub enum CoreError {
   MaxRedeemable,
   #[msg("Minimum input exceeds maximum input for this route.")]
   MinInputExceedsMax,
+  // `mint_extensions`
+  #[msg("Mint carries a Token Extensions type that is not whitelisted.")]
+  MintExtensionBlacklisted,
+  #[msg("Mint extension is present in a disallowed configuration.")]
+  MintExtensionConfigBlacklisted,
+  #[msg("Mint account data failed to deserialize as Token Extensions.")]
+  CannotDeserializeMintExtension,
 }
