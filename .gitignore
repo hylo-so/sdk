@@ -6,4 +6,5 @@ target/
 .claude/settings.local.json
 .rsmap/
 **/*.MD
+!AGENTS.md
 .codebase-index/
