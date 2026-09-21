@@ -42,6 +42,16 @@ fn atom_rate<InExp: Integer, OutExp: Integer>(token_rate: f64) -> f64 {
   token_rate * 10f64.powi(InExp::to_i32() - OutExp::to_i32())
 }
 
+/// Which collateral ratio priced a stablecoin redeem fee.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FeeBasis {
+  /// Fee at the projected CR. The strict math gives the same fee.
+  CurrentCr,
+  /// Projected CR is above the redeem fee-curve domain. Fee at the
+  /// domain edge. The route cannot execute in this state.
+  RedeemMaxCr,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OperationOutput<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
   pub in_amount: UFix64<InExp>,

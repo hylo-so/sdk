@@ -2,10 +2,14 @@
 
 use fix::prelude::*;
 use hylo_core::calculus::positive_rate;
+use hylo_core::collateral_ratio::CollateralRatio;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
+use hylo_core::fees::curve_controller::{
+  InterpolatedFeeController, InterpolatedRedeemFees,
+};
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
@@ -22,10 +26,38 @@ use hylo_idl::with_exo_pairs;
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  atom_rate, gate, past_zero, LstSwapOperationOutput, MintOperationOutput,
-  OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
+  atom_rate, gate, past_zero, FeeBasis, LstSwapOperationOutput,
+  MintOperationOutput, OperationOutput, RedeemOperationOutput,
+  SwapOperationOutput, TokenOperation,
 };
 use crate::{Local, LocalExo, LST};
+
+/// Stablecoin redeem fee at `min(projected CR, curve x_max)`.
+///
+/// Compares in curve coordinates so the basis agrees with the strict
+/// lookup, which truncates CR to `N5`.
+///
+/// # Errors
+/// * Curve interpolation, fee conversion, or fee extraction
+#[cfg_attr(not(test), allow(dead_code))]
+fn clamped_redeem_fee(
+  fees: &InterpolatedRedeemFees,
+  projected_cr: CollateralRatio,
+  amount_out: UFix64<N9>,
+) -> Result<(FeeExtract<N9>, FeeBasis), CoreError> {
+  let x = projected_cr.fee_curve_x();
+  let x_max = fees.curve().x_max();
+  let basis = if x > x_max {
+    FeeBasis::RedeemMaxCr
+  } else {
+    FeeBasis::CurrentCr
+  };
+  let fee_rate: UFix64<N5> = fees
+    .fee_inner(x.min(x_max))?
+    .narrow()
+    .ok_or(CoreError::InterpFeeConversion)?;
+  FeeExtract::new(fee_rate, amount_out).map(|extract| (extract, basis))
+}
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// Pause and harvest gates for LST-pair routes.
@@ -1936,3 +1968,93 @@ macro_rules! exo_levercoin_ops {
 }
 
 with_exo_pairs!(exo_levercoin_ops);
+
+#[cfg(test)]
+mod tests {
+  use anyhow::Result;
+  use fix::prelude::*;
+  use hylo_core::collateral_ratio::CR;
+  use hylo_core::fees::curve_controller::{
+    InterpolatedFeeController, InterpolatedRedeemFees,
+  };
+  use hylo_core::fees::curves::redeem_fee_curve;
+
+  use super::clamped_redeem_fee;
+  use crate::token_operation::FeeBasis;
+
+  const AMOUNT: UFix64<N9> = UFix64::constant(5_000_000_000);
+
+  fn fees() -> Result<InterpolatedRedeemFees> {
+    Ok(InterpolatedRedeemFees::new(redeem_fee_curve()?))
+  }
+
+  #[test]
+  fn clamped_fee_equals_strict_inside_domain() -> Result<()> {
+    let fees = fees()?;
+    let cr = CR::Finite(UFix64::new(1_300_000_000));
+    let strict = fees.apply_fee(cr, AMOUNT)?;
+    let (clamped, basis) = clamped_redeem_fee(&fees, cr, AMOUNT)?;
+    assert_eq!(basis, FeeBasis::CurrentCr);
+    assert_eq!(clamped.fees_extracted, strict.fees_extracted);
+    assert_eq!(clamped.amount_remaining, strict.amount_remaining);
+    Ok(())
+  }
+
+  #[test]
+  fn clamped_fee_at_domain_edge_is_current_cr() -> Result<()> {
+    let fees = fees()?;
+    let cr = CR::Finite(UFix64::new(1_500_000_000));
+    let (_, basis) = clamped_redeem_fee(&fees, cr, AMOUNT)?;
+    assert_eq!(basis, FeeBasis::CurrentCr);
+    Ok(())
+  }
+
+  #[test]
+  fn clamped_fee_truncates_like_strict() -> Result<()> {
+    // 1.500005 truncates to 1.50000 in N5: strict accepts, so CurrentCr.
+    let fees = fees()?;
+    let cr = CR::Finite(UFix64::new(1_500_005_000));
+    assert!(fees.apply_fee(cr, AMOUNT).is_ok());
+    let (_, basis) = clamped_redeem_fee(&fees, cr, AMOUNT)?;
+    assert_eq!(basis, FeeBasis::CurrentCr);
+    Ok(())
+  }
+
+  #[test]
+  fn clamped_fee_above_domain_uses_edge_fee() -> Result<()> {
+    let fees = fees()?;
+    let edge =
+      fees.apply_fee(CR::Finite(UFix64::new(1_500_000_000)), AMOUNT)?;
+    let above = CR::Finite(UFix64::new(3_000_000_000));
+    assert!(fees.apply_fee(above, AMOUNT).is_err());
+    let (clamped, basis) = clamped_redeem_fee(&fees, above, AMOUNT)?;
+    assert_eq!(basis, FeeBasis::RedeemMaxCr);
+    assert_eq!(clamped.fees_extracted, edge.fees_extracted);
+    assert_eq!(clamped.amount_remaining, edge.amount_remaining);
+    Ok(())
+  }
+
+  #[test]
+  fn clamped_fee_handles_infinite_cr() -> Result<()> {
+    let fees = fees()?;
+    let edge =
+      fees.apply_fee(CR::Finite(UFix64::new(1_500_000_000)), AMOUNT)?;
+    let (clamped, basis) = clamped_redeem_fee(&fees, CR::Infinite, AMOUNT)?;
+    assert_eq!(basis, FeeBasis::RedeemMaxCr);
+    assert_eq!(clamped.amount_remaining, edge.amount_remaining);
+    Ok(())
+  }
+
+  #[test]
+  fn clamped_fee_conserves_amount() -> Result<()> {
+    let fees = fees()?;
+    let (clamped, _) = clamped_redeem_fee(&fees, CR::Infinite, AMOUNT)?;
+    assert_eq!(
+      clamped
+        .fees_extracted
+        .checked_add(&clamped.amount_remaining),
+      Some(AMOUNT)
+    );
+    Ok(())
+  }
+}
