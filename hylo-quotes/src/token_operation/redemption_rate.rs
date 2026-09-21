@@ -8,12 +8,17 @@
 //!
 //! # Availability
 //!
-//! The reading survives every route gate (pause, overdue harvest, oracle
-//! window), and a collateral ratio above the redeem fee-curve domain:
-//! such a lane is priced with the fee at the domain edge and reports
-//! [`FeeBasis::RedeemMaxCr`]. A lane is absent only when it cannot price
-//! the reference at all (vault cannot cover it, LST epoch price missing,
-//! arithmetic overflow).
+//! A route gate (pause, overdue harvest, oracle window) or a collateral
+//! ratio above the redeem fee-curve domain never removes a lane by
+//! itself: the reading survives both. A CR above the domain instead
+//! prices the lane at the domain edge and reports
+//! [`FeeBasis::RedeemMaxCr`].
+//!
+//! A lane is absent whenever its indicative math refuses the reference
+//! amount, or the lane's USD valuation cannot be formed. Known causes
+//! (not exhaustive): the vault cannot cover the reference amount; the
+//! pair's virtual stablecoin supply or burn limit cannot cover it; the
+//! LST epoch price is missing; arithmetic overflow.
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, ensure, Result};
