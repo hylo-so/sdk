@@ -364,7 +364,7 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Pauses an EXO pair for the given collateral mint.
+  /// Pauses an exo pair for the given collateral mint.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
@@ -380,7 +380,7 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Unpauses an EXO pair for the given collateral mint.
+  /// Unpauses an exo pair for the given collateral mint.
   ///
   /// # Errors
   /// * Failed to build transaction instructions

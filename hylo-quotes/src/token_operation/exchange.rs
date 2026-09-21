@@ -33,7 +33,7 @@ use crate::token_operation::{
 };
 use crate::{Local, LocalExo, LST};
 
-/// Type-erased EXO quote, expressed in the route mints' native atoms.
+/// Type-erased exo quote, expressed in the route mints' native atoms.
 #[derive(Clone, Copy, Debug)]
 pub struct RuntimeExoQuote {
   pub in_amount: u64,

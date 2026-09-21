@@ -6,7 +6,7 @@ use crate::router;
 use crate::router::account_builders;
 use crate::router::client::args;
 
-/// Initializes the canonical EXO registry.
+/// Initializes the canonical exo registry.
 #[must_use]
 pub fn initialize_exo_registry(admin: Pubkey) -> Instruction {
   let accounts = account_builders::initialize_exo_registry(admin);
@@ -18,7 +18,7 @@ pub fn initialize_exo_registry(admin: Pubkey) -> Instruction {
   }
 }
 
-/// Registers a collateral/levercoin EXO pair with the router.
+/// Registers a collateral/levercoin exo pair with the router.
 #[must_use]
 pub fn register_exo_entry(
   admin: Pubkey,
