@@ -119,15 +119,8 @@ pub use runtime_quote_strategy::RuntimeQuoteStrategy;
 pub use simulated_operation::ComputeUnitInfo;
 pub use simulation_strategy::SimulationStrategy;
 
-/// Default buffered compute units for all exchange operations.
-///
-/// This is a buffered estimate (higher than measured values ~74k-97k CU) that
-/// provides a safe default for all current quote operations. Measured values
-/// came from calibration tool, but this value includes additional buffer for
-/// safety across all operation types.
-///
-/// In the future, this could be replaced with per-instruction defaults based
-/// on more comprehensive statistical analysis.
+/// Compute unit limit for every quote operation, with buffer over the
+/// measured 74k to 97k range.
 pub const DEFAULT_CUS_WITH_BUFFER: u64 = 100_000;
 
 /// Typed executable quote with amounts, instructions, and compute units.
