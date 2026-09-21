@@ -8,10 +8,10 @@
 //!
 //! Two quote strategies are available:
 //!
-//! - **`ProtocolStateStrategy`**: Computes quotes using protocol state and SDK
+//! * **`ProtocolStateStrategy`**: Computes quotes using protocol state and SDK
 //!   math. Fast and doesn't require transaction simulation, but doesn't check
 //!   wallet balances.
-//! - **`SimulationStrategy`**: Computes quotes by simulating transactions.
+//! * **`SimulationStrategy`**: Computes quotes by simulating transactions.
 //!   Slower but validates that transactions would actually succeed (e.g.,
 //!   checks wallet balances).
 //!
