@@ -14,6 +14,12 @@ use crate::fees::interp::{FixInterp, Point};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pricing::narrow;
 
+/// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
+const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
+
+/// Maximum fee exacted against borrow rate
+const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
+
 /// Per-epoch borrow rate for exogenous collateral without native yield.
 #[derive(
   Debug,
@@ -30,12 +36,6 @@ pub struct BorrowRateCurveConfig {
   pub floor_rate: UFixValue64,
   pub ceil_rate: UFixValue64,
 }
-
-/// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
-const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
-
-/// Maximum fee exacted against borrow rate
-const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);
 
 /// Builds a curve over CR: constant at `floor` through the neutral zone,
 /// linear from `floor` to `ceil` across buy zone 1.
