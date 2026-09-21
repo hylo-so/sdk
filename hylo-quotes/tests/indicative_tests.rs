@@ -129,5 +129,30 @@ fn exo_pairs_clamp_independently() -> Result<()> {
   )
   .is_err());
   assert!(state.indicative_output::<HYUSD, HYPE>(REFERENCE).is_ok());
+  // CBBTC is in domain: the indicative tier must equal the ungated
+  // math, not silently reprice it, even while HYPE clamps.
+  assert_eq!(
+    state.indicative_output::<HYUSD, CBBTC>(REFERENCE)?,
+    TokenOperation::<HYUSD, CBBTC>::compute_output_ungated(&state, REFERENCE)?
+  );
+  Ok(())
+}
+
+#[test]
+fn exo_redeem_indicative_fee_is_flat_above_domain() -> Result<()> {
+  // Same edge fee at any CR above the domain. Collateral-out does not
+  // depend on total collateral, so the outputs are equal.
+  let mut at_3 = load_state()?;
+  with_exo_cr(&mut at_3.cbbtc_pair, CR_ABOVE_DOMAIN)?;
+  let mut at_6 = load_state()?;
+  with_exo_cr(&mut at_6.cbbtc_pair, UFix64::new(6_000_000_000))?;
+  assert_eq!(
+    at_3
+      .indicative_output::<HYUSD, CBBTC>(REFERENCE)?
+      .out_amount,
+    at_6
+      .indicative_output::<HYUSD, CBBTC>(REFERENCE)?
+      .out_amount
+  );
   Ok(())
 }

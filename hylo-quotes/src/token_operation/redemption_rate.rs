@@ -3,8 +3,15 @@
 //! A RATE for an oracle-feed consumer, never an executable quote. It
 //! multiplies the sHYUSD -> hyUSD earn-pool exit rate (NAV net of the
 //! withdrawal fee) by the best USD value among the hyUSD redemption
-//! lanes, each priced with the indicative math at a reference amount and
-//! valued at the lower oracle bound.
+//! lanes, each priced with the indicative math at a reference amount.
+//! The LST and exo lanes are valued at the lower oracle bound; the USDC
+//! lane is valued at the USDC/USD spot capped at par (this SDK version
+//! has no USDC price range).
+//!
+//! An LST/exo lane's redeem leg converts at the UPPER oracle bound
+//! while its valuation uses the LOWER bound, so the lane's hyUSD rate
+//! is about `nav * lower / upper * (1 - fee)`: the oracle level
+//! cancels out, and the rate cannot exceed par.
 //!
 //! # Availability
 //!
@@ -18,12 +25,14 @@
 //! amount, or the lane's USD valuation cannot be formed. Known causes
 //! (not exhaustive): the vault cannot cover the reference amount; the
 //! pair's virtual stablecoin supply or burn limit cannot cover it; the
-//! LST epoch price is missing; arithmetic overflow.
+//! LST epoch price is missing; arithmetic overflow. The LST epoch price
+//! is a regular, expected absence: after an epoch rollover it stays
+//! missing until the LST price crank runs, so both LST lanes drop for
+//! that window and `best` moves to another lane.
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, ensure, Result};
 use fix::prelude::*;
-use hylo_core::earn_pool_math::lp_token_nav;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
@@ -37,16 +46,19 @@ use crate::{Local, LST};
 
 /// One hyUSD redemption lane priced at the reference amount.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub struct RedemptionLane {
   /// Collateral mint the lane redeems into.
   pub mint: Pubkey,
-  /// Route gates pass and the fee is unclamped: executable now.
+  /// Route gates pass and the fee is unclamped: executable at
+  /// `reference_hyusd` in the current state.
   pub open: bool,
   /// Which collateral ratio priced the redeem fee.
   pub fee_basis: FeeBasis,
   /// Net output in the lane token's own decimals.
   pub amount_out: UFixValue64,
-  /// `amount_out` valued at the lower oracle bound.
+  /// `amount_out` valued in USD: at the lower oracle bound for the
+  /// LST and exo lanes, at the USDC/USD spot capped at par for USDC.
   pub usd_out: UFix64<N9>,
   /// USD per hyUSD through this lane.
   pub hyusd_usd_rate: UFix64<N9>,
@@ -56,6 +68,7 @@ pub struct RedemptionLane {
 
 /// The sHYUSD redemption rate and the lanes behind it.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub struct RedemptionRate {
   /// hyUSD per sHYUSD: earn-pool NAV net of the withdrawal fee.
   pub shyusd_hyusd_rate: UFix64<N9>,
@@ -63,21 +76,40 @@ pub struct RedemptionRate {
   pub reference_hyusd: UFix64<N6>,
   /// Lanes that priced the reference.
   pub lanes: Vec<RedemptionLane>,
-  /// Lane with the highest `usd_out`.
+  /// Lane with the highest `usd_out`. May be a CLOSED lane: check
+  /// `best.open`. On an exact tie the later lane in the fixed order
+  /// JITOSOL, HYLOSOL, CBBTC, HYPE, USDC wins, since that is what
+  /// `Iterator::max_by_key` returns.
   pub best: RedemptionLane,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  /// hyUSD per sHYUSD at `N9`: NAV net of the withdrawal fee. Ignores
-  /// the withdrawal limiter, which gates execution and not value.
+  /// hyUSD per sHYUSD: earn-pool NAV, floored at true `N9`, net of the
+  /// withdrawal fee. Ignores the withdrawal limiter, which gates
+  /// execution and not value.
+  ///
+  /// # Degenerate states
+  /// Zero sHYUSD supply gives NAV `1.0` (the same convention as
+  /// `lp_token_nav`), so this returns `1.0` net of the withdrawal fee,
+  /// not an error. A nonzero supply against an empty earn pool gives
+  /// NAV `0`, and so a rate of `0`, also not an error.
+  ///
+  /// # Errors
+  /// * NAV overflows `N9`
+  /// * Withdrawal fee conversion or fee extraction
   fn shyusd_exit_rate(&self) -> Result<UFix64<N9>> {
-    let nav: UFix64<N6> = lp_token_nav(
-      UFix64::new(self.hyusd_pool.amount),
-      UFix64::new(self.shyusd_mint.supply),
-    )?;
+    let pool = UFix64::<N6>::new(self.hyusd_pool.amount);
+    let supply = UFix64::<N6>::new(self.shyusd_mint.supply);
+    let nav = if supply == UFix64::zero() {
+      UFix64::<N9>::one()
+    } else {
+      UFix64::<N9>::one()
+        .mul_div_floor(pool, supply)
+        .ok_or_else(|| anyhow!("earn pool NAV overflows N9"))?
+    };
     let withdrawal_fee: UFix64<N4> =
       self.pool_config.withdrawal_fee.try_into()?;
-    Ok(FeeExtract::new(withdrawal_fee, nav.convert::<N9>())?.amount_remaining)
+    Ok(FeeExtract::new(withdrawal_fee, nav)?.amount_remaining)
   }
 
   /// LST/USD at the lower SOL/USD bound.
@@ -130,6 +162,12 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// A rate, never an executable quote: see the module docs.
   ///
+  /// # Degenerate states
+  /// Zero sHYUSD supply gives NAV `1.0`, so the rate is `1.0` net of
+  /// the withdrawal fee, not an error. A nonzero supply against an
+  /// empty earn pool gives NAV `0`, and so a rate of `0`, also not an
+  /// error. A consumer must treat both as "pool not live".
+  ///
   /// # Errors
   /// * Zero `reference`
   /// * Earn-pool NAV or withdrawal fee
@@ -179,9 +217,20 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.redemption_lane::<USDC>(
         reference,
         exit,
-        TokenOperation::<HYUSD, USDC>::compute_output_ungated(self, reference)
-          .map(|op| (op.out_amount, FeeBasis::CurrentCr)),
-        Some(self.usdc_exchange_state.usdc_usd_spot),
+        TokenOperation::<HYUSD, USDC>::compute_output_indicative(
+          self, reference,
+        )
+        .map(|op| (op.out_amount, FeeBasis::CurrentCr)),
+        // The rate skips route gates, and the USDC par-tolerance check
+        // is one of those gates: an above-par USDC spot would
+        // otherwise lift this lane above 1 USD and make it `best`.
+        // This SDK version has no USDC price range, so cap at par.
+        Some(
+          self
+            .usdc_exchange_state
+            .usdc_usd_spot
+            .min(UFix64::<N9>::one()),
+        ),
       ),
     ]
     .into_iter()

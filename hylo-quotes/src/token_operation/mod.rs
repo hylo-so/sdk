@@ -50,9 +50,12 @@ fn atom_rate<InExp: Integer, OutExp: Integer>(token_rate: f64) -> f64 {
 }
 
 /// Which collateral ratio priced a stablecoin redeem fee.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum FeeBasis {
-  /// Fee at the projected CR. The strict math gives the same fee.
+  /// Fee at the projected post-trade CR: what the strict math uses.
+  /// Flat-fee lanes (USDC) have no CR to project, and always report
+  /// this variant.
   CurrentCr,
   /// Projected CR is above the redeem fee-curve domain. Fee at the
   /// domain edge. The route cannot execute in this state.

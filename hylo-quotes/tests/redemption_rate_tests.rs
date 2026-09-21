@@ -7,10 +7,15 @@ use common::{
   load_state, with_exo_cr, with_lst_cr, CR_ABOVE_DOMAIN, CR_IN_DOMAIN,
 };
 use fix::prelude::*;
+use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_idl::tokens::{TokenMint, CBBTC, HYLOSOL, HYPE, JITOSOL};
-use hylo_quotes::prelude::{FeeBasis, RedemptionLane, RedemptionRate};
+use hylo_idl::tokens::{
+  TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
+};
+use hylo_quotes::prelude::{
+  FeeBasis, RedemptionLane, RedemptionRate, TokenOperation,
+};
 
 const REFERENCE: UFix64<N6> = UFix64::constant(1_000_000_000);
 
@@ -23,28 +28,56 @@ fn lane(
 
 #[test]
 fn raw_mainnet_snapshot_has_a_rate() -> Result<()> {
-  // Every collateral pair is above 150% CR in this snapshot, and the
-  // strict math refuses all five lanes. The rate must still exist.
+  // Smoke test only: does not assume anything about where the raw
+  // snapshot sits relative to the redeem fee-curve domain, so it stays
+  // true across a snapshot refresh. See
+  // `above_domain_lanes_report_redeem_max_cr_and_closed` for the
+  // domain-specific assertions, built from a known CR instead.
   let rate = load_state()?.redemption_rate(REFERENCE)?;
-  assert!(rate.lanes.len() >= 4);
-  assert!(rate
-    .lanes
-    .iter()
-    .all(|lane| lane.fee_basis == FeeBasis::RedeemMaxCr && !lane.open));
-  assert_eq!(rate.reference_hyusd, REFERENCE);
+  assert!(!rate.lanes.is_empty());
   Ok(())
 }
 
 #[test]
+fn above_domain_lanes_report_redeem_max_cr_and_closed() -> Result<()> {
+  // Built explicitly above the domain rather than relying on the raw
+  // snapshot happening to sit there, so this stays true across a
+  // snapshot refresh.
+  let mut state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
+  with_exo_cr(&mut state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
+  with_exo_cr(&mut state.hype_pair, CR_ABOVE_DOMAIN)?;
+  let rate = state.redemption_rate(REFERENCE)?;
+  assert_eq!(rate.reference_hyusd, REFERENCE);
+  [JITOSOL::MINT, HYLOSOL::MINT, CBBTC::MINT, HYPE::MINT]
+    .iter()
+    .try_for_each(|mint| {
+      let collateral_lane =
+        lane(&rate, *mint).ok_or_else(|| anyhow!("missing lane"))?;
+      assert_eq!(collateral_lane.fee_basis, FeeBasis::RedeemMaxCr);
+      assert!(!collateral_lane.open);
+      Ok(())
+    })
+}
+
+#[test]
 fn rate_is_near_par_and_nav() -> Result<()> {
-  let rate = load_state()?.redemption_rate(REFERENCE)?;
+  let state = load_state()?;
+  let rate = state.redemption_rate(REFERENCE)?;
   // hyUSD redeems near 1 USD: above 0.95, never above 1.
   assert!(rate.best.hyusd_usd_rate > UFix64::new(950_000_000));
   assert!(rate.best.hyusd_usd_rate <= UFix64::one());
-  // Snapshot NAV is 18851015400385 / 12665223434433 = 1.4884,
-  // withdrawal fee 0.10% -> 1.4869.
-  assert!(rate.shyusd_hyusd_rate > UFix64::new(1_486_000_000));
-  assert!(rate.shyusd_hyusd_rate < UFix64::new(1_488_000_000));
+
+  // Expected value computed independently, straight from state, so
+  // this stays correct across a snapshot refresh.
+  let pool = UFix64::<N6>::new(state.hyusd_pool.amount);
+  let supply = UFix64::<N6>::new(state.shyusd_mint.supply);
+  let nav = UFix64::<N9>::one()
+    .mul_div_floor(pool, supply)
+    .ok_or_else(|| anyhow!("earn pool NAV overflows N9"))?;
+  let withdrawal_fee: UFix64<N4> =
+    state.pool_config.withdrawal_fee.try_into()?;
+  let expected = FeeExtract::new(withdrawal_fee, nav)?.amount_remaining;
+  assert_eq!(rate.shyusd_hyusd_rate, expected);
   Ok(())
 }
 
@@ -204,6 +237,90 @@ fn in_domain_lane_opens_and_closes_on_pause() -> Result<()> {
   assert!(!paused_hylo.open);
   assert_eq!(paused_jito.shyusd_usd_rate, open_jito.shyusd_usd_rate);
   assert_eq!(paused_hylo.shyusd_usd_rate, open_hylo.shyusd_usd_rate);
+  Ok(())
+}
+
+#[test]
+fn exhausted_withdrawal_limiter_keeps_the_rate() -> Result<()> {
+  let untouched = load_state()?.redemption_rate(REFERENCE)?;
+  let mut state = load_state()?;
+  state.pool_config.withdrawal_limiter.limit = UFixValue64::new(0, -6).into();
+
+  // Confirm the limiter really is exhausted: even one sHYUSD can no
+  // longer withdraw.
+  assert!(TokenOperation::<SHYUSD, HYUSD>::compute_output_ungated(
+    &state,
+    UFix64::<N6>::one()
+  )
+  .is_err());
+
+  // The rate is a value, not an execution path: it ignores the
+  // limiter and matches the untouched state.
+  let rate = state.redemption_rate(REFERENCE)?;
+  assert_eq!(rate.shyusd_hyusd_rate, untouched.shyusd_hyusd_rate);
+  Ok(())
+}
+
+#[test]
+fn overdue_harvest_closes_the_lane_but_keeps_the_rate() -> Result<()> {
+  let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  let open_rate = state.redemption_rate(REFERENCE)?;
+  let open_jito = lane(&open_rate, JITOSOL::MINT)
+    .ok_or_else(|| anyhow!("no JITOSOL lane"))?;
+  assert!(open_jito.open, "expected the JITOSOL lane to start open");
+
+  let mut overdue_state = state;
+  overdue_state.yield_harvest_epoch = overdue_state
+    .yield_harvest_epoch
+    .checked_sub(1)
+    .ok_or_else(|| anyhow!("yield_harvest_epoch underflow"))?;
+  let overdue_rate = overdue_state.redemption_rate(REFERENCE)?;
+  let overdue_jito = lane(&overdue_rate, JITOSOL::MINT)
+    .ok_or_else(|| anyhow!("no JITOSOL lane"))?;
+  assert!(!overdue_jito.open);
+  assert_eq!(overdue_jito.shyusd_usd_rate, open_jito.shyusd_usd_rate);
+  Ok(())
+}
+
+#[test]
+fn stale_sol_oracle_closes_the_lane_but_keeps_the_rate() -> Result<()> {
+  let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  let open_rate = state.redemption_rate(REFERENCE)?;
+  let open_jito = lane(&open_rate, JITOSOL::MINT)
+    .ok_or_else(|| anyhow!("no JITOSOL lane"))?;
+  assert!(open_jito.open, "expected the JITOSOL lane to start open");
+
+  let mut stale_state = state;
+  stale_state.sol_usd_publish_time = 0;
+  let stale_rate = stale_state.redemption_rate(REFERENCE)?;
+  let stale_jito = lane(&stale_rate, JITOSOL::MINT)
+    .ok_or_else(|| anyhow!("no JITOSOL lane"))?;
+  assert!(!stale_jito.open);
+  assert_eq!(stale_jito.shyusd_usd_rate, open_jito.shyusd_usd_rate);
+  Ok(())
+}
+
+#[test]
+fn usdc_lane_never_prices_above_par() -> Result<()> {
+  let mut state = load_state()?;
+  state.usdc_exchange_state.usdc_usd_spot = UFix64::new(1_050_000_000);
+  // The raw snapshot's USDC virtual-stablecoin supply and vault
+  // balance are both too small to redeem the reference amount; raise
+  // them (both public fields) so the lane actually prices and this
+  // test exercises the par cap rather than vacuously passing.
+  state.usdc_exchange_state.virtual_stablecoin.supply =
+    UFix64::<N6>::new(1_000_000_000_000).into();
+  state.usdc_exchange_state.vault_balance =
+    UFix64::<N6>::new(1_000_000_000_000);
+  let rate = state.redemption_rate(REFERENCE)?;
+  assert!(
+    lane(&rate, USDC::MINT).is_some(),
+    "expected the USDC lane to price"
+  );
+  assert!(rate
+    .lanes
+    .iter()
+    .all(|lane| lane.hyusd_usd_rate <= UFix64::one()));
   Ok(())
 }
 
