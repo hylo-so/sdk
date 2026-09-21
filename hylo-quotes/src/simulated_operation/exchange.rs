@@ -203,7 +203,7 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
 
 /// Mint stablecoin from USDC.
 ///
-/// On-chain: USDC is normalized to N9 before fee extraction, so
+/// Onchain: USDC is normalized to N9 before fee extraction, so
 /// event amounts `usdc_deposited` and `usdc_fees` are N9.
 impl SimulatedOperation<USDC, HYUSD> for RouterClient {
   type FeeExp = N9;
@@ -233,7 +233,7 @@ impl SimulatedOperation<USDC, HYUSD> for RouterClient {
 
 /// Redeem stablecoin to USDC.
 ///
-/// On-chain: fee is applied to HYUSD input before conversion.
+/// Onchain: fee is applied to HYUSD input before conversion.
 /// `fee_base` is the total HYUSD input (`stablecoin_burned +
 /// stablecoin_fees`) and `fee_mint` is HYUSD.
 impl SimulatedOperation<HYUSD, USDC> for RouterClient {
