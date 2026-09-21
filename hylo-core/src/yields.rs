@@ -112,7 +112,7 @@ impl YieldHarvestConfig {
   }
 }
 
-/// Records epoch harvest information for off-chain consumers.
+/// Records epoch harvest information for offchain consumers.
 #[derive(
   Debug,
   Clone,
