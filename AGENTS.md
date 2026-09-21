@@ -450,9 +450,12 @@ a dozen shapers expand from it across the workspace: `impl_exo`,
 `exo_router_transaction_data`, `exo_levercoin_ops`, `exo_simulated_ops`,
 `exo_pyth_feed_dispatch`.
 
-**Adding an exo pair means editing one macro, not a dozen call sites.** If a
-change requires touching every shaper individually, the change is in the
-wrong place.
+Adding an exo pair edits the `with_exo_pairs!` list plus three things the
+shapers do not cover: the `impl PythOracle` in `hylo-core/src/pyth/feeds.rs`,
+the eight routes for the pair in
+`hylo-quotes/src/runtime_quote_strategy.rs`, and the explicit token imports
+in each file that invokes a shaper. If a change requires touching a shaper
+body, the change is in the wrong place.
 
 ### Fixed-point math
 
