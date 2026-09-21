@@ -279,4 +279,6 @@ pub enum CoreError {
   MintExtensionConfigBlacklisted,
   #[msg("Mint account data failed to deserialize as Token Extensions.")]
   CannotDeserializeMintExtension,
+  #[msg("Arithmetic overflow")]
+  ArithmeticOverflow,
 }

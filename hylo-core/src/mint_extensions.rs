@@ -1,5 +1,7 @@
 use anchor_spl::token_2022::spl_token_2022::extension::pausable::PausableConfig;
-use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::TransferFeeConfig;
+use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
+  TransferFee, TransferFeeConfig, MAX_FEE_BASIS_POINTS,
+};
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHook;
 use anchor_spl::token_2022::spl_token_2022::extension::{
   BaseStateWithExtensions, ExtensionType, StateWithExtensions,
@@ -9,7 +11,7 @@ use anchor_spl::token_interface::spl_pod::optional_keys::OptionalNonZeroPubkey;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  CannotDeserializeMintExtension, MintExtensionBlacklisted,
+  ArithmeticOverflow, CannotDeserializeMintExtension, MintExtensionBlacklisted,
   MintExtensionConfigBlacklisted,
 };
 
@@ -22,7 +24,8 @@ pub enum ExtensionClass {
   /// transfers or accounting. Enforced at registration and on every
   /// collateral token CPI.
   Guard,
-  /// Presence allowed. Protocol math reads the extension.
+  /// Presence allowed. Transfer-fee helpers adjust amounts;
+  /// `ScaledUiAmount` and `InterestBearingConfig` stay on raw amount × Pyth.
   Adjust,
   /// Presence allowed. Listing decision only; no code path.
   Policy,
@@ -36,10 +39,12 @@ pub enum ExtensionClass {
 #[must_use]
 pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionClass {
   match ext {
+    ExtensionType::TransferHook | ExtensionType::Pausable => {
+      ExtensionClass::Guard
+    }
     ExtensionType::TransferFeeConfig
-    | ExtensionType::TransferHook
-    | ExtensionType::Pausable => ExtensionClass::Guard,
-    ExtensionType::ScaledUiAmount => ExtensionClass::Adjust,
+    | ExtensionType::ScaledUiAmount
+    | ExtensionType::InterestBearingConfig => ExtensionClass::Adjust,
     ExtensionType::PermanentDelegate | ExtensionType::DefaultAccountState => {
       ExtensionClass::Policy
     }
@@ -119,16 +124,6 @@ fn validate_extension_configuration(
   ext: ExtensionType,
 ) -> Result<(), CoreError> {
   match ext {
-    ExtensionType::TransferFeeConfig => {
-      let config = mint
-        .get_extension::<TransferFeeConfig>()
-        .map_err(|_| CannotDeserializeMintExtension)?;
-      if transfer_fee_is_zero(config) {
-        Ok(())
-      } else {
-        Err(MintExtensionConfigBlacklisted)
-      }
-    }
     ExtensionType::TransferHook => {
       let hook = mint
         .get_extension::<TransferHook>()
@@ -155,9 +150,109 @@ fn validate_extension_configuration(
   }
 }
 
-fn transfer_fee_is_zero(config: &TransferFeeConfig) -> bool {
-  u16::from(config.older_transfer_fee.transfer_fee_basis_points) == 0
-    && u16::from(config.newer_transfer_fee.transfer_fee_basis_points) == 0
+/// Gross transfer amount and the fee taken from it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TransferFeeIncludedAmount {
+  pub amount: u64,
+  pub transfer_fee: u64,
+}
+
+/// Net destination amount after the transfer fee.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TransferFeeExcludedAmount {
+  pub amount: u64,
+  pub transfer_fee: u64,
+}
+
+/// Exact-in: `transfer_fee_included_amount` is inclusive of the fee.
+///
+/// # Errors
+/// * Malformed mint TLV
+/// * Fee arithmetic overflow
+pub fn calculate_transfer_fee_excluded_amount(
+  mint_data: &[u8],
+  transfer_fee_included_amount: u64,
+  epoch: u64,
+) -> Result<TransferFeeExcludedAmount, CoreError> {
+  match epoch_transfer_fee(mint_data, epoch)? {
+    Some(fee) => {
+      let transfer_fee = fee
+        .calculate_fee(transfer_fee_included_amount)
+        .ok_or(ArithmeticOverflow)?;
+      let amount = transfer_fee_included_amount
+        .checked_sub(transfer_fee)
+        .ok_or(ArithmeticOverflow)?;
+      Ok(TransferFeeExcludedAmount {
+        amount,
+        transfer_fee,
+      })
+    }
+    None => Ok(TransferFeeExcludedAmount {
+      amount: transfer_fee_included_amount,
+      transfer_fee: 0,
+    }),
+  }
+}
+
+/// Exact-out: `transfer_fee_excluded_amount` is the destination net.
+///
+/// # Errors
+/// * Malformed mint TLV
+/// * Fee arithmetic overflow
+/// * Inverse fee does not round-trip
+pub fn calculate_transfer_fee_included_amount(
+  mint_data: &[u8],
+  transfer_fee_excluded_amount: u64,
+  epoch: u64,
+) -> Result<TransferFeeIncludedAmount, CoreError> {
+  if transfer_fee_excluded_amount == 0 {
+    Ok(TransferFeeIncludedAmount {
+      amount: 0,
+      transfer_fee: 0,
+    })
+  } else {
+    match epoch_transfer_fee(mint_data, epoch)? {
+      Some(fee) => {
+        let transfer_fee =
+          if u16::from(fee.transfer_fee_basis_points) == MAX_FEE_BASIS_POINTS {
+            // SPL inverse fee is 0 at 100%; use `maximum_fee` instead.
+            u64::from(fee.maximum_fee)
+          } else {
+            fee
+              .calculate_inverse_fee(transfer_fee_excluded_amount)
+              .ok_or(ArithmeticOverflow)?
+          };
+        let amount = transfer_fee_excluded_amount
+          .checked_add(transfer_fee)
+          .ok_or(ArithmeticOverflow)?;
+        let verified = fee.calculate_fee(amount).ok_or(ArithmeticOverflow)?;
+        (transfer_fee == verified)
+          .then_some(TransferFeeIncludedAmount {
+            amount,
+            transfer_fee,
+          })
+          .ok_or(ArithmeticOverflow)
+      }
+      None => Ok(TransferFeeIncludedAmount {
+        amount: transfer_fee_excluded_amount,
+        transfer_fee: 0,
+      }),
+    }
+  }
+}
+
+fn epoch_transfer_fee(
+  mint_data: &[u8],
+  epoch: u64,
+) -> Result<Option<TransferFee>, CoreError> {
+  let mint = StateWithExtensions::<Mint>::unpack(mint_data)
+    .map_err(|_| CannotDeserializeMintExtension)?;
+  Ok(
+    mint
+      .get_extension::<TransferFeeConfig>()
+      .ok()
+      .map(|config| *config.get_epoch_fee(epoch)),
+  )
 }
 
 #[cfg(test)]
@@ -168,6 +263,7 @@ mod tests {
   use anchor_spl::token::spl_token::state::Mint as SplMint;
   use anchor_spl::token_2022::spl_token_2022::extension::interest_bearing_mint::InterestBearingConfig;
   use anchor_spl::token_2022::spl_token_2022::extension::metadata_pointer::MetadataPointer;
+  use anchor_spl::token_2022::spl_token_2022::extension::scaled_ui_amount::ScaledUiAmountConfig;
   use anchor_spl::token_2022::spl_token_2022::extension::{
     BaseStateWithExtensionsMut, Extension, PodStateWithExtensionsMut,
   };
@@ -237,13 +333,42 @@ mod tests {
   }
 
   #[test]
-  fn nonzero_transfer_fee_is_rejected() {
+  fn nonzero_transfer_fee_is_valid() {
     let data = mint_with!(TransferFeeConfig, |config| {
       config.newer_transfer_fee.transfer_fee_basis_points = 100.into();
     });
+    assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
+  }
+
+  #[test]
+  fn exact_in_includes_transfer_fee() {
+    let data = mint_with!(TransferFeeConfig, |config| {
+      config.newer_transfer_fee.transfer_fee_basis_points = 100.into();
+      config.newer_transfer_fee.maximum_fee = u64::MAX.into();
+    });
     assert_eq!(
-      validate_collateral_mint_extensions(&data),
-      Err(MintExtensionConfigBlacklisted)
+      calculate_transfer_fee_excluded_amount(&data, 10_000, 0)
+        .expect("excluded"),
+      TransferFeeExcludedAmount {
+        amount: 9_900,
+        transfer_fee: 100,
+      }
+    );
+    assert_eq!(
+      calculate_transfer_fee_excluded_amount(&classic_mint(), 10_000, 0)
+        .expect("classic"),
+      TransferFeeExcludedAmount {
+        amount: 10_000,
+        transfer_fee: 0,
+      }
+    );
+    assert_eq!(
+      calculate_transfer_fee_included_amount(&data, 9_900, 0)
+        .expect("included"),
+      TransferFeeIncludedAmount {
+        amount: 10_000,
+        transfer_fee: 100,
+      }
     );
   }
 
@@ -284,20 +409,19 @@ mod tests {
   }
 
   #[test]
-  fn interest_bearing_is_rejected() {
+  fn interest_bearing_is_valid() {
     let data = mint_with!(InterestBearingConfig, |_| {});
-    assert_eq!(
-      validate_collateral_mint_extensions(&data),
-      Err(MintExtensionBlacklisted)
-    );
+    assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
+  }
+
+  #[test]
+  fn scaled_ui_amount_is_valid() {
+    let data = mint_with!(ScaledUiAmountConfig, |_| {});
+    assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
   }
 
   #[test]
   fn unlisted_and_reject_classes() {
-    assert_eq!(
-      mint_extension_class(ExtensionType::InterestBearingConfig),
-      ExtensionClass::Reject
-    );
     assert_eq!(
       mint_extension_class(ExtensionType::NonTransferable),
       ExtensionClass::Reject
@@ -312,9 +436,17 @@ mod tests {
     );
     assert_eq!(
       mint_extension_class(ExtensionType::TransferFeeConfig),
-      ExtensionClass::Guard
+      ExtensionClass::Adjust
     );
-    assert!(!is_whitelisted_mint_extension(
+    assert_eq!(
+      mint_extension_class(ExtensionType::InterestBearingConfig),
+      ExtensionClass::Adjust
+    );
+    assert_eq!(
+      mint_extension_class(ExtensionType::ScaledUiAmount),
+      ExtensionClass::Adjust
+    );
+    assert!(is_whitelisted_mint_extension(
       ExtensionType::InterestBearingConfig
     ));
     assert!(is_whitelisted_mint_extension(
