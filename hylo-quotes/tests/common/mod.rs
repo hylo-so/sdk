@@ -12,8 +12,9 @@ use hylo_quotes::prelude::{ProtocolAccounts, ProtocolState};
 use hylo_quotes::protocol_state::ExoPairState;
 use serde_json::from_reader;
 
-/// CR inside the redeem fee-curve domain (curve `x_max` is 1.50).
-pub const CR_IN_DOMAIN: UFix64<N9> = UFix64::constant(1_300_000_000);
+/// CR inside the redeem fee-curve domain (curve domain is 1.30 to
+/// 1.50, so 1.40 is mid-domain).
+pub const CR_IN_DOMAIN: UFix64<N9> = UFix64::constant(1_400_000_000);
 
 /// CR above the redeem fee-curve domain.
 pub const CR_ABOVE_DOMAIN: UFix64<N9> = UFix64::constant(3_000_000_000);

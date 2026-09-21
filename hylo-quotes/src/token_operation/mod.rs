@@ -133,6 +133,20 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     self.preconditions()?;
     self.min_input_ungated()
   }
+
+  /// Output as if the route could execute: skips
+  /// [`Self::preconditions`] and prices a state outside a fee-curve
+  /// domain at the domain edge. A rate reference, never an executable
+  /// quote. Equal to [`Self::compute_output_ungated`] when that succeeds.
+  ///
+  /// # Errors
+  /// * Underlying arithmetic
+  fn compute_output_indicative(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<OperationOutput<IN::Exp, OUT::Exp, Self::FeeExp>, CoreError> {
+    self.compute_output_ungated(amount_in)
+  }
 }
 
 /// Turbofish helper for [`TokenOperation`].
@@ -140,6 +154,27 @@ pub trait TokenOperationExt {
   /// # Errors
   /// * Arithmetic or mode restrictions.
   fn output<IN, OUT>(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<
+    OperationOutput<
+      IN::Exp,
+      OUT::Exp,
+      <Self as TokenOperation<IN, OUT>>::FeeExp,
+    >,
+    CoreError,
+  >
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer;
+
+  /// Turbofish form of [`TokenOperation::compute_output_indicative`].
+  ///
+  /// # Errors
+  /// * Underlying arithmetic
+  fn indicative_output<IN, OUT>(
     &self,
     amount_in: UFix64<IN::Exp>,
   ) -> Result<
@@ -176,5 +211,25 @@ impl<X> TokenOperationExt for X {
     <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
   {
     TokenOperation::<IN, OUT>::compute_output(self, amount_in)
+  }
+
+  fn indicative_output<IN, OUT>(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<
+    OperationOutput<
+      IN::Exp,
+      OUT::Exp,
+      <Self as TokenOperation<IN, OUT>>::FeeExp,
+    >,
+    CoreError,
+  >
+  where
+    Self: TokenOperation<IN, OUT>,
+    IN: TokenMint,
+    OUT: TokenMint,
+    <Self as TokenOperation<IN, OUT>>::FeeExp: Integer,
+  {
+    TokenOperation::<IN, OUT>::compute_output_indicative(self, amount_in)
   }
 }
