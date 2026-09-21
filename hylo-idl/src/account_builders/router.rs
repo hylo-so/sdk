@@ -6,7 +6,7 @@ use crate::router::client::accounts::{
 };
 use crate::{pda, router};
 
-/// Builds the account context for initializing the canonical EXO registry.
+/// Builds the account context for initializing the canonical exo registry.
 #[must_use]
 pub fn initialize_exo_registry(admin: Pubkey) -> InitializeExoRegistry {
   InitializeExoRegistry {
@@ -17,7 +17,7 @@ pub fn initialize_exo_registry(admin: Pubkey) -> InitializeExoRegistry {
   }
 }
 
-/// Builds the account context for registering an EXO pair with the router.
+/// Builds the account context for registering an exo pair with the router.
 #[must_use]
 pub fn register_exo_entry(
   admin: Pubkey,
