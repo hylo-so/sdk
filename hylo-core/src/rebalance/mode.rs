@@ -16,8 +16,8 @@ use crate::fees::curves::mint_fee_curve;
 
 #[derive(
   Debug,
-  Copy,
   Clone,
+  Copy,
   PartialEq,
   Eq,
   PartialOrd,
@@ -48,7 +48,7 @@ impl Display for RebalanceMode {
   }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CrRange {
   start: Bound<UFix64<N9>>,
   end: Bound<UFix64<N9>>,

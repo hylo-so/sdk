@@ -20,9 +20,9 @@ const MAX_CEIL_MULT: UFix64<N9> = UFix64::constant(5_000_000_000);
 
 /// Captures yield harvest configuration as two basis point values:
 #[derive(
-  Copy,
-  Clone,
   Debug,
+  Clone,
+  Copy,
   PartialEq,
   InitSpace,
   AnchorSerialize,
@@ -114,9 +114,9 @@ impl YieldHarvestConfig {
 
 /// Records epoch harvest information for off-chain consumers.
 #[derive(
-  Copy,
-  Clone,
   Debug,
+  Clone,
+  Copy,
   InitSpace,
   AnchorSerialize,
   AnchorDeserialize,
