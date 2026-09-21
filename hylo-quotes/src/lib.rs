@@ -131,7 +131,7 @@ pub use simulation_strategy::SimulationStrategy;
 pub const DEFAULT_CUS_WITH_BUFFER: u64 = 100_000;
 
 /// Typed executable quote with amounts, instructions, and compute units.
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct ExecutableQuote<In: Integer, Out: Integer, Fee: Integer> {
   pub amount_in: UFix64<In>,
   pub amount_out: UFix64<Out>,
@@ -144,7 +144,7 @@ pub struct ExecutableQuote<In: Integer, Out: Integer, Fee: Integer> {
 }
 
 /// Executable quote with runtime exponent information.
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct ExecutableQuoteValue {
   pub amount_in: UFixValue64,
   pub amount_out: UFixValue64,
@@ -173,7 +173,7 @@ impl<In: Integer, Out: Integer, Fee: Integer>
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum ComputeUnitStrategy {
   /// Estimated compute units based on historical data
   Estimated,

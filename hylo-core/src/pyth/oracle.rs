@@ -21,7 +21,7 @@ const MAX_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(50_000_000);
 /// Divides oracle secs to a tighter tolerance.
 pub const ORACLE_DIVISOR: u64 = 4;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 pub struct OracleConfig {
   pub interval_secs: u64,
   pub conf_tolerance: UFix64<N9>,
@@ -68,7 +68,7 @@ pub fn validate_conf_tolerance(
 
 /// Spread of an asset price, with a lower and upper quote.
 /// Use lower in minting, higher in redeeming.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PriceRange<Exp: Integer> {
   pub lower: UFix64<Exp>,
   pub upper: UFix64<Exp>,
@@ -201,7 +201,7 @@ fn validate_verification_level(
 }
 
 /// Validated oracle spot price and confidence interval.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OraclePrice {
   pub spot: UFix64<N9>,
   pub conf: UFix64<N9>,

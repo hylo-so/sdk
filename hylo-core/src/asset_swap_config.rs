@@ -7,7 +7,7 @@ use crate::fees::controller::FeeExtract;
 /// 100 bps (1%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(100);
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AssetSwapConfig {
   pub fee: UFix64<N4>,
 }

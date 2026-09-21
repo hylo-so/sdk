@@ -16,9 +16,9 @@ use crate::rebalance::pricing::narrow;
 
 /// Per-epoch borrow rate for exogenous collateral without native yield.
 #[derive(
-  Copy,
-  Clone,
   Debug,
+  Clone,
+  Copy,
   PartialEq,
   InitSpace,
   AnchorSerialize,
