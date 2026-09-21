@@ -24,7 +24,7 @@ use hylo_idl::tokens::{
 };
 use hylo_idl::with_exo_pairs;
 
-use crate::protocol_state::ProtocolState;
+use crate::protocol_state::{ExoPairState, ProtocolState};
 use crate::token_operation::{
   atom_rate, gate, linear_rate, past_zero, FeeBasis, LstSwapOperationOutput,
   MintOperationOutput, OperationOutput, RedeemOperationOutput,
@@ -893,10 +893,15 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+  /// Shared `HYUSD -> Exo` redeem math. `fee` prices the gross collateral.
+  fn redeem_stablecoin_exo_core<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
+    fee: impl FnOnce(
+      &ExoPairState<C>,
+      UFix64<N9>,
+    ) -> Result<(FeeExtract<N9>, FeeBasis), CoreError>,
+  ) -> Result<(UFix64<N9>, UFix64<E::Exp>, FeeExtract<N9>, FeeBasis), CoreError>
   where
     UFix64<E::Exp>: FixExt,
   {
@@ -910,28 +915,90 @@ impl<C: SolanaClock> ProtocolState<C> {
       collateral_out <= pair.context.total_collateral,
       CoreError::InsufficientLiquidity,
     )?;
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = pair.context.stablecoin_redeem_fee(collateral_out)?;
+    let (extract, basis) = fee(pair, collateral_out)?;
     validate_burn(
       pair.context.virtual_stablecoin_supply()?,
       in_amount,
       pair.supply_floor,
     )?;
-    let out_amount: UFix64<E::Exp> = amount_remaining
+    let out_amount: UFix64<E::Exp> = extract
+      .amount_remaining
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
+    Ok((collateral_out, out_amount, extract, basis))
+  }
+
+  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let (collateral_out, out_amount, extract, _) = self
+      .redeem_stablecoin_exo_core::<E>(in_amount, |pair, collateral_out| {
+        pair
+          .context
+          .stablecoin_redeem_fee(collateral_out)
+          .map(|extract| (extract, FeeBasis::CurrentCr))
+      })?;
     Ok(OperationOutput {
       in_amount,
       out_amount,
-      fee_amount: fees_extracted,
+      fee_amount: extract.fees_extracted,
       fee_mint: E::MINT,
       fee_base: collateral_out,
       marginal_rate: atom_rate::<N6, E::Exp>(
-        pair.context.stablecoin_redeem_marginal(in_amount)?,
+        self
+          .exo_pair::<E>()?
+          .context
+          .stablecoin_redeem_marginal(in_amount)?,
       ),
     })
+  }
+
+  /// `HYUSD -> Exo` with the redeem fee clamped at the curve domain edge.
+  ///
+  /// # Errors
+  /// * Pair lookup, conversion, liquidity, fee, burn limit, or marginal
+  pub(super) fn redeem_stablecoin_exo_indicative<E: Exo + PythOracle>(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<(OperationOutput<N6, E::Exp, N9>, FeeBasis), CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let (collateral_out, out_amount, extract, basis) = self
+      .redeem_stablecoin_exo_core::<E>(in_amount, |pair, collateral_out| {
+        let projected = pair.context.projected_redeem_state(collateral_out)?;
+        clamped_redeem_fee(
+          &pair.context.stablecoin_redeem_fees,
+          projected.collateral_ratio,
+          collateral_out,
+        )
+      })?;
+    let marginal_rate = match basis {
+      FeeBasis::CurrentCr => atom_rate::<N6, E::Exp>(
+        self
+          .exo_pair::<E>()?
+          .context
+          .stablecoin_redeem_marginal(in_amount)?,
+      ),
+      FeeBasis::RedeemMaxCr => {
+        linear_rate::<N6, E::Exp>(in_amount, out_amount)?
+      }
+    };
+    Ok((
+      OperationOutput {
+        in_amount,
+        out_amount,
+        fee_amount: extract.fees_extracted,
+        fee_mint: E::MINT,
+        fee_base: collateral_out,
+        marginal_rate,
+      },
+      basis,
+    ))
   }
 
   fn redeem_stablecoin_exo_max_input<E: Exo + PythOracle>(
@@ -1772,6 +1839,15 @@ where
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError> {
     self.redeem_stablecoin_exo_quote::<E>(in_amount)
+  }
+
+  fn compute_output_indicative(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError> {
+    self
+      .redeem_stablecoin_exo_indicative::<E>(in_amount)
+      .map(|(output, _)| output)
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
