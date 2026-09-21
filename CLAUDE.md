@@ -141,6 +141,13 @@ Computing quotes from protocol state:
 let op = state.output::<JITOSOL, HYUSD>(amount_in)?;
 ```
 
+Fair-value rate (not a quote; survives gates and CR above the redeem fee domain):
+```rust
+let rate = state.redemption_rate(UFix64::<N6>::new(1_000_000_000))?;
+let usd_per_shyusd = rate.best.shyusd_usd_rate;
+let op = state.indicative_output::<HYUSD, JITOSOL>(amount_in)?;
+```
+
 Using the prelude:
 ```rust
 use hylo_clients::prelude::*;  // Common imports
