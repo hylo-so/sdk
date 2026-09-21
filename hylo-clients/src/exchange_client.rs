@@ -18,10 +18,9 @@ use crate::util::{
   ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
 };
 
-/// Admin client for the Hylo exchange program. Manages LST
-/// registration, oracle configuration, fee updates, and protocol
-/// stats. User-facing operations go through
-/// [`crate::router_client::RouterClient`].
+/// Admin client for the exchange program: LST registration, oracle
+/// configuration, fee updates, and protocol stats. User-facing operations
+/// go through [`crate::router_client::RouterClient`].
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

@@ -52,10 +52,7 @@ pub struct RpcStateProvider {
 }
 
 impl RpcStateProvider {
-  /// Create a new RPC state provider
-  ///
-  /// # Arguments
-  /// * `rpc_client` - Solana RPC client for fetching account data
+  /// Creates a state provider over an RPC client.
   #[must_use]
   pub fn new(rpc_client: Arc<RpcClient>) -> Self {
     Self { rpc_client }
