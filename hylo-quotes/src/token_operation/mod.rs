@@ -1,7 +1,13 @@
 //! Token operation trait for pure protocol math.
+//!
+//! Three tiers, in increasing looseness: gated
+//! ([`TokenOperation::compute_output`]),
+//! ungated ([`TokenOperation::compute_output_ungated`]), and indicative
+//! ([`TokenOperation::compute_output_indicative`]).
 
 mod earn_pool;
 mod exchange;
+mod redemption_rate;
 
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::{CheckedAdd, UFix64, N6, N9};
@@ -9,6 +15,7 @@ use fix::typenum::Integer;
 use hylo_core::calculus::{positive, positive_rate};
 use hylo_core::error::CoreError;
 use hylo_idl::tokens::TokenMint;
+pub use redemption_rate::{RedemptionLane, RedemptionRate};
 
 fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
   condition.then_some(()).ok_or(error)
@@ -134,10 +141,13 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     self.min_input_ungated()
   }
 
-  /// Output as if the route could execute: skips
-  /// [`Self::preconditions`] and prices a state outside a fee-curve
-  /// domain at the domain edge. A rate reference, never an executable
-  /// quote. Equal to [`Self::compute_output_ungated`] when that succeeds.
+  /// Output as if the route could execute. Skips
+  /// [`Self::preconditions`]. The default is
+  /// [`Self::compute_output_ungated`]. A route whose math has a fee-curve
+  /// domain overrides it to price a state outside the domain at the
+  /// domain edge (today: `HYUSD -> LST` and `HYUSD -> Exo`). A rate
+  /// reference, never an executable quote. Equal to
+  /// [`Self::compute_output_ungated`] whenever that succeeds.
   ///
   /// # Errors
   /// * Underlying arithmetic
