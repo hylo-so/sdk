@@ -24,13 +24,23 @@ use hylo_idl::tokens::{
 };
 use hylo_idl::with_exo_pairs;
 
-use crate::protocol_state::{ExoPairState, ProtocolState};
+use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
   atom_rate, gate, linear_rate, past_zero, FeeBasis, LstSwapOperationOutput,
   MintOperationOutput, OperationOutput, RedeemOperationOutput,
   SwapOperationOutput, TokenOperation,
 };
 use crate::{Local, LocalExo, LST};
+
+/// Which stablecoin redeem fee a `HYUSD -> collateral` route prices with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum RedeemFeeMode {
+  /// The on-chain fee. Fails above the fee-curve domain.
+  Strict,
+  /// The fee at `min(projected CR, curve x_max)`. Not executable above
+  /// the domain; see [`FeeBasis`].
+  Clamped,
+}
 
 /// Stablecoin redeem fee at `min(projected CR, curve x_max)`.
 ///
@@ -197,16 +207,17 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// Shared `HYUSD -> LST` redeem math. `fee` prices the gross LST out.
-  fn redeem_stablecoin_lst_core<L: LST + Local>(
+  /// `HYUSD -> LST` redeem math. In [`RedeemFeeMode::Clamped`] the fee
+  /// is clamped at the curve domain edge, where the fee is flat and the
+  /// marginal rate is the realized linear rate.
+  ///
+  /// # Errors
+  /// * Conversion, liquidity, fee, burn limit, or marginal rate
+  pub(super) fn redeem_stablecoin_lst_quote<L: LST + Local>(
     &self,
     in_amount: UFix64<N6>,
-    fee: impl FnOnce(
-      &LstSolPrice,
-      UFix64<N9>,
-    ) -> Result<(FeeExtract<N9>, FeeBasis), CoreError>,
-  ) -> Result<(LstSolPrice, UFix64<N9>, FeeExtract<N9>, FeeBasis), CoreError>
-  {
+    mode: RedeemFeeMode,
+  ) -> Result<(RedeemOperationOutput, FeeBasis), CoreError> {
     let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let lst_out = self
@@ -217,63 +228,27 @@ impl<C: SolanaClock> ProtocolState<C> {
       lst_out <= self.lst_vault_balance::<L>()?,
       CoreError::InsufficientLiquidity,
     )?;
-    let (extract, basis) = fee(&lst_price, lst_out)?;
+    let (extract, basis) = match mode {
+      RedeemFeeMode::Strict => self
+        .exchange_context
+        .stablecoin_redeem_fee(&lst_price, lst_out)
+        .map(|extract| (extract, FeeBasis::CurrentCr))?,
+      RedeemFeeMode::Clamped => {
+        let projected = self
+          .exchange_context
+          .projected_redeem_state(&lst_price, lst_out)?;
+        clamped_redeem_fee(
+          &self.exchange_context.stablecoin_redeem_fees,
+          projected.collateral_ratio,
+          lst_out,
+        )?
+      }
+    };
     validate_burn(
       self.exchange_context.virtual_stablecoin_supply()?,
       in_amount,
       SUPPLY_FLOOR,
     )?;
-    Ok((lst_price, lst_out, extract, basis))
-  }
-
-  fn redeem_stablecoin_lst_quote<L: LST + Local>(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<RedeemOperationOutput, CoreError> {
-    let (lst_price, lst_out, extract, _) = self
-      .redeem_stablecoin_lst_core::<L>(in_amount, |price, lst_out| {
-        self
-          .exchange_context
-          .stablecoin_redeem_fee(price, lst_out)
-          .map(|extract| (extract, FeeBasis::CurrentCr))
-      })?;
-    let marginal_rate = atom_rate::<N6, N9>(
-      self
-        .exchange_context
-        .stablecoin_redeem_marginal(&lst_price, in_amount)?,
-    );
-    Ok(OperationOutput {
-      in_amount,
-      out_amount: extract.amount_remaining,
-      fee_amount: extract.fees_extracted,
-      fee_mint: L::MINT,
-      fee_base: lst_out,
-      marginal_rate,
-    })
-  }
-
-  /// `HYUSD -> LST` with the redeem fee clamped at the curve domain edge.
-  ///
-  /// Above the domain the fee is flat, so the marginal rate is the
-  /// realized linear rate.
-  ///
-  /// # Errors
-  /// * Conversion, liquidity, fee, burn limit, or marginal rate
-  pub(super) fn redeem_stablecoin_lst_indicative<L: LST + Local>(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<(RedeemOperationOutput, FeeBasis), CoreError> {
-    let (lst_price, lst_out, extract, basis) = self
-      .redeem_stablecoin_lst_core::<L>(in_amount, |price, lst_out| {
-        let projected = self
-          .exchange_context
-          .projected_redeem_state(price, lst_out)?;
-        clamped_redeem_fee(
-          &self.exchange_context.stablecoin_redeem_fees,
-          projected.collateral_ratio,
-          lst_out,
-        )
-      })?;
     let marginal_rate = match basis {
       FeeBasis::CurrentCr => atom_rate::<N6, N9>(
         self
@@ -893,15 +868,17 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// Shared `HYUSD -> Exo` redeem math. `fee` prices the gross collateral.
-  fn redeem_stablecoin_exo_core<E: Exo + PythOracle>(
+  /// `HYUSD -> Exo` redeem math. In [`RedeemFeeMode::Clamped`] the fee
+  /// is clamped at the curve domain edge, where the fee is flat and the
+  /// marginal rate is the realized linear rate.
+  ///
+  /// # Errors
+  /// * Pair lookup, conversion, liquidity, fee, burn limit, or marginal
+  pub(super) fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
     &self,
     in_amount: UFix64<N6>,
-    fee: impl FnOnce(
-      &ExoPairState<C>,
-      UFix64<N9>,
-    ) -> Result<(FeeExtract<N9>, FeeBasis), CoreError>,
-  ) -> Result<(UFix64<N9>, UFix64<E::Exp>, FeeExtract<N9>, FeeBasis), CoreError>
+    mode: RedeemFeeMode,
+  ) -> Result<(OperationOutput<N6, E::Exp, N9>, FeeBasis), CoreError>
   where
     UFix64<E::Exp>: FixExt,
   {
@@ -915,7 +892,20 @@ impl<C: SolanaClock> ProtocolState<C> {
       collateral_out <= pair.context.total_collateral,
       CoreError::InsufficientLiquidity,
     )?;
-    let (extract, basis) = fee(pair, collateral_out)?;
+    let (extract, basis) = match mode {
+      RedeemFeeMode::Strict => pair
+        .context
+        .stablecoin_redeem_fee(collateral_out)
+        .map(|extract| (extract, FeeBasis::CurrentCr))?,
+      RedeemFeeMode::Clamped => {
+        let projected = pair.context.projected_redeem_state(collateral_out)?;
+        clamped_redeem_fee(
+          &pair.context.stablecoin_redeem_fees,
+          projected.collateral_ratio,
+          collateral_out,
+        )?
+      }
+    };
     validate_burn(
       pair.context.virtual_stablecoin_supply()?,
       in_amount,
@@ -925,64 +915,9 @@ impl<C: SolanaClock> ProtocolState<C> {
       .amount_remaining
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
-    Ok((collateral_out, out_amount, extract, basis))
-  }
-
-  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
-  where
-    UFix64<E::Exp>: FixExt,
-  {
-    let (collateral_out, out_amount, extract, _) = self
-      .redeem_stablecoin_exo_core::<E>(in_amount, |pair, collateral_out| {
-        pair
-          .context
-          .stablecoin_redeem_fee(collateral_out)
-          .map(|extract| (extract, FeeBasis::CurrentCr))
-      })?;
-    Ok(OperationOutput {
-      in_amount,
-      out_amount,
-      fee_amount: extract.fees_extracted,
-      fee_mint: E::MINT,
-      fee_base: collateral_out,
-      marginal_rate: atom_rate::<N6, E::Exp>(
-        self
-          .exo_pair::<E>()?
-          .context
-          .stablecoin_redeem_marginal(in_amount)?,
-      ),
-    })
-  }
-
-  /// `HYUSD -> Exo` with the redeem fee clamped at the curve domain edge.
-  ///
-  /// # Errors
-  /// * Pair lookup, conversion, liquidity, fee, burn limit, or marginal
-  pub(super) fn redeem_stablecoin_exo_indicative<E: Exo + PythOracle>(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<(OperationOutput<N6, E::Exp, N9>, FeeBasis), CoreError>
-  where
-    UFix64<E::Exp>: FixExt,
-  {
-    let (collateral_out, out_amount, extract, basis) = self
-      .redeem_stablecoin_exo_core::<E>(in_amount, |pair, collateral_out| {
-        let projected = pair.context.projected_redeem_state(collateral_out)?;
-        clamped_redeem_fee(
-          &pair.context.stablecoin_redeem_fees,
-          projected.collateral_ratio,
-          collateral_out,
-        )
-      })?;
     let marginal_rate = match basis {
       FeeBasis::CurrentCr => atom_rate::<N6, E::Exp>(
-        self
-          .exo_pair::<E>()?
-          .context
-          .stablecoin_redeem_marginal(in_amount)?,
+        pair.context.stablecoin_redeem_marginal(in_amount)?,
       ),
       FeeBasis::RedeemMaxCr => {
         linear_rate::<N6, E::Exp>(in_amount, out_amount)?
@@ -1838,7 +1773,9 @@ where
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError> {
-    self.redeem_stablecoin_exo_quote::<E>(in_amount)
+    self
+      .redeem_stablecoin_exo_quote::<E>(in_amount, RedeemFeeMode::Strict)
+      .map(|(output, _)| output)
   }
 
   fn compute_output_indicative(
@@ -1846,7 +1783,7 @@ where
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError> {
     self
-      .redeem_stablecoin_exo_indicative::<E>(in_amount)
+      .redeem_stablecoin_exo_quote::<E>(in_amount, RedeemFeeMode::Clamped)
       .map(|(output, _)| output)
   }
 
@@ -1970,7 +1907,9 @@ impl<C: SolanaClock> TokenOperation<HYUSD, JITOSOL> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput, CoreError> {
-    self.redeem_stablecoin_lst_quote::<JITOSOL>(in_amount)
+    self
+      .redeem_stablecoin_lst_quote::<JITOSOL>(in_amount, RedeemFeeMode::Strict)
+      .map(|(output, _)| output)
   }
 
   fn compute_output_indicative(
@@ -1978,7 +1917,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, JITOSOL> for ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput, CoreError> {
     self
-      .redeem_stablecoin_lst_indicative::<JITOSOL>(in_amount)
+      .redeem_stablecoin_lst_quote::<JITOSOL>(in_amount, RedeemFeeMode::Clamped)
       .map(|(output, _)| output)
   }
 
@@ -2002,7 +1941,9 @@ impl<C: SolanaClock> TokenOperation<HYUSD, HYLOSOL> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput, CoreError> {
-    self.redeem_stablecoin_lst_quote::<HYLOSOL>(in_amount)
+    self
+      .redeem_stablecoin_lst_quote::<HYLOSOL>(in_amount, RedeemFeeMode::Strict)
+      .map(|(output, _)| output)
   }
 
   fn compute_output_indicative(
@@ -2010,7 +1951,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, HYLOSOL> for ProtocolState<C> {
     in_amount: UFix64<N6>,
   ) -> Result<RedeemOperationOutput, CoreError> {
     self
-      .redeem_stablecoin_lst_indicative::<HYLOSOL>(in_amount)
+      .redeem_stablecoin_lst_quote::<HYLOSOL>(in_amount, RedeemFeeMode::Clamped)
       .map(|(output, _)| output)
   }
 

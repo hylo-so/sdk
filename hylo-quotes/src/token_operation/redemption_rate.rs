@@ -41,6 +41,7 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, USDC};
 
 use crate::protocol_state::ProtocolState;
+use crate::token_operation::exchange::RedeemFeeMode;
 use crate::token_operation::{FeeBasis, TokenOperation};
 use crate::{Local, LST};
 
@@ -186,7 +187,10 @@ impl<C: SolanaClock> ProtocolState<C> {
         reference,
         exit,
         self
-          .redeem_stablecoin_lst_indicative::<JITOSOL>(reference)
+          .redeem_stablecoin_lst_quote::<JITOSOL>(
+            reference,
+            RedeemFeeMode::Clamped,
+          )
           .map(|(op, basis)| (op.out_amount, basis)),
         self.lst_usd_lower::<JITOSOL>(),
       ),
@@ -194,7 +198,10 @@ impl<C: SolanaClock> ProtocolState<C> {
         reference,
         exit,
         self
-          .redeem_stablecoin_lst_indicative::<HYLOSOL>(reference)
+          .redeem_stablecoin_lst_quote::<HYLOSOL>(
+            reference,
+            RedeemFeeMode::Clamped,
+          )
           .map(|(op, basis)| (op.out_amount, basis)),
         self.lst_usd_lower::<HYLOSOL>(),
       ),
@@ -202,7 +209,10 @@ impl<C: SolanaClock> ProtocolState<C> {
         reference,
         exit,
         self
-          .redeem_stablecoin_exo_indicative::<CBBTC>(reference)
+          .redeem_stablecoin_exo_quote::<CBBTC>(
+            reference,
+            RedeemFeeMode::Clamped,
+          )
           .map(|(op, basis)| (op.out_amount, basis)),
         Some(self.cbbtc_pair.context.collateral_usd_price().lower),
       ),
@@ -210,7 +220,10 @@ impl<C: SolanaClock> ProtocolState<C> {
         reference,
         exit,
         self
-          .redeem_stablecoin_exo_indicative::<HYPE>(reference)
+          .redeem_stablecoin_exo_quote::<HYPE>(
+            reference,
+            RedeemFeeMode::Clamped,
+          )
           .map(|(op, basis)| (op.out_amount, basis)),
         Some(self.hype_pair.context.collateral_usd_price().lower),
       ),
