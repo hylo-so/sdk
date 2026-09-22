@@ -2,9 +2,10 @@
 //!
 //! Each function builds account metas for a router `Route`
 //! instruction wrapping the appropriate exchange or earn pool
-//! accounts.
+//! accounts. Jupiter's program encodes the `route` instruction data, so
+//! these build the `route` account shape.
 
-use anchor_lang::prelude::{AccountMeta, Pubkey, ToAccountMetas};
+use anchor_lang::prelude::{Pubkey, ToAccountMetas};
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use hylo_idl::{earn_pool, exchange, pda};
 use hylo_jupiter_amm_interface::{Swap, SwapAndAccountMetas};
@@ -14,10 +15,7 @@ fn route_account_metas<A: ToAccountMetas>(
   out_token: Pubkey,
   inner_accounts: &A,
 ) -> SwapAndAccountMetas {
-  let account_metas =
-    std::iter::once(AccountMeta::new_readonly(pda::EXO_REGISTRY, false))
-      .chain(inner_accounts.to_account_metas(None))
-      .collect();
+  let account_metas = inner_accounts.to_account_metas(None);
   SwapAndAccountMetas {
     swap: Swap::Hylo {
       in_token,
