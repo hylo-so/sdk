@@ -1,3 +1,4 @@
+use anchor_lang::prelude::Pubkey;
 use anchor_spl::token_2022::spl_token_2022::extension::pausable::PausableConfig;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
   TransferFee, TransferFeeConfig,
@@ -150,6 +151,21 @@ fn validate_extension_configuration(
   }
 }
 
+/// `TransferFeeConfig` when `owner` is Token-2022 and the extension is set.
+#[must_use]
+pub fn has_transfer_fee_extension(
+  owner: &Pubkey,
+  mint_data: &[u8],
+) -> Option<TransferFeeConfig> {
+  if *owner == anchor_spl::token_2022::ID {
+    StateWithExtensions::<Mint>::unpack(mint_data)
+      .ok()
+      .and_then(|mint| mint.get_extension::<TransferFeeConfig>().ok().copied())
+  } else {
+    None
+  }
+}
+
 /// Gross transfer amount and the fee taken from it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TransferFeeIncludedAmount {
@@ -167,14 +183,14 @@ pub struct TransferFeeExcludedAmount {
 /// Exact-in: `transfer_fee_included_amount` is inclusive of the fee.
 ///
 /// # Errors
-/// * Malformed mint TLV
 /// * Fee arithmetic overflow
 pub fn calculate_transfer_fee_excluded_amount(
+  owner: &Pubkey,
   mint_data: &[u8],
   transfer_fee_included_amount: u64,
   epoch: u64,
 ) -> Result<TransferFeeExcludedAmount, CoreError> {
-  match epoch_transfer_fee(mint_data, epoch)? {
+  match epoch_transfer_fee(owner, mint_data, epoch) {
     Some(fee) => {
       let transfer_fee = fee
         .calculate_fee(transfer_fee_included_amount)
@@ -203,17 +219,18 @@ pub fn calculate_transfer_fee_excluded_amount(
 /// `calculate_inverse_fee` is not used. It is not a true inverse of
 /// `calculate_fee` (`calculate_fee(x) >= inverse(x - calculate_fee(x))`).
 /// Using that fee, or reconstructing gross as `net + inverse`, can disagree
-/// with the withheld amount on the transfer. See: https://github.com/solana-labs/solana-program-library/pull/6874
+/// with the withheld amount on the transfer. See
+/// <https://github.com/solana-labs/solana-program-library/pull/6874>.
 ///
 /// # Errors
-/// * Malformed mint TLV
 /// * Fee arithmetic overflow
 pub fn calculate_transfer_fee_included_amount(
+  owner: &Pubkey,
   mint_data: &[u8],
   transfer_fee_excluded_amount: u64,
   epoch: u64,
 ) -> Result<TransferFeeIncludedAmount, CoreError> {
-  match epoch_transfer_fee(mint_data, epoch)? {
+  match epoch_transfer_fee(owner, mint_data, epoch) {
     Some(fee) => {
       let amount = fee
         .calculate_pre_fee_amount(transfer_fee_excluded_amount)
@@ -232,17 +249,12 @@ pub fn calculate_transfer_fee_included_amount(
 }
 
 fn epoch_transfer_fee(
+  owner: &Pubkey,
   mint_data: &[u8],
   epoch: u64,
-) -> Result<Option<TransferFee>, CoreError> {
-  let mint = StateWithExtensions::<Mint>::unpack(mint_data)
-    .map_err(|_| CannotDeserializeMintExtension)?;
-  Ok(
-    mint
-      .get_extension::<TransferFeeConfig>()
-      .ok()
-      .map(|config| *config.get_epoch_fee(epoch)),
-  )
+) -> Option<TransferFee> {
+  has_transfer_fee_extension(owner, mint_data)
+    .map(|config| *config.get_epoch_fee(epoch))
 }
 
 #[cfg(test)]
@@ -331,37 +343,84 @@ mod tests {
   }
 
   #[test]
+  fn transfer_fee_extension_requires_token_2022_owner() {
+    let fee_mint = mint_with!(TransferFeeConfig, |_| {});
+    let hook_mint = mint_with!(TransferHook, |_| {});
+    assert!(
+      has_transfer_fee_extension(&anchor_spl::token_2022::ID, &fee_mint)
+        .is_some()
+    );
+    assert_eq!(
+      has_transfer_fee_extension(&anchor_spl::token::ID, &fee_mint),
+      None
+    );
+    assert_eq!(
+      has_transfer_fee_extension(&anchor_spl::token_2022::ID, &hook_mint),
+      None
+    );
+    assert_eq!(
+      has_transfer_fee_extension(&anchor_spl::token_2022::ID, &classic_mint()),
+      None
+    );
+    assert_eq!(
+      has_transfer_fee_extension(&anchor_spl::token_2022::ID, &[0u8; 8]),
+      None
+    );
+  }
+
+  #[test]
   fn exact_in_includes_transfer_fee() {
     let data = mint_with!(TransferFeeConfig, |config| {
       config.newer_transfer_fee.transfer_fee_basis_points = 100.into();
       config.newer_transfer_fee.maximum_fee = u64::MAX.into();
     });
     assert_eq!(
-      calculate_transfer_fee_excluded_amount(&data, 10_000, 0)
-        .expect("excluded"),
+      calculate_transfer_fee_excluded_amount(
+        &anchor_spl::token_2022::ID,
+        &data,
+        10_000,
+        0,
+      )
+      .expect("excluded"),
       TransferFeeExcludedAmount {
         amount: 9_900,
         transfer_fee: 100,
       }
     );
     assert_eq!(
-      calculate_transfer_fee_excluded_amount(&classic_mint(), 10_000, 0)
-        .expect("classic"),
+      calculate_transfer_fee_excluded_amount(
+        &anchor_spl::token::ID,
+        &classic_mint(),
+        10_000,
+        0,
+      )
+      .expect("classic"),
       TransferFeeExcludedAmount {
         amount: 10_000,
         transfer_fee: 0,
       }
     );
     assert_eq!(
-      calculate_transfer_fee_included_amount(&data, 9_900, 0)
-        .expect("included"),
+      calculate_transfer_fee_included_amount(
+        &anchor_spl::token_2022::ID,
+        &data,
+        9_900,
+        0,
+      )
+      .expect("included"),
       TransferFeeIncludedAmount {
         amount: 10_000,
         transfer_fee: 100,
       }
     );
     assert_eq!(
-      calculate_transfer_fee_included_amount(&data, 0, 0).expect("zero"),
+      calculate_transfer_fee_included_amount(
+        &anchor_spl::token_2022::ID,
+        &data,
+        0,
+        0,
+      )
+      .expect("zero"),
       TransferFeeIncludedAmount {
         amount: 0,
         transfer_fee: 0,
@@ -376,7 +435,13 @@ mod tests {
       config.newer_transfer_fee.maximum_fee = 50.into();
     });
     assert_eq!(
-      calculate_transfer_fee_included_amount(&data, 100, 0).expect("max fee"),
+      calculate_transfer_fee_included_amount(
+        &anchor_spl::token_2022::ID,
+        &data,
+        100,
+        0,
+      )
+      .expect("max fee"),
       TransferFeeIncludedAmount {
         amount: 150,
         transfer_fee: 50,
