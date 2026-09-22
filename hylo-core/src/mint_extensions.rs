@@ -1,6 +1,6 @@
 use anchor_spl::token_2022::spl_token_2022::extension::pausable::PausableConfig;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
-  TransferFee, TransferFeeConfig, MAX_FEE_BASIS_POINTS,
+  TransferFee, TransferFeeConfig,
 };
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHook;
 use anchor_spl::token_2022::spl_token_2022::extension::{
@@ -196,48 +196,38 @@ pub fn calculate_transfer_fee_excluded_amount(
 
 /// Exact-out: `transfer_fee_excluded_amount` is the destination net.
 ///
+/// Gross is SPL `calculate_pre_fee_amount` (ceiling), so destination
+/// receives at least `net`. Fee is `calculate_fee` of that gross, matching
+/// what Token-2022 withholds.
+///
+/// `calculate_inverse_fee` is not used. It is not a true inverse of
+/// `calculate_fee` (`calculate_fee(x) >= inverse(x - calculate_fee(x))`).
+/// Using that fee, or reconstructing gross as `net + inverse`, can disagree
+/// with the withheld amount on the transfer. See: https://github.com/solana-labs/solana-program-library/pull/6874
+///
 /// # Errors
 /// * Malformed mint TLV
 /// * Fee arithmetic overflow
-/// * Inverse fee does not round-trip
 pub fn calculate_transfer_fee_included_amount(
   mint_data: &[u8],
   transfer_fee_excluded_amount: u64,
   epoch: u64,
 ) -> Result<TransferFeeIncludedAmount, CoreError> {
-  if transfer_fee_excluded_amount == 0 {
-    Ok(TransferFeeIncludedAmount {
-      amount: 0,
-      transfer_fee: 0,
-    })
-  } else {
-    match epoch_transfer_fee(mint_data, epoch)? {
-      Some(fee) => {
-        let transfer_fee =
-          if u16::from(fee.transfer_fee_basis_points) == MAX_FEE_BASIS_POINTS {
-            // SPL inverse fee is 0 at 100%; use `maximum_fee` instead.
-            u64::from(fee.maximum_fee)
-          } else {
-            fee
-              .calculate_inverse_fee(transfer_fee_excluded_amount)
-              .ok_or(ArithmeticOverflow)?
-          };
-        let amount = transfer_fee_excluded_amount
-          .checked_add(transfer_fee)
-          .ok_or(ArithmeticOverflow)?;
-        let verified = fee.calculate_fee(amount).ok_or(ArithmeticOverflow)?;
-        (transfer_fee == verified)
-          .then_some(TransferFeeIncludedAmount {
-            amount,
-            transfer_fee,
-          })
-          .ok_or(ArithmeticOverflow)
-      }
-      None => Ok(TransferFeeIncludedAmount {
-        amount: transfer_fee_excluded_amount,
-        transfer_fee: 0,
-      }),
+  match epoch_transfer_fee(mint_data, epoch)? {
+    Some(fee) => {
+      let amount = fee
+        .calculate_pre_fee_amount(transfer_fee_excluded_amount)
+        .ok_or(ArithmeticOverflow)?;
+      let transfer_fee = fee.calculate_fee(amount).ok_or(ArithmeticOverflow)?;
+      Ok(TransferFeeIncludedAmount {
+        amount,
+        transfer_fee,
+      })
     }
+    None => Ok(TransferFeeIncludedAmount {
+      amount: transfer_fee_excluded_amount,
+      transfer_fee: 0,
+    }),
   }
 }
 
@@ -368,6 +358,28 @@ mod tests {
       TransferFeeIncludedAmount {
         amount: 10_000,
         transfer_fee: 100,
+      }
+    );
+    assert_eq!(
+      calculate_transfer_fee_included_amount(&data, 0, 0).expect("zero"),
+      TransferFeeIncludedAmount {
+        amount: 0,
+        transfer_fee: 0,
+      }
+    );
+  }
+
+  #[test]
+  fn exact_out_full_basis_points_uses_maximum_fee() {
+    let data = mint_with!(TransferFeeConfig, |config| {
+      config.newer_transfer_fee.transfer_fee_basis_points = 10_000.into();
+      config.newer_transfer_fee.maximum_fee = 50.into();
+    });
+    assert_eq!(
+      calculate_transfer_fee_included_amount(&data, 100, 0).expect("max fee"),
+      TransferFeeIncludedAmount {
+        amount: 150,
+        transfer_fee: 50,
       }
     );
   }
