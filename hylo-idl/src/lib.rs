@@ -54,7 +54,7 @@ pub mod router {
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::{pubkey, Pubkey};
-  use anchor_lang::Id;
+  use anchor_lang::{Discriminator, Id, ToAccountMetas};
 
   use crate::{earn_pool, exchange, pda, router};
 
@@ -128,5 +128,22 @@ mod tests {
     assert!(register.accounts.iter().any(|account| {
       account.pubkey == pda::exo_levercoin_mint(collateral_mint)
     }));
+  }
+
+  /// `route` keeps the 2.6.1 discriminator and fixed account list so
+  /// clients built against that release keep working.
+  #[test]
+  fn route_surface_frozen_at_2_6_1() {
+    assert_eq!(
+      router::client::args::Route::DISCRIMINATOR,
+      [229, 23, 203, 151, 122, 227, 173, 42]
+    );
+    assert!(router::client::accounts::Route {}
+      .to_account_metas(None)
+      .is_empty());
+    assert_ne!(
+      router::client::args::Route::DISCRIMINATOR,
+      router::client::args::RouteV2::DISCRIMINATOR
+    );
   }
 }
