@@ -188,7 +188,7 @@ pub struct TransferFeeExcludedAmount {
   pub transfer_fee: u64,
 }
 
-/// Exact-in: `transfer_fee_included_amount` is inclusive of the fee.
+/// Takes an amount inclusive of the transfer fee and returns the post-fee amount and the fee amount.
 ///
 /// # Errors
 /// * Fee arithmetic overflow
@@ -218,11 +218,11 @@ pub fn calculate_transfer_fee_excluded_amount(
   }
 }
 
-/// Exact-out: `transfer_fee_excluded_amount` is the destination net.
+/// Takes an amount exclusive of the transfer fee and returns the pre-fee amount and the fee amount.
 ///
-/// Gross is SPL `calculate_pre_fee_amount` (ceiling), so destination
-/// receives at least `net`. Fee is `calculate_fee` of that gross, matching
-/// what Token-2022 withholds.
+/// Gross is SPL `calculate_pre_fee_amount`, the minimum amount whose
+/// post-fee transfer equals `net`. Fee is `calculate_fee` of that gross,
+/// matching what Token-2022 withholds.
 ///
 /// `calculate_inverse_fee` is not used. It is not a true inverse of
 /// `calculate_fee` (`calculate_fee(x) >= inverse(x - calculate_fee(x))`).
