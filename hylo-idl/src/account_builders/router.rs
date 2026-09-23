@@ -37,7 +37,7 @@ pub fn register_exo_entry(
 
 /// Builds the fixed account context for `route_v2`.
 #[must_use]
-pub fn route_v2() -> RouteV2 {
+pub const fn route_v2() -> RouteV2 {
   RouteV2 {
     exo_registry: pda::EXO_REGISTRY,
   }
