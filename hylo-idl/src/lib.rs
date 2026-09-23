@@ -55,6 +55,7 @@ pub mod router {
 mod tests {
   use anchor_lang::prelude::{pubkey, Pubkey};
   use anchor_lang::{Discriminator, Id, ToAccountMetas};
+  use const_crypto::sha2::Sha256;
 
   use crate::{earn_pool, exchange, pda, router};
 
@@ -130,20 +131,19 @@ mod tests {
     }));
   }
 
-  /// `route` keeps the 2.6.1 discriminator and fixed account list so
-  /// clients built against that release keep working.
+  /// `route` keeps the discriminator and empty fixed account list from
+  /// 2.6.1 so clients built against that release keep working.
   #[test]
   fn route_surface_frozen_at_2_6_1() {
-    assert_eq!(
-      router::client::args::Route::DISCRIMINATOR,
-      [229, 23, 203, 151, 122, 227, 173, 42]
-    );
+    let route = Sha256::new().update(b"global:route").finalize();
+    let route_v2 = Sha256::new().update(b"global:route_v2").finalize();
+    assert_eq!(&router::client::args::Route::DISCRIMINATOR[..], &route[..8]);
     assert!(router::client::accounts::Route {}
       .to_account_metas(None)
       .is_empty());
-    assert_ne!(
-      router::client::args::Route::DISCRIMINATOR,
-      router::client::args::RouteV2::DISCRIMINATOR
+    assert_eq!(
+      &router::client::args::RouteV2::DISCRIMINATOR[..],
+      &route_v2[..8]
     );
   }
 }
