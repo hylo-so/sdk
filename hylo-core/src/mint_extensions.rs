@@ -25,8 +25,8 @@ pub enum ExtensionClass {
   /// transfers or accounting. Enforced at registration and on every
   /// collateral token CPI.
   Guard,
-  /// Presence allowed. Transfer-fee helpers adjust amounts;
-  /// `ScaledUiAmount` and `InterestBearingConfig` stay on raw amount × Pyth.
+  /// Presence allowed but amounts must be adjusted per configuration.
+  /// e.g.`ScaledUiAmount` and `InterestBearingConfig` stay on raw amount × Pyth.
   Adjust,
   /// Presence allowed. Listing decision only; no code path.
   Policy,
