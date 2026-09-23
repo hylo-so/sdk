@@ -105,7 +105,7 @@ The `TokenMint` trait defines tokens with an associated `Exp` type for decimal p
 
 | Trait | Purpose |
 |-------|---------|
-| `TokenOperation<IN, OUT>` | Pure math for computing quotes, in three tiers: gated `compute_output`, ungated `compute_output_ungated`, indicative `compute_output_indicative` |
+| `TokenOperation<IN, OUT>` | Pure math for computing quotes |
 | `InstructionBuilder<IN, OUT>` | Build instructions for token pairs |
 | `BuildTransactionData<IN, OUT>` | Full transaction construction |
 | `SimulatePrice<IN, OUT>` | Quote via transaction simulation |
@@ -148,7 +148,6 @@ Fair-value rate (not a quote; survives gates and CR above the redeem fee domain)
 ```rust
 let rate = state.redemption_rate(UFix64::<N6>::new(1_000_000_000))?;
 let usd_per_shyusd = rate.best.shyusd_usd_rate;
-let op = state.indicative_output::<HYUSD, JITOSOL>(amount_in)?;
 ```
 
 Using the prelude:
