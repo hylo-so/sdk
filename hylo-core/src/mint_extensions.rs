@@ -28,7 +28,7 @@ use crate::error::CoreError::{
 
 /// Policy class for a Token Extensions type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ExtensionClass {
+pub enum ExtensionPolicy {
   /// Presence fails registration and later collateral token CPIs.
   Reject,
   /// Presence allowed only while the extension config does not affect
@@ -49,13 +49,13 @@ pub enum ExtensionClass {
 
 /// Class for a mint extension against the collateral whitelist.
 #[must_use]
-pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionClass {
+pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionPolicy {
   match ext {
-    TransferHook | Pausable => ExtensionClass::Guard,
+    TransferHook | Pausable => ExtensionPolicy::Guard,
     TransferFeeConfig | ScaledUiAmount | InterestBearingConfig => {
-      ExtensionClass::Adjust
+      ExtensionPolicy::Adjust
     }
-    PermanentDelegate | DefaultAccountState => ExtensionClass::Policy,
+    PermanentDelegate | DefaultAccountState => ExtensionPolicy::Policy,
     MintCloseAuthority
     | ConfidentialTransferMint
     | ConfidentialTransferFeeConfig
@@ -64,8 +64,8 @@ pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionClass {
     | GroupPointer
     | TokenGroup
     | GroupMemberPointer
-    | TokenGroupMember => ExtensionClass::Inert,
-    _ => ExtensionClass::Reject,
+    | TokenGroupMember => ExtensionPolicy::Inert,
+    _ => ExtensionPolicy::Reject,
   }
 }
 
@@ -73,25 +73,25 @@ pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionClass {
 #[must_use]
 pub const fn token_account_extension_class(
   ext: ExtensionType,
-) -> ExtensionClass {
+) -> ExtensionPolicy {
   match ext {
     TransferFeeAmount
     | TransferHookAccount
     | PausableAccount
     | NonTransferableAccount
-    | ImmutableOwner => ExtensionClass::Inert,
+    | ImmutableOwner => ExtensionPolicy::Inert,
     ConfidentialTransferAccount
     | ConfidentialTransferFeeAmount
     | MemoTransfer
-    | CpiGuard => ExtensionClass::User,
-    _ => ExtensionClass::Reject,
+    | CpiGuard => ExtensionPolicy::User,
+    _ => ExtensionPolicy::Reject,
   }
 }
 
 /// Whether the mint extension may appear on collateral.
 #[must_use]
 pub const fn is_whitelisted_mint_extension(ext: ExtensionType) -> bool {
-  !matches!(mint_extension_class(ext), ExtensionClass::Reject)
+  !matches!(mint_extension_class(ext), ExtensionPolicy::Reject)
 }
 
 /// Rejects unlisted mint extensions and non-dormant Guard configs.
@@ -118,12 +118,12 @@ fn validate_present_mint_extension(
   ext: ExtensionType,
 ) -> Result<(), CoreError> {
   match mint_extension_class(ext) {
-    ExtensionClass::Reject => Err(MintExtensionBlacklisted),
-    ExtensionClass::Guard => validate_extension_configuration(mint, ext),
-    ExtensionClass::Adjust
-    | ExtensionClass::Policy
-    | ExtensionClass::Inert
-    | ExtensionClass::User => Ok(()),
+    ExtensionPolicy::Reject => Err(MintExtensionBlacklisted),
+    ExtensionPolicy::Guard => validate_extension_configuration(mint, ext),
+    ExtensionPolicy::Adjust
+    | ExtensionPolicy::Policy
+    | ExtensionPolicy::Inert
+    | ExtensionPolicy::User => Ok(()),
   }
 }
 
@@ -509,22 +509,22 @@ mod tests {
   fn unlisted_and_reject_classes() {
     assert_eq!(
       mint_extension_class(NonTransferable),
-      ExtensionClass::Reject
+      ExtensionPolicy::Reject
     );
     assert_eq!(
       mint_extension_class(ConfidentialMintBurn),
-      ExtensionClass::Reject
+      ExtensionPolicy::Reject
     );
-    assert_eq!(mint_extension_class(MemoTransfer), ExtensionClass::Reject);
+    assert_eq!(mint_extension_class(MemoTransfer), ExtensionPolicy::Reject);
     assert_eq!(
       mint_extension_class(TransferFeeConfig),
-      ExtensionClass::Adjust
+      ExtensionPolicy::Adjust
     );
     assert_eq!(
       mint_extension_class(InterestBearingConfig),
-      ExtensionClass::Adjust
+      ExtensionPolicy::Adjust
     );
-    assert_eq!(mint_extension_class(ScaledUiAmount), ExtensionClass::Adjust);
+    assert_eq!(mint_extension_class(ScaledUiAmount), ExtensionPolicy::Adjust);
     assert!(is_whitelisted_mint_extension(InterestBearingConfig));
     assert!(is_whitelisted_mint_extension(TransferFeeConfig));
     assert!(is_whitelisted_mint_extension(ScaledUiAmount));
@@ -534,15 +534,15 @@ mod tests {
   fn token_account_classes() {
     assert_eq!(
       token_account_extension_class(ImmutableOwner),
-      ExtensionClass::Inert
+      ExtensionPolicy::Inert
     );
     assert_eq!(
       token_account_extension_class(MemoTransfer),
-      ExtensionClass::User
+      ExtensionPolicy::User
     );
     assert_eq!(
       token_account_extension_class(TransferFeeConfig),
-      ExtensionClass::Reject
+      ExtensionPolicy::Reject
     );
   }
 }
