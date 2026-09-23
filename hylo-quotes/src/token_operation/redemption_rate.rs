@@ -1,40 +1,8 @@
-//! State-derived sHYUSD redemption rate.
+//! State-derived sHYUSD redemption rate for oracle feeds. Not a quote.
 //!
-//! A RATE for an oracle-feed consumer, never an executable quote. It
-//! multiplies the sHYUSD -> hyUSD earn-pool exit rate (NAV net of the
-//! withdrawal fee) by the best USD value among the hyUSD redemption
-//! lanes, each valued at a reference amount. The LST and exo lanes are
-//! valued at the lower oracle bound; the USDC lane is valued at the
-//! USDC/USD spot capped at par (this SDK version has no USDC price
-//! range).
-//!
-//! An LST/exo lane converts hyUSD to collateral at the UPPER oracle
-//! bound while its valuation uses the LOWER bound, so the lane's hyUSD
-//! rate is about `nav * lower / upper * (1 - fee)`: the oracle level
-//! cancels out, and the rate cannot exceed par.
-//!
-//! The valuation is separate from the executable quote math in
-//! [`TokenOperation`]. It shares the conversion and fee primitives, but
-//! it skips route gates and prices the redeem fee at
-//! `min(projected CR, curve x_max)`. A lane's `open` flag is the strict
-//! quote at the reference amount.
-//!
-//! # Availability
-//!
-//! A route gate (pause, overdue harvest, oracle window) or a collateral
-//! ratio above the redeem fee-curve domain never removes a lane by
-//! itself: the reading survives both. A CR above the domain instead
-//! prices the lane at the domain edge and reports
-//! [`FeeBasis::RedeemMaxCr`].
-//!
-//! A lane is absent whenever it cannot absorb the reference amount, or
-//! the lane's USD valuation cannot be formed. Known causes (not
-//! exhaustive): the vault cannot cover the reference amount; the
-//! pair's virtual stablecoin supply or burn floor cannot cover it; the
-//! LST epoch price is missing; arithmetic overflow. The LST epoch price
-//! is a regular, expected absence: after an epoch rollover it stays
-//! missing until the LST price crank runs, so both LST lanes drop for
-//! that window and `best` moves to another lane.
+//! `rate = sHYUSD exit rate * best hyUSD lane value`. Lanes skip route
+//! gates and price the redeem fee at `min(projected CR, curve x_max)`.
+//! A lane drops when it cannot absorb the reference amount.
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, ensure, Result};
@@ -61,19 +29,13 @@ use crate::{Local, LST};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum FeeBasis {
-  /// Fee at the projected post-trade CR: what the strict math uses.
-  /// Flat-fee lanes (USDC) have no CR to project, and always report
-  /// this variant.
+  /// Projected CR, as in the strict math. Always used by USDC.
   CurrentCr,
-  /// Projected CR is above the redeem fee-curve domain. Fee at the
-  /// domain edge. The route cannot execute in this state.
+  /// Projected CR above the fee-curve domain; fee at the domain edge.
   RedeemMaxCr,
 }
 
 /// Stablecoin redeem fee at `min(projected CR, curve x_max)`.
-///
-/// Compares in curve coordinates so the basis agrees with the strict
-/// lookup, which truncates CR to `N5`.
 ///
 /// # Errors
 /// * Curve interpolation, fee conversion, or fee extraction
@@ -102,15 +64,13 @@ fn clamped_redeem_fee(
 pub struct RedemptionLane {
   /// Collateral mint the lane redeems into.
   pub mint: Pubkey,
-  /// Route gates pass and the fee is unclamped: executable at
-  /// `reference_hyusd` in the current state.
+  /// Strict quote at `reference_hyusd` succeeds.
   pub open: bool,
   /// Which collateral ratio priced the redeem fee.
   pub fee_basis: FeeBasis,
   /// Net output in the lane token's own decimals.
   pub amount_out: UFixValue64,
-  /// `amount_out` valued in USD: at the lower oracle bound for the
-  /// LST and exo lanes, at the USDC/USD spot capped at par for USDC.
+  /// `amount_out` at the lower oracle bound (USDC: spot capped at 1).
   pub usd_out: UFix64<N9>,
   /// USD per hyUSD through this lane.
   pub hyusd_usd_rate: UFix64<N9>,
@@ -128,23 +88,13 @@ pub struct RedemptionRate {
   pub reference_hyusd: UFix64<N6>,
   /// Lanes that priced the reference.
   pub lanes: Vec<RedemptionLane>,
-  /// Lane with the highest `usd_out`. May be a CLOSED lane: check
-  /// `best.open`. On an exact tie the later lane in the fixed order
-  /// JITOSOL, HYLOSOL, CBBTC, HYPE, USDC wins, since that is what
-  /// `Iterator::max_by_key` returns.
+  /// Lane with the highest `usd_out`. May be closed.
   pub best: RedemptionLane,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  /// hyUSD per sHYUSD: earn-pool NAV, floored at true `N9`, net of the
-  /// withdrawal fee. Ignores the withdrawal limiter, which gates
-  /// execution and not value.
-  ///
-  /// # Degenerate states
-  /// Zero sHYUSD supply gives NAV `1.0` (the same convention as
-  /// `lp_token_nav`), so this returns `1.0` net of the withdrawal fee,
-  /// not an error. A nonzero supply against an empty earn pool gives
-  /// NAV `0`, and so a rate of `0`, also not an error.
+  /// hyUSD per sHYUSD: earn-pool NAV net of the withdrawal fee.
+  /// Ignores the withdrawal limiter.
   ///
   /// # Errors
   /// * NAV overflows `N9`
@@ -207,12 +157,10 @@ impl<C: SolanaClock> ProtocolState<C> {
     .map(|(extract, basis)| (extract.amount_remaining, basis))
   }
 
-  /// Exo collateral out for `reference` hyUSD, net of the clamped
-  /// redeem fee.
+  /// Exo out for `reference` hyUSD, net of the clamped redeem fee.
   ///
   /// # Errors
-  /// * Pair lookup, conversion, collateral or burn capacity, projection, fee,
-  ///   or precision
+  /// * Conversion, collateral or burn capacity, projection, or fee
   fn exo_lane_value<E: Exo>(
     &self,
     reference: UFix64<N6>,
@@ -291,14 +239,6 @@ impl<C: SolanaClock> ProtocolState<C> {
 
   /// USD value of one sHYUSD through the best hyUSD redemption lane.
   ///
-  /// A rate, never an executable quote: see the module docs.
-  ///
-  /// # Degenerate states
-  /// Zero sHYUSD supply gives NAV `1.0`, so the rate is `1.0` net of
-  /// the withdrawal fee, not an error. A nonzero supply against an
-  /// empty earn pool gives NAV `0`, and so a rate of `0`, also not an
-  /// error. A consumer must treat both as "pool not live".
-  ///
   /// # Errors
   /// * Zero `reference`
   /// * Earn-pool NAV or withdrawal fee
@@ -340,13 +280,9 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.redemption_lane::<USDC>(
         reference,
         exit,
-        // Flat fee and no CR domain: the ungated quote is the value.
         TokenOperation::<HYUSD, USDC>::compute_output_ungated(self, reference)
           .map(|op| (op.out_amount, FeeBasis::CurrentCr)),
-        // The rate skips route gates, and the USDC par-tolerance check
-        // is one of those gates: an above-par USDC spot would
-        // otherwise lift this lane above 1 USD and make it `best`.
-        // This SDK version has no USDC price range, so cap at par.
+        // Par-tolerance gate is skipped, so cap spot at par.
         Some(
           self
             .usdc_exchange_state

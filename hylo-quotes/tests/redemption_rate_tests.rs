@@ -28,11 +28,6 @@ fn lane(
 
 #[test]
 fn raw_mainnet_snapshot_has_a_rate() -> Result<()> {
-  // Smoke test only: does not assume anything about where the raw
-  // snapshot sits relative to the redeem fee-curve domain, so it stays
-  // true across a snapshot refresh. See
-  // `above_domain_lanes_report_redeem_max_cr_and_closed` for the
-  // domain-specific assertions, built from a known CR instead.
   let rate = load_state()?.redemption_rate(REFERENCE)?;
   assert!(!rate.lanes.is_empty());
   Ok(())
@@ -40,9 +35,6 @@ fn raw_mainnet_snapshot_has_a_rate() -> Result<()> {
 
 #[test]
 fn above_domain_lanes_report_redeem_max_cr_and_closed() -> Result<()> {
-  // Built explicitly above the domain rather than relying on the raw
-  // snapshot happening to sit there, so this stays true across a
-  // snapshot refresh.
   let mut state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
   with_exo_cr(&mut state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
   with_exo_cr(&mut state.hype_pair, CR_ABOVE_DOMAIN)?;
@@ -67,8 +59,6 @@ fn rate_is_near_par_and_nav() -> Result<()> {
   assert!(rate.best.hyusd_usd_rate > UFix64::new(950_000_000));
   assert!(rate.best.hyusd_usd_rate <= UFix64::one());
 
-  // Expected value computed independently, straight from state, so
-  // this stays correct across a snapshot refresh.
   let pool = UFix64::<N6>::new(state.hyusd_pool.amount);
   let supply = UFix64::<N6>::new(state.shyusd_mint.supply);
   let nav = UFix64::<N9>::one()
@@ -104,10 +94,7 @@ fn lane_rates_compose() -> Result<()> {
 
 #[test]
 fn every_lane_hyusd_rate_is_near_par() -> Result<()> {
-  // On the raw snapshot every lane's hyUSD leg redeems in a narrow band
-  // just under par (0.99664..0.99771). A wrong oracle bound or a wrong
-  // price on any single lane, not only the best one, would fall outside
-  // this band.
+  // Every lane sits just under par on the raw snapshot.
   let rate = load_state()?.redemption_rate(REFERENCE)?;
   assert!(rate.lanes.iter().all(|lane| {
     lane.hyusd_usd_rate > UFix64::<N9>::new(990_000_000)
@@ -118,10 +105,6 @@ fn every_lane_hyusd_rate_is_near_par() -> Result<()> {
 
 #[test]
 fn lane_usd_out_matches_amount_times_lower_price() -> Result<()> {
-  // Recomputes `usd_out` independently of `redemption_rate`'s own
-  // formula, straight from state, to pin `usd_out = amount_out x
-  // lower_price` rather than trusting the production code to check
-  // itself.
   let state = load_state()?;
   let rate = state.redemption_rate(REFERENCE)?;
 
@@ -178,9 +161,7 @@ fn in_domain_lane_reports_current_cr() -> Result<()> {
 
 #[test]
 fn in_domain_lane_equals_strict_quote() -> Result<()> {
-  // The lane math is a copy of the strict quote's conversion and gates.
-  // Inside the domain the clamp is a no-op, so the two must agree to
-  // the atom; this guards the copy against drift in either direction.
+  // Guards the lane math copy against drift from the strict quote.
   let mut state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
   with_exo_cr(&mut state.cbbtc_pair, CR_IN_DOMAIN)?;
   let rate = state.redemption_rate(REFERENCE)?;
@@ -236,9 +217,7 @@ fn paused_protocol_keeps_the_rate() -> Result<()> {
 
 #[test]
 fn in_domain_lane_opens_and_closes_on_pause() -> Result<()> {
-  // `paused_protocol_keeps_the_rate` is vacuous on the raw snapshot:
-  // every lane is already closed by `RedeemMaxCr`. Build a state where
-  // the LST lanes start open, and check pausing actually closes them.
+  // Raw snapshot lanes are already closed; start from open lanes.
   let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
   let open_rate = state.redemption_rate(REFERENCE)?;
   let open_jito = lane(&open_rate, JITOSOL::MINT)
@@ -270,16 +249,12 @@ fn exhausted_withdrawal_limiter_keeps_the_rate() -> Result<()> {
   let mut state = load_state()?;
   state.pool_config.withdrawal_limiter.limit = UFixValue64::new(0, -6).into();
 
-  // Confirm the limiter really is exhausted: even one sHYUSD can no
-  // longer withdraw.
   assert!(TokenOperation::<SHYUSD, HYUSD>::compute_output_ungated(
     &state,
     UFix64::<N6>::one()
   )
   .is_err());
 
-  // The rate is a value, not an execution path: it ignores the
-  // limiter and matches the untouched state.
   let rate = state.redemption_rate(REFERENCE)?;
   assert_eq!(rate.shyusd_hyusd_rate, untouched.shyusd_hyusd_rate);
   Ok(())
@@ -328,10 +303,7 @@ fn stale_sol_oracle_closes_the_lane_but_keeps_the_rate() -> Result<()> {
 fn usdc_lane_never_prices_above_par() -> Result<()> {
   let mut state = load_state()?;
   state.usdc_exchange_state.usdc_usd_spot = UFix64::new(1_050_000_000);
-  // The raw snapshot's USDC virtual-stablecoin supply and vault
-  // balance are both too small to redeem the reference amount; raise
-  // them (both public fields) so the lane actually prices and this
-  // test exercises the par cap rather than vacuously passing.
+  // Raw snapshot USDC capacity cannot absorb the reference.
   state.usdc_exchange_state.virtual_stablecoin.supply =
     UFix64::<N6>::new(1_000_000_000_000).into();
   state.usdc_exchange_state.vault_balance =

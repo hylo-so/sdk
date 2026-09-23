@@ -12,12 +12,10 @@ use hylo_quotes::prelude::{ProtocolAccounts, ProtocolState};
 use hylo_quotes::protocol_state::ExoPairState;
 use serde_json::from_reader;
 
-/// CR inside the redeem fee-curve domain. The domain has no lower
-/// bound and stops at 1.50: below 1.30 the fee is flat at the curve
-/// minimum, and 1.40 is on the sloped part of the curve.
+/// CR inside the redeem fee-curve domain (stops at 1.50).
 pub const CR_IN_DOMAIN: UFix64<N9> = UFix64::constant(1_400_000_000);
 
-/// CR above the redeem fee-curve domain, which stops at 1.50.
+/// CR above the redeem fee-curve domain.
 pub const CR_ABOVE_DOMAIN: UFix64<N9> = UFix64::constant(1_600_000_000);
 
 /// Loads the mainnet snapshot into protocol state.
