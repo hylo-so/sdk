@@ -131,8 +131,6 @@ mod tests {
     }));
   }
 
-  /// `route` keeps the discriminator and empty fixed account list from
-  /// 2.6.1 so clients built against that release keep working.
   #[test]
   fn route_surface_frozen_at_2_6_1() {
     let route = Sha256::new().update(b"global:route").finalize();
