@@ -2,7 +2,7 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::system_program;
 
 use crate::router::client::accounts::{
-  InitializeExoRegistry, RegisterExoEntry, Route,
+  InitializeExoRegistry, RegisterExoEntry, RouteV2,
 };
 use crate::{pda, router};
 
@@ -35,10 +35,10 @@ pub fn register_exo_entry(
   }
 }
 
-/// Builds the fixed account context for routing through the proxy program.
+/// Builds the fixed account context for `route_v2`.
 #[must_use]
-pub fn route() -> Route {
-  Route {
+pub const fn route_v2() -> RouteV2 {
+  RouteV2 {
     exo_registry: pda::EXO_REGISTRY,
   }
 }

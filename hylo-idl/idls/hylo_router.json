@@ -393,6 +393,44 @@
         173,
         42
       ],
+      "accounts": [],
+      "args": [
+        {
+          "name": "token_a",
+          "type": "pubkey"
+        },
+        {
+          "name": "token_b",
+          "type": "pubkey"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "route_v2",
+      "discriminator": [
+        187,
+        100,
+        250,
+        204,
+        49,
+        196,
+        175,
+        20
+      ],
       "accounts": [
         {
           "name": "exo_registry",
@@ -813,7 +851,7 @@
     {
       "name": "HarvestCache",
       "docs": [
-        "Records epoch harvest information for off-chain consumers."
+        "Records epoch harvest information for offchain consumers."
       ],
       "type": {
         "kind": "struct",

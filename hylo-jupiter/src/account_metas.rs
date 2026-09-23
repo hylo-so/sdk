@@ -1,10 +1,11 @@
 //! Account meta builders for Jupiter AMM swap instructions.
 //!
-//! Each function builds account metas for a router `Route`
+//! Each function builds account metas for a router `route_v2`
 //! instruction wrapping the appropriate exchange or earn pool
 //! accounts.
 
-use anchor_lang::prelude::{AccountMeta, Pubkey, ToAccountMetas};
+use anchor_lang::prelude::{Pubkey, ToAccountMetas};
+use hylo_idl::router::account_builders;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use hylo_idl::{earn_pool, exchange, pda};
 use hylo_jupiter_amm_interface::{Swap, SwapAndAccountMetas};
@@ -14,10 +15,11 @@ fn route_account_metas<A: ToAccountMetas>(
   out_token: Pubkey,
   inner_accounts: &A,
 ) -> SwapAndAccountMetas {
-  let account_metas =
-    std::iter::once(AccountMeta::new_readonly(pda::EXO_REGISTRY, false))
-      .chain(inner_accounts.to_account_metas(None))
-      .collect();
+  let account_metas = account_builders::route_v2()
+    .to_account_metas(None)
+    .into_iter()
+    .chain(inner_accounts.to_account_metas(None))
+    .collect();
   SwapAndAccountMetas {
     swap: Swap::Hylo {
       in_token,
