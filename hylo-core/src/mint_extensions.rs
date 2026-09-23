@@ -13,7 +13,7 @@ use anchor_spl::token_interface::spl_pod::optional_keys::OptionalNonZeroPubkey;
 use crate::error::CoreError;
 use crate::error::CoreError::{
   ArithmeticOverflow, CannotDeserializeMintExtension, MintExtensionBlacklisted,
-  MintExtensionConfigBlacklisted,
+  MintExtensionDisallowedConfig,
 };
 
 /// Policy class for a Token Extensions type.
@@ -133,7 +133,7 @@ fn validate_extension_configuration(
       if hook.program_id == OptionalNonZeroPubkey::default() {
         Ok(())
       } else {
-        Err(MintExtensionConfigBlacklisted)
+        Err(MintExtensionDisallowedConfig)
       }
     }
     ExtensionType::Pausable => {
@@ -142,7 +142,7 @@ fn validate_extension_configuration(
         .map_err(|_| CannotDeserializeMintExtension)?;
       // check if mint is not paused
       if bool::from(pausable.paused) {
-        Err(MintExtensionConfigBlacklisted)
+        Err(MintExtensionDisallowedConfig)
       } else {
         Ok(())
       }
@@ -464,7 +464,7 @@ mod tests {
     });
     assert_eq!(
       validate_collateral_mint_extensions(&data),
-      Err(MintExtensionConfigBlacklisted)
+      Err(MintExtensionDisallowedConfig)
     );
   }
 
@@ -481,7 +481,7 @@ mod tests {
     });
     assert_eq!(
       validate_collateral_mint_extensions(&data),
-      Err(MintExtensionConfigBlacklisted)
+      Err(MintExtensionDisallowedConfig)
     );
   }
 

@@ -276,7 +276,7 @@ pub enum CoreError {
   #[msg("Mint carries a Token Extensions type that is not whitelisted.")]
   MintExtensionBlacklisted,
   #[msg("Mint extension is present in a disallowed configuration.")]
-  MintExtensionConfigBlacklisted,
+  MintExtensionDisallowedConfig,
   #[msg("Mint account data failed to deserialize as Token Extensions.")]
   CannotDeserializeMintExtension,
   #[msg("Arithmetic overflow")]
