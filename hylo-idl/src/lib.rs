@@ -131,8 +131,10 @@ mod tests {
     }));
   }
 
+  /// Asserts `route` and `route_v2` keep the default Anchor discriminators
+  /// for their names and `route` has no fixed accounts.
   #[test]
-  fn route_surface_frozen_at_2_6_1() {
+  fn route_instructions_match_anchor_defaults() {
     let route = Sha256::new().update(b"global:route").finalize();
     let route_v2 = Sha256::new().update(b"global:route_v2").finalize();
     assert_eq!(&router::client::args::Route::DISCRIMINATOR[..], &route[..8]);
