@@ -1,9 +1,19 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token_2022::spl_token_2022::extension::pausable::PausableConfig;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
-  TransferFee, TransferFeeConfig,
+  TransferFee, TransferFeeConfig as TransferFeeConfigExtension,
 };
-use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHook;
+use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHook as TransferHookConfig;
+use anchor_spl::token_2022::spl_token_2022::extension::ExtensionType::{
+  ConfidentialMintBurn, ConfidentialTransferAccount,
+  ConfidentialTransferFeeAmount, ConfidentialTransferFeeConfig,
+  ConfidentialTransferMint, CpiGuard, DefaultAccountState, GroupMemberPointer,
+  GroupPointer, ImmutableOwner, InterestBearingConfig, MemoTransfer,
+  MetadataPointer, MintCloseAuthority, NonTransferable, NonTransferableAccount,
+  Pausable, PausableAccount, PermanentDelegate, ScaledUiAmount, TokenGroup,
+  TokenGroupMember, TokenMetadata, TransferFeeAmount, TransferFeeConfig,
+  TransferHook, TransferHookAccount,
+};
 use anchor_spl::token_2022::spl_token_2022::extension::{
   BaseStateWithExtensions, ExtensionType, StateWithExtensions,
 };
@@ -26,7 +36,8 @@ pub enum ExtensionClass {
   /// collateral token CPI.
   Guard,
   /// Presence allowed but amounts must be adjusted per configuration.
-  /// e.g.`ScaledUiAmount` and `InterestBearingConfig` stay on raw amount × Pyth.
+  /// e.g.`ScaledUiAmount` and `InterestBearingConfig` stay on raw amount ×
+  /// Pyth.
   Adjust,
   /// Presence allowed. Listing decision only; no code path.
   Policy,
@@ -40,24 +51,20 @@ pub enum ExtensionClass {
 #[must_use]
 pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionClass {
   match ext {
-    ExtensionType::TransferHook | ExtensionType::Pausable => {
-      ExtensionClass::Guard
+    TransferHook | Pausable => ExtensionClass::Guard,
+    TransferFeeConfig | ScaledUiAmount | InterestBearingConfig => {
+      ExtensionClass::Adjust
     }
-    ExtensionType::TransferFeeConfig
-    | ExtensionType::ScaledUiAmount
-    | ExtensionType::InterestBearingConfig => ExtensionClass::Adjust,
-    ExtensionType::PermanentDelegate | ExtensionType::DefaultAccountState => {
-      ExtensionClass::Policy
-    }
-    ExtensionType::MintCloseAuthority
-    | ExtensionType::ConfidentialTransferMint
-    | ExtensionType::ConfidentialTransferFeeConfig
-    | ExtensionType::MetadataPointer
-    | ExtensionType::TokenMetadata
-    | ExtensionType::GroupPointer
-    | ExtensionType::TokenGroup
-    | ExtensionType::GroupMemberPointer
-    | ExtensionType::TokenGroupMember => ExtensionClass::Inert,
+    PermanentDelegate | DefaultAccountState => ExtensionClass::Policy,
+    MintCloseAuthority
+    | ConfidentialTransferMint
+    | ConfidentialTransferFeeConfig
+    | MetadataPointer
+    | TokenMetadata
+    | GroupPointer
+    | TokenGroup
+    | GroupMemberPointer
+    | TokenGroupMember => ExtensionClass::Inert,
     _ => ExtensionClass::Reject,
   }
 }
@@ -68,15 +75,15 @@ pub const fn token_account_extension_class(
   ext: ExtensionType,
 ) -> ExtensionClass {
   match ext {
-    ExtensionType::TransferFeeAmount
-    | ExtensionType::TransferHookAccount
-    | ExtensionType::PausableAccount
-    | ExtensionType::NonTransferableAccount
-    | ExtensionType::ImmutableOwner => ExtensionClass::Inert,
-    ExtensionType::ConfidentialTransferAccount
-    | ExtensionType::ConfidentialTransferFeeAmount
-    | ExtensionType::MemoTransfer
-    | ExtensionType::CpiGuard => ExtensionClass::User,
+    TransferFeeAmount
+    | TransferHookAccount
+    | PausableAccount
+    | NonTransferableAccount
+    | ImmutableOwner => ExtensionClass::Inert,
+    ConfidentialTransferAccount
+    | ConfidentialTransferFeeAmount
+    | MemoTransfer
+    | CpiGuard => ExtensionClass::User,
     _ => ExtensionClass::Reject,
   }
 }
@@ -125,9 +132,9 @@ fn validate_extension_configuration(
   ext: ExtensionType,
 ) -> Result<(), CoreError> {
   match ext {
-    ExtensionType::TransferHook => {
+    TransferHook => {
       let hook = mint
-        .get_extension::<TransferHook>()
+        .get_extension::<TransferHookConfig>()
         .map_err(|_| CannotDeserializeMintExtension)?;
       // check if hook program ID is not set
       if hook.program_id == OptionalNonZeroPubkey::default() {
@@ -136,7 +143,7 @@ fn validate_extension_configuration(
         Err(MintExtensionDisallowedConfig)
       }
     }
-    ExtensionType::Pausable => {
+    Pausable => {
       let pausable = mint
         .get_extension::<PausableConfig>()
         .map_err(|_| CannotDeserializeMintExtension)?;
@@ -156,11 +163,16 @@ fn validate_extension_configuration(
 pub fn has_transfer_fee_extension(
   owner: &Pubkey,
   mint_data: &[u8],
-) -> Option<TransferFeeConfig> {
+) -> Option<TransferFeeConfigExtension> {
   if *owner == anchor_spl::token_2022::ID {
     StateWithExtensions::<Mint>::unpack(mint_data)
       .ok()
-      .and_then(|mint| mint.get_extension::<TransferFeeConfig>().ok().copied())
+      .and_then(|mint| {
+        mint
+          .get_extension::<TransferFeeConfigExtension>()
+          .ok()
+          .copied()
+      })
   } else {
     None
   }
@@ -330,13 +342,13 @@ mod tests {
 
   #[test]
   fn zero_transfer_fee_is_valid() {
-    let data = mint_with!(TransferFeeConfig, |_| {});
+    let data = mint_with!(TransferFeeConfigExtension, |_| {});
     assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
   }
 
   #[test]
   fn nonzero_transfer_fee_is_valid() {
-    let data = mint_with!(TransferFeeConfig, |config| {
+    let data = mint_with!(TransferFeeConfigExtension, |config| {
       config.newer_transfer_fee.transfer_fee_basis_points = 100.into();
     });
     assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
@@ -344,8 +356,8 @@ mod tests {
 
   #[test]
   fn transfer_fee_extension_requires_token_2022_owner() {
-    let fee_mint = mint_with!(TransferFeeConfig, |_| {});
-    let hook_mint = mint_with!(TransferHook, |_| {});
+    let fee_mint = mint_with!(TransferFeeConfigExtension, |_| {});
+    let hook_mint = mint_with!(TransferHookConfig, |_| {});
     assert!(
       has_transfer_fee_extension(&anchor_spl::token_2022::ID, &fee_mint)
         .is_some()
@@ -370,7 +382,7 @@ mod tests {
 
   #[test]
   fn exact_in_includes_transfer_fee() {
-    let data = mint_with!(TransferFeeConfig, |config| {
+    let data = mint_with!(TransferFeeConfigExtension, |config| {
       config.newer_transfer_fee.transfer_fee_basis_points = 100.into();
       config.newer_transfer_fee.maximum_fee = u64::MAX.into();
     });
@@ -430,7 +442,7 @@ mod tests {
 
   #[test]
   fn exact_out_full_basis_points_uses_maximum_fee() {
-    let data = mint_with!(TransferFeeConfig, |config| {
+    let data = mint_with!(TransferFeeConfigExtension, |config| {
       config.newer_transfer_fee.transfer_fee_basis_points = 10_000.into();
       config.newer_transfer_fee.maximum_fee = 50.into();
     });
@@ -451,13 +463,13 @@ mod tests {
 
   #[test]
   fn unset_transfer_hook_is_valid() {
-    let data = mint_with!(TransferHook, |_| {});
+    let data = mint_with!(TransferHookConfig, |_| {});
     assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
   }
 
   #[test]
   fn set_transfer_hook_is_rejected() {
-    let data = mint_with!(TransferHook, |hook| {
+    let data = mint_with!(TransferHookConfig, |hook| {
       hook.program_id = Some(Pubkey::new_from_array([1; 32]))
         .try_into()
         .expect("pubkey");
@@ -500,50 +512,40 @@ mod tests {
   #[test]
   fn unlisted_and_reject_classes() {
     assert_eq!(
-      mint_extension_class(ExtensionType::NonTransferable),
+      mint_extension_class(NonTransferable),
       ExtensionClass::Reject
     );
     assert_eq!(
-      mint_extension_class(ExtensionType::ConfidentialMintBurn),
+      mint_extension_class(ConfidentialMintBurn),
       ExtensionClass::Reject
     );
+    assert_eq!(mint_extension_class(MemoTransfer), ExtensionClass::Reject);
     assert_eq!(
-      mint_extension_class(ExtensionType::MemoTransfer),
-      ExtensionClass::Reject
-    );
-    assert_eq!(
-      mint_extension_class(ExtensionType::TransferFeeConfig),
+      mint_extension_class(TransferFeeConfig),
       ExtensionClass::Adjust
     );
     assert_eq!(
-      mint_extension_class(ExtensionType::InterestBearingConfig),
+      mint_extension_class(InterestBearingConfig),
       ExtensionClass::Adjust
     );
-    assert_eq!(
-      mint_extension_class(ExtensionType::ScaledUiAmount),
-      ExtensionClass::Adjust
-    );
-    assert!(is_whitelisted_mint_extension(
-      ExtensionType::InterestBearingConfig
-    ));
-    assert!(is_whitelisted_mint_extension(
-      ExtensionType::TransferFeeConfig
-    ));
-    assert!(is_whitelisted_mint_extension(ExtensionType::ScaledUiAmount));
+    assert_eq!(mint_extension_class(ScaledUiAmount), ExtensionClass::Adjust);
+    assert!(is_whitelisted_mint_extension(InterestBearingConfig));
+    assert!(is_whitelisted_mint_extension(TransferFeeConfig));
+    assert!(is_whitelisted_mint_extension(ScaledUiAmount));
   }
 
   #[test]
   fn token_account_classes() {
     assert_eq!(
-      token_account_extension_class(ExtensionType::ImmutableOwner),
+      token_account_extension_class(ImmutableOwner),
       ExtensionClass::Inert
     );
     assert_eq!(
-      token_account_extension_class(ExtensionType::MemoTransfer),
+      token_account_extension_class(MemoTransfer),
       ExtensionClass::User
     );
     assert_eq!(
-      token_account_extension_class(ExtensionType::TransferFeeConfig),
+      token_account_extension_class(TransferFeeConfig),
       ExtensionClass::Reject
     );
   }
