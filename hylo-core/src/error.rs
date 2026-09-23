@@ -1,4 +1,5 @@
 use anchor_lang::prelude::error_code;
+use anchor_lang::solana_program::program_error::ProgramError;
 use fix::prelude::ExponentMismatch;
 
 impl std::error::Error for CoreError {}
@@ -6,6 +7,12 @@ impl std::error::Error for CoreError {}
 impl From<ExponentMismatch> for CoreError {
   fn from(_: ExponentMismatch) -> CoreError {
     CoreError::FixValueConversion
+  }
+}
+
+impl From<ProgramError> for CoreError {
+  fn from(_: ProgramError) -> CoreError {
+    CoreError::CannotDeserializeMintExtension
   }
 }
 

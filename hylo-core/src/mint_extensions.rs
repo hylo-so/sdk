@@ -133,9 +133,7 @@ fn validate_extension_configuration(
 ) -> Result<(), CoreError> {
   match ext {
     TransferHook => {
-      let hook = mint
-        .get_extension::<TransferHookConfig>()
-        .map_err(|_| CannotDeserializeMintExtension)?;
+      let hook = mint.get_extension::<TransferHookConfig>()?;
       // check if hook program ID is not set
       if hook.program_id == OptionalNonZeroPubkey::default() {
         Ok(())
@@ -144,9 +142,7 @@ fn validate_extension_configuration(
       }
     }
     Pausable => {
-      let pausable = mint
-        .get_extension::<PausableConfig>()
-        .map_err(|_| CannotDeserializeMintExtension)?;
+      let pausable = mint.get_extension::<PausableConfig>()?;
       // check if mint is not paused
       if bool::from(pausable.paused) {
         Err(MintExtensionDisallowedConfig)
