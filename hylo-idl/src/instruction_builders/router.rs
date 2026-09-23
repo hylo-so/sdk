@@ -34,7 +34,8 @@ pub fn register_exo_entry(
 }
 
 /// Routes through the proxy program, forwarding the given accounts
-/// to the target program via CPI.
+/// to the target program via CPI. Exo pairs resolve from the pair table
+/// compiled into the router.
 #[must_use]
 pub fn route<A: ToAccountMetas>(
   args: &args::Route,
@@ -42,7 +43,22 @@ pub fn route<A: ToAccountMetas>(
 ) -> Instruction {
   Instruction {
     program_id: router::ID,
-    accounts: account_builders::route()
+    accounts: inner_accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+/// Routes through the proxy program, forwarding the given accounts
+/// to the target program via CPI. Exo pairs resolve from the onchain
+/// registry.
+#[must_use]
+pub fn route_v2<A: ToAccountMetas>(
+  args: &args::RouteV2,
+  inner_accounts: &A,
+) -> Instruction {
+  Instruction {
+    program_id: router::ID,
+    accounts: account_builders::route_v2()
       .to_account_metas(None)
       .into_iter()
       .chain(inner_accounts.to_account_metas(None))
