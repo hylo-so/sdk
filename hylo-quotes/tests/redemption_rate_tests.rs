@@ -177,6 +177,30 @@ fn in_domain_lane_reports_current_cr() -> Result<()> {
 }
 
 #[test]
+fn in_domain_lane_equals_strict_quote() -> Result<()> {
+  // The lane math is a copy of the strict quote's conversion and gates.
+  // Inside the domain the clamp is a no-op, so the two must agree to
+  // the atom; this guards the copy against drift in either direction.
+  let mut state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  with_exo_cr(&mut state.cbbtc_pair, CR_IN_DOMAIN)?;
+  let rate = state.redemption_rate(REFERENCE)?;
+  let jito = TokenOperation::<HYUSD, JITOSOL>::compute_output_ungated(
+    &state, REFERENCE,
+  )?;
+  let cbbtc =
+    TokenOperation::<HYUSD, CBBTC>::compute_output_ungated(&state, REFERENCE)?;
+  assert_eq!(
+    lane(&rate, JITOSOL::MINT).map(|lane| lane.amount_out),
+    Some(jito.out_amount.into())
+  );
+  assert_eq!(
+    lane(&rate, CBBTC::MINT).map(|lane| lane.amount_out),
+    Some(cbbtc.out_amount.into())
+  );
+  Ok(())
+}
+
+#[test]
 fn clamped_lane_is_never_open() -> Result<()> {
   let rate = load_state()?.redemption_rate(REFERENCE)?;
   assert!(rate
