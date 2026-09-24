@@ -18,21 +18,26 @@ impl ExoRegistry {
 
 #[cfg(test)]
 mod tests {
-  use anchor_lang::prelude::Pubkey;
+  use std::array::from_fn;
 
+  use anchor_lang::prelude::Pubkey;
+  use anyhow::Result;
+
+  use crate::pda;
   use crate::router::accounts::ExoRegistry;
   use crate::router::types::ExoEntry;
+  use crate::tokens::{Exo, TokenMint, CBBTC, ZEC};
 
-  fn entry(byte: u8) -> ExoEntry {
+  fn entry<E: Exo>() -> ExoEntry {
     ExoEntry {
-      collateral_mint: Pubkey::new_from_array([byte; 32]),
-      levercoin_mint: Pubkey::new_from_array([byte.wrapping_add(1); 32]),
+      collateral_mint: E::MINT,
+      levercoin_mint: pda::exo_levercoin_mint(E::MINT),
     }
   }
 
   fn registry(current_size: u8) -> ExoRegistry {
-    let entries =
-      std::array::from_fn(|index| entry(u8::try_from(index).unwrap()));
+    let registered = [entry::<CBBTC>(), entry::<ZEC>()];
+    let entries = from_fn(|slot| registered[slot % registered.len()]);
     ExoRegistry {
       current_size,
       bump: 0,
@@ -42,30 +47,24 @@ mod tests {
   }
 
   #[test]
-  fn entries_truncate_to_current_size() {
-    let registry = registry(2);
-    let collateral_mints = registry
-      .registered_entries()
-      .unwrap()
+  fn entries_truncate_to_current_size() -> Result<()> {
+    let collateral_mints = registry(2)
+      .registered_entries()?
       .iter()
       .map(|entry| entry.collateral_mint)
-      .collect::<Vec<_>>();
-    assert_eq!(
-      collateral_mints,
-      [entry(0).collateral_mint, entry(1).collateral_mint]
-    );
+      .collect::<Vec<Pubkey>>();
+    assert_eq!(collateral_mints, [CBBTC::MINT, ZEC::MINT]);
+    Ok(())
   }
 
   #[test]
-  fn empty_registry_has_no_entries() {
-    let registry = registry(0);
-    assert!(registry.registered_entries().unwrap().is_empty());
+  fn empty_registry_has_no_entries() -> Result<()> {
+    assert!(registry(0).registered_entries()?.is_empty());
+    Ok(())
   }
 
   #[test]
   fn current_size_beyond_capacity_errors() {
-    let capacity = registry(0).entries.len();
-    let registry = registry(u8::try_from(capacity).unwrap() + 1);
-    assert!(registry.registered_entries().is_err());
+    assert!(registry(u8::MAX).registered_entries().is_err());
   }
 }
