@@ -1,3 +1,4 @@
+mod admin;
 mod instructions;
 mod transaction_data;
 
