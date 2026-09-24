@@ -15,7 +15,8 @@ impl RouterClient {
   /// * Failed to deserialize account data
   pub async fn exo_registry(&self) -> Result<ExoRegistry> {
     let account = self.program().rpc().get_account(&pda::EXO_REGISTRY).await?;
-    Ok(ExoRegistry::try_deserialize(&mut account.data.as_slice())?)
+    ExoRegistry::try_deserialize(&mut account.data.as_slice())
+      .context("Exo registry deserialization")
   }
 }
 
