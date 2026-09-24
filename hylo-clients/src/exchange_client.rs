@@ -940,6 +940,29 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
+  /// Direct variant of [`Self::register_exo`].
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub async fn register_exo_direct(
+    &self,
+    collateral_mint: Pubkey,
+    exo_usd_pyth_feed: Pubkey,
+    args: &args::RegisterExo,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::register_exo(
+      self.program.payer(),
+      collateral_mint,
+      exo_usd_pyth_feed,
+      args,
+    );
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    Ok(VersionedTransactionData::new(
+      vec![instruction],
+      vec![exchange_lut],
+    ))
+  }
+
   /// Seeds an empty exo pair with its initial collateral, minting
   /// levercoin and stablecoin to the dead address.
   ///
