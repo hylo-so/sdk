@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
 
 use anchor_lang::prelude::Pubkey;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::Mint;
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::UFix64;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
@@ -497,7 +498,7 @@ impl PairConfig<USDC, HYUSD> for HyloJupiterPair<USDC, HYUSD> {
 
 /// [`PairConfig`] impls for an exo collateral and its levercoin.
 macro_rules! exo_pair_configs {
-  ($exo:ident, $lever:ident) => {
+  ($exo:ident, $lever:ident, $token_program:expr) => {
     impl PairConfig<$exo, USDC> for HyloJupiterPair<$exo, USDC> {
       fn program_id() -> Pubkey {
         exchange::ID
@@ -528,11 +529,13 @@ macro_rules! exo_pair_configs {
             user,
             $exo::MINT,
             $exo::FEED.address,
+            $token_program,
           )),
           (USDC::MINT, $exo::MINT) => Ok(account_metas::swap_usdc_to_exo(
             user,
             $exo::MINT,
             $exo::FEED.address,
+            $token_program,
           )),
           _ => Err(anyhow!("Invalid mint pair")),
         }
@@ -569,12 +572,14 @@ macro_rules! exo_pair_configs {
             user,
             $exo::MINT,
             $exo::FEED.address,
+            $token_program,
           )),
           (HYUSD::MINT, $exo::MINT) => {
             Ok(account_metas::redeem_stablecoin_exo(
               user,
               $exo::MINT,
               $exo::FEED.address,
+              $token_program,
             ))
           }
           _ => Err(anyhow!("Invalid mint pair")),
@@ -612,12 +617,14 @@ macro_rules! exo_pair_configs {
             user,
             $exo::MINT,
             $exo::FEED.address,
+            $token_program,
           )),
           ($lever::MINT, $exo::MINT) => {
             Ok(account_metas::redeem_levercoin_exo(
               user,
               $exo::MINT,
               $exo::FEED.address,
+              $token_program,
             ))
           }
           _ => Err(anyhow!("Invalid mint pair")),
@@ -656,6 +663,7 @@ macro_rules! exo_pair_configs {
               user,
               $exo::MINT,
               $exo::FEED.address,
+              $token_program,
             ))
           }
           ($lever::MINT, HYUSD::MINT) => {
@@ -663,6 +671,7 @@ macro_rules! exo_pair_configs {
               user,
               $exo::MINT,
               $exo::FEED.address,
+              $token_program,
             ))
           }
           _ => Err(anyhow!("Invalid mint pair")),
@@ -672,8 +681,8 @@ macro_rules! exo_pair_configs {
   };
 }
 
-exo_pair_configs!(CBBTC, XBTC);
-exo_pair_configs!(HYPE, XHYPE);
+exo_pair_configs!(CBBTC, XBTC, CBBTC::TOKEN_PROGRAM);
+exo_pair_configs!(HYPE, XHYPE, HYPE::TOKEN_PROGRAM);
 
 impl<IN, OUT> Amm for HyloJupiterPair<IN, OUT>
 where
@@ -725,11 +734,11 @@ where
       pda::HYUSD_POOL,
       pda::POOL_CONFIG,
       pda::exo_pair(CBBTC::MINT),
-      pda::exo_vault(CBBTC::MINT),
+      pda::exo_vault(CBBTC::MINT, CBBTC::TOKEN_PROGRAM),
       pda::exo_levercoin_mint(CBBTC::MINT),
       CBBTC::FEED.address,
       pda::exo_pair(HYPE::MINT),
-      pda::exo_vault(HYPE::MINT),
+      pda::exo_vault(HYPE::MINT, HYPE::TOKEN_PROGRAM),
       pda::exo_levercoin_mint(HYPE::MINT),
       HYPE::FEED.address,
       pda::USDC_PAIR,
@@ -763,14 +772,20 @@ where
     let cbbtc_pair = build_exo_pair_state::<CBBTC, ClockRef>(
       self.clock.clone(),
       keyed_account(account_map, &pda::exo_pair(CBBTC::MINT))?,
-      keyed_account(account_map, &pda::exo_vault(CBBTC::MINT))?,
+      keyed_account(
+        account_map,
+        &pda::exo_vault(CBBTC::MINT, CBBTC::TOKEN_PROGRAM),
+      )?,
       keyed_account(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?,
       keyed_account(account_map, &CBBTC::FEED.address)?,
     )?;
     let hype_pair = build_exo_pair_state::<HYPE, ClockRef>(
       self.clock.clone(),
       keyed_account(account_map, &pda::exo_pair(HYPE::MINT))?,
-      keyed_account(account_map, &pda::exo_vault(HYPE::MINT))?,
+      keyed_account(
+        account_map,
+        &pda::exo_vault(HYPE::MINT, HYPE::TOKEN_PROGRAM),
+      )?,
       keyed_account(account_map, &pda::exo_levercoin_mint(HYPE::MINT))?,
       keyed_account(account_map, &HYPE::FEED.address)?,
     )?;

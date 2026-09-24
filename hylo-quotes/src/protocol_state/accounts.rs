@@ -127,7 +127,7 @@ impl ProtocolAccounts {
     hylo_core::pyth::SOL_USD.address,
     sysvar::clock::ID,
     pda::exo_pair(CBBTC::MINT),
-    pda::exo_vault(CBBTC::MINT),
+    pda::exo_vault(CBBTC::MINT, CBBTC::TOKEN_PROGRAM),
     pda::exo_levercoin_mint(CBBTC::MINT),
     CBBTC::FEED.address,
     pda::USDC_PAIR,
@@ -138,7 +138,7 @@ impl ProtocolAccounts {
     pda::lst_vault(HYLOSOL::MINT),
     pda::usdc_vault(USDC::MINT),
     pda::exo_pair(HYPE::MINT),
-    pda::exo_vault(HYPE::MINT),
+    pda::exo_vault(HYPE::MINT, HYPE::TOKEN_PROGRAM),
     pda::exo_levercoin_mint(HYPE::MINT),
     HYPE::FEED.address,
   ];
@@ -170,7 +170,7 @@ impl ProtocolAccounts {
   pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 5] {
     [
       pda::exo_pair(E::MINT),
-      pda::exo_vault(E::MINT),
+      pda::exo_vault(E::MINT, E::TOKEN_PROGRAM),
       pda::exo_levercoin_mint(E::MINT),
       E::FEED.address,
       sysvar::clock::ID,

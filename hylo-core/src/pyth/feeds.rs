@@ -1,7 +1,9 @@
-use anchor_lang::prelude::Pubkey;
+use anchor_lang::prelude::{pubkey, Pubkey};
 use const_crypto::ed25519;
 #[cfg(feature = "offchain")]
-use hylo_idl::tokens::{TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
+use hylo_idl::tokens::{
+  TokenMint, CBBTC, HYPE, ONYC, PAXG, PST, SPCX, WETH, ZEC,
+};
 use pyth_solana_receiver_sdk::price_update::FeedId;
 use pyth_solana_receiver_sdk::PYTH_PUSH_ORACLE_ID;
 
@@ -73,6 +75,20 @@ pub const ETH_USD: PythFeed = PythFeed::new([
   247, 159, 88, 37, 18, 109, 102, 84, 128, 135, 70, 52, 253, 10, 206,
 ]);
 
+/// `Crypto.SPCXX/USD` shard 0 on the legacy Pyth oracle program.
+pub const SPCX_USD: PythFeed = PythFeed {
+  feed_id: [
+    232, 226, 35, 74, 6, 178, 136, 254, 221, 228, 58, 233, 69, 12, 178, 136,
+    136, 110, 203, 50, 89, 173, 47, 65, 208, 6, 127, 2, 36, 74, 1, 1,
+  ],
+  address: pubkey!("6u5tiC8JdcLdgMjoJE7QTf8suHyVmxbKZW4TLnhFr1fk"),
+};
+
+pub const PAXG_USD: PythFeed = PythFeed::new([
+  39, 55, 23, 180, 148, 48, 144, 111, 75, 12, 35, 14, 153, 170, 16, 7, 248, 55,
+  88, 227, 25, 158, 219, 200, 135, 192, 208, 108, 62, 51, 36, 148,
+]);
+
 /// Associates a [`TokenMint`] with the Pyth feed pricing it.
 #[cfg(feature = "offchain")]
 pub trait PythOracle: TokenMint {
@@ -107,6 +123,16 @@ impl PythOracle for PST {
 #[cfg(feature = "offchain")]
 impl PythOracle for WETH {
   const FEED: PythFeed = ETH_USD;
+}
+
+#[cfg(feature = "offchain")]
+impl PythOracle for SPCX {
+  const FEED: PythFeed = SPCX_USD;
+}
+
+#[cfg(feature = "offchain")]
+impl PythOracle for PAXG {
+  const FEED: PythFeed = PAXG_USD;
 }
 
 #[cfg(test)]
@@ -148,6 +174,14 @@ mod tests {
     assert_eq!(
       ETH_USD.address,
       pubkey!("7odryi4WfoMFHtv2eubdMgP1pqQMmdiXSK1N2tqZ2nRH")
+    );
+    assert_eq!(
+      SPCX_USD.address,
+      pubkey!("6u5tiC8JdcLdgMjoJE7QTf8suHyVmxbKZW4TLnhFr1fk")
+    );
+    assert_eq!(
+      PAXG_USD.address,
+      pubkey!("AwBRZ5QYW8RhcF4EJaU1WSn42cPQFZU3yvSDg1uSh748")
     );
   }
 }

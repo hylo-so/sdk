@@ -16,7 +16,6 @@ use anchor_client::Cluster;
 use anchor_lang::prelude::AccountMeta;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
-use anchor_spl::token;
 use anyhow::{anyhow, bail, Context, Result};
 use hylo_core::idl::tokens::{StakePool, HYLOSOL, JITOSOL};
 use itertools::Itertools;
@@ -204,8 +203,12 @@ pub fn build_test_router_client() -> Result<RouterClient> {
 
 /// Builds ATA creation instruction for a user and mint.
 #[must_use]
-pub fn user_ata_instruction(user: &Pubkey, mint: &Pubkey) -> Instruction {
-  ata_instruction(user, user, mint)
+pub fn user_ata_instruction(
+  user: &Pubkey,
+  mint: &Pubkey,
+  token_program: &Pubkey,
+) -> Instruction {
+  ata_instruction(user, user, mint, token_program)
 }
 
 /// Builds ATA creation instruction with separate payer and owner.
@@ -214,6 +217,7 @@ pub fn ata_instruction(
   payer: &Pubkey,
   owner: &Pubkey,
   mint: &Pubkey,
+  token_program: &Pubkey,
 ) -> Instruction {
-  create_associated_token_account_idempotent(payer, owner, mint, &token::ID)
+  create_associated_token_account_idempotent(payer, owner, mint, token_program)
 }

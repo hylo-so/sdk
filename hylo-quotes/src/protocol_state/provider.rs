@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use anchor_lang::prelude::{Clock, Pubkey};
 use anchor_lang::AccountDeserialize;
-use anchor_spl::token::Mint;
+use anchor_spl::token_interface::Mint;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use fix::prelude::UFix64;

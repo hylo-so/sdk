@@ -209,7 +209,7 @@ pub fn register_lst(
     fee_auth: pda::fee_auth(lst_mint),
     vault_auth: pda::lst_vault_auth(lst_mint),
     registry_auth: pda::LST_REGISTRY_AUTH,
-    fee_vault: pda::fee_vault(lst_mint),
+    fee_vault: pda::fee_vault(lst_mint, token::ID),
     lst_vault: pda::lst_vault(lst_mint),
     lst_mint,
     lst_registry,
@@ -309,10 +309,12 @@ pub fn settle_virtual_stablecoin_usdc() -> Instruction {
 pub fn settle_virtual_stablecoin_exo(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> Instruction {
   let accounts = account_builders::settle_virtual_stablecoin_exo(
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   let args = args::SettleVirtualStablecoinExo {};
   Instruction {
@@ -332,7 +334,7 @@ pub fn harvest_yield(
     stablecoin_mint: HYUSD::MINT,
     stablecoin_auth: pda::HYUSD_AUTH,
     stablecoin_fee_auth: pda::fee_auth(HYUSD::MINT),
-    stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
+    stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT, token::ID),
     stablecoin_pool: pda::HYUSD_POOL,
     pool_auth: pda::POOL_AUTH,
     sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
@@ -393,10 +395,15 @@ pub fn register_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
   exo_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::RegisterExo,
 ) -> Instruction {
-  let accounts =
-    account_builders::register_exo(admin, collateral_mint, exo_usd_pyth_feed);
+  let accounts = account_builders::register_exo(
+    admin,
+    collateral_mint,
+    exo_usd_pyth_feed,
+    collateral_token_program,
+  );
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -409,12 +416,14 @@ pub fn mint_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::MintLevercoinExo,
 ) -> Instruction {
   let accounts = account_builders::mint_levercoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -428,12 +437,14 @@ pub fn mint_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::MintStablecoinExo,
 ) -> Instruction {
   let accounts = account_builders::mint_stablecoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -447,12 +458,14 @@ pub fn redeem_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::RedeemLevercoinExo,
 ) -> Instruction {
   let accounts = account_builders::redeem_levercoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -466,12 +479,14 @@ pub fn redeem_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::RedeemStablecoinExo,
 ) -> Instruction {
   let accounts = account_builders::redeem_stablecoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -485,12 +500,14 @@ pub fn genesis_mint_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::GenesisMintExo,
 ) -> Instruction {
   let accounts = account_builders::genesis_mint_exo(
     admin,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -503,10 +520,12 @@ pub fn genesis_mint_exo(
 pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> Instruction {
   let accounts = account_builders::harvest_borrow_rate(
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   let args = args::HarvestBorrowRate {};
   Instruction {
@@ -521,12 +540,14 @@ pub fn convert_lever_to_stable_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::ConvertLeverToStableExo,
 ) -> Instruction {
   let accounts = account_builders::convert_lever_to_stable_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -540,12 +561,14 @@ pub fn convert_stable_to_lever_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::ConvertStableToLeverExo,
 ) -> Instruction {
   let accounts = account_builders::convert_stable_to_lever_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1198,12 +1221,14 @@ pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::SwapExoToUsdc,
 ) -> Instruction {
   let accounts = account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1217,12 +1242,14 @@ pub fn swap_exo_to_usdc_all(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::SwapExoToUsdcAll,
 ) -> Instruction {
   let accounts = account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1236,12 +1263,14 @@ pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
   args: &args::SwapUsdcToExo,
 ) -> Instruction {
   let accounts = account_builders::swap_usdc_to_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1300,9 +1329,14 @@ pub fn withdraw_fees(
   payer: Pubkey,
   treasury: Pubkey,
   fee_token_mint: Pubkey,
+  token_program: Pubkey,
 ) -> Instruction {
-  let accounts =
-    account_builders::withdraw_fees(payer, treasury, fee_token_mint);
+  let accounts = account_builders::withdraw_fees(
+    payer,
+    treasury,
+    fee_token_mint,
+    token_program,
+  );
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),

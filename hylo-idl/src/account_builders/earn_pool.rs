@@ -38,7 +38,7 @@ pub fn withdraw(user: Pubkey) -> UserWithdraw {
     stablecoin_mint: HYUSD::MINT,
     user_stablecoin_ta: pda::hyusd_ata(user),
     fee_auth: pda::fee_auth(HYUSD::MINT),
-    fee_vault: pda::fee_vault(HYUSD::MINT),
+    fee_vault: pda::fee_vault(HYUSD::MINT, token::ID),
     user_lp_token_ta: pda::shyusd_ata(user),
     pool_auth: pda::POOL_AUTH,
     stablecoin_pool: pda::HYUSD_POOL,

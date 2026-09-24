@@ -1,5 +1,5 @@
 use anchor_lang::prelude::{borsh, AnchorDeserialize, AnchorSerialize};
-use anchor_spl::token::Mint;
+use anchor_spl::token_interface::Mint;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use serde::{Deserialize, Serialize};

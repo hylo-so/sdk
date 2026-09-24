@@ -43,9 +43,9 @@ pub const fn mint<const N: usize>(program_id: Pubkey, seed: [u8; N]) -> Pubkey {
 }
 
 #[must_use]
-pub const fn ata(auth: Pubkey, mint: Pubkey) -> Pubkey {
+pub const fn ata(auth: Pubkey, mint: Pubkey, token_program: Pubkey) -> Pubkey {
   let (key, _bump) = ed25519::derive_program_address(
-    &[auth.as_array(), token::ID.as_array(), mint.as_array()],
+    &[auth.as_array(), token_program.as_array(), mint.as_array()],
     spl_associated_token_account::ID.as_array(),
   );
   Pubkey::new_from_array(key)
@@ -75,37 +75,37 @@ pub const fn metadata(mint: Pubkey) -> Pubkey {
 
 #[must_use]
 pub const fn hyusd_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, HYUSD::MINT)
+  ata(auth, HYUSD::MINT, HYUSD::TOKEN_PROGRAM)
 }
 
 #[must_use]
 pub const fn xsol_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, XSOL::MINT)
+  ata(auth, XSOL::MINT, XSOL::TOKEN_PROGRAM)
 }
 
 #[must_use]
 pub const fn shyusd_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, SHYUSD::MINT)
+  ata(auth, SHYUSD::MINT, SHYUSD::TOKEN_PROGRAM)
 }
 
 #[must_use]
 pub const fn usdc_ata(auth: Pubkey) -> Pubkey {
-  ata(auth, USDC::MINT)
+  ata(auth, USDC::MINT, USDC::TOKEN_PROGRAM)
 }
 
 #[must_use]
 pub const fn lst_vault(mint: Pubkey) -> Pubkey {
-  ata(lst_vault_auth(mint), mint)
+  ata(lst_vault_auth(mint), mint, token::ID)
 }
 
 #[must_use]
-pub const fn exo_vault(mint: Pubkey) -> Pubkey {
-  ata(exo_vault_auth(mint), mint)
+pub const fn exo_vault(mint: Pubkey, token_program: Pubkey) -> Pubkey {
+  ata(exo_vault_auth(mint), mint, token_program)
 }
 
 #[must_use]
 pub const fn usdc_vault(mint: Pubkey) -> Pubkey {
-  ata(usdc_vault_auth(mint), mint)
+  ata(usdc_vault_auth(mint), mint, USDC::TOKEN_PROGRAM)
 }
 
 #[must_use]
@@ -138,8 +138,8 @@ pub const fn lst_header(mint: Pubkey) -> Pubkey {
 }
 
 #[must_use]
-pub const fn fee_vault(mint: Pubkey) -> Pubkey {
-  ata(fee_auth(mint), mint)
+pub const fn fee_vault(mint: Pubkey, token_program: Pubkey) -> Pubkey {
+  ata(fee_auth(mint), mint, token_program)
 }
 
 #[must_use]
@@ -212,9 +212,10 @@ pub const SETTLEMENT_AUTH: Pubkey = SETTLEMENT_AUTH_DERIVED.0;
 
 pub const SETTLEMENT_AUTH_BUMP: u8 = SETTLEMENT_AUTH_DERIVED.1;
 
-pub const HYUSD_POOL: Pubkey = ata(POOL_AUTH, HYUSD::MINT);
+pub const HYUSD_POOL: Pubkey =
+  ata(POOL_AUTH, HYUSD::MINT, HYUSD::TOKEN_PROGRAM);
 
-pub const XSOL_POOL: Pubkey = ata(POOL_AUTH, XSOL::MINT);
+pub const XSOL_POOL: Pubkey = ata(POOL_AUTH, XSOL::MINT, XSOL::TOKEN_PROGRAM);
 
 pub const EARN_POOL_PROGRAM_DATA: Pubkey = progdata(earn_pool::ID);
 

@@ -7,7 +7,8 @@ use anchor_client::solana_sdk::clock::Clock;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::Mint;
 use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::collateral_ratio::{CollateralRatio, CR};
@@ -77,7 +78,7 @@ impl StatsAccounts {
     SHYUSD::MINT,
     pda::exo_pair(CBBTC::MINT),
     CBBTC::MINT,
-    pda::exo_vault(CBBTC::MINT),
+    pda::exo_vault(CBBTC::MINT, CBBTC::TOKEN_PROGRAM),
     pda::exo_levercoin_mint(CBBTC::MINT),
     pda::BTC_USD_PYTH_FEED,
     pda::SOL_USD_PYTH_FEED,
