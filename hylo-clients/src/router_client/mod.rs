@@ -1,3 +1,5 @@
+mod admin;
+mod exo_registry;
 mod instructions;
 mod transaction_data;
 
