@@ -637,7 +637,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.12.3",
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -768,9 +768,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck"
-version = "1.25.0"
+version = "1.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8efb64bd706a16a1bdde310ae86b351e4d21550d98d056f22f8a7f7a2183fec"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -1599,7 +1599,7 @@ checksum = "135b12329e5e3ce057a9f972339ea52bc954fe1e9358ef27f95e89716fbc5424"
 
 [[package]]
 name = "hylo-clients"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1625,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1659,11 +1659,12 @@ dependencies = [
 
 [[package]]
 name = "hylo-idl"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "anyhow",
+ "bytemuck",
  "const-crypto",
  "hylo-fix",
  "mpl-token-metadata",
@@ -1673,13 +1674,15 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
  "anchor-spl",
  "anyhow",
  "bincode",
+ "bytemuck",
+ "futures",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
@@ -1709,7 +1712,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-quotes"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1718,6 +1721,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "bincode",
+ "bytemuck",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
@@ -1760,7 +1764,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-stats"
-version = "2.6.0"
+version = "2.7.0"
 dependencies = [
  "anchor-client",
  "anchor-lang",

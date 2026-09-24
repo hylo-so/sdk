@@ -18,10 +18,9 @@ use crate::util::{
   ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
 };
 
-/// Admin client for the Hylo exchange program. Manages LST
-/// registration, oracle configuration, fee updates, and protocol
-/// stats. User-facing operations go through
-/// [`crate::router_client::RouterClient`].
+/// Admin client for the exchange program: LST registration, oracle
+/// configuration, fee updates, and protocol stats. User-facing operations
+/// go through [`crate::router_client::RouterClient`].
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
@@ -364,7 +363,7 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Pauses an EXO pair for the given collateral mint.
+  /// Pauses an exo pair for the given collateral mint.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
@@ -380,7 +379,7 @@ impl ExchangeClient {
     squads.build_proposal(&inner, self.program.payer(), memo)
   }
 
-  /// Unpauses an EXO pair for the given collateral mint.
+  /// Unpauses an exo pair for the given collateral mint.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
@@ -939,6 +938,29 @@ impl ExchangeClient {
     let inner =
       VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
     squads.build_proposal(&inner, self.program.payer(), memo)
+  }
+
+  /// Direct variant of [`Self::register_exo`].
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub async fn register_exo_direct(
+    &self,
+    collateral_mint: Pubkey,
+    exo_usd_pyth_feed: Pubkey,
+    args: &args::RegisterExo,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::register_exo(
+      self.program.payer(),
+      collateral_mint,
+      exo_usd_pyth_feed,
+      args,
+    );
+    let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
+    Ok(VersionedTransactionData::new(
+      vec![instruction],
+      vec![exchange_lut],
+    ))
   }
 
   /// Seeds an empty exo pair with its initial collateral, minting

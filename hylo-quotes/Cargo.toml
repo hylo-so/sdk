@@ -16,6 +16,7 @@ anchor-spl.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 bincode.workspace = true
+bytemuck.workspace = true
 hylo-clients.workspace = true
 hylo-core = { workspace = true, features = ["offchain"] }
 hylo-fix.workspace = true

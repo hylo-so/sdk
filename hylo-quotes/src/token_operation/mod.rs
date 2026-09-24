@@ -4,6 +4,7 @@ mod earn_pool;
 mod exchange;
 
 use anchor_lang::prelude::Pubkey;
+pub use exchange::RuntimeExoQuote;
 use fix::prelude::{CheckedAdd, UFix64, N6, N9};
 use fix::typenum::Integer;
 use hylo_core::calculus::{positive, positive_rate};
@@ -39,7 +40,16 @@ pub(crate) fn linear_rate<InExp: Integer, OutExp: Integer>(
 /// Scales a token-level marginal rate to atoms:
 /// `rate * 10^(out_decimals - in_decimals)`.
 fn atom_rate<InExp: Integer, OutExp: Integer>(token_rate: f64) -> f64 {
-  token_rate * 10f64.powi(InExp::to_i32() - OutExp::to_i32())
+  atom_rate_decimals(token_rate, -InExp::to_i32(), -OutExp::to_i32())
+}
+
+/// Scales a token rate to atoms given input and output decimals.
+fn atom_rate_decimals(
+  token_rate: f64,
+  in_decimals: i32,
+  out_decimals: i32,
+) -> f64 {
+  token_rate * 10f64.powi(out_decimals - in_decimals)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -50,6 +60,40 @@ pub struct OperationOutput<InExp: Integer, OutExp: Integer, FeeExp: Integer> {
   pub fee_mint: Pubkey,
   pub fee_base: UFix64<FeeExp>,
   pub marginal_rate: f64,
+}
+
+impl<InExp: Integer, OutExp: Integer, FeeExp: Integer>
+  OperationOutput<InExp, OutExp, FeeExp>
+{
+  /// Retypes the input side and scales the marginal rate to atoms.
+  fn retype_in<NewIn: Integer>(
+    self,
+    in_amount: UFix64<NewIn>,
+  ) -> OperationOutput<NewIn, OutExp, FeeExp> {
+    OperationOutput {
+      in_amount,
+      out_amount: self.out_amount,
+      fee_amount: self.fee_amount,
+      fee_mint: self.fee_mint,
+      fee_base: self.fee_base,
+      marginal_rate: atom_rate::<NewIn, OutExp>(self.marginal_rate),
+    }
+  }
+
+  /// Retypes the output side and scales the marginal rate to atoms.
+  fn retype_out<NewOut: Integer>(
+    self,
+    out_amount: UFix64<NewOut>,
+  ) -> OperationOutput<InExp, NewOut, FeeExp> {
+    OperationOutput {
+      in_amount: self.in_amount,
+      out_amount,
+      fee_amount: self.fee_amount,
+      fee_mint: self.fee_mint,
+      fee_base: self.fee_base,
+      marginal_rate: atom_rate::<InExp, NewOut>(self.marginal_rate),
+    }
+  }
 }
 
 pub type MintOperationOutput = OperationOutput<N9, N6, N9>;

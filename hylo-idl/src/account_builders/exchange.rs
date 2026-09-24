@@ -159,7 +159,7 @@ pub fn convert_lever_to_stable_lst(user: Pubkey) -> ConvertLeverToStableLst {
   }
 }
 
-/// Builds account context for registering an EXO pair.
+/// Builds account context for registering an exo pair.
 #[must_use]
 pub fn register_exo(
   admin: Pubkey,

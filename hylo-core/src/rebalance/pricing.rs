@@ -27,9 +27,9 @@ pub const BUY_CEIL_MAX_PCT: UFix64<N9> = UFix64::constant(2_000_000);
 
 /// Floor/ceil deviation percentages for rebalance price curve construction.
 #[derive(
-  Copy,
-  Clone,
   Debug,
+  Clone,
+  Copy,
   PartialEq,
   InitSpace,
   AnchorSerialize,
