@@ -21,9 +21,8 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{
-  build_lst_exchange_context, exo_pubkeys_from_entries, exo_registry_entries,
-  read_exo_registry, ExoAccounts, ExoPairAccounts, ExoPairState,
-  ProtocolAccounts, ProtocolState,
+  build_lst_exchange_context, exo_pubkeys_from_entries, read_exo_registry,
+  ExoAccounts, ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
 };
 
 /// Trait for fetching protocol state from a data source
@@ -143,7 +142,7 @@ impl StateProvider<Clock> for RpcStateProvider {
       .await
       .map_err(|e| anyhow!("Failed to fetch Exo registry from RPC: {e}"))?;
     let registry = read_exo_registry(&registry_account.data)?;
-    let exo_keys = exo_pubkeys_from_entries(exo_registry_entries(&registry)?)?;
+    let exo_keys = exo_pubkeys_from_entries(registry.registered_entries()?)?;
     let keys = ProtocolAccounts::PUBKEYS
       .into_iter()
       .chain(exo_keys)

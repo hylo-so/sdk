@@ -44,17 +44,6 @@ pub fn read_exo_registry(data: &[u8]) -> Result<ExoRegistry> {
     .map_err(|error| anyhow!("Exo registry deserialization: {error}"))
 }
 
-/// Registered entries.
-///
-/// # Errors
-/// * `current_size` exceeds capacity
-pub fn exo_registry_entries(registry: &ExoRegistry) -> Result<&[ExoEntry]> {
-  registry
-    .entries
-    .get(..usize::from(registry.current_size))
-    .context("Exo registry length exceeds capacity")
-}
-
 /// Entry whose collateral or levercoin is `mint_a` or `mint_b`.
 #[must_use]
 pub fn find_exo_entry(

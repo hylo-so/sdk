@@ -24,8 +24,8 @@ use hylo_jupiter_amm_interface::{
 };
 use hylo_quotes::protocol_state::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  exo_registry_entries, find_exo_entry, read_exo_registry, ExoAccounts,
-  ExoPairAccounts, ProtocolState, UsdcExchangeState,
+  find_exo_entry, read_exo_registry, ExoAccounts, ExoPairAccounts,
+  ProtocolState, UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use rust_decimal::Decimal;
@@ -752,7 +752,7 @@ impl Amm for HyloJupiterExo {
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     self.snapshot.update(account_map)?;
     let registry = exo_registry(account_map)?;
-    let entries = exo_registry_entries(&registry)?;
+    let entries = registry.registered_entries()?;
     self.exo_account_keys = exo_pubkeys_from_entries(entries)?;
     self.exo_entries = entries.to_vec();
     let exo_accounts = entries
