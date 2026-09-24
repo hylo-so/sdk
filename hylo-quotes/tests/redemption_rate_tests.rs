@@ -282,20 +282,42 @@ fn overdue_harvest_closes_the_lane_but_keeps_the_rate() -> Result<()> {
 }
 
 #[test]
-fn stale_sol_oracle_closes_the_lane_but_keeps_the_rate() -> Result<()> {
-  let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
-  let open_rate = state.redemption_rate(REFERENCE)?;
-  let open_jito = lane(&open_rate, JITOSOL::MINT)
-    .ok_or_else(|| anyhow!("no JITOSOL lane"))?;
-  assert!(open_jito.open, "expected the JITOSOL lane to start open");
+fn stale_sol_oracle_drops_the_lst_lanes() -> Result<()> {
+  let mut state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  let fresh_rate = state.redemption_rate(REFERENCE)?;
+  assert!(lane(&fresh_rate, JITOSOL::MINT).is_some());
+  assert!(lane(&fresh_rate, HYLOSOL::MINT).is_some());
 
-  let mut stale_state = state;
-  stale_state.sol_usd_publish_time = 0;
-  let stale_rate = stale_state.redemption_rate(REFERENCE)?;
-  let stale_jito = lane(&stale_rate, JITOSOL::MINT)
-    .ok_or_else(|| anyhow!("no JITOSOL lane"))?;
-  assert!(!stale_jito.open);
-  assert_eq!(stale_jito.shyusd_usd_rate, open_jito.shyusd_usd_rate);
+  state.sol_usd_publish_time = 0;
+  let stale_rate = state.redemption_rate(REFERENCE)?;
+  assert!(lane(&stale_rate, JITOSOL::MINT).is_none());
+  assert!(lane(&stale_rate, HYLOSOL::MINT).is_none());
+  assert_ne!(stale_rate.best.mint, JITOSOL::MINT);
+  assert_ne!(stale_rate.best.mint, HYLOSOL::MINT);
+  Ok(())
+}
+
+#[test]
+fn stale_exo_oracle_drops_only_that_lane() -> Result<()> {
+  let mut state = load_state()?;
+  assert!(lane(&state.redemption_rate(REFERENCE)?, CBBTC::MINT).is_some());
+
+  state.cbbtc_pair.oracle_publish_time = 0;
+  let rate = state.redemption_rate(REFERENCE)?;
+  assert!(lane(&rate, CBBTC::MINT).is_none());
+  assert!(lane(&rate, HYPE::MINT).is_some());
+  assert_ne!(rate.best.mint, CBBTC::MINT);
+  Ok(())
+}
+
+#[test]
+fn all_oracles_stale_fails() -> Result<()> {
+  let mut state = load_state()?;
+  state.sol_usd_publish_time = 0;
+  state.cbbtc_pair.oracle_publish_time = 0;
+  state.hype_pair.oracle_publish_time = 0;
+  state.usdc_exchange_state.vault_balance = UFix64::zero();
+  assert!(state.redemption_rate(REFERENCE).is_err());
   Ok(())
 }
 

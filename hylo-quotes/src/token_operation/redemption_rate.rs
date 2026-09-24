@@ -2,7 +2,8 @@
 //!
 //! `rate = sHYUSD exit rate * best hyUSD lane value`. Lanes skip route
 //! gates and price the redeem fee at `min(projected CR, curve x_max)`.
-//! A lane drops when it cannot absorb the reference amount.
+//! A lane drops when it cannot absorb the reference amount or its
+//! collateral oracle is outside the stablecoin oracle window.
 
 use anchor_lang::prelude::Pubkey;
 use anyhow::{anyhow, ensure, Result};
@@ -114,7 +115,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(FeeExtract::new(withdrawal_fee, nav)?.amount_remaining)
   }
 
-  /// LST/USD at the lower SOL/USD bound.
+  /// LST/USD at the lower SOL/USD bound. `None` if SOL/USD is stale.
   fn lst_usd_lower<L: LST + Local>(&self) -> Option<UFix64<N9>> {
     let price: LstSolPrice = self.lst_header::<L>().ok()?.price_sol.into();
     price
@@ -124,6 +125,7 @@ impl<C: SolanaClock> ProtocolState<C> {
         self.exchange_context.collateral_usd_price().lower,
         UFix64::one(),
       )
+      .filter(|_| self.sol_usd_in_stablecoin_oracle_window())
   }
 
   /// LST out for `reference` hyUSD, net of the clamped redeem fee.
@@ -195,11 +197,12 @@ impl<C: SolanaClock> ProtocolState<C> {
       .map(|amount_out| (amount_out, basis))
   }
 
-  /// Exo/USD at the lower oracle bound.
+  /// Exo/USD at the lower oracle bound. `None` if the feed is stale.
   fn exo_usd_lower<E: Exo>(&self) -> Option<UFix64<N9>> {
     self
       .exo_pair::<E>()
       .ok()
+      .filter(|pair| pair.collateral_usd_in_stablecoin_oracle_window())
       .map(|pair| pair.context.collateral_usd_price().lower)
   }
 
