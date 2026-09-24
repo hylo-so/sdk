@@ -8,7 +8,7 @@ use crate::program_client::VersionedTransactionData;
 use crate::squads::{SquadsContext, SquadsTransactionData};
 
 impl RouterClient {
-  /// Initializes the canonical exo registry.
+  /// Initializes the registry of routable exo pairs.
   ///
   /// # Errors
   /// * Failed to build transaction instructions

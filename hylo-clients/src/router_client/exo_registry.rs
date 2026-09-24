@@ -8,7 +8,7 @@ use super::RouterClient;
 use crate::program_client::ProgramClient;
 
 impl RouterClient {
-  /// Fetches the canonical exo registry.
+  /// Fetches the registry of routable exo pairs.
   ///
   /// # Errors
   /// * Failed to fetch the account
