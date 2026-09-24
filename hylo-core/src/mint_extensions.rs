@@ -5,11 +5,11 @@ use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
 };
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHook as TransferHookConfig;
 use anchor_spl::token_2022::spl_token_2022::extension::ExtensionType::{
-  ConfidentialMintBurn, ConfidentialTransferAccount,
+  ConfidentialTransferAccount,
   ConfidentialTransferFeeAmount, ConfidentialTransferFeeConfig,
   ConfidentialTransferMint, CpiGuard, DefaultAccountState, GroupMemberPointer,
   GroupPointer, ImmutableOwner, InterestBearingConfig, MemoTransfer,
-  MetadataPointer, MintCloseAuthority, NonTransferable, NonTransferableAccount,
+  MetadataPointer, MintCloseAuthority, NonTransferableAccount,
   Pausable, PausableAccount, PermanentDelegate, ScaledUiAmount, TokenGroup,
   TokenGroupMember, TokenMetadata, TransferFeeAmount, TransferFeeConfig,
   TransferHook, TransferHookAccount,
