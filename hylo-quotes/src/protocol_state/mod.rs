@@ -12,6 +12,5 @@ pub use exo_registry::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
   find_exo_entry, read_exo_registry,
 };
-pub use hylo_clients::router_client::exo_registry_entries;
 pub use provider::{RpcStateProvider, StateProvider};
 pub use state::{build_lst_exchange_context, ProtocolState, UsdcExchangeState};

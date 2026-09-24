@@ -15,7 +15,6 @@ use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::tokens::TokenMint;
 
 use crate::program_client::ProgramClient;
-pub use crate::router_client::exo_registry::exo_registry_entries;
 use crate::transaction::TransactionSyntax;
 
 /// Arguments for all router-based token operations.
