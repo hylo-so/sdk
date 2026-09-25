@@ -22,9 +22,9 @@ pub use crate::simulated_operation::{
 };
 // TokenOperation (pure math)
 pub use crate::token_operation::{
-  LstSwapOperationOutput, MintOperationOutput, OperationOutput,
-  RedeemOperationOutput, SwapOperationOutput, TokenOperation,
-  TokenOperationExt,
+  FeeBasis, LstSwapOperationOutput, MintOperationOutput, OperationOutput,
+  RedeemOperationOutput, RedemptionLane, RedemptionRate, SwapOperationOutput,
+  TokenOperation, TokenOperationExt,
 };
 // Strategy implementations
 pub use crate::ProtocolStateStrategy;

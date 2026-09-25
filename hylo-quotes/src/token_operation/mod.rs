@@ -2,6 +2,7 @@
 
 mod earn_pool;
 mod exchange;
+mod redemption_rate;
 
 use anchor_lang::prelude::Pubkey;
 use fix::prelude::{CheckedAdd, UFix64, N6, N9};
@@ -9,6 +10,7 @@ use fix::typenum::Integer;
 use hylo_core::calculus::{positive, positive_rate};
 use hylo_core::error::CoreError;
 use hylo_idl::tokens::TokenMint;
+pub use redemption_rate::{FeeBasis, RedemptionLane, RedemptionRate};
 
 fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
   condition.then_some(()).ok_or(error)
