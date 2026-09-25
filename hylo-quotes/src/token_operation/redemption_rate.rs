@@ -17,13 +17,12 @@ use hylo_core::fees::curve_controller::{
 };
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, USDC,
 };
 
 use crate::protocol_state::ProtocolState;
-use crate::token_operation::{gate, TokenOperation};
+use crate::token_operation::TokenOperation;
 use crate::{Local, LST};
 
 /// Which collateral ratio priced a stablecoin redeem fee.
@@ -136,20 +135,9 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
     reference: UFix64<N6>,
   ) -> Result<(UFix64<N9>, FeeBasis), CoreError> {
+    let (lst_price, lst_out) =
+      self.redeem_stablecoin_lst_gross::<L>(reference)?;
     let context = &self.exchange_context;
-    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
-    let lst_out = context
-      .token_conversion(&lst_price)?
-      .token_to_lst(reference, context.stablecoin_nav()?)?;
-    gate(
-      lst_out <= self.lst_vault_balance::<L>()?,
-      CoreError::InsufficientLiquidity,
-    )?;
-    validate_burn(
-      context.virtual_stablecoin_supply()?,
-      reference,
-      SUPPLY_FLOOR,
-    )?;
     let projected = context.projected_redeem_state(&lst_price, lst_out)?;
     clamped_redeem_fee(
       &context.stablecoin_redeem_fees,
@@ -170,20 +158,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   where
     UFix64<E::Exp>: FixExt,
   {
-    let pair = self.exo_pair::<E>()?;
-    let context = &pair.context;
-    let collateral_out = context
-      .exo_conversion()
-      .token_to_exo(reference, context.stablecoin_nav()?)?;
-    gate(
-      collateral_out <= context.total_collateral,
-      CoreError::InsufficientLiquidity,
-    )?;
-    validate_burn(
-      context.virtual_stablecoin_supply()?,
-      reference,
-      pair.supply_floor,
-    )?;
+    let collateral_out = self.redeem_stablecoin_exo_gross::<E>(reference)?;
+    let context = &self.exo_pair::<E>()?.context;
     let projected = context.projected_redeem_state(collateral_out)?;
     let (extract, basis) = clamped_redeem_fee(
       &context.stablecoin_redeem_fees,
