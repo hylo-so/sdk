@@ -103,6 +103,25 @@ fn every_lane_hyusd_rate_is_near_par() -> Result<()> {
   Ok(())
 }
 
+/// `usd_out` is truncated to N6, so it may sit up to this far below the
+/// N9 product of amount and price.
+const USD_OUT_TOLERANCE: UFix64<N9> = UFix64::constant(2_000);
+
+fn assert_near_below(
+  name: &str,
+  lane_usd: UFix64<N9>,
+  independent: UFix64<N9>,
+) -> Result<()> {
+  let gap = independent
+    .checked_sub(&lane_usd)
+    .ok_or_else(|| anyhow!("{name} usd_out above the N9 product"))?;
+  assert!(
+    gap <= USD_OUT_TOLERANCE,
+    "{name} usd_out mismatch: lane={lane_usd:?} independent={independent:?}"
+  );
+  Ok(())
+}
+
 #[test]
 fn lane_usd_out_matches_amount_times_lower_price() -> Result<()> {
   let state = load_state()?;
@@ -118,31 +137,20 @@ fn lane_usd_out_matches_amount_times_lower_price() -> Result<()> {
       UFix64::<N9>::one(),
     )
     .ok_or_else(|| anyhow!("jitosol lower price overflow"))?;
-  let jitosol_amount = UFix64::<N9>::try_from(jitosol.amount_out)?;
-  let jitosol_expected = jitosol_amount
+  let jitosol_expected = UFix64::<N9>::try_from(jitosol.amount_out)?
     .mul_div_floor(jitosol_lower, UFix64::<N9>::one())
     .ok_or_else(|| anyhow!("jitosol usd_out overflow"))?;
-  assert_eq!(
-    jitosol.usd_out, jitosol_expected,
-    "jitosol usd_out mismatch: lane={:?} independent={:?}",
-    jitosol.usd_out, jitosol_expected
-  );
+  assert_near_below("jitosol", jitosol.usd_out, jitosol_expected)?;
 
   let cbbtc =
     lane(&rate, CBBTC::MINT).ok_or_else(|| anyhow!("no CBBTC lane"))?;
   let cbbtc_lower = state.cbbtc_pair.context.collateral_usd_price.lower;
-  let cbbtc_amount = UFix64::<N8>::try_from(cbbtc.amount_out)?
+  let cbbtc_expected = UFix64::<N8>::try_from(cbbtc.amount_out)?
     .checked_convert::<N9>()
-    .ok_or_else(|| anyhow!("cbbtc amount convert overflow"))?;
-  let cbbtc_expected = cbbtc_amount
+    .ok_or_else(|| anyhow!("cbbtc amount convert overflow"))?
     .mul_div_floor(cbbtc_lower, UFix64::<N9>::one())
     .ok_or_else(|| anyhow!("cbbtc usd_out overflow"))?;
-  assert_eq!(
-    cbbtc.usd_out, cbbtc_expected,
-    "cbbtc usd_out mismatch: lane={:?} independent={:?}",
-    cbbtc.usd_out, cbbtc_expected
-  );
-  Ok(())
+  assert_near_below("cbbtc", cbbtc.usd_out, cbbtc_expected)
 }
 
 #[test]

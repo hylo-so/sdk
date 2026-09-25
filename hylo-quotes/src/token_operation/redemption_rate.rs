@@ -10,19 +10,17 @@ use anyhow::{anyhow, ensure, Result};
 use fix::prelude::*;
 use hylo_core::collateral_ratio::CollateralRatio;
 use hylo_core::error::CoreError;
-use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::fees::curve_controller::{
   InterpolatedFeeController, InterpolatedRedeemFees,
 };
-use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, USDC,
 };
 
 use crate::protocol_state::ProtocolState;
-use crate::token_operation::TokenOperation;
+use crate::token_operation::{gate, TokenOperation};
 use crate::{Local, LST};
 
 /// Which collateral ratio priced a stablecoin redeem fee.
@@ -70,7 +68,8 @@ pub struct RedemptionLane {
   pub fee_basis: FeeBasis,
   /// Net output in the lane token's own decimals.
   pub amount_out: UFixValue64,
-  /// `amount_out` at the lower oracle bound (USDC: spot capped at 1).
+  /// `amount_out` at the lower oracle bound, in N6 precision
+  /// (USDC: spot capped at 1).
   pub usd_out: UFix64<N9>,
   /// USD per hyUSD through this lane.
   pub hyusd_usd_rate: UFix64<N9>,
@@ -90,6 +89,13 @@ pub struct RedemptionRate {
   pub lanes: Vec<RedemptionLane>,
   /// Lane with the highest `usd_out`. May be closed.
   pub best: RedemptionLane,
+}
+
+/// Net lane output, its fee basis, and its USD value at the lower bound.
+struct LaneValue<Exp> {
+  amount_out: UFix64<Exp>,
+  fee_basis: FeeBasis,
+  usd_out: UFix64<N6>,
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
@@ -114,72 +120,96 @@ impl<C: SolanaClock> ProtocolState<C> {
     Ok(FeeExtract::new(withdrawal_fee, nav)?.amount_remaining)
   }
 
-  /// LST/USD at the lower SOL/USD bound. `None` if SOL/USD is stale.
-  fn lst_usd_lower<L: LST + Local>(&self) -> Option<UFix64<N9>> {
-    let price: LstSolPrice = self.lst_header::<L>().ok()?.price_sol.into();
-    price
-      .get_epoch_price(self.exchange_context.clock.epoch())
-      .ok()?
-      .mul_div_floor(
-        self.exchange_context.collateral_usd_price().lower,
-        UFix64::one(),
-      )
-      .filter(|_| self.sol_usd_in_stablecoin_oracle_window())
-  }
-
   /// LST out for `reference` hyUSD, net of the clamped redeem fee.
   ///
   /// # Errors
+  /// * Stale SOL/USD feed
   /// * Conversion, vault or burn capacity, projection, or fee
   fn lst_lane_value<L: LST + Local>(
     &self,
     reference: UFix64<N6>,
-  ) -> Result<(UFix64<N9>, FeeBasis), CoreError> {
+  ) -> Result<LaneValue<N9>, CoreError> {
+    gate(
+      self.sol_usd_in_stablecoin_oracle_window(),
+      CoreError::PythOracleOutdated,
+    )?;
     let (lst_price, lst_out) =
       self.redeem_stablecoin_lst_gross::<L>(reference)?;
     let context = &self.exchange_context;
     let projected = context.projected_redeem_state(&lst_price, lst_out)?;
-    clamped_redeem_fee(
+    let (extract, fee_basis) = clamped_redeem_fee(
       &context.stablecoin_redeem_fees,
       projected.collateral_ratio,
       lst_out,
-    )
-    .map(|(extract, basis)| (extract.amount_remaining, basis))
+    )?;
+    let usd_out = context
+      .token_conversion(&lst_price)?
+      .lst_to_token(extract.amount_remaining, UFix64::one())?;
+    Ok(LaneValue {
+      amount_out: extract.amount_remaining,
+      fee_basis,
+      usd_out,
+    })
   }
 
   /// Exo out for `reference` hyUSD, net of the clamped redeem fee.
   ///
   /// # Errors
+  /// * Stale collateral feed
   /// * Conversion, collateral or burn capacity, projection, or fee
   fn exo_lane_value<E: Exo>(
     &self,
     reference: UFix64<N6>,
-  ) -> Result<(UFix64<E::Exp>, FeeBasis), CoreError>
+  ) -> Result<LaneValue<E::Exp>, CoreError>
   where
     UFix64<E::Exp>: FixExt,
   {
+    let pair = self.exo_pair::<E>()?;
+    gate(
+      pair.collateral_usd_in_stablecoin_oracle_window(),
+      CoreError::PythOracleOutdated,
+    )?;
     let collateral_out = self.redeem_stablecoin_exo_gross::<E>(reference)?;
-    let context = &self.exo_pair::<E>()?.context;
+    let context = &pair.context;
     let projected = context.projected_redeem_state(collateral_out)?;
-    let (extract, basis) = clamped_redeem_fee(
+    let (extract, fee_basis) = clamped_redeem_fee(
       &context.stablecoin_redeem_fees,
       projected.collateral_ratio,
       collateral_out,
     )?;
-    extract
+    let amount_out: UFix64<E::Exp> = extract
       .amount_remaining
       .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)
-      .map(|amount_out| (amount_out, basis))
+      .ok_or(CoreError::TokenAmountPrecision)?;
+    let usd_out = context.exo_conversion().exo_to_token(
+      amount_out
+        .checked_convert::<N9>()
+        .ok_or(CoreError::TokenAmountPrecision)?,
+      UFix64::<N9>::one(),
+    )?;
+    Ok(LaneValue {
+      amount_out,
+      fee_basis,
+      usd_out,
+    })
   }
 
-  /// Exo/USD at the lower oracle bound. `None` if the feed is stale.
-  fn exo_usd_lower<E: Exo>(&self) -> Option<UFix64<N9>> {
-    self
-      .exo_pair::<E>()
-      .ok()
-      .filter(|pair| pair.collateral_usd_in_stablecoin_oracle_window())
-      .map(|pair| pair.context.collateral_usd_price().lower)
+  /// USDC out for `reference` hyUSD. Spot is capped at par because the
+  /// par-tolerance gate is skipped.
+  fn usdc_lane_value(&self, reference: UFix64<N6>) -> Option<LaneValue<N6>> {
+    let amount_out =
+      TokenOperation::<HYUSD, USDC>::compute_output_ungated(self, reference)
+        .ok()?
+        .out_amount;
+    let spot = self
+      .usdc_exchange_state
+      .usdc_usd_spot
+      .min(UFix64::<N9>::one());
+    Some(LaneValue {
+      amount_out,
+      fee_basis: FeeBasis::CurrentCr,
+      usd_out: amount_out.mul_div_floor(spot, UFix64::<N9>::one())?,
+    })
   }
 
   /// Lowers one valued lane. `None` drops the lane.
@@ -187,18 +217,19 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
     reference: UFix64<N6>,
     shyusd_hyusd_rate: UFix64<N9>,
-    valued: Result<(UFix64<OUT::Exp>, FeeBasis), CoreError>,
-    usd_price_lower: Option<UFix64<N9>>,
+    valued: Option<LaneValue<OUT::Exp>>,
   ) -> Option<RedemptionLane>
   where
     OUT: TokenMint,
     ProtocolState<C>: TokenOperation<HYUSD, OUT>,
     UFix64<OUT::Exp>: FixExt,
   {
-    let (out_amount, fee_basis) = valued.ok()?;
-    let usd_out = out_amount
-      .checked_convert::<N9>()?
-      .mul_div_floor(usd_price_lower?, UFix64::<N9>::one())?;
+    let LaneValue {
+      amount_out,
+      fee_basis,
+      usd_out,
+    } = valued?;
+    let usd_out = usd_out.checked_convert::<N9>()?;
     let hyusd_usd_rate =
       usd_out.mul_div_floor(UFix64::<N6>::one(), reference)?;
     let shyusd_usd_rate =
@@ -209,7 +240,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       mint: OUT::MINT,
       open,
       fee_basis,
-      amount_out: out_amount.into(),
+      amount_out: amount_out.into(),
       usd_out,
       hyusd_usd_rate,
       shyusd_usd_rate,
@@ -235,39 +266,27 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.redemption_lane::<JITOSOL>(
         reference,
         exit,
-        self.lst_lane_value::<JITOSOL>(reference),
-        self.lst_usd_lower::<JITOSOL>(),
+        self.lst_lane_value::<JITOSOL>(reference).ok(),
       ),
       self.redemption_lane::<HYLOSOL>(
         reference,
         exit,
-        self.lst_lane_value::<HYLOSOL>(reference),
-        self.lst_usd_lower::<HYLOSOL>(),
+        self.lst_lane_value::<HYLOSOL>(reference).ok(),
       ),
       self.redemption_lane::<CBBTC>(
         reference,
         exit,
-        self.exo_lane_value::<CBBTC>(reference),
-        self.exo_usd_lower::<CBBTC>(),
+        self.exo_lane_value::<CBBTC>(reference).ok(),
       ),
       self.redemption_lane::<HYPE>(
         reference,
         exit,
-        self.exo_lane_value::<HYPE>(reference),
-        self.exo_usd_lower::<HYPE>(),
+        self.exo_lane_value::<HYPE>(reference).ok(),
       ),
       self.redemption_lane::<USDC>(
         reference,
         exit,
-        TokenOperation::<HYUSD, USDC>::compute_output_ungated(self, reference)
-          .map(|op| (op.out_amount, FeeBasis::CurrentCr)),
-        // Par-tolerance gate is skipped, so cap spot at par.
-        Some(
-          self
-            .usdc_exchange_state
-            .usdc_usd_spot
-            .min(UFix64::<N9>::one()),
-        ),
+        self.usdc_lane_value(reference),
       ),
     ]
     .into_iter()
