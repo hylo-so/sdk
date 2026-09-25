@@ -166,12 +166,15 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_stablecoin_lst_quote<L: LST + Local>(
+  /// LST price and gross LST out for `in_amount` hyUSD, before the fee.
+  ///
+  /// # Errors
+  /// * Conversion, vault capacity, or burn below the supply floor
+  pub(super) fn redeem_stablecoin_lst_gross<L: LST + Local>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<RedeemOperationOutput, CoreError> {
-    let lst_header = self.lst_header::<L>()?;
-    let lst_price = lst_header.price_sol.into();
+  ) -> Result<(LstSolPrice, UFix64<N9>), CoreError> {
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let lst_out = self
       .exchange_context
@@ -181,17 +184,26 @@ impl<C: SolanaClock> ProtocolState<C> {
       lst_out <= self.lst_vault_balance::<L>()?,
       CoreError::InsufficientLiquidity,
     )?;
+    validate_burn(
+      self.exchange_context.virtual_stablecoin_supply()?,
+      in_amount,
+      SUPPLY_FLOOR,
+    )?;
+    Ok((lst_price, lst_out))
+  }
+
+  fn redeem_stablecoin_lst_quote<L: LST + Local>(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    let (lst_price, lst_out) =
+      self.redeem_stablecoin_lst_gross::<L>(in_amount)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
     } = self
       .exchange_context
       .stablecoin_redeem_fee(&lst_price, lst_out)?;
-    validate_burn(
-      self.exchange_context.virtual_stablecoin_supply()?,
-      in_amount,
-      SUPPLY_FLOOR,
-    )?;
     let marginal_rate = atom_rate::<N6, N9>(
       self
         .exchange_context
@@ -803,13 +815,14 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+  /// Gross collateral out for `in_amount` hyUSD, before the fee.
+  ///
+  /// # Errors
+  /// * Conversion, collateral capacity, or burn below the supply floor
+  pub(super) fn redeem_stablecoin_exo_gross<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
-  where
-    UFix64<E::Exp>: FixExt,
-  {
+  ) -> Result<UFix64<N9>, CoreError> {
     let pair = self.exo_pair::<E>()?;
     let stablecoin_nav = pair.context.stablecoin_nav()?;
     let collateral_out = pair
@@ -820,15 +833,27 @@ impl<C: SolanaClock> ProtocolState<C> {
       collateral_out <= pair.context.total_collateral,
       CoreError::InsufficientLiquidity,
     )?;
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = pair.context.stablecoin_redeem_fee(collateral_out)?;
     validate_burn(
       pair.context.virtual_stablecoin_supply()?,
       in_amount,
       pair.supply_floor,
     )?;
+    Ok(collateral_out)
+  }
+
+  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let pair = self.exo_pair::<E>()?;
+    let collateral_out = self.redeem_stablecoin_exo_gross::<E>(in_amount)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = pair.context.stablecoin_redeem_fee(collateral_out)?;
     let out_amount: UFix64<E::Exp> = amount_remaining
       .checked_convert()
       .ok_or(CoreError::TokenAmountPrecision)?;
