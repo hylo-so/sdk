@@ -81,7 +81,7 @@ pub struct RedemptionLane {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub struct RedemptionRate {
-  /// hyUSD per sHYUSD: earn-pool NAV net of the withdrawal fee.
+  /// hyUSD per sHYUSD: net withdraw of the reference, per sHYUSD.
   pub shyusd_hyusd_rate: UFix64<N9>,
   /// hyUSD amount every lane was priced at.
   pub reference_hyusd: UFix64<N6>,
@@ -99,25 +99,18 @@ struct LaneValue<Exp> {
 }
 
 impl<C: SolanaClock> ProtocolState<C> {
-  /// hyUSD per sHYUSD: earn-pool NAV net of the withdrawal fee.
-  /// Ignores the withdrawal limiter.
+  /// hyUSD per sHYUSD: net withdraw of `reference` sHYUSD (capped at
+  /// supply) per sHYUSD. Ignores the withdrawal limiter.
   ///
   /// # Errors
-  /// * NAV overflows `N9`
-  /// * Withdrawal fee conversion or fee extraction
-  fn shyusd_exit_rate(&self) -> Result<UFix64<N9>> {
-    let pool = UFix64::<N6>::new(self.hyusd_pool.amount);
-    let supply = UFix64::<N6>::new(self.shyusd_mint.supply);
-    let nav = if supply == UFix64::zero() {
-      UFix64::<N9>::one()
-    } else {
-      UFix64::<N9>::one()
-        .mul_div_floor(pool, supply)
-        .ok_or_else(|| anyhow!("earn pool NAV overflows N9"))?
-    };
-    let withdrawal_fee: UFix64<N4> =
-      self.pool_config.withdrawal_fee.try_into()?;
-    Ok(FeeExtract::new(withdrawal_fee, nav)?.amount_remaining)
+  /// * Zero sHYUSD supply
+  /// * Withdraw arithmetic or withdrawal fee
+  fn shyusd_exit_rate(&self, reference: UFix64<N6>) -> Result<UFix64<N9>> {
+    let shares = reference.min(UFix64::new(self.shyusd_mint.supply));
+    let (_, extract) = self.withdraw_shyusd_gross(shares)?;
+    UFix64::<N9>::one()
+      .mul_div_floor(extract.amount_remaining, shares)
+      .ok_or_else(|| anyhow!("earn pool has no sHYUSD supply"))
   }
 
   /// LST out for `reference` hyUSD, net of the clamped redeem fee.
@@ -251,7 +244,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   ///
   /// # Errors
   /// * Zero `reference`
-  /// * Earn-pool NAV or withdrawal fee
+  /// * Earn-pool withdraw, withdrawal fee, or zero sHYUSD supply
   /// * No lane can price `reference`
   pub fn redemption_rate(
     &self,
@@ -261,7 +254,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       reference > UFix64::zero(),
       "redemption reference amount must be nonzero"
     );
-    let exit = self.shyusd_exit_rate()?;
+    let exit = self.shyusd_exit_rate(reference)?;
     let lanes: Vec<RedemptionLane> = [
       self.redemption_lane::<JITOSOL>(
         reference,

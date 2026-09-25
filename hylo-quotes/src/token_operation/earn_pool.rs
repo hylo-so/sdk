@@ -71,6 +71,32 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   }
 }
 
+impl<C: SolanaClock> ProtocolState<C> {
+  /// hyUSD withdrawn for `in_amount` sHYUSD and its withdrawal fee split.
+  /// Skips the withdrawal limiter.
+  ///
+  /// # Errors
+  /// * `in_amount` above sHYUSD supply
+  /// * Withdraw arithmetic, fee conversion, or fee extraction
+  pub(super) fn withdraw_shyusd_gross(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<(UFix64<N6>, FeeExtract<N6>), CoreError> {
+    let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
+    let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
+    gate(
+      in_amount <= shyusd_supply,
+      CoreError::InsufficientEarnPoolLiquidity,
+    )?;
+    let hyusd_to_withdraw =
+      amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
+    let withdrawal_fee: UFix64<N4> =
+      self.pool_config.withdrawal_fee.try_into()?;
+    FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)
+      .map(|extract| (hyusd_to_withdraw, extract))
+  }
+}
+
 impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   type FeeExp = N6;
 
@@ -87,14 +113,15 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<SwapOperationOutput, CoreError> {
-    let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
-    let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
-    gate(
-      in_amount <= shyusd_supply,
-      CoreError::InsufficientEarnPoolLiquidity,
-    )?;
-    let hyusd_to_withdraw =
-      amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
+    let shyusd_supply = UFix64::<N6>::new(self.shyusd_mint.supply);
+    let hyusd_in_pool = UFix64::<N6>::new(self.hyusd_pool.amount);
+    let (
+      hyusd_to_withdraw,
+      FeeExtract {
+        fees_extracted,
+        amount_remaining,
+      },
+    ) = self.withdraw_shyusd_gross(in_amount)?;
     let withdrawal_limiter: WithdrawalLimiter =
       self.pool_config.withdrawal_limiter.into();
     withdrawal_limiter.validate_withdrawal(
@@ -103,10 +130,6 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     )?;
     let withdrawal_fee: UFix64<N4> =
       self.pool_config.withdrawal_fee.try_into()?;
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)?;
 
     // hyusd_out(x) = x * hyusd_in_pool / shyusd_supply * (1 - fee)
     let marginal_rate = positive_rate(

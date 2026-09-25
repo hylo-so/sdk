@@ -59,6 +59,8 @@ fn rate_is_near_par_and_nav() -> Result<()> {
   assert!(rate.best.hyusd_usd_rate > UFix64::new(950_000_000));
   assert!(rate.best.hyusd_usd_rate <= UFix64::one());
 
+  // Independent N9 NAV net of fee; the rate prices N6 amounts, so it may
+  // differ by a few N9 atoms.
   let pool = UFix64::<N6>::new(state.hyusd_pool.amount);
   let supply = UFix64::<N6>::new(state.shyusd_mint.supply);
   let nav = UFix64::<N9>::one()
@@ -67,7 +69,12 @@ fn rate_is_near_par_and_nav() -> Result<()> {
   let withdrawal_fee: UFix64<N4> =
     state.pool_config.withdrawal_fee.try_into()?;
   let expected = FeeExtract::new(withdrawal_fee, nav)?.amount_remaining;
-  assert_eq!(rate.shyusd_hyusd_rate, expected);
+  let gap = expected.bits.abs_diff(rate.shyusd_hyusd_rate.bits);
+  assert!(
+    gap <= 5,
+    "exit rate {:?} vs NAV {expected:?}",
+    rate.shyusd_hyusd_rate
+  );
   Ok(())
 }
 
