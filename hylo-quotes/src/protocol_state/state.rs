@@ -48,6 +48,10 @@ pub struct UsdcExchangeState {
   pub usdc_usd_spot: Result<UFix64<N9>, CoreError>,
   /// Tolerated distance from par for the USDC pair
   pub par_tolerance: ParTolerance,
+  /// Share of pair TVL retained in the USDC vault
+  pub reserve_ratio: UFix64<N6>,
+  /// Maximum USD pair size used to calculate the reserve
+  pub pair_size_cap_usd: UFix64<N6>,
 }
 
 /// Tests a feed publish time against the tightened stablecoin oracle window.
@@ -419,6 +423,8 @@ fn build_usdc_exchange_state(
     virtual_stablecoin,
     usdc_usd_spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
+    reserve_ratio: usdc_pair.reserve_ratio.try_into()?,
+    pair_size_cap_usd: usdc_pair.pair_size_cap_usd.try_into()?,
   })
 }
 

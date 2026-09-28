@@ -19029,6 +19029,121 @@
       }
     },
     {
+      "name": "update_usdc_reserve_gate",
+      "discriminator": [
+        180,
+        124,
+        5,
+        241,
+        51,
+        118,
+        9,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "reserve_ratio",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "pair_size_cap_usd",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateUsdcReserveGateEvent"
+        }
+      }
+    },
+    {
       "name": "update_yield_harvest_config",
       "discriminator": [
         140,
@@ -20134,6 +20249,19 @@
       ]
     },
     {
+      "name": "UpdateUsdcReserveGateEvent",
+      "discriminator": [
+        226,
+        22,
+        210,
+        8,
+        133,
+        82,
+        207,
+        183
+      ]
+    },
+    {
       "name": "UpdateYieldHarvestConfigEvent",
       "discriminator": [
         67,
@@ -20405,6 +20533,11 @@
       "code": 6048,
       "name": "VirtualStablecoinExceedsVault",
       "msg": "Virtual stablecoin supply exceeds USDC vault balance."
+    },
+    {
+      "code": 6049,
+      "name": "UsdcReserveBelowMinimum",
+      "msg": "USDC vault reserve would fall below the pair minimum."
     }
   ],
   "types": [
@@ -23284,6 +23417,46 @@
       }
     },
     {
+      "name": "UpdateUsdcReserveGateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_reserve_ratio",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_reserve_ratio",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "old_pair_size_cap_usd",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "new_pair_size_cap_usd",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateYieldHarvestConfigEvent",
       "type": {
         "kind": "struct",
@@ -23369,11 +23542,27 @@
             }
           },
           {
+            "name": "reserve_ratio",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pair_size_cap_usd",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                109
+                91
               ]
             }
           }

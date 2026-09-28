@@ -21,6 +21,7 @@ pub mod lst;
 pub mod par_tolerance;
 pub mod pyth;
 pub mod rebalance;
+pub mod reserve_gate;
 pub mod slippage_config;
 pub mod solana_clock;
 pub mod util;
