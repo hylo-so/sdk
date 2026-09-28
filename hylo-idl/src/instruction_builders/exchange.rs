@@ -1151,6 +1151,25 @@ pub fn update_usdc_redeem_fee(
 }
 
 #[must_use]
+pub fn update_usdc_reserve_gate(
+  admin: Pubkey,
+  args: &args::UpdateUsdcReserveGate,
+) -> Instruction {
+  let accounts = accounts::UpdateUsdcReserveGate {
+    admin,
+    hylo: pda::HYLO,
+    usdc_pair: pda::USDC_PAIR,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn initialize_lst_virtual_stablecoin(admin: Pubkey) -> Instruction {
   let accounts = accounts::InitializeLstVirtualStablecoin {
     admin,
