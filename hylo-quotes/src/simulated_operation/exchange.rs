@@ -25,7 +25,6 @@ use crate::token_operation::{
 };
 use crate::{Local, LST};
 
-/// Mint stablecoin from LST.
 impl<L: LST + Local> SimulatedOperation<L, HYUSD> for RouterClient {
   type FeeExp = N9;
   type Event = MintStablecoinLstEvent;
@@ -51,7 +50,6 @@ impl<L: LST + Local> SimulatedOperation<L, HYUSD> for RouterClient {
   }
 }
 
-/// Redeem stablecoin for LST.
 impl<L: LST + Local> SimulatedOperation<HYUSD, L> for RouterClient {
   type FeeExp = N9;
   type Event = RedeemStablecoinLstEvent;
@@ -76,7 +74,6 @@ impl<L: LST + Local> SimulatedOperation<HYUSD, L> for RouterClient {
   }
 }
 
-/// Mint levercoin from LST.
 impl<L: LST + Local> SimulatedOperation<L, XSOL> for RouterClient {
   type FeeExp = N9;
   type Event = MintLevercoinLstEvent;
@@ -102,7 +99,6 @@ impl<L: LST + Local> SimulatedOperation<L, XSOL> for RouterClient {
   }
 }
 
-/// Redeem levercoin for LST.
 impl<L: LST + Local> SimulatedOperation<XSOL, L> for RouterClient {
   type FeeExp = N9;
   type Event = RedeemLevercoinLstEvent;
@@ -127,7 +123,6 @@ impl<L: LST + Local> SimulatedOperation<XSOL, L> for RouterClient {
   }
 }
 
-/// Convert stablecoin to levercoin.
 impl SimulatedOperation<HYUSD, XSOL> for RouterClient {
   type FeeExp = N6;
   type Event = ConvertStableToLeverLstEvent;
@@ -152,7 +147,6 @@ impl SimulatedOperation<HYUSD, XSOL> for RouterClient {
   }
 }
 
-/// Convert levercoin to stablecoin.
 impl SimulatedOperation<XSOL, HYUSD> for RouterClient {
   type FeeExp = N6;
   type Event = ConvertLeverToStableLstEvent;
@@ -177,7 +171,6 @@ impl SimulatedOperation<XSOL, HYUSD> for RouterClient {
   }
 }
 
-/// Swap between LSTs.
 impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
   for RouterClient
 {
@@ -203,7 +196,7 @@ impl<L1: LST + Local, L2: LST + Local> SimulatedOperation<L1, L2>
 
 /// Mint stablecoin from USDC.
 ///
-/// On-chain: USDC is normalized to N9 before fee extraction, so
+/// Onchain: USDC is normalized to N9 before fee extraction, so
 /// event amounts `usdc_deposited` and `usdc_fees` are N9.
 impl SimulatedOperation<USDC, HYUSD> for RouterClient {
   type FeeExp = N9;
@@ -233,7 +226,7 @@ impl SimulatedOperation<USDC, HYUSD> for RouterClient {
 
 /// Redeem stablecoin to USDC.
 ///
-/// On-chain: fee is applied to HYUSD input before conversion.
+/// Onchain: fee is applied to HYUSD input before conversion.
 /// `fee_base` is the total HYUSD input (`stablecoin_burned +
 /// stablecoin_fees`) and `fee_mint` is HYUSD.
 impl SimulatedOperation<HYUSD, USDC> for RouterClient {
@@ -260,7 +253,6 @@ impl SimulatedOperation<HYUSD, USDC> for RouterClient {
   }
 }
 
-/// Swap LST for USDC.
 impl<L: LST + Local> SimulatedOperation<L, USDC> for RouterClient {
   type FeeExp = N9;
   type Event = SwapLstToUsdcEvent;
@@ -284,7 +276,6 @@ impl<L: LST + Local> SimulatedOperation<L, USDC> for RouterClient {
   }
 }
 
-/// Swap USDC for LST.
 impl<L: LST + Local> SimulatedOperation<USDC, L> for RouterClient {
   type FeeExp = N6;
   type Event = SwapUsdcToLstEvent;

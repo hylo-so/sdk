@@ -9,7 +9,7 @@ use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
 use hylo_idl::router::client::args as router_args;
-use hylo_idl::router::instruction_builders::route;
+use hylo_idl::router::instruction_builders::route_v2;
 use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
   SHYUSD, USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
@@ -32,13 +32,13 @@ fn route_instruction<A: ToAccountMetas>(
   slippage_config: Option<SlippageConfig>,
   inner_accounts: &A,
 ) -> Instruction {
-  let args = router_args::Route {
+  let args = router_args::RouteV2 {
     token_a,
     token_b,
     amount,
     slippage_config: slippage_config.map(Into::into),
   };
-  route(&args, inner_accounts)
+  route_v2(&args, inner_accounts)
 }
 
 macro_rules! router_instruction {

@@ -25,11 +25,11 @@
 //!
 //! ## Clients
 //!
-//! - [`router_client::RouterClient`] — All user-facing token operations (mint,
+//! * [`router_client::RouterClient`] — All user-facing token operations (mint,
 //!   redeem, swap, earn pool) via the router program
-//! - [`exchange_client::ExchangeClient`] — Admin operations for the exchange
+//! * [`exchange_client::ExchangeClient`] — Admin operations for the exchange
 //!   program
-//! - [`earn_pool_client::EarnPoolClient`] — Admin operations for the earn pool
+//! * [`earn_pool_client::EarnPoolClient`] — Admin operations for the earn pool
 //!   program
 
 pub mod earn_pool_client;

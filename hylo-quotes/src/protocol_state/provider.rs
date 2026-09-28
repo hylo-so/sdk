@@ -9,21 +9,20 @@ use anchor_lang::AccountDeserialize;
 use anchor_spl::token::Mint;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use fix::prelude::UFix64;
-use fix::util::FixExt;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::idl::exchange::accounts::Hylo;
+use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
-use hylo_idl::with_exo_pairs;
+use hylo_idl::{pda, with_exo_pairs};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{
-  build_exo_pair_state, build_lst_exchange_context, ExoPairState,
-  ProtocolAccounts, ProtocolState,
+  build_lst_exchange_context, exo_pubkeys_from_entries, read_exo_registry,
+  ExoAccounts, ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
 };
 
 /// Trait for fetching protocol state from a data source
@@ -52,10 +51,7 @@ pub struct RpcStateProvider {
 }
 
 impl RpcStateProvider {
-  /// Create a new RPC state provider
-  ///
-  /// # Arguments
-  /// * `rpc_client` - Solana RPC client for fetching account data
+  /// Creates a state provider over an RPC client.
   #[must_use]
   pub fn new(rpc_client: Arc<RpcClient>) -> Self {
     Self { rpc_client }
@@ -93,33 +89,24 @@ impl RpcStateProvider {
   /// Returns error if the fetch or deserialization fails.
   pub async fn fetch_exo_pair<E: Exo + PythOracle>(
     &self,
-  ) -> Result<ExoPairState<Clock>>
-  where
-    UFix64<E::Exp>: FixExt,
-  {
+  ) -> Result<ExoPairState<Clock>> {
     let pubkeys = ProtocolAccounts::exo_pubkeys::<E>();
     let data = self
       .rpc_client
       .get_multiple_accounts(&pubkeys)
       .await
       .map_err(|e| anyhow!("Failed to fetch exo accounts from RPC: {e}"))?;
-    let (exo_pair, vault, levercoin_mint, collateral_usd, clock) = match data
-      .as_slice()
-    {
-      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_usd), Some(clock)] => {
-        Ok((exo_pair, vault, levercoin_mint, collateral_usd, clock))
-      }
-      _ => Err(anyhow!("Missing exo account")),
-    }?;
+    let (clock, pair_accounts) =
+      data.split_last().context("Missing exo account")?;
+    let raw = ExoPairAccounts::from_fetched(pair_accounts)?;
+    let clock = clock.as_ref().context("Missing clock account")?;
     let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-    build_exo_pair_state::<E, Clock>(
-      clock,
-      exo_pair,
-      vault,
-      levercoin_mint,
-      collateral_usd,
-    )
+    let entry = ExoEntry {
+      collateral_mint: E::MINT,
+      levercoin_mint: pda::exo_levercoin_mint(E::MINT),
+    };
+    ExoAccounts::parse(&entry, &raw)?.pair_state(clock)
   }
 }
 
@@ -149,9 +136,20 @@ with_exo_pairs!(exo_pair_dispatch);
 #[async_trait]
 impl StateProvider<Clock> for RpcStateProvider {
   async fn fetch_state(&self) -> Result<ProtocolState<Clock>> {
+    let registry_account = self
+      .rpc_client
+      .get_account(&pda::EXO_REGISTRY)
+      .await
+      .map_err(|e| anyhow!("Failed to fetch Exo registry from RPC: {e}"))?;
+    let registry = read_exo_registry(&registry_account.data)?;
+    let exo_keys = exo_pubkeys_from_entries(registry.registered_entries()?)?;
+    let keys = ProtocolAccounts::PUBKEYS
+      .into_iter()
+      .chain(exo_keys)
+      .collect::<Vec<_>>();
     let account_data = self
       .rpc_client
-      .get_multiple_accounts(&ProtocolAccounts::PUBKEYS)
+      .get_multiple_accounts(&keys)
       .await
       .map_err(|e| anyhow!("Failed to fetch accounts from RPC: {e}"))?;
     let accounts = ProtocolAccounts::from_fetched(&account_data)?;
@@ -178,7 +176,7 @@ mod tests {
   }
 
   #[tokio::test]
-  #[ignore = "requires lst_swap_fee on mainnet"]
+  #[ignore = "requires the Exo registry router on mainnet"]
   async fn test_fetch_state() {
     let rpc_client = build_test_rpc_client();
     let provider = RpcStateProvider::new(rpc_client);

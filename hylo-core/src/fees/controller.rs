@@ -23,8 +23,8 @@ const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
 #[derive(
-  Copy,
   Clone,
+  Copy,
   PartialEq,
   InitSpace,
   AnchorSerialize,
@@ -127,8 +127,8 @@ impl<Exp> FeeExtract<Exp> {
 
 /// **Deprecated** — retained only for `Hylo` account deserialization.
 #[derive(
-  Copy,
   Clone,
+  Copy,
   InitSpace,
   AnchorSerialize,
   AnchorDeserialize,
@@ -148,8 +148,8 @@ impl StablecoinFees {
 }
 
 #[derive(
-  Copy,
   Clone,
+  Copy,
   PartialEq,
   InitSpace,
   AnchorDeserialize,

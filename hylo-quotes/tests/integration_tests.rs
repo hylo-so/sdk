@@ -83,7 +83,7 @@ fn assert_quotes_match(
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn jitosol_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -106,7 +106,7 @@ async fn jitosol_to_hyusd(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn hyusd_to_jitosol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -129,7 +129,7 @@ async fn hyusd_to_jitosol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn jitosol_to_xsol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -152,7 +152,7 @@ async fn jitosol_to_xsol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn xsol_to_jitosol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -175,7 +175,7 @@ async fn xsol_to_jitosol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn hyusd_to_xsol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -198,7 +198,7 @@ async fn hyusd_to_xsol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn xsol_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -221,7 +221,7 @@ async fn xsol_to_hyusd(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "re-enable after mainnet is on v2"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn jitosol_to_hylosol(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -244,7 +244,7 @@ async fn jitosol_to_hylosol(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "v2 SDK against v1 mainnet earn pool — re-enable after v2 deploy"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn hyusd_to_shyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -267,7 +267,7 @@ async fn hyusd_to_shyusd(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn usdc_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -290,7 +290,7 @@ async fn usdc_to_hyusd(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn hyusd_to_usdc(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -313,7 +313,7 @@ async fn hyusd_to_usdc(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn cbbtc_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -336,7 +336,7 @@ async fn cbbtc_to_hyusd(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn hyusd_to_cbbtc(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -359,7 +359,7 @@ async fn hyusd_to_cbbtc(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn cbbtc_to_xbtc(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -382,7 +382,7 @@ async fn cbbtc_to_xbtc(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn xbtc_to_cbbtc(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -405,7 +405,7 @@ async fn xbtc_to_cbbtc(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn hyusd_to_xbtc(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(
@@ -428,7 +428,7 @@ async fn hyusd_to_xbtc(ctx: &QuoteStrategyTestContext) {
 
 #[test_context(QuoteStrategyTestContext)]
 #[tokio::test]
-#[ignore = "requires exo/USDC pair accounts on-chain"]
+#[ignore = "requires the Exo registry router on mainnet"]
 async fn xbtc_to_hyusd(ctx: &QuoteStrategyTestContext) {
   let (state, sim) = join!(
     ctx.protocol_state_strategy.runtime_quote(

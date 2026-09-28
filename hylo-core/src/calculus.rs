@@ -24,7 +24,7 @@ pub fn positive<Exp: Integer>(
 }
 
 /// Validates a rate as strictly positive and finite — the only form a
-/// marginal rate may leave this module in.
+/// marginal rate leaves this module in.
 ///
 /// # Errors
 /// * Non-finite or non-positive rate
@@ -66,7 +66,7 @@ pub fn quotient_rule(
 /// ```
 ///
 /// Zero `curve_slope` short-circuits to zero: on a flat curve region
-/// the `d_inner` factor is irrelevant and may be infinite.
+/// the `d_inner` factor is ignored, even when infinite.
 #[must_use]
 pub fn chain_rule(curve_slope: f64, d_inner: f64) -> f64 {
   if curve_slope == 0.0 {

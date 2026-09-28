@@ -20,6 +20,7 @@ anchor-lang.workspace = true
 anchor-spl.workspace = true
 anyhow.workspace = true
 bincode.workspace = true
+bytemuck.workspace = true
 hylo-clients.workspace = true
 hylo-core = { workspace = true, features = ["offchain"] }
 hylo-fix.workspace = true
@@ -32,6 +33,7 @@ solana-rpc-client.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+futures.workspace = true
 
 [lints]
 workspace = true

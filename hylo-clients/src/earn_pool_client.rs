@@ -12,10 +12,9 @@ use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
 
-/// Admin client for the Hylo earn pool program. Manages pool
-/// initialization, rebalancing, fee configuration, and stats.
-/// User-facing deposit/withdraw goes through
-/// [`crate::router_client::RouterClient`].
+/// Admin client for the earn pool program: pool initialization,
+/// rebalancing, fee configuration, and stats. User-facing deposit and
+/// withdraw go through [`crate::router_client::RouterClient`].
 pub struct EarnPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

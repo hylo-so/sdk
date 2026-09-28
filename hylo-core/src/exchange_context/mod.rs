@@ -1,8 +1,7 @@
 //! Exchange context trait and implementations.
 //!
-//! [`ExchangeContext`] abstracts over collateral source and provides
-//! default implementations for NAVs, rebalance modes, swap fees, and
-//! validations.
+//! [`ExchangeContext`] abstracts over the collateral source, with default
+//! NAVs, rebalance modes, swap fees, and validations.
 
 mod exo;
 mod lst;
@@ -351,10 +350,8 @@ pub trait ExchangeContext {
     Ok(RebalanceMode::from_cr(projected_cr))
   }
 
-  /// Returns the worse of current vs projected mode for fee
-  /// purposes. Transactions that improve CR only pay fees at
-  /// the current mode; transactions that worsen CR pay at the
-  /// projected mode.
+  /// Worse of the current and projected rebalance modes, so a transaction
+  /// that worsens CR pays fees at the projected mode.
   fn select_rebalance_mode_for_fees(
     &self,
     projected: RebalanceMode,

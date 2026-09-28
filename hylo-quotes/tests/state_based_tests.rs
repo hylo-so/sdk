@@ -53,7 +53,7 @@ fn load_state() -> Result<ProtocolState<Clock>> {
     env!("CARGO_MANIFEST_DIR")
   );
   let file = File::open(path)?;
-  let accounts = from_reader::<_, ProtocolAccounts>(file)?;
+  let accounts = from_reader::<File, ProtocolAccounts>(file)?;
   ProtocolState::try_from(&accounts)
 }
 

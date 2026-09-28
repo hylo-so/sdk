@@ -167,3 +167,29 @@ macro_rules! impl_exo {
 }
 
 with_exo_pairs!(impl_exo);
+
+/// Role a mint plays in an exo pair's routing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExoRole {
+  Collateral,
+  Levercoin,
+  Stablecoin,
+  Usdc,
+}
+
+/// Role of `mint` in the pair backed by `collateral_mint` and
+/// `levercoin_mint`, or `None` when the mint is not routable through it.
+#[must_use]
+pub fn exo_role(
+  collateral_mint: Pubkey,
+  levercoin_mint: Pubkey,
+  mint: Pubkey,
+) -> Option<ExoRole> {
+  match mint {
+    HYUSD::MINT => Some(ExoRole::Stablecoin),
+    USDC::MINT => Some(ExoRole::Usdc),
+    m if m == collateral_mint => Some(ExoRole::Collateral),
+    m if m == levercoin_mint => Some(ExoRole::Levercoin),
+    _ => None,
+  }
+}
