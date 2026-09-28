@@ -18,7 +18,7 @@ pub fn required_reserve(
     };
     capped_pair_size
       .checked_mul(&reserve_ratio)
-      .and_then(|reserve| reserve.checked_convert::<N6>())
+      .and_then(Fix::checked_convert::<N6>)
       .ok_or(CoreError::InsufficientLiquidity)
   }
 }
