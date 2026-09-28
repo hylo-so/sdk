@@ -61,6 +61,8 @@ fn usdc_state(
     virtual_stablecoin,
     usdc_usd_spot: usdc_oracle.spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
+    reserve_ratio: usdc_pair.reserve_ratio.try_into()?,
+    pair_size_cap_usd: usdc_pair.pair_size_cap_usd.try_into()?,
   })
 }
 

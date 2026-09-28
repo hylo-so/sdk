@@ -10,6 +10,7 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
+use hylo_core::reserve_gate::required_reserve;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{
   max_mintable, validate_burn, SUPPLY_FLOOR,
@@ -67,6 +68,24 @@ impl<C: SolanaClock> ProtocolState<C> {
         .vault_balance
         .min(usdc_state.virtual_stablecoin.supply()?),
     )
+  }
+
+  /// USDC available to a rebalance buy after the pair's reserve.
+  fn usdc_rebalance_buy_liquidity(
+    &self,
+    pair_size_usd: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let usdc_state = self.usdc_exchange_state();
+    let required_reserve = required_reserve(
+      usdc_state.reserve_ratio,
+      usdc_state.pair_size_cap_usd,
+      pair_size_usd,
+    )?;
+    let reserve_headroom = usdc_state
+      .vault_balance
+      .checked_sub(&required_reserve)
+      .ok_or(CoreError::InsufficientLiquidity)?;
+    Ok(reserve_headroom.min(usdc_state.virtual_stablecoin.supply()?))
   }
 }
 
@@ -1257,9 +1276,14 @@ impl<C: SolanaClock> ProtocolState<C> {
       out_amount <= self.usdc_exchange_state().vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
+    let pair_size_usd = self
+      .exchange_context
+      .total_value_locked()?
+      .checked_convert_ceil::<N6>()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
-      out_amount <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
-      CoreError::BurnUnderflow,
+      out_amount <= self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+      CoreError::InsufficientLiquidity,
     )?;
     let pnl = self
       .exchange_context
@@ -1332,10 +1356,18 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.exchange_context.rebalance_buy_target()?,
       epoch,
     )?;
+    let pair_size_usd = self
+      .exchange_context
+      .total_value_locked()?
+      .checked_convert_ceil::<N6>()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let input_cap = self
       .exchange_context
       .rebalance_buy_conversion(&adjusted, UFix64::zero())?
-      .max_lst_for_token(self.usdc_redeemable()?, UFix64::one())?;
+      .max_lst_for_token(
+        self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+        UFix64::one(),
+      )?;
     Ok(buy_target.min(input_cap))
   }
 
@@ -1512,9 +1544,14 @@ impl<C: SolanaClock> ProtocolState<C> {
       out_amount <= self.usdc_exchange_state().vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
+    let pair_size_usd = pair
+      .context
+      .total_value_locked()?
+      .checked_convert_ceil::<N6>()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     gate(
-      out_amount <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
-      CoreError::BurnUnderflow,
+      out_amount <= self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+      CoreError::InsufficientLiquidity,
     )?;
     let pnl = pair
       .context
@@ -1540,9 +1577,16 @@ impl<C: SolanaClock> ProtocolState<C> {
   {
     let exo = &self.exo_pair::<E>()?.context;
     let buy_target = exo.rebalance_buy_target()?;
+    let pair_size_usd = exo
+      .total_value_locked()?
+      .checked_convert_ceil::<N6>()
+      .ok_or(CoreError::TokenAmountPrecision)?;
     let input_cap = exo
       .rebalance_buy_conversion(UFix64::zero())?
-      .max_exo_for_token(self.usdc_redeemable()?, UFix64::<N9>::one())?;
+      .max_exo_for_token(
+        self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+        UFix64::<N9>::one(),
+      )?;
     buy_target
       .min(input_cap)
       .checked_convert::<E::Exp>()
