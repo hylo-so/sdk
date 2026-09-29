@@ -13,12 +13,13 @@ offchain = [
   "dep:hylo-jupiter-amm-interface",
   "hylo-fix/typed-floats",
 ]
-shadow = ["hylo-idl?/shadow"]
+shadow = ["hylo-idl?/shadow", "hylo-oracle-types/shadow"]
 
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 hylo-fix.workspace = true
+hylo-oracle-types.workspace = true
 const-crypto.workspace = true
 hylo-idl = { workspace = true, optional = true }
 hylo-jupiter-amm-interface = { workspace = true, optional = true }
@@ -27,6 +28,7 @@ pyth-solana-receiver-sdk.workspace = true
 serde.workspace = true
 
 [dev-dependencies]
+hylo-oracle-types = { workspace = true, features = ["test-support"] }
 anyhow.workspace = true
 more-asserts.workspace = true
 proptest.workspace = true

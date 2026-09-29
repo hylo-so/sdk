@@ -4,6 +4,7 @@ members = [
     "hylo-core",
     "hylo-idl",
     "hylo-jupiter",
+    "hylo-oracle-types",
     "hylo-quotes",
     "hylo-stats",
 ]
@@ -25,6 +26,10 @@ base64 = "0.22.1"
 const-crypto = "0.3.0"
 bincode = "1.3.3"
 futures = "0.3.31"
+hex-literal = "0.4.1"
+static_assertions = "1.1.0"
+pyth-lazer-protocol = "0.46.0"
+hylo-oracle-types = { version = "2.6.1", path = "hylo-oracle-types" }
 hylo-clients = { version = "2.6.0", path = "hylo-clients" }
 hylo-core = { version = "2.6.0", path = "hylo-core" }
 hylo-fix = "0.8.0"

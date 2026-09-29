@@ -2,6 +2,7 @@ use anchor_lang::prelude::{pubkey, Pubkey};
 use anchor_spl::mint::USDC as USDC_MINT;
 use fix::prelude::{N6, N8, N9};
 use fix::typenum::Integer;
+use hylo_oracle_types::BTC_USD_FEED_ID;
 
 use crate::{earn_pool, exchange, pda};
 
@@ -167,3 +168,41 @@ macro_rules! impl_exo {
 }
 
 with_exo_pairs!(impl_exo);
+
+/// Canonical collateral-mint to oracle feed-id binding — the one place the
+/// exchange learns which observation prices an EXO collateral. This is only the curated source-neutral subset; other supported
+/// collateral continues to use the existing Pyth feed mappings.
+const EXO_FEEDS: &[(Pubkey, u16)] = &[(CBBTC::MINT, BTC_USD_FEED_ID)];
+
+/// Oracle feed id that prices `collateral_mint`, or `None` if unbound.
+#[must_use]
+pub fn feed_id_for(collateral_mint: &Pubkey) -> Option<u16> {
+  EXO_FEEDS
+    .iter()
+    .position(|(mint, _)| mint == collateral_mint)
+    .map(|index| EXO_FEEDS[index].1)
+}
+
+#[cfg(test)]
+mod oracle_binding_tests {
+  use super::*;
+
+  #[test]
+  fn only_curated_collateral_uses_neutral_registry() {
+    assert_eq!(feed_id_for(&CBBTC::MINT), Some(BTC_USD_FEED_ID));
+    for mint in [HYPE::MINT, ONYC::MINT, PST::MINT, WETH::MINT, ZEC::MINT] {
+      assert_eq!(feed_id_for(&mint), None);
+    }
+  }
+
+  #[test]
+  fn observation_addresses_match_runtime_derivation() {
+    for feed in hylo_oracle_types::FEEDS {
+      let (address, _) = Pubkey::find_program_address(
+        &[hylo_oracle_types::OBSERVATION, &feed.id.to_le_bytes()],
+        &hylo_oracle_types::ID,
+      );
+      assert_eq!(pda::observation(feed.id), address);
+    }
+  }
+}

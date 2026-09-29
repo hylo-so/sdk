@@ -2,6 +2,7 @@ use anchor_lang::prelude::{bpf_loader_upgradeable, pubkey, Pubkey};
 use anchor_spl::associated_token::spl_associated_token_account;
 use anchor_spl::token;
 use const_crypto::ed25519;
+use hylo_oracle_types::{BTC_USD_FEED_ID, SOL_USD_FEED_ID, USDC_USD_FEED_ID};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::types::AddressField;
@@ -237,3 +238,24 @@ pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);
 
 pub const USDC_PAIR: Pubkey =
   pda!(exchange::ID, exchange::constants::USDC_PAIR);
+
+/// Observation PDA for feed `id`, owned by the hylo-oracle program. This is the
+/// source-neutral account the migrated exchange reads at every price-feed slot;
+/// pins to the oracle main/shadow id via the `shadow` feature.
+#[must_use]
+pub const fn observation(id: u16) -> Pubkey {
+  let id_bytes = id.to_le_bytes();
+  let seeds: [&[u8]; 2] = [hylo_oracle_types::OBSERVATION, &id_bytes];
+  let (key, _bump) =
+    ed25519::derive_program_address(&seeds, hylo_oracle_types::ID.as_array());
+  Pubkey::new_from_array(key)
+}
+
+/// SOL/USD observation (feed id 0); pinned by a constant seed in LST contexts.
+pub const SOL_USD_OBSERVATION: Pubkey = observation(SOL_USD_FEED_ID);
+
+/// BTC/USD observation (feed id 1); resolved from the cbBTC collateral mint.
+pub const BTC_USD_OBSERVATION: Pubkey = observation(BTC_USD_FEED_ID);
+
+/// USDC/USD observation (feed id 2); pinned by the USDC pair.
+pub const USDC_USD_OBSERVATION: Pubkey = observation(USDC_USD_FEED_ID);

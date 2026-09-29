@@ -8,13 +8,14 @@ homepage.workspace = true
 include = ["idls/", "src/"]
 
 [features]
-shadow = []
+shadow = ["hylo-oracle-types/shadow"]
 
 [[bin]]
 name = "lut-accounts"
 path = "src/bin/lut_accounts.rs"
 
 [dependencies]
+hylo-oracle-types.workspace = true
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 anyhow.workspace = true

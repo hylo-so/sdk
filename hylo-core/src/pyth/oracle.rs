@@ -104,7 +104,7 @@ impl<Exp: Integer> PriceRange<Exp> {
 
 /// Checks the ratio of `conf / price` against given tolerance.
 /// Guards against unusually large spreads in the oracle price.
-fn validate_conf(
+pub(crate) fn validate_conf(
   price: UFix64<N9>,
   conf: UFix64<N9>,
   tolerance: UFix64<N9>,
@@ -161,7 +161,10 @@ fn validate_posted_slot(
 ///
 /// # Errors
 /// * Negative price or unsupported exponent
-fn validate_price(price: i64, exp: i32) -> Result<UFix64<N9>, CoreError> {
+pub(crate) fn validate_price(
+  price: i64,
+  exp: i32,
+) -> Result<UFix64<N9>, CoreError> {
   if price <= 0 {
     Err(PythOracleNegativePrice)
   } else {
@@ -174,7 +177,10 @@ fn validate_price(price: i64, exp: i32) -> Result<UFix64<N9>, CoreError> {
 ///
 /// # Errors
 /// * Unsupported exponent or conversion overflow
-fn normalize_pyth_price(price: u64, exp: i32) -> Result<UFix64<N9>, CoreError> {
+pub(crate) fn normalize_pyth_price(
+  price: u64,
+  exp: i32,
+) -> Result<UFix64<N9>, CoreError> {
   match exp {
     -2 => UFix64::<N2>::new(price).checked_convert(),
     -3 => UFix64::<N3>::new(price).checked_convert(),
