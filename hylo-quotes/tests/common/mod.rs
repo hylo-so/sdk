@@ -22,14 +22,18 @@ pub const CR_ABOVE_DOMAIN: UFix64<N9> = UFix64::constant(1_600_000_000);
 ///
 /// # Errors
 /// * File IO, JSON, or state construction
-pub fn load_state() -> Result<ProtocolState<Clock>> {
+pub fn load_accounts() -> Result<ProtocolAccounts> {
   let path = format!(
     "{}/tests/data/protocol-state-1039-295160.json",
     env!("CARGO_MANIFEST_DIR")
   );
   let file = File::open(path)?;
-  let accounts = from_reader::<_, ProtocolAccounts>(file)?;
-  ProtocolState::try_from(&accounts)
+  Ok(from_reader::<_, ProtocolAccounts>(file)?)
+}
+
+/// Builds the unchanged mainnet fixture state.
+pub fn load_state() -> Result<ProtocolState<Clock>> {
+  ProtocolState::try_from(&load_accounts()?)
 }
 
 /// `cr * supply / usd_lower`: collateral that puts a pair at `cr`.
