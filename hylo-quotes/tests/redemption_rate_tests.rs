@@ -37,7 +37,10 @@ fn raw_mainnet_snapshot_has_a_rate() -> Result<()> {
 fn above_domain_lanes_report_redeem_max_cr_and_closed() -> Result<()> {
   let mut state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
   with_exo_cr(&mut state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
-  with_exo_cr(&mut state.hype_pair, CR_ABOVE_DOMAIN)?;
+  with_exo_cr(
+    state.hype_pair.as_mut().expect("fixture HYPE"),
+    CR_ABOVE_DOMAIN,
+  )?;
   let rate = state.redemption_rate(REFERENCE)?;
   assert_eq!(rate.reference_hyusd, REFERENCE);
   [JITOSOL::MINT, HYLOSOL::MINT, CBBTC::MINT, HYPE::MINT]
@@ -211,7 +214,12 @@ fn clamped_lane_is_never_open() -> Result<()> {
 fn empty_vault_drops_the_lane() -> Result<()> {
   let mut state = load_state()?;
   state.jitosol_vault_balance = UFix64::zero();
-  state.hype_pair.context.total_collateral = UFix64::zero();
+  state
+    .hype_pair
+    .as_mut()
+    .expect("fixture HYPE")
+    .context
+    .total_collateral = UFix64::zero();
   let rate = state.redemption_rate(REFERENCE)?;
   assert!(lane(&rate, JITOSOL::MINT).is_none());
   assert!(lane(&rate, HYPE::MINT).is_none());
@@ -330,7 +338,11 @@ fn all_oracles_stale_fails() -> Result<()> {
   let mut state = load_state()?;
   state.sol_usd_publish_time = 0;
   state.cbbtc_pair.oracle_publish_time = 0;
-  state.hype_pair.oracle_publish_time = 0;
+  state
+    .hype_pair
+    .as_mut()
+    .expect("fixture HYPE")
+    .oracle_publish_time = 0;
   state.usdc_exchange_state.vault_balance = UFix64::zero();
   assert!(state.redemption_rate(REFERENCE).is_err());
   Ok(())
@@ -369,8 +381,52 @@ fn no_priced_lane_fails() -> Result<()> {
   state.jitosol_vault_balance = UFix64::zero();
   state.hylosol_vault_balance = UFix64::zero();
   state.cbbtc_pair.context.total_collateral = UFix64::zero();
-  state.hype_pair.context.total_collateral = UFix64::zero();
+  state
+    .hype_pair
+    .as_mut()
+    .expect("fixture HYPE")
+    .context
+    .total_collateral = UFix64::zero();
   state.usdc_exchange_state.vault_balance = UFix64::zero();
   assert!(state.redemption_rate(REFERENCE).is_err());
+  Ok(())
+}
+
+#[test]
+fn missing_or_malformed_hype_only_removes_its_lane() -> Result<()> {
+  use hylo_quotes::prelude::ProtocolState;
+  let accounts = common::load_accounts()?;
+  let baseline =
+    ProtocolState::try_from(&accounts)?.redemption_rate(REFERENCE)?;
+  for field in 0..4 {
+    for malformed in [false, true] {
+      let mut modified = accounts.clone();
+      let slot = match field {
+        0 => &mut modified.hype_exo_pair,
+        1 => &mut modified.hype_vault,
+        2 => &mut modified.xhype_mint,
+        _ => &mut modified.hype_usd_pyth,
+      };
+      if malformed {
+        slot
+          .as_mut()
+          .ok_or_else(|| anyhow!("fixture missing HYPE account"))?
+          .data
+          .clear();
+      } else {
+        *slot = None;
+      }
+      let state = ProtocolState::try_from(&modified)?;
+      assert!(state.hype_pair.is_none());
+      assert!(state.exo_pair::<HYPE>().is_err());
+      let rate = state.redemption_rate(REFERENCE)?;
+      assert!(lane(&rate, HYPE::MINT).is_none());
+      for expected in
+        baseline.lanes.iter().filter(|lane| lane.mint != HYPE::MINT)
+      {
+        assert_eq!(lane(&rate, expected.mint), Some(expected));
+      }
+    }
+  }
   Ok(())
 }
