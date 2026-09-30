@@ -101,7 +101,7 @@ impl PartialEq for RedemptionLane {
 
 impl Eq for RedemptionLane {}
 
-/// sHYUSD redemption rate with its lanes.
+/// hyUSD and sHYUSD redemption rates with their lanes.
 #[derive(Debug, Clone)]
 pub struct RedemptionRate {
   /// hyUSD withdrawn for one sHYUSD, net of the withdrawal fee.

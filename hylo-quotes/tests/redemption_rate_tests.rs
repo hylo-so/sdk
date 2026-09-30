@@ -1,4 +1,4 @@
-//! State derived sHYUSD redemption rate.
+//! State derived hyUSD and sHYUSD redemption rates.
 
 mod common;
 
