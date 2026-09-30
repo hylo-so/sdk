@@ -11,8 +11,13 @@
 //! A lane prices when its liquidity covers `reference_hyusd` and its
 //! oracle is fresh. Fresh means the publish time is within
 //! `oracle_interval_secs / ORACLE_DIVISOR`, the staleness bound the
-//! stablecoin instructions enforce onchain. Gates and the withdrawal
-//! limiter only set `execution`.
+//! stablecoin instructions enforce onchain.
+//!
+//! A failed [`TokenOperation::preconditions`] (pause, overdue harvest,
+//! par tolerance) or an exhausted
+//! [`WithdrawalLimiter`](hylo_core::limiter::withdraw::WithdrawalLimiter)
+//! leaves every rate unchanged and is reported through
+//! [`RedemptionLane::execution`].
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
