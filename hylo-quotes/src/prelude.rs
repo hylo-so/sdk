@@ -16,6 +16,8 @@ pub use hylo_idl::tokens::{
 pub use crate::protocol_state::{
   ProtocolAccounts, ProtocolState, RpcStateProvider, StateProvider,
 };
+// Redemption rate (oracle feed)
+pub use crate::redemption_rate::{RedemptionLane, RedemptionRate};
 // SimulatedOperation (event extraction)
 pub use crate::simulated_operation::{
   SimulatedOperation, SimulatedOperationExt,
