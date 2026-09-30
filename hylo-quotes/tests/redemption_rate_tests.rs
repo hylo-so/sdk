@@ -24,7 +24,7 @@ use hylo_quotes::protocol_state::{ExoPairState, UsdcExchangeState};
 
 const REFERENCE: UFix64<N6> = UFix64::constant(1_000_000_000);
 
-/// CR inside the redeem fee curve domain, which ends at 1.50.
+/// CR inside the redeem fee curve domain.
 const CR_IN_DOMAIN: UFix64<N9> = UFix64::constant(1_400_000_000);
 
 /// CR above the redeem fee curve domain.

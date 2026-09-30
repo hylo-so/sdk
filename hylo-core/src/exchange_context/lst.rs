@@ -233,8 +233,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .fee_rate(projected.collateral_ratio)
   }
 
-  /// Stablecoin redeem fee at the projected CR, saturating at the upper
-  /// bound of the curve's domain.
+  /// Stablecoin redeem fee at the projected CR, saturating at `y_max`.
   ///
   /// # Errors
   /// * Projection underflow, interpolation, or fee extraction

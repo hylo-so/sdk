@@ -117,8 +117,7 @@ impl InterpolatedRedeemFees {
     InterpolatedRedeemFees { curve }
   }
 
-  /// Fee rate for a collateral ratio, saturating at `y_max` above the
-  /// curve's domain.
+  /// Fee rate at `cr`, saturating at `y_max`.
   ///
   /// # Errors
   /// * Interpolation or fee conversion

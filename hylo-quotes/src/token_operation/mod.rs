@@ -125,12 +125,10 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
   }
 }
 
-/// Amount a token pair operation takes its fee from.
 pub trait FeeBase<IN: TokenMint, OUT: TokenMint>:
   TokenOperation<IN, OUT>
 {
-  /// Converts the input and checks the pair's liquidity, skipping fees,
-  /// supply limits, and [`TokenOperation::preconditions`].
+  /// Converts `amount_in` and checks liquidity. Skips fees and gates.
   ///
   /// # Errors
   /// * Conversion arithmetic

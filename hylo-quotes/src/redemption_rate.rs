@@ -1,8 +1,5 @@
 //! State derived sHYUSD redemption rate for oracle feeds.
 //!
-//! Values one sHYUSD as the hyUSD its withdrawal returns, priced through
-//! the hyUSD redemption lane with the highest USD output:
-//!
 //! ```txt
 //!                          usd_out
 //! hyusd_usd_rate   =  -----------------
@@ -11,10 +8,11 @@
 //! shyusd_usd_rate  =  shyusd_hyusd_rate * hyusd_usd_rate
 //! ```
 //!
-//! A lane prices when its collateral covers the reference amount and its
-//! oracle price is inside the stablecoin window. Route gates and the
-//! withdrawal limiter close execution without moving the rate. The redeem
-//! fee saturates at `y_max`.
+//! A lane prices when its liquidity covers `reference_hyusd` and its
+//! oracle publish time is within the stablecoin oracle interval, the
+//! pair's `oracle_interval_secs / ORACLE_DIVISOR`, which is the staleness
+//! bound the stablecoin instructions enforce onchain. Gates and the
+//! withdrawal limiter only set `execution`.
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
@@ -42,7 +40,7 @@ pub struct RedemptionLane {
   pub mint: Pubkey,
   /// Outcome of the strict quote at the reference amount.
   pub execution: Result<(), CoreError>,
-  /// Collateral out, in the lane token's own decimals.
+  /// Net collateral out in the lane token's decimals.
   pub amount_out: UFixValue64,
   /// USD value of `amount_out` at the lower oracle bound.
   pub usd_out: UFix64<N9>,
@@ -103,7 +101,7 @@ impl PartialEq for RedemptionLane {
 
 impl Eq for RedemptionLane {}
 
-/// The sHYUSD redemption rate and the lanes behind it.
+/// sHYUSD redemption rate with its lanes.
 #[derive(Debug, Clone)]
 pub struct RedemptionRate {
   /// hyUSD withdrawn for one sHYUSD, net of the withdrawal fee.
@@ -117,7 +115,7 @@ pub struct RedemptionRate {
 }
 
 impl RedemptionRate {
-  /// Derives the rate from protocol state at a reference hyUSD amount.
+  /// Prices every lane at `reference_hyusd`.
   ///
   /// # Errors
   /// * `ZeroAmount` on a zero reference
