@@ -1,4 +1,4 @@
-//! State derived sHYUSD redemption rate for oracle feeds.
+//! State derived hyUSD and sHYUSD redemption rates for oracle feeds.
 //!
 //! ```txt
 //!                          usd_out
