@@ -10,7 +10,7 @@ use hylo_core::calculus::{positive, positive_rate};
 use hylo_core::error::CoreError;
 use hylo_idl::tokens::TokenMint;
 
-fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
+pub(crate) fn gate(condition: bool, error: CoreError) -> Result<(), CoreError> {
   condition.then_some(()).ok_or(error)
 }
 
@@ -123,6 +123,20 @@ pub trait TokenOperation<IN: TokenMint, OUT: TokenMint> {
     self.preconditions()?;
     self.min_input_ungated()
   }
+}
+
+pub trait FeeBase<IN: TokenMint, OUT: TokenMint>:
+  TokenOperation<IN, OUT>
+{
+  /// Converts `amount_in` and checks liquidity. Skips fees and gates.
+  ///
+  /// # Errors
+  /// * Conversion arithmetic
+  /// * Insufficient liquidity
+  fn fee_base(
+    &self,
+    amount_in: UFix64<IN::Exp>,
+  ) -> Result<UFix64<Self::FeeExp>, CoreError>;
 }
 
 /// Turbofish helper for [`TokenOperation`].

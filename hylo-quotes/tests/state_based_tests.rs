@@ -3,17 +3,17 @@
 //! Prices move with every snapshot, so these assert that a route produces
 //! output, not what it produces.
 
+mod common;
+
 use std::fs::File;
 
-use anchor_lang::solana_program::clock::Clock;
 use anyhow::Result;
+use common::load_state;
 use fix::prelude::*;
 use hylo_clients::prelude::CommitmentConfig;
 use hylo_idl::tokens::{HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_quotes::prelude::{
-  ProtocolAccounts, ProtocolState, TokenOperationExt,
-};
-use serde_json::{from_reader, to_writer};
+use hylo_quotes::prelude::{ProtocolAccounts, TokenOperationExt};
+use serde_json::to_writer;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 /// Pulls needed accounts from RPC into a file indexed by epoch and slot.
@@ -47,18 +47,7 @@ async fn dump_snapshot() -> Result<()> {
   dump_protocol_accounts().await
 }
 
-fn load_state() -> Result<ProtocolState<Clock>> {
-  let path = format!(
-    "{}/tests/data/protocol-state-1018-114971.json",
-    env!("CARGO_MANIFEST_DIR")
-  );
-  let file = File::open(path)?;
-  let accounts = from_reader::<_, ProtocolAccounts>(file)?;
-  ProtocolState::try_from(&accounts)
-}
-
 #[test]
-#[ignore = "snapshot predates usdc_pair.redeem_fee; re-dump after redeploy"]
 fn jitosol_to_xsol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N9>::new(1_000_000_000);
@@ -68,7 +57,6 @@ fn jitosol_to_xsol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates usdc_pair.redeem_fee; re-dump after redeploy"]
 fn xsol_to_jitosol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N6>::new(1_000_000);
@@ -78,7 +66,6 @@ fn xsol_to_jitosol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates usdc_pair.redeem_fee; re-dump after redeploy"]
 fn hyusd_to_xsol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N6>::new(1_000_000);
@@ -88,7 +75,6 @@ fn hyusd_to_xsol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates usdc_pair.redeem_fee; re-dump after redeploy"]
 fn jitosol_to_hylosol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N9>::new(1_000_000_000);
@@ -98,7 +84,6 @@ fn jitosol_to_hylosol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates usdc_pair.redeem_fee; re-dump after redeploy"]
 fn hyusd_to_shyusd() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N6>::new(1_000_000);

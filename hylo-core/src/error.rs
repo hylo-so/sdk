@@ -80,6 +80,8 @@ pub enum CoreError {
   LstToToken,
   #[msg("Arithmetic error in conversion from protocol token to LST.")]
   TokenToLst,
+  #[msg("Arithmetic error in conversion from LST to USD.")]
+  LstToUsd,
   // `fees::controller`
   #[msg("Over/underflow while computing fee extraction for transaction.")]
   FeeExtraction,
@@ -156,6 +158,8 @@ pub enum CoreError {
   ExoToToken,
   #[msg("Arithmetic error converting protocol token to exo collateral.")]
   ExoFromToken,
+  #[msg("Arithmetic error converting exo collateral to USD.")]
+  ExoToUsd,
   // `normalize_mint_exp`
   #[msg("Precision conversion failed while normalizing exo amount to N9.")]
   ExoAmountNormalization,
@@ -272,4 +276,9 @@ pub enum CoreError {
   MaxRedeemable,
   #[msg("Minimum input exceeds maximum input for this route.")]
   MinInputExceedsMax,
+  // `redemption_rate`
+  #[msg("No redemption lane can price the reference amount.")]
+  NoRedemptionLane,
+  #[msg("Overflow while computing redemption rate.")]
+  RedemptionRateOverflow,
 }
