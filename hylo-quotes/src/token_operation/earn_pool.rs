@@ -5,6 +5,7 @@ use hylo_core::calculus::positive_rate;
 use hylo_core::earn_pool_math::{
   amount_token_to_withdraw, lp_token_nav, lp_token_out,
   max_lp_token_for_withdrawal, max_token_for_lp_deposit,
+  stablecoin_withdrawal_fee,
 };
 use hylo_core::error::CoreError;
 use hylo_core::fees::controller::FeeExtract;
@@ -15,7 +16,8 @@ use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
 use crate::token_operation::{
-  gate, past_zero, OperationOutput, SwapOperationOutput, TokenOperation,
+  gate, past_zero, FeeBase, OperationOutput, SwapOperationOutput,
+  TokenOperation,
 };
 
 impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
@@ -71,29 +73,18 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   }
 }
 
-impl<C: SolanaClock> ProtocolState<C> {
-  /// hyUSD withdrawn for `in_amount` sHYUSD and its withdrawal fee split.
-  /// Skips the withdrawal limiter.
-  ///
-  /// # Errors
-  /// * `in_amount` above sHYUSD supply
-  /// * Withdraw arithmetic, fee conversion, or fee extraction
-  pub(super) fn withdraw_shyusd_gross(
-    &self,
-    in_amount: UFix64<N6>,
-  ) -> Result<(UFix64<N6>, FeeExtract<N6>), CoreError> {
+impl<C: SolanaClock> FeeBase<SHYUSD, HYUSD> for ProtocolState<C> {
+  fn fee_base(&self, in_amount: UFix64<N6>) -> Result<UFix64<N6>, CoreError> {
     let shyusd_supply = UFix64::new(self.shyusd_mint.supply);
-    let hyusd_in_pool = UFix64::new(self.hyusd_pool.amount);
     gate(
       in_amount <= shyusd_supply,
       CoreError::InsufficientEarnPoolLiquidity,
     )?;
-    let hyusd_to_withdraw =
-      amount_token_to_withdraw(in_amount, shyusd_supply, hyusd_in_pool)?;
-    let withdrawal_fee: UFix64<N4> =
-      self.pool_config.withdrawal_fee.try_into()?;
-    FeeExtract::new(withdrawal_fee, hyusd_to_withdraw)
-      .map(|extract| (hyusd_to_withdraw, extract))
+    amount_token_to_withdraw(
+      in_amount,
+      shyusd_supply,
+      UFix64::new(self.hyusd_pool.amount),
+    )
   }
 }
 
@@ -115,13 +106,8 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
   ) -> Result<SwapOperationOutput, CoreError> {
     let shyusd_supply = UFix64::<N6>::new(self.shyusd_mint.supply);
     let hyusd_in_pool = UFix64::<N6>::new(self.hyusd_pool.amount);
-    let (
-      hyusd_to_withdraw,
-      FeeExtract {
-        fees_extracted,
-        amount_remaining,
-      },
-    ) = self.withdraw_shyusd_gross(in_amount)?;
+    let hyusd_to_withdraw =
+      FeeBase::<SHYUSD, HYUSD>::fee_base(self, in_amount)?;
     let withdrawal_limiter: WithdrawalLimiter =
       self.pool_config.withdrawal_limiter.into();
     withdrawal_limiter.validate_withdrawal(
@@ -130,6 +116,10 @@ impl<C: SolanaClock> TokenOperation<SHYUSD, HYUSD> for ProtocolState<C> {
     )?;
     let withdrawal_fee: UFix64<N4> =
       self.pool_config.withdrawal_fee.try_into()?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = stablecoin_withdrawal_fee(hyusd_to_withdraw, withdrawal_fee)?;
 
     // hyusd_out(x) = x * hyusd_in_pool / shyusd_supply * (1 - fee)
     let marginal_rate = positive_rate(
