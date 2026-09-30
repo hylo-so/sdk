@@ -189,9 +189,11 @@ where
   let usd_out = context
     .token_conversion(&lst_sol_price)?
     .lst_to_usd(amount_out)?;
-  RedemptionLane::new::<L>(
+  let execution =
     TokenOperation::<HYUSD, L>::compute_output(state, reference_hyusd)
-      .map(|_| ()),
+      .map(|_| ());
+  RedemptionLane::new::<L>(
+    execution,
     amount_out,
     usd_out,
     reference_hyusd,
@@ -233,9 +235,11 @@ where
       .checked_convert::<N9>()
       .ok_or(CoreError::TokenAmountPrecision)?,
   )?;
-  RedemptionLane::new::<E>(
+  let execution =
     TokenOperation::<HYUSD, E>::compute_output(state, reference_hyusd)
-      .map(|_| ()),
+      .map(|_| ());
+  RedemptionLane::new::<E>(
+    execution,
     amount_out,
     usd_out,
     reference_hyusd,
@@ -259,9 +263,11 @@ fn usdc_lane<C: SolanaClock>(
     .checked_convert::<N9>()
     .and_then(|usdc| usdc.mul_floor(spot))
     .ok_or(CoreError::RedemptionRateOverflow)?;
-  RedemptionLane::new::<USDC>(
+  let execution =
     TokenOperation::<HYUSD, USDC>::compute_output(state, reference_hyusd)
-      .map(|_| ()),
+      .map(|_| ());
+  RedemptionLane::new::<USDC>(
+    execution,
     amount_out,
     usd_out,
     reference_hyusd,
