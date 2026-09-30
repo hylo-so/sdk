@@ -206,10 +206,10 @@ fn in_domain_lane_equals_strict_quote() -> Result<()> {
 fn above_domain_lane_prices_at_edge_fee_and_reports_it() -> Result<()> {
   let state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
   let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
-  let hype_pair = with_exo_cr(state.hype_pair, CR_ABOVE_DOMAIN)?;
+  let hype_pair = with_exo_cr(state.hype_pair.unwrap(), CR_ABOVE_DOMAIN)?;
   let state = ProtocolState {
     cbbtc_pair,
-    hype_pair,
+    hype_pair: Some(hype_pair),
     ..state
   };
   let rate = RedemptionRate::new(&state, REFERENCE)?;
@@ -287,10 +287,10 @@ fn strict_quote_reports_fee_before_burn_floor() -> Result<()> {
 #[test]
 fn empty_vault_drops_the_lane() -> Result<()> {
   let state = load_state()?;
-  let hype_pair = with_exo_cr(state.hype_pair, UFix64::zero())?;
+  let hype_pair = with_exo_cr(state.hype_pair.unwrap(), UFix64::zero())?;
   let state = ProtocolState {
     jitosol_vault_balance: UFix64::zero(),
-    hype_pair,
+    hype_pair: Some(hype_pair),
     ..state
   };
   let rate = RedemptionRate::new(&state, REFERENCE)?;
@@ -418,10 +418,10 @@ fn no_priced_lane_fails() -> Result<()> {
       oracle_publish_time: 0,
       ..state.cbbtc_pair
     },
-    hype_pair: ExoPairState {
+    hype_pair: Some(ExoPairState {
       oracle_publish_time: 0,
-      ..state.hype_pair
-    },
+      ..state.hype_pair.unwrap()
+    }),
     usdc_exchange_state: UsdcExchangeState {
       vault_balance: UFix64::zero(),
       ..state.usdc_exchange_state
@@ -478,5 +478,35 @@ fn zero_reference_fails() -> Result<()> {
     RedemptionRate::new(&load_state()?, UFix64::zero()).err(),
     Some(CoreError::ZeroAmount)
   );
+  Ok(())
+}
+
+#[test]
+fn missing_or_malformed_hype_preserves_other_lanes() -> Result<()> {
+  let path = format!(
+    "{}/tests/data/protocol-state-1039-295160.json",
+    env!("CARGO_MANIFEST_DIR")
+  );
+  let accounts: hylo_quotes::protocol_state::ProtocolAccounts =
+    serde_json::from_reader(std::fs::File::open(path)?)?;
+  let baseline =
+    RedemptionRate::new(&ProtocolState::try_from(&accounts)?, REFERENCE)?;
+  for malformed in [false, true] {
+    let mut accounts = accounts.clone();
+    if malformed {
+      accounts.hype_exo_pair.as_mut().unwrap().data.clear();
+    } else {
+      accounts.hype_exo_pair = None;
+    }
+    let rate =
+      RedemptionRate::new(&ProtocolState::try_from(&accounts)?, REFERENCE)?;
+    assert!(!has_lane(&rate, HYPE::MINT));
+    for expected in lanes(&baseline).filter(|l| l.mint != HYPE::MINT) {
+      let actual = lane(&rate, expected.mint)?;
+      assert_eq!(actual.amount_out, expected.amount_out);
+      assert_eq!(actual.usd_out, expected.usd_out);
+      assert_eq!(actual.execution, expected.execution);
+    }
+  }
   Ok(())
 }

@@ -808,7 +808,7 @@ where
       hyusd_pool,
       &sol_usd,
       cbbtc_pair,
-      hype_pair,
+      Some(hype_pair),
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,

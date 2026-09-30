@@ -143,8 +143,8 @@ pub struct ProtocolState<C: SolanaClock> {
   /// cbBTC exo pair
   pub cbbtc_pair: ExoPairState<C>,
 
-  /// HYPE exo pair
-  pub hype_pair: ExoPairState<C>,
+  /// HYPE exo pair, absent when its accounts cannot be loaded
+  pub hype_pair: Option<ExoPairState<C>>,
 
   /// USDC exchange state
   pub usdc_exchange_state: UsdcExchangeState,
@@ -198,7 +198,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     hyusd_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
     cbbtc_pair: ExoPairState<C>,
-    hype_pair: ExoPairState<C>,
+    hype_pair: Option<ExoPairState<C>>,
     usdc_exchange_state: UsdcExchangeState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
@@ -290,7 +290,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   pub fn exo_pair<E: Exo>(&self) -> Result<&ExoPairState<C>, CoreError> {
     match E::MINT {
       CBBTC::MINT => Ok(&self.cbbtc_pair),
-      HYPE::MINT => Ok(&self.hype_pair),
+      HYPE::MINT => self.hype_pair.as_ref().ok_or(CoreError::UnknownExoMint),
       _ => Err(CoreError::UnknownExoMint),
     }
   }
@@ -466,13 +466,17 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       &accounts.xbtc_mint,
       &accounts.btc_usd_pyth,
     )?;
-    let hype_pair = build_exo_pair_state::<HYPE, Clock>(
-      clock.clone(),
-      &accounts.hype_exo_pair,
-      &accounts.hype_vault,
-      &accounts.xhype_mint,
-      &accounts.hype_usd_pyth,
-    )?;
+    // Optional collateral must not invalidate unrelated quote/valuation lanes.
+    let hype_pair = (|| {
+      build_exo_pair_state::<HYPE, Clock>(
+        clock.clone(),
+        accounts.hype_exo_pair.as_ref()?,
+        accounts.hype_vault.as_ref()?,
+        accounts.xhype_mint.as_ref()?,
+        accounts.hype_usd_pyth.as_ref()?,
+      )
+      .ok()
+    })();
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
     let jitosol_stake_pool =

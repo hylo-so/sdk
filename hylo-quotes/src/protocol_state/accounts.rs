@@ -99,16 +99,20 @@ pub struct ProtocolAccounts {
   pub usdc_vault: Account,
 
   /// HYPE `ExoPair` PDA
-  pub hype_exo_pair: Account,
+  #[serde(default)]
+  pub hype_exo_pair: Option<Account>,
 
   /// HYPE collateral vault token account
-  pub hype_vault: Account,
+  #[serde(default)]
+  pub hype_vault: Option<Account>,
 
   /// xHYPE levercoin mint
-  pub xhype_mint: Account,
+  #[serde(default)]
+  pub xhype_mint: Option<Account>,
 
   /// Pyth HYPE/USD price feed
-  pub hype_usd_pyth: Account,
+  #[serde(default)]
+  pub hype_usd_pyth: Option<Account>,
 }
 
 impl ProtocolAccounts {
@@ -188,7 +192,7 @@ impl ProtocolAccounts {
   ///
   /// # Errors
   /// * Account count differs from [`ProtocolAccounts::PUBKEYS`] length
-  /// * Any account is missing
+  /// * A required account is missing; missing HYPE accounts disable its lane
   pub fn from_fetched(
     accounts: &[Option<Account>],
   ) -> Result<ProtocolAccounts> {
@@ -220,10 +224,10 @@ impl ProtocolAccounts {
       jitosol_vault: fetched_account(accounts, 18, "JitoSOL vault")?,
       hylosol_vault: fetched_account(accounts, 19, "hyloSOL vault")?,
       usdc_vault: fetched_account(accounts, 20, "USDC vault")?,
-      hype_exo_pair: fetched_account(accounts, 21, "HYPE ExoPair")?,
-      hype_vault: fetched_account(accounts, 22, "HYPE vault")?,
-      xhype_mint: fetched_account(accounts, 23, "xHYPE mint")?,
-      hype_usd_pyth: fetched_account(accounts, 24, "HYPE/USD Pyth feed")?,
+      hype_exo_pair: fetched_account(accounts, 21, "HYPE ExoPair").ok(),
+      hype_vault: fetched_account(accounts, 22, "HYPE vault").ok(),
+      xhype_mint: fetched_account(accounts, 23, "xHYPE mint").ok(),
+      hype_usd_pyth: fetched_account(accounts, 24, "HYPE/USD Pyth feed").ok(),
     })
   }
 
