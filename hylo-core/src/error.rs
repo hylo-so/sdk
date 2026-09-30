@@ -276,4 +276,9 @@ pub enum CoreError {
   MaxRedeemable,
   #[msg("Minimum input exceeds maximum input for this route.")]
   MinInputExceedsMax,
+  // `redemption_rate`
+  #[msg("No redemption lane can price the reference amount.")]
+  NoRedemptionLane,
+  #[msg("Overflow while computing redemption rate.")]
+  RedemptionRateOverflow,
 }
