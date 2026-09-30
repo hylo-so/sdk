@@ -9,15 +9,18 @@ use common::load_state;
 use fix::prelude::*;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::ExchangeContext;
+use hylo_core::idl::earn_pool::accounts::PoolConfig;
+use hylo_core::idl::earn_pool::types::WithdrawalLimiter;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_core::virtual_stablecoin::{validate_burn, VirtualStablecoin};
 use hylo_idl::tokens::{
   TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
 };
 use hylo_quotes::prelude::{
   FeeBase, ProtocolState, RedemptionLane, RedemptionRate, TokenOperation,
 };
-use hylo_quotes::protocol_state::ExoPairState;
+use hylo_quotes::protocol_state::{ExoPairState, UsdcExchangeState};
 
 const REFERENCE: UFix64<N6> = UFix64::constant(1_000_000_000);
 
@@ -59,13 +62,13 @@ fn with_lst_cr(
 
 /// Rewrites an exo pair's collateral so it projects to `target_cr`.
 fn with_exo_cr(
-  pair: &mut ExoPairState<Clock>,
+  mut pair: ExoPairState<Clock>,
   target_cr: UFix64<N9>,
-) -> Result<()> {
+) -> Result<ExoPairState<Clock>> {
   let supply = pair.context.virtual_stablecoin_supply()?;
   let lower = pair.context.collateral_usd_price.lower;
   pair.context.total_collateral = collateral_for_cr(supply, lower, target_cr)?;
-  Ok(())
+  Ok(pair)
 }
 
 fn lanes(rate: &RedemptionRate) -> impl Iterator<Item = &RedemptionLane> {
@@ -175,8 +178,12 @@ fn lane_usd_out_is_amount_times_lower_price() -> Result<()> {
 
 #[test]
 fn in_domain_lane_equals_strict_quote() -> Result<()> {
-  let mut state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
-  with_exo_cr(&mut state.cbbtc_pair, CR_IN_DOMAIN)?;
+  let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_IN_DOMAIN)?;
+  let state = ProtocolState {
+    cbbtc_pair,
+    ..state
+  };
   let rate = RedemptionRate::new(&state, REFERENCE)?;
   let jitosol =
     TokenOperation::<HYUSD, JITOSOL>::compute_output(&state, REFERENCE)?;
@@ -197,9 +204,14 @@ fn in_domain_lane_equals_strict_quote() -> Result<()> {
 
 #[test]
 fn above_domain_lane_prices_at_edge_fee_and_reports_it() -> Result<()> {
-  let mut state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
-  with_exo_cr(&mut state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
-  with_exo_cr(&mut state.hype_pair, CR_ABOVE_DOMAIN)?;
+  let state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
+  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
+  let hype_pair = with_exo_cr(state.hype_pair, CR_ABOVE_DOMAIN)?;
+  let state = ProtocolState {
+    cbbtc_pair,
+    hype_pair,
+    ..state
+  };
   let rate = RedemptionRate::new(&state, REFERENCE)?;
   [JITOSOL::MINT, HYLOSOL::MINT, CBBTC::MINT, HYPE::MINT]
     .into_iter()
@@ -216,8 +228,12 @@ fn above_domain_lane_prices_at_edge_fee_and_reports_it() -> Result<()> {
 
 #[test]
 fn fee_base_plus_strict_fee_equals_quote() -> Result<()> {
-  let mut state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
-  with_exo_cr(&mut state.cbbtc_pair, CR_IN_DOMAIN)?;
+  let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_IN_DOMAIN)?;
+  let state = ProtocolState {
+    cbbtc_pair,
+    ..state
+  };
 
   let lst_price: LstSolPrice = state.jitosol_header.price_sol.into();
   let lst_out = FeeBase::<HYUSD, JITOSOL>::fee_base(&state, REFERENCE)?;
@@ -245,25 +261,38 @@ fn fee_base_plus_strict_fee_equals_quote() -> Result<()> {
 
 #[test]
 fn strict_quote_reports_fee_before_burn_floor() -> Result<()> {
-  // Supply just above the reference leaves the burn below the floor and
-  // pushes the CR above the curve; the protocol reports the fee first.
-  let mut state = load_state()?;
-  let supply = REFERENCE
-    .checked_add(&state.cbbtc_pair.supply_floor)
-    .and_then(|floor| floor.checked_sub(&UFix64::new(1)))
+  // A redeem one atom past the burn floor at a CR above the curve fails
+  // both checks; the protocol reports the fee first.
+  let state = load_state()?;
+  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
+  let state = ProtocolState {
+    cbbtc_pair,
+    ..state
+  };
+  let supply = state.cbbtc_pair.context.virtual_stablecoin_supply()?;
+  let past_floor = supply
+    .checked_sub(&state.cbbtc_pair.supply_floor)
+    .and_then(|burnable| burnable.checked_add(&UFix64::new(1)))
     .ok_or_else(|| anyhow!("supply arithmetic"))?;
-  state.cbbtc_pair.context.virtual_stablecoin.supply = supply.into();
+  assert_eq!(
+    validate_burn(supply, past_floor, state.cbbtc_pair.supply_floor).err(),
+    Some(CoreError::VirtualStablecoinBurnLimit)
+  );
   let quote =
-    TokenOperation::<HYUSD, CBBTC>::compute_output_ungated(&state, REFERENCE);
+    TokenOperation::<HYUSD, CBBTC>::compute_output_ungated(&state, past_floor);
   assert_eq!(quote.err(), Some(CoreError::NoValidStablecoinRedeemFee));
   Ok(())
 }
 
 #[test]
 fn empty_vault_drops_the_lane() -> Result<()> {
-  let mut state = load_state()?;
-  state.jitosol_vault_balance = UFix64::zero();
-  state.hype_pair.context.total_collateral = UFix64::zero();
+  let state = load_state()?;
+  let hype_pair = with_exo_cr(state.hype_pair, UFix64::zero())?;
+  let state = ProtocolState {
+    jitosol_vault_balance: UFix64::zero(),
+    hype_pair,
+    ..state
+  };
   let rate = RedemptionRate::new(&state, REFERENCE)?;
   assert!(!has_lane(&rate, JITOSOL::MINT));
   assert!(!has_lane(&rate, HYPE::MINT));
@@ -277,8 +306,10 @@ fn paused_protocol_keeps_the_rate() -> Result<()> {
   let open_rate = RedemptionRate::new(&open_state, REFERENCE)?;
   assert_eq!(lane(&open_rate, JITOSOL::MINT)?.execution, Ok(()));
 
-  let mut paused_state = open_state;
-  paused_state.protocol_paused = true;
+  let paused_state = ProtocolState {
+    protocol_paused: true,
+    ..open_state
+  };
   let paused_rate = RedemptionRate::new(&paused_state, REFERENCE)?;
   assert_eq!(
     paused_rate.best.shyusd_usd_rate,
@@ -292,8 +323,17 @@ fn paused_protocol_keeps_the_rate() -> Result<()> {
 #[test]
 fn exhausted_withdrawal_limiter_keeps_the_rate() -> Result<()> {
   let untouched = RedemptionRate::new(&load_state()?, REFERENCE)?;
-  let mut state = load_state()?;
-  state.pool_config.withdrawal_limiter.limit = UFixValue64::new(0, -6).into();
+  let state = load_state()?;
+  let state = ProtocolState {
+    pool_config: PoolConfig {
+      withdrawal_limiter: WithdrawalLimiter {
+        limit: UFixValue64::new(0, -6).into(),
+        ..state.pool_config.withdrawal_limiter
+      },
+      ..state.pool_config
+    },
+    ..state
+  };
   assert!(TokenOperation::<SHYUSD, HYUSD>::compute_output_ungated(
     &state,
     UFix64::<N6>::one()
@@ -311,11 +351,13 @@ fn overdue_harvest_closes_the_lane_but_keeps_the_rate() -> Result<()> {
   let open_jitosol = lane(&open_rate, JITOSOL::MINT)?;
   assert_eq!(open_jitosol.execution, Ok(()));
 
-  let mut overdue_state = state;
-  overdue_state.yield_harvest_epoch = overdue_state
-    .yield_harvest_epoch
-    .checked_sub(1)
-    .ok_or_else(|| anyhow!("yield_harvest_epoch underflow"))?;
+  let overdue_state = ProtocolState {
+    yield_harvest_epoch: state
+      .yield_harvest_epoch
+      .checked_sub(1)
+      .ok_or_else(|| anyhow!("yield_harvest_epoch underflow"))?,
+    ..state
+  };
   let overdue_rate = RedemptionRate::new(&overdue_state, REFERENCE)?;
   let overdue_jitosol = lane(&overdue_rate, JITOSOL::MINT)?;
   assert_eq!(
@@ -331,13 +373,16 @@ fn overdue_harvest_closes_the_lane_but_keeps_the_rate() -> Result<()> {
 
 #[test]
 fn stale_sol_oracle_drops_the_lst_lanes() -> Result<()> {
-  let mut state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
+  let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
   let fresh_rate = RedemptionRate::new(&state, REFERENCE)?;
   assert!(has_lane(&fresh_rate, JITOSOL::MINT));
   assert!(has_lane(&fresh_rate, HYLOSOL::MINT));
 
-  state.sol_usd_publish_time = 0;
-  let stale_rate = RedemptionRate::new(&state, REFERENCE)?;
+  let stale_state = ProtocolState {
+    sol_usd_publish_time: 0,
+    ..state
+  };
+  let stale_rate = RedemptionRate::new(&stale_state, REFERENCE)?;
   assert!(!has_lane(&stale_rate, JITOSOL::MINT));
   assert!(!has_lane(&stale_rate, HYLOSOL::MINT));
   Ok(())
@@ -345,14 +390,20 @@ fn stale_sol_oracle_drops_the_lst_lanes() -> Result<()> {
 
 #[test]
 fn stale_exo_oracle_drops_only_that_lane() -> Result<()> {
-  let mut state = load_state()?;
+  let state = load_state()?;
   assert!(has_lane(
     &RedemptionRate::new(&state, REFERENCE)?,
     CBBTC::MINT
   ));
 
-  state.cbbtc_pair.oracle_publish_time = 0;
-  let rate = RedemptionRate::new(&state, REFERENCE)?;
+  let stale_state = ProtocolState {
+    cbbtc_pair: ExoPairState {
+      oracle_publish_time: 0,
+      ..state.cbbtc_pair
+    },
+    ..state
+  };
+  let rate = RedemptionRate::new(&stale_state, REFERENCE)?;
   assert!(!has_lane(&rate, CBBTC::MINT));
   assert!(has_lane(&rate, HYPE::MINT));
   Ok(())
@@ -360,11 +411,23 @@ fn stale_exo_oracle_drops_only_that_lane() -> Result<()> {
 
 #[test]
 fn no_priced_lane_fails() -> Result<()> {
-  let mut state = load_state()?;
-  state.sol_usd_publish_time = 0;
-  state.cbbtc_pair.oracle_publish_time = 0;
-  state.hype_pair.oracle_publish_time = 0;
-  state.usdc_exchange_state.vault_balance = UFix64::zero();
+  let state = load_state()?;
+  let state = ProtocolState {
+    sol_usd_publish_time: 0,
+    cbbtc_pair: ExoPairState {
+      oracle_publish_time: 0,
+      ..state.cbbtc_pair
+    },
+    hype_pair: ExoPairState {
+      oracle_publish_time: 0,
+      ..state.hype_pair
+    },
+    usdc_exchange_state: UsdcExchangeState {
+      vault_balance: UFix64::zero(),
+      ..state.usdc_exchange_state
+    },
+    ..state
+  };
   assert_eq!(
     RedemptionRate::new(&state, REFERENCE).err(),
     Some(CoreError::NoRedemptionLane)
@@ -374,21 +437,31 @@ fn no_priced_lane_fails() -> Result<()> {
 
 #[test]
 fn usdc_lane_prices_at_spot_capped_at_par() -> Result<()> {
-  let mut state = load_state()?;
   // Raw snapshot USDC capacity cannot absorb the reference.
-  state.usdc_exchange_state.virtual_stablecoin.supply =
-    UFix64::<N6>::new(1_000_000_000_000).into();
-  state.usdc_exchange_state.vault_balance =
-    UFix64::<N6>::new(1_000_000_000_000);
+  let capacity = UFix64::<N6>::new(1_000_000_000_000);
+  let with_spot = |spot: UFix64<N9>| -> Result<ProtocolState<Clock>> {
+    let state = load_state()?;
+    Ok(ProtocolState {
+      usdc_exchange_state: UsdcExchangeState {
+        virtual_stablecoin: VirtualStablecoin {
+          supply: capacity.into(),
+        },
+        vault_balance: capacity,
+        usdc_usd_spot: spot,
+        ..state.usdc_exchange_state
+      },
+      ..state
+    })
+  };
 
-  state.usdc_exchange_state.usdc_usd_spot = UFix64::new(1_050_000_000);
-  let above_par = RedemptionRate::new(&state, REFERENCE)?;
+  let above_par =
+    RedemptionRate::new(&with_spot(UFix64::new(1_050_000_000))?, REFERENCE)?;
   let above_lane = lane(&above_par, USDC::MINT)?;
   assert!(above_lane.hyusd_usd_rate <= UFix64::one());
   assert_eq!(above_lane.execution, Err(CoreError::ParToleranceExceeded));
 
-  state.usdc_exchange_state.usdc_usd_spot = UFix64::new(970_000_000);
-  let below_par = RedemptionRate::new(&state, REFERENCE)?;
+  let below_par =
+    RedemptionRate::new(&with_spot(UFix64::new(970_000_000))?, REFERENCE)?;
   let below_lane = lane(&below_par, USDC::MINT)?;
   let expected = UFix64::<N6>::try_from(below_lane.amount_out)?
     .checked_convert::<N9>()
