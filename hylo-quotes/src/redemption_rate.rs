@@ -9,10 +9,10 @@
 //! ```
 //!
 //! A lane prices when its liquidity covers `reference_hyusd` and its
-//! oracle publish time is within the stablecoin oracle interval, the
-//! pair's `oracle_interval_secs / ORACLE_DIVISOR`, which is the staleness
-//! bound the stablecoin instructions enforce onchain. Gates and the
-//! withdrawal limiter only set `execution`.
+//! oracle is fresh. Fresh means the publish time is within
+//! `oracle_interval_secs / ORACLE_DIVISOR`, the staleness bound the
+//! stablecoin instructions enforce onchain. Gates and the withdrawal
+//! limiter only set `execution`.
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
