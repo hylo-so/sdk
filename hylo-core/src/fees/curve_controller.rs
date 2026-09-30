@@ -116,6 +116,22 @@ impl InterpolatedRedeemFees {
   pub fn new(curve: FixInterp<11, N5>) -> InterpolatedRedeemFees {
     InterpolatedRedeemFees { curve }
   }
+
+  /// Fee rate for a collateral ratio, saturating at `y_max` above the
+  /// curve's domain.
+  ///
+  /// # Errors
+  /// * Interpolation or fee conversion
+  #[cfg(feature = "offchain")]
+  pub fn saturating_fee_rate(
+    &self,
+    cr: CollateralRatio,
+  ) -> Result<UFix64<N5>, CoreError> {
+    self
+      .fee_inner(cr.fee_curve_x().min(self.curve.x_max()))?
+      .narrow()
+      .ok_or(CoreError::InterpFeeConversion)
+  }
 }
 
 impl InterpolatedFeeController<11> for InterpolatedRedeemFees {
@@ -148,6 +164,7 @@ impl InterpolatedFeeController<11> for InterpolatedRedeemFees {
 
 #[cfg(test)]
 mod tests {
+  use anyhow::Result;
   use fix::typenum::Integer;
   use proptest::prelude::*;
   use proptest::test_runner::TestCaseResult;
@@ -253,15 +270,39 @@ mod tests {
   }
 
   #[test]
-  fn redeem_fee_maximal_at_domain_edge() -> anyhow::Result<()> {
+  fn redeem_fee_maximal_at_domain_edge() -> Result<()> {
     let fees = redeem_fees();
     let cr = IFix64::<N5>::constant(150_000);
     assert_eq!(fees.fee_inner(cr)?, fees.curve().y_max());
     Ok(())
   }
 
+  #[cfg(feature = "offchain")]
   #[test]
-  fn mint_slope_zero_where_fee_pinned() -> anyhow::Result<()> {
+  fn saturating_fee_rate_equals_strict_inside_domain() -> Result<()> {
+    let fees = redeem_fees();
+    let cr = CR::Finite(UFix64::new(1_300_000_000));
+    assert_eq!(fees.saturating_fee_rate(cr)?, fees.fee_rate(cr)?);
+    Ok(())
+  }
+
+  #[cfg(feature = "offchain")]
+  #[test]
+  fn saturating_fee_rate_holds_edge_above_domain() -> Result<()> {
+    let fees = redeem_fees();
+    let edge = fees.fee_rate(CR::Finite(UFix64::new(1_500_000_000)))?;
+    let above = CR::Finite(UFix64::new(3_000_000_000));
+    assert_eq!(
+      fees.fee_rate(above).err(),
+      Some(CoreError::NoValidStablecoinRedeemFee)
+    );
+    assert_eq!(fees.saturating_fee_rate(above)?, edge);
+    assert_eq!(fees.saturating_fee_rate(CR::Infinite)?, edge);
+    Ok(())
+  }
+
+  #[test]
+  fn mint_slope_zero_where_fee_pinned() -> Result<()> {
     let fees = mint_fees();
     let pinned = IFix64::<N5>::constant(150_001);
     assert_eq!(fees.fee_inner(pinned)?, fees.curve().y_min());
