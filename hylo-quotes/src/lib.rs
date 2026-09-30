@@ -106,6 +106,7 @@ pub mod protocol_state;
 mod protocol_state_strategy;
 mod quote_metadata;
 mod quote_strategy;
+pub mod redemption_rate;
 mod runtime_quote_strategy;
 pub mod simulated_operation;
 mod simulation_strategy;
