@@ -10,7 +10,7 @@ use hylo_idl::earn_pool::types::TokenMetadata;
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::squads::{SquadsContext, SquadsTransactionData};
+use crate::signing::{SignedTransaction, SigningMethod};
 
 /// Admin client for the Hylo earn pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
@@ -19,6 +19,7 @@ use crate::squads::{SquadsContext, SquadsTransactionData};
 pub struct EarnPoolClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
+  signing_method: SigningMethod,
 }
 
 impl ProgramClient for EarnPoolClient {
@@ -28,7 +29,11 @@ impl ProgramClient for EarnPoolClient {
     program: Program<Arc<Keypair>>,
     keypair: Arc<Keypair>,
   ) -> EarnPoolClient {
-    EarnPoolClient { program, keypair }
+    EarnPoolClient {
+      program,
+      keypair,
+      signing_method: SigningMethod::Direct,
+    }
   }
 
   fn program(&self) -> &Program<Arc<Keypair>> {
@@ -41,125 +46,140 @@ impl ProgramClient for EarnPoolClient {
 }
 
 impl EarnPoolClient {
+  /// Selects the signing method for privileged and initializer instructions.
+  #[must_use]
+  pub fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
+    self.signing_method = signing_method;
+    self
+  }
+
+  fn signer(&self) -> Pubkey {
+    self.signing_method.authority(self.program.payer())
+  }
+
+  async fn sign(
+    &self,
+    inner: VersionedTransactionData,
+    memo: String,
+  ) -> Result<SignedTransaction> {
+    self
+      .signing_method
+      .prepare(&self.program.rpc(), self.program.payer(), inner, memo)
+      .await
+  }
+
   /// Initializes the earn pool.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_earn_pool(
+  pub async fn initialize_earn_pool(
     &self,
     upgrade_authority: Pubkey,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_earn_pool(
-      self.program.payer(),
+      self.signer(),
       upgrade_authority,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("initialize_earn_pool", &instruction);
+    self
+      .sign(VersionedTransactionData::one(instruction), memo)
+      .await
   }
 
   /// Initializes the LP token mint for the earn pool.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_lp_token_mint(
+  pub async fn initialize_lp_token_mint(
     &self,
     lp_token_metadata: TokenMetadata,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_lp_token_mint(
-      self.program.payer(),
+      self.signer(),
       lp_token_metadata,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("initialize_lp_token_mint", &instruction);
+    self
+      .sign(VersionedTransactionData::one(instruction), memo)
+      .await
   }
 
   /// Deprecates the levercoin pool via Squads proposal.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn deprecate_levercoin_pool(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
+  pub async fn deprecate_levercoin_pool(&self) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::deprecate_levercoin_pool(squads.vault_pda());
+      instruction_builders::deprecate_levercoin_pool(self.signer());
     let memo = build_memo("deprecate_levercoin_pool", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the withdrawal fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_withdrawal_fee(
+  pub async fn update_withdrawal_fee(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateWithdrawalFee,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_withdrawal_fee(squads.vault_pda(), args);
+      instruction_builders::update_withdrawal_fee(self.signer(), args);
     let memo = build_memo("update_withdrawal_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the withdrawal limit.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_withdrawal_limit(
+  pub async fn update_withdrawal_limit(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateWithdrawalLimit,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_withdrawal_limit(squads.vault_pda(), args);
+      instruction_builders::update_withdrawal_limit(self.signer(), args);
     let memo = build_memo("update_withdrawal_limit", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the deposit limit.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_deposit_limit(
+  pub async fn update_deposit_limit(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateDepositLimit,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_deposit_limit(squads.vault_pda(), args);
+      instruction_builders::update_deposit_limit(self.signer(), args);
     let memo = build_memo("update_deposit_limit", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Pauses the earn pool.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn pause_earn_pool(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::pause_earn_pool(squads.vault_pda());
+  pub async fn pause_earn_pool(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::pause_earn_pool(self.signer());
     let memo = build_memo("pause_earn_pool", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Unpauses the earn pool.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn unpause_earn_pool(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::unpause_earn_pool(squads.vault_pda());
+  pub async fn unpause_earn_pool(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::unpause_earn_pool(self.signer());
     let memo = build_memo("unpause_earn_pool", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 }
