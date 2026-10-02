@@ -3,7 +3,7 @@ use anyhow::Result;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use squads_multisig::pda::get_vault_pda;
 
-use crate::program_client::VersionedTransactionData;
+use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
 
 /// Selects how an administrative instruction is authorized and submitted.
@@ -64,6 +64,31 @@ impl SigningMethod {
   }
 }
 
+#[async_trait::async_trait]
+pub trait SigningClient: ProgramClient {
+  fn signing_method(&self) -> SigningMethod;
+
+  #[must_use]
+  fn with_signing_method(self, signing_method: SigningMethod) -> Self
+  where
+    Self: Sized;
+
+  fn signer(&self) -> Pubkey {
+    self.signing_method().authority(self.program().payer())
+  }
+
+  async fn sign(
+    &self,
+    inner: VersionedTransactionData,
+    memo: String,
+  ) -> Result<SignedTransaction> {
+    self
+      .signing_method()
+      .prepare(&self.program().rpc(), self.program().payer(), inner, memo)
+      .await
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use anchor_client::solana_sdk::instruction::Instruction;
@@ -95,7 +120,7 @@ mod tests {
   }
 
   #[test]
-  fn squads_finalization_wraps_the_inner_transaction() -> Result<()> {
+  fn squads_proposal_wraps_the_inner_transaction() -> Result<()> {
     let multisig = Pubkey::new_unique();
     let context = SquadsContext {
       multisig,

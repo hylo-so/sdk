@@ -10,7 +10,7 @@ use hylo_idl::earn_pool::types::TokenMetadata;
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::signing::{SignedTransaction, SigningMethod};
+use crate::signing::{SignedTransaction, SigningClient, SigningMethod};
 
 /// Admin client for the Hylo earn pool program. Manages pool
 /// initialization, rebalancing, fee configuration, and stats.
@@ -45,29 +45,18 @@ impl ProgramClient for EarnPoolClient {
   }
 }
 
-impl EarnPoolClient {
-  /// Selects the signing method for privileged and initializer instructions.
-  #[must_use]
-  pub fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
+impl SigningClient for EarnPoolClient {
+  fn signing_method(&self) -> SigningMethod {
+    self.signing_method
+  }
+
+  fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
     self.signing_method = signing_method;
     self
   }
+}
 
-  fn signer(&self) -> Pubkey {
-    self.signing_method.authority(self.program.payer())
-  }
-
-  async fn sign(
-    &self,
-    inner: VersionedTransactionData,
-    memo: String,
-  ) -> Result<SignedTransaction> {
-    self
-      .signing_method
-      .prepare(&self.program.rpc(), self.program.payer(), inner, memo)
-      .await
-  }
-
+impl EarnPoolClient {
   /// Initializes the earn pool.
   ///
   /// # Errors

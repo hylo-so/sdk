@@ -13,7 +13,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD};
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::signing::{SignedTransaction, SigningMethod};
+use crate::signing::{SignedTransaction, SigningClient, SigningMethod};
 use crate::util::{
   ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
 };
@@ -51,29 +51,18 @@ impl ProgramClient for ExchangeClient {
   }
 }
 
-impl ExchangeClient {
-  /// Selects the signing method for privileged and initializer instructions.
-  #[must_use]
-  pub fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
+impl SigningClient for ExchangeClient {
+  fn signing_method(&self) -> SigningMethod {
+    self.signing_method
+  }
+
+  fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
     self.signing_method = signing_method;
     self
   }
+}
 
-  fn signer(&self) -> Pubkey {
-    self.signing_method.authority(self.program.payer())
-  }
-
-  async fn sign(
-    &self,
-    inner: VersionedTransactionData,
-    memo: String,
-  ) -> Result<SignedTransaction> {
-    self
-      .signing_method
-      .prepare(&self.program.rpc(), self.program.payer(), inner, memo)
-      .await
-  }
-
+impl ExchangeClient {
   /// Initializes the Hylo exchange protocol.
   ///
   /// # Errors
