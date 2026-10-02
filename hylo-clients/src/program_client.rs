@@ -58,6 +58,10 @@ pub trait ProgramClient: Sized {
 
   fn program(&self) -> &Program<Arc<Keypair>>;
 
+  fn payer(&self) -> Pubkey {
+    self.program().payer()
+  }
+
   fn keypair(&self) -> Arc<Keypair>;
 
   /// Constructs the program client with a given keypair and associated program

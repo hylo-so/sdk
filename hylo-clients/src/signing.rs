@@ -74,7 +74,7 @@ pub trait SigningClient: ProgramClient {
     Self: Sized;
 
   fn signer(&self) -> Pubkey {
-    self.signing_method().authority(self.program().payer())
+    self.signing_method().authority(self.payer())
   }
 
   async fn sign(
@@ -84,7 +84,7 @@ pub trait SigningClient: ProgramClient {
   ) -> Result<SignedTransaction> {
     self
       .signing_method()
-      .prepare(&self.program().rpc(), self.program().payer(), inner, memo)
+      .prepare(&self.program().rpc(), self.payer(), inner, memo)
       .await
   }
 }
