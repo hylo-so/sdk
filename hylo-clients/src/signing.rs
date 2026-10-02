@@ -25,19 +25,7 @@ pub enum SignedTransaction {
 }
 
 impl SigningMethod {
-  /// Returns the authority account expected by the inner instruction.
-  #[must_use]
-  pub fn authority(self, payer: Pubkey) -> Pubkey {
-    match self {
-      Self::Direct => payer,
-      Self::Squads {
-        multisig,
-        vault_index,
-      } => get_vault_pda(&multisig, vault_index, None).0,
-    }
-  }
-
-  /// Finalizes an administrative transaction using the configured method.
+  /// Prepares an administrative transaction using the configured method.
   ///
   /// # Errors
   /// * Failed to fetch the next Squads transaction index.
@@ -74,7 +62,13 @@ pub trait SigningClient: ProgramClient {
     Self: Sized;
 
   fn signer(&self) -> Pubkey {
-    self.signing_method().authority(self.payer())
+    match self.signing_method() {
+      SigningMethod::Direct => self.payer(),
+      SigningMethod::Squads {
+        multisig,
+        vault_index,
+      } => get_vault_pda(&multisig, vault_index, None).0,
+    }
   }
 
   async fn sign(
@@ -91,33 +85,11 @@ pub trait SigningClient: ProgramClient {
 
 #[cfg(test)]
 mod tests {
+  use crate::program_client::VersionedTransactionData;
+  use crate::squads::SquadsContext;
   use anchor_client::solana_sdk::instruction::Instruction;
   use anchor_client::solana_sdk::pubkey::Pubkey;
   use anyhow::Result;
-  use squads_multisig::pda::get_vault_pda;
-
-  use super::SigningMethod;
-  use crate::program_client::VersionedTransactionData;
-  use crate::squads::SquadsContext;
-
-  #[test]
-  fn direct_uses_the_client_payer_as_authority() {
-    let payer = Pubkey::new_unique();
-    assert_eq!(SigningMethod::Direct.authority(payer), payer);
-  }
-
-  #[test]
-  fn squads_uses_its_vault_pda_as_authority() {
-    let multisig = Pubkey::new_unique();
-    let method = SigningMethod::Squads {
-      multisig,
-      vault_index: 3,
-    };
-    assert_eq!(
-      method.authority(Pubkey::new_unique()),
-      get_vault_pda(&multisig, 3, None).0
-    );
-  }
 
   #[test]
   fn squads_proposal_wraps_the_inner_transaction() -> Result<()> {
