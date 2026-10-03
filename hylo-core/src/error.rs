@@ -205,6 +205,8 @@ pub enum CoreError {
   RangeUnexpectedBound,
   #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]
   StablecoinMintThresholdInvalid,
+  #[msg("Rebalance reserve configuration is invalid.")]
+  ReserveGateInvalid,
   // `limiter::levercoin`
   #[msg("Levercoin market cap limit not in valid configuration range.")]
   LevercoinMarketCapLimitInvalid,
