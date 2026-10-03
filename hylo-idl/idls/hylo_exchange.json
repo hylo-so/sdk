@@ -19121,7 +19121,7 @@
       ],
       "args": [
         {
-          "name": "reserve_ratio",
+          "name": "reserve_per_tvl",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -19129,7 +19129,7 @@
           }
         },
         {
-          "name": "pair_size_cap_usd",
+          "name": "tvl_cap",
           "type": {
             "defined": {
               "name": "UFixValue64"
@@ -20538,6 +20538,11 @@
       "code": 6049,
       "name": "UsdcReserveBelowMinimum",
       "msg": "USDC vault reserve would fall below the pair minimum."
+    },
+    {
+      "code": 6050,
+      "name": "UsdcReserveRatioInvalid",
+      "msg": "USDC reserve ratio exceeds one."
     }
   ],
   "types": [
@@ -22640,6 +22645,33 @@
       }
     },
     {
+      "name": "ReserveGate",
+      "docs": [
+        "Reserve policy applied to collateral-to-stablecoin rebalances."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "reserve_per_tvl",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "tvl_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "SettleRebalancePnlExoEvent",
       "type": {
         "kind": "struct",
@@ -23422,7 +23454,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "old_reserve_ratio",
+            "name": "old_reserve_per_tvl",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -23430,7 +23462,7 @@
             }
           },
           {
-            "name": "new_reserve_ratio",
+            "name": "new_reserve_per_tvl",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -23438,7 +23470,7 @@
             }
           },
           {
-            "name": "old_pair_size_cap_usd",
+            "name": "old_tvl_cap",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -23446,7 +23478,7 @@
             }
           },
           {
-            "name": "new_pair_size_cap_usd",
+            "name": "new_tvl_cap",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -23542,18 +23574,10 @@
             }
           },
           {
-            "name": "reserve_ratio",
+            "name": "reserve_gate",
             "type": {
               "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "pair_size_cap_usd",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
+                "name": "ReserveGate"
               }
             }
           },

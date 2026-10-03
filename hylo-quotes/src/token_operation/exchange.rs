@@ -10,7 +10,6 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
-use hylo_core::reserve_gate::required_reserve;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{
   max_mintable, validate_burn, SUPPLY_FLOOR,
@@ -76,11 +75,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     pair_size_usd: UFix64<N6>,
   ) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let min_usdc_reserve = required_reserve(
-      usdc_state.reserve_ratio,
-      usdc_state.pair_size_cap_usd,
-      pair_size_usd,
-    )?;
+    let min_usdc_reserve =
+      usdc_state.reserve_gate.required_reserve(pair_size_usd)?;
     let usdc_headroom = usdc_state
       .vault_balance
       .checked_sub(&min_usdc_reserve)

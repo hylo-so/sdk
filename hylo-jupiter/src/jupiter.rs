@@ -13,6 +13,7 @@ use hylo_core::idl::tokens::{
 use hylo_core::idl::{earn_pool, exchange, pda};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, PythOracle, SOL_USD};
+use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
@@ -53,6 +54,11 @@ fn usdc_state(
   let usdc_oracle = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
+  let reserve_gate = ReserveGate::new(
+    usdc_pair.reserve_gate.reserve_per_tvl.into(),
+    usdc_pair.reserve_gate.tvl_cap.into(),
+  )?;
+
   Ok(UsdcExchangeState {
     mint_fee: usdc_pair.mint_fee.try_into()?,
     redeem_fee: usdc_pair.redeem_fee.try_into()?,
@@ -61,8 +67,7 @@ fn usdc_state(
     virtual_stablecoin,
     usdc_usd_spot: usdc_oracle.spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
-    reserve_ratio: usdc_pair.reserve_ratio.try_into()?,
-    pair_size_cap_usd: usdc_pair.pair_size_cap_usd.try_into()?,
+    reserve_gate,
   })
 }
 
