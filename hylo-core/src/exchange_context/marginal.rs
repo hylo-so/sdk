@@ -10,6 +10,7 @@ use crate::error::CoreError;
 use crate::fees::controller::FeeController;
 use crate::fees::curve_controller::InterpolatedFeeController;
 use crate::lst::sol_price::LstSolPrice;
+use crate::oracle::PriceRange;
 use crate::rebalance::pricing::RebalancePriceController;
 use crate::solana_clock::SolanaClock;
 

@@ -1,10 +1,12 @@
-use anchor_lang::prelude::{bpf_loader_upgradeable, pubkey, Pubkey};
+use anchor_lang::prelude::{bpf_loader_upgradeable, Pubkey};
 use anchor_spl::associated_token::spl_associated_token_account;
 use anchor_spl::token;
 use const_crypto::ed25519;
+use hylo_oracle_types::{
+  BTC_USD_FEED_ID, HYPE_USD_FEED_ID, SOL_USD_FEED_ID, USDC_USD_FEED_ID,
+};
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
-use crate::exchange::types::AddressField;
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
 use crate::{earn_pool, exchange};
 
@@ -220,14 +222,29 @@ pub const EARN_POOL_PROGRAM_DATA: Pubkey = progdata(earn_pool::ID);
 
 pub const EXCHANGE_PROGRAM_DATA: Pubkey = progdata(exchange::ID);
 
-pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7AviUf9nL62mcxNbQGKm4nKDQnPjswo6c5MX4D57HmyE");
+/// Observation PDA for feed `id`, owned by the hylo-oracle program. This is the
+/// source-neutral account the migrated exchange reads at every price-feed slot;
+/// pins to the oracle main/shadow id via the `shadow` feature.
+#[must_use]
+pub const fn observation(id: u16) -> Pubkey {
+  let id_bytes = id.to_le_bytes();
+  let seeds: [&[u8]; 2] = [hylo_oracle_types::OBSERVATION, &id_bytes];
+  let (key, _bump) =
+    ed25519::derive_program_address(&seeds, hylo_oracle_types::ID.as_array());
+  Pubkey::new_from_array(key)
+}
 
-pub const USDC_USD_PYTH_FEED: Pubkey =
-  pubkey!("6HAuqASbHEh4w4REJEUUUCginTLfj1kwCh215ZLtMkrT");
+/// SOL/USD observation (feed id 0); pinned by a constant seed in LST contexts.
+pub const SOL_USD_OBSERVATION: Pubkey = observation(SOL_USD_FEED_ID);
 
-pub const BTC_USD_PYTH_FEED: Pubkey =
-  pubkey!("APgzQGGdv2qCgBkX6aHVkrGePtBVDDg68GiqaM7rmtf5");
+/// BTC/USD observation (feed id 1); resolved from the cbBTC collateral mint.
+pub const BTC_USD_OBSERVATION: Pubkey = observation(BTC_USD_FEED_ID);
+
+/// USDC/USD observation (feed id 2); pinned by the USDC pair.
+pub const USDC_USD_OBSERVATION: Pubkey = observation(USDC_USD_FEED_ID);
+
+/// HYPE/USD observation (feed id 3); resolved from the HYPE collateral mint.
+pub const HYPE_USD_OBSERVATION: Pubkey = observation(HYPE_USD_FEED_ID);
 
 pub const DEAD: Pubkey = pda!(exchange::ID, exchange::constants::DEAD);
 

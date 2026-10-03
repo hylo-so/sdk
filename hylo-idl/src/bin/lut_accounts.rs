@@ -48,10 +48,10 @@ const LUT_ACCOUNTS: &[Pubkey] = &[
   // Earn pool token accounts
   pda::HYUSD_POOL,
   pda::XSOL_POOL,
-  // Oracle feeds
-  pda::SOL_USD_PYTH_FEED,
-  pda::USDC_USD_PYTH_FEED,
-  pda::BTC_USD_PYTH_FEED,
+  // Oracle observations (source-neutral price feeds read by the exchange)
+  pda::SOL_USD_OBSERVATION,
+  pda::USDC_USD_OBSERVATION,
+  pda::BTC_USD_OBSERVATION,
   // JITOSOL accounts
   pda::fee_auth(JITOSOL::MINT),
   pda::lst_vault_auth(JITOSOL::MINT),

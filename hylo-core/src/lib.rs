@@ -19,7 +19,7 @@ pub mod kani_generators;
 pub mod limiter;
 pub mod lst;
 pub mod par_tolerance;
-pub mod pyth;
+pub mod oracle;
 pub mod rebalance;
 pub mod slippage_config;
 pub mod solana_clock;

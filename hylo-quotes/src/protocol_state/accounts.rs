@@ -7,7 +7,6 @@ use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, ensure, Context, Result};
 use hylo_core::error::CoreError;
-use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
   Exo, StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD,
@@ -59,8 +58,8 @@ pub struct ProtocolAccounts {
   /// HYUSD earn pool token account
   pub hyusd_pool: Account,
 
-  /// Pyth SOL/USD price feed
-  pub sol_usd_pyth: Account,
+  /// SOL/USD observation (hylo-oracle)
+  pub sol_usd_observation: Account,
 
   /// Solana clock sysvar
   pub clock: Account,
@@ -74,14 +73,14 @@ pub struct ProtocolAccounts {
   /// xBTC levercoin mint
   pub xbtc_mint: Account,
 
-  /// Pyth BTC/USD price feed
-  pub btc_usd_pyth: Account,
+  /// BTC/USD observation (hylo-oracle)
+  pub btc_usd_observation: Account,
 
   /// `UsdcPair` PDA
   pub usdc_pair: Account,
 
-  /// Pyth USDC/USD price feed
-  pub usdc_usd_pyth: Account,
+  /// USDC/USD observation (hylo-oracle)
+  pub usdc_usd_observation: Account,
 
   /// `JitoSOL` SPL stake pool state
   pub jitosol_pool_state: Account,
@@ -107,8 +106,8 @@ pub struct ProtocolAccounts {
   /// xHYPE levercoin mint
   pub xhype_mint: Account,
 
-  /// Pyth HYPE/USD price feed
-  pub hype_usd_pyth: Account,
+  /// HYPE/USD observation (hylo-oracle)
+  pub hype_usd_observation: Account,
 }
 
 impl ProtocolAccounts {
@@ -124,14 +123,14 @@ impl ProtocolAccounts {
     XSOL::MINT,
     pda::POOL_CONFIG,
     pda::HYUSD_POOL,
-    hylo_core::pyth::SOL_USD.address,
+    pda::SOL_USD_OBSERVATION,
     sysvar::clock::ID,
     pda::exo_pair(CBBTC::MINT),
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
-    CBBTC::FEED.address,
+    pda::BTC_USD_OBSERVATION,
     pda::USDC_PAIR,
-    pda::USDC_USD_PYTH_FEED,
+    pda::USDC_USD_OBSERVATION,
     JITOSOL::POOL_STATE,
     HYLOSOL::POOL_STATE,
     pda::lst_vault(JITOSOL::MINT),
@@ -140,7 +139,7 @@ impl ProtocolAccounts {
     pda::exo_pair(HYPE::MINT),
     pda::exo_vault(HYPE::MINT),
     pda::exo_levercoin_mint(HYPE::MINT),
-    HYPE::FEED.address,
+    pda::HYPE_USD_OBSERVATION,
   ];
 
   /// Get the list of account pubkeys in the order expected by RPC
@@ -152,29 +151,34 @@ impl ProtocolAccounts {
 
   /// Pubkey subset for the isolated LST exchange context.
   ///
-  /// Order: Hylo, xSOL mint, SOL/USD feed, clock.
+  /// Order: Hylo, xSOL mint, SOL/USD observation, clock.
   #[must_use]
   pub const fn lst_pubkeys() -> [Pubkey; 4] {
     [
       pda::HYLO,
       XSOL::MINT,
-      hylo_core::pyth::SOL_USD.address,
+      pda::SOL_USD_OBSERVATION,
       sysvar::clock::ID,
     ]
   }
 
   /// Pubkey subset for one isolated exo pair.
   ///
-  /// Order: exo pair, vault, levercoin mint, collateral/USD feed, clock.
+  /// Order: exo pair, vault, levercoin mint, BTC/USD observation, clock.
   #[must_use]
-  pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 5] {
-    [
+  pub fn exo_pubkeys<E: Exo>() -> Result<[Pubkey; 5]> {
+    let collateral_usd_observation = match E::MINT {
+      CBBTC::MINT => pda::BTC_USD_OBSERVATION,
+      HYPE::MINT => pda::HYPE_USD_OBSERVATION,
+      _ => return Err(anyhow!("no oracle observation for exo collateral")),
+    };
+    Ok([
       pda::exo_pair(E::MINT),
       pda::exo_vault(E::MINT),
       pda::exo_levercoin_mint(E::MINT),
-      E::FEED.address,
+      collateral_usd_observation,
       sysvar::clock::ID,
-    ]
+    ])
   }
 
   /// Expected number of protocol accounts
@@ -207,14 +211,22 @@ impl ProtocolAccounts {
       xsol_mint: fetched_account(accounts, 5, "XSOL mint")?,
       pool_config: fetched_account(accounts, 6, "Pool config")?,
       hyusd_pool: fetched_account(accounts, 7, "HYUSD pool")?,
-      sol_usd_pyth: fetched_account(accounts, 8, "SOL/USD Pyth feed")?,
+      sol_usd_observation: fetched_account(accounts, 8, "SOL/USD observation")?,
       clock: fetched_account(accounts, 9, "Clock sysvar")?,
       cbbtc_exo_pair: fetched_account(accounts, 10, "cbBTC ExoPair")?,
       cbbtc_vault: fetched_account(accounts, 11, "cbBTC vault")?,
       xbtc_mint: fetched_account(accounts, 12, "xBTC mint")?,
-      btc_usd_pyth: fetched_account(accounts, 13, "BTC/USD Pyth feed")?,
+      btc_usd_observation: fetched_account(
+        accounts,
+        13,
+        "BTC/USD observation",
+      )?,
       usdc_pair: fetched_account(accounts, 14, "UsdcPair")?,
-      usdc_usd_pyth: fetched_account(accounts, 15, "USDC/USD Pyth feed")?,
+      usdc_usd_observation: fetched_account(
+        accounts,
+        15,
+        "USDC/USD observation",
+      )?,
       jitosol_pool_state: fetched_account(accounts, 16, "JitoSOL pool state")?,
       hylosol_pool_state: fetched_account(accounts, 17, "hyloSOL pool state")?,
       jitosol_vault: fetched_account(accounts, 18, "JitoSOL vault")?,
@@ -223,7 +235,11 @@ impl ProtocolAccounts {
       hype_exo_pair: fetched_account(accounts, 21, "HYPE ExoPair")?,
       hype_vault: fetched_account(accounts, 22, "HYPE vault")?,
       xhype_mint: fetched_account(accounts, 23, "xHYPE mint")?,
-      hype_usd_pyth: fetched_account(accounts, 24, "HYPE/USD Pyth feed")?,
+      hype_usd_observation: fetched_account(
+        accounts,
+        24,
+        "HYPE/USD observation",
+      )?,
     })
   }
 

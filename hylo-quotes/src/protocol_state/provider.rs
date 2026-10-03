@@ -14,11 +14,10 @@ use fix::util::FixExt;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::idl::exchange::accounts::Hylo;
-use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
 use hylo_idl::with_exo_pairs;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_oracle_types::OracleObservation;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::{
@@ -80,8 +79,9 @@ impl RpcStateProvider {
     }?;
     let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
     let xsol_mint = Mint::try_deserialize(&mut xsol_mint.data.as_slice())?;
-    let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())
-      .context("SOL/USD Pyth deserialization")?;
+    let sol_usd =
+      OracleObservation::try_deserialize(&mut sol_usd.data.as_slice())
+        .context("SOL/USD observation deserialization")?;
     let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
     build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)
@@ -91,13 +91,11 @@ impl RpcStateProvider {
   ///
   /// # Errors
   /// Returns error if the fetch or deserialization fails.
-  pub async fn fetch_exo_pair<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<ExoPairState<Clock>>
+  pub async fn fetch_exo_pair<E: Exo>(&self) -> Result<ExoPairState<Clock>>
   where
     UFix64<E::Exp>: FixExt,
   {
-    let pubkeys = ProtocolAccounts::exo_pubkeys::<E>();
+    let pubkeys = ProtocolAccounts::exo_pubkeys::<E>()?;
     let data = self
       .rpc_client
       .get_multiple_accounts(&pubkeys)
