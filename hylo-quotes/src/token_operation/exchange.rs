@@ -76,16 +76,16 @@ impl<C: SolanaClock> ProtocolState<C> {
     pair_size_usd: UFix64<N6>,
   ) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
-    let required_reserve = required_reserve(
+    let min_usdc_reserve = required_reserve(
       usdc_state.reserve_ratio,
       usdc_state.pair_size_cap_usd,
       pair_size_usd,
     )?;
-    let reserve_headroom = usdc_state
+    let usdc_headroom = usdc_state
       .vault_balance
-      .checked_sub(&required_reserve)
+      .checked_sub(&min_usdc_reserve)
       .ok_or(CoreError::InsufficientLiquidity)?;
-    Ok(reserve_headroom.min(usdc_state.virtual_stablecoin.supply()?))
+    Ok(usdc_headroom.min(usdc_state.virtual_stablecoin.supply()?))
   }
 }
 
