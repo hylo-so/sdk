@@ -13,7 +13,7 @@ use hylo_idl::tokens::{TokenMint, HYUSD};
 
 use crate::memo::build_memo;
 use crate::program_client::{ProgramClient, VersionedTransactionData};
-use crate::squads::{SquadsContext, SquadsTransactionData};
+use crate::signing::{SignedTransaction, SigningClient, SigningMethod};
 use crate::util::{
   ata_instruction, HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE,
 };
@@ -25,6 +25,7 @@ use crate::util::{
 pub struct ExchangeClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
+  signing_method: SigningMethod,
 }
 
 impl ProgramClient for ExchangeClient {
@@ -34,7 +35,11 @@ impl ProgramClient for ExchangeClient {
     program: Program<Arc<Keypair>>,
     keypair: Arc<Keypair>,
   ) -> ExchangeClient {
-    ExchangeClient { program, keypair }
+    ExchangeClient {
+      program,
+      keypair,
+      signing_method: SigningMethod::Direct,
+    }
   }
 
   fn program(&self) -> &Program<Arc<Keypair>> {
@@ -46,41 +51,58 @@ impl ProgramClient for ExchangeClient {
   }
 }
 
+impl SigningClient for ExchangeClient {
+  fn signing_method(&self) -> SigningMethod {
+    self.signing_method
+  }
+
+  fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
+    self.signing_method = signing_method;
+    self
+  }
+}
+
 impl ExchangeClient {
   /// Initializes the Hylo exchange protocol.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_protocol(
+  pub async fn initialize_protocol(
     &self,
     upgrade_authority: Pubkey,
     treasury: Pubkey,
     args: &args::InitializeProtocol,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_protocol(
-      self.program.payer(),
+      self.signer(),
       upgrade_authority,
       treasury,
       args,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("initialize_protocol", &instruction);
+    self
+      .sign(VersionedTransactionData::one(instruction), memo)
+      .await
   }
 
   /// Initializes hyUSD and xSOL token mints.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_mints(
+  pub async fn initialize_mints(
     &self,
     stablecoin_metadata: TokenMetadata,
     levercoin_metadata: TokenMetadata,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_mints(
-      self.program.payer(),
+      self.signer(),
       stablecoin_metadata,
       levercoin_metadata,
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("initialize_mints", &instruction);
+    self
+      .sign(VersionedTransactionData::one(instruction), memo)
+      .await
   }
 
   /// Initializes the LST registry lookup table.
@@ -88,28 +110,34 @@ impl ExchangeClient {
   /// # Errors
   /// * Failed to get current slot
   /// * Failed to build transaction instructions
-  pub fn initialize_lst_registry(
+  pub async fn initialize_lst_registry(
     &self,
     slot: u64,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::initialize_lst_registry(slot, self.program.payer());
-    Ok(VersionedTransactionData::one(instruction))
+      instruction_builders::initialize_lst_registry(slot, self.signer());
+    let memo = build_memo("initialize_lst_registry", &instruction);
+    self
+      .sign(VersionedTransactionData::one(instruction), memo)
+      .await
   }
 
   /// Initializes LST price calculators in registry.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_lst_registry_calculators(
+  pub async fn initialize_lst_registry_calculators(
     &self,
     lst_registry: Pubkey,
-  ) -> Result<VersionedTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_lst_registry_calculators(
       lst_registry,
-      self.program.payer(),
+      self.signer(),
     );
-    Ok(VersionedTransactionData::one(instruction))
+    let memo = build_memo("initialize_lst_registry_calculators", &instruction);
+    self
+      .sign(VersionedTransactionData::one(instruction), memo)
+      .await
   }
 
   /// Registers a new LST for mint/redeem.
@@ -119,7 +147,6 @@ impl ExchangeClient {
   #[allow(clippy::too_many_arguments)]
   pub async fn register_lst(
     &self,
-    squads: &SquadsContext,
     lst_registry: Pubkey,
     lst_mint: Pubkey,
     lst_stake_pool_state: Pubkey,
@@ -128,7 +155,7 @@ impl ExchangeClient {
     stake_pool_program: Pubkey,
     stake_pool_program_data: Pubkey,
     rebalance_fee: UFixValue64,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::register_lst(
       lst_mint,
       lst_stake_pool_state,
@@ -137,14 +164,14 @@ impl ExchangeClient {
       stake_pool_program,
       stake_pool_program_data,
       lst_registry,
-      squads.vault_pda(),
+      self.signer(),
       rebalance_fee,
     );
     let memo = build_memo("register_lst", &instruction);
     let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
     let inner =
       VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Builds transaction data for LST price oracle crank.
@@ -194,727 +221,587 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_oracle_conf_tolerance(
+  pub async fn update_oracle_conf_tolerance(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateOracleConfTolerance,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_oracle_conf_tolerance(
-      squads.vault_pda(),
-      args,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::update_oracle_conf_tolerance(self.signer(), args);
     let memo = build_memo("update_oracle_conf_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::update_oracle_conf_tolerance`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_oracle_conf_tolerance_direct(
-    &self,
-    args: &args::UpdateOracleConfTolerance,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_oracle_conf_tolerance(
-      self.program.payer(),
-      args,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Updates the SOL/USD oracle address.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_sol_usd_oracle(
+  pub async fn update_sol_usd_oracle(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateSolUsdOracle,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_sol_usd_oracle(squads.vault_pda(), args);
+      instruction_builders::update_sol_usd_oracle(self.signer(), args);
     let memo = build_memo("update_sol_usd_oracle", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the LST swap fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_lst_swap_fee(
+  pub async fn update_lst_swap_fee(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateLstSwapFee,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_lst_swap_fee(squads.vault_pda(), args);
+      instruction_builders::update_lst_swap_fee(self.signer(), args);
     let memo = build_memo("update_lst_swap_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the levercoin fee configuration.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_levercoin_fees(
+  pub async fn update_levercoin_fees(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateLevercoinFees,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_levercoin_fees(squads.vault_pda(), args);
+      instruction_builders::update_levercoin_fees(self.signer(), args);
     let memo = build_memo("update_levercoin_fees", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the oracle staleness interval.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_oracle_interval(
+  pub async fn update_oracle_interval(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateOracleInterval,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_oracle_interval(squads.vault_pda(), args);
+      instruction_builders::update_oracle_interval(self.signer(), args);
     let memo = build_memo("update_oracle_interval", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the LST stablecoin mint threshold.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_lst_stablecoin_mint_threshold(
+  pub async fn update_lst_stablecoin_mint_threshold(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateLstStablecoinMintThreshold,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
       instruction_builders::update_lst_stablecoin_mint_threshold(
-        squads.vault_pda(),
+        self.signer(),
         args,
       );
     let memo = build_memo("update_lst_stablecoin_mint_threshold", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Pauses the protocol.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn pause_protocol(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::pause_protocol(squads.vault_pda());
+  pub async fn pause_protocol(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::pause_protocol(self.signer());
     let memo = build_memo("pause_protocol", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Unpauses the protocol.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn unpause_protocol(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::unpause_protocol(squads.vault_pda());
+  pub async fn unpause_protocol(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::unpause_protocol(self.signer());
     let memo = build_memo("unpause_protocol", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Pauses the LST pair.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn pause_lst_pair(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::pause_lst_pair(squads.vault_pda());
+  pub async fn pause_lst_pair(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::pause_lst_pair(self.signer());
     let memo = build_memo("pause_lst_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Unpauses the LST pair.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn unpause_lst_pair(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::unpause_lst_pair(squads.vault_pda());
+  pub async fn unpause_lst_pair(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::unpause_lst_pair(self.signer());
     let memo = build_memo("unpause_lst_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Pauses an EXO pair for the given collateral mint.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn pause_exo_pair(
+  pub async fn pause_exo_pair(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::pause_exo_pair(squads.vault_pda(), collateral_mint);
+      instruction_builders::pause_exo_pair(self.signer(), collateral_mint);
     let memo = build_memo("pause_exo_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Unpauses an EXO pair for the given collateral mint.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn unpause_exo_pair(
+  pub async fn unpause_exo_pair(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::unpause_exo_pair(
-      squads.vault_pda(),
-      collateral_mint,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::unpause_exo_pair(self.signer(), collateral_mint);
     let memo = build_memo("unpause_exo_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Pauses the USDC pair.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn pause_usdc_pair(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::pause_usdc_pair(squads.vault_pda());
+  pub async fn pause_usdc_pair(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::pause_usdc_pair(self.signer());
     let memo = build_memo("pause_usdc_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Unpauses the USDC pair.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn unpause_usdc_pair(
-    &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction =
-      instruction_builders::unpause_usdc_pair(squads.vault_pda());
+  pub async fn unpause_usdc_pair(&self) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::unpause_usdc_pair(self.signer());
     let memo = build_memo("unpause_usdc_pair", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the LST buy curve configuration.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_lst_buy_curve_config(
+  pub async fn update_lst_buy_curve_config(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateLstBuyCurveConfig,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_lst_buy_curve_config(
-      squads.vault_pda(),
-      args,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::update_lst_buy_curve_config(self.signer(), args);
     let memo = build_memo("update_lst_buy_curve_config", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::update_lst_buy_curve_config`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_lst_buy_curve_config_direct(
-    &self,
-    args: &args::UpdateLstBuyCurveConfig,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_lst_buy_curve_config(
-      self.program.payer(),
-      args,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Updates the LST sell curve configuration.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_lst_sell_curve_config(
+  pub async fn update_lst_sell_curve_config(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateLstSellCurveConfig,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_lst_sell_curve_config(
-      squads.vault_pda(),
-      args,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::update_lst_sell_curve_config(self.signer(), args);
     let memo = build_memo("update_lst_sell_curve_config", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::update_lst_sell_curve_config`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn update_lst_sell_curve_config_direct(
-    &self,
-    args: &args::UpdateLstSellCurveConfig,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::update_lst_sell_curve_config(
-      self.program.payer(),
-      args,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Updates the yield harvest configuration.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_yield_harvest_config(
+  pub async fn update_yield_harvest_config(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateYieldHarvestConfig,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_yield_harvest_config(
-      squads.vault_pda(),
-      args,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::update_yield_harvest_config(self.signer(), args);
     let memo = build_memo("update_yield_harvest_config", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the USDC oracle confidence tolerance.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_usdc_oracle_conf_tolerance(
+  pub async fn update_usdc_oracle_conf_tolerance(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateUsdcOracleConfTolerance,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_usdc_oracle_conf_tolerance(
-      squads.vault_pda(),
+      self.signer(),
       args,
     );
     let memo = build_memo("update_usdc_oracle_conf_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the USDC oracle staleness interval.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_usdc_oracle_interval(
+  pub async fn update_usdc_oracle_interval(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateUsdcOracleInterval,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::update_usdc_oracle_interval(
-      squads.vault_pda(),
-      args,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::update_usdc_oracle_interval(self.signer(), args);
     let memo = build_memo("update_usdc_oracle_interval", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the USDC mint fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_usdc_mint_fee(
+  pub async fn update_usdc_mint_fee(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateUsdcMintFee,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_usdc_mint_fee(squads.vault_pda(), args);
+      instruction_builders::update_usdc_mint_fee(self.signer(), args);
     let memo = build_memo("update_usdc_mint_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the USDC redeem fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_usdc_redeem_fee(
+  pub async fn update_usdc_redeem_fee(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateUsdcRedeemFee,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_usdc_redeem_fee(squads.vault_pda(), args);
+      instruction_builders::update_usdc_redeem_fee(self.signer(), args);
     let memo = build_memo("update_usdc_redeem_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the USDC par tolerance.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_par_tolerance(
+  pub async fn update_par_tolerance(
     &self,
-    squads: &SquadsContext,
     args: &args::UpdateParTolerance,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_par_tolerance(squads.vault_pda(), args);
+      instruction_builders::update_par_tolerance(self.signer(), args);
     let memo = build_memo("update_par_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the rebalance fee for an LST.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_lst_rebalance_fee(
+  pub async fn update_lst_rebalance_fee(
     &self,
-    squads: &SquadsContext,
     lst_mint: Pubkey,
     args: &args::UpdateLstRebalanceFee,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_lst_rebalance_fee(
-      squads.vault_pda(),
+      self.signer(),
       lst_mint,
       args,
     );
     let memo = build_memo("update_lst_rebalance_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the borrow rate curve for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_borrow_rate_curve(
+  pub async fn update_exo_borrow_rate_curve(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoBorrowRateCurve,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_borrow_rate_curve(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_borrow_rate_curve", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the borrow rate fee for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_borrow_rate_fee(
+  pub async fn update_exo_borrow_rate_fee(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoBorrowRateFee,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_borrow_rate_fee(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_borrow_rate_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the oracle for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_oracle(
+  pub async fn update_exo_oracle(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracle,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_oracle(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_oracle", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the oracle confidence tolerance for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_oracle_conf_tolerance(
+  pub async fn update_exo_oracle_conf_tolerance(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracleConfTolerance,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_oracle_conf_tolerance(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_oracle_conf_tolerance", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the oracle staleness interval for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_oracle_interval(
+  pub async fn update_exo_oracle_interval(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoOracleInterval,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_oracle_interval(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_oracle_interval", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the stablecoin mint threshold for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_stablecoin_mint_threshold(
+  pub async fn update_exo_stablecoin_mint_threshold(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoStablecoinMintThreshold,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
       instruction_builders::update_exo_stablecoin_mint_threshold(
-        squads.vault_pda(),
+        self.signer(),
         collateral_mint,
         args,
       );
     let memo = build_memo("update_exo_stablecoin_mint_threshold", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the buy curve for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_buy_curve(
+  pub async fn update_exo_buy_curve(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoBuyCurve,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_buy_curve(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_buy_curve", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the sell curve for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_sell_curve(
+  pub async fn update_exo_sell_curve(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoSellCurve,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_sell_curve(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_sell_curve", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the levercoin fees for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_levercoin_fees(
+  pub async fn update_exo_levercoin_fees(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoLevercoinFees,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::update_exo_levercoin_fees(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       args,
     );
     let memo = build_memo("update_exo_levercoin_fees", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Updates the levercoin market cap limit for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn update_exo_levercoin_market_cap_limit(
+  pub async fn update_exo_levercoin_market_cap_limit(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     args: &args::UpdateExoLevercoinMarketCapLimit,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
       instruction_builders::update_exo_levercoin_market_cap_limit(
-        squads.vault_pda(),
+        self.signer(),
         collateral_mint,
         args,
       );
     let memo =
       build_memo("update_exo_levercoin_market_cap_limit", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Initializes USDC support.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_usdc(
+  pub async fn initialize_usdc(
     &self,
-    squads: &SquadsContext,
     usdc_usd_pyth_feed: Pubkey,
     args: &args::InitializeUsdc,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_usdc(
-      squads.vault_pda(),
+      self.signer(),
       usdc_usd_pyth_feed,
       args,
     );
     let memo = build_memo("initialize_usdc", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::initialize_usdc`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn initialize_usdc_direct(
-    &self,
-    usdc_usd_pyth_feed: Pubkey,
-    args: &args::InitializeUsdc,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::initialize_usdc(
-      self.program.payer(),
-      usdc_usd_pyth_feed,
-      args,
-    );
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
-  /// Initializes the LST virtual stablecoin.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn initialize_lst_virtual_stablecoin_direct(
-    &self,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::initialize_lst_virtual_stablecoin(
-      self.program.payer(),
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Initializes the LST virtual stablecoin via Squads proposal.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_lst_virtual_stablecoin(
+  pub async fn initialize_lst_virtual_stablecoin(
     &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::initialize_lst_virtual_stablecoin(
-      squads.vault_pda(),
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::initialize_lst_virtual_stablecoin(self.signer());
     let memo = build_memo("initialize_lst_virtual_stablecoin", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Initializes the pool drawdown ledger for the LST pool.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_pool_drawdown_lst(
+  pub async fn initialize_pool_drawdown_lst(
     &self,
-    squads: &SquadsContext,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::initialize_pool_drawdown_lst(squads.vault_pda());
+      instruction_builders::initialize_pool_drawdown_lst(self.signer());
     let memo = build_memo("initialize_pool_drawdown_lst", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Initializes the pool drawdown ledger for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn initialize_pool_drawdown_exo(
+  pub async fn initialize_pool_drawdown_exo(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_pool_drawdown_exo(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
     );
     let memo = build_memo("initialize_pool_drawdown_exo", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Registers an exo collateral.
@@ -923,13 +810,12 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub async fn register_exo(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     exo_usd_pyth_feed: Pubkey,
     args: &args::RegisterExo,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::register_exo(
-      squads.vault_pda(),
+      self.signer(),
       collateral_mint,
       exo_usd_pyth_feed,
       args,
@@ -938,7 +824,7 @@ impl ExchangeClient {
     let exchange_lut = self.load_lookup_table(&HYLO_LOOKUP_TABLE).await?;
     let inner =
       VersionedTransactionData::new(vec![instruction], vec![exchange_lut]);
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Seeds an empty exo pair with its initial collateral, minting
@@ -946,14 +832,13 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn genesis_mint_exo(
+  pub async fn genesis_mint_exo(
     &self,
-    squads: &SquadsContext,
     collateral_mint: Pubkey,
     collateral_usd_pyth_feed: Pubkey,
     args: &args::GenesisMintExo,
-  ) -> Result<SquadsTransactionData> {
-    let vault = squads.vault_pda();
+  ) -> Result<SignedTransaction> {
+    let vault = self.signer();
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
     let dead_levercoin_ata =
       ata_instruction(&vault, &pda::DEAD, &levercoin_mint);
@@ -969,7 +854,7 @@ impl ExchangeClient {
       vec![dead_levercoin_ata, dead_stablecoin_ata, instruction],
       vec![],
     );
-    squads.build_proposal(&inner, self.program.payer(), memo)
+    self.sign(inner, memo).await
   }
 
   /// Withdraws accumulated fees to the treasury.
@@ -1047,78 +932,40 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn propose_address_update(
+  pub async fn propose_address_update(
     &self,
-    squads: &SquadsContext,
     address_field: AddressField,
     new_address: Pubkey,
     ttl_secs: u64,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::propose_address_update(
-      squads.vault_pda(),
+      self.signer(),
       address_field,
       new_address,
       ttl_secs,
     );
     let memo = build_memo("propose_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::propose_address_update`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn propose_address_update_direct(
-    &self,
-    address_field: AddressField,
-    new_address: Pubkey,
-    ttl_secs: u64,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::propose_address_update(
-      self.program.payer(),
-      address_field,
-      new_address,
-      ttl_secs,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Approves an outstanding address update proposal.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn approve_address_update(
+  pub async fn approve_address_update(
     &self,
-    squads: &SquadsContext,
     new_address: Pubkey,
     address_field: AddressField,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::approve_address_update(
-      squads.vault_pda(),
+      self.signer(),
       new_address,
       address_field,
     );
     let memo = build_memo("approve_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::approve_address_update`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn approve_address_update_direct(
-    &self,
-    new_address: Pubkey,
-    address_field: AddressField,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::approve_address_update(
-      self.program.payer(),
-      new_address,
-      address_field,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Accepts an approved address update proposal. Rent on the proposal
@@ -1126,69 +973,33 @@ impl ExchangeClient {
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn accept_address_update(
+  pub async fn accept_address_update(
     &self,
-    squads: &SquadsContext,
     admin: Pubkey,
     address_field: AddressField,
-  ) -> Result<SquadsTransactionData> {
+  ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::accept_address_update(
-      squads.vault_pda(),
+      self.signer(),
       admin,
       address_field,
     );
     let memo = build_memo("accept_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::accept_address_update`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn accept_address_update_direct(
-    &self,
-    admin: Pubkey,
-    address_field: AddressField,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::accept_address_update(
-      self.program.payer(),
-      admin,
-      address_field,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 
   /// Cancels an outstanding address update proposal.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub fn cancel_address_update(
+  pub async fn cancel_address_update(
     &self,
-    squads: &SquadsContext,
     address_field: AddressField,
-  ) -> Result<SquadsTransactionData> {
-    let instruction = instruction_builders::cancel_address_update(
-      squads.vault_pda(),
-      address_field,
-    );
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::cancel_address_update(self.signer(), address_field);
     let memo = build_memo("cancel_address_update", &instruction);
     let inner = VersionedTransactionData::one(instruction);
-    squads.build_proposal(&inner, self.program.payer(), memo)
-  }
-
-  /// Direct variant of [`Self::cancel_address_update`].
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn cancel_address_update_direct(
-    &self,
-    address_field: AddressField,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::cancel_address_update(
-      self.program.payer(),
-      address_field,
-    );
-    Ok(VersionedTransactionData::one(instruction))
+    self.sign(inner, memo).await
   }
 }

@@ -15,4 +15,5 @@ pub use crate::program_client::{ProgramClient, VersionedTransactionData};
 pub use crate::router_client::{
   InstructionBuilder, InstructionBuilderExt, RouterArgs, RouterClient,
 };
+pub use crate::signing::{SignedTransaction, SigningClient, SigningMethod};
 pub use crate::transaction::{BuildTransactionData, TransactionSyntax};

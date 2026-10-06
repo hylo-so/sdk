@@ -38,6 +38,7 @@ pub mod memo;
 pub mod prelude;
 pub mod program_client;
 pub mod router_client;
+pub mod signing;
 pub mod squads;
 pub mod transaction;
 pub mod util;
