@@ -85,11 +85,12 @@ pub trait SigningClient: ProgramClient {
 
 #[cfg(test)]
 mod tests {
-  use crate::program_client::VersionedTransactionData;
-  use crate::squads::SquadsContext;
   use anchor_client::solana_sdk::instruction::Instruction;
   use anchor_client::solana_sdk::pubkey::Pubkey;
   use anyhow::Result;
+
+  use crate::program_client::VersionedTransactionData;
+  use crate::squads::SquadsContext;
 
   #[test]
   fn squads_proposal_wraps_the_inner_transaction() -> Result<()> {
