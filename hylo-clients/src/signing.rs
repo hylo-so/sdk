@@ -7,7 +7,7 @@ use crate::program_client::{ProgramClient, VersionedTransactionData};
 use crate::squads::{SquadsContext, SquadsTransactionData};
 
 /// Selects how an administrative instruction is authorized and submitted.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum SigningMethod {
   /// The client's payer signs and submits the instruction directly.
   #[default]
@@ -16,7 +16,8 @@ pub enum SigningMethod {
   Squads { multisig: Pubkey, vault_index: u8 },
 }
 
-/// A completed administrative transaction ready for CLI-specific handling.
+/// An administrative transaction signed directly or wrapped in a Squads
+/// proposal.
 pub enum SignedTransaction {
   /// A normal transaction signed by the client's payer.
   Direct(VersionedTransactionData),
