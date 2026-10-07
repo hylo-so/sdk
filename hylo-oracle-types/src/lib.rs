@@ -16,8 +16,9 @@ pub mod state;
 
 pub use constants::{MAX_EXPONENT, MICROS_PER_SECOND, MIN_EXPONENT};
 pub use feeds::{
-  FeedConfig, OracleSource, PythCoreFeedId, PythLazerFeedId, BTC_USD_FEED_ID,
-  FEEDS, LAZER_CHANNEL, SOL_USD_FEED_ID, USDC_USD_FEED_ID,
+  ChainlinkDataStreamsFeedId, FeedConfig, OracleSource, PythCoreFeedId,
+  PythLazerFeedId, BTC_USD_FEED_ID, FEEDS, LAZER_CHANNEL, SOL_USD_FEED_ID,
+  USDC_USD_FEED_ID,
 };
 pub use seeds::OBSERVATION;
 pub use state::OracleObservation;

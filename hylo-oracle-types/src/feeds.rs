@@ -21,6 +21,7 @@ pub const LAZER_CHANNEL: u8 = 4;
 pub enum OracleSource {
   PythCore,
   PythLazer,
+  ChainlinkDataStreams,
 }
 
 /// Pyth Core feed id (Pyth's 32-byte identifier).
@@ -30,6 +31,10 @@ pub struct PythCoreFeedId(pub [u8; 32]);
 /// Pyth Lazer feed id (Lazer's numeric identifier).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PythLazerFeedId(pub u32);
+
+/// Chainlink Data Streams feed id (the verified report's 32-byte id).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ChainlinkDataStreamsFeedId(pub [u8; 32]);
 
 /// Registry feed ids; each equals the asset's index in `FEEDS`.
 pub const SOL_USD_FEED_ID: u16 = 0;
@@ -42,6 +47,7 @@ pub struct FeedConfig {
   pub pyth_core: PythCoreFeedId,
   pub pyth_lazer: PythLazerFeedId,
   pub pyth_lazer_channel: u8,
+  pub chainlink_data_streams: ChainlinkDataStreamsFeedId,
 }
 
 impl FeedConfig {
@@ -60,6 +66,13 @@ impl FeedConfig {
       .iter()
       .find(|cfg| cfg.pyth_lazer == feed && cfg.pyth_lazer_channel == channel)
   }
+
+  #[must_use]
+  pub fn by_chainlink_data_streams(
+    feed: ChainlinkDataStreamsFeedId,
+  ) -> Option<&'static Self> {
+    FEEDS.iter().find(|cfg| cfg.chainlink_data_streams == feed)
+  }
 }
 
 /// Curated feed registry: the single source of truth for feed identity and the
@@ -74,6 +87,10 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: PythLazerFeedId(6),
     pyth_lazer_channel: LAZER_CHANNEL,
+    // Chainlink Data Streams SOL/USD V3 feed id.
+    chainlink_data_streams: ChainlinkDataStreamsFeedId(hex!(
+      "0003b778d3f6b2ac4991302b89cb313f99a42467d6c9c5f96f57c29c0d2bc24f"
+    )),
   },
   // id 1 — BTC/USD (cbBTC collateral).
   FeedConfig {
@@ -84,6 +101,10 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: PythLazerFeedId(1),
     pyth_lazer_channel: LAZER_CHANNEL,
+    // Chainlink Data Streams BTC/USD V3 feed id.
+    chainlink_data_streams: ChainlinkDataStreamsFeedId(hex!(
+      "00039d9e45394f473ab1f050a1b963e6b05351e52d71e507509ada0c95ed75b8"
+    )),
   },
   // id 2 — USDC/USD (USDC pair).
   FeedConfig {
@@ -94,6 +115,10 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: PythLazerFeedId(7),
     pyth_lazer_channel: LAZER_CHANNEL,
+    // Chainlink Data Streams USDC/USD V3 feed id.
+    chainlink_data_streams: ChainlinkDataStreamsFeedId(hex!(
+      "00038f83323b6b08116d1614cf33a9bd71ab5e0abf0c9f1b783a74a43e7bd992"
+    )),
   },
 ];
 
@@ -143,6 +168,17 @@ mod tests {
       .collect::<std::collections::HashSet<_>>()
       .len();
     assert_eq!(count, unique, "duplicate (pyth_lazer, channel) in FEEDS");
+  }
+
+  #[test]
+  fn chainlink_data_streams_feed_ids_are_unique_and_bound() {
+    let count = FEEDS.len();
+    let unique = FEEDS
+      .iter()
+      .map(|feed| feed.chainlink_data_streams.0)
+      .collect::<std::collections::HashSet<_>>()
+      .len();
+    assert_eq!(count, unique, "duplicate Chainlink Data Streams feed id");
   }
 
   #[test]
