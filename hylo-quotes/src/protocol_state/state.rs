@@ -412,7 +412,7 @@ fn build_usdc_exchange_state(
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
 
-  let reserve_gate = ReserveGate::new(
+  let reserve_gate = ReserveGate::validated(
     usdc_pair.reserve_gate.reserve_per_tvl.into(),
     usdc_pair.reserve_gate.tvl_cap.into(),
   )?;
