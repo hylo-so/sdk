@@ -72,7 +72,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   /// USDC available to a rebalance buy after the pair's reserve.
   fn usdc_rebalance_buy_liquidity(
     &self,
-    pair_size_usd: UFix64<N6>,
+    pair_size_usd: UFix64<N9>,
   ) -> Result<UFix64<N6>, CoreError> {
     let usdc_state = self.usdc_exchange_state();
     let min_usdc_reserve =
@@ -1272,11 +1272,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       out_amount <= self.usdc_exchange_state().vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
-    let pair_size_usd = self
-      .exchange_context
-      .total_value_locked()?
-      .checked_convert_ceil::<N6>()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+    let pair_size_usd = self.exchange_context.total_value_locked()?;
     gate(
       out_amount <= self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
       CoreError::InsufficientLiquidity,
@@ -1352,11 +1348,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.exchange_context.rebalance_buy_target()?,
       epoch,
     )?;
-    let pair_size_usd = self
-      .exchange_context
-      .total_value_locked()?
-      .checked_convert_ceil::<N6>()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+    let pair_size_usd = self.exchange_context.total_value_locked()?;
     let input_cap = self
       .exchange_context
       .rebalance_buy_conversion(&adjusted, UFix64::zero())?
@@ -1540,11 +1532,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       out_amount <= self.usdc_exchange_state().vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
-    let pair_size_usd = pair
-      .context
-      .total_value_locked()?
-      .checked_convert_ceil::<N6>()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+    let pair_size_usd = pair.context.total_value_locked()?;
     gate(
       out_amount <= self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
       CoreError::InsufficientLiquidity,
@@ -1573,10 +1561,7 @@ impl<C: SolanaClock> ProtocolState<C> {
   {
     let exo = &self.exo_pair::<E>()?.context;
     let buy_target = exo.rebalance_buy_target()?;
-    let pair_size_usd = exo
-      .total_value_locked()?
-      .checked_convert_ceil::<N6>()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+    let pair_size_usd = exo.total_value_locked()?;
     let input_cap = exo
       .rebalance_buy_conversion(UFix64::zero())?
       .max_exo_for_token(
