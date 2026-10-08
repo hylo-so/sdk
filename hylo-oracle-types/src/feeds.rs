@@ -48,6 +48,7 @@ pub struct FeedConfig {
   pub pyth_lazer: PythLazerFeedId,
   pub pyth_lazer_channel: u8,
   pub chainlink_data_streams: ChainlinkDataStreamsFeedId,
+  pub chainlink_data_streams_decimals: u8,
 }
 
 impl FeedConfig {
@@ -91,6 +92,7 @@ pub const FEEDS: &[FeedConfig] = &[
     chainlink_data_streams: ChainlinkDataStreamsFeedId(hex!(
       "0003b778d3f6b2ac4991302b89cb313f99a42467d6c9c5f96f57c29c0d2bc24f"
     )),
+    chainlink_data_streams_decimals: 18,
   },
   // id 1 — BTC/USD (cbBTC collateral).
   FeedConfig {
@@ -105,6 +107,7 @@ pub const FEEDS: &[FeedConfig] = &[
     chainlink_data_streams: ChainlinkDataStreamsFeedId(hex!(
       "00039d9e45394f473ab1f050a1b963e6b05351e52d71e507509ada0c95ed75b8"
     )),
+    chainlink_data_streams_decimals: 18,
   },
   // id 2 — USDC/USD (USDC pair).
   FeedConfig {
@@ -119,6 +122,7 @@ pub const FEEDS: &[FeedConfig] = &[
     chainlink_data_streams: ChainlinkDataStreamsFeedId(hex!(
       "00038f83323b6b08116d1614cf33a9bd71ab5e0abf0c9f1b783a74a43e7bd992"
     )),
+    chainlink_data_streams_decimals: 18,
   },
 ];
 
