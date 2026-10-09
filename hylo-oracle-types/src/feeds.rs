@@ -44,6 +44,8 @@ pub struct FeedConfig {
   /// Optional while an asset is sourced from Pyth Core only.
   pub pyth_lazer: Option<PythLazerFeedId>,
   pub pyth_lazer_channel: Option<u8>,
+  /// Maximum off-market price movement, in basis points. Zero disables the off-market band.
+  pub off_market_band_bps: u16,
 }
 
 impl FeedConfig {
@@ -76,6 +78,7 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: Some(PythLazerFeedId(6)),
     pyth_lazer_channel: Some(LAZER_CHANNEL),
+    off_market_band_bps: 200,
   },
   // id 1 — BTC/USD (cbBTC collateral).
   FeedConfig {
@@ -86,6 +89,7 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: Some(PythLazerFeedId(1)),
     pyth_lazer_channel: Some(LAZER_CHANNEL),
+    off_market_band_bps: 200,
   },
   // id 2 — USDC/USD (USDC pair).
   FeedConfig {
@@ -96,6 +100,7 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: Some(PythLazerFeedId(7)),
     pyth_lazer_channel: Some(LAZER_CHANNEL),
+    off_market_band_bps: 200,
   },
   // id 3 — HYPE/USD. Main already supports the HYPE exo pair. Keep its
   // verified Core feed during the migration; no Lazer id is configured until
@@ -107,6 +112,7 @@ pub const FEEDS: &[FeedConfig] = &[
     )),
     pyth_lazer: None,
     pyth_lazer_channel: None,
+    off_market_band_bps: 200,
   },
 ];
 
@@ -166,6 +172,14 @@ mod tests {
         .count(),
       unique,
       "duplicate (pyth_lazer, channel) in FEEDS"
+    );
+  }
+
+  #[test]
+  fn off_market_price_bands_are_expressed_in_basis_points() {
+    assert!(
+      FEEDS.iter().all(|feed| feed.off_market_band_bps <= 10_000),
+      "an off-market price band cannot exceed 100%"
     );
   }
 
