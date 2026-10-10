@@ -9,7 +9,7 @@ const_assert_eq!(OracleObservation::INIT_SPACE, 108);
 /// price/exponent/confidence layout mirrors Pyth's `PriceFeedMessage` field for
 /// field (raw ints sharing one exponent) rather than `UFixValue64`, because
 /// this is a source-neutral facts record; typed conversion is the consumer's
-/// job. Populated iff `price_timestamp_us != 0`. Consumers gate freshness on
+/// job. Populated if `price_timestamp_us != 0`. Consumers gate freshness on
 /// `price_timestamp_us` (the price-determination time, not `posted_slot`),
 /// confidence on `confidence`, and must pin the account by PDA address.
 #[account]
