@@ -84,7 +84,37 @@ mod tests {
   use super::*;
 
   #[test]
-  fn caps_tvl_before_computing_reserve() -> Result<(), CoreError> {
+  fn applies_ratio_below_cap() -> Result<(), CoreError> {
+    let gate = ReserveGate::validated(
+      UFixValue64::new(50_000_000, -9),
+      UFixValue64::new(10_000_000_000_000_000, -9),
+    )?;
+    let tvl = UFix64::<N9>::new(5_000_000_000_000_000);
+
+    assert_eq!(
+      gate.required_reserve(tvl)?,
+      UFix64::<N6>::new(250_000_000_000)
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn rounds_reserve_up() -> Result<(), CoreError> {
+    let gate = ReserveGate::validated(
+      UFixValue64::new(50_000_000, -9),
+      UFixValue64::new(10_000_000_000_000_000, -9),
+    )?;
+    let tvl = UFix64::<N9>::new(5_000_000_000_000_001);
+
+    assert_eq!(
+      gate.required_reserve(tvl)?,
+      UFix64::<N6>::new(250_000_000_001)
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn plateaus_at_cap() -> Result<(), CoreError> {
     let gate = ReserveGate::validated(
       UFixValue64::new(50_000_000, -9),
       UFixValue64::new(10_000_000_000_000_000, -9),
@@ -99,7 +129,7 @@ mod tests {
   }
 
   #[test]
-  fn zero_cap_leaves_tvl_uncapped() -> Result<(), CoreError> {
+  fn zero_cap_disables_plateau() -> Result<(), CoreError> {
     let gate = ReserveGate::validated(
       UFixValue64::new(50_000_000, -9),
       UFixValue64::new(0, -9),
@@ -114,7 +144,7 @@ mod tests {
   }
 
   #[test]
-  fn rejects_a_reserve_ratio_above_one() {
+  fn rejects_ratio_above_one() {
     assert_eq!(
       ReserveGate::validated(
         UFixValue64::new(1_000_000_001, -9),
