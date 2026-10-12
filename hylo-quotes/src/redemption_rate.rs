@@ -263,7 +263,7 @@ fn usdc_lane<C: SolanaClock>(
     reference_hyusd,
   )?
   .out_amount;
-  let spot = state.usdc_exchange_state.usdc_usd_spot.min(UFix64::one());
+  let spot = state.usdc_exchange_state.usdc_usd_spot?.min(UFix64::one());
   let usd_out = amount_out
     .checked_convert::<N9>()
     .and_then(|usdc| usdc.mul_floor(spot))

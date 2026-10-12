@@ -43,8 +43,9 @@ pub struct UsdcExchangeState {
   pub vault_balance: UFix64<N6>,
   /// Virtual stablecoin counter for the USDC pair
   pub virtual_stablecoin: VirtualStablecoin,
-  /// USDC/USD spot price, gated against par
-  pub usdc_usd_spot: UFix64<N9>,
+  /// USDC/USD spot price gated against par, or the oracle validation error
+  /// that rejected it. A rejected oracle disables USDC routes only.
+  pub usdc_usd_spot: Result<UFix64<N9>, CoreError>,
   /// Tolerated distance from par for the USDC pair
   pub par_tolerance: ParTolerance,
 }
@@ -387,7 +388,8 @@ where
 /// Builds USDC exchange state from protocol accounts.
 ///
 /// # Errors
-/// * Deserialization or oracle failure
+/// * Deserialization failure. Oracle validation failure is kept in
+///   `usdc_usd_spot` so it cannot fail the whole protocol state.
 fn build_usdc_exchange_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
@@ -402,7 +404,8 @@ fn build_usdc_exchange_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_oracle = query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
+  let usdc_usd_spot = query_pyth_oracle(clock, &usdc_usd, oracle_config)
+    .map(|oracle| oracle.spot);
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
 
@@ -415,7 +418,7 @@ fn build_usdc_exchange_state(
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin,
-    usdc_usd_spot: usdc_oracle.spot,
+    usdc_usd_spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
   })
 }

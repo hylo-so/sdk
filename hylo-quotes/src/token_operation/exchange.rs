@@ -57,7 +57,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     gate(!usdc_state.paused, CoreError::PairPaused)?;
     usdc_state
       .par_tolerance
-      .validate_spot(usdc_state.usdc_usd_spot)
+      .validate_spot(usdc_state.usdc_usd_spot?)
   }
 
   /// USDC the vault can pay out against the virtual stablecoin supply.
