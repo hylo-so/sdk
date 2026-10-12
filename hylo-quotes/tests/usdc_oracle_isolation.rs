@@ -120,7 +120,7 @@ fn wide_confidence_preserves_independent_redemptions_and_rejects_usdc() {
 fn stale_usdc_preserves_its_error_for_both_routes() {
   let mut accounts = accounts();
   rewrite_usdc(&mut accounts, |oracle| {
-    oracle.price_message.publish_time = 0;
+    oracle.price_message.publish_time = 1;
   });
   let state = ProtocolState::<Clock>::try_from(&accounts).unwrap();
   assert!(matches!(
