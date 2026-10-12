@@ -271,6 +271,7 @@ mod tests {
   use anchor_lang::prelude::Pubkey;
   use anchor_spl::token::spl_token::solana_program::program_pack::Pack;
   use anchor_spl::token::spl_token::state::Mint as SplMint;
+  use anchor_spl::token_2022::spl_token_2022::extension::ExtensionType::{ConfidentialMintBurn, NonTransferable};
   use anchor_spl::token_2022::spl_token_2022::extension::interest_bearing_mint::InterestBearingConfig;
   use anchor_spl::token_2022::spl_token_2022::extension::metadata_pointer::MetadataPointer;
   use anchor_spl::token_2022::spl_token_2022::extension::scaled_ui_amount::ScaledUiAmountConfig;
