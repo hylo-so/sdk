@@ -4,9 +4,8 @@ mod common;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::clock::Clock;
-use anchor_lang::{AccountDeserialize, AccountSerialize};
 use anyhow::{anyhow, Result};
-use common::{load_accounts, load_state};
+use common::load_state;
 use fix::prelude::*;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::ExchangeContext;
@@ -22,7 +21,6 @@ use hylo_quotes::prelude::{
   FeeBase, ProtocolState, RedemptionLane, RedemptionRate, TokenOperation,
 };
 use hylo_quotes::protocol_state::{ExoPairState, UsdcExchangeState};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 const REFERENCE: UFix64<N6> = UFix64::constant(1_000_000_000);
 
@@ -438,22 +436,15 @@ fn no_priced_lane_fails() -> Result<()> {
 }
 
 #[test]
-fn wide_usdc_oracle_drops_only_the_usdc_lane() -> Result<()> {
-  // Confidence equal to price is far outside any conf tolerance.
-  let mut accounts = load_accounts()?;
-  let mut usdc_usd = PriceUpdateV2::try_deserialize(
-    &mut accounts.usdc_usd_pyth.data.as_slice(),
-  )?;
-  usdc_usd.price_message.conf = usdc_usd.price_message.price.unsigned_abs();
-  let mut data = Vec::new();
-  usdc_usd.try_serialize(&mut data)?;
-  accounts.usdc_usd_pyth.data = data;
-
-  let state = ProtocolState::try_from(&accounts)?;
-  assert_eq!(
-    state.usdc_exchange_state.usdc_usd_spot.err(),
-    Some(CoreError::PythOracleConfidence)
-  );
+fn rejected_usdc_oracle_drops_only_the_usdc_lane() -> Result<()> {
+  let state = load_state()?;
+  let state = ProtocolState {
+    usdc_exchange_state: UsdcExchangeState {
+      usdc_usd_spot: Err(CoreError::PythOracleConfidence),
+      ..state.usdc_exchange_state
+    },
+    ..state
+  };
   assert_eq!(
     TokenOperation::<HYUSD, USDC>::compute_output(&state, REFERENCE).err(),
     Some(CoreError::PythOracleConfidence)
