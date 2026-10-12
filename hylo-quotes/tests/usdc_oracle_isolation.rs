@@ -52,23 +52,29 @@ fn accounts() -> ProtocolAccounts {
   }
 }
 
-fn rewrite_usdc(
-  accounts: &mut ProtocolAccounts,
-  update: impl FnOnce(&mut PriceUpdateV2),
-) {
-  let mut oracle =
-    PriceUpdateV2::try_deserialize(&mut accounts.usdc_usd_pyth.data.as_slice())
-      .unwrap();
-  update(&mut oracle);
-  accounts.usdc_usd_pyth.data.clear();
-  oracle
-    .try_serialize(&mut accounts.usdc_usd_pyth.data)
-    .unwrap();
+fn with_oracle(
+  accounts: ProtocolAccounts,
+  oracle: &PriceUpdateV2,
+) -> ProtocolAccounts {
+  let mut data = Vec::new();
+  oracle.try_serialize(&mut data).unwrap();
+  ProtocolAccounts {
+    usdc_usd_pyth: Account {
+      data,
+      ..accounts.usdc_usd_pyth
+    },
+    ..accounts
+  }
+}
+
+fn usdc_oracle(accounts: &ProtocolAccounts) -> PriceUpdateV2 {
+  PriceUpdateV2::try_deserialize(&mut accounts.usdc_usd_pyth.data.as_slice())
+    .unwrap()
 }
 
 #[test]
 fn wide_confidence_preserves_independent_redemptions_and_rejects_usdc() {
-  let mut accounts = accounts();
+  let accounts = accounts();
   let healthy = ProtocolState::<Clock>::try_from(&accounts).unwrap();
   let hyusd = healthy
     .output::<HYUSD, JITOSOL>(UFix64::new(1_000_000))
@@ -78,12 +84,18 @@ fn wide_confidence_preserves_independent_redemptions_and_rejects_usdc() {
     .unwrap();
   let stable_nav = healthy.exchange_context.stablecoin_nav().unwrap();
   let lever_nav = healthy.exchange_context.levercoin_redeem_nav().unwrap();
-  rewrite_usdc(&mut accounts, |oracle| {
-    oracle.price_message.conf = oracle.price_message.price.unsigned_abs();
-  });
-  let degraded = ProtocolState::<Clock>::try_from(&accounts).unwrap();
+  let oracle = usdc_oracle(&accounts);
+  let wide = PriceUpdateV2 {
+    price_message: pyth_solana_receiver_sdk::price_update::PriceFeedMessage {
+      conf: oracle.price_message.price.unsigned_abs(),
+      ..oracle.price_message
+    },
+    ..oracle
+  };
+  let degraded =
+    ProtocolState::<Clock>::try_from(&with_oracle(accounts, &wide)).unwrap();
   assert_eq!(
-    degraded.usdc_exchange_state.usdc_usd_price,
+    degraded.usdc_exchange_state.usdc_usd_oracle,
     Err(CoreError::PythOracleConfidence)
   );
   assert_eq!(
@@ -118,11 +130,18 @@ fn wide_confidence_preserves_independent_redemptions_and_rejects_usdc() {
 
 #[test]
 fn stale_usdc_preserves_its_error_for_both_routes() {
-  let mut accounts = accounts();
-  rewrite_usdc(&mut accounts, |oracle| {
-    oracle.price_message.publish_time = 1;
-  });
-  let state = ProtocolState::<Clock>::try_from(&accounts).unwrap();
+  let accounts = accounts();
+  let oracle = usdc_oracle(&accounts);
+  let outdated = PriceUpdateV2 {
+    price_message: pyth_solana_receiver_sdk::price_update::PriceFeedMessage {
+      publish_time: 1,
+      ..oracle.price_message
+    },
+    ..oracle
+  };
+  let state =
+    ProtocolState::<Clock>::try_from(&with_oracle(accounts, &outdated))
+      .unwrap();
   assert!(matches!(
     state.output::<USDC, HYUSD>(UFix64::new(1_000_000)),
     Err(CoreError::PythOracleOutdated)
@@ -135,14 +154,21 @@ fn stale_usdc_preserves_its_error_for_both_routes() {
 
 #[test]
 fn malformed_usdc_accounts_are_fatal() {
-  for field in ["pair", "oracle", "vault"] {
-    let mut accounts = accounts();
-    match field {
-      "pair" => accounts.usdc_pair.data.clear(),
-      "oracle" => accounts.usdc_usd_pyth.data.clear(),
-      "vault" => accounts.usdc_vault.data.clear(),
-      _ => unreachable!(),
-    }
-    assert!(ProtocolState::<Clock>::try_from(&accounts).is_err());
+  let accounts = accounts();
+  for malformed in [
+    ProtocolAccounts {
+      usdc_pair: Account::default(),
+      ..accounts.clone()
+    },
+    ProtocolAccounts {
+      usdc_usd_pyth: Account::default(),
+      ..accounts.clone()
+    },
+    ProtocolAccounts {
+      usdc_vault: Account::default(),
+      ..accounts
+    },
+  ] {
+    assert!(ProtocolState::<Clock>::try_from(&malformed).is_err());
   }
 }
