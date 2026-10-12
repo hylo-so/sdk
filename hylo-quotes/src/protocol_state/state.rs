@@ -43,8 +43,8 @@ pub struct UsdcExchangeState {
   pub vault_balance: UFix64<N6>,
   /// Virtual stablecoin counter for the USDC pair
   pub virtual_stablecoin: VirtualStablecoin,
-  /// USDC/USD spot price gated against par, or the oracle validation error
-  /// that rejected it. A rejected oracle disables USDC routes only.
+  /// USDC/USD spot price, or the oracle validation error that rejected it.
+  /// A rejected oracle disables USDC routes only.
   pub usdc_usd_spot: Result<UFix64<N9>, CoreError>,
   /// Tolerated distance from par for the USDC pair
   pub par_tolerance: ParTolerance,
@@ -388,8 +388,7 @@ where
 /// Builds USDC exchange state from protocol accounts.
 ///
 /// # Errors
-/// * Deserialization failure. Oracle validation failure is kept in
-///   `usdc_usd_spot` so it cannot fail the whole protocol state.
+/// * Deserialization or oracle failure
 fn build_usdc_exchange_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
