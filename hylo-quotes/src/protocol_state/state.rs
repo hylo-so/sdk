@@ -22,6 +22,7 @@ use hylo_core::pyth::{
   query_pyth_oracle, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
 };
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
+use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYLOSOL, HYPE, JITOSOL};
@@ -48,6 +49,8 @@ pub struct UsdcExchangeState {
   pub usdc_usd_spot: Result<UFix64<N9>, CoreError>,
   /// Tolerated distance from par for the USDC pair
   pub par_tolerance: ParTolerance,
+  /// Reserve policy for collateral-to-USDC rebalances.
+  pub reserve_gate: ReserveGate,
 }
 
 /// Tests a feed publish time against the tightened stablecoin oracle window.
@@ -411,6 +414,11 @@ fn build_usdc_exchange_state(
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
 
+  let reserve_gate = ReserveGate::new(
+    usdc_pair.reserve_gate.reserve_per_tvl.into(),
+    usdc_pair.reserve_gate.tvl_cap.into(),
+  )?;
+
   Ok(UsdcExchangeState {
     mint_fee: usdc_pair.mint_fee.try_into()?,
     redeem_fee: usdc_pair.redeem_fee.try_into()?,
@@ -419,6 +427,7 @@ fn build_usdc_exchange_state(
     virtual_stablecoin,
     usdc_usd_spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
+    reserve_gate,
   })
 }
 
