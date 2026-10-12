@@ -1,0 +1,33 @@
+name: Production SDK backport CI
+
+on:
+  pull_request:
+    branches: [agent/multi-exo-quote-additive]
+
+permissions:
+  contents: read
+
+jobs:
+  compatible-sdk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure OpenSSL build dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+      - name: Select the production application's Rust toolchain
+        run: rustup toolchain install 1.96.0 --profile minimal --component rustfmt,clippy && rustup default 1.96.0
+      - name: Formatting
+        run: cargo fmt --all -- --check
+      - name: Build the unchanged production account layouts
+        run: cargo build --workspace --locked
+      - name: Lint
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Default deployment tests
+        run: cargo test --workspace --exclude hylo-jupiter --locked
+      - name: Shadow deployment tests
+        run: cargo test --workspace --exclude hylo-jupiter --features shadow --locked

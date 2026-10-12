@@ -33,8 +33,9 @@ use crate::LST;
 /// USDC exchange state for stablecoin mint/redeem.
 #[derive(Clone)]
 pub struct UsdcExchangeState {
-  /// USDC/USD oracle price range
-  pub usdc_usd_price: hylo_core::pyth::PriceRange<N9>,
+  /// USDC/USD oracle price range, or the validation error rejecting it.
+  /// An invalid oracle disables USDC routes without blocking other pairs.
+  pub usdc_usd_price: Result<hylo_core::pyth::PriceRange<N9>, CoreError>,
   /// Swap fee extracted on USDC operations
   pub swap_fee: UFix64<N4>,
   /// USDC pair pause flag
@@ -46,12 +47,14 @@ pub struct UsdcExchangeState {
 }
 
 impl UsdcExchangeState {
-  /// Builds the USDC stablecoin conversion from stored price range.
-  #[must_use]
-  pub fn conversion(&self) -> UsdcStablecoinConversion {
-    UsdcStablecoinConversion {
-      usdc_usd_price: self.usdc_usd_price,
-    }
+  /// Builds the USDC stablecoin conversion from the validated price range.
+  ///
+  /// # Errors
+  /// * The oracle validation error stored when building state
+  pub fn conversion(&self) -> Result<UsdcStablecoinConversion, CoreError> {
+    Ok(UsdcStablecoinConversion {
+      usdc_usd_price: self.usdc_usd_price?,
+    })
   }
 }
 
@@ -460,7 +463,8 @@ where
 /// Builds USDC exchange state from protocol accounts.
 ///
 /// # Errors
-/// * Deserialization or oracle failure
+/// * Deserialization, fee, or virtual supply failure. Oracle validation
+///   failures are retained in `usdc_usd_price` for USDC routes only.
 fn build_usdc_exchange_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
@@ -475,9 +479,9 @@ fn build_usdc_exchange_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_oracle =
-    hylo_core::pyth::query_pyth_oracle(clock, &usdc_usd, oracle_config)?;
-  let usdc_usd_price = usdc_oracle.price_range()?;
+  let usdc_usd_price =
+    hylo_core::pyth::query_pyth_oracle(clock, &usdc_usd, oracle_config)
+      .and_then(|oracle| oracle.price_range());
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
 
