@@ -138,13 +138,10 @@ mod tests {
   fn route_instructions_match_anchor_defaults() {
     let route = Sha256::new().update(b"global:route").finalize();
     let route_v2 = Sha256::new().update(b"global:route_v2").finalize();
-    assert_eq!(&router::client::args::Route::DISCRIMINATOR[..], &route[..8]);
+    assert_eq!(router::client::args::Route::DISCRIMINATOR, &route[..8]);
     assert!(router::client::accounts::Route {}
       .to_account_metas(None)
       .is_empty());
-    assert_eq!(
-      &router::client::args::RouteV2::DISCRIMINATOR[..],
-      &route_v2[..8]
-    );
+    assert_eq!(router::client::args::RouteV2::DISCRIMINATOR, &route_v2[..8]);
   }
 }
