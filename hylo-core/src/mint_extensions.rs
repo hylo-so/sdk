@@ -5,14 +5,13 @@ use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{
 };
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::TransferHook as TransferHookConfig;
 use anchor_spl::token_2022::spl_token_2022::extension::ExtensionType::{
-  ConfidentialTransferAccount,
-  ConfidentialTransferFeeAmount, ConfidentialTransferFeeConfig,
-  ConfidentialTransferMint, CpiGuard, DefaultAccountState, GroupMemberPointer,
-  GroupPointer, ImmutableOwner, InterestBearingConfig, MemoTransfer,
-  MetadataPointer, MintCloseAuthority, NonTransferableAccount,
-  Pausable, PausableAccount, PermanentDelegate, ScaledUiAmount, TokenGroup,
-  TokenGroupMember, TokenMetadata, TransferFeeAmount, TransferFeeConfig,
-  TransferHook, TransferHookAccount,
+  ConfidentialTransferAccount, ConfidentialTransferFeeAmount,
+  ConfidentialTransferFeeConfig, ConfidentialTransferMint, CpiGuard,
+  DefaultAccountState, GroupMemberPointer, GroupPointer, ImmutableOwner,
+  InterestBearingConfig, MemoTransfer, MetadataPointer, MintCloseAuthority,
+  NonTransferableAccount, Pausable, PausableAccount, PermanentDelegate,
+  ScaledUiAmount, TokenGroup, TokenGroupMember, TokenMetadata,
+  TransferFeeAmount, TransferFeeConfig, TransferHook, TransferHookAccount,
 };
 use anchor_spl::token_2022::spl_token_2022::extension::{
   BaseStateWithExtensions, ExtensionType, StateWithExtensions,
@@ -188,7 +187,8 @@ pub struct TransferFeeExcludedAmount {
   pub transfer_fee: u64,
 }
 
-/// Takes an amount inclusive of the transfer fee and returns the post-fee amount and the fee amount.
+/// Takes an amount inclusive of the transfer fee and returns the post-fee
+/// amount and the fee amount.
 ///
 /// # Errors
 /// * Fee arithmetic overflow
@@ -218,7 +218,8 @@ pub fn calculate_transfer_fee_excluded_amount(
   }
 }
 
-/// Takes an amount exclusive of the transfer fee and returns the pre-fee amount and the fee amount.
+/// Takes an amount exclusive of the transfer fee and returns the pre-fee amount
+/// and the fee amount.
 ///
 /// Gross is SPL `calculate_pre_fee_amount`, the minimum amount whose
 /// post-fee transfer equals `net`. Fee is `calculate_fee` of that gross,
@@ -525,7 +526,10 @@ mod tests {
       mint_extension_class(InterestBearingConfig),
       ExtensionPolicy::Adjust
     );
-    assert_eq!(mint_extension_class(ScaledUiAmount), ExtensionPolicy::Adjust);
+    assert_eq!(
+      mint_extension_class(ScaledUiAmount),
+      ExtensionPolicy::Adjust
+    );
     assert!(is_whitelisted_mint_extension(InterestBearingConfig));
     assert!(is_whitelisted_mint_extension(TransferFeeConfig));
     assert!(is_whitelisted_mint_extension(ScaledUiAmount));
