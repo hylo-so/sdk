@@ -3,8 +3,7 @@
 use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::ToAccountMetas;
-use anyhow::Result;
-use hylo_core::pyth::PythOracle;
+use anyhow::{Context, Result};
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
@@ -24,6 +23,12 @@ use crate::util::{
 const BASE_LOOKUP_TABLES: &[Pubkey] = &[HYLO_LOOKUP_TABLE];
 const LST_LOOKUP_TABLES: &[Pubkey] =
   &[HYLO_LOOKUP_TABLE, LST_REGISTRY_LOOKUP_TABLE];
+
+fn exo_observation<E: TokenMint>() -> Result<Pubkey> {
+  hylo_idl::tokens::feed_id_for(&E::MINT)
+    .map(hylo_idl::pda::observation)
+    .context("unbound exo collateral")
+}
 
 fn route_instruction<A: ToAccountMetas>(
   token_a: Pubkey,
@@ -170,7 +175,7 @@ macro_rules! exo_router_instructions {
       account_builders::mint_stablecoin_exo(
         user,
         $exo::MINT,
-        $exo::FEED.address,
+        exo_observation::<$exo>()?,
       )
     });
 
@@ -183,7 +188,7 @@ macro_rules! exo_router_instructions {
         account_builders::mint_levercoin_exo(
           user,
           $exo::MINT,
-          $exo::FEED.address,
+          exo_observation::<$exo>()?,
         )
       }
     );
@@ -192,7 +197,7 @@ macro_rules! exo_router_instructions {
       account_builders::redeem_stablecoin_exo(
         user,
         $exo::MINT,
-        $exo::FEED.address,
+        exo_observation::<$exo>()?,
       )
     });
 
@@ -200,7 +205,7 @@ macro_rules! exo_router_instructions {
       account_builders::redeem_levercoin_exo(
         user,
         $exo::MINT,
-        $exo::FEED.address,
+        exo_observation::<$exo>()?,
       )
     });
 
@@ -213,7 +218,7 @@ macro_rules! exo_router_instructions {
         account_builders::convert_stable_to_lever_exo(
           user,
           $exo::MINT,
-          $exo::FEED.address,
+          exo_observation::<$exo>()?,
         )
       }
     );
@@ -227,17 +232,17 @@ macro_rules! exo_router_instructions {
         account_builders::convert_lever_to_stable_exo(
           user,
           $exo::MINT,
-          $exo::FEED.address,
+          exo_observation::<$exo>()?,
         )
       }
     );
 
     router_instruction!($exo, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
-      account_builders::swap_exo_to_usdc(user, $exo::MINT, $exo::FEED.address)
+      account_builders::swap_exo_to_usdc(user, $exo::MINT, exo_observation::<$exo>()?)
     });
 
     router_instruction!(USDC, $exo, BASE_LOOKUP_TABLES, $exo::MINT, |user| {
-      account_builders::swap_usdc_to_exo(user, $exo::MINT, $exo::FEED.address)
+      account_builders::swap_usdc_to_exo(user, $exo::MINT, exo_observation::<$exo>()?)
     });
     )+
   };

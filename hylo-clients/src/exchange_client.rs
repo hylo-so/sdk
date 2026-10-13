@@ -232,21 +232,6 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
-  /// Updates the SOL/USD oracle address.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub async fn update_sol_usd_oracle(
-    &self,
-    args: &args::UpdateSolUsdOracle,
-  ) -> Result<SignedTransaction> {
-    let instruction =
-      instruction_builders::update_sol_usd_oracle(self.signer(), args);
-    let memo = build_memo("update_sol_usd_oracle", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    self.sign(inner, memo).await
-  }
-
   /// Updates the LST swap fee.
   ///
   /// # Errors
@@ -483,47 +468,17 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
-  /// Updates the USDC mint fee.
+  /// Updates the USDC swap fee.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub async fn update_usdc_mint_fee(
+  pub async fn update_usdc_swap_fee(
     &self,
-    args: &args::UpdateUsdcMintFee,
+    args: &args::UpdateUsdcSwapFee,
   ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_usdc_mint_fee(self.signer(), args);
-    let memo = build_memo("update_usdc_mint_fee", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    self.sign(inner, memo).await
-  }
-
-  /// Updates the USDC redeem fee.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub async fn update_usdc_redeem_fee(
-    &self,
-    args: &args::UpdateUsdcRedeemFee,
-  ) -> Result<SignedTransaction> {
-    let instruction =
-      instruction_builders::update_usdc_redeem_fee(self.signer(), args);
-    let memo = build_memo("update_usdc_redeem_fee", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    self.sign(inner, memo).await
-  }
-
-  /// Updates the USDC par tolerance.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub async fn update_par_tolerance(
-    &self,
-    args: &args::UpdateParTolerance,
-  ) -> Result<SignedTransaction> {
-    let instruction =
-      instruction_builders::update_par_tolerance(self.signer(), args);
-    let memo = build_memo("update_par_tolerance", &instruction);
+      instruction_builders::update_usdc_swap_fee(self.signer(), args);
+    let memo = build_memo("update_usdc_swap_fee", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     self.sign(inner, memo).await
   }
@@ -547,59 +502,21 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
-  /// Updates the borrow rate curve for an exo collateral.
+  /// Updates the borrow rate for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub async fn update_exo_borrow_rate_curve(
+  pub async fn update_exo_borrow_rate(
     &self,
     collateral_mint: Pubkey,
-    args: &args::UpdateExoBorrowRateCurve,
+    args: &args::UpdateExoBorrowRate,
   ) -> Result<SignedTransaction> {
-    let instruction = instruction_builders::update_exo_borrow_rate_curve(
+    let instruction = instruction_builders::update_exo_borrow_rate(
       self.signer(),
       collateral_mint,
       args,
     );
-    let memo = build_memo("update_exo_borrow_rate_curve", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    self.sign(inner, memo).await
-  }
-
-  /// Updates the borrow rate fee for an exo collateral.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub async fn update_exo_borrow_rate_fee(
-    &self,
-    collateral_mint: Pubkey,
-    args: &args::UpdateExoBorrowRateFee,
-  ) -> Result<SignedTransaction> {
-    let instruction = instruction_builders::update_exo_borrow_rate_fee(
-      self.signer(),
-      collateral_mint,
-      args,
-    );
-    let memo = build_memo("update_exo_borrow_rate_fee", &instruction);
-    let inner = VersionedTransactionData::one(instruction);
-    self.sign(inner, memo).await
-  }
-
-  /// Updates the oracle for an exo collateral.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub async fn update_exo_oracle(
-    &self,
-    collateral_mint: Pubkey,
-    args: &args::UpdateExoOracle,
-  ) -> Result<SignedTransaction> {
-    let instruction = instruction_builders::update_exo_oracle(
-      self.signer(),
-      collateral_mint,
-      args,
-    );
-    let memo = build_memo("update_exo_oracle", &instruction);
+    let memo = build_memo("update_exo_borrow_rate", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     self.sign(inner, memo).await
   }
@@ -746,17 +663,45 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub async fn initialize_usdc(
     &self,
-    usdc_usd_pyth_feed: Pubkey,
     args: &args::InitializeUsdc,
   ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_usdc(
       self.signer(),
-      usdc_usd_pyth_feed,
+      pda::USDC_USD_OBSERVATION,
       args,
     );
     let memo = build_memo("initialize_usdc", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     self.sign(inner, memo).await
+  }
+
+  /// Direct variant of [`Self::initialize_usdc`].
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_usdc_direct(
+    &self,
+    args: &args::InitializeUsdc,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::initialize_usdc(
+      self.program.payer(),
+      pda::USDC_USD_OBSERVATION,
+      args,
+    );
+    Ok(VersionedTransactionData::one(instruction))
+  }
+
+  /// Initializes the LST virtual stablecoin.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub fn initialize_lst_virtual_stablecoin_direct(
+    &self,
+  ) -> Result<VersionedTransactionData> {
+    let instruction = instruction_builders::initialize_lst_virtual_stablecoin(
+      self.program.payer(),
+    );
+    Ok(VersionedTransactionData::one(instruction))
   }
 
   /// Initializes the LST virtual stablecoin via Squads proposal.
@@ -811,13 +756,13 @@ impl ExchangeClient {
   pub async fn register_exo(
     &self,
     collateral_mint: Pubkey,
-    exo_usd_pyth_feed: Pubkey,
+    exo_usd_oracle: Pubkey,
     args: &args::RegisterExo,
   ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::register_exo(
       self.signer(),
       collateral_mint,
-      exo_usd_pyth_feed,
+      exo_usd_oracle,
       args,
     );
     let memo = build_memo("register_exo", &instruction);
@@ -835,7 +780,7 @@ impl ExchangeClient {
   pub async fn genesis_mint_exo(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_oracle: Pubkey,
     args: &args::GenesisMintExo,
   ) -> Result<SignedTransaction> {
     let vault = self.signer();
@@ -846,7 +791,7 @@ impl ExchangeClient {
     let instruction = instruction_builders::genesis_mint_exo(
       vault,
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_oracle,
       args,
     );
     let memo = build_memo("genesis_mint_exo", &instruction);
@@ -881,11 +826,11 @@ impl ExchangeClient {
   pub fn harvest_borrow_rate(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_oracle: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::harvest_borrow_rate(
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_oracle,
     );
     Ok(VersionedTransactionData::one(instruction))
   }
@@ -901,17 +846,6 @@ impl ExchangeClient {
     Ok(VersionedTransactionData::one(instruction))
   }
 
-  /// Settles the USDC virtual stablecoin against the earn pool.
-  ///
-  /// # Errors
-  /// * Failed to build transaction instructions
-  pub fn settle_virtual_stablecoin_usdc(
-    &self,
-  ) -> Result<VersionedTransactionData> {
-    let instruction = instruction_builders::settle_virtual_stablecoin_usdc();
-    Ok(VersionedTransactionData::one(instruction))
-  }
-
   /// Settles the exo virtual stablecoin against the earn pool.
   ///
   /// # Errors
@@ -919,11 +853,11 @@ impl ExchangeClient {
   pub fn settle_virtual_stablecoin_exo(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_oracle: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::settle_virtual_stablecoin_exo(
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_oracle,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

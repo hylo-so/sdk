@@ -1,10 +1,8 @@
-use crate::borrow_rate::BorrowRateCurveConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 use crate::limiter::deposit::DepositLimiter;
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
-use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
 use crate::rebalance::pricing::RebalanceCurveConfig;
@@ -54,7 +52,7 @@ impl From<hylo_idl::exchange::types::YieldHarvestConfig>
 {
   fn from(idl: hylo_idl::exchange::types::YieldHarvestConfig) -> Self {
     YieldHarvestConfig {
-      ceil_mult: idl.ceil_mult.into(),
+      ceil_mult: idl.allocation.into(),
       fee: idl.fee.into(),
     }
   }
@@ -90,27 +88,9 @@ impl From<hylo_idl::earn_pool::types::VirtualStablecoin> for VirtualStablecoin {
   }
 }
 
-impl From<hylo_idl::exchange::types::ParTolerance> for ParTolerance {
-  fn from(idl: hylo_idl::exchange::types::ParTolerance) -> ParTolerance {
-    ParTolerance {
-      tolerance: idl.tolerance.into(),
-    }
-  }
-}
-
 impl From<hylo_idl::exchange::types::PoolDrawdown> for PoolDrawdown {
   fn from(idl: hylo_idl::exchange::types::PoolDrawdown) -> PoolDrawdown {
     PoolDrawdown::new(idl.ledger.into())
-  }
-}
-
-impl From<hylo_idl::exchange::types::BorrowRateCurveConfig>
-  for BorrowRateCurveConfig
-{
-  fn from(
-    idl: hylo_idl::exchange::types::BorrowRateCurveConfig,
-  ) -> BorrowRateCurveConfig {
-    BorrowRateCurveConfig::new(idl.floor_rate.into(), idl.ceil_rate.into())
   }
 }
 
@@ -238,7 +218,7 @@ impl From<YieldHarvestConfig>
 {
   fn from(val: YieldHarvestConfig) -> Self {
     hylo_idl::exchange::types::YieldHarvestConfig {
-      ceil_mult: val.ceil_mult.into(),
+      allocation: val.ceil_mult.into(),
       fee: val.fee.into(),
     }
   }
@@ -251,17 +231,6 @@ impl From<RebalanceCurveConfig>
     hylo_idl::exchange::types::RebalanceCurveConfig {
       floor_pct: val.floor_pct.into(),
       ceil_pct: val.ceil_pct.into(),
-    }
-  }
-}
-
-impl From<BorrowRateCurveConfig>
-  for hylo_idl::exchange::types::BorrowRateCurveConfig
-{
-  fn from(val: BorrowRateCurveConfig) -> Self {
-    hylo_idl::exchange::types::BorrowRateCurveConfig {
-      floor_rate: val.floor_rate.into(),
-      ceil_rate: val.ceil_rate.into(),
     }
   }
 }

@@ -17,16 +17,14 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::par_tolerance::ParTolerance;
-use hylo_core::pyth::{
-  query_pyth_oracle, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
+use hylo_core::oracle::{
+  query_hylo_oracle, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
 };
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
-use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYLOSOL, HYPE, JITOSOL};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_oracle_types::OracleObservation;
 
 use crate::protocol_state::ProtocolAccounts;
 use crate::LST;
@@ -34,10 +32,8 @@ use crate::LST;
 /// USDC exchange state for stablecoin mint/redeem.
 #[derive(Clone)]
 pub struct UsdcExchangeState {
-  /// Fee extracted when minting stablecoin from USDC
-  pub mint_fee: UFix64<N4>,
-  /// Fee extracted when redeeming stablecoin to USDC
-  pub redeem_fee: UFix64<N4>,
+  /// Swap fee extracted on USDC operations
+  pub swap_fee: UFix64<N4>,
   /// USDC pair pause flag
   pub paused: bool,
   /// USDC collateral vault balance
@@ -47,24 +43,17 @@ pub struct UsdcExchangeState {
   /// USDC/USD spot price, or the oracle validation error that rejected it.
   /// A rejected oracle disables USDC routes only.
   pub usdc_usd_spot: Result<UFix64<N9>, CoreError>,
-  /// Tolerated distance from par for the USDC pair
-  pub par_tolerance: ParTolerance,
-  /// Reserve policy for collateral-to-USDC rebalances.
-  pub reserve_gate: ReserveGate,
 }
 
-/// Tests a feed publish time against the tightened stablecoin oracle window.
-fn in_stablecoin_oracle_window(
-  publish_time: i64,
-  interval_secs: u64,
-  now: i64,
-) -> bool {
-  validate_publish_time(
-    publish_time,
-    interval_secs.div_ceil(ORACLE_DIVISOR),
-    now,
+/// Publish time of `observation`, in seconds.
+///
+/// # Errors
+/// * Timestamp does not fit in `i64`
+fn observation_publish_secs(observation: &OracleObservation) -> Result<i64> {
+  i64::try_from(
+    observation.price_timestamp_us / hylo_oracle_types::MICROS_PER_SECOND,
   )
-  .is_ok()
+  .context("oracle publish time")
 }
 
 /// Everything a route needs from one registered [`ExoPair`].
@@ -103,11 +92,12 @@ impl<C: SolanaClock> ExoPairState<C> {
   /// Tests this pair's collateral feed against the stablecoin oracle window.
   #[must_use]
   pub fn collateral_usd_in_stablecoin_oracle_window(&self) -> bool {
-    in_stablecoin_oracle_window(
+    validate_publish_time(
       self.oracle_publish_time,
-      self.oracle_interval_secs,
+      self.oracle_interval_secs.div_ceil(ORACLE_DIVISOR),
       self.context.clock.unix_timestamp(),
     )
+    .is_ok()
   }
 }
 
@@ -200,7 +190,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     shyusd_mint: Mint,
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
-    sol_usd: &PriceUpdateV2,
+    sol_usd: &OracleObservation,
     cbbtc_pair: ExoPairState<C>,
     hype_pair: ExoPairState<C>,
     usdc_exchange_state: UsdcExchangeState,
@@ -209,7 +199,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
   ) -> Result<Self> {
-    let sol_usd_publish_time = sol_usd.price_message.publish_time;
+    let sol_usd_publish_time = observation_publish_secs(sol_usd)?;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context =
@@ -244,11 +234,12 @@ impl<C: SolanaClock> ProtocolState<C> {
   /// Tests the SOL/USD feed against the stablecoin oracle window.
   #[must_use]
   pub fn sol_usd_in_stablecoin_oracle_window(&self) -> bool {
-    in_stablecoin_oracle_window(
+    validate_publish_time(
       self.sol_usd_publish_time,
-      self.oracle_interval_secs,
+      self.oracle_interval_secs.div_ceil(ORACLE_DIVISOR),
       self.exchange_context.clock.unix_timestamp(),
     )
+    .is_ok()
   }
 
   /// Selects an [`LstHeader`] field given a token implementing [`LST`].
@@ -313,7 +304,7 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
   clock: C,
   hylo: &Hylo,
   xsol_mint: &Mint,
-  sol_usd: &PriceUpdateV2,
+  sol_usd: &OracleObservation,
 ) -> Result<LstExchangeContext<C>> {
   let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
   let oracle_config = OracleConfig::new(
@@ -356,8 +347,8 @@ where
   let levercoin_mint =
     Mint::try_deserialize(&mut levercoin_mint.data.as_slice())?;
   let collateral_usd =
-    PriceUpdateV2::try_deserialize(&mut collateral_usd.data.as_slice())
-      .context("collateral/USD Pyth deserialization")?;
+    OracleObservation::try_deserialize(&mut collateral_usd.data.as_slice())
+      .context("collateral/USD observation deserialization")?;
 
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -370,7 +361,7 @@ where
     .checked_convert::<N9>()
     .ok_or_else(|| anyhow!("exo vault amount overflows N9"))?;
 
-  let oracle_publish_time = collateral_usd.price_message.publish_time;
+  let oracle_publish_time = observation_publish_secs(&collateral_usd)?;
   let context = ExoExchangeContext::load(
     clock,
     total_collateral,
@@ -398,15 +389,16 @@ fn build_usdc_exchange_state(
 ) -> Result<UsdcExchangeState> {
   let usdc_pair =
     UsdcPair::try_deserialize(&mut accounts.usdc_pair.data.as_slice())?;
-  let usdc_usd =
-    PriceUpdateV2::try_deserialize(&mut accounts.usdc_usd_pyth.data.as_slice())
-      .context("USDC/USD Pyth deserialization")?;
+  let usdc_usd = OracleObservation::try_deserialize(
+    &mut accounts.usdc_usd_observation.data.as_slice(),
+  )
+  .context("USDC/USD observation deserialization")?;
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_usd_spot = query_pyth_oracle(clock, &usdc_usd, oracle_config)
+  let usdc_usd_spot = query_hylo_oracle(clock, &usdc_usd, oracle_config)
     .map(|oracle| oracle.spot);
   let usdc_vault =
     TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
@@ -414,20 +406,12 @@ fn build_usdc_exchange_state(
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
 
-  let reserve_gate = ReserveGate::validated(
-    usdc_pair.reserve_gate.reserve_per_tvl.into(),
-    usdc_pair.reserve_gate.tvl_cap.into(),
-  )?;
-
   Ok(UsdcExchangeState {
-    mint_fee: usdc_pair.mint_fee.try_into()?,
-    redeem_fee: usdc_pair.redeem_fee.try_into()?,
+    swap_fee: usdc_pair.swap_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin,
     usdc_usd_spot,
-    par_tolerance: usdc_pair.par_tolerance.into(),
-    reserve_gate,
   })
 }
 
@@ -462,10 +446,10 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hyusd_pool =
       TokenAccount::try_deserialize(&mut accounts.hyusd_pool.data.as_slice())?;
 
-    let sol_usd = PriceUpdateV2::try_deserialize(
-      &mut accounts.sol_usd_pyth.data.as_slice(),
+    let sol_usd = OracleObservation::try_deserialize(
+      &mut accounts.sol_usd_observation.data.as_slice(),
     )
-    .context("SOL/USD Pyth deserialization")?;
+    .context("SOL/USD observation deserialization")?;
 
     let clock: Clock = bincode::deserialize(&accounts.clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
@@ -475,14 +459,14 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       &accounts.cbbtc_exo_pair,
       &accounts.cbbtc_vault,
       &accounts.xbtc_mint,
-      &accounts.btc_usd_pyth,
+      &accounts.btc_usd_observation,
     )?;
     let hype_pair = build_exo_pair_state::<HYPE, Clock>(
       clock.clone(),
       &accounts.hype_exo_pair,
       &accounts.hype_vault,
       &accounts.xhype_mint,
-      &accounts.hype_usd_pyth,
+      &accounts.hype_usd_observation,
     )?;
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
 
