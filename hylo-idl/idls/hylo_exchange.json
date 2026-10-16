@@ -4307,6 +4307,22 @@
               "name": "UFixValue64"
             }
           }
+        },
+        {
+          "name": "reserve_per_tvl",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "tvl_cap",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
         }
       ],
       "returns": {
@@ -20533,16 +20549,6 @@
       "code": 6048,
       "name": "VirtualStablecoinExceedsVault",
       "msg": "Virtual stablecoin supply exceeds USDC vault balance."
-    },
-    {
-      "code": 6049,
-      "name": "UsdcReserveBelowMinimum",
-      "msg": "USDC vault reserve would fall below the pair minimum."
-    },
-    {
-      "code": 6050,
-      "name": "UsdcReserveRatioInvalid",
-      "msg": "USDC reserve ratio exceeds one."
     }
   ],
   "types": [
@@ -21565,6 +21571,14 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "reserve_gate",
+            "type": {
+              "defined": {
+                "name": "ReserveGate"
               }
             }
           }
@@ -23454,34 +23468,18 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "old_reserve_per_tvl",
+            "name": "old_reserve_gate",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "ReserveGate"
               }
             }
           },
           {
-            "name": "new_reserve_per_tvl",
+            "name": "new_reserve_gate",
             "type": {
               "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "old_tvl_cap",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
-              }
-            }
-          },
-          {
-            "name": "new_tvl_cap",
-            "type": {
-              "defined": {
-                "name": "UFixValue64"
+                "name": "ReserveGate"
               }
             }
           }
