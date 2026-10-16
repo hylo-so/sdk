@@ -59,7 +59,7 @@ fn runtime_quote_from_collateral<FeeExp: Integer>(
     marginal_rate: atom_rate_decimals(
       quote.marginal_rate,
       i32::from(decimals),
-      6,
+      -N6::to_i32(),
     ),
   }
 }
@@ -80,7 +80,7 @@ fn runtime_quote_to_collateral<FeeExp: Integer>(
     fee_base: quote.fee_base.bits,
     marginal_rate: atom_rate_decimals(
       quote.marginal_rate,
-      6,
+      -N6::to_i32(),
       i32::from(decimals),
     ),
   })
