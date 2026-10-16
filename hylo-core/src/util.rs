@@ -31,15 +31,15 @@ pub fn max_scaled_input<Exp: Integer, RExp: Integer>(
   }
 }
 
-/// Bridges runtime decimals to typed `UFix64<N9>`.
+/// Bridges runtime mint decimals to typed `UFix64<N9>`.
 ///
 /// # Errors
 /// * Unsupported decimal count or conversion overflow
-pub fn normalize_exp(
-  decimals: u8,
+pub fn normalize_mint_exp(
+  mint: &Mint,
   amount: u64,
 ) -> Result<UFix64<N9>, CoreError> {
-  match decimals {
+  match mint.decimals {
     2 => UFix64::<N2>::new(amount).checked_convert(),
     3 => UFix64::<N3>::new(amount).checked_convert(),
     4 => UFix64::<N4>::new(amount).checked_convert(),
@@ -54,15 +54,16 @@ pub fn normalize_exp(
   .ok_or(ExoAmountNormalization)
 }
 
-/// Converts typed `UFix64<N9>` back to a raw `u64` in `decimals`.
+/// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
+/// decimals.
 ///
 /// # Errors
 /// * Unsupported decimal count
-pub fn denormalize_exp(
-  decimals: u8,
+pub fn denormalize_mint_exp(
+  mint: &Mint,
   amount: UFix64<N9>,
 ) -> Result<u64, CoreError> {
-  match decimals {
+  match mint.decimals {
     2 => amount.checked_convert::<N2>().map(|o| o.bits),
     3 => amount.checked_convert::<N3>().map(|o| o.bits),
     4 => amount.checked_convert::<N4>().map(|o| o.bits),
@@ -77,53 +78,6 @@ pub fn denormalize_exp(
   .ok_or(ExoAmountNormalization)
 }
 
-/// Converts typed `UFix64<N9>` back to a raw `u64` in `decimals`, rounding
-/// up.
-///
-/// # Errors
-/// * Unsupported decimal count
-pub fn denormalize_exp_ceil(
-  decimals: u8,
-  amount: UFix64<N9>,
-) -> Result<u64, CoreError> {
-  match decimals {
-    2 => amount.checked_convert_ceil::<N2>().map(|o| o.bits),
-    3 => amount.checked_convert_ceil::<N3>().map(|o| o.bits),
-    4 => amount.checked_convert_ceil::<N4>().map(|o| o.bits),
-    5 => amount.checked_convert_ceil::<N5>().map(|o| o.bits),
-    6 => amount.checked_convert_ceil::<N6>().map(|o| o.bits),
-    7 => amount.checked_convert_ceil::<N7>().map(|o| o.bits),
-    8 => amount.checked_convert_ceil::<N8>().map(|o| o.bits),
-    9 => Some(amount.bits),
-    10 => amount.checked_convert_ceil::<N10>().map(|o| o.bits),
-    _ => None,
-  }
-  .ok_or(ExoAmountNormalization)
-}
-
-/// Bridges runtime mint decimals to typed `UFix64<N9>`.
-///
-/// # Errors
-/// * Unsupported decimal count or conversion overflow
-pub fn normalize_mint_exp(
-  mint: &Mint,
-  amount: u64,
-) -> Result<UFix64<N9>, CoreError> {
-  normalize_exp(mint.decimals, amount)
-}
-
-/// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
-/// decimals.
-///
-/// # Errors
-/// * Unsupported decimal count
-pub fn denormalize_mint_exp(
-  mint: &Mint,
-  amount: UFix64<N9>,
-) -> Result<u64, CoreError> {
-  denormalize_exp(mint.decimals, amount)
-}
-
 /// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
 /// decimals, rounding up.
 ///
@@ -136,7 +90,19 @@ pub fn denormalize_mint_exp_ceil(
   mint: &Mint,
   amount: UFix64<N9>,
 ) -> Result<u64, CoreError> {
-  denormalize_exp_ceil(mint.decimals, amount)
+  match mint.decimals {
+    2 => amount.checked_convert_ceil::<N2>().map(|o| o.bits),
+    3 => amount.checked_convert_ceil::<N3>().map(|o| o.bits),
+    4 => amount.checked_convert_ceil::<N4>().map(|o| o.bits),
+    5 => amount.checked_convert_ceil::<N5>().map(|o| o.bits),
+    6 => amount.checked_convert_ceil::<N6>().map(|o| o.bits),
+    7 => amount.checked_convert_ceil::<N7>().map(|o| o.bits),
+    8 => amount.checked_convert_ceil::<N8>().map(|o| o.bits),
+    9 => Some(amount.bits),
+    10 => amount.checked_convert_ceil::<N10>().map(|o| o.bits),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization)
 }
 
 #[macro_export]

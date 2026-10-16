@@ -67,7 +67,7 @@ pub struct ExoAccounts {
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
   pub collateral_mint: Pubkey,
-  pub collateral_mint_decimals: u8,
+  pub collateral_mint_account: Mint,
   pub context: ExoExchangeContext<C>,
   pub paused: bool,
   pub pool_drawdown: PoolDrawdown,
@@ -176,7 +176,7 @@ impl ExoAccounts {
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
       collateral_mint: self.exo_pair.collateral_mint,
-      collateral_mint_decimals: self.collateral_mint.decimals,
+      collateral_mint_account: self.collateral_mint,
       context,
       paused: self.exo_pair.paused,
       pool_drawdown: self.exo_pair.pool_drawdown.into(),

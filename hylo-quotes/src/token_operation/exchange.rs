@@ -1,6 +1,7 @@
 //! `TokenOperation` implementations for exchange pairs.
 
 use anchor_lang::prelude::Pubkey;
+use anchor_spl::token::Mint;
 use fix::prelude::*;
 use fix::typenum::Integer;
 use hylo_core::calculus::positive_rate;
@@ -14,7 +15,7 @@ use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
 use hylo_core::rebalance::pnl::RebalancePnl;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::util::{denormalize_exp, normalize_exp};
+use hylo_core::util::{denormalize_mint_exp, normalize_mint_exp};
 use hylo_core::virtual_stablecoin::{
   max_mintable, validate_burn, SUPPLY_FLOOR,
 };
@@ -47,7 +48,7 @@ pub struct RuntimeExoQuote {
 /// Runtime quote from a core quote whose input is collateral in `N9`.
 fn runtime_quote_from_collateral<FeeExp: Integer>(
   amount: u64,
-  decimals: u8,
+  collateral_mint: &Mint,
   quote: OperationOutput<N9, N6, FeeExp>,
 ) -> RuntimeExoQuote {
   RuntimeExoQuote {
@@ -58,7 +59,7 @@ fn runtime_quote_from_collateral<FeeExp: Integer>(
     fee_base: quote.fee_base.bits,
     marginal_rate: atom_rate_decimals(
       quote.marginal_rate,
-      i32::from(decimals),
+      i32::from(collateral_mint.decimals),
       -N6::to_i32(),
     ),
   }
@@ -69,19 +70,19 @@ fn runtime_quote_from_collateral<FeeExp: Integer>(
 /// # Errors
 /// * Output denormalization
 fn runtime_quote_to_collateral<FeeExp: Integer>(
-  decimals: u8,
+  collateral_mint: &Mint,
   quote: OperationOutput<N6, N9, FeeExp>,
 ) -> Result<RuntimeExoQuote, CoreError> {
   Ok(RuntimeExoQuote {
     in_amount: quote.in_amount.bits,
-    out_amount: denormalize_exp(decimals, quote.out_amount)?,
+    out_amount: denormalize_mint_exp(collateral_mint, quote.out_amount)?,
     fee_amount: quote.fee_amount.bits,
     fee_mint: quote.fee_mint,
     fee_base: quote.fee_base.bits,
     marginal_rate: atom_rate_decimals(
       quote.marginal_rate,
       -N6::to_i32(),
-      i32::from(decimals),
+      i32::from(collateral_mint.decimals),
     ),
   })
 }
@@ -113,8 +114,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     amount: u64,
   ) -> Result<RuntimeExoQuote, CoreError> {
     let pair = self.exo_pair_by_mint(entry.collateral_mint)?;
-    let decimals = pair.collateral_mint_decimals;
-    let collateral_in = || normalize_exp(decimals, amount);
+    let collateral_in =
+      || normalize_mint_exp(&pair.collateral_mint_account, amount);
     let token_in = UFix64::<N6>::new(amount);
     let roles = (
       exo_entry_role(entry, input_mint)?,
@@ -124,22 +125,30 @@ impl<C: SolanaClock> ProtocolState<C> {
       (Collateral, Stablecoin) => {
         self.mint_stablecoin_exo_gates(pair)?;
         let quote = ProtocolState::mint_stablecoin_exo(pair, collateral_in()?)?;
-        Ok(runtime_quote_from_collateral(amount, decimals, quote))
+        Ok(runtime_quote_from_collateral(
+          amount,
+          &pair.collateral_mint_account,
+          quote,
+        ))
       }
       (Stablecoin, Collateral) => {
         self.redeem_stablecoin_exo_gates(pair)?;
         let quote = ProtocolState::redeem_stablecoin_exo(pair, token_in)?;
-        runtime_quote_to_collateral(decimals, quote)
+        runtime_quote_to_collateral(&pair.collateral_mint_account, quote)
       }
       (Collateral, Levercoin) => {
         self.mint_levercoin_exo_gates(pair)?;
         let quote = ProtocolState::mint_levercoin_exo(pair, collateral_in()?)?;
-        Ok(runtime_quote_from_collateral(amount, decimals, quote))
+        Ok(runtime_quote_from_collateral(
+          amount,
+          &pair.collateral_mint_account,
+          quote,
+        ))
       }
       (Levercoin, Collateral) => {
         self.redeem_levercoin_exo_gates(pair)?;
         let quote = ProtocolState::redeem_levercoin_exo(pair, token_in)?;
-        runtime_quote_to_collateral(decimals, quote)
+        runtime_quote_to_collateral(&pair.collateral_mint_account, quote)
       }
       (Stablecoin, Levercoin) => {
         self.convert_stable_to_lever_exo_gates(pair)?;
@@ -152,12 +161,16 @@ impl<C: SolanaClock> ProtocolState<C> {
       (Collateral, Usdc) => {
         self.swap_exo_to_usdc_gates(pair)?;
         let quote = self.swap_exo_to_usdc(pair, collateral_in()?)?;
-        Ok(runtime_quote_from_collateral(amount, decimals, quote))
+        Ok(runtime_quote_from_collateral(
+          amount,
+          &pair.collateral_mint_account,
+          quote,
+        ))
       }
       (Usdc, Collateral) => {
         self.swap_usdc_to_exo_gates(pair)?;
         let quote = self.swap_usdc_to_exo(pair, token_in)?;
-        runtime_quote_to_collateral(decimals, quote)
+        runtime_quote_to_collateral(&pair.collateral_mint_account, quote)
       }
       _ => Err(CoreError::UnknownExoMint),
     }
