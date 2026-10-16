@@ -1,5 +1,3 @@
-mod admin;
-mod exo_registry;
 mod instructions;
 mod transaction_data;
 
@@ -9,13 +7,18 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
-use anyhow::Result;
+use anchor_lang::AccountDeserialize;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use hylo_core::slippage_config::SlippageConfig;
+use hylo_idl::pda;
+use hylo_idl::router::accounts::ExoRegistry;
+use hylo_idl::router::instruction_builders;
 use hylo_idl::tokens::TokenMint;
 
-use crate::program_client::ProgramClient;
-use crate::signing::{SigningClient, SigningMethod};
+use crate::memo::build_memo;
+use crate::program_client::{ProgramClient, VersionedTransactionData};
+use crate::signing::{SignedTransaction, SigningClient, SigningMethod};
 use crate::transaction::TransactionSyntax;
 
 /// Arguments for all router-based token operations.
@@ -123,3 +126,43 @@ impl SigningClient for RouterClient {
 
 #[async_trait]
 impl TransactionSyntax for RouterClient {}
+
+impl RouterClient {
+  /// Fetches the registry of routable exo pairs.
+  ///
+  /// # Errors
+  /// * Failed to fetch the account
+  /// * Failed to deserialize account data
+  pub async fn exo_registry(&self) -> Result<ExoRegistry> {
+    let account = self.program().rpc().get_account(&pda::EXO_REGISTRY).await?;
+    ExoRegistry::try_deserialize(&mut account.data.as_slice())
+      .context("Exo registry deserialization")
+  }
+
+  /// Initializes the registry of routable exo pairs.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub async fn initialize_exo_registry(&self) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::initialize_exo_registry(self.signer());
+    let memo = build_memo("initialize_exo_registry", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    self.sign(inner, memo).await
+  }
+
+  /// Registers the exo pair for the given collateral mint with the router.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub async fn register_exo_entry(
+    &self,
+    collateral_mint: Pubkey,
+  ) -> Result<SignedTransaction> {
+    let instruction =
+      instruction_builders::register_exo_entry(self.signer(), collateral_mint);
+    let memo = build_memo("register_exo_entry", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    self.sign(inner, memo).await
+  }
+}
