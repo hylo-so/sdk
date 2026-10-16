@@ -5,7 +5,9 @@ use fix::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::error::CoreError;
-use crate::error::CoreError::{InsufficientLiquidity, ReserveGateInvalid};
+use crate::error::CoreError::{
+  InsufficientLiquidity, ReserveGateInvalid, UsdcReserveBelowMinimum,
+};
 
 /// Reserve policy applied to collateral-to-stablecoin rebalances.
 #[derive(
@@ -77,6 +79,21 @@ impl ReserveGate {
       .and_then(UFix64::checked_convert_ceil::<N6>)
       .ok_or(InsufficientLiquidity)
   }
+
+  /// Rejects a USDC outflow that leaves the vault below the required reserve.
+  pub fn validate_outflow(
+    &self,
+    usdc_vault_balance: UFix64<N6>,
+    usdc_out: UFix64<N6>,
+    pair_tvl: UFix64<N9>,
+  ) -> Result<(), CoreError> {
+    let usdc_vault_remaining = usdc_vault_balance
+      .checked_sub(&usdc_out)
+      .ok_or(InsufficientLiquidity)?;
+    (usdc_vault_remaining >= self.required_reserve(pair_tvl)?)
+      .then_some(())
+      .ok_or(UsdcReserveBelowMinimum)
+  }
 }
 
 #[cfg(test)]
@@ -139,6 +156,50 @@ mod tests {
     assert_eq!(
       gate.required_reserve(tvl)?,
       UFix64::<N6>::new(2_500_000_000_000),
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn accepts_outflow_at_reserve_boundary() -> Result<(), CoreError> {
+    let gate = ReserveGate::validated(
+      UFixValue64::new(50_000_000, -9),
+      UFixValue64::new(0, -9),
+    )?;
+    let tvl = UFix64::<N9>::new(5_000_000_000_000_000);
+    let usdc_vault_balance = UFix64::<N6>::new(1_000_000_000_000);
+    let usdc_out = UFix64::<N6>::new(750_000_000_000);
+
+    gate.validate_outflow(usdc_vault_balance, usdc_out, tvl)
+  }
+
+  #[test]
+  fn rejects_outflow_below_reserve() -> Result<(), CoreError> {
+    let gate = ReserveGate::validated(
+      UFixValue64::new(50_000_000, -9),
+      UFixValue64::new(0, -9),
+    )?;
+    let tvl = UFix64::<N9>::new(5_000_000_000_000_000);
+    let usdc_vault_balance = UFix64::<N6>::new(1_000_000_000_000);
+    let usdc_out = UFix64::<N6>::new(750_000_000_001);
+
+    assert_eq!(
+      gate.validate_outflow(usdc_vault_balance, usdc_out, tvl),
+      Err(UsdcReserveBelowMinimum)
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn rejects_outflow_exceeding_vault() -> Result<(), CoreError> {
+    let gate =
+      ReserveGate::validated(UFixValue64::new(0, -9), UFixValue64::new(0, -9))?;
+    let usdc_vault_balance = UFix64::<N6>::new(1_000_000);
+    let usdc_out = UFix64::<N6>::new(1_000_001);
+
+    assert_eq!(
+      gate.validate_outflow(usdc_vault_balance, usdc_out, UFix64::zero()),
+      Err(InsufficientLiquidity)
     );
     Ok(())
   }

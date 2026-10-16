@@ -283,4 +283,7 @@ pub enum CoreError {
   NoRedemptionLane,
   #[msg("Overflow while computing redemption rate.")]
   RedemptionRateOverflow,
+  // `reserve_gate`
+  #[msg("USDC vault balance below required reserve.")]
+  UsdcReserveBelowMinimum,
 }
