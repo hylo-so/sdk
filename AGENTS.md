@@ -116,11 +116,11 @@ Anchor IDL codegen and type-safe token definitions. No math, no RPC.
 
 Transaction builders and execution clients.
 
-`RouterClient` handles every user-facing operation — mint, redeem, swap,
-earn pool deposit and withdraw. `ExchangeClient` and `EarnPoolClient` are
-admin only. Also `ProgramClient`, `BuildTransactionData`,
-`TransactionSyntax`, `InstructionBuilder`, `squads` multisig, `memo`,
-`util::LST`, and `prelude`.
+`RouterClient` covers every user-facing operation — mint, redeem, swap,
+earn pool deposit and withdraw — plus exo registry administration.
+`ExchangeClient` and `EarnPoolClient` are admin only. Also `ProgramClient`,
+`BuildTransactionData`, `TransactionSyntax`, `InstructionBuilder`,
+`signing`, `squads` multisig, `memo`, `util::LST`, and `prelude`.
 
 ### `hylo-quotes`
 

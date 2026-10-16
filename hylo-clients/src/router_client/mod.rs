@@ -81,9 +81,9 @@ impl<X> InstructionBuilderExt for X {
   }
 }
 
-/// Builds and executes transactions through the Hylo router program.
-/// Handles all user-facing token operations: mint, redeem, swap, and
-/// earn pool deposit/withdraw.
+/// Builds and executes transactions through the Hylo router program:
+/// mint, redeem, swap, earn pool deposit and withdraw, and exo registry
+/// administration.
 pub struct RouterClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,

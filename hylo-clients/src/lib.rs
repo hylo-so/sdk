@@ -25,8 +25,9 @@
 //!
 //! ## Clients
 //!
-//! * [`router_client::RouterClient`] — All user-facing token operations (mint,
-//!   redeem, swap, earn pool) via the router program
+//! * [`router_client::RouterClient`] — User-facing token operations (mint,
+//!   redeem, swap, earn pool) and exo registry administration via the
+//!   router program
 //! * [`exchange_client::ExchangeClient`] — Admin operations for the exchange
 //!   program
 //! * [`earn_pool_client::EarnPoolClient`] — Admin operations for the earn pool
