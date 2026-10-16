@@ -3462,11 +3462,15 @@
             }
           },
           {
+            "name": "deposits_locked",
+            "type": "bool"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                13
+                12
               ]
             }
           }
