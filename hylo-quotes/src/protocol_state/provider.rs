@@ -12,7 +12,6 @@ use async_trait::async_trait;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::idl::exchange::accounts::Hylo;
-use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
@@ -102,11 +101,7 @@ impl RpcStateProvider {
     let clock = clock.as_ref().context("Missing clock account")?;
     let clock: Clock = bincode::deserialize(&clock.data)
       .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-    let entry = ExoEntry {
-      collateral_mint: E::MINT,
-      levercoin_mint: pda::exo_levercoin_mint(E::MINT),
-    };
-    ExoAccounts::parse(&entry, &raw)?.pair_state(clock)
+    ExoAccounts::parse(&E::EXO_ENTRY, &raw)?.pair_state(clock)
   }
 }
 

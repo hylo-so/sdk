@@ -3,6 +3,7 @@ use anchor_spl::mint::USDC as USDC_MINT;
 use fix::prelude::{N6, N8, N9};
 use fix::typenum::Integer;
 
+use crate::router::types::ExoEntry;
 use crate::{earn_pool, exchange, pda};
 
 /// Calls `$cb` "shaper" macro once for every exo pair.
@@ -158,7 +159,13 @@ impl StakePool for HYLOSOL {
 }
 
 /// Exogenous collateral backing an `ExoPair`.
-pub trait Exo: TokenMint {}
+pub trait Exo: TokenMint {
+  /// Registry entry pairing the collateral mint with its levercoin mint.
+  const EXO_ENTRY: ExoEntry = ExoEntry {
+    collateral_mint: Self::MINT,
+    levercoin_mint: pda::exo_levercoin_mint(Self::MINT),
+  };
+}
 
 macro_rules! impl_exo {
   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
