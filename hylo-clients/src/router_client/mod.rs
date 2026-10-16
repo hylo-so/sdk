@@ -15,6 +15,7 @@ use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::tokens::TokenMint;
 
 use crate::program_client::ProgramClient;
+use crate::signing::{SigningClient, SigningMethod};
 use crate::transaction::TransactionSyntax;
 
 /// Arguments for all router-based token operations.
@@ -83,6 +84,7 @@ impl<X> InstructionBuilderExt for X {
 pub struct RouterClient {
   program: Program<Arc<Keypair>>,
   keypair: Arc<Keypair>,
+  signing_method: SigningMethod,
 }
 
 impl ProgramClient for RouterClient {
@@ -92,7 +94,11 @@ impl ProgramClient for RouterClient {
     program: Program<Arc<Keypair>>,
     keypair: Arc<Keypair>,
   ) -> RouterClient {
-    RouterClient { program, keypair }
+    RouterClient {
+      program,
+      keypair,
+      signing_method: SigningMethod::Direct,
+    }
   }
 
   fn program(&self) -> &Program<Arc<Keypair>> {
@@ -101,6 +107,17 @@ impl ProgramClient for RouterClient {
 
   fn keypair(&self) -> Arc<Keypair> {
     self.keypair.clone()
+  }
+}
+
+impl SigningClient for RouterClient {
+  fn signing_method(&self) -> SigningMethod {
+    self.signing_method
+  }
+
+  fn with_signing_method(mut self, signing_method: SigningMethod) -> Self {
+    self.signing_method = signing_method;
+    self
   }
 }
 
