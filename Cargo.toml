@@ -10,7 +10,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "2.6.5"
+version = "2.6.6"
 edition = "2021"
 license = "MPL-2.0"
 homepage = "https://hylo.so"
@@ -26,9 +26,9 @@ const-crypto = "0.3.0"
 bincode = "1.3.3"
 futures = "0.3.31"
 hylo-clients = { version = "2.6.5", path = "hylo-clients" }
-hylo-core = { version = "2.6.5", path = "hylo-core" }
+hylo-core = { version = "2.6.6", path = "hylo-core" }
 hylo-fix = "0.8.0"
-hylo-idl = { version = "2.6.5", path = "hylo-idl" }
+hylo-idl = { version = "2.6.6", path = "hylo-idl" }
 hylo-jupiter = { version = "2.6.5", path = "hylo-jupiter" }
 hylo-quotes = { version = "2.6.5", path = "hylo-quotes" }
 hylo-stats = { version = "2.6.5", path = "hylo-stats" }
