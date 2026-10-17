@@ -17,13 +17,13 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{
   max_mintable, validate_burn, SUPPLY_FLOOR,
 };
-use hylo_idl::tokens::ExoRole::{Collateral, Levercoin, Stablecoin, Usdc};
 use hylo_idl::tokens::{
   Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
   XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 use hylo_idl::with_exo_pairs;
 
+use crate::protocol_state::ExoRole::{Collateral, Levercoin, Stablecoin, Usdc};
 use crate::protocol_state::{exo_entry_role, ProtocolState};
 use crate::token_operation::{
   atom_rate, gate, past_zero, FeeBase, LstSwapOperationOutput,

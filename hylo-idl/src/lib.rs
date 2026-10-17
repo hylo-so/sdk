@@ -103,7 +103,6 @@ mod tests {
     )
     .0;
 
-    assert_eq!(pda::exo_registry(), expected_registry);
     assert_eq!(pda::EXO_REGISTRY, expected_registry);
     assert_eq!(pda::ROUTER_EVENT_AUTHORITY, pda::event_auth(router::ID));
   }

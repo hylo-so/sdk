@@ -10,7 +10,7 @@ pub use exo_pair::{
 };
 pub use exo_registry::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  find_exo_entry, read_exo_entries,
+  find_exo_entry, read_exo_entries, ExoRole,
 };
 pub use provider::{RpcStateProvider, StateProvider};
 pub use state::{build_lst_exchange_context, ProtocolState, UsdcExchangeState};

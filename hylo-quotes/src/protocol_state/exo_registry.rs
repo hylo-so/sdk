@@ -8,9 +8,18 @@ use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::{PythFeed, PythOracle};
 use hylo_idl::tokens::{
-  exo_role, ExoRole, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC,
+  TokenMint, CBBTC, HYPE, HYUSD, ONYC, PST, USDC, WETH, ZEC,
 };
 use hylo_idl::{pda, with_exo_pairs};
+
+/// Role a mint plays in an exo pair's routing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExoRole {
+  Collateral,
+  Levercoin,
+  Stablecoin,
+  Usdc,
+}
 
 macro_rules! exo_pyth_feed_dispatch {
   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
@@ -72,8 +81,13 @@ pub fn exo_entry_role(
   entry: &ExoEntry,
   mint: Pubkey,
 ) -> Result<ExoRole, CoreError> {
-  exo_role(entry.collateral_mint, entry.levercoin_mint, mint)
-    .ok_or(CoreError::UnknownExoMint)
+  match mint {
+    HYUSD::MINT => Ok(ExoRole::Stablecoin),
+    USDC::MINT => Ok(ExoRole::Usdc),
+    m if m == entry.collateral_mint => Ok(ExoRole::Collateral),
+    m if m == entry.levercoin_mint => Ok(ExoRole::Levercoin),
+    _ => Err(CoreError::UnknownExoMint),
+  }
 }
 
 /// Five pubkeys per registry entry, in `ExoPairAccounts` field order.
