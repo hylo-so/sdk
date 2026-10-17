@@ -1,4 +1,4 @@
-//! Accounts and state for one Exo registry entry.
+//! Accounts and state for one exo registry entry.
 
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;

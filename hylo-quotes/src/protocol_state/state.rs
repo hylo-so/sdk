@@ -104,7 +104,7 @@ pub struct ProtocolState<C: SolanaClock> {
   /// LST swap configuration
   pub lst_swap_config: AssetSwapConfig,
 
-  /// Registered Exo pairs keyed by collateral mint
+  /// Registered exo pairs keyed by collateral mint
   pub exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
 
   /// USDC exchange state
@@ -260,7 +260,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     self.exo_pair_by_mint(E::MINT)
   }
 
-  /// Selects the pair state for a registered Exo collateral mint.
+  /// Selects the pair state for a registered exo collateral mint.
   ///
   /// # Errors
   /// * Collateral has no registered pair in this snapshot.

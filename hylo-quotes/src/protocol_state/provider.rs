@@ -126,7 +126,7 @@ impl StateProvider<Clock> for RpcStateProvider {
       .rpc_client
       .get_account(&pda::EXO_REGISTRY)
       .await
-      .context("Failed to fetch Exo registry from RPC")?;
+      .context("Failed to fetch exo registry from RPC")?;
     let entries = read_exo_entries(&registry_account.data)?;
     let exo_keys = exo_pubkeys_from_entries(&entries)?;
     let keys = ProtocolAccounts::PUBKEYS
@@ -162,7 +162,7 @@ mod tests {
   }
 
   #[tokio::test]
-  #[ignore = "requires the Exo registry router on mainnet"]
+  #[ignore = "requires the exo registry router on mainnet"]
   async fn test_fetch_state() -> Result<()> {
     let rpc_client = build_test_rpc_client();
     let provider = RpcStateProvider::new(rpc_client);

@@ -36,7 +36,7 @@ use crate::util::{
   account_map_get, fee_pct, keyed_account, quote, validate_swap_params,
 };
 
-/// Reads the active Exo entries from the router-owned registry account.
+/// Reads the active exo entries from the router-owned registry account.
 ///
 /// # Errors
 /// * Registry account is missing, malformed, or carries an invalid length.
@@ -45,7 +45,7 @@ fn exo_entries(account_map: &AccountMap) -> Result<Vec<ExoEntry>> {
   read_exo_entries(&account.data)
 }
 
-/// Shared, runtime-discovered state used by classic and Exo Jupiter AMMs.
+/// Shared, runtime-discovered state used by classic and exo Jupiter AMMs.
 #[derive(Clone)]
 struct HyloJupiterSnapshot {
   clock: ClockRef,
@@ -721,7 +721,7 @@ impl Amm for HyloJupiterExo {
   }
 
   fn label(&self) -> String {
-    "Hylo Exo Registry".to_owned()
+    "Hylo exo registry".to_owned()
   }
 
   fn program_id(&self) -> Pubkey {
@@ -838,7 +838,7 @@ impl Amm for HyloJupiterExo {
       (Usdc, Collateral) => {
         Ok(account_metas::swap_usdc_to_exo(*user, collateral, oracle))
       }
-      _ => Err(anyhow!("Invalid Exo mint pair")),
+      _ => Err(anyhow!("Invalid exo mint pair")),
     }
   }
 
