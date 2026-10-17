@@ -22,7 +22,6 @@ pub mod tokens;
 pub mod type_bridge;
 
 mod account_builders;
-mod exo_registry;
 mod instruction_builders;
 
 pub mod exchange {

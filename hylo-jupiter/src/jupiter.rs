@@ -6,7 +6,6 @@ use anyhow::{anyhow, Context, Result};
 use fix::prelude::UFix64;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
-use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::idl::tokens::ExoRole::{
   Collateral, Levercoin, Stablecoin, Usdc,
@@ -25,7 +24,7 @@ use hylo_jupiter_amm_interface::{
 };
 use hylo_quotes::protocol_state::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  find_exo_entry, read_exo_registry, ExoAccounts, ExoPairAccounts,
+  find_exo_entry, read_exo_entries, ExoAccounts, ExoPairAccounts,
   ProtocolState, UsdcExchangeState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -40,9 +39,9 @@ use crate::util::{
 ///
 /// # Errors
 /// * Registry account is missing, malformed, or carries an invalid length.
-fn exo_registry(account_map: &AccountMap) -> Result<ExoRegistry> {
+fn exo_entries(account_map: &AccountMap) -> Result<Vec<ExoEntry>> {
   let account = keyed_account(account_map, &pda::EXO_REGISTRY)?;
-  read_exo_registry(&account.data)
+  read_exo_entries(&account.data)
 }
 
 /// Shared, runtime-discovered state used by classic and Exo Jupiter AMMs.
@@ -759,10 +758,8 @@ impl Amm for HyloJupiterExo {
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     self.snapshot.update(account_map)?;
-    let registry = exo_registry(account_map)?;
-    let entries = registry.registered_entries()?;
-    self.exo_account_keys = exo_pubkeys_from_entries(entries)?;
-    self.exo_entries = entries.to_vec();
+    let entries = exo_entries(account_map)?;
+    self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
     let exo_accounts = entries
       .iter()
       .map(|entry| {
@@ -778,6 +775,7 @@ impl Amm for HyloJupiterExo {
         ExoAccounts::parse(entry, &raw)
       })
       .collect::<Result<Vec<_>>>()?;
+    self.exo_entries = entries;
     self
       .snapshot
       .state

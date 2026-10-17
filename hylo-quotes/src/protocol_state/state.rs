@@ -31,7 +31,7 @@ use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::{
-  read_exo_registry, ExoAccounts, ExoPairState, ProtocolAccounts,
+  read_exo_entries, ExoAccounts, ExoPairState, ProtocolAccounts,
 };
 use crate::LST;
 
@@ -517,8 +517,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hylosol_vault = TokenAccount::try_deserialize(
       &mut accounts.hylosol_vault.data.as_slice(),
     )?;
-    let exo_registry = read_exo_registry(&accounts.exo_registry.data)?;
-    let entries = exo_registry.registered_entries()?;
+    let entries = read_exo_entries(&accounts.exo_registry.data)?;
     anyhow::ensure!(
       entries.len() == accounts.exo_accounts.len(),
       "Exo registry has {} entries but {} pair account groups were fetched",

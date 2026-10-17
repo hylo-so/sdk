@@ -2,7 +2,7 @@
 
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::Discriminator;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use hylo_core::error::CoreError;
 use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
@@ -31,17 +31,23 @@ macro_rules! exo_pyth_feed_dispatch {
 
 with_exo_pairs!(exo_pyth_feed_dispatch);
 
-/// Decodes the registry from raw account data.
+/// Decodes the registered entries from raw registry account data.
 ///
 /// # Errors
 /// * Discriminator mismatch
 /// * Payload size mismatch
-pub fn read_exo_registry(data: &[u8]) -> Result<ExoRegistry> {
+/// * `current_size` exceeds capacity
+pub fn read_exo_entries(data: &[u8]) -> Result<Vec<ExoEntry>> {
   let payload = data
     .strip_prefix(ExoRegistry::DISCRIMINATOR)
     .context("Exo registry discriminator mismatch")?;
-  bytemuck::try_pod_read_unaligned(payload)
-    .map_err(|error| anyhow!("Exo registry deserialization: {error}"))
+  let registry: ExoRegistry = bytemuck::try_pod_read_unaligned(payload)
+    .context("Exo registry deserialization")?;
+  registry
+    .entries
+    .get(..usize::from(registry.current_size))
+    .map(<[ExoEntry]>::to_vec)
+    .context("Exo registry length exceeds capacity")
 }
 
 /// Entry whose collateral or levercoin is `mint_a` or `mint_b`.
