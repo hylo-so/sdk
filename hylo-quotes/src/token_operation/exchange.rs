@@ -2080,7 +2080,7 @@ macro_rules! runtime_exo_dispatch {
             .output::<USDC, $exo>(UFix64::new(amount))
             .map(RuntimeExoQuote::from),
           )+
-          _ => Err(CoreError::UnknownExoMint),
+          _ => Err(CoreError::UnroutableExoPair),
         }
       }
     }
