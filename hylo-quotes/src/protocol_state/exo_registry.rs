@@ -68,10 +68,10 @@ pub fn find_exo_entry(
   mint_a: Pubkey,
   mint_b: Pubkey,
 ) -> Option<&ExoEntry> {
+  let mints = [mint_a, mint_b];
   entries.iter().find(|entry| {
-    [mint_a, mint_b].iter().any(|mint| {
-      *mint == entry.collateral_mint || *mint == entry.levercoin_mint
-    })
+    mints.contains(&entry.collateral_mint)
+      || mints.contains(&entry.levercoin_mint)
   })
 }
 
@@ -100,18 +100,19 @@ pub fn exo_entry_role(
 pub fn exo_pubkeys_from_entries(
   entries: &[ExoEntry],
 ) -> Result<Vec<Pubkey>, CoreError> {
-  entries
-    .iter()
-    .map(|entry| -> Result<[Pubkey; EXO_PAIR_ACCOUNTS], CoreError> {
+  entries.iter().try_fold(
+    Vec::with_capacity(entries.len() * EXO_PAIR_ACCOUNTS),
+    |mut keys, entry| {
       let feed = exo_pyth_feed_by_mint(entry.collateral_mint)?;
-      Ok([
+      let entry_keys: [Pubkey; EXO_PAIR_ACCOUNTS] = [
         pda::exo_pair(entry.collateral_mint),
         pda::exo_vault(entry.collateral_mint),
         entry.levercoin_mint,
         entry.collateral_mint,
         feed.address,
-      ])
-    })
-    .collect::<Result<Vec<_>, CoreError>>()
-    .map(|groups| groups.into_iter().flatten().collect())
+      ];
+      keys.extend(entry_keys);
+      Ok(keys)
+    },
+  )
 }

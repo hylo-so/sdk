@@ -31,11 +31,8 @@ pub trait StateProvider<C: SolanaClock>: Send + Sync {
   async fn fetch_state(&self) -> Result<ProtocolState<C>>;
 }
 
-// Implement StateProvider for Arc<T> where T: StateProvider
 #[async_trait]
-impl<T: StateProvider<C>, C: SolanaClock> StateProvider<C>
-  for std::sync::Arc<T>
-{
+impl<T: StateProvider<C>, C: SolanaClock> StateProvider<C> for Arc<T> {
   async fn fetch_state(&self) -> Result<ProtocolState<C>> {
     (**self).fetch_state().await
   }
@@ -166,13 +163,10 @@ mod tests {
 
   #[tokio::test]
   #[ignore = "requires the Exo registry router on mainnet"]
-  async fn test_fetch_state() {
+  async fn test_fetch_state() -> Result<()> {
     let rpc_client = build_test_rpc_client();
     let provider = RpcStateProvider::new(rpc_client);
-    let state = provider
-      .fetch_state()
-      .await
-      .expect("Failed to fetch protocol state");
+    let state = provider.fetch_state().await?;
 
     // Verify timestamp is set and matches clock
     assert!(state.fetched_at > 0);
@@ -200,5 +194,6 @@ mod tests {
 
     // Verify clock has reasonable values (slot is u64, so just check it's set)
     assert!(state.exchange_context.clock.slot() > 0);
+    Ok(())
   }
 }
