@@ -1680,7 +1680,6 @@ dependencies = [
  "anchor-spl",
  "anyhow",
  "bincode",
- "bytemuck",
  "hylo-clients",
  "hylo-core",
  "hylo-fix",
