@@ -12,6 +12,8 @@ use hylo_idl::tokens::{
 };
 use hylo_idl::{pda, with_exo_pairs};
 
+use crate::protocol_state::exo_pair::EXO_PAIR_ACCOUNTS;
+
 /// Role a mint plays in an exo pair's routing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExoRole {
@@ -90,7 +92,8 @@ pub fn exo_entry_role(
   }
 }
 
-/// Five pubkeys per registry entry, in `ExoPairAccounts` field order.
+/// [`EXO_PAIR_ACCOUNTS`] pubkeys per registry entry, in `ExoPairAccounts`
+/// field order.
 ///
 /// # Errors
 /// * Collateral mint has no feed
@@ -99,7 +102,7 @@ pub fn exo_pubkeys_from_entries(
 ) -> Result<Vec<Pubkey>, CoreError> {
   entries
     .iter()
-    .map(|entry| {
+    .map(|entry| -> Result<[Pubkey; EXO_PAIR_ACCOUNTS], CoreError> {
       let feed = exo_pyth_feed_by_mint(entry.collateral_mint)?;
       Ok([
         pda::exo_pair(entry.collateral_mint),
