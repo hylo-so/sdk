@@ -78,11 +78,7 @@ pub struct ExoPairState<C: SolanaClock> {
 
 /// Checks that the pair's oracle matches the feed the SDK fetches for its
 /// collateral.
-///
-/// # Errors
-/// * Collateral mint has no feed
-/// * Oracle address or feed id differs from the SDK feed
-pub fn validate_exo_pair_oracle(exo_pair: &ExoPair) -> Result<()> {
+fn validate_exo_pair_oracle(exo_pair: &ExoPair) -> Result<()> {
   let feed = exo_pyth_feed_by_mint(exo_pair.collateral_mint)?;
   ensure!(
     exo_pair.oracle == feed.address,
