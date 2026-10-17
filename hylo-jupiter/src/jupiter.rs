@@ -864,7 +864,6 @@ impl Amm for HyloJupiterExo {
 mod tests {
   use anchor_lang::pubkey;
   use fix::prelude::*;
-  use futures::stream::{self, StreamExt, TryStreamExt};
   use hylo_clients::prelude::{
     RouterArgs, TransactionSyntax, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD,
     USDC, XBTC, XSOL,
@@ -982,18 +981,17 @@ mod tests {
       params: None,
     };
     let amm_context = load_amm_context(&client).await?;
-    let amm =
+    let mut amm =
       HyloJupiterExo::from_keyed_account(&jupiter_account, &amm_context)?;
-    // Registry -> pair accounts -> oracle feeds.
-    stream::iter(0..3)
-      .map(Ok)
-      .try_fold(amm, |mut amm, _| async {
-        let account_map =
-          load_account_map(&client, &amm.get_accounts_to_update()).await?;
-        amm.update(&account_map)?;
-        Ok(amm)
-      })
-      .await
+    // The first update only discovers the pair account keys from the
+    // registry and fails on the pair accounts; the second has them.
+    let account_map =
+      load_account_map(&client, &amm.get_accounts_to_update()).await?;
+    let _ = amm.update(&account_map);
+    let account_map =
+      load_account_map(&client, &amm.get_accounts_to_update()).await?;
+    amm.update(&account_map)?;
+    Ok(amm)
   }
 
   #[tokio::test]
