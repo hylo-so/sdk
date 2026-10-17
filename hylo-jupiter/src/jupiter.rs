@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+use std::iter::once;
 use std::marker::PhantomData;
 
 use anchor_lang::prelude::Pubkey;
@@ -25,14 +27,13 @@ use hylo_quotes::protocol_state::ExoRole::{
 use hylo_quotes::protocol_state::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
   find_exo_entry, read_exo_entries, ExoAccounts, ExoPairAccounts,
-  ProtocolState, UsdcExchangeState,
+  ProtocolState, UsdcExchangeState, EXO_PAIR_ACCOUNTS,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
-use rust_decimal::Decimal;
 
 use crate::account_metas;
 use crate::util::{
-  account_map_get, keyed_account, quote, validate_swap_params,
+  account_map_get, fee_pct, keyed_account, quote, validate_swap_params,
 };
 
 /// Reads the active Exo entries from the router-owned registry account.
@@ -641,10 +642,11 @@ where
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    let mut mints = vec![IN::MINT, OUT::MINT, HYUSD::MINT, USDC::MINT];
-    mints.sort_unstable();
-    mints.dedup();
-    mints
+    [IN::MINT, OUT::MINT, HYUSD::MINT, USDC::MINT]
+      .into_iter()
+      .collect::<BTreeSet<_>>()
+      .into_iter()
+      .collect()
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
@@ -687,7 +689,8 @@ where
   }
 }
 
-/// Registry-rooted Jupiter AMM for every currently registered Exo pair.
+/// Registry-rooted Jupiter AMM for every currently registered exo pair.
+#[derive(Clone)]
 pub struct HyloJupiterExo {
   snapshot: HyloJupiterSnapshot,
   exo_entries: Vec<ExoEntry>,
@@ -699,16 +702,6 @@ impl HyloJupiterExo {
   fn exo_entry_for(&self, mint_a: Pubkey, mint_b: Pubkey) -> Result<&ExoEntry> {
     find_exo_entry(&self.exo_entries, mint_a, mint_b)
       .context("Exo route is not registered")
-  }
-}
-
-impl Clone for HyloJupiterExo {
-  fn clone(&self) -> Self {
-    HyloJupiterExo {
-      snapshot: self.snapshot.clone(),
-      exo_entries: self.exo_entries.clone(),
-      exo_account_keys: self.exo_account_keys.clone(),
-    }
   }
 }
 
@@ -740,7 +733,7 @@ impl Amm for HyloJupiterExo {
   }
 
   fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    let mut mints = [HYUSD::MINT, USDC::MINT]
+    [HYUSD::MINT, USDC::MINT]
       .into_iter()
       .chain(
         self
@@ -748,34 +741,35 @@ impl Amm for HyloJupiterExo {
           .iter()
           .flat_map(|entry| [entry.collateral_mint, entry.levercoin_mint]),
       )
-      .collect::<Vec<_>>();
-    mints.sort_unstable();
-    mints.dedup();
-    mints
+      .collect::<BTreeSet<_>>()
+      .into_iter()
+      .collect()
   }
 
   fn get_accounts_to_update(&self) -> Vec<Pubkey> {
-    let mut accounts = HyloJupiterSnapshot::accounts_to_update();
-    accounts.push(pda::EXO_REGISTRY);
-    accounts.extend(self.exo_account_keys.iter().copied());
-    accounts
+    HyloJupiterSnapshot::accounts_to_update()
+      .into_iter()
+      .chain(once(pda::EXO_REGISTRY))
+      .chain(self.exo_account_keys.iter().copied())
+      .collect()
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     let entries = exo_entries(account_map)?;
     self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
-    let exo_accounts = entries
-      .iter()
-      .map(|entry| {
-        let feed = exo_pyth_feed_by_mint(entry.collateral_mint)?;
-        let account = |key: &Pubkey| keyed_account(account_map, key).cloned();
-        let raw = ExoPairAccounts {
-          exo_pair: account(&pda::exo_pair(entry.collateral_mint))?,
-          vault: account(&pda::exo_vault(entry.collateral_mint))?,
-          levercoin_mint: account(&entry.levercoin_mint)?,
-          collateral_mint: account(&entry.collateral_mint)?,
-          oracle: account(&feed.address)?,
-        };
+    let exo_accounts = self
+      .exo_account_keys
+      .chunks(EXO_PAIR_ACCOUNTS)
+      .zip(&entries)
+      .map(|(keys, entry)| {
+        let fetched = keys
+          .iter()
+          .map(|key| account_map.get(key).cloned())
+          .collect::<Vec<_>>();
+        let raw =
+          ExoPairAccounts::from_fetched(&fetched).with_context(|| {
+            format!("exo pair accounts for {}", entry.collateral_mint)
+          })?;
         ExoAccounts::parse(entry, &raw)
       })
       .collect::<Result<Vec<_>>>()?;
@@ -793,19 +787,12 @@ impl Amm for HyloJupiterExo {
       params.output_mint,
       params.amount,
     )?;
-    let fee_pct = if quote.fee_base == 0 {
-      Decimal::ZERO
-    } else {
-      Decimal::from(quote.fee_amount)
-        .checked_div(Decimal::from(quote.fee_base))
-        .context("Exo fee percentage overflow")?
-    };
     Ok(Quote {
       in_amount: quote.in_amount,
       out_amount: quote.out_amount,
       fee_amount: quote.fee_amount,
       fee_mint: quote.fee_mint,
-      fee_pct,
+      fee_pct: fee_pct(quote.fee_amount, quote.fee_base)?,
     })
   }
 

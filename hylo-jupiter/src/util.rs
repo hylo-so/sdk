@@ -2,7 +2,6 @@ use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Context, Result};
-use fix::num_traits::FromPrimitive;
 use fix::prelude::UFix64;
 use fix::typenum::Integer;
 use hylo_core::idl::tokens::TokenMint;
@@ -16,23 +15,30 @@ use hylo_quotes::token_operation::{
 use rust_decimal::Decimal;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
+/// Fee percentage of `fee_base` taken as `fees_extracted`, both in atoms of
+/// the same mint.
+///
+/// # Errors
+/// * Arithmetic
+pub fn fee_pct(fees_extracted: u64, fee_base: u64) -> Result<Decimal> {
+  if fee_base == 0 {
+    Ok(Decimal::ZERO)
+  } else {
+    Decimal::from(fees_extracted)
+      .checked_div(Decimal::from(fee_base))
+      .context("Arithmetic error in `fee_pct`")
+  }
+}
+
 /// Computes fee percentage as `Decimal`.
 ///
 /// # Errors
-/// * Conversions
 /// * Arithmetic
 pub fn fee_pct_decimal<Exp>(
   fees_extracted: UFix64<Exp>,
   fee_base: UFix64<Exp>,
 ) -> Result<Decimal> {
-  if fee_base == UFix64::new(0) {
-    Ok(Decimal::ZERO)
-  } else {
-    Decimal::from_u64(fees_extracted.bits)
-      .zip(Decimal::from_u64(fee_base.bits))
-      .and_then(|(num, denom)| num.checked_div(denom))
-      .context("Arithmetic error in `fee_pct_decimal`")
-  }
+  fee_pct(fees_extracted.bits, fee_base.bits)
 }
 
 /// Converts [`OperationOutput`] to Jupiter [`Quote`].

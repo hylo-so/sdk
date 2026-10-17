@@ -5,7 +5,9 @@ mod provider;
 mod state;
 
 pub use accounts::ProtocolAccounts;
-pub use exo_pair::{ExoAccounts, ExoPairAccounts, ExoPairState};
+pub use exo_pair::{
+  ExoAccounts, ExoPairAccounts, ExoPairState, EXO_PAIR_ACCOUNTS,
+};
 pub use exo_registry::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
   find_exo_entry, read_exo_entries, ExoRole,

@@ -23,7 +23,7 @@ use crate::protocol_state::exo_registry::exo_pyth_feed_by_mint;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
 /// Accounts fetched per registry entry, the [`ExoPairAccounts`] field count.
-pub(crate) const EXO_PAIR_ACCOUNTS: usize = 5;
+pub const EXO_PAIR_ACCOUNTS: usize = 5;
 
 /// Raw accounts for one registry entry, in fetch order.
 #[derive(Debug, Clone, Serialize, Deserialize)]
