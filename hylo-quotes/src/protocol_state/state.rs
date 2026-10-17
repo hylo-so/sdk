@@ -168,124 +168,13 @@ impl<C: SolanaClock> ProtocolState<C> {
   where
     C: Clone,
   {
-    let exo_pairs =
-      ProtocolState::exo_pairs_from_accounts(&clock, exo_accounts)?;
-    ProtocolState::build_from_exo_pairs(
-      clock,
-      hylo,
-      jitosol_header,
-      hylosol_header,
-      hyusd_mint,
-      xsol_mint,
-      shyusd_mint,
-      pool_config,
-      hyusd_pool,
-      sol_usd,
-      exo_pairs,
-      usdc_exchange_state,
-      jitosol_stake_pool,
-      hylosol_stake_pool,
-      jitosol_vault_balance,
-      hylosol_vault_balance,
-    )
-  }
-
-  /// Build a core protocol snapshot.
-  ///
-  /// # Errors
-  ///
-  /// Returns an error if the core exchange context or a required protocol
-  /// conversion cannot be constructed from the supplied accounts.
-  #[allow(clippy::too_many_arguments)]
-  pub fn build_base(
-    clock: C,
-    hylo: &Hylo,
-    jitosol_header: LstHeader,
-    hylosol_header: LstHeader,
-    hyusd_mint: Mint,
-    xsol_mint: Mint,
-    shyusd_mint: Mint,
-    pool_config: PoolConfig,
-    hyusd_pool: TokenAccount,
-    sol_usd: &PriceUpdateV2,
-    usdc_exchange_state: UsdcExchangeState,
-    jitosol_stake_pool: SplStakePool,
-    hylosol_stake_pool: SplStakePool,
-    jitosol_vault_balance: UFix64<N9>,
-    hylosol_vault_balance: UFix64<N9>,
-  ) -> Result<ProtocolState<C>> {
-    ProtocolState::build_from_exo_pairs(
-      clock,
-      hylo,
-      jitosol_header,
-      hylosol_header,
-      hyusd_mint,
-      xsol_mint,
-      shyusd_mint,
-      pool_config,
-      hyusd_pool,
-      sol_usd,
-      HashMap::new(),
-      usdc_exchange_state,
-      jitosol_stake_pool,
-      hylosol_stake_pool,
-      jitosol_vault_balance,
-      hylosol_vault_balance,
-    )
-  }
-
-  /// Loads Exo pair state from parsed accounts, dropping any prior pairs.
-  ///
-  /// # Errors
-  /// * Pair state load
-  pub fn load_exo_pairs(
-    &mut self,
-    clock: &C,
-    exo_accounts: &[ExoAccounts],
-  ) -> Result<()>
-  where
-    C: Clone,
-  {
-    self.exo_pairs =
-      ProtocolState::exo_pairs_from_accounts(clock, exo_accounts)?;
-    Ok(())
-  }
-
-  fn exo_pairs_from_accounts(
-    clock: &C,
-    exo_accounts: &[ExoAccounts],
-  ) -> Result<HashMap<Pubkey, ExoPairState<C>>>
-  where
-    C: Clone,
-  {
-    exo_accounts
+    let exo_pairs = exo_accounts
       .iter()
       .map(|accounts| {
         let pair = accounts.pair_state(clock.clone())?;
-        Ok((accounts.collateral_mint(), pair))
+        Ok((pair.collateral_mint, pair))
       })
-      .collect()
-  }
-
-  #[allow(clippy::too_many_arguments)]
-  fn build_from_exo_pairs(
-    clock: C,
-    hylo: &Hylo,
-    jitosol_header: LstHeader,
-    hylosol_header: LstHeader,
-    hyusd_mint: Mint,
-    xsol_mint: Mint,
-    shyusd_mint: Mint,
-    pool_config: PoolConfig,
-    hyusd_pool: TokenAccount,
-    sol_usd: &PriceUpdateV2,
-    exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
-    usdc_exchange_state: UsdcExchangeState,
-    jitosol_stake_pool: SplStakePool,
-    hylosol_stake_pool: SplStakePool,
-    jitosol_vault_balance: UFix64<N9>,
-    hylosol_vault_balance: UFix64<N9>,
-  ) -> Result<ProtocolState<C>> {
+      .collect::<Result<HashMap<_, _>>>()?;
     let sol_usd_publish_time = sol_usd.price_message.publish_time;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;

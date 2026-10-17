@@ -130,7 +130,11 @@ impl HyloJupiterSnapshot {
     ]
   }
 
-  fn update(&mut self, account_map: &AccountMap) -> Result<()> {
+  fn update(
+    &mut self,
+    account_map: &AccountMap,
+    exo_accounts: &[ExoAccounts],
+  ) -> Result<()> {
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
     let xsol_mint: Mint = account_map_get(account_map, &XSOL::MINT)?;
@@ -162,7 +166,7 @@ impl HyloJupiterSnapshot {
     let hylosol_stake_pool = SplStakePool::from_bytes(
       &keyed_account(account_map, &HYLOSOL::POOL_STATE)?.data,
     )?;
-    self.state = Some(ProtocolState::build_base(
+    self.state = Some(ProtocolState::build(
       self.clock.clone(),
       &hylo,
       jitosol_header,
@@ -173,6 +177,7 @@ impl HyloJupiterSnapshot {
       pool_config,
       hyusd_pool,
       &sol_usd,
+      exo_accounts,
       usdc_exchange_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -647,7 +652,7 @@ where
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-    self.snapshot.update(account_map)
+    self.snapshot.update(account_map, &[])
   }
 
   fn quote(&self, params: &QuoteParams) -> Result<Quote> {
@@ -757,7 +762,6 @@ impl Amm for HyloJupiterExo {
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-    self.snapshot.update(account_map)?;
     let entries = exo_entries(account_map)?;
     self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
     let exo_accounts = entries
@@ -775,13 +779,9 @@ impl Amm for HyloJupiterExo {
         ExoAccounts::parse(entry, &raw)
       })
       .collect::<Result<Vec<_>>>()?;
+    self.snapshot.update(account_map, &exo_accounts)?;
     self.exo_entries = entries;
-    self
-      .snapshot
-      .state
-      .as_mut()
-      .context("core state not set")?
-      .load_exo_pairs(&self.snapshot.clock, &exo_accounts)
+    Ok(())
   }
 
   fn quote(&self, params: &QuoteParams) -> Result<Quote> {

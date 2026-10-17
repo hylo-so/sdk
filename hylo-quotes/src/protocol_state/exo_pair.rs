@@ -136,11 +136,6 @@ impl ExoAccounts {
     })
   }
 
-  #[must_use]
-  pub fn collateral_mint(&self) -> Pubkey {
-    self.exo_pair.collateral_mint
-  }
-
   /// Loads the pair state under `clock`.
   ///
   /// # Errors
