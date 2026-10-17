@@ -12,7 +12,7 @@ use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::idl::tokens::{
   StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
-use hylo_core::idl::{exchange, pda};
+use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
 use hylo_core::reserve_gate::ReserveGate;
@@ -267,7 +267,7 @@ impl Amm for HyloJupiter {
   }
 
   fn program_id(&self) -> Pubkey {
-    exchange::ID
+    router::ID
   }
 
   fn key(&self) -> Pubkey {
