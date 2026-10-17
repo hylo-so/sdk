@@ -5,20 +5,17 @@
 use std::sync::Arc;
 
 use anchor_lang::prelude::{Clock, Pubkey};
-use anchor_lang::AccountDeserialize;
-use anchor_spl::token::Mint;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
-use hylo_core::idl::exchange::accounts::Hylo;
 use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
 use hylo_idl::{pda, with_exo_pairs};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
+use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::{
   build_lst_exchange_context, exo_pubkeys_from_entries, read_exo_entries,
   ExoAccounts, ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
@@ -73,13 +70,12 @@ impl RpcStateProvider {
       }
       _ => Err(anyhow!("Missing LST account")),
     }?;
-    let hylo = Hylo::try_deserialize(&mut hylo.data.as_slice())?;
-    let xsol_mint = Mint::try_deserialize(&mut xsol_mint.data.as_slice())?;
-    let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())
-      .context("SOL/USD Pyth deserialization")?;
-    let clock: Clock = bincode::deserialize(&clock.data)
-      .context("Failed to deserialize clock")?;
-    build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)
+    build_lst_exchange_context(
+      decode_clock(clock)?,
+      &decode(hylo, "Hylo")?,
+      &decode(xsol_mint, "XSOL mint")?,
+      &decode(sol_usd, "SOL/USD Pyth feed")?,
+    )
   }
 
   /// Fetch the isolated pair state for exo collateral `E`.
@@ -99,9 +95,7 @@ impl RpcStateProvider {
       data.split_last().context("Missing exo account")?;
     let raw = ExoPairAccounts::from_fetched(pair_accounts)?;
     let clock = clock.as_ref().context("Missing clock account")?;
-    let clock: Clock = bincode::deserialize(&clock.data)
-      .context("Failed to deserialize clock")?;
-    ExoAccounts::parse(&E::EXO_ENTRY, &raw)?.pair_state(clock)
+    ExoAccounts::parse(&E::EXO_ENTRY, &raw)?.pair_state(decode_clock(clock)?)
   }
 }
 

@@ -7,9 +7,8 @@ use std::collections::HashMap;
 
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::prelude::Pubkey;
-use anchor_lang::AccountDeserialize;
 use anchor_spl::token::{Mint, TokenAccount};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;
 use hylo_core::error::CoreError;
@@ -30,6 +29,7 @@ use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
+use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::{
   read_exo_entries, ExoAccounts, ExoPairState, ProtocolAccounts,
 };
@@ -319,11 +319,9 @@ fn build_usdc_exchange_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
 ) -> Result<UsdcExchangeState> {
-  let usdc_pair =
-    UsdcPair::try_deserialize(&mut accounts.usdc_pair.data.as_slice())?;
-  let usdc_usd =
-    PriceUpdateV2::try_deserialize(&mut accounts.usdc_usd_pyth.data.as_slice())
-      .context("USDC/USD Pyth deserialization")?;
+  let usdc_pair: UsdcPair = decode(&accounts.usdc_pair, "UsdcPair")?;
+  let usdc_usd: PriceUpdateV2 =
+    decode(&accounts.usdc_usd_pyth, "USDC/USD Pyth feed")?;
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
@@ -331,8 +329,7 @@ fn build_usdc_exchange_state(
   );
   let usdc_usd_spot = query_pyth_oracle(clock, &usdc_usd, oracle_config)
     .map(|oracle| oracle.spot);
-  let usdc_vault =
-    TokenAccount::try_deserialize(&mut accounts.usdc_vault.data.as_slice())?;
+  let usdc_vault: TokenAccount = decode(&accounts.usdc_vault, "USDC vault")?;
 
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
@@ -362,52 +359,30 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
   /// # Errors
   /// Returns error if any account fails deserialization.
   fn try_from(accounts: &ProtocolAccounts) -> Result<Self> {
-    let hylo = Hylo::try_deserialize(&mut accounts.hylo.data.as_slice())?;
-
-    let jitosol_header =
-      LstHeader::try_deserialize(&mut accounts.jitosol_header.data.as_slice())?;
-
-    let hylosol_header =
-      LstHeader::try_deserialize(&mut accounts.hylosol_header.data.as_slice())?;
-
-    let hyusd_mint =
-      Mint::try_deserialize(&mut accounts.hyusd_mint.data.as_slice())?;
-
-    let shyusd_mint =
-      Mint::try_deserialize(&mut accounts.shyusd_mint.data.as_slice())?;
-
-    let xsol_mint =
-      Mint::try_deserialize(&mut accounts.xsol_mint.data.as_slice())?;
-
-    let pool_config =
-      PoolConfig::try_deserialize(&mut accounts.pool_config.data.as_slice())?;
-
-    let hyusd_pool =
-      TokenAccount::try_deserialize(&mut accounts.hyusd_pool.data.as_slice())?;
-
-    let sol_usd = PriceUpdateV2::try_deserialize(
-      &mut accounts.sol_usd_pyth.data.as_slice(),
-    )
-    .context("SOL/USD Pyth deserialization")?;
-
-    let clock: Clock = bincode::deserialize(&accounts.clock.data)
-      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
-
+    let hylo: Hylo = decode(&accounts.hylo, "Hylo")?;
+    let jitosol_header: LstHeader =
+      decode(&accounts.jitosol_header, "JitoSOL header")?;
+    let hylosol_header: LstHeader =
+      decode(&accounts.hylosol_header, "hyloSOL header")?;
+    let hyusd_mint: Mint = decode(&accounts.hyusd_mint, "HYUSD mint")?;
+    let shyusd_mint: Mint = decode(&accounts.shyusd_mint, "SHYUSD mint")?;
+    let xsol_mint: Mint = decode(&accounts.xsol_mint, "XSOL mint")?;
+    let pool_config: PoolConfig = decode(&accounts.pool_config, "Pool config")?;
+    let hyusd_pool: TokenAccount = decode(&accounts.hyusd_pool, "HYUSD pool")?;
+    let sol_usd: PriceUpdateV2 =
+      decode(&accounts.sol_usd_pyth, "SOL/USD Pyth feed")?;
+    let clock = decode_clock(&accounts.clock)?;
     let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
-
     let jitosol_stake_pool =
       SplStakePool::from_bytes(&accounts.jitosol_pool_state.data)?;
     let hylosol_stake_pool =
       SplStakePool::from_bytes(&accounts.hylosol_pool_state.data)?;
-
-    let jitosol_vault = TokenAccount::try_deserialize(
-      &mut accounts.jitosol_vault.data.as_slice(),
-    )?;
-    let hylosol_vault = TokenAccount::try_deserialize(
-      &mut accounts.hylosol_vault.data.as_slice(),
-    )?;
+    let jitosol_vault: TokenAccount =
+      decode(&accounts.jitosol_vault, "JitoSOL vault")?;
+    let hylosol_vault: TokenAccount =
+      decode(&accounts.hylosol_vault, "hyloSOL vault")?;
     let entries = read_exo_entries(&accounts.exo_registry.data)?;
-    anyhow::ensure!(
+    ensure!(
       entries.len() == accounts.exo_accounts.len(),
       "Exo registry has {} entries but {} pair account groups were fetched",
       entries.len(),

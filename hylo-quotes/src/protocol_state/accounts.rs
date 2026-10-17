@@ -1,7 +1,7 @@
 //! Type-safe collection of protocol state accounts
 
 use anchor_client::solana_sdk::account::Account;
-use anchor_lang::prelude::Pubkey;
+use anchor_lang::prelude::{Clock, Pubkey};
 use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
 use anyhow::{ensure, Context, Result};
@@ -22,6 +22,11 @@ pub(crate) fn decode<A: AccountDeserialize>(
 ) -> Result<A> {
   A::try_deserialize(&mut account.data.as_slice())
     .with_context(|| format!("{name} deserialization"))
+}
+
+/// Deserializes the clock sysvar account.
+pub(crate) fn decode_clock(account: &Account) -> Result<Clock> {
+  bincode::deserialize(&account.data).context("Clock deserialization")
 }
 
 /// Extracts the fetched account at `index`, named `name` in errors.
