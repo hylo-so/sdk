@@ -66,7 +66,7 @@ impl RpcStateProvider {
       .rpc_client
       .get_multiple_accounts(&pubkeys)
       .await
-      .map_err(|e| anyhow!("Failed to fetch LST accounts from RPC: {e}"))?;
+      .context("Failed to fetch LST accounts from RPC")?;
     let (hylo, xsol_mint, sol_usd, clock) = match data.as_slice() {
       [Some(hylo), Some(xsol_mint), Some(sol_usd), Some(clock)] => {
         Ok((hylo, xsol_mint, sol_usd, clock))
@@ -78,7 +78,7 @@ impl RpcStateProvider {
     let sol_usd = PriceUpdateV2::try_deserialize(&mut sol_usd.data.as_slice())
       .context("SOL/USD Pyth deserialization")?;
     let clock: Clock = bincode::deserialize(&clock.data)
-      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+      .context("Failed to deserialize clock")?;
     build_lst_exchange_context(clock, &hylo, &xsol_mint, &sol_usd)
   }
 
@@ -94,13 +94,13 @@ impl RpcStateProvider {
       .rpc_client
       .get_multiple_accounts(&pubkeys)
       .await
-      .map_err(|e| anyhow!("Failed to fetch exo accounts from RPC: {e}"))?;
+      .context("Failed to fetch exo accounts from RPC")?;
     let (clock, pair_accounts) =
       data.split_last().context("Missing exo account")?;
     let raw = ExoPairAccounts::from_fetched(pair_accounts)?;
     let clock = clock.as_ref().context("Missing clock account")?;
     let clock: Clock = bincode::deserialize(&clock.data)
-      .map_err(|e| anyhow!("Failed to deserialize clock: {e}"))?;
+      .context("Failed to deserialize clock")?;
     ExoAccounts::parse(&E::EXO_ENTRY, &raw)?.pair_state(clock)
   }
 }
@@ -135,7 +135,7 @@ impl StateProvider<Clock> for RpcStateProvider {
       .rpc_client
       .get_account(&pda::EXO_REGISTRY)
       .await
-      .map_err(|e| anyhow!("Failed to fetch Exo registry from RPC: {e}"))?;
+      .context("Failed to fetch Exo registry from RPC")?;
     let entries = read_exo_entries(&registry_account.data)?;
     let exo_keys = exo_pubkeys_from_entries(&entries)?;
     let keys = ProtocolAccounts::PUBKEYS
@@ -146,7 +146,7 @@ impl StateProvider<Clock> for RpcStateProvider {
       .rpc_client
       .get_multiple_accounts(&keys)
       .await
-      .map_err(|e| anyhow!("Failed to fetch accounts from RPC: {e}"))?;
+      .context("Failed to fetch accounts from RPC")?;
     let accounts = ProtocolAccounts::from_fetched(&account_data)?;
     ProtocolState::try_from(&accounts)
   }
