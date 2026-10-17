@@ -18,13 +18,13 @@ use hylo_core::virtual_stablecoin::{
   max_mintable, validate_burn, SUPPLY_FLOOR,
 };
 use hylo_idl::tokens::{
-  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
-  XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD,
+  USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 use hylo_idl::with_exo_pairs;
 
 use crate::protocol_state::ExoRole::{Collateral, Levercoin, Stablecoin, Usdc};
-use crate::protocol_state::{exo_entry_role, ProtocolState};
+use crate::protocol_state::{exo_entry_role, find_exo_entry, ProtocolState};
 use crate::token_operation::{
   atom_rate, gate, past_zero, FeeBase, LstSwapOperationOutput,
   MintOperationOutput, OperationOutput, RedeemOperationOutput,
@@ -32,9 +32,9 @@ use crate::token_operation::{
 };
 use crate::{Local, LocalExo, LST};
 
-/// Type-erased exo quote in the route mints' atoms.
+/// Type-erased quote in the route mints' atoms.
 #[derive(Debug, Clone, Copy)]
-pub struct RuntimeExoQuote {
+pub struct RuntimeQuote {
   pub in_amount: u64,
   pub out_amount: u64,
   pub fee_amount: u64,
@@ -44,10 +44,10 @@ pub struct RuntimeExoQuote {
 }
 
 impl<InExp: Integer, OutExp: Integer, FeeExp: Integer>
-  From<OperationOutput<InExp, OutExp, FeeExp>> for RuntimeExoQuote
+  From<OperationOutput<InExp, OutExp, FeeExp>> for RuntimeQuote
 {
-  fn from(quote: OperationOutput<InExp, OutExp, FeeExp>) -> RuntimeExoQuote {
-    RuntimeExoQuote {
+  fn from(quote: OperationOutput<InExp, OutExp, FeeExp>) -> RuntimeQuote {
+    RuntimeQuote {
       in_amount: quote.in_amount.bits,
       out_amount: quote.out_amount.bits,
       fee_amount: quote.fee_amount.bits,
@@ -2040,47 +2040,43 @@ macro_rules! runtime_exo_dispatch {
     impl<C: SolanaClock> ProtocolState<C> {
       /// Quotes a registry entry's route between `input_mint` and
       /// `output_mint` through the typed [`TokenOperation`] for its pair.
-      ///
-      /// # Errors
-      /// * Mints are not a route of the entry
-      /// * Route gated in current state or protocol arithmetic
-      pub fn runtime_exo_quote(
+      fn runtime_exo_quote(
         &self,
         entry: &ExoEntry,
         input_mint: Pubkey,
         output_mint: Pubkey,
         amount: u64,
-      ) -> Result<RuntimeExoQuote, CoreError> {
+      ) -> Result<RuntimeQuote, CoreError> {
         let input_role = exo_entry_role(entry, input_mint)?;
         let output_role = exo_entry_role(entry, output_mint)?;
         match (entry.collateral_mint, input_role, output_role) {
           $(
           (<$exo>::MINT, Collateral, Stablecoin) => self
             .output::<$exo, HYUSD>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Stablecoin, Collateral) => self
             .output::<HYUSD, $exo>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Collateral, Levercoin) => self
             .output::<$exo, $lever>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Levercoin, Collateral) => self
             .output::<$lever, $exo>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Stablecoin, Levercoin) => self
             .output::<HYUSD, $lever>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Levercoin, Stablecoin) => self
             .output::<$lever, HYUSD>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Collateral, Usdc) => self
             .output::<$exo, USDC>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           (<$exo>::MINT, Usdc, Collateral) => self
             .output::<USDC, $exo>(UFix64::new(amount))
-            .map(RuntimeExoQuote::from),
+            .map(RuntimeQuote::from),
           )+
-          _ => Err(CoreError::UnroutableExoPair),
+          _ => Err(CoreError::UnroutablePair),
         }
       }
     }
@@ -2088,3 +2084,60 @@ macro_rules! runtime_exo_dispatch {
 }
 
 with_exo_pairs!(runtime_exo_dispatch);
+
+macro_rules! enshrined_routes {
+  ($(($in:ident, $out:ident)),+ $(,)?) => {
+    impl<C: SolanaClock> ProtocolState<C> {
+      /// Quotes the route between `input_mint` and `output_mint`: an
+      /// enshrined LST, USDC, or earn pool pair, else the exo pair in
+      /// `entries` that owns one of the mints.
+      ///
+      /// # Errors
+      /// * [`CoreError::UnroutablePair`] when no route joins the mints
+      /// * Route gated in current state or protocol arithmetic
+      pub fn runtime_quote(
+        &self,
+        entries: &[ExoEntry],
+        input_mint: Pubkey,
+        output_mint: Pubkey,
+        amount: u64,
+      ) -> Result<RuntimeQuote, CoreError> {
+        match (input_mint, output_mint) {
+          $(
+          (<$in>::MINT, <$out>::MINT) => self
+            .output::<$in, $out>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          )+
+          _ => find_exo_entry(entries, input_mint, output_mint)
+            .ok_or(CoreError::UnroutablePair)
+            .and_then(|entry| {
+              self.runtime_exo_quote(entry, input_mint, output_mint, amount)
+            }),
+        }
+      }
+    }
+  };
+}
+
+enshrined_routes! {
+  (JITOSOL, HYUSD),
+  (HYUSD, JITOSOL),
+  (HYLOSOL, HYUSD),
+  (HYUSD, HYLOSOL),
+  (JITOSOL, XSOL),
+  (XSOL, JITOSOL),
+  (HYLOSOL, XSOL),
+  (XSOL, HYLOSOL),
+  (HYUSD, XSOL),
+  (XSOL, HYUSD),
+  (JITOSOL, HYLOSOL),
+  (HYLOSOL, JITOSOL),
+  (JITOSOL, USDC),
+  (USDC, JITOSOL),
+  (HYLOSOL, USDC),
+  (USDC, HYLOSOL),
+  (USDC, HYUSD),
+  (HYUSD, USDC),
+  (HYUSD, SHYUSD),
+  (SHYUSD, HYUSD),
+}

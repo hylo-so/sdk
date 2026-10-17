@@ -287,6 +287,6 @@ pub enum CoreError {
   #[msg("USDC vault balance below required reserve.")]
   UsdcReserveBelowMinimum,
   // `exo_registry`
-  #[msg("Mint pair is not a route of the exo entry.")]
-  UnroutableExoPair,
+  #[msg("No route between the mint pair.")]
+  UnroutablePair,
 }

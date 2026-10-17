@@ -3,14 +3,8 @@ use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::UFix64;
-use fix::typenum::Integer;
-use hylo_core::idl::tokens::TokenMint;
 use hylo_jupiter_amm_interface::{
-  AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
-};
-use hylo_quotes::protocol_state::ProtocolState;
-use hylo_quotes::token_operation::{
-  OperationOutput, TokenOperation, TokenOperationExt,
+  AccountMap, AmmContext, ClockRef, SwapMode, SwapParams,
 };
 use rust_decimal::Decimal;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -39,47 +33,6 @@ pub fn fee_pct_decimal<Exp>(
   fee_base: UFix64<Exp>,
 ) -> Result<Decimal> {
   fee_pct(fees_extracted.bits, fee_base.bits)
-}
-
-/// Converts [`OperationOutput`] to Jupiter [`Quote`].
-///
-/// # Errors
-/// * Fee decimal conversion
-pub fn operation_to_quote<InExp, OutExp, FeeExp>(
-  op: OperationOutput<InExp, OutExp, FeeExp>,
-) -> Result<Quote>
-where
-  InExp: Integer,
-  OutExp: Integer,
-  FeeExp: Integer,
-{
-  let fee_pct = fee_pct_decimal(op.fee_amount, op.fee_base)?;
-  Ok(Quote {
-    in_amount: op.in_amount.bits,
-    out_amount: op.out_amount.bits,
-    fee_amount: op.fee_amount.bits,
-    fee_mint: op.fee_mint,
-    fee_pct,
-  })
-}
-
-/// Generic Jupiter quote for any `IN -> OUT` pair.
-///
-/// # Errors
-/// * Quote math
-/// * Fee decimal conversion
-pub fn quote<IN, OUT>(
-  state: &ProtocolState<ClockRef>,
-  amount: u64,
-) -> Result<Quote>
-where
-  IN: TokenMint,
-  OUT: TokenMint,
-  ProtocolState<ClockRef>: TokenOperation<IN, OUT>,
-  <ProtocolState<ClockRef> as TokenOperation<IN, OUT>>::FeeExp: Integer,
-{
-  let op = state.output::<IN, OUT>(UFix64::new(amount))?;
-  operation_to_quote(op)
 }
 
 /// Finds a raw account in Jupiter's `AccountMap`.

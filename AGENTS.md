@@ -134,7 +134,7 @@ Quoting strategies over protocol state or simulation.
 
 ### `hylo-jupiter`
 
-Jupiter AMM integration. `HyloJupiterPair`, `HyloJupiterExo`, `PairConfig`,
+Jupiter AMM integration. `HyloJupiter`, one AMM over every route, and
 `account_metas`. Excluded from workspace tests.
 
 ### `hylo-stats`
