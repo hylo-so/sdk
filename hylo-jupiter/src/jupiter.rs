@@ -9,6 +9,9 @@ use hylo_core::error::CoreError;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
 use hylo_core::idl::router::types::ExoEntry;
+use hylo_core::idl::tokens::ExoRole::{
+  Collateral, Levercoin, Stablecoin, Usdc,
+};
 use hylo_core::idl::tokens::{
   StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
@@ -20,9 +23,6 @@ use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
-};
-use hylo_quotes::protocol_state::ExoRole::{
-  Collateral, Levercoin, Stablecoin, Usdc,
 };
 use hylo_quotes::protocol_state::{
   exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
