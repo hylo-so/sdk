@@ -76,7 +76,7 @@ fn validate_entry(entry: &ExoEntry, exo_pair: &ExoPair) -> Result<()> {
   );
   ensure!(
     pda::exo_levercoin_mint(entry.collateral_mint) == entry.levercoin_mint,
-    "registry levercoin mint {} is not the levercoin PDA for {}",
+    "Registry levercoin mint {} is not the levercoin PDA for {}",
     entry.levercoin_mint,
     entry.collateral_mint,
   );
