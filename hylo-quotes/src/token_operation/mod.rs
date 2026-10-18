@@ -4,6 +4,7 @@ mod earn_pool;
 mod exchange;
 
 use anchor_lang::prelude::Pubkey;
+pub use exchange::RuntimeQuote;
 use fix::prelude::{CheckedAdd, UFix64, N6, N9};
 use fix::typenum::Integer;
 use hylo_core::calculus::{positive, positive_rate};

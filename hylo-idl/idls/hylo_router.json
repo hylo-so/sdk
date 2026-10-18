@@ -8,6 +8,380 @@
   },
   "instructions": [
     {
+      "name": "initialize_exo_registry",
+      "discriminator": [
+        206,
+        1,
+        167,
+        241,
+        155,
+        52,
+        154,
+        32
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "exo_registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_exo_entry",
+      "discriminator": [
+        181,
+        72,
+        217,
+        192,
+        124,
+        174,
+        91,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "exo_pair",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "exo_registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "levercoin_mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  108,
+                  101,
+                  118,
+                  101,
+                  114,
+                  99,
+                  111,
+                  105,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                245,
+                187,
+                72,
+                160,
+                4,
+                116,
+                48,
+                134,
+                197,
+                164,
+                152,
+                189,
+                233,
+                219,
+                27,
+                124,
+                201,
+                65,
+                103,
+                243,
+                58,
+                82,
+                140,
+                90,
+                13,
+                150,
+                83,
+                40,
+                223,
+                158,
+                124,
+                33
+              ]
+            }
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "RegisterExoEntryEvent"
+        }
+      }
+    },
+    {
       "name": "route",
       "discriminator": [
         229,
@@ -44,6 +418,125 @@
           }
         }
       ]
+    },
+    {
+      "name": "route_v2",
+      "discriminator": [
+        187,
+        100,
+        250,
+        204,
+        49,
+        196,
+        175,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "exo_registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "token_a",
+          "type": "pubkey"
+        },
+        {
+          "name": "token_b",
+          "type": "pubkey"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "slippage_config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "SlippageConfig"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ExoPair",
+      "discriminator": [
+        251,
+        244,
+        72,
+        181,
+        40,
+        119,
+        232,
+        48
+      ]
+    },
+    {
+      "name": "ExoRegistry",
+      "discriminator": [
+        58,
+        84,
+        157,
+        251,
+        17,
+        52,
+        87,
+        210
+      ]
+    },
+    {
+      "name": "Hylo",
+      "discriminator": [
+        114,
+        161,
+        169,
+        210,
+        204,
+        175,
+        149,
+        174
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "RegisterExoEntryEvent",
+      "discriminator": [
+        27,
+        24,
+        183,
+        127,
+        40,
+        144,
+        30,
+        0
+      ]
     }
   ],
   "errors": [
@@ -56,9 +549,623 @@
       "code": 6001,
       "name": "InvalidRouteAccounts",
       "msg": "Invalid accounts for route."
+    },
+    {
+      "code": 6002,
+      "name": "ExoRegistryFull",
+      "msg": "EXO registry is full."
+    },
+    {
+      "code": 6003,
+      "name": "ExoAlreadyRegistered",
+      "msg": "EXO pair is already registered."
+    },
+    {
+      "code": 6004,
+      "name": "AdminNoop",
+      "msg": "Admin instruction would have no effect."
     }
   ],
   "types": [
+    {
+      "name": "BorrowRateCurveConfig",
+      "docs": [
+        "Per-epoch borrow rate for exogenous collateral without native yield."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_rate",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExoEntry",
+      "docs": [
+        "Collateral mint paired with its levercoin mint."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExoPair",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "fee_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle_feed_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_mint_threshold",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_curve_config",
+            "type": {
+              "defined": {
+                "name": "BorrowRateCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "borrow_rate_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "levercoin_market_cap_limit",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin_supply_floor",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                91
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExoRegistry",
+      "docs": [
+        "Routable EXO collateral and levercoin mint pairs."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "current_size",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad",
+            "docs": [
+              "Pads the header to eight bytes."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "entries",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "ExoEntry"
+                  }
+                },
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeePair",
+      "docs": [
+        "Represents the spread of fees between mint and redeem for protocol tokens.",
+        "All fees must be in basis points to represent a fractional percentage",
+        "directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "redeem",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "HarvestCache",
+      "docs": [
+        "Records epoch harvest information for offchain consumers."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "stability_pool_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_to_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Hylo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_registry",
+            "type": "pubkey"
+          },
+          {
+            "name": "stablecoin_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "stablecoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "stablecoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "registry_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "total_sol_cache_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
+              }
+            }
+          },
+          {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "total_sol_cache",
+            "type": {
+              "defined": {
+                "name": "TotalSolCache"
+              }
+            }
+          },
+          {
+            "name": "yield_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "yield_harvest_config",
+            "type": {
+              "defined": {
+                "name": "YieldHarvestConfig"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_mint_threshold",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "_unused_1",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "sol_usd_oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_swap_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "lst_buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "lst_sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "protocol_paused",
+            "type": "bool"
+          },
+          {
+            "name": "lst_pair_paused",
+            "type": "bool"
+          },
+          {
+            "name": "_unused_2",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                13
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LevercoinFees",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "normal",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "sell_zone_1",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "sell_zone_2",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolDrawdown",
+      "docs": [
+        "Outstanding hyUSD debt owed to the earn pool after a Depeg absorption."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalanceCurveConfig",
+      "docs": [
+        "Floor/ceil deviation percentages for rebalance price curve construction."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_pct",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_pct",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegisterExoEntryEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "SlippageConfig",
       "docs": [
@@ -87,6 +1194,53 @@
       }
     },
     {
+      "name": "StablecoinFees",
+      "docs": [
+        "**Deprecated** — retained only for `Hylo` account deserialization."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "normal",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "mode_1",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TotalSolCache",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "current_update_epoch",
+            "type": "u64"
+          },
+          {
+            "name": "total_sol",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UFixValue64",
       "docs": [
         "A value-space `Fix` where base is always 10 and bits are a concrete type.",
@@ -105,6 +1259,64 @@
           }
         ]
       }
+    },
+    {
+      "name": "VirtualStablecoin",
+      "docs": [
+        "Simple counter representing the supply of a \"virtual\" stablecoin."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "supply",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldHarvestConfig",
+      "docs": [
+        "Captures yield harvest configuration as two basis point values:"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "EXO_REGISTRY",
+      "type": {
+        "array": [
+          "u8",
+          12
+        ]
+      },
+      "value": "[101, 120, 111, 95, 114, 101, 103, 105, 115, 116, 114, 121]"
     }
   ]
 }
