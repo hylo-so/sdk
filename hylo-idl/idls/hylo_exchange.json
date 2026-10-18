@@ -21229,7 +21229,7 @@
     {
       "name": "HarvestCache",
       "docs": [
-        "Records epoch harvest information for off-chain consumers."
+        "Records epoch harvest information for offchain consumers."
       ],
       "type": {
         "kind": "struct",
