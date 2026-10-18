@@ -18,7 +18,7 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::{
   build_lst_exchange_context, exo_pubkeys_from_entries, read_exo_entries,
-  ExoAccounts, ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
+  ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
 };
 
 /// Trait for fetching protocol state from a data source
@@ -92,7 +92,7 @@ impl RpcStateProvider {
       data.split_last().context("Missing exo account")?;
     let raw = ExoPairAccounts::from_fetched(pair_accounts)?;
     let clock = clock.as_ref().context("Missing clock account")?;
-    ExoAccounts::parse(&E::EXO_ENTRY, &raw)?.pair_state(decode_clock(clock)?)
+    raw.pair_state(&E::EXO_ENTRY, decode_clock(clock)?)
   }
 }
 

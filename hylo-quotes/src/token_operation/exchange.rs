@@ -82,7 +82,7 @@ impl<C: SolanaClock> ProtocolState<C> {
 
   /// Pause and par gates for routes touching the USDC vault.
   fn usdc_pair_gates(&self) -> Result<(), CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!usdc_state.paused, CoreError::PairPaused)?;
     usdc_state
@@ -92,7 +92,7 @@ impl<C: SolanaClock> ProtocolState<C> {
 
   /// USDC the vault can pay out against the virtual stablecoin supply.
   fn usdc_redeemable(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     Ok(
       usdc_state
         .vault_balance
@@ -105,7 +105,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
     pair_size_usd: UFix64<N9>,
   ) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let min_usdc_reserve =
       usdc_state.reserve_gate.required_reserve(pair_size_usd)?;
     let usdc_headroom = usdc_state
@@ -676,7 +676,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -695,7 +695,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let counter_headroom = usdc_state.virtual_stablecoin.max_mintable()?;
     let mint_headroom = max_mintable(UFix64::new(self.hyusd_mint.supply))?;
     FeeExtract::max_input(
@@ -705,7 +705,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     past_zero(FeeExtract::max_input(usdc_state.mint_fee, UFix64::zero())?)
   }
 }
@@ -721,7 +721,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -748,12 +748,12 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let redeem_fee = self.usdc_exchange_state().redeem_fee;
+    let redeem_fee = self.usdc_pair.redeem_fee;
     FeeExtract::max_input(redeem_fee, self.usdc_redeemable()?)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     past_zero(FeeExtract::max_input(
       usdc_state.redeem_fee,
       UFix64::zero(),
@@ -1320,7 +1320,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       .rebalance_buy_conversion(&adjusted, in_amount)?;
     let out_amount = conversion.lst_to_token(in_amount, UFix64::one())?;
     gate(
-      out_amount <= self.usdc_exchange_state().vault_balance,
+      out_amount <= self.usdc_pair.vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
     let pair_size_usd = self.exchange_context.total_value_locked()?;
@@ -1580,7 +1580,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let out_amount =
       conversion.exo_to_token(normalized, UFix64::<N9>::one())?;
     gate(
-      out_amount <= self.usdc_exchange_state().vault_balance,
+      out_amount <= self.usdc_pair.vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
     let pair_size_usd = pair.context.total_value_locked()?;

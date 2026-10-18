@@ -22,7 +22,7 @@ use hylo_idl::tokens::{
 use hylo_quotes::prelude::{
   FeeBase, ProtocolState, RedemptionLane, RedemptionRate, TokenOperation,
 };
-use hylo_quotes::protocol_state::{ExoPairState, UsdcExchangeState};
+use hylo_quotes::protocol_state::{ExoPairState, UsdcPairState};
 
 const REFERENCE: UFix64<N6> = UFix64::constant(1_000_000_000);
 
@@ -443,9 +443,9 @@ fn no_priced_lane_fails() -> Result<()> {
   let state = with_stale_exo_oracle::<HYPE>(state)?;
   let state = ProtocolState {
     sol_usd_publish_time: 0,
-    usdc_exchange_state: UsdcExchangeState {
+    usdc_pair: UsdcPairState {
       vault_balance: UFix64::zero(),
-      ..state.usdc_exchange_state
+      ..state.usdc_pair
     },
     ..state
   };
@@ -461,9 +461,9 @@ fn no_priced_lane_fails() -> Result<()> {
 fn rejected_usdc_oracle_drops_only_the_usdc_lane() -> Result<()> {
   let state = load_state()?;
   let state = ProtocolState {
-    usdc_exchange_state: UsdcExchangeState {
+    usdc_pair: UsdcPairState {
       usdc_usd_spot: Err(CoreError::PythOracleConfidence),
-      ..state.usdc_exchange_state
+      ..state.usdc_pair
     },
     ..state
   };
@@ -491,13 +491,13 @@ fn usdc_lane_prices_at_spot_capped_at_par() -> Result<()> {
   let with_spot = |spot: UFix64<N9>| -> Result<ProtocolState<Clock>> {
     let state = load_state()?;
     Ok(ProtocolState {
-      usdc_exchange_state: UsdcExchangeState {
+      usdc_pair: UsdcPairState {
         virtual_stablecoin: VirtualStablecoin {
           supply: capacity.into(),
         },
         vault_balance: capacity,
         usdc_usd_spot: Ok(spot),
-        ..state.usdc_exchange_state
+        ..state.usdc_pair
       },
       ..state
     })

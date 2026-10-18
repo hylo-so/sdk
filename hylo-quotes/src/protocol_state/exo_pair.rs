@@ -35,37 +35,6 @@ pub struct ExoPairAccounts {
   pub oracle: Account,
 }
 
-impl ExoPairAccounts {
-  /// Builds from five fetched accounts in field order.
-  ///
-  /// # Errors
-  /// * Wrong count or any account missing
-  pub fn from_fetched(accounts: &[Option<Account>]) -> Result<ExoPairAccounts> {
-    match accounts {
-      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint), Some(oracle)] => {
-        Ok(ExoPairAccounts {
-          exo_pair: exo_pair.clone(),
-          vault: vault.clone(),
-          levercoin_mint: levercoin_mint.clone(),
-          collateral_mint: collateral_mint.clone(),
-          oracle: oracle.clone(),
-        })
-      }
-      _ => Err(anyhow!("Exo pair accounts missing")),
-    }
-  }
-}
-
-/// Decoded accounts for one registry entry, checked against the entry.
-#[derive(Clone)]
-pub struct ExoAccounts {
-  exo_pair: ExoPair,
-  vault: TokenAccount,
-  levercoin_mint: Mint,
-  collateral_mint: Mint,
-  oracle: PriceUpdateV2,
-}
-
 /// Everything a route needs from one registered [`ExoPair`].
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
@@ -114,68 +83,81 @@ fn validate_entry(entry: &ExoEntry, exo_pair: &ExoPair) -> Result<()> {
   Ok(())
 }
 
-impl ExoAccounts {
-  /// Decodes the raw accounts and checks them against the registry entry.
+impl ExoPairAccounts {
+  /// Builds from five fetched accounts in field order.
+  ///
+  /// # Errors
+  /// * Wrong count or any account missing
+  pub fn from_fetched(accounts: &[Option<Account>]) -> Result<ExoPairAccounts> {
+    match accounts {
+      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint), Some(oracle)] => {
+        Ok(ExoPairAccounts {
+          exo_pair: exo_pair.clone(),
+          vault: vault.clone(),
+          levercoin_mint: levercoin_mint.clone(),
+          collateral_mint: collateral_mint.clone(),
+          oracle: oracle.clone(),
+        })
+      }
+      _ => Err(anyhow!("Exo pair accounts missing")),
+    }
+  }
+
+  /// Decodes the accounts, checks them against the registry entry, and
+  /// loads the pair state under `clock`.
   ///
   /// # Errors
   /// * Account deserialization
   /// * Pair collateral differs from the entry
   /// * Entry levercoin mint is not the pair's levercoin PDA
   /// * Pair oracle differs from the SDK feed
-  pub fn parse(entry: &ExoEntry, raw: &ExoPairAccounts) -> Result<ExoAccounts> {
-    let exo_pair = decode(&raw.exo_pair, "Exo pair")?;
-    validate_entry(entry, &exo_pair)?;
-    validate_exo_pair_oracle(&exo_pair)?;
-    Ok(ExoAccounts {
-      exo_pair,
-      vault: decode(&raw.vault, "Exo vault")?,
-      levercoin_mint: decode(&raw.levercoin_mint, "Exo levercoin mint")?,
-      collateral_mint: decode(&raw.collateral_mint, "Exo collateral mint")?,
-      oracle: decode(&raw.oracle, "Exo collateral/USD Pyth feed")?,
-    })
-  }
-
-  /// Loads the pair state under `clock`.
-  ///
-  /// # Errors
-  /// * Vault balance normalization
-  /// * Context load or fixed-point conversion
+  /// * Vault balance normalization, context load, or fixed-point conversion
   pub fn pair_state<C: SolanaClock>(
     &self,
+    entry: &ExoEntry,
     clock: C,
   ) -> Result<ExoPairState<C>> {
-    let total_collateral =
-      normalize_mint_exp(&self.collateral_mint, self.vault.amount)?;
+    let exo_pair: ExoPair = decode(&self.exo_pair, "Exo pair")?;
+    validate_entry(entry, &exo_pair)?;
+    validate_exo_pair_oracle(&exo_pair)?;
+    let vault: TokenAccount = decode(&self.vault, "Exo vault")?;
+    let levercoin_mint: Mint =
+      decode(&self.levercoin_mint, "Exo levercoin mint")?;
+    let collateral_mint: Mint =
+      decode(&self.collateral_mint, "Exo collateral mint")?;
+    let oracle: PriceUpdateV2 =
+      decode(&self.oracle, "Exo collateral/USD Pyth feed")?;
+    let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
-      self.exo_pair.oracle_interval_secs,
-      self.exo_pair.oracle_conf_tolerance.try_into()?,
+      exo_pair.oracle_interval_secs,
+      exo_pair.oracle_conf_tolerance.try_into()?,
     );
     let virtual_stablecoin: VirtualStablecoin =
-      self.exo_pair.virtual_stablecoin.into();
-    let levercoin_fees: LevercoinFees = self.exo_pair.levercoin_fees.into();
+      exo_pair.virtual_stablecoin.into();
+    let levercoin_fees: LevercoinFees = exo_pair.levercoin_fees.into();
     let context = ExoExchangeContext::load(
       clock,
       total_collateral,
-      self.exo_pair.stablecoin_mint_threshold.try_into()?,
+      exo_pair.stablecoin_mint_threshold.try_into()?,
       oracle_config,
       levercoin_fees,
-      &self.oracle,
+      &oracle,
       virtual_stablecoin,
-      Some(&self.levercoin_mint),
-      self.exo_pair.sell_curve_config.into(),
-      self.exo_pair.buy_curve_config.into(),
-      self.exo_pair.levercoin_market_cap_limit.try_into()?,
+      Some(&levercoin_mint),
+      exo_pair.sell_curve_config.into(),
+      exo_pair.buy_curve_config.into(),
+      exo_pair.levercoin_market_cap_limit.try_into()?,
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
-      collateral_mint: self.exo_pair.collateral_mint,
+      collateral_mint: exo_pair.collateral_mint,
       context,
-      paused: self.exo_pair.paused,
-      pool_drawdown: self.exo_pair.pool_drawdown.into(),
-      borrow_rate_harvest_epoch: self.exo_pair.borrow_rate_harvest_cache.epoch,
-      supply_floor: self.exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle_publish_time: self.oracle.price_message.publish_time,
-      oracle_interval_secs: self.exo_pair.oracle_interval_secs,
+      paused: exo_pair.paused,
+      pool_drawdown: exo_pair.pool_drawdown.into(),
+      borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
+      supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
+      oracle_publish_time: oracle.price_message.publish_time,
+      oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
   }
 }

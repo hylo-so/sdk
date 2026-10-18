@@ -30,14 +30,12 @@ use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::protocol_state::accounts::{decode, decode_clock};
-use crate::protocol_state::{
-  read_exo_entries, ExoAccounts, ExoPairState, ProtocolAccounts,
-};
+use crate::protocol_state::{read_exo_entries, ExoPairState, ProtocolAccounts};
 use crate::LST;
 
 /// USDC exchange state for stablecoin mint/redeem.
 #[derive(Clone)]
-pub struct UsdcExchangeState {
+pub struct UsdcPairState {
   /// Fee extracted when minting stablecoin from USDC
   pub mint_fee: UFix64<N4>,
   /// Fee extracted when redeeming stablecoin to USDC
@@ -108,7 +106,7 @@ pub struct ProtocolState<C: SolanaClock> {
   pub exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
 
   /// USDC exchange state
-  pub usdc_exchange_state: UsdcExchangeState,
+  pub usdc_pair: UsdcPairState,
 
   /// `JitoSOL` SPL stake pool
   pub jitosol_stake_pool: SplStakePool,
@@ -158,23 +156,13 @@ impl<C: SolanaClock> ProtocolState<C> {
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
     sol_usd: &PriceUpdateV2,
-    exo_accounts: &[ExoAccounts],
-    usdc_exchange_state: UsdcExchangeState,
+    exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
+    usdc_pair: UsdcPairState,
     jitosol_stake_pool: SplStakePool,
     hylosol_stake_pool: SplStakePool,
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
-  ) -> Result<ProtocolState<C>>
-  where
-    C: Clone,
-  {
-    let exo_pairs = exo_accounts
-      .iter()
-      .map(|accounts| {
-        let pair = accounts.pair_state(clock.clone())?;
-        Ok((pair.collateral_mint, pair))
-      })
-      .collect::<Result<HashMap<_, _>>>()?;
+  ) -> Result<ProtocolState<C>> {
     let sol_usd_publish_time = sol_usd.price_message.publish_time;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
@@ -192,7 +180,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       fetched_at,
       lst_swap_config,
       exo_pairs,
-      usdc_exchange_state,
+      usdc_pair,
       jitosol_stake_pool,
       hylosol_stake_pool,
       protocol_paused: hylo.protocol_paused,
@@ -273,11 +261,6 @@ impl<C: SolanaClock> ProtocolState<C> {
       .get(&collateral_mint)
       .ok_or(CoreError::UnknownExoMint)
   }
-
-  #[must_use]
-  pub fn usdc_exchange_state(&self) -> &UsdcExchangeState {
-    &self.usdc_exchange_state
-  }
 }
 
 /// Builds the `LstExchangeContext` from protocol accounts.
@@ -315,10 +298,10 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
 ///
 /// # Errors
 /// * Deserialization or oracle failure
-fn build_usdc_exchange_state(
+fn build_usdc_pair_state(
   clock: &Clock,
   accounts: &ProtocolAccounts,
-) -> Result<UsdcExchangeState> {
+) -> Result<UsdcPairState> {
   let usdc_pair: UsdcPair = decode(&accounts.usdc_pair, "UsdcPair")?;
   let usdc_usd: PriceUpdateV2 =
     decode(&accounts.usdc_usd_pyth, "USDC/USD Pyth feed")?;
@@ -339,7 +322,7 @@ fn build_usdc_exchange_state(
     usdc_pair.reserve_gate.tvl_cap.into(),
   )?;
 
-  Ok(UsdcExchangeState {
+  Ok(UsdcPairState {
     mint_fee: usdc_pair.mint_fee.try_into()?,
     redeem_fee: usdc_pair.redeem_fee.try_into()?,
     paused: usdc_pair.paused,
@@ -372,7 +355,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let sol_usd: PriceUpdateV2 =
       decode(&accounts.sol_usd_pyth, "SOL/USD Pyth feed")?;
     let clock = decode_clock(&accounts.clock)?;
-    let usdc_exchange_state = build_usdc_exchange_state(&clock, accounts)?;
+    let usdc_pair = build_usdc_pair_state(&clock, accounts)?;
     let jitosol_stake_pool =
       SplStakePool::from_bytes(&accounts.jitosol_pool_state.data)?;
     let hylosol_stake_pool =
@@ -391,8 +374,11 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let exo_pairs = entries
       .iter()
       .zip(&accounts.exo_accounts)
-      .map(|(entry, raw)| ExoAccounts::parse(entry, raw))
-      .collect::<Result<Vec<_>>>()?;
+      .map(|(entry, raw)| {
+        let pair = raw.pair_state(entry, clock.clone())?;
+        Ok((pair.collateral_mint, pair))
+      })
+      .collect::<Result<HashMap<_, _>>>()?;
     Self::build(
       clock,
       &hylo,
@@ -404,8 +390,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      &exo_pairs,
-      usdc_exchange_state,
+      exo_pairs,
+      usdc_pair,
       jitosol_stake_pool,
       hylosol_stake_pool,
       UFix64::new(jitosol_vault.amount),
