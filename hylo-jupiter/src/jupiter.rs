@@ -110,11 +110,11 @@ pub struct HyloJupiter {
 
 impl HyloJupiter {
   /// Decodes the enshrined accounts and builds the protocol state with
-  /// the loaded exo pairs.
+  /// the pairs of `entries`.
   fn build_state(
     &self,
     account_map: &AccountMap,
-    exo_pairs: HashMap<Pubkey, ExoPairState<ClockRef>>,
+    entries: &[ExoEntry],
   ) -> Result<ProtocolState<ClockRef>> {
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
@@ -158,7 +158,7 @@ impl HyloJupiter {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      exo_pairs,
+      self.exo_pairs(account_map, entries)?,
       usdc_pair_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -167,15 +167,13 @@ impl HyloJupiter {
     )
   }
 
-  /// Loads the pair state of each entry from the map, reading accounts in
-  /// the order of `exo_account_keys`.
+  /// Loads the pair state of each entry from the map.
   fn exo_pairs(
     &self,
     account_map: &AccountMap,
     entries: &[ExoEntry],
   ) -> Result<HashMap<Pubkey, ExoPairState<ClockRef>>> {
-    self
-      .exo_account_keys
+    exo_pubkeys_from_entries(entries)?
       .chunks(EXO_PAIR_ACCOUNTS)
       .zip(entries)
       .map(|(keys, entry)| {
@@ -294,9 +292,8 @@ impl Amm for HyloJupiter {
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     let registry = keyed_account(account_map, &pda::EXO_REGISTRY)?;
     let entries = read_exo_entries(&registry.data)?;
+    self.state = Some(self.build_state(account_map, &entries)?);
     self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
-    let exo_pairs = self.exo_pairs(account_map, &entries)?;
-    self.state = Some(self.build_state(account_map, exo_pairs)?);
     self.exo_entries = entries;
     Ok(())
   }
