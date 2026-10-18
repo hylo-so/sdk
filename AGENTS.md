@@ -561,7 +561,27 @@ is not required for them.
 
 Any SDK API change requires grepping every `hylo-so` consumer repository for
 call sites before it ships. A change that compiles here can still break a
-downstream repo that this workspace does not build.
+downstream repo that this workspace does not build. Never filter
+`~/Github/protocol` out of that grep: the router program imports
+`hylo_idl::tokens` and `hylo_idl::pda` directly and is the main consumer of
+`hylo-idl`.
+
+### Breaking changes are verified against protocol
+
+`~/Github/protocol` pins `hylo-core` and `hylo-idl` as GitHub dependencies
+(`{ git = "https://github.com/hylo-so/sdk", branch = ".." }`). Every breaking
+change — a moved or renamed item, a changed signature, a removed export, an
+IDL surface change — is tested there before the SDK PR merges:
+
+1. Push the SDK branch. Point protocol's `[workspace.dependencies]` and
+   `litesvm-tests/Cargo.toml` git pins at it; the protocol repository is
+   hands-off for edits, so the owner applies that line.
+2. `cargo check` the programs and `litesvm-tests` in protocol against the
+   pin. A compile failure there blocks the SDK PR.
+3. Regenerate the IDLs from protocol HEAD with `nix run .#build-idl-all` and
+   copy them with `copy-idl ../sdk/hylo-idl/idls`. The JSON under
+   `hylo-idl/idls/` must match the protocol build byte for byte; a diff means
+   the SDK PR is missing an IDL change and does not merge until it carries it.
 
 ---
 
@@ -570,7 +590,9 @@ downstream repo that this workspace does not build.
 ### Repository boundaries
 
 * **`~/Github/protocol`** — never edit. Audited onchain code; changes are
-  applied by the repository owner personally. Read it freely.
+  applied by the repository owner personally. Read it freely; `cargo check`
+  and IDL builds there are reads, not edits, and are required before a
+  breaking SDK change merges (see CI and versioning).
 * **`~/Github/fix`** — never edit. `hylo-fix` is consumed as a pinned
   crates.io dependency. Supply a diff or snippet for the owner to apply.
 * **This repository** is public (`hylo-so/sdk`). See Disclosure.
