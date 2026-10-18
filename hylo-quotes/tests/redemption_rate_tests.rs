@@ -2,6 +2,8 @@
 
 mod common;
 
+use std::iter::once;
+
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::clock::Clock;
 use anyhow::{anyhow, Result};
@@ -15,12 +17,12 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{validate_burn, VirtualStablecoin};
 use hylo_idl::tokens::{
-  TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
 };
 use hylo_quotes::prelude::{
   FeeBase, ProtocolState, RedemptionLane, RedemptionRate, TokenOperation,
 };
-use hylo_quotes::protocol_state::{ExoPairState, UsdcExchangeState};
+use hylo_quotes::protocol_state::{ExoPairState, UsdcPairState};
 
 const REFERENCE: UFix64<N6> = UFix64::constant(1_000_000_000);
 
@@ -60,19 +62,49 @@ fn with_lst_cr(
   Ok(state)
 }
 
-/// Rewrites an exo pair's collateral so it projects to `target_cr`.
-fn with_exo_cr(
-  mut pair: ExoPairState<Clock>,
+/// Replaces the registered pair for `E` with `update(pair)`.
+fn with_exo_pair<E: Exo>(
+  state: ProtocolState<Clock>,
+  update: impl FnOnce(ExoPairState<Clock>) -> Result<ExoPairState<Clock>>,
+) -> Result<ProtocolState<Clock>> {
+  let pair = update(state.exo_pair::<E>()?.clone())?;
+  let exo_pairs = state
+    .exo_pairs
+    .into_iter()
+    .filter(|(mint, _)| *mint != E::MINT)
+    .chain(once((E::MINT, pair)))
+    .collect();
+  Ok(ProtocolState { exo_pairs, ..state })
+}
+
+/// Rewrites the registered pair for `E` so it projects to `target_cr`.
+fn with_exo_cr<E: Exo>(
+  state: ProtocolState<Clock>,
   target_cr: UFix64<N9>,
-) -> Result<ExoPairState<Clock>> {
-  let supply = pair.context.virtual_stablecoin_supply()?;
-  let lower = pair.context.collateral_usd_price.lower;
-  pair.context.total_collateral = collateral_for_cr(supply, lower, target_cr)?;
-  Ok(pair)
+) -> Result<ProtocolState<Clock>> {
+  with_exo_pair::<E>(state, |mut pair| {
+    let supply = pair.context.virtual_stablecoin_supply()?;
+    let lower = pair.context.collateral_usd_price.lower;
+    pair.context.total_collateral =
+      collateral_for_cr(supply, lower, target_cr)?;
+    Ok(pair)
+  })
+}
+
+/// Zeroes the oracle publish time of the registered pair for `E`.
+fn with_stale_exo_oracle<E: Exo>(
+  state: ProtocolState<Clock>,
+) -> Result<ProtocolState<Clock>> {
+  with_exo_pair::<E>(state, |pair| {
+    Ok(ExoPairState {
+      oracle_publish_time: 0,
+      ..pair
+    })
+  })
 }
 
 fn lanes(rate: &RedemptionRate) -> impl Iterator<Item = &RedemptionLane> {
-  std::iter::once(&rate.best).chain(&rate.other_lanes)
+  once(&rate.best).chain(&rate.other_lanes)
 }
 
 fn lane(rate: &RedemptionRate, mint: Pubkey) -> Result<&RedemptionLane> {
@@ -173,11 +205,14 @@ fn lane_usd_out_is_amount_times_lower_price() -> Result<()> {
   assert_eq!(jitosol.usd_out, jitosol_usd);
 
   let cbbtc = lane(&rate, CBBTC::MINT)?;
+  let cbbtc_lower = state
+    .exo_pair::<CBBTC>()?
+    .context
+    .collateral_usd_price
+    .lower;
   let cbbtc_usd = UFix64::<N8>::try_from(cbbtc.amount_out)?
     .checked_convert::<N9>()
-    .and_then(|amount| {
-      amount.mul_floor(state.cbbtc_pair.context.collateral_usd_price.lower)
-    })
+    .and_then(|amount| amount.mul_floor(cbbtc_lower))
     .ok_or_else(|| anyhow!("cbbtc usd_out overflows"))?;
   assert_eq!(cbbtc.usd_out, cbbtc_usd);
   Ok(())
@@ -187,11 +222,7 @@ fn lane_usd_out_is_amount_times_lower_price() -> Result<()> {
 #[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn in_domain_lane_equals_strict_quote() -> Result<()> {
   let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
-  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_IN_DOMAIN)?;
-  let state = ProtocolState {
-    cbbtc_pair,
-    ..state
-  };
+  let state = with_exo_cr::<CBBTC>(state, CR_IN_DOMAIN)?;
   let rate = RedemptionRate::new(&state, REFERENCE)?;
   let jitosol =
     TokenOperation::<HYUSD, JITOSOL>::compute_output(&state, REFERENCE)?;
@@ -214,13 +245,8 @@ fn in_domain_lane_equals_strict_quote() -> Result<()> {
 #[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn above_domain_lane_prices_at_edge_fee_and_reports_it() -> Result<()> {
   let state = with_lst_cr(load_state()?, CR_ABOVE_DOMAIN)?;
-  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
-  let hype_pair = with_exo_cr(state.hype_pair, CR_ABOVE_DOMAIN)?;
-  let state = ProtocolState {
-    cbbtc_pair,
-    hype_pair,
-    ..state
-  };
+  let state = with_exo_cr::<CBBTC>(state, CR_ABOVE_DOMAIN)?;
+  let state = with_exo_cr::<HYPE>(state, CR_ABOVE_DOMAIN)?;
   let rate = RedemptionRate::new(&state, REFERENCE)?;
   [JITOSOL::MINT, HYLOSOL::MINT, CBBTC::MINT, HYPE::MINT]
     .into_iter()
@@ -239,11 +265,7 @@ fn above_domain_lane_prices_at_edge_fee_and_reports_it() -> Result<()> {
 #[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn fee_base_plus_strict_fee_equals_quote() -> Result<()> {
   let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
-  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_IN_DOMAIN)?;
-  let state = ProtocolState {
-    cbbtc_pair,
-    ..state
-  };
+  let state = with_exo_cr::<CBBTC>(state, CR_IN_DOMAIN)?;
 
   let lst_price: LstSolPrice = state.jitosol_header.price_sol.into();
   let lst_out = FeeBase::<HYUSD, JITOSOL>::fee_base(&state, REFERENCE)?;
@@ -274,19 +296,15 @@ fn fee_base_plus_strict_fee_equals_quote() -> Result<()> {
 fn strict_quote_reports_fee_before_burn_floor() -> Result<()> {
   // A redeem one atom past the burn floor at a CR above the curve fails
   // both checks; the protocol reports the fee first.
-  let state = load_state()?;
-  let cbbtc_pair = with_exo_cr(state.cbbtc_pair, CR_ABOVE_DOMAIN)?;
-  let state = ProtocolState {
-    cbbtc_pair,
-    ..state
-  };
-  let supply = state.cbbtc_pair.context.virtual_stablecoin_supply()?;
+  let state = with_exo_cr::<CBBTC>(load_state()?, CR_ABOVE_DOMAIN)?;
+  let pair = state.exo_pair::<CBBTC>()?;
+  let supply = pair.context.virtual_stablecoin_supply()?;
   let past_floor = supply
-    .checked_sub(&state.cbbtc_pair.supply_floor)
+    .checked_sub(&pair.supply_floor)
     .and_then(|burnable| burnable.checked_add(&UFix64::new(1)))
     .ok_or_else(|| anyhow!("supply arithmetic"))?;
   assert_eq!(
-    validate_burn(supply, past_floor, state.cbbtc_pair.supply_floor).err(),
+    validate_burn(supply, past_floor, pair.supply_floor).err(),
     Some(CoreError::VirtualStablecoinBurnLimit)
   );
   let quote =
@@ -298,11 +316,9 @@ fn strict_quote_reports_fee_before_burn_floor() -> Result<()> {
 #[test]
 #[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn empty_vault_drops_the_lane() -> Result<()> {
-  let state = load_state()?;
-  let hype_pair = with_exo_cr(state.hype_pair, UFix64::zero())?;
+  let state = with_exo_cr::<HYPE>(load_state()?, UFix64::zero())?;
   let state = ProtocolState {
     jitosol_vault_balance: UFix64::zero(),
-    hype_pair,
     ..state
   };
   let rate = RedemptionRate::new(&state, REFERENCE)?;
@@ -413,13 +429,7 @@ fn stale_exo_oracle_drops_only_that_lane() -> Result<()> {
     CBBTC::MINT
   ));
 
-  let stale_state = ProtocolState {
-    cbbtc_pair: ExoPairState {
-      oracle_publish_time: 0,
-      ..state.cbbtc_pair
-    },
-    ..state
-  };
+  let stale_state = with_stale_exo_oracle::<CBBTC>(state)?;
   let rate = RedemptionRate::new(&stale_state, REFERENCE)?;
   assert!(!has_lane(&rate, CBBTC::MINT));
   assert!(has_lane(&rate, HYPE::MINT));
@@ -429,20 +439,13 @@ fn stale_exo_oracle_drops_only_that_lane() -> Result<()> {
 #[test]
 #[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn no_priced_lane_fails() -> Result<()> {
-  let state = load_state()?;
+  let state = with_stale_exo_oracle::<CBBTC>(load_state()?)?;
+  let state = with_stale_exo_oracle::<HYPE>(state)?;
   let state = ProtocolState {
     sol_usd_publish_time: 0,
-    cbbtc_pair: ExoPairState {
-      oracle_publish_time: 0,
-      ..state.cbbtc_pair
-    },
-    hype_pair: ExoPairState {
-      oracle_publish_time: 0,
-      ..state.hype_pair
-    },
-    usdc_exchange_state: UsdcExchangeState {
+    usdc_pair: UsdcPairState {
       vault_balance: UFix64::zero(),
-      ..state.usdc_exchange_state
+      ..state.usdc_pair
     },
     ..state
   };
@@ -458,9 +461,9 @@ fn no_priced_lane_fails() -> Result<()> {
 fn rejected_usdc_oracle_drops_only_the_usdc_lane() -> Result<()> {
   let state = load_state()?;
   let state = ProtocolState {
-    usdc_exchange_state: UsdcExchangeState {
+    usdc_pair: UsdcPairState {
       usdc_usd_spot: Err(CoreError::PythOracleConfidence),
-      ..state.usdc_exchange_state
+      ..state.usdc_pair
     },
     ..state
   };
@@ -488,13 +491,13 @@ fn usdc_lane_prices_at_spot_capped_at_par() -> Result<()> {
   let with_spot = |spot: UFix64<N9>| -> Result<ProtocolState<Clock>> {
     let state = load_state()?;
     Ok(ProtocolState {
-      usdc_exchange_state: UsdcExchangeState {
+      usdc_pair: UsdcPairState {
         virtual_stablecoin: VirtualStablecoin {
           supply: capacity.into(),
         },
         vault_balance: capacity,
         usdc_usd_spot: Ok(spot),
-        ..state.usdc_exchange_state
+        ..state.usdc_pair
       },
       ..state
     })

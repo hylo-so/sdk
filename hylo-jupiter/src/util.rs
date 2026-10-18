@@ -2,78 +2,37 @@ use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::{AccountDeserialize, Pubkey};
 use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Context, Result};
-use fix::num_traits::FromPrimitive;
 use fix::prelude::UFix64;
-use fix::typenum::Integer;
-use hylo_core::idl::tokens::TokenMint;
 use hylo_jupiter_amm_interface::{
-  AccountMap, AmmContext, ClockRef, Quote, SwapMode, SwapParams,
-};
-use hylo_quotes::protocol_state::ProtocolState;
-use hylo_quotes::token_operation::{
-  OperationOutput, TokenOperation, TokenOperationExt,
+  AccountMap, AmmContext, ClockRef, SwapMode, SwapParams,
 };
 use rust_decimal::Decimal;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
+/// Fee percentage of `fee_base` taken as `fees_extracted`, both in atoms of
+/// the same mint.
+///
+/// # Errors
+/// * Arithmetic
+pub fn fee_pct(fees_extracted: u64, fee_base: u64) -> Result<Decimal> {
+  if fee_base == 0 {
+    Ok(Decimal::ZERO)
+  } else {
+    Decimal::from(fees_extracted)
+      .checked_div(Decimal::from(fee_base))
+      .context("Arithmetic error in `fee_pct`")
+  }
+}
+
 /// Computes fee percentage as `Decimal`.
 ///
 /// # Errors
-/// * Conversions
 /// * Arithmetic
 pub fn fee_pct_decimal<Exp>(
   fees_extracted: UFix64<Exp>,
   fee_base: UFix64<Exp>,
 ) -> Result<Decimal> {
-  if fee_base == UFix64::new(0) {
-    Ok(Decimal::ZERO)
-  } else {
-    Decimal::from_u64(fees_extracted.bits)
-      .zip(Decimal::from_u64(fee_base.bits))
-      .and_then(|(num, denom)| num.checked_div(denom))
-      .context("Arithmetic error in `fee_pct_decimal`")
-  }
-}
-
-/// Converts [`OperationOutput`] to Jupiter [`Quote`].
-///
-/// # Errors
-/// * Fee decimal conversion
-pub fn operation_to_quote<InExp, OutExp, FeeExp>(
-  op: OperationOutput<InExp, OutExp, FeeExp>,
-) -> Result<Quote>
-where
-  InExp: Integer,
-  OutExp: Integer,
-  FeeExp: Integer,
-{
-  let fee_pct = fee_pct_decimal(op.fee_amount, op.fee_base)?;
-  Ok(Quote {
-    in_amount: op.in_amount.bits,
-    out_amount: op.out_amount.bits,
-    fee_amount: op.fee_amount.bits,
-    fee_mint: op.fee_mint,
-    fee_pct,
-  })
-}
-
-/// Generic Jupiter quote for any `IN -> OUT` pair.
-///
-/// # Errors
-/// * Quote math
-/// * Fee decimal conversion
-pub fn quote<IN, OUT>(
-  state: &ProtocolState<ClockRef>,
-  amount: u64,
-) -> Result<Quote>
-where
-  IN: TokenMint,
-  OUT: TokenMint,
-  ProtocolState<ClockRef>: TokenOperation<IN, OUT>,
-  <ProtocolState<ClockRef> as TokenOperation<IN, OUT>>::FeeExp: Integer,
-{
-  let op = state.output::<IN, OUT>(UFix64::new(amount))?;
-  operation_to_quote(op)
+  fee_pct(fees_extracted.bits, fee_base.bits)
 }
 
 /// Finds a raw account in Jupiter's `AccountMap`.

@@ -21,7 +21,7 @@ const MAX_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(50_000_000);
 /// Divides oracle secs to a tighter tolerance.
 pub const ORACLE_DIVISOR: u64 = 4;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 pub struct OracleConfig {
   pub interval_secs: u64,
   pub conf_tolerance: UFix64<N9>,
@@ -68,17 +68,15 @@ pub fn validate_conf_tolerance(
 
 /// Spread of an asset price, with a lower and upper quote.
 /// Use lower in minting, higher in redeeming.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PriceRange<Exp: Integer> {
   pub lower: UFix64<Exp>,
   pub upper: UFix64<Exp>,
 }
 
 impl<Exp: Integer> PriceRange<Exp> {
-  /// Pyth does not publish a "true" price but a range of values defined by a
-  /// base price and a confidence interval `(μ-σ, μ+σ)`.
-  /// This data type either returns the lower or upper bound of that range.
-  /// See [Pyth documentation](https://docs.pyth.network/price-feeds/best-practices#confidence-intervals)
+  /// Lower or upper bound of the Pyth confidence interval `(μ-σ, μ+σ)`
+  /// around the base price.
   pub fn from_conf(
     price: UFix64<Exp>,
     conf: UFix64<Exp>,
@@ -201,7 +199,7 @@ fn validate_verification_level(
 }
 
 /// Validated oracle spot price and confidence interval.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OraclePrice {
   pub spot: UFix64<N9>,
   pub conf: UFix64<N9>,
@@ -264,7 +262,7 @@ mod tests {
 
   use super::*;
 
-  /// Max safe raw price bits for a given exponent before N9 overflow.
+  /// Largest raw price bits for an exponent before N9 overflow.
   /// `u64::MAX / 10^(9 - |exp|)`
   fn pyth_price_max(exp: i32) -> u64 {
     u64::MAX / 10u64.pow(9 - exp.unsigned_abs())
@@ -275,7 +273,7 @@ mod tests {
     (-9i32..=-2).boxed()
   }
 
-  /// Raw Pyth price and exponent pair safe for N9 conversion.
+  /// Raw Pyth price and exponent pair that converts to N9 without overflow.
   fn pyth_price() -> BoxedStrategy<(u64, i32)> {
     pyth_exponent()
       .prop_flat_map(|exp| (1u64..=pyth_price_max(exp), Just(exp)))

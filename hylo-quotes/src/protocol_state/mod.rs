@@ -1,10 +1,14 @@
 mod accounts;
+mod exo_pair;
+mod exo_registry;
 mod provider;
 mod state;
 
 pub use accounts::ProtocolAccounts;
-pub use provider::{RpcStateProvider, StateProvider};
-pub use state::{
-  build_exo_pair_state, build_lst_exchange_context, ExoPairState,
-  ProtocolState, UsdcExchangeState,
+pub use exo_pair::{ExoPairAccounts, ExoPairState, EXO_PAIR_ACCOUNTS};
+pub use exo_registry::{
+  exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
+  find_exo_entry, read_exo_entries, ExoRole,
 };
+pub use provider::{RpcStateProvider, StateProvider};
+pub use state::{build_lst_exchange_context, ProtocolState, UsdcPairState};

@@ -46,7 +46,7 @@ pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
   pubkey!("9Mb2Mt76AN7eNY3BBA4LgfTicARXhcEEokTBfsN47noK");
 #[cfg(feature = "shadow")]
 pub const LST_REGISTRY_LOOKUP_TABLE: Pubkey =
-  pubkey!("CoBiwzy3VjtXumzT4YsGZb7mQKRrwkpkeixsvnfEEeL4");
+  pubkey!("JqLv5MTMQALF2qF7YiAn5zxPbUB6ep121gs5fQnSFPG");
 
 /// This wallet should hold at least one unit of jitoSOL, xSOL, hyUSD, and
 /// sHYUSD. Useful for simulations of mint and redemption.

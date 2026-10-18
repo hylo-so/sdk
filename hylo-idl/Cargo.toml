@@ -17,7 +17,7 @@ path = "src/bin/lut_accounts.rs"
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
-anyhow.workspace = true
+bytemuck.workspace = true
 const-crypto.workspace = true
 hylo-fix.workspace = true
 mpl-token-metadata.workspace = true
