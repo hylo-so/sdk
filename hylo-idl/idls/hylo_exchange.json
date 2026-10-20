@@ -3916,6 +3916,22 @@
               "name": "UFixValue64"
             }
           }
+        },
+        {
+          "name": "reserve_per_tvl",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "tvl_cap",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
         }
       ],
       "returns": {
@@ -16995,6 +17011,121 @@
       }
     },
     {
+      "name": "update_usdc_reserve_gate",
+      "discriminator": [
+        180,
+        124,
+        5,
+        241,
+        51,
+        118,
+        9,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  100,
+                  99,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "reserve_per_tvl",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "tvl_cap",
+          "type": {
+            "defined": {
+              "name": "UFixValue64"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateUsdcReserveGateEvent"
+        }
+      }
+    },
+    {
       "name": "update_yield_harvest_config",
       "discriminator": [
         140,
@@ -18033,6 +18164,19 @@
       ]
     },
     {
+      "name": "UpdateUsdcReserveGateEvent",
+      "discriminator": [
+        226,
+        22,
+        210,
+        8,
+        133,
+        82,
+        207,
+        183
+      ]
+    },
+    {
       "name": "UpdateYieldHarvestConfigEvent",
       "discriminator": [
         67,
@@ -18984,7 +19128,7 @@
     {
       "name": "HarvestCache",
       "docs": [
-        "Records epoch harvest information for off-chain consumers."
+        "Records epoch harvest information for offchain consumers."
       ],
       "type": {
         "kind": "struct",
@@ -19326,6 +19470,14 @@
             "type": {
               "defined": {
                 "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "reserve_gate",
+            "type": {
+              "defined": {
+                "name": "ReserveGate"
               }
             }
           }
@@ -20406,6 +20558,33 @@
       }
     },
     {
+      "name": "ReserveGate",
+      "docs": [
+        "Reserve policy applied to collateral-to-stablecoin rebalances."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "reserve_per_tvl",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "tvl_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "SettleRebalancePnlExoEvent",
       "type": {
         "kind": "struct",
@@ -21183,6 +21362,30 @@
       }
     },
     {
+      "name": "UpdateUsdcReserveGateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_reserve_gate",
+            "type": {
+              "defined": {
+                "name": "ReserveGate"
+              }
+            }
+          },
+          {
+            "name": "new_reserve_gate",
+            "type": {
+              "defined": {
+                "name": "ReserveGate"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "UpdateYieldHarvestConfigEvent",
       "type": {
         "kind": "struct",
@@ -21268,11 +21471,19 @@
             }
           },
           {
+            "name": "reserve_gate",
+            "type": {
+              "defined": {
+                "name": "ReserveGate"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                109
+                91
               ]
             }
           }

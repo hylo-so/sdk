@@ -1,44 +1,71 @@
-use std::marker::PhantomData;
+use std::collections::{BTreeSet, HashMap};
+use std::iter::once;
 
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::TokenAccount;
 use anchor_spl::token_interface::Mint;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use fix::prelude::UFix64;
+use hylo_core::error::CoreError;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
-use hylo_core::idl::tokens::{
-  StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
-  XBTC, XHYPE, XSOL,
+use hylo_core::idl::router::types::ExoEntry;
+use hylo_core::idl::tokens::ExoRole::{
+  Collateral, Levercoin, Stablecoin, Usdc,
 };
-use hylo_core::idl::{earn_pool, exchange, pda};
+use hylo_core::idl::tokens::{
+  StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+};
+use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig, PythOracle, SOL_USD};
+use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  build_exo_pair_state, ProtocolState, UsdcExchangeState,
+  exo_entry_role, exo_pubkeys_from_entries, find_exo_entry, read_exo_entries,
+  ExoPairAccounts, ExoPairPubkeys, ExoPairState, ProtocolState, UsdcPairState,
+  EXO_PAIR_ACCOUNTS,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
 use crate::util::{
-  account_map_get, keyed_account, quote, validate_swap_params,
+  account_map_get, fee_pct, keyed_account, validate_swap_params,
 };
 
-/// Bidirectional single-pair Jupiter AMM client.
-pub struct HyloJupiterPair<IN, OUT>
-where
-  IN: TokenMint,
-  OUT: TokenMint,
-{
-  clock: ClockRef,
-  state: Option<ProtocolState<ClockRef>>,
-  _phantom: PhantomData<(IN, OUT)>,
-}
+/// Mints of the pairs compiled into the exchange and earn pool programs.
+const ENSHRINED_MINTS: [Pubkey; 6] = [
+  HYUSD::MINT,
+  SHYUSD::MINT,
+  XSOL::MINT,
+  USDC::MINT,
+  JITOSOL::MINT,
+  HYLOSOL::MINT,
+];
+
+/// Accounts behind the enshrined pairs, fetched on every update.
+const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
+  pda::HYLO,
+  HYUSD::MINT,
+  XSOL::MINT,
+  pda::lst_header(JITOSOL::MINT),
+  pda::lst_header(HYLOSOL::MINT),
+  JITOSOL::POOL_STATE,
+  HYLOSOL::POOL_STATE,
+  SOL_USD.address,
+  SHYUSD::MINT,
+  pda::HYUSD_POOL,
+  pda::POOL_CONFIG,
+  pda::USDC_PAIR,
+  pda::USDC_USD_PYTH_FEED,
+  pda::lst_vault(JITOSOL::MINT),
+  pda::lst_vault(HYLOSOL::MINT),
+  pda::usdc_vault(USDC::MINT),
+];
 
 /// Builds the USDC exchange state from a Jupiter account snapshot.
 fn usdc_state(
@@ -46,711 +73,50 @@ fn usdc_state(
   usdc_pair: &UsdcPair,
   usdc_usd: &PriceUpdateV2,
   usdc_vault: &TokenAccount,
-) -> Result<UsdcExchangeState> {
+) -> Result<UsdcPairState> {
   let usdc_oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_oracle = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)?;
+  let usdc_usd_spot = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)
+    .map(|oracle| oracle.spot);
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
-  Ok(UsdcExchangeState {
+  let reserve_gate = ReserveGate::validated(
+    usdc_pair.reserve_gate.reserve_per_tvl.into(),
+    usdc_pair.reserve_gate.tvl_cap.into(),
+  )?;
+
+  Ok(UsdcPairState {
     mint_fee: usdc_pair.mint_fee.try_into()?,
     redeem_fee: usdc_pair.redeem_fee.try_into()?,
     paused: usdc_pair.paused,
     vault_balance: UFix64::new(usdc_vault.amount),
     virtual_stablecoin,
-    usdc_usd_spot: usdc_oracle.spot,
+    usdc_usd_spot,
     par_tolerance: usdc_pair.par_tolerance.into(),
+    reserve_gate,
   })
 }
 
-impl<IN: TokenMint, OUT: TokenMint> Clone for HyloJupiterPair<IN, OUT> {
-  fn clone(&self) -> Self {
-    Self {
-      clock: self.clock.clone(),
-      state: self.state.clone(),
-      _phantom: PhantomData,
-    }
-  }
+/// Jupiter AMM over every Hylo route: the enshrined LST, USDC, and earn
+/// pool pairs plus the exo pairs listed in the registry.
+#[derive(Clone)]
+pub struct HyloJupiter {
+  clock: ClockRef,
+  state: Option<ProtocolState<ClockRef>>,
+  exo_entries: Vec<ExoEntry>,
+  exo_account_keys: Vec<Pubkey>,
 }
 
-/// Pair-specific configuration and dispatch.
-pub trait PairConfig<IN: TokenMint, OUT: TokenMint> {
-  fn program_id() -> Pubkey;
-  fn label() -> &'static str;
-  fn key() -> Pubkey;
-
-  /// Generate a quote for the given pair.
-  ///
-  /// # Errors
-  /// * Unsupported pair
-  /// * Arithmetic error
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote>;
-
-  /// Return related accounts for one direction of the pair.
-  ///
-  /// # Errors
-  /// * Unsupported pair
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas>;
-}
-
-/// Quotes both directions of the `$in`/`$out` pair.
-macro_rules! pair_quote {
-  ($in:ident, $out:ident, $state:expr, $amount:expr, $in_mint:expr,
-   $out_mint:expr) => {
-    match ($in_mint, $out_mint) {
-      ($in::MINT, $out::MINT) => quote::<$in, $out>($state, $amount),
-      ($out::MINT, $in::MINT) => quote::<$out, $in>($state, $amount),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  };
-}
-
-impl PairConfig<JITOSOL, HYUSD> for HyloJupiterPair<JITOSOL, HYUSD> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo JITOSOL<->HYUSD"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(JITOSOL, HYUSD, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, HYUSD::MINT) => {
-        Ok(account_metas::mint_stablecoin_lst(user, JITOSOL::MINT))
-      }
-      (HYUSD::MINT, JITOSOL::MINT) => {
-        Ok(account_metas::redeem_stablecoin_lst(user, JITOSOL::MINT))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<HYLOSOL, HYUSD> for HyloJupiterPair<HYLOSOL, HYUSD> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo HYLOSOL<->HYUSD"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(HYLOSOL, HYUSD, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (HYLOSOL::MINT, HYUSD::MINT) => {
-        Ok(account_metas::mint_stablecoin_lst(user, HYLOSOL::MINT))
-      }
-      (HYUSD::MINT, HYLOSOL::MINT) => {
-        Ok(account_metas::redeem_stablecoin_lst(user, HYLOSOL::MINT))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<JITOSOL, XSOL> for HyloJupiterPair<JITOSOL, XSOL> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo JITOSOL<->XSOL"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(JITOSOL, XSOL, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, XSOL::MINT) => {
-        Ok(account_metas::mint_levercoin_lst(user, JITOSOL::MINT))
-      }
-      (XSOL::MINT, JITOSOL::MINT) => {
-        Ok(account_metas::redeem_levercoin_lst(user, JITOSOL::MINT))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<HYLOSOL, XSOL> for HyloJupiterPair<HYLOSOL, XSOL> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo HYLOSOL<->XSOL"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(HYLOSOL, XSOL, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (HYLOSOL::MINT, XSOL::MINT) => {
-        Ok(account_metas::mint_levercoin_lst(user, HYLOSOL::MINT))
-      }
-      (XSOL::MINT, HYLOSOL::MINT) => {
-        Ok(account_metas::redeem_levercoin_lst(user, HYLOSOL::MINT))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<HYUSD, XSOL> for HyloJupiterPair<HYUSD, XSOL> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo HYUSD<->XSOL"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(HYUSD, XSOL, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (HYUSD::MINT, XSOL::MINT) => {
-        Ok(account_metas::convert_stable_to_lever_lst(user))
-      }
-      (XSOL::MINT, HYUSD::MINT) => {
-        Ok(account_metas::convert_lever_to_stable_lst(user))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<HYUSD, SHYUSD> for HyloJupiterPair<HYUSD, SHYUSD> {
-  fn program_id() -> Pubkey {
-    earn_pool::ID
-  }
-  fn label() -> &'static str {
-    "Hylo HYUSD<->SHYUSD"
-  }
-  fn key() -> Pubkey {
-    pda::POOL_CONFIG
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(HYUSD, SHYUSD, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (HYUSD::MINT, SHYUSD::MINT) => Ok(account_metas::earn_pool_deposit(user)),
-      (SHYUSD::MINT, HYUSD::MINT) => {
-        Ok(account_metas::earn_pool_withdraw(user))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<JITOSOL, HYLOSOL> for HyloJupiterPair<JITOSOL, HYLOSOL> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo JITOSOL<->HYLOSOL"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(JITOSOL, HYLOSOL, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, HYLOSOL::MINT) => Ok(account_metas::swap_lst_to_lst(
-        user,
-        JITOSOL::MINT,
-        HYLOSOL::MINT,
-      )),
-      (HYLOSOL::MINT, JITOSOL::MINT) => Ok(account_metas::swap_lst_to_lst(
-        user,
-        HYLOSOL::MINT,
-        JITOSOL::MINT,
-      )),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<JITOSOL, USDC> for HyloJupiterPair<JITOSOL, USDC> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo JITOSOL<->USDC"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(JITOSOL, USDC, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (JITOSOL::MINT, USDC::MINT) => Ok(account_metas::swap_lst_to_usdc(
-        user,
-        JITOSOL::MINT,
-        JITOSOL::POOL_STATE,
-      )),
-      (USDC::MINT, JITOSOL::MINT) => Ok(account_metas::swap_usdc_to_lst(
-        user,
-        JITOSOL::MINT,
-        JITOSOL::POOL_STATE,
-      )),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<HYLOSOL, USDC> for HyloJupiterPair<HYLOSOL, USDC> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo HYLOSOL<->USDC"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(HYLOSOL, USDC, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (HYLOSOL::MINT, USDC::MINT) => Ok(account_metas::swap_lst_to_usdc(
-        user,
-        HYLOSOL::MINT,
-        HYLOSOL::POOL_STATE,
-      )),
-      (USDC::MINT, HYLOSOL::MINT) => Ok(account_metas::swap_usdc_to_lst(
-        user,
-        HYLOSOL::MINT,
-        HYLOSOL::POOL_STATE,
-      )),
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-impl PairConfig<USDC, HYUSD> for HyloJupiterPair<USDC, HYUSD> {
-  fn program_id() -> Pubkey {
-    exchange::ID
-  }
-  fn label() -> &'static str {
-    "Hylo USDC<->HYUSD"
-  }
-  fn key() -> Pubkey {
-    pda::HYLO
-  }
-
-  fn quote(
-    state: &ProtocolState<ClockRef>,
-    amount: u64,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<Quote> {
-    pair_quote!(USDC, HYUSD, state, amount, input_mint, output_mint)
-  }
-
-  fn build_account_metas(
-    user: Pubkey,
-    input_mint: Pubkey,
-    output_mint: Pubkey,
-  ) -> Result<SwapAndAccountMetas> {
-    match (input_mint, output_mint) {
-      (USDC::MINT, HYUSD::MINT) => {
-        Ok(account_metas::mint_stablecoin_usdc(user))
-      }
-      (HYUSD::MINT, USDC::MINT) => {
-        Ok(account_metas::redeem_stablecoin_usdc(user))
-      }
-      _ => Err(anyhow!("Invalid mint pair")),
-    }
-  }
-}
-
-/// [`PairConfig`] impls for an exo collateral and its levercoin.
-macro_rules! exo_pair_configs {
-  ($exo:ident, $lever:ident, $token_program:expr) => {
-    impl PairConfig<$exo, USDC> for HyloJupiterPair<$exo, USDC> {
-      fn program_id() -> Pubkey {
-        exchange::ID
-      }
-      fn label() -> &'static str {
-        concat!("Hylo ", stringify!($exo), "<->USDC")
-      }
-      fn key() -> Pubkey {
-        pda::HYLO
-      }
-
-      fn quote(
-        state: &ProtocolState<ClockRef>,
-        amount: u64,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<Quote> {
-        pair_quote!($exo, USDC, state, amount, input_mint, output_mint)
-      }
-
-      fn build_account_metas(
-        user: Pubkey,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<SwapAndAccountMetas> {
-        match (input_mint, output_mint) {
-          ($exo::MINT, USDC::MINT) => Ok(account_metas::swap_exo_to_usdc(
-            user,
-            $exo::MINT,
-            $exo::FEED.address,
-            $token_program,
-          )),
-          (USDC::MINT, $exo::MINT) => Ok(account_metas::swap_usdc_to_exo(
-            user,
-            $exo::MINT,
-            $exo::FEED.address,
-            $token_program,
-          )),
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
-      }
-    }
-
-    impl PairConfig<$exo, HYUSD> for HyloJupiterPair<$exo, HYUSD> {
-      fn program_id() -> Pubkey {
-        exchange::ID
-      }
-      fn label() -> &'static str {
-        concat!("Hylo ", stringify!($exo), "<->HYUSD")
-      }
-      fn key() -> Pubkey {
-        pda::HYLO
-      }
-
-      fn quote(
-        state: &ProtocolState<ClockRef>,
-        amount: u64,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<Quote> {
-        pair_quote!($exo, HYUSD, state, amount, input_mint, output_mint)
-      }
-
-      fn build_account_metas(
-        user: Pubkey,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<SwapAndAccountMetas> {
-        match (input_mint, output_mint) {
-          ($exo::MINT, HYUSD::MINT) => Ok(account_metas::mint_stablecoin_exo(
-            user,
-            $exo::MINT,
-            $exo::FEED.address,
-            $token_program,
-          )),
-          (HYUSD::MINT, $exo::MINT) => {
-            Ok(account_metas::redeem_stablecoin_exo(
-              user,
-              $exo::MINT,
-              $exo::FEED.address,
-              $token_program,
-            ))
-          }
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
-      }
-    }
-
-    impl PairConfig<$exo, $lever> for HyloJupiterPair<$exo, $lever> {
-      fn program_id() -> Pubkey {
-        exchange::ID
-      }
-      fn label() -> &'static str {
-        concat!("Hylo ", stringify!($exo), "<->", stringify!($lever))
-      }
-      fn key() -> Pubkey {
-        pda::HYLO
-      }
-
-      fn quote(
-        state: &ProtocolState<ClockRef>,
-        amount: u64,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<Quote> {
-        pair_quote!($exo, $lever, state, amount, input_mint, output_mint)
-      }
-
-      fn build_account_metas(
-        user: Pubkey,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<SwapAndAccountMetas> {
-        match (input_mint, output_mint) {
-          ($exo::MINT, $lever::MINT) => Ok(account_metas::mint_levercoin_exo(
-            user,
-            $exo::MINT,
-            $exo::FEED.address,
-            $token_program,
-          )),
-          ($lever::MINT, $exo::MINT) => {
-            Ok(account_metas::redeem_levercoin_exo(
-              user,
-              $exo::MINT,
-              $exo::FEED.address,
-              $token_program,
-            ))
-          }
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
-      }
-    }
-
-    impl PairConfig<HYUSD, $lever> for HyloJupiterPair<HYUSD, $lever> {
-      fn program_id() -> Pubkey {
-        exchange::ID
-      }
-      fn label() -> &'static str {
-        concat!("Hylo HYUSD<->", stringify!($lever))
-      }
-      fn key() -> Pubkey {
-        pda::HYLO
-      }
-
-      fn quote(
-        state: &ProtocolState<ClockRef>,
-        amount: u64,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<Quote> {
-        pair_quote!(HYUSD, $lever, state, amount, input_mint, output_mint)
-      }
-
-      fn build_account_metas(
-        user: Pubkey,
-        input_mint: Pubkey,
-        output_mint: Pubkey,
-      ) -> Result<SwapAndAccountMetas> {
-        match (input_mint, output_mint) {
-          (HYUSD::MINT, $lever::MINT) => {
-            Ok(account_metas::convert_stable_to_lever_exo(
-              user,
-              $exo::MINT,
-              $exo::FEED.address,
-              $token_program,
-            ))
-          }
-          ($lever::MINT, HYUSD::MINT) => {
-            Ok(account_metas::convert_lever_to_stable_exo(
-              user,
-              $exo::MINT,
-              $exo::FEED.address,
-              $token_program,
-            ))
-          }
-          _ => Err(anyhow!("Invalid mint pair")),
-        }
-      }
-    }
-  };
-}
-
-exo_pair_configs!(CBBTC, XBTC, CBBTC::TOKEN_PROGRAM);
-exo_pair_configs!(HYPE, XHYPE, HYPE::TOKEN_PROGRAM);
-
-impl<IN, OUT> Amm for HyloJupiterPair<IN, OUT>
-where
-  IN: TokenMint + 'static,
-  OUT: TokenMint + 'static,
-  Self: PairConfig<IN, OUT> + Clone + Send + Sync,
-{
-  fn from_keyed_account(
-    _keyed_account: &KeyedAccount,
-    amm_context: &AmmContext,
-  ) -> Result<Self>
-  where
-    Self: Sized,
-  {
-    Ok(HyloJupiterPair {
-      clock: amm_context.clock_ref.clone(),
-      state: None,
-      _phantom: PhantomData,
-    })
-  }
-
-  fn label(&self) -> String {
-    <Self as PairConfig<IN, OUT>>::label().to_string()
-  }
-
-  fn program_id(&self) -> Pubkey {
-    <Self as PairConfig<IN, OUT>>::program_id()
-  }
-
-  fn key(&self) -> Pubkey {
-    <Self as PairConfig<IN, OUT>>::key()
-  }
-
-  fn get_reserve_mints(&self) -> Vec<Pubkey> {
-    vec![IN::MINT, OUT::MINT]
-  }
-
-  fn get_accounts_to_update(&self) -> Vec<Pubkey> {
-    vec![
-      pda::HYLO,
-      HYUSD::MINT,
-      XSOL::MINT,
-      pda::lst_header(JITOSOL::MINT),
-      pda::lst_header(HYLOSOL::MINT),
-      JITOSOL::POOL_STATE,
-      HYLOSOL::POOL_STATE,
-      SOL_USD.address,
-      SHYUSD::MINT,
-      pda::HYUSD_POOL,
-      pda::POOL_CONFIG,
-      pda::exo_pair(CBBTC::MINT),
-      pda::exo_vault(CBBTC::MINT, CBBTC::TOKEN_PROGRAM),
-      pda::exo_levercoin_mint(CBBTC::MINT),
-      CBBTC::FEED.address,
-      pda::exo_pair(HYPE::MINT),
-      pda::exo_vault(HYPE::MINT, HYPE::TOKEN_PROGRAM),
-      pda::exo_levercoin_mint(HYPE::MINT),
-      HYPE::FEED.address,
-      pda::USDC_PAIR,
-      pda::USDC_USD_PYTH_FEED,
-      pda::lst_vault(JITOSOL::MINT),
-      pda::lst_vault(HYLOSOL::MINT),
-      pda::usdc_vault(USDC::MINT),
-    ]
-  }
-
-  fn update(&mut self, account_map: &AccountMap) -> Result<()> {
-    // Core protocol state
+impl HyloJupiter {
+  /// Decodes the enshrined accounts and builds the protocol state with
+  /// the pairs of `entries`.
+  fn build_state(
+    &self,
+    account_map: &AccountMap,
+    entries: &[ExoEntry],
+  ) -> Result<ProtocolState<ClockRef>> {
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
     let xsol_mint: Mint = account_map_get(account_map, &XSOL::MINT)?;
@@ -760,36 +126,11 @@ where
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
     let sol_usd: PriceUpdateV2 =
       account_map_get(account_map, &SOL_USD.address)?;
-
-    // Earn pool
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
     let pool_config: PoolConfig =
       account_map_get(account_map, &pda::POOL_CONFIG)?;
-
-    // Exo pairs
-    let cbbtc_pair = build_exo_pair_state::<CBBTC, ClockRef>(
-      self.clock.clone(),
-      keyed_account(account_map, &pda::exo_pair(CBBTC::MINT))?,
-      keyed_account(
-        account_map,
-        &pda::exo_vault(CBBTC::MINT, CBBTC::TOKEN_PROGRAM),
-      )?,
-      keyed_account(account_map, &pda::exo_levercoin_mint(CBBTC::MINT))?,
-      keyed_account(account_map, &CBBTC::FEED.address)?,
-    )?;
-    let hype_pair = build_exo_pair_state::<HYPE, ClockRef>(
-      self.clock.clone(),
-      keyed_account(account_map, &pda::exo_pair(HYPE::MINT))?,
-      keyed_account(
-        account_map,
-        &pda::exo_vault(HYPE::MINT, HYPE::TOKEN_PROGRAM),
-      )?,
-      keyed_account(account_map, &pda::exo_levercoin_mint(HYPE::MINT))?,
-      keyed_account(account_map, &HYPE::FEED.address)?,
-    )?;
-
     let usdc_pair: UsdcPair = account_map_get(account_map, &pda::USDC_PAIR)?;
     let jitosol_vault: TokenAccount =
       account_map_get(account_map, &pda::lst_vault(JITOSOL::MINT))?;
@@ -799,19 +140,15 @@ where
       account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
     let usdc_usd: PriceUpdateV2 =
       account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
-
-    let usdc_exchange_state =
+    let usdc_pair_state =
       usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;
-
-    // Stake pools
-    let jitosol_pool_state = keyed_account(account_map, &JITOSOL::POOL_STATE)?;
-    let jitosol_stake_pool =
-      SplStakePool::from_bytes(&jitosol_pool_state.data)?;
-    let hylosol_pool_state = keyed_account(account_map, &HYLOSOL::POOL_STATE)?;
-    let hylosol_stake_pool =
-      SplStakePool::from_bytes(&hylosol_pool_state.data)?;
-
-    self.state = Some(ProtocolState::build(
+    let jitosol_stake_pool = SplStakePool::from_bytes(
+      &keyed_account(account_map, &JITOSOL::POOL_STATE)?.data,
+    )?;
+    let hylosol_stake_pool = SplStakePool::from_bytes(
+      &keyed_account(account_map, &HYLOSOL::POOL_STATE)?.data,
+    )?;
+    ProtocolState::build(
       self.clock.clone(),
       &hylo,
       jitosol_header,
@@ -822,26 +159,183 @@ where
       pool_config,
       hyusd_pool,
       &sol_usd,
-      cbbtc_pair,
-      hype_pair,
-      usdc_exchange_state,
+      self.exo_pairs(account_map, entries)?,
+      usdc_pair_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
       UFix64::new(jitosol_vault.amount),
       UFix64::new(hylosol_vault.amount),
-    )?);
+    )
+  }
 
+  /// Loads the pair state of each entry from the map.
+  fn exo_pairs(
+    &self,
+    account_map: &AccountMap,
+    entries: &[ExoEntry],
+  ) -> Result<HashMap<Pubkey, ExoPairState<ClockRef>>> {
+    exo_pubkeys_from_entries(entries)?
+      .chunks(EXO_PAIR_ACCOUNTS)
+      .zip(entries)
+      .map(|(keys, entry)| {
+        let fetched = keys
+          .iter()
+          .map(|key| account_map.get(key).cloned())
+          .collect::<Vec<_>>();
+        let raw =
+          ExoPairAccounts::from_fetched(&fetched).with_context(|| {
+            format!("exo pair accounts for {}", entry.collateral_mint)
+          })?;
+        let pair = raw.pair_state(entry, self.clock.clone())?;
+        Ok((pair.collateral_mint, pair))
+      })
+      .collect()
+  }
+
+  /// Swap accounts for the exo route between `source` and `destination`.
+  fn exo_account_metas(
+    &self,
+    user: Pubkey,
+    source: Pubkey,
+    destination: Pubkey,
+  ) -> Result<SwapAndAccountMetas> {
+    let entry = find_exo_entry(&self.exo_entries, source, destination)
+      .ok_or(CoreError::UnroutablePair)?;
+    let collateral = entry.collateral_mint;
+    let ExoPairPubkeys {
+      oracle,
+      token_program,
+      ..
+    } = ExoPairPubkeys::by_mint(collateral)?;
+    let roles = (
+      exo_entry_role(entry, source)?,
+      exo_entry_role(entry, destination)?,
+    );
+    let metas = match roles {
+      (Collateral, Stablecoin) => account_metas::mint_stablecoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Stablecoin, Collateral) => account_metas::redeem_stablecoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Collateral, Levercoin) => account_metas::mint_levercoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Levercoin, Collateral) => account_metas::redeem_levercoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Stablecoin, Levercoin) => account_metas::convert_stable_to_lever_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Levercoin, Stablecoin) => account_metas::convert_lever_to_stable_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Collateral, Usdc) => {
+        account_metas::swap_exo_to_usdc(user, collateral, oracle, token_program)
+      }
+      (Usdc, Collateral) => {
+        account_metas::swap_usdc_to_exo(user, collateral, oracle, token_program)
+      }
+      _ => Err(CoreError::UnroutablePair)?,
+    };
+    Ok(metas)
+  }
+}
+
+impl Amm for HyloJupiter {
+  fn from_keyed_account(
+    keyed_account: &KeyedAccount,
+    amm_context: &AmmContext,
+  ) -> Result<Self>
+  where
+    Self: Sized,
+  {
+    let exo_entries = read_exo_entries(&keyed_account.account.data)?;
+    let exo_account_keys = exo_pubkeys_from_entries(&exo_entries)?;
+    Ok(HyloJupiter {
+      clock: amm_context.clock_ref.clone(),
+      state: None,
+      exo_entries,
+      exo_account_keys,
+    })
+  }
+
+  fn label(&self) -> String {
+    "Hylo".to_owned()
+  }
+
+  fn program_id(&self) -> Pubkey {
+    router::ID
+  }
+
+  fn key(&self) -> Pubkey {
+    pda::EXO_REGISTRY
+  }
+
+  fn get_reserve_mints(&self) -> Vec<Pubkey> {
+    ENSHRINED_MINTS
+      .into_iter()
+      .chain(
+        self
+          .exo_entries
+          .iter()
+          .flat_map(|entry| [entry.collateral_mint, entry.levercoin_mint]),
+      )
+      .collect::<BTreeSet<_>>()
+      .into_iter()
+      .collect()
+  }
+
+  fn get_accounts_to_update(&self) -> Vec<Pubkey> {
+    ENSHRINED_ACCOUNTS
+      .into_iter()
+      .chain(once(pda::EXO_REGISTRY))
+      .chain(self.exo_account_keys.iter().copied())
+      .collect()
+  }
+
+  fn update(&mut self, account_map: &AccountMap) -> Result<()> {
+    let registry = keyed_account(account_map, &pda::EXO_REGISTRY)?;
+    let entries = read_exo_entries(&registry.data)?;
+    self.state = Some(self.build_state(account_map, &entries)?);
+    self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
+    self.exo_entries = entries;
     Ok(())
   }
 
   fn quote(&self, params: &QuoteParams) -> Result<Quote> {
-    let state = self.state.as_ref().context("`state` not set")?;
-    <Self as PairConfig<IN, OUT>>::quote(
-      state,
-      params.amount,
+    let state = self.state.as_ref().context("state not set")?;
+    let quote = state.runtime_quote(
+      &self.exo_entries,
       params.input_mint,
       params.output_mint,
-    )
+      params.amount,
+    )?;
+    Ok(Quote {
+      in_amount: quote.in_amount,
+      out_amount: quote.out_amount,
+      fee_amount: quote.fee_amount,
+      fee_mint: quote.fee_mint,
+      fee_pct: fee_pct(quote.fee_amount, quote.fee_base)?,
+    })
   }
 
   fn get_swap_and_account_metas(
@@ -851,14 +345,76 @@ where
     let SwapParams {
       source_mint,
       destination_mint,
-      token_transfer_authority: user,
+      token_transfer_authority,
       ..
     } = validate_swap_params(p)?;
-    <Self as PairConfig<IN, OUT>>::build_account_metas(
-      *user,
-      *source_mint,
-      *destination_mint,
-    )
+    let user = *token_transfer_authority;
+    let metas = match (*source_mint, *destination_mint) {
+      (JITOSOL::MINT, HYUSD::MINT) => {
+        account_metas::mint_stablecoin_lst(user, JITOSOL::MINT)
+      }
+      (HYLOSOL::MINT, HYUSD::MINT) => {
+        account_metas::mint_stablecoin_lst(user, HYLOSOL::MINT)
+      }
+      (HYUSD::MINT, JITOSOL::MINT) => {
+        account_metas::redeem_stablecoin_lst(user, JITOSOL::MINT)
+      }
+      (HYUSD::MINT, HYLOSOL::MINT) => {
+        account_metas::redeem_stablecoin_lst(user, HYLOSOL::MINT)
+      }
+      (JITOSOL::MINT, XSOL::MINT) => {
+        account_metas::mint_levercoin_lst(user, JITOSOL::MINT)
+      }
+      (HYLOSOL::MINT, XSOL::MINT) => {
+        account_metas::mint_levercoin_lst(user, HYLOSOL::MINT)
+      }
+      (XSOL::MINT, JITOSOL::MINT) => {
+        account_metas::redeem_levercoin_lst(user, JITOSOL::MINT)
+      }
+      (XSOL::MINT, HYLOSOL::MINT) => {
+        account_metas::redeem_levercoin_lst(user, HYLOSOL::MINT)
+      }
+      (HYUSD::MINT, XSOL::MINT) => {
+        account_metas::convert_stable_to_lever_lst(user)
+      }
+      (XSOL::MINT, HYUSD::MINT) => {
+        account_metas::convert_lever_to_stable_lst(user)
+      }
+      (HYUSD::MINT, SHYUSD::MINT) => account_metas::earn_pool_deposit(user),
+      (SHYUSD::MINT, HYUSD::MINT) => account_metas::earn_pool_withdraw(user),
+      (JITOSOL::MINT, HYLOSOL::MINT) => {
+        account_metas::swap_lst_to_lst(user, JITOSOL::MINT, HYLOSOL::MINT)
+      }
+      (HYLOSOL::MINT, JITOSOL::MINT) => {
+        account_metas::swap_lst_to_lst(user, HYLOSOL::MINT, JITOSOL::MINT)
+      }
+      (JITOSOL::MINT, USDC::MINT) => account_metas::swap_lst_to_usdc(
+        user,
+        JITOSOL::MINT,
+        JITOSOL::POOL_STATE,
+      ),
+      (HYLOSOL::MINT, USDC::MINT) => account_metas::swap_lst_to_usdc(
+        user,
+        HYLOSOL::MINT,
+        HYLOSOL::POOL_STATE,
+      ),
+      (USDC::MINT, JITOSOL::MINT) => account_metas::swap_usdc_to_lst(
+        user,
+        JITOSOL::MINT,
+        JITOSOL::POOL_STATE,
+      ),
+      (USDC::MINT, HYLOSOL::MINT) => account_metas::swap_usdc_to_lst(
+        user,
+        HYLOSOL::MINT,
+        HYLOSOL::POOL_STATE,
+      ),
+      (USDC::MINT, HYUSD::MINT) => account_metas::mint_stablecoin_usdc(user),
+      (HYUSD::MINT, USDC::MINT) => account_metas::redeem_stablecoin_usdc(user),
+      (source, destination) => {
+        self.exo_account_metas(user, source, destination)?
+      }
+    };
+    Ok(metas)
   }
 
   fn clone_amm(&self) -> Box<dyn Amm + Send + Sync> {
@@ -869,6 +425,7 @@ where
 #[cfg(test)]
 mod tests {
   use anchor_lang::pubkey;
+  use anyhow::anyhow;
   use fix::prelude::*;
   use hylo_clients::prelude::{
     RouterArgs, TransactionSyntax, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD,
@@ -950,15 +507,10 @@ mod tests {
   const TESTER: Pubkey =
     pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
 
-  async fn build_jupiter_pair<IN, OUT>() -> Result<HyloJupiterPair<IN, OUT>>
-  where
-    IN: TokenMint + 'static,
-    OUT: TokenMint + 'static,
-    HyloJupiterPair<IN, OUT>: PairConfig<IN, OUT> + Clone + Send + Sync,
-  {
+  async fn build_jupiter() -> Result<HyloJupiter> {
     let url = std::env::var("RPC_URL")?;
     let client = RpcClient::new(url);
-    let key = <HyloJupiterPair<IN, OUT> as PairConfig<IN, OUT>>::key();
+    let key = pda::EXO_REGISTRY;
     let account = client.get_account(&key).await?;
     let jupiter_account = KeyedAccount {
       key,
@@ -966,14 +518,12 @@ mod tests {
       params: None,
     };
     let amm_context = load_amm_context(&client).await?;
-    let mut pair = HyloJupiterPair::<IN, OUT>::from_keyed_account(
-      &jupiter_account,
-      &amm_context,
-    )?;
-    let accounts_to_update = pair.get_accounts_to_update();
-    let account_map = load_account_map(&client, &accounts_to_update).await?;
-    pair.update(&account_map)?;
-    Ok(pair)
+    let mut amm =
+      HyloJupiter::from_keyed_account(&jupiter_account, &amm_context)?;
+    let account_map =
+      load_account_map(&client, &amm.get_accounts_to_update()).await?;
+    amm.update(&account_map)?;
+    Ok(amm)
   }
 
   #[tokio::test]
@@ -985,7 +535,7 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, HYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<JITOSOL, HYUSD>(RouterArgs {
@@ -1012,7 +562,7 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, HYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYUSD, JITOSOL>(RouterArgs {
@@ -1039,7 +589,7 @@ mod tests {
       output_mint: XSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, XSOL>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<JITOSOL, XSOL>(RouterArgs {
@@ -1066,7 +616,7 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, XSOL>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<XSOL, JITOSOL>(RouterArgs {
@@ -1093,7 +643,7 @@ mod tests {
       output_mint: XSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYUSD, XSOL>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYUSD, XSOL>(RouterArgs {
@@ -1135,7 +685,7 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYUSD, XSOL>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<XSOL, HYUSD>(RouterArgs {
@@ -1177,7 +727,7 @@ mod tests {
       output_mint: SHYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYUSD, SHYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYUSD, SHYUSD>(RouterArgs {
@@ -1215,7 +765,7 @@ mod tests {
       output_mint: HYLOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, HYLOSOL>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<JITOSOL, HYLOSOL>(RouterArgs {
@@ -1248,7 +798,7 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, HYLOSOL>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYLOSOL, JITOSOL>(RouterArgs {
@@ -1281,7 +831,7 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, USDC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<JITOSOL, USDC>(RouterArgs {
@@ -1313,7 +863,7 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<JITOSOL, USDC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<USDC, JITOSOL>(RouterArgs {
@@ -1346,7 +896,7 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYLOSOL, USDC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYLOSOL, USDC>(RouterArgs {
@@ -1378,7 +928,7 @@ mod tests {
       output_mint: HYLOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYLOSOL, USDC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<USDC, HYLOSOL>(RouterArgs {
@@ -1411,7 +961,7 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<USDC, HYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<USDC, HYUSD>(RouterArgs {
@@ -1448,7 +998,7 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<USDC, HYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYUSD, USDC>(RouterArgs {
@@ -1482,7 +1032,7 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<CBBTC, USDC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<CBBTC, USDC>(RouterArgs {
@@ -1518,7 +1068,7 @@ mod tests {
       output_mint: CBBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<CBBTC, USDC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<USDC, CBBTC>(RouterArgs {
@@ -1555,7 +1105,7 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<CBBTC, HYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<CBBTC, HYUSD>(RouterArgs {
@@ -1593,7 +1143,7 @@ mod tests {
       output_mint: CBBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<CBBTC, HYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYUSD, CBBTC>(RouterArgs {
@@ -1632,7 +1182,7 @@ mod tests {
       output_mint: XBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<CBBTC, XBTC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<CBBTC, XBTC>(RouterArgs {
@@ -1670,7 +1220,7 @@ mod tests {
       output_mint: CBBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<CBBTC, XBTC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<XBTC, CBBTC>(RouterArgs {
@@ -1709,7 +1259,7 @@ mod tests {
       output_mint: XBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYUSD, XBTC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<HYUSD, XBTC>(RouterArgs {
@@ -1743,7 +1293,7 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYUSD, XBTC>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<XBTC, HYUSD>(RouterArgs {
@@ -1777,7 +1327,7 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter_pair::<HYUSD, SHYUSD>().await?;
+    let jup = build_jupiter().await?;
     let hylo = build_test_router_client()?;
     let args = hylo
       .build_transaction_data::<SHYUSD, HYUSD>(RouterArgs {

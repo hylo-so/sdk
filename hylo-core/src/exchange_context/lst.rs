@@ -233,6 +233,24 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       .fee_rate(projected.collateral_ratio)
   }
 
+  /// Stablecoin redeem fee at the projected CR, saturating at `y_max`.
+  ///
+  /// # Errors
+  /// * Projection underflow, interpolation, or fee extraction
+  #[cfg(feature = "offchain")]
+  pub fn saturating_stablecoin_redeem_fee(
+    &self,
+    lst_sol_price: &LstSolPrice,
+    amount_lst_out: UFix64<N9>,
+  ) -> Result<FeeExtract<N9>, CoreError> {
+    let projected =
+      self.projected_redeem_state(lst_sol_price, amount_lst_out)?;
+    let fee_rate = self
+      .stablecoin_redeem_fees
+      .saturating_fee_rate(projected.collateral_ratio)?;
+    FeeExtract::new(fee_rate, amount_lst_out)
+  }
+
   /// Post-trade state used by the stablecoin redeem fee projection.
   pub fn projected_redeem_state(
     &self,

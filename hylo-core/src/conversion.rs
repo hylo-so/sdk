@@ -2,8 +2,8 @@ use fix::prelude::*;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  ExoFromToken, ExoToToken, LeverToStable, LstToToken, StableToLever,
-  TokenToLst,
+  ExoFromToken, ExoToToken, ExoToUsd, LeverToStable, LstToToken, LstToUsd,
+  StableToLever, TokenToLst,
 };
 use crate::pyth::PriceRange;
 #[cfg(feature = "offchain")]
@@ -63,6 +63,26 @@ impl Conversion {
       .and_then(|amt| amt.mul_div_floor(self.lst_sol_price, UFix64::one()))
       .and_then(|sol| sol.mul_div_floor(self.usd_sol_price.lower, token_nav))
       .map(UFix64::convert)
+  }
+
+  /// Values an LST amount in USD at the lower SOL/USD bound.
+  ///
+  /// ```txt
+  ///                  SOL       USD
+  /// USD  =  LST  *  -----  *  -----
+  ///                  LST       SOL
+  /// ```
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  pub fn lst_to_usd(
+    &self,
+    amount_lst: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    amount_lst
+      .mul_floor(self.lst_sol_price)
+      .and_then(|sol| sol.mul_floor(self.usd_sol_price.lower))
+      .ok_or(LstToUsd)
   }
 
   /// Inverse of [`lst_to_token`](Self::lst_to_token) under a token cap.
@@ -278,6 +298,25 @@ impl ExoConversion {
         amt.mul_div_floor(self.collateral_usd_price.lower, token_nav)
       })
       .and_then(UFix64::checked_convert::<N6>)
+  }
+
+  /// Values a collateral amount in USD at the lower oracle bound.
+  ///
+  /// ```txt
+  ///                            USD
+  /// USD  =  COLLATERAL  *  ------------
+  ///                         COLLATERAL
+  /// ```
+  ///
+  /// # Errors
+  /// * Arithmetic overflow
+  pub fn exo_to_usd(
+    &self,
+    amount: UFix64<N9>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    amount
+      .mul_floor(self.collateral_usd_price.lower)
+      .ok_or(ExoToUsd)
   }
 
   /// Inverse of [`exo_to_token`](Self::exo_to_token) under a token cap.

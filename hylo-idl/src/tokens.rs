@@ -4,6 +4,7 @@ use anchor_spl::{token, token_2022};
 use fix::prelude::{N6, N8, N9};
 use fix::typenum::Integer;
 
+use crate::router::types::ExoEntry;
 use crate::{earn_pool, exchange, pda};
 
 /// Calls `$cb` "shaper" macro once for every exo pair.
@@ -206,7 +207,13 @@ impl StakePool for HYLOSOL {
 }
 
 /// Exogenous collateral backing an `ExoPair`.
-pub trait Exo: TokenMint {}
+pub trait Exo: TokenMint {
+  /// Registry entry pairing the collateral mint with its levercoin mint.
+  const EXO_ENTRY: ExoEntry = ExoEntry {
+    collateral_mint: Self::MINT,
+    levercoin_mint: pda::exo_levercoin_mint(Self::MINT),
+  };
+}
 
 macro_rules! impl_exo {
   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
@@ -215,3 +222,29 @@ macro_rules! impl_exo {
 }
 
 with_exo_pairs!(impl_exo);
+
+/// Role a mint plays in an exo pair's routing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExoRole {
+  Collateral,
+  Levercoin,
+  Stablecoin,
+  Usdc,
+}
+
+/// Role of `mint` in the pair backed by `collateral_mint` and
+/// `levercoin_mint`, or `None` when the mint is not routable through it.
+#[must_use]
+pub fn exo_role(
+  collateral_mint: Pubkey,
+  levercoin_mint: Pubkey,
+  mint: Pubkey,
+) -> Option<ExoRole> {
+  match mint {
+    HYUSD::MINT => Some(ExoRole::Stablecoin),
+    USDC::MINT => Some(ExoRole::Usdc),
+    m if m == collateral_mint => Some(ExoRole::Collateral),
+    m if m == levercoin_mint => Some(ExoRole::Levercoin),
+    _ => None,
+  }
+}

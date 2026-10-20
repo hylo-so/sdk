@@ -195,7 +195,7 @@ mod test {
   ///
   /// Given `out = in * in_price / out_price`
   /// Rearrange to `in * in_price = out * out_price`
-  /// Assuming `out` is `u64::MAX`, ensure there will be no overflow.
+  /// Assuming `out` is `u64::MAX`, the inputs do not overflow.
   fn safe_conversion_inputs(
     amount: UFix64<N9>,
     in_price: UFix64<N9>,

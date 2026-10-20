@@ -25,6 +25,11 @@
 [hylo-idl-docs-badge]: https://docs.rs/hylo-idl/badge.svg
 [hylo-idl-docs]: https://docs.rs/hylo-idl
 
+[hylo-quotes-version]: https://img.shields.io/crates/v/hylo-quotes.svg
+[hylo-quotes-crates]: https://crates.io/crates/hylo-quotes
+[hylo-quotes-docs-badge]: https://docs.rs/hylo-quotes/badge.svg
+[hylo-quotes-docs]: https://docs.rs/hylo-quotes
+
 [hylo-jupiter-version]: https://img.shields.io/crates/v/hylo-jupiter.svg
 [hylo-jupiter-crates]: https://crates.io/crates/hylo-jupiter
 [hylo-jupiter-docs-badge]: https://docs.rs/hylo-jupiter/badge.svg
@@ -40,5 +45,6 @@
 | [`hylo-core`](./hylo-core)       | Core protocol data types, math, and utilities | [![Crates.io][hylo-core-version]][hylo-core-crates]       | [![Docs][hylo-core-docs-badge]][hylo-core-docs]       |
 | [`hylo-clients`](./hylo-clients) | Hylo RPC clients                              | [![Crates.io][hylo-clients-version]][hylo-clients-crates] | [![Docs][hylo-clients-docs-badge]][hylo-clients-docs] |
 | [`hylo-idl`](./hylo-idl)         | IDL definitions and utilities                 | [![Crates.io][hylo-idl-version]][hylo-idl-crates]         | [![Docs][hylo-idl-docs-badge]][hylo-idl-docs]         |
+| [`hylo-quotes`](./hylo-quotes)   | Quoting strategies over state or simulation   | [![Crates.io][hylo-quotes-version]][hylo-quotes-crates]   | [![Docs][hylo-quotes-docs-badge]][hylo-quotes-docs]   |
 | [`hylo-jupiter`](./hylo-jupiter) | Jupiter integration                           | [![Crates.io][hylo-jupiter-version]][hylo-jupiter-crates] | [![Docs][hylo-jupiter-docs-badge]][hylo-jupiter-docs] |
 | [`hylo-stats`](./hylo-stats)     | Offchain yield statistics                     | [![Crates.io][hylo-stats-version]][hylo-stats-crates]     | [![Docs][hylo-stats-docs-badge]][hylo-stats-docs]     |

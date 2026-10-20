@@ -1,11 +1,14 @@
 //! `TokenOperation` implementations for exchange pairs.
 
+use anchor_lang::prelude::Pubkey;
 use fix::prelude::*;
+use fix::typenum::Integer;
 use hylo_core::calculus::positive_rate;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::marginal::SwapMarginals;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::fees::controller::FeeExtract;
+use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::pyth::PythOracle;
 use hylo_core::rebalance::mode::RebalanceMode;
@@ -14,18 +17,46 @@ use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::{
   max_mintable, validate_burn, SUPPLY_FLOOR,
 };
+use hylo_idl::tokens::ExoRole::{Collateral, Levercoin, Stablecoin, Usdc};
 use hylo_idl::tokens::{
-  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, USDC, WETH,
-  XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
+  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST, SHYUSD,
+  USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
 use hylo_idl::with_exo_pairs;
 
-use crate::protocol_state::ProtocolState;
+use crate::protocol_state::{exo_entry_role, find_exo_entry, ProtocolState};
 use crate::token_operation::{
-  atom_rate, gate, past_zero, LstSwapOperationOutput, MintOperationOutput,
-  OperationOutput, RedeemOperationOutput, SwapOperationOutput, TokenOperation,
+  atom_rate, gate, past_zero, FeeBase, LstSwapOperationOutput,
+  MintOperationOutput, OperationOutput, RedeemOperationOutput,
+  SwapOperationOutput, TokenOperation, TokenOperationExt,
 };
 use crate::{Local, LocalExo, LST};
+
+/// Type-erased quote in the route mints' atoms.
+#[derive(Debug, Clone, Copy)]
+pub struct RuntimeQuote {
+  pub in_amount: u64,
+  pub out_amount: u64,
+  pub fee_amount: u64,
+  pub fee_mint: Pubkey,
+  pub fee_base: u64,
+  pub marginal_rate: f64,
+}
+
+impl<InExp: Integer, OutExp: Integer, FeeExp: Integer>
+  From<OperationOutput<InExp, OutExp, FeeExp>> for RuntimeQuote
+{
+  fn from(quote: OperationOutput<InExp, OutExp, FeeExp>) -> RuntimeQuote {
+    RuntimeQuote {
+      in_amount: quote.in_amount.bits,
+      out_amount: quote.out_amount.bits,
+      fee_amount: quote.fee_amount.bits,
+      fee_mint: quote.fee_mint,
+      fee_base: quote.fee_base.bits,
+      marginal_rate: quote.marginal_rate,
+    }
+  }
+}
 
 impl<C: SolanaClock> ProtocolState<C> {
   /// Pause and harvest gates for LST-pair routes.
@@ -51,22 +82,37 @@ impl<C: SolanaClock> ProtocolState<C> {
 
   /// Pause and par gates for routes touching the USDC vault.
   fn usdc_pair_gates(&self) -> Result<(), CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!usdc_state.paused, CoreError::PairPaused)?;
     usdc_state
       .par_tolerance
-      .validate_spot(usdc_state.usdc_usd_spot)
+      .validate_spot(usdc_state.usdc_usd_spot?)
   }
 
   /// USDC the vault can pay out against the virtual stablecoin supply.
   fn usdc_redeemable(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     Ok(
       usdc_state
         .vault_balance
         .min(usdc_state.virtual_stablecoin.supply()?),
     )
+  }
+
+  /// USDC available to a rebalance buy after the pair's reserve.
+  fn usdc_rebalance_buy_liquidity(
+    &self,
+    pair_size_usd: UFix64<N9>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let usdc_state = &self.usdc_pair;
+    let min_usdc_reserve =
+      usdc_state.reserve_gate.required_reserve(pair_size_usd)?;
+    let usdc_headroom = usdc_state
+      .vault_balance
+      .checked_sub(&min_usdc_reserve)
+      .ok_or(CoreError::InsufficientLiquidity)?;
+    Ok(usdc_headroom.min(usdc_state.virtual_stablecoin.supply()?))
   }
 }
 
@@ -166,12 +212,12 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_stablecoin_lst_quote<L: LST + Local>(
+  /// LST owed for `in_amount` hyUSD, checked against the vault.
+  fn redeem_stablecoin_lst_fee_base<L: LST + Local>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<RedeemOperationOutput, CoreError> {
-    let lst_header = self.lst_header::<L>()?;
-    let lst_price = lst_header.price_sol.into();
+  ) -> Result<UFix64<N9>, CoreError> {
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
     let stablecoin_nav = self.exchange_context.stablecoin_nav()?;
     let lst_out = self
       .exchange_context
@@ -181,6 +227,15 @@ impl<C: SolanaClock> ProtocolState<C> {
       lst_out <= self.lst_vault_balance::<L>()?,
       CoreError::InsufficientLiquidity,
     )?;
+    Ok(lst_out)
+  }
+
+  fn redeem_stablecoin_lst_quote<L: LST + Local>(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    let lst_price: LstSolPrice = self.lst_header::<L>()?.price_sol.into();
+    let lst_out = self.redeem_stablecoin_lst_fee_base::<L>(in_amount)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -621,7 +676,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -640,7 +695,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let counter_headroom = usdc_state.virtual_stablecoin.max_mintable()?;
     let mint_headroom = max_mintable(UFix64::new(self.hyusd_mint.supply))?;
     FeeExtract::max_input(
@@ -650,7 +705,7 @@ impl<C: SolanaClock> TokenOperation<USDC, HYUSD> for ProtocolState<C> {
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     past_zero(FeeExtract::max_input(usdc_state.mint_fee, UFix64::zero())?)
   }
 }
@@ -666,7 +721,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<OperationOutput<N6, N6, N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -693,12 +748,12 @@ impl<C: SolanaClock> TokenOperation<HYUSD, USDC> for ProtocolState<C> {
   }
 
   fn max_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let redeem_fee = self.usdc_exchange_state().redeem_fee;
+    let redeem_fee = self.usdc_pair.redeem_fee;
     FeeExtract::max_input(redeem_fee, self.usdc_redeemable()?)
   }
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
-    let usdc_state = self.usdc_exchange_state();
+    let usdc_state = &self.usdc_pair;
     past_zero(FeeExtract::max_input(
       usdc_state.redeem_fee,
       UFix64::zero(),
@@ -803,13 +858,12 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+  /// Collateral owed for `in_amount` hyUSD, checked against the pair's
+  /// total collateral.
+  fn redeem_stablecoin_exo_fee_base<E: Exo>(
     &self,
     in_amount: UFix64<N6>,
-  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
-  where
-    UFix64<E::Exp>: FixExt,
-  {
+  ) -> Result<UFix64<N9>, CoreError> {
     let pair = self.exo_pair::<E>()?;
     let stablecoin_nav = pair.context.stablecoin_nav()?;
     let collateral_out = pair
@@ -820,6 +874,18 @@ impl<C: SolanaClock> ProtocolState<C> {
       collateral_out <= pair.context.total_collateral,
       CoreError::InsufficientLiquidity,
     )?;
+    Ok(collateral_out)
+  }
+
+  fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<OperationOutput<N6, E::Exp, N9>, CoreError>
+  where
+    UFix64<E::Exp>: FixExt,
+  {
+    let pair = self.exo_pair::<E>()?;
+    let collateral_out = self.redeem_stablecoin_exo_fee_base::<E>(in_amount)?;
     let FeeExtract {
       fees_extracted,
       amount_remaining,
@@ -1254,12 +1320,13 @@ impl<C: SolanaClock> ProtocolState<C> {
       .rebalance_buy_conversion(&adjusted, in_amount)?;
     let out_amount = conversion.lst_to_token(in_amount, UFix64::one())?;
     gate(
-      out_amount <= self.usdc_exchange_state().vault_balance,
+      out_amount <= self.usdc_pair.vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
+    let pair_size_usd = self.exchange_context.total_value_locked()?;
     gate(
-      out_amount <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
-      CoreError::BurnUnderflow,
+      out_amount <= self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+      CoreError::InsufficientLiquidity,
     )?;
     let pnl = self
       .exchange_context
@@ -1332,10 +1399,14 @@ impl<C: SolanaClock> ProtocolState<C> {
       self.exchange_context.rebalance_buy_target()?,
       epoch,
     )?;
+    let pair_size_usd = self.exchange_context.total_value_locked()?;
     let input_cap = self
       .exchange_context
       .rebalance_buy_conversion(&adjusted, UFix64::zero())?
-      .max_lst_for_token(self.usdc_redeemable()?, UFix64::one())?;
+      .max_lst_for_token(
+        self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+        UFix64::one(),
+      )?;
     Ok(buy_target.min(input_cap))
   }
 
@@ -1509,12 +1580,13 @@ impl<C: SolanaClock> ProtocolState<C> {
     let out_amount =
       conversion.exo_to_token(normalized, UFix64::<N9>::one())?;
     gate(
-      out_amount <= self.usdc_exchange_state().vault_balance,
+      out_amount <= self.usdc_pair.vault_balance,
       CoreError::InsufficientLiquidity,
     )?;
+    let pair_size_usd = pair.context.total_value_locked()?;
     gate(
-      out_amount <= self.usdc_exchange_state().virtual_stablecoin.supply()?,
-      CoreError::BurnUnderflow,
+      out_amount <= self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+      CoreError::InsufficientLiquidity,
     )?;
     let pnl = pair
       .context
@@ -1540,9 +1612,13 @@ impl<C: SolanaClock> ProtocolState<C> {
   {
     let exo = &self.exo_pair::<E>()?.context;
     let buy_target = exo.rebalance_buy_target()?;
+    let pair_size_usd = exo.total_value_locked()?;
     let input_cap = exo
       .rebalance_buy_conversion(UFix64::zero())?
-      .max_exo_for_token(self.usdc_redeemable()?, UFix64::<N9>::one())?;
+      .max_exo_for_token(
+        self.usdc_rebalance_buy_liquidity(pair_size_usd)?,
+        UFix64::<N9>::one(),
+      )?;
     buy_target
       .min(input_cap)
       .checked_convert::<E::Exp>()
@@ -1663,6 +1739,16 @@ where
 
   fn min_input_ungated(&self) -> Result<UFix64<E::Exp>, CoreError> {
     self.mint_stablecoin_exo_min_input::<E>()
+  }
+}
+
+impl<E: Exo + PythOracle + LocalExo, C: SolanaClock> FeeBase<HYUSD, E>
+  for ProtocolState<C>
+where
+  UFix64<E::Exp>: FixExt,
+{
+  fn fee_base(&self, in_amount: UFix64<N6>) -> Result<UFix64<N9>, CoreError> {
+    self.redeem_stablecoin_exo_fee_base::<E>(in_amount)
   }
 }
 
@@ -1793,6 +1879,12 @@ impl<C: SolanaClock> TokenOperation<HYLOSOL, HYUSD> for ProtocolState<C> {
   }
 }
 
+impl<C: SolanaClock> FeeBase<HYUSD, JITOSOL> for ProtocolState<C> {
+  fn fee_base(&self, in_amount: UFix64<N6>) -> Result<UFix64<N9>, CoreError> {
+    self.redeem_stablecoin_lst_fee_base::<JITOSOL>(in_amount)
+  }
+}
+
 impl<C: SolanaClock> TokenOperation<HYUSD, JITOSOL> for ProtocolState<C> {
   type FeeExp = N9;
 
@@ -1813,6 +1905,12 @@ impl<C: SolanaClock> TokenOperation<HYUSD, JITOSOL> for ProtocolState<C> {
 
   fn min_input_ungated(&self) -> Result<UFix64<N6>, CoreError> {
     self.redeem_stablecoin_lst_min_input::<JITOSOL>()
+  }
+}
+
+impl<C: SolanaClock> FeeBase<HYUSD, HYLOSOL> for ProtocolState<C> {
+  fn fee_base(&self, in_amount: UFix64<N6>) -> Result<UFix64<N9>, CoreError> {
+    self.redeem_stablecoin_lst_fee_base::<HYLOSOL>(in_amount)
   }
 }
 
@@ -1936,3 +2034,110 @@ macro_rules! exo_levercoin_ops {
 }
 
 with_exo_pairs!(exo_levercoin_ops);
+
+macro_rules! runtime_exo_dispatch {
+  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
+    impl<C: SolanaClock> ProtocolState<C> {
+      /// Quotes a registry entry's route between `input_mint` and
+      /// `output_mint` through the typed [`TokenOperation`] for its pair.
+      fn runtime_exo_quote(
+        &self,
+        entry: &ExoEntry,
+        input_mint: Pubkey,
+        output_mint: Pubkey,
+        amount: u64,
+      ) -> Result<RuntimeQuote, CoreError> {
+        let input_role = exo_entry_role(entry, input_mint)?;
+        let output_role = exo_entry_role(entry, output_mint)?;
+        match (entry.collateral_mint, input_role, output_role) {
+          $(
+          (<$exo>::MINT, Collateral, Stablecoin) => self
+            .output::<$exo, HYUSD>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Stablecoin, Collateral) => self
+            .output::<HYUSD, $exo>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Collateral, Levercoin) => self
+            .output::<$exo, $lever>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Levercoin, Collateral) => self
+            .output::<$lever, $exo>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Stablecoin, Levercoin) => self
+            .output::<HYUSD, $lever>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Levercoin, Stablecoin) => self
+            .output::<$lever, HYUSD>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Collateral, Usdc) => self
+            .output::<$exo, USDC>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          (<$exo>::MINT, Usdc, Collateral) => self
+            .output::<USDC, $exo>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          )+
+          _ => Err(CoreError::UnroutablePair),
+        }
+      }
+    }
+  };
+}
+
+with_exo_pairs!(runtime_exo_dispatch);
+
+macro_rules! enshrined_routes {
+  ($(($in:ident, $out:ident)),+ $(,)?) => {
+    impl<C: SolanaClock> ProtocolState<C> {
+      /// Quotes the route between `input_mint` and `output_mint`: an
+      /// enshrined LST, USDC, or earn pool pair, else the exo pair in
+      /// `entries` that owns one of the mints.
+      ///
+      /// # Errors
+      /// * [`CoreError::UnroutablePair`] when no route joins the mints
+      /// * Route gated in current state or protocol arithmetic
+      pub fn runtime_quote(
+        &self,
+        entries: &[ExoEntry],
+        input_mint: Pubkey,
+        output_mint: Pubkey,
+        amount: u64,
+      ) -> Result<RuntimeQuote, CoreError> {
+        match (input_mint, output_mint) {
+          $(
+          (<$in>::MINT, <$out>::MINT) => self
+            .output::<$in, $out>(UFix64::new(amount))
+            .map(RuntimeQuote::from),
+          )+
+          _ => find_exo_entry(entries, input_mint, output_mint)
+            .ok_or(CoreError::UnroutablePair)
+            .and_then(|entry| {
+              self.runtime_exo_quote(entry, input_mint, output_mint, amount)
+            }),
+        }
+      }
+    }
+  };
+}
+
+enshrined_routes! {
+  (JITOSOL, HYUSD),
+  (HYUSD, JITOSOL),
+  (HYLOSOL, HYUSD),
+  (HYUSD, HYLOSOL),
+  (JITOSOL, XSOL),
+  (XSOL, JITOSOL),
+  (HYLOSOL, XSOL),
+  (XSOL, HYLOSOL),
+  (HYUSD, XSOL),
+  (XSOL, HYUSD),
+  (JITOSOL, HYLOSOL),
+  (HYLOSOL, JITOSOL),
+  (JITOSOL, USDC),
+  (USDC, JITOSOL),
+  (HYLOSOL, USDC),
+  (USDC, HYLOSOL),
+  (USDC, HYUSD),
+  (HYUSD, USDC),
+  (HYUSD, SHYUSD),
+  (SHYUSD, HYUSD),
+}

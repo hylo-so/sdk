@@ -6,7 +6,7 @@ use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::types::AddressField;
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
-use crate::{earn_pool, exchange};
+use crate::{earn_pool, exchange, router};
 
 macro_rules! pda {
   ($program_id:expr, $base:expr) => {{
@@ -235,6 +235,11 @@ pub const DEAD: Pubkey = pda!(exchange::ID, exchange::constants::DEAD);
 pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 
 pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);
+
+pub const ROUTER_EVENT_AUTHORITY: Pubkey = event_auth(router::ID);
+
+pub const EXO_REGISTRY: Pubkey =
+  pda!(router::ID, router::constants::EXO_REGISTRY);
 
 pub const USDC_PAIR: Pubkey =
   pda!(exchange::ID, exchange::constants::USDC_PAIR);
