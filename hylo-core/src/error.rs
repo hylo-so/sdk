@@ -303,6 +303,6 @@ pub enum CoreError {
   MintExtensionDisallowedConfig,
   #[msg("Mint account data failed to deserialize as Token Extensions.")]
   CannotDeserializeMintExtension,
-  #[msg("Arithmetic overflow")]
-  ArithmeticOverflow,
+  #[msg("Overflow while computing transfer fee.")]
+  TransferFeeOverflow,
 }

@@ -21,8 +21,8 @@ use anchor_spl::token_interface::spl_pod::optional_keys::OptionalNonZeroPubkey;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  ArithmeticOverflow, CannotDeserializeMintExtension, MintExtensionBlacklisted,
-  MintExtensionDisallowedConfig,
+  CannotDeserializeMintExtension, MintExtensionBlacklisted,
+  MintExtensionDisallowedConfig, TransferFeeOverflow,
 };
 
 /// Policy class for a Token Extensions type.
@@ -202,10 +202,10 @@ pub fn calculate_transfer_fee_excluded_amount(
     Some(fee) => {
       let transfer_fee = fee
         .calculate_fee(transfer_fee_included_amount)
-        .ok_or(ArithmeticOverflow)?;
+        .ok_or(TransferFeeOverflow)?;
       let amount = transfer_fee_included_amount
         .checked_sub(transfer_fee)
-        .ok_or(ArithmeticOverflow)?;
+        .ok_or(TransferFeeOverflow)?;
       Ok(TransferFeeExcludedAmount {
         amount,
         transfer_fee,
@@ -243,8 +243,9 @@ pub fn calculate_transfer_fee_included_amount(
     Some(fee) => {
       let amount = fee
         .calculate_pre_fee_amount(transfer_fee_excluded_amount)
-        .ok_or(ArithmeticOverflow)?;
-      let transfer_fee = fee.calculate_fee(amount).ok_or(ArithmeticOverflow)?;
+        .ok_or(TransferFeeOverflow)?;
+      let transfer_fee =
+        fee.calculate_fee(amount).ok_or(TransferFeeOverflow)?;
       Ok(TransferFeeIncludedAmount {
         amount,
         transfer_fee,
