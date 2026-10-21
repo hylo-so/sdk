@@ -53,8 +53,8 @@
     text = ''
       local_version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml)
       missing=()
-      for crate in hylo-idl hylo-core hylo-clients hylo-stats \
-        hylo-quotes hylo-jupiter; do
+      for crate in hylo-oracle-types hylo-idl hylo-core \
+        hylo-clients hylo-stats hylo-quotes hylo-jupiter; do
         published=$(curl -sf -A hylo-sdk-publish \
           "https://crates.io/api/v1/crates/$crate" \
           | jq -r '.crate.max_version')

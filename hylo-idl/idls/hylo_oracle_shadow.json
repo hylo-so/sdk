@@ -1,0 +1,627 @@
+{
+  "address": "HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F",
+  "metadata": {
+    "name": "hylo_oracle",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "initialize_price_aggregate",
+      "docs": [
+        "Create and seed a price aggregate account for a registered feed.",
+        "",
+        "# Errors",
+        "",
+        "* The feed id is not in the registry.",
+        "* Emitting the initialization event fails."
+      ],
+      "discriminator": [
+        78,
+        122,
+        200,
+        157,
+        158,
+        202,
+        23,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "price_aggregate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "update_with_pyth_lazer",
+      "docs": [
+        "Verify one signed Pyth Lazer batch and store each feed's observation.",
+        "",
+        "# Errors",
+        "",
+        "* Pyth Lazer verification fails.",
+        "* The payload does not decode, names another channel, or lists a different",
+        "feed count than the remaining accounts.",
+        "* A feed is unknown, or its price aggregate account does not match or",
+        "deserialize.",
+        "* A feed property, price, confidence, exponent, or timestamp is invalid.",
+        "* The source index exceeds sample capacity, or the account write fails.",
+        "* The clock sysvar is unavailable.",
+        "* An update event fails to emit."
+      ],
+      "discriminator": [
+        46,
+        193,
+        151,
+        25,
+        61,
+        158,
+        101,
+        82
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pyth_lazer_program",
+          "address": "pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt"
+        },
+        {
+          "name": "pyth_lazer_storage",
+          "address": "3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL"
+        },
+        {
+          "name": "pyth_lazer_treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "channel_id",
+          "type": "u8"
+        },
+        {
+          "name": "message_data",
+          "type": "bytes"
+        },
+        {
+          "name": "ed25519_instruction_index",
+          "type": "u16"
+        },
+        {
+          "name": "signature_index",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "PriceAggregate",
+      "discriminator": [
+        241,
+        179,
+        146,
+        72,
+        88,
+        141,
+        189,
+        245
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "PriceAggregateInitialized",
+      "discriminator": [
+        9,
+        210,
+        56,
+        212,
+        82,
+        27,
+        5,
+        184
+      ]
+    },
+    {
+      "name": "PriceAggregateUpdated",
+      "discriminator": [
+        114,
+        143,
+        94,
+        21,
+        212,
+        187,
+        16,
+        26
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidPrice",
+      "msg": "Price sample price must be above 0."
+    },
+    {
+      "code": 6001,
+      "name": "ExponentOutOfRange",
+      "msg": "Price sample exponent is out of allowed range."
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTimestamp",
+      "msg": "Price sample timestamp is not a valid timestamp."
+    },
+    {
+      "code": 6003,
+      "name": "ConfidenceExceededLimit",
+      "msg": "Confidence exceeded the maximum confidence interval."
+    },
+    {
+      "code": 6004,
+      "name": "PriceBandExceeded",
+      "msg": "Price sample exceeded the maximum price band."
+    },
+    {
+      "code": 6005,
+      "name": "InvalidLazerPayload",
+      "msg": "Verified Lazer payload could not be decoded."
+    },
+    {
+      "code": 6006,
+      "name": "UnexpectedLazerChannel",
+      "msg": "Verified Lazer payload used an unexpected channel."
+    },
+    {
+      "code": 6007,
+      "name": "MissingLazerPrice",
+      "msg": "Verified Lazer feed is missing price."
+    },
+    {
+      "code": 6008,
+      "name": "MissingLazerExponent",
+      "msg": "Verified Lazer feed is missing exponent."
+    },
+    {
+      "code": 6009,
+      "name": "MissingLazerConfidence",
+      "msg": "Verified Lazer feed is missing confidence."
+    },
+    {
+      "code": 6010,
+      "name": "InvalidLazerConfidence",
+      "msg": "Verified Lazer feed has invalid confidence."
+    },
+    {
+      "code": 6011,
+      "name": "MissingLazerFeedUpdateTimestamp",
+      "msg": "Verified Lazer feed is missing feed update timestamp."
+    },
+    {
+      "code": 6012,
+      "name": "MissingLazerMarketSession",
+      "msg": "Verified Lazer feed is missing market session."
+    },
+    {
+      "code": 6013,
+      "name": "DuplicateLazerProperty",
+      "msg": "Verified Lazer feed contained a required property more than once."
+    },
+    {
+      "code": 6014,
+      "name": "UnknownFeed",
+      "msg": "Feed id is not present in the feed registry."
+    },
+    {
+      "code": 6015,
+      "name": "InvalidReferenceFeed",
+      "msg": "Price sample reference feed is missing or invalid."
+    },
+    {
+      "code": 6016,
+      "name": "UnknownLazerFeed",
+      "msg": "Verified Lazer feed and channel are not in the feed registry."
+    },
+    {
+      "code": 6017,
+      "name": "InvalidPriceAggregateAccount",
+      "msg": "PriceAggregate account does not match its feed's PDA identity."
+    },
+    {
+      "code": 6018,
+      "name": "RemainingAccountsMismatch",
+      "msg": "Remaining account count does not match the batch payload."
+    },
+    {
+      "code": 6019,
+      "name": "SampleCapacityExceeded",
+      "msg": "Source index exceeds price aggregate sample capacity."
+    },
+    {
+      "code": 6020,
+      "name": "NoFreshPriceSamples",
+      "msg": "All price samples are stale."
+    },
+    {
+      "code": 6021,
+      "name": "StalePriceSample",
+      "msg": "Price sample exceeded the maximum staleness."
+    },
+    {
+      "code": 6022,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow."
+    },
+    {
+      "code": 6023,
+      "name": "ConversionError",
+      "msg": "Unable to cast safely."
+    }
+  ],
+  "types": [
+    {
+      "name": "MarketSession",
+      "docs": [
+        "Interface for price sample market sessions.",
+        "",
+        "Not to be confused with [`pyth_lazer_protocol::api::MarketSession`]."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PreMarket"
+          },
+          {
+            "name": "Regular"
+          },
+          {
+            "name": "PostMarket"
+          },
+          {
+            "name": "Overnight"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleSource",
+      "docs": [
+        "Price source backing an observation. New sources append here."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PythLazer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "samples",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "PriceSample"
+                  }
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregateInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          },
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregateUpdated",
+      "docs": [
+        "Emitted whenever a price aggregate records a newer price, from any source."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          },
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "source",
+            "type": {
+              "defined": {
+                "name": "OracleSource"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceSample",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price",
+            "docs": [
+              "Price of asset, scaled by 10^[`PriceSample::exponent`]."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "docs": [
+              "Exponent used for the price."
+            ],
+            "type": "i16"
+          },
+          {
+            "name": "confidence",
+            "docs": [
+              "Confidence interval of the price, scaled by 10^[`PriceSample::exponent`]."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "posted_slot",
+            "docs": [
+              "Clock slot when the sample was posted."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "posted_timestamp_us",
+            "docs": [
+              "Timestamp when the sample was posted, in microseconds."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "market_session",
+            "docs": [
+              "Market session when the sample was last posted.",
+              "",
+              "Assets that are traded 24/7 will always have a market session of",
+              "[`MarketSession::Regular`].",
+              "",
+              "Assets that are traded 24/5 are implied in",
+              "[`hylo_oracle_types::feeds::FEEDS`], with a [`reference_feed`] of",
+              "[`Some`]."
+            ],
+            "type": {
+              "defined": {
+                "name": "MarketSession"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS",
+      "type": "u16",
+      "value": "500"
+    },
+    {
+      "name": "DEFAULT_MAX_PRICE_BAND_BPS",
+      "type": "u16",
+      "value": "500"
+    },
+    {
+      "name": "DEFAULT_MAX_STALENESS_SECS",
+      "type": "u64",
+      "value": "5"
+    },
+    {
+      "name": "DEFAULT_MAX_STALENESS_SECS_US",
+      "type": "u64",
+      "value": "5000000"
+    },
+    {
+      "name": "DEFAULT_MAX_STALENESS_SLOTS",
+      "type": "u64",
+      "value": "30"
+    },
+    {
+      "name": "MAX_BASIS_POINTS",
+      "type": "u16",
+      "value": "10000"
+    },
+    {
+      "name": "MAX_EXPONENT",
+      "type": "i16",
+      "value": "-2"
+    },
+    {
+      "name": "MAX_PRICE_AGGREGATE_SAMPLES",
+      "type": "u8",
+      "value": "8"
+    },
+    {
+      "name": "MICROS_PER_SECOND",
+      "type": "u64",
+      "value": "1000000"
+    },
+    {
+      "name": "MIN_EXPONENT",
+      "type": "i16",
+      "value": "-9"
+    },
+    {
+      "name": "PRICE_AGGREGATE",
+      "type": {
+        "array": [
+          "u8",
+          15
+        ]
+      },
+      "value": "[112, 114, 105, 99, 101, 95, 97, 103, 103, 114, 101, 103, 97, 116, 101]"
+    }
+  ]
+}
