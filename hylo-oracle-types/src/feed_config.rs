@@ -1,23 +1,21 @@
 use crate::{OracleSourceConfig, PythLazerChannelId, PythLazerFeedId, FEEDS};
 
-/// Static per-asset feed configuration; the only place feed identity lives.
+/// Static configuration for one asset feed.
 pub struct FeedConfig {
   pub id: u16,
   pub feeds: &'static [FeedSourceConfig],
 }
 
-/// Oracle source and its reference within the feed configuration.
+/// One oracle source in a feed, with an optional reference for non-regular
+/// market sessions. `reference_feed` is an in-range index into that feed's
+/// source list and points at a source with no reference.
 pub struct FeedSourceConfig {
   pub source: OracleSourceConfig,
-  /// Points to another feed that is used for non-regular market session price
-  /// validations.
-  ///
-  /// Must not form a cyclic reference with another feed.
   pub reference_feed: Option<u8>,
 }
 
 impl FeedConfig {
-  /// Direct index; `feed_ids_match_index` guarantees `id` is the array index.
+  /// Returns the feed at `id`. `id` equals that feed's index in `FEEDS`.
   #[must_use]
   pub fn by_id(id: u16) -> Option<&'static Self> {
     FEEDS.get(usize::from(id))

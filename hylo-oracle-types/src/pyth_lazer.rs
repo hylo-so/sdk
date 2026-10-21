@@ -2,11 +2,10 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PythLazerFeedId(pub u32);
 
+/// Pyth Lazer channel id.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PythLazerChannelId(pub u8);
 
-/// On-chain Pyth Lazer channel id the mio publisher signs on
-/// (`fixed_rate@1000ms`). Equals
-/// `pyth_lazer_protocol::ChannelId::FIXED_RATE_1000`; kept a bare `u8` so
-/// consumers don't pull the Lazer protocol crate.
+/// `fixed_rate@1000ms`, equal to
+/// `pyth_lazer_protocol::ChannelId::FIXED_RATE_1000`.
 pub const LAZER_CHANNEL: PythLazerChannelId = PythLazerChannelId(4);

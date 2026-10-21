@@ -1,14 +1,12 @@
 use crate::OracleSourceConfig::PythLazer;
 use crate::{FeedConfig, FeedSourceConfig, PythLazerFeedId, LAZER_CHANNEL};
 
-/// Registry feed ids; each equals the asset's index in `FEEDS`.
 pub const SOL_USD_FEED_ID: u16 = 0;
 pub const BTC_USD_FEED_ID: u16 = 1;
 pub const USDC_USD_FEED_ID: u16 = 2;
 pub const HYPE_USD_FEED_ID: u16 = 3;
 
-/// Curated feed registry: the single source of truth for feed identity and the
-/// `id` ⇄ asset mapping. Pyth Lazer ids and channel match the mio publisher.
+/// Index-keyed feed registry. Pyth Lazer ids match the mio publisher.
 pub const FEEDS: &[FeedConfig] = &[
   // id 0 — SOL/USD (LST USD anchor).
   FeedConfig {
@@ -78,7 +76,8 @@ const fn valid_feed_registry(feeds: &[FeedConfig], index: usize) -> bool {
   if index == feeds.len() {
     true
   } else {
-    valid_reference_feeds(feeds[index].feeds, 0)
+    feeds[index].id as usize == index
+      && valid_reference_feeds(feeds[index].feeds, 0)
       && valid_feed_registry(feeds, index + 1)
   }
 }
@@ -115,28 +114,6 @@ mod tests {
       0
     ));
   };
-
-  #[test]
-  fn feed_ids_are_unique() {
-    let count = FEEDS.len();
-    let unique = FEEDS
-      .iter()
-      .map(|feed| feed.id)
-      .collect::<std::collections::HashSet<_>>()
-      .len();
-    assert_eq!(count, unique, "duplicate feed id in FEEDS");
-  }
-
-  #[test]
-  fn feed_ids_match_index() {
-    FEEDS.iter().enumerate().for_each(|(index, feed)| {
-      assert_eq!(
-        usize::from(feed.id),
-        index,
-        "FEEDS[{index}].id must equal its index (by_id indexes directly)"
-      );
-    });
-  }
 
   #[test]
   fn pyth_lazer_feed_channel_pairs_are_unique() {
