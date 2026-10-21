@@ -8,6 +8,7 @@ homepage.workspace = true
 
 [features]
 default = []
+shadow = []
 
 [dependencies]
 anchor-lang.workspace = true
