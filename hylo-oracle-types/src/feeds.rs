@@ -1,0 +1,103 @@
+use crate::OracleSourceConfig::PythLazer;
+use crate::{FeedConfig, PythLazerFeedId, LAZER_CHANNEL};
+
+/// Registry feed ids; each equals the asset's index in `FEEDS`.
+pub const SOL_USD_FEED_ID: u16 = 0;
+pub const BTC_USD_FEED_ID: u16 = 1;
+pub const USDC_USD_FEED_ID: u16 = 2;
+pub const HYPE_USD_FEED_ID: u16 = 3;
+
+/// Curated feed registry: the single source of truth for feed identity and the
+/// `id` ⇄ asset mapping. Pyth Lazer ids and channel match the mio publisher.
+pub const FEEDS: &[FeedConfig] = &[
+  // id 0 — SOL/USD (LST USD anchor).
+  FeedConfig {
+    id: SOL_USD_FEED_ID,
+    feeds: &[PythLazer {
+      feed_id: PythLazerFeedId(6),
+      channel_id: LAZER_CHANNEL,
+    }],
+  },
+  // id 1 — BTC/USD (cbBTC collateral).
+  FeedConfig {
+    id: BTC_USD_FEED_ID,
+    feeds: &[PythLazer {
+      feed_id: PythLazerFeedId(1),
+      channel_id: LAZER_CHANNEL,
+    }],
+  },
+  // id 2 — USDC/USD (USDC pair).
+  FeedConfig {
+    id: USDC_USD_FEED_ID,
+    feeds: &[PythLazer {
+      feed_id: PythLazerFeedId(7),
+      channel_id: LAZER_CHANNEL,
+    }],
+  },
+  // id 3 — HYPE/USD (HYPE collateral).
+  FeedConfig {
+    id: HYPE_USD_FEED_ID,
+    feeds: &[PythLazer {
+      feed_id: PythLazerFeedId(110),
+      channel_id: LAZER_CHANNEL,
+    }],
+  },
+];
+
+#[cfg(test)]
+mod tests {
+  use super::{FEEDS, LAZER_CHANNEL};
+  use crate::OracleSourceConfig;
+
+  #[test]
+  fn feed_ids_are_unique() {
+    let count = FEEDS.len();
+    let unique = FEEDS
+      .iter()
+      .map(|feed| feed.id)
+      .collect::<std::collections::HashSet<_>>()
+      .len();
+    assert_eq!(count, unique, "duplicate feed id in FEEDS");
+  }
+
+  #[test]
+  fn feed_ids_match_index() {
+    FEEDS.iter().enumerate().for_each(|(index, feed)| {
+      assert_eq!(
+        usize::from(feed.id),
+        index,
+        "FEEDS[{index}].id must equal its index (by_id indexes directly)"
+      );
+    });
+  }
+
+  #[test]
+  fn pyth_lazer_feed_channel_pairs_are_unique() {
+    let pairs = FEEDS
+      .iter()
+      .flat_map(|feed| feed.feeds)
+      .map(|source| {
+        let OracleSourceConfig::PythLazer {
+          feed_id,
+          channel_id,
+        } = source;
+        (feed_id.0, channel_id.0)
+      })
+      .collect::<Vec<_>>();
+    let unique = pairs.iter().collect::<std::collections::HashSet<_>>().len();
+    assert_eq!(
+      pairs.len(),
+      unique,
+      "duplicate (pyth_lazer, channel) in FEEDS"
+    );
+  }
+
+  #[test]
+  fn lazer_channel_matches_pyth_protocol() {
+    assert_eq!(
+      LAZER_CHANNEL.0,
+      pyth_lazer_protocol::ChannelId::FIXED_RATE_1000.0,
+      "LAZER_CHANNEL must track pyth_lazer_protocol FIXED_RATE_1000"
+    );
+  }
+}
