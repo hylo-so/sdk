@@ -1737,6 +1737,7 @@ dependencies = [
  "const-crypto",
  "hylo-fix",
  "mpl-token-metadata",
+ "pyth-lazer-solana-contract",
  "solana-address-lookup-table-interface",
  "solana-loader-v3-interface 5.0.0",
 ]
@@ -2785,6 +2786,20 @@ dependencies = [
  "serde_json",
  "serde_with",
  "strum",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "pyth-lazer-solana-contract"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bc89b0d35b07f09ad6407859519847be5ebdb170fd73dfdd0fce3336b31d3ed"
+dependencies = [
+ "anchor-lang",
+ "bytemuck",
+ "byteorder",
+ "pyth-lazer-protocol",
+ "solana-program",
  "thiserror 2.0.18",
 ]
 

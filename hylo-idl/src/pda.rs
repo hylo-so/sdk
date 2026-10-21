@@ -6,7 +6,7 @@ use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::types::AddressField;
 use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
-use crate::{earn_pool, exchange, router};
+use crate::{earn_pool, exchange, oracle, router};
 
 macro_rules! pda {
   ($program_id:expr, $base:expr) => {{
@@ -162,6 +162,16 @@ pub const fn event_auth(program_id: Pubkey) -> Pubkey {
 }
 
 #[must_use]
+pub const fn price_aggregate(id: u16) -> Pubkey {
+  let id_bytes = id.to_le_bytes();
+  let (key, _bump) = ed25519::derive_program_address(
+    &[oracle::constants::PRICE_AGGREGATE.as_slice(), &id_bytes],
+    oracle::ID.as_array(),
+  );
+  Pubkey::new_from_array(key)
+}
+
+#[must_use]
 pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
 }
@@ -236,6 +246,8 @@ pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);
 
 pub const ROUTER_EVENT_AUTHORITY: Pubkey = event_auth(router::ID);
+
+pub const ORACLE_EVENT_AUTHORITY: Pubkey = event_auth(oracle::ID);
 
 pub const EXO_REGISTRY: Pubkey =
   pda!(router::ID, router::constants::EXO_REGISTRY);
