@@ -262,12 +262,13 @@ pub trait ExchangeContext {
     } else {
       let collateral_value = self
         .total_collateral()
-        .mul_div_ceil(self.collateral_usd_price().upper, UFix64::one())
+        .mul_ceil(self.collateral_usd_price().upper)
         .ok_or(LevercoinMarketCapArithmetic)?;
+      let stablecoin_nav = self.stablecoin_nav()?;
       let stablecoin_value = self
         .virtual_stablecoin_supply()?
-        .mul_div_floor(self.stablecoin_nav()?, UFix64::one())
-        .and_then(UFix64::checked_convert)
+        .checked_convert::<N9>()
+        .and_then(|supply| supply.mul_floor(stablecoin_nav))
         .ok_or(LevercoinMarketCapArithmetic)?;
       Ok(collateral_value.saturating_sub(&stablecoin_value))
     }
