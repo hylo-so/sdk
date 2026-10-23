@@ -20934,6 +20934,23 @@
       }
     },
     {
+      "name": "EarnPoolDepositGate",
+      "docs": [
+        "Earn pool deposit gate, closed by a loss absorption that empties the pool."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
       "name": "ExoPair",
       "type": {
         "kind": "struct",
@@ -21504,8 +21521,12 @@
             }
           },
           {
-            "name": "deposits_locked",
-            "type": "bool"
+            "name": "earn_pool_deposit_gate",
+            "type": {
+              "defined": {
+                "name": "EarnPoolDepositGate"
+              }
+            }
           },
           {
             "name": "_reserved",
