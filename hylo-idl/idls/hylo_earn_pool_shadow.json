@@ -3221,18 +3221,18 @@
       }
     },
     {
-      "name": "EarnPoolDepositGate",
+      "name": "EarnPoolDepositLock",
       "docs": [
-        "Earn pool deposit gate, closed by a loss absorption that empties the pool."
+        "Earn pool deposit lock, engaged by a loss absorption that empties the pool."
       ],
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Open"
+            "name": "Unlocked"
           },
           {
-            "name": "Closed"
+            "name": "Locked"
           }
         ]
       }
@@ -3479,10 +3479,10 @@
             }
           },
           {
-            "name": "earn_pool_deposit_gate",
+            "name": "earn_pool_deposit_lock",
             "type": {
               "defined": {
-                "name": "EarnPoolDepositGate"
+                "name": "EarnPoolDepositLock"
               }
             }
           },
