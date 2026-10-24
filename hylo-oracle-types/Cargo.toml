@@ -12,6 +12,7 @@ shadow = []
 
 [dependencies]
 anchor-lang.workspace = true
+hylo-fix.workspace = true
 
 [dev-dependencies]
 pyth-lazer-protocol.workspace = true
