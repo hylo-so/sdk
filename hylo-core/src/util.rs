@@ -1,4 +1,4 @@
-use anchor_spl::token::Mint;
+use anchor_spl::token_interface::Mint;
 use fix::prelude::*;
 #[cfg(feature = "offchain")]
 use fix::typenum::Integer;
@@ -266,7 +266,7 @@ mod tests {
   use anchor_lang::AccountDeserialize;
   use anchor_spl::token::spl_token::solana_program::program_pack::Pack;
   use anchor_spl::token::spl_token::state::Mint as SplMint;
-  use anchor_spl::token::Mint;
+  use anchor_spl::token_interface::Mint;
   use anyhow::Result;
   use fix::aliases::si::{Micro, Nano};
   use fix::prelude::*;

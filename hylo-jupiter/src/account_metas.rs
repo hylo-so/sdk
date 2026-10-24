@@ -156,11 +156,13 @@ pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(collateral_mint, USDC::MINT, &accounts)
 }
@@ -171,11 +173,13 @@ pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::swap_usdc_to_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(USDC::MINT, collateral_mint, &accounts)
 }
@@ -186,11 +190,13 @@ pub fn mint_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::mint_stablecoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(collateral_mint, HYUSD::MINT, &accounts)
 }
@@ -201,11 +207,13 @@ pub fn redeem_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::redeem_stablecoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(HYUSD::MINT, collateral_mint, &accounts)
 }
@@ -216,11 +224,13 @@ pub fn mint_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::mint_levercoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(
     collateral_mint,
@@ -235,11 +245,13 @@ pub fn redeem_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::redeem_levercoin_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(
     pda::exo_levercoin_mint(collateral_mint),
@@ -254,11 +266,13 @@ pub fn convert_stable_to_lever_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::convert_stable_to_lever_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(
     HYUSD::MINT,
@@ -273,11 +287,13 @@ pub fn convert_lever_to_stable_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
   collateral_usd_pyth_feed: Pubkey,
+  collateral_token_program: Pubkey,
 ) -> SwapAndAccountMetas {
   let accounts = exchange::account_builders::convert_lever_to_stable_exo(
     user,
     collateral_mint,
     collateral_usd_pyth_feed,
+    collateral_token_program,
   );
   route_account_metas(
     pda::exo_levercoin_mint(collateral_mint),

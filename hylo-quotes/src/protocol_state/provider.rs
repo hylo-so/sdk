@@ -2,9 +2,11 @@
 //!
 //! Provides abstractions for fetching Hylo protocol state from various sources.
 
+use std::iter::once;
 use std::sync::Arc;
 
 use anchor_lang::prelude::{Clock, Pubkey};
+use anchor_lang::solana_program::sysvar;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use hylo_core::error::CoreError;
@@ -18,7 +20,8 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::{
   build_lst_exchange_context, exo_pubkeys_from_entries, read_exo_entries,
-  ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
+  ExoPairAccounts, ExoPairPubkeys, ExoPairState, ProtocolAccounts,
+  ProtocolState,
 };
 
 /// Trait for fetching protocol state from a data source
@@ -82,7 +85,11 @@ impl RpcStateProvider {
   pub async fn fetch_exo_pair<E: Exo + PythOracle>(
     &self,
   ) -> Result<ExoPairState<Clock>> {
-    let pubkeys = ProtocolAccounts::exo_pubkeys::<E>();
+    let pubkeys: Vec<Pubkey> = ExoPairPubkeys::derive::<E>()
+      .account_keys()
+      .into_iter()
+      .chain(once(sysvar::clock::ID))
+      .collect();
     let data = self
       .rpc_client
       .get_multiple_accounts(&pubkeys)

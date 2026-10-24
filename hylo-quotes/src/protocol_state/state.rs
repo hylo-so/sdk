@@ -7,7 +7,8 @@ use std::collections::HashMap;
 
 use anchor_client::solana_sdk::clock::{Clock, UnixTimestamp};
 use anchor_lang::prelude::Pubkey;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::Mint;
 use anyhow::{ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::asset_swap_config::AssetSwapConfig;

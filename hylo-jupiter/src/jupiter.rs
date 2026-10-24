@@ -2,7 +2,8 @@ use std::collections::{BTreeSet, HashMap};
 use std::iter::once;
 
 use anchor_lang::prelude::Pubkey;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::Mint;
 use anyhow::{Context, Result};
 use fix::prelude::UFix64;
 use hylo_core::error::CoreError;
@@ -25,9 +26,9 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  find_exo_entry, read_exo_entries, ExoPairAccounts, ExoPairState,
-  ProtocolState, UsdcPairState, EXO_PAIR_ACCOUNTS,
+  exo_entry_role, exo_pubkeys_from_entries, find_exo_entry, read_exo_entries,
+  ExoPairAccounts, ExoPairPubkeys, ExoPairState, ProtocolState, UsdcPairState,
+  EXO_PAIR_ACCOUNTS,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
@@ -201,35 +202,57 @@ impl HyloJupiter {
     let entry = find_exo_entry(&self.exo_entries, source, destination)
       .ok_or(CoreError::UnroutablePair)?;
     let collateral = entry.collateral_mint;
-    let oracle = exo_pyth_feed_by_mint(collateral)?.address;
+    let ExoPairPubkeys {
+      oracle,
+      token_program,
+      ..
+    } = ExoPairPubkeys::by_mint(collateral)?;
     let roles = (
       exo_entry_role(entry, source)?,
       exo_entry_role(entry, destination)?,
     );
     let metas = match roles {
-      (Collateral, Stablecoin) => {
-        account_metas::mint_stablecoin_exo(user, collateral, oracle)
-      }
-      (Stablecoin, Collateral) => {
-        account_metas::redeem_stablecoin_exo(user, collateral, oracle)
-      }
-      (Collateral, Levercoin) => {
-        account_metas::mint_levercoin_exo(user, collateral, oracle)
-      }
-      (Levercoin, Collateral) => {
-        account_metas::redeem_levercoin_exo(user, collateral, oracle)
-      }
-      (Stablecoin, Levercoin) => {
-        account_metas::convert_stable_to_lever_exo(user, collateral, oracle)
-      }
-      (Levercoin, Stablecoin) => {
-        account_metas::convert_lever_to_stable_exo(user, collateral, oracle)
-      }
+      (Collateral, Stablecoin) => account_metas::mint_stablecoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Stablecoin, Collateral) => account_metas::redeem_stablecoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Collateral, Levercoin) => account_metas::mint_levercoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Levercoin, Collateral) => account_metas::redeem_levercoin_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Stablecoin, Levercoin) => account_metas::convert_stable_to_lever_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
+      (Levercoin, Stablecoin) => account_metas::convert_lever_to_stable_exo(
+        user,
+        collateral,
+        oracle,
+        token_program,
+      ),
       (Collateral, Usdc) => {
-        account_metas::swap_exo_to_usdc(user, collateral, oracle)
+        account_metas::swap_exo_to_usdc(user, collateral, oracle, token_program)
       }
       (Usdc, Collateral) => {
-        account_metas::swap_usdc_to_exo(user, collateral, oracle)
+        account_metas::swap_usdc_to_exo(user, collateral, oracle, token_program)
       }
       _ => Err(CoreError::UnroutablePair)?,
     };

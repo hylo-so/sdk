@@ -1,4 +1,4 @@
-use anchor_spl::token::Mint;
+use anchor_spl::token_interface::Mint;
 use fix::prelude::*;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
