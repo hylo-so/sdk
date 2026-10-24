@@ -3052,6 +3052,23 @@
       }
     },
     {
+      "name": "EarnPoolDepositLock",
+      "docs": [
+        "Earn pool deposit lock, engaged by a loss absorption that empties the pool."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unlocked"
+          },
+          {
+            "name": "Locked"
+          }
+        ]
+      }
+    },
+    {
       "name": "FeePair",
       "docs": [
         "Represents the spread of fees between mint and redeem for protocol tokens.",
@@ -3293,11 +3310,19 @@
             }
           },
           {
+            "name": "earn_pool_deposit_lock",
+            "type": {
+              "defined": {
+                "name": "EarnPoolDepositLock"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                13
+                12
               ]
             }
           }

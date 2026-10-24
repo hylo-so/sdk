@@ -2085,6 +2085,7 @@
       "accounts": [
         {
           "name": "hylo",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -8846,6 +8847,7 @@
       "accounts": [
         {
           "name": "hylo",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -9615,6 +9617,7 @@
       "accounts": [
         {
           "name": "hylo",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -10025,6 +10028,7 @@
         },
         {
           "name": "hylo",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -10671,6 +10675,7 @@
         },
         {
           "name": "hylo",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -12878,6 +12883,7 @@
         },
         {
           "name": "hylo",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -18827,6 +18833,23 @@
       }
     },
     {
+      "name": "EarnPoolDepositLock",
+      "docs": [
+        "Earn pool deposit lock, engaged by a loss absorption that empties the pool."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unlocked"
+          },
+          {
+            "name": "Locked"
+          }
+        ]
+      }
+    },
+    {
       "name": "ExoPair",
       "type": {
         "kind": "struct",
@@ -19397,11 +19420,19 @@
             }
           },
           {
+            "name": "earn_pool_deposit_lock",
+            "type": {
+              "defined": {
+                "name": "EarnPoolDepositLock"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                13
+                12
               ]
             }
           }

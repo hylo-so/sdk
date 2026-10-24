@@ -18,15 +18,15 @@ use crate::error::CoreError;
 #[cfg(feature = "offchain")]
 use crate::error::CoreError::CollateralRatioOverflow;
 use crate::error::CoreError::{
-  DestinationStablecoin, LevercoinNav, MaxMintable, MaxSwappable,
-  RebalanceBuySideTarget, RebalanceSellSideLiquidity,
-  RequestedStablecoinOverMaxMintable, VirtualStablecoinOverhang,
-  VirtualStablecoinSurplus,
+  DestinationStablecoin, LevercoinMarketCapArithmetic, LevercoinNav,
+  MaxMintable, MaxSwappable, RebalanceBuySideTarget,
+  RebalanceSellSideLiquidity, RequestedStablecoinOverMaxMintable,
+  VirtualStablecoinOverhang, VirtualStablecoinSurplus,
 };
 use crate::exchange_math::{
-  depeg_stablecoin_nav, levercoin_market_cap, max_mintable_stablecoin,
-  max_redeemable_stablecoin, max_swappable_stablecoin, next_levercoin_mint_nav,
-  next_levercoin_redeem_nav, total_value_locked,
+  depeg_stablecoin_nav, max_mintable_stablecoin, max_redeemable_stablecoin,
+  max_swappable_stablecoin, next_levercoin_mint_nav, next_levercoin_redeem_nav,
+  total_value_locked,
 };
 use crate::fees::controller::{FeeExtract, LevercoinFees};
 use crate::fees::curve_controller::cr_from_curve;
@@ -251,12 +251,27 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Current levercoin market cap in USD.
+  /// Current levercoin market cap in USD: collateral value above the
+  /// stablecoin claim, zero when the levercoin is underwater or unissued.
   ///
   /// # Errors
-  /// * Missing supply, NAV failure, or arithmetic overflow
+  /// * Missing supply or arithmetic overflow
   fn levercoin_market_cap(&self) -> Result<UFix64<N9>, CoreError> {
-    levercoin_market_cap(self.levercoin_supply()?, self.levercoin_mint_nav()?)
+    if self.levercoin_supply()? == UFix64::zero() {
+      Ok(UFix64::zero())
+    } else {
+      let collateral_value = self
+        .total_collateral()
+        .mul_ceil(self.collateral_usd_price().upper)
+        .ok_or(LevercoinMarketCapArithmetic)?;
+      let stablecoin_nav = self.stablecoin_nav()?;
+      let stablecoin_value = self
+        .virtual_stablecoin_supply()?
+        .checked_convert::<N9>()
+        .and_then(|supply| supply.mul_floor(stablecoin_nav))
+        .ok_or(LevercoinMarketCapArithmetic)?;
+      Ok(collateral_value.saturating_sub(&stablecoin_value))
+    }
   }
 
   /// Stablecoin NAV — $1 in all modes except Depeg.
