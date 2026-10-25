@@ -1,4 +1,4 @@
-use crate::{OracleSourceConfig, PythLazerChannelId, PythLazerFeedId, FEEDS};
+use crate::{OracleSourceConfig, PythLazerFeedId, FEEDS};
 
 /// Static configuration for one asset feed.
 pub struct FeedConfig {
@@ -21,20 +21,14 @@ impl FeedConfig {
     FEEDS.get(usize::from(id))
   }
 
-  /// Selects the registry entry whose Pyth Lazer source matches both ids.
+  /// Returns the registry entry whose Pyth Lazer feed id equals `feed`.
   #[must_use]
-  pub fn by_pyth_lazer(
-    feed: PythLazerFeedId,
-    channel: PythLazerChannelId,
-  ) -> Option<&'static Self> {
+  pub fn by_pyth_lazer(feed: PythLazerFeedId) -> Option<&'static Self> {
     FEEDS.iter().find(|cfg| {
       cfg.feeds.iter().any(|source| {
         matches!(
           &source.source,
-          OracleSourceConfig::PythLazer {
-            feed_id,
-            channel_id,
-          } if *feed_id == feed && *channel_id == channel
+          OracleSourceConfig::PythLazer { feed_id } if *feed_id == feed
         )
       })
     })

@@ -429,14 +429,12 @@ mod tests {
     PriceAggregateSamples, PriceSample, ValidationConfig,
   };
   use crate::{
-    FeedConfig, FeedSourceConfig, OracleSourceConfig, PythLazerChannelId,
-    PythLazerFeedId,
+    FeedConfig, FeedSourceConfig, OracleSourceConfig, PythLazerFeedId,
   };
 
   const SOURCE: FeedSourceConfig = FeedSourceConfig {
     source: OracleSourceConfig::PythLazer {
       feed_id: PythLazerFeedId(1),
-      channel_id: PythLazerChannelId(1),
     },
     reference_feed: None,
   };
@@ -452,7 +450,6 @@ mod tests {
       FeedSourceConfig {
         source: OracleSourceConfig::PythLazer {
           feed_id: PythLazerFeedId(2),
-          channel_id: PythLazerChannelId(1),
         },
         reference_feed: Some(1),
       },

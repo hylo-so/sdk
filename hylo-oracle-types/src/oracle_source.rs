@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{PythLazerChannelId, PythLazerFeedId};
+use crate::PythLazerFeedId;
 
 /// Price source backing an observation.
 #[derive(
@@ -19,8 +19,5 @@ pub enum OracleSource {
 
 /// Identifiers for one price source.
 pub enum OracleSourceConfig {
-  PythLazer {
-    feed_id: PythLazerFeedId,
-    channel_id: PythLazerChannelId,
-  },
+  PythLazer { feed_id: PythLazerFeedId },
 }
