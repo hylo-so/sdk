@@ -8,13 +8,9 @@ use crate::{oracle, pda};
 
 /// Builds the instruction that creates the price aggregate for `mint`.
 #[must_use]
-pub fn initialize_price_aggregate(
-  payer: Pubkey,
-  mint: Pubkey,
-  id: u16,
-) -> Instruction {
+pub fn initialize_price_aggregate(payer: Pubkey, mint: Pubkey) -> Instruction {
   let accounts = account_builders::initialize_price_aggregate(payer, mint);
-  let args = args::InitializePriceAggregate { id };
+  let args = args::InitializePriceAggregate { mint };
   Instruction {
     program_id: oracle::ID,
     accounts: accounts.to_account_metas(None),

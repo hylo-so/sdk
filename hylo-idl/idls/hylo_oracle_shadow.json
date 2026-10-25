@@ -4,7 +4,7 @@
     "name": "hylo_oracle",
     "version": "0.1.0",
     "spec": "0.1.0",
-    "description": "Created with Anchor"
+    "description": "Hylo Oracle Program"
   },
   "instructions": [
     {
@@ -14,7 +14,7 @@
         "",
         "# Errors",
         "",
-        "* The feed id is not in the registry.",
+        "* The mint is not in the feed registry.",
         "* Emitting the initialization event fails."
       ],
       "discriminator": [
@@ -60,7 +60,7 @@
               },
               {
                 "kind": "arg",
-                "path": "id"
+                "path": "mint"
               }
             ]
           }
@@ -104,8 +104,8 @@
       ],
       "args": [
         {
-          "name": "id",
-          "type": "u16"
+          "name": "mint",
+          "type": "pubkey"
         }
       ]
     },
@@ -384,7 +384,8 @@
     {
       "name": "MarketSession",
       "docs": [
-        "Interface for price sample market sessions.",
+        "Trading session recorded with a price sample.",
+        "A session other than regular is checked against a reference sample.",
         "",
         "Not to be confused with [`pyth_lazer_protocol::api::MarketSession`]."
       ],
@@ -412,7 +413,7 @@
     {
       "name": "OracleSource",
       "docs": [
-        "Price source backing an observation. New sources append here."
+        "Price source backing an observation."
       ],
       "type": {
         "kind": "enum",
@@ -425,6 +426,9 @@
     },
     {
       "name": "PriceAggregate",
+      "docs": [
+        "Samples posted for one feed, one slot per configured source."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -463,8 +467,8 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "id",
-            "type": "u16"
+            "name": "mint",
+            "type": "pubkey"
           },
           {
             "name": "price_aggregate",
@@ -482,10 +486,6 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "id",
-            "type": "u16"
-          },
-          {
             "name": "price_aggregate",
             "type": "pubkey"
           },
@@ -502,56 +502,35 @@
     },
     {
       "name": "PriceSample",
+      "docs": [
+        "Source observation. Price and confidence share an exponent from -9 to -2.",
+        "A zero price is an unoccupied slot."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "price",
-            "docs": [
-              "Price of asset, scaled by 10^[`PriceSample::exponent`]."
-            ],
             "type": "u64"
           },
           {
             "name": "exponent",
-            "docs": [
-              "Exponent used for the price."
-            ],
             "type": "i16"
           },
           {
             "name": "confidence",
-            "docs": [
-              "Confidence interval of the price, scaled by 10^[`PriceSample::exponent`]."
-            ],
             "type": "u64"
           },
           {
             "name": "posted_slot",
-            "docs": [
-              "Clock slot when the sample was posted."
-            ],
             "type": "u64"
           },
           {
             "name": "posted_timestamp_us",
-            "docs": [
-              "Timestamp when the sample was posted, in microseconds."
-            ],
             "type": "u64"
           },
           {
             "name": "market_session",
-            "docs": [
-              "Market session when the sample was last posted.",
-              "",
-              "Assets that are traded 24/7 will always have a market session of",
-              "[`MarketSession::Regular`].",
-              "",
-              "Assets that are traded 24/5 are implied in",
-              "[`hylo_oracle_types::feeds::FEEDS`], with a [`reference_feed`] of",
-              "[`Some`]."
-            ],
             "type": {
               "defined": {
                 "name": "MarketSession"

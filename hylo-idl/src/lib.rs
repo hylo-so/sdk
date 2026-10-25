@@ -173,9 +173,8 @@ mod tests {
     assert_eq!(pda::ORACLE_EVENT_AUTHORITY, pda::event_auth(oracle::ID));
 
     let payer = Pubkey::new_unique();
-    let id: u16 = 3;
     let initialize =
-      oracle::instruction_builders::initialize_price_aggregate(payer, mint, id);
+      oracle::instruction_builders::initialize_price_aggregate(payer, mint);
     assert_eq!(initialize.program_id, oracle::ID);
     assert!(initialize.accounts.iter().any(|account| {
       account.pubkey == expected_aggregate && account.is_writable
