@@ -1,3 +1,5 @@
+use static_assertions::const_assert;
+
 use crate::OracleSourceConfig::PythLazer;
 use crate::{FeedConfig, FeedSourceConfig, PythLazerFeedId};
 
@@ -77,12 +79,13 @@ const fn valid_feed_registry(feeds: &[FeedConfig], index: usize) -> bool {
   }
 }
 
-/// Compile-time validation of feed registry: ensures no cyclic or out-of-bound
-/// references.
-const _: () = assert!(valid_feed_registry(FEEDS, 0), "invalid reference feed");
+// No cyclic or out-of-range reference feeds.
+const_assert!(valid_feed_registry(FEEDS, 0));
 
 #[cfg(test)]
 mod tests {
+  use static_assertions::const_assert;
+
   use super::{valid_reference_feeds, FEEDS};
   use crate::{FeedSourceConfig, OracleSourceConfig, PythLazerFeedId};
 
@@ -95,19 +98,17 @@ mod tests {
     }
   }
 
-  const _: () = {
-    assert!(valid_reference_feeds(&[source(Some(1)), source(None)], 0));
-    assert!(!valid_reference_feeds(&[source(Some(1))], 0));
-    assert!(!valid_reference_feeds(&[source(Some(0))], 0));
-    assert!(!valid_reference_feeds(
-      &[source(Some(1)), source(Some(0))],
-      0
-    ));
-    assert!(!valid_reference_feeds(
-      &[source(Some(1)), source(Some(2)), source(Some(0))],
-      0
-    ));
-  };
+  const_assert!(valid_reference_feeds(&[source(Some(1)), source(None)], 0));
+  const_assert!(!valid_reference_feeds(&[source(Some(1))], 0));
+  const_assert!(!valid_reference_feeds(&[source(Some(0))], 0));
+  const_assert!(!valid_reference_feeds(
+    &[source(Some(1)), source(Some(0))],
+    0
+  ));
+  const_assert!(!valid_reference_feeds(
+    &[source(Some(1)), source(Some(2)), source(Some(0))],
+    0
+  ));
 
   #[test]
   fn pyth_lazer_feed_ids_are_unique() {

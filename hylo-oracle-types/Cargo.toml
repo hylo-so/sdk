@@ -13,6 +13,7 @@ shadow = []
 [dependencies]
 anchor-lang.workspace = true
 hylo-fix.workspace = true
+static_assertions.workspace = true
 
 [lints]
 workspace = true
