@@ -6,7 +6,6 @@ pub const BTC_USD_FEED_ID: u16 = 1;
 pub const USDC_USD_FEED_ID: u16 = 2;
 pub const HYPE_USD_FEED_ID: u16 = 3;
 
-/// Index-keyed feed registry. Pyth Lazer ids match the mio publisher.
 pub const FEEDS: &[FeedConfig] = &[
   // id 0 — SOL/USD (LST USD anchor).
   FeedConfig {
