@@ -4,10 +4,19 @@ use static_assertions::const_assert;
 use crate::OracleSourceConfig::PythLazer;
 use crate::{FeedConfig, FeedSourceConfig, PythLazerFeedId};
 
+pub const SOL_MINT: Pubkey =
+  pubkey!("So11111111111111111111111111111111111111112");
+pub const CBBTC_MINT: Pubkey =
+  pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
+pub const USDC_MINT: Pubkey =
+  pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+pub const HYPE_MINT: Pubkey =
+  pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
+
 pub const FEEDS: &[FeedConfig] = &[
   // SOL/USD
   FeedConfig {
-    mint: pubkey!("So11111111111111111111111111111111111111112"),
+    mint: SOL_MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(6),
@@ -17,7 +26,7 @@ pub const FEEDS: &[FeedConfig] = &[
   },
   // BTC/USD
   FeedConfig {
-    mint: pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
+    mint: CBBTC_MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(1),
@@ -27,7 +36,7 @@ pub const FEEDS: &[FeedConfig] = &[
   },
   // USDC/USD
   FeedConfig {
-    mint: pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+    mint: USDC_MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(7),
@@ -37,7 +46,7 @@ pub const FEEDS: &[FeedConfig] = &[
   },
   // HYPE/USD
   FeedConfig {
-    mint: pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g"),
+    mint: HYPE_MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(110),
