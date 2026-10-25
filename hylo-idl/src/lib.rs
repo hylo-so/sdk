@@ -164,17 +164,18 @@ mod tests {
 
   #[test]
   fn oracle_price_aggregate_matches_program_seeds() {
-    let id: u16 = 3;
+    let mint = Pubkey::new_unique();
     let (expected_aggregate, _bump) = Pubkey::find_program_address(
-      &[&oracle::constants::PRICE_AGGREGATE, &id.to_le_bytes()],
+      &[&oracle::constants::PRICE_AGGREGATE, mint.as_ref()],
       &oracle::ID,
     );
-    assert_eq!(pda::price_aggregate(id), expected_aggregate);
+    assert_eq!(pda::price_aggregate(mint), expected_aggregate);
     assert_eq!(pda::ORACLE_EVENT_AUTHORITY, pda::event_auth(oracle::ID));
 
     let payer = Pubkey::new_unique();
+    let id: u16 = 3;
     let initialize =
-      oracle::instruction_builders::initialize_price_aggregate(payer, id);
+      oracle::instruction_builders::initialize_price_aggregate(payer, mint, id);
     assert_eq!(initialize.program_id, oracle::ID);
     assert!(initialize.accounts.iter().any(|account| {
       account.pubkey == expected_aggregate && account.is_writable
@@ -190,7 +191,7 @@ mod tests {
     let update = oracle::instruction_builders::update_with_pyth_lazer(
       payer,
       treasury,
-      &[id],
+      &[mint],
       &args,
     );
     assert_eq!(update.program_id, oracle::ID);

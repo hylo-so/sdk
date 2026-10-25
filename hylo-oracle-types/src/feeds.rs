@@ -1,17 +1,13 @@
+use anchor_lang::prelude::{pubkey, Pubkey};
 use static_assertions::const_assert;
 
 use crate::OracleSourceConfig::PythLazer;
 use crate::{FeedConfig, FeedSourceConfig, PythLazerFeedId};
 
-pub const SOL_USD_FEED_ID: u16 = 0;
-pub const BTC_USD_FEED_ID: u16 = 1;
-pub const USDC_USD_FEED_ID: u16 = 2;
-pub const HYPE_USD_FEED_ID: u16 = 3;
-
 pub const FEEDS: &[FeedConfig] = &[
-  // id 0 — SOL/USD (LST USD anchor).
+  // SOL/USD
   FeedConfig {
-    id: SOL_USD_FEED_ID,
+    mint: pubkey!("So11111111111111111111111111111111111111112"),
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(6),
@@ -19,9 +15,9 @@ pub const FEEDS: &[FeedConfig] = &[
       reference_feed: None,
     }],
   },
-  // id 1 — BTC/USD (cbBTC collateral).
+  // BTC/USD
   FeedConfig {
-    id: BTC_USD_FEED_ID,
+    mint: pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(1),
@@ -29,9 +25,9 @@ pub const FEEDS: &[FeedConfig] = &[
       reference_feed: None,
     }],
   },
-  // id 2 — USDC/USD (USDC pair).
+  // USDC/USD
   FeedConfig {
-    id: USDC_USD_FEED_ID,
+    mint: pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(7),
@@ -39,9 +35,9 @@ pub const FEEDS: &[FeedConfig] = &[
       reference_feed: None,
     }],
   },
-  // id 3 — HYPE/USD (HYPE collateral).
+  // HYPE/USD
   FeedConfig {
-    id: HYPE_USD_FEED_ID,
+    mint: pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g"),
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(110),
@@ -73,20 +69,59 @@ const fn valid_feed_registry(feeds: &[FeedConfig], index: usize) -> bool {
   if index == feeds.len() {
     true
   } else {
-    feeds[index].id as usize == index
+    mint_absent_before(feeds, index, 0)
       && valid_reference_feeds(feeds[index].feeds, 0)
       && valid_feed_registry(feeds, index + 1)
   }
 }
 
-// No cyclic or out-of-range reference feeds.
+const fn get<T>(items: &[T], index: usize) -> Option<&T> {
+  if index < items.len() {
+    Some(&items[index])
+  } else {
+    None
+  }
+}
+
+const fn mint_absent_before(
+  feeds: &[FeedConfig],
+  index: usize,
+  earlier: usize,
+) -> bool {
+  if earlier == index {
+    get(feeds, index).is_some()
+  } else {
+    match (get(feeds, earlier), get(feeds, index)) {
+      (Some(earlier_feed), Some(index_feed)) => {
+        !same_mint(earlier_feed.mint, index_feed.mint)
+          && mint_absent_before(feeds, index, earlier + 1)
+      }
+      _ => false,
+    }
+  }
+}
+
+const fn same_mint(left: Pubkey, right: Pubkey) -> bool {
+  same_bytes(&left.to_bytes(), &right.to_bytes(), 0)
+}
+
+const fn same_bytes(left: &[u8; 32], right: &[u8; 32], index: usize) -> bool {
+  match (get(left, index), get(right, index)) {
+    (Some(left_byte), Some(right_byte)) => {
+      *left_byte == *right_byte && same_bytes(left, right, index + 1)
+    }
+    _ => index == left.len(),
+  }
+}
+
+// No cyclic or out-of-range reference feeds, and no duplicate mints.
 const_assert!(valid_feed_registry(FEEDS, 0));
 
 #[cfg(test)]
 mod tests {
   use static_assertions::const_assert;
 
-  use super::{valid_reference_feeds, FEEDS};
+  use super::{mint_absent_before, same_bytes, valid_reference_feeds, FEEDS};
   use crate::{FeedSourceConfig, OracleSourceConfig, PythLazerFeedId};
 
   const fn source(reference_feed: Option<u8>) -> FeedSourceConfig {
@@ -109,6 +144,10 @@ mod tests {
     &[source(Some(1)), source(Some(2)), source(Some(0))],
     0
   ));
+
+  const_assert!(!mint_absent_before(&[], 0, 0));
+  const_assert!(!mint_absent_before(FEEDS, 0, 1));
+  const_assert!(!same_bytes(&[0; 32], &[0; 32], 33));
 
   #[test]
   fn pyth_lazer_feed_ids_are_unique() {

@@ -8,15 +8,15 @@ use crate::oracle::client::accounts::{
 };
 use crate::{oracle, pda};
 
-/// Builds the account context for creating the price aggregate for `id`.
+/// Builds the account context for creating the price aggregate for `mint`.
 #[must_use]
 pub const fn initialize_price_aggregate(
   payer: Pubkey,
-  id: u16,
+  mint: Pubkey,
 ) -> InitializePriceAggregate {
   InitializePriceAggregate {
     payer,
-    price_aggregate: pda::price_aggregate(id),
+    price_aggregate: pda::price_aggregate(mint),
     system_program: system_program::ID,
     event_authority: pda::ORACLE_EVENT_AUTHORITY,
     program: oracle::ID,

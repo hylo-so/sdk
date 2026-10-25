@@ -421,6 +421,7 @@ impl PriceAggregateSamples {
 
 #[cfg(test)]
 mod tests {
+  use anchor_lang::prelude::Pubkey;
   use fix::prelude::UFix64;
   use fix::typenum::N9;
 
@@ -440,12 +441,12 @@ mod tests {
   };
 
   const CONFIG: FeedConfig = FeedConfig {
-    id: 0,
+    mint: Pubkey::new_from_array([0; 32]),
     feeds: &[SOURCE, SOURCE],
   };
 
   const BANDED_CONFIG: FeedConfig = FeedConfig {
-    id: 0,
+    mint: Pubkey::new_from_array([0; 32]),
     feeds: &[
       FeedSourceConfig {
         source: OracleSourceConfig::PythLazer {

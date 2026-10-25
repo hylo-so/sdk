@@ -162,13 +162,8 @@ pub const fn event_auth(program_id: Pubkey) -> Pubkey {
 }
 
 #[must_use]
-pub const fn price_aggregate(id: u16) -> Pubkey {
-  let id_bytes = id.to_le_bytes();
-  let (key, _bump) = ed25519::derive_program_address(
-    &[oracle::constants::PRICE_AGGREGATE.as_slice(), &id_bytes],
-    oracle::ID.as_array(),
-  );
-  Pubkey::new_from_array(key)
+pub const fn price_aggregate(mint: Pubkey) -> Pubkey {
+  pda!(oracle::ID, oracle::constants::PRICE_AGGREGATE, mint)
 }
 
 #[must_use]

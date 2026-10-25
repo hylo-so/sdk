@@ -6,10 +6,14 @@ use crate::oracle::account_builders;
 use crate::oracle::client::args;
 use crate::{oracle, pda};
 
-/// Builds the instruction that creates the price aggregate for `id`.
+/// Builds the instruction that creates the price aggregate for `mint`.
 #[must_use]
-pub fn initialize_price_aggregate(payer: Pubkey, id: u16) -> Instruction {
-  let accounts = account_builders::initialize_price_aggregate(payer, id);
+pub fn initialize_price_aggregate(
+  payer: Pubkey,
+  mint: Pubkey,
+  id: u16,
+) -> Instruction {
+  let accounts = account_builders::initialize_price_aggregate(payer, mint);
   let args = args::InitializePriceAggregate { id };
   Instruction {
     program_id: oracle::ID,
@@ -18,20 +22,20 @@ pub fn initialize_price_aggregate(payer: Pubkey, id: u16) -> Instruction {
   }
 }
 
-/// Builds the Pyth Lazer update instruction for `feed_ids` in payload order.
-/// Each feed id appends its price aggregate as a writable account.
+/// Builds the Pyth Lazer update instruction for `mints` in payload order.
+/// Each mint appends its price aggregate as a writable account.
 #[must_use]
 pub fn update_with_pyth_lazer(
   payer: Pubkey,
   pyth_lazer_treasury: Pubkey,
-  feed_ids: &[u16],
+  mints: &[Pubkey],
   args: &args::UpdateWithPythLazer,
 ) -> Instruction {
   let accounts =
     account_builders::update_with_pyth_lazer(payer, pyth_lazer_treasury);
-  let price_aggregates = feed_ids
+  let price_aggregates = mints
     .iter()
-    .map(|id| AccountMeta::new(pda::price_aggregate(*id), false));
+    .map(|mint| AccountMeta::new(pda::price_aggregate(*mint), false));
   Instruction {
     program_id: oracle::ID,
     accounts: accounts

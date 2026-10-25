@@ -1,8 +1,10 @@
+use anchor_lang::prelude::Pubkey;
+
 use crate::{OracleSourceConfig, PythLazerFeedId, FEEDS};
 
 /// Static configuration for one asset feed.
 pub struct FeedConfig {
-  pub id: u16,
+  pub mint: Pubkey,
   pub feeds: &'static [FeedSourceConfig],
 }
 
@@ -15,10 +17,10 @@ pub struct FeedSourceConfig {
 }
 
 impl FeedConfig {
-  /// Returns the feed at `id`. `id` equals that feed's index in `FEEDS`.
+  /// Returns the registry entry for `mint`.
   #[must_use]
-  pub fn by_id(id: u16) -> Option<&'static Self> {
-    FEEDS.get(usize::from(id))
+  pub fn by_mint(mint: Pubkey) -> Option<&'static Self> {
+    FEEDS.iter().find(|cfg| cfg.mint == mint)
   }
 
   /// Returns the registry entry whose Pyth Lazer feed id equals `feed`.
