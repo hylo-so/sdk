@@ -9,21 +9,19 @@ homepage.workspace = true
 [features]
 default = []
 offchain = [
-  "dep:hylo-idl",
   "dep:hylo-jupiter-amm-interface",
   "hylo-fix/typed-floats",
 ]
-shadow = ["hylo-idl?/shadow"]
+shadow = ["hylo-idl/shadow"]
 
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
 hylo-fix.workspace = true
-const-crypto.workspace = true
-hylo-idl = { workspace = true, optional = true }
+hylo-idl.workspace = true
 hylo-jupiter-amm-interface = { workspace = true, optional = true }
+hylo-oracle-types.workspace = true
 itertools.workspace = true
-pyth-solana-receiver-sdk.workspace = true
 serde.workspace = true
 
 [dev-dependencies]

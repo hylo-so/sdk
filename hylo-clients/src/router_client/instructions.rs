@@ -4,18 +4,16 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::ToAccountMetas;
 use anyhow::Result;
-use hylo_core::pyth::PythOracle;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
 use hylo_idl::router::client::args as router_args;
 use hylo_idl::router::instruction_builders::route_v2;
-use hylo_idl::pda;
 use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
   SHYUSD, USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
-use hylo_idl::with_exo_pairs;
+use hylo_idl::{pda, with_exo_pairs};
 
 use super::{InstructionBuilder, RouterArgs, RouterClient};
 use crate::util::{

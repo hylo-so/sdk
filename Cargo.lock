@@ -1256,15 +1256,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fast-math"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2465292146cdfc2011350fe3b1c616ac83cf0faeedb33463ba1c332ed8948d66"
-dependencies = [
- "ieee754",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1684,7 +1675,6 @@ dependencies = [
  "hylo-squads-multisig",
  "itertools 0.14.0",
  "mpl-token-metadata",
- "pyth-solana-receiver-sdk",
  "serde_json",
  "solana-address-lookup-table-interface",
  "solana-rpc-client",
@@ -1700,14 +1690,13 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "anyhow",
- "const-crypto",
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
+ "hylo-oracle-types",
  "itertools 0.14.0",
  "more-asserts",
  "proptest",
- "pyth-solana-receiver-sdk",
  "serde",
 ]
 
@@ -1756,8 +1745,8 @@ dependencies = [
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
+ "hylo-oracle-types",
  "hylo-quotes",
- "pyth-solana-receiver-sdk",
  "rust_decimal",
  "solana-rpc-client",
  "tokio",
@@ -1803,7 +1792,7 @@ dependencies = [
  "hylo-core",
  "hylo-fix",
  "hylo-idl",
- "pyth-solana-receiver-sdk",
+ "hylo-oracle-types",
  "serde",
  "serde_json",
  "solana-rpc-client",
@@ -1851,7 +1840,7 @@ dependencies = [
  "hylo-core",
  "hylo-fix",
  "hylo-idl",
- "pyth-solana-receiver-sdk",
+ "hylo-oracle-types",
  "solana-rpc-client",
  "thiserror 2.0.18",
  "tokio",
@@ -2049,12 +2038,6 @@ dependencies = [
  "icu_normalizer",
  "icu_properties",
 ]
-
-[[package]]
-name = "ieee754"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9007da9cacbd3e6343da136e98b0d2df013f553d35bdec8b518f07bea768e19c"
 
 [[package]]
 name = "indexmap"
@@ -2386,35 +2369,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "956787520e75e9bd233246045d19f42fb73242759cc57fba9611d940ae96d4b0"
 
 [[package]]
-name = "num"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
-dependencies = [
- "num-bigint",
- "num-complex",
- "num-integer",
- "num-iter",
- "num-rational",
- "num-traits",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
  "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
-dependencies = [
  "num-traits",
 ]
 
@@ -2452,28 +2412,6 @@ version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
 dependencies = [
- "num-traits",
-]
-
-[[package]]
-name = "num-iter"
-version = "0.1.45"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1429034a0490724d0075ebb2bc9e875d6503c3cf69e235a8941aa757d83ef5bf"
-dependencies = [
- "autocfg",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-rational"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
-dependencies = [
- "num-bigint",
- "num-integer",
  "num-traits",
 ]
 
@@ -2801,39 +2739,6 @@ dependencies = [
  "pyth-lazer-protocol",
  "solana-program",
  "thiserror 2.0.18",
-]
-
-[[package]]
-name = "pyth-solana-receiver-sdk"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "209892afe495433c5eae9406a76eedc1409100614727495348abdc91916154dd"
-dependencies = [
- "anchor-lang",
- "cfg-if",
- "hex",
- "pythnet-sdk",
-]
-
-[[package]]
-name = "pythnet-sdk"
-version = "2.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "498d20fd330277697aaee92f341bdabdb4695b10e05f054157a18ad8b7746a17"
-dependencies = [
- "anchor-lang",
- "bincode",
- "borsh 0.10.4",
- "bytemuck",
- "byteorder",
- "fast-math",
- "hex",
- "rustc_version",
- "serde",
- "sha3",
- "slow_primes",
- "solana-program",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -3589,15 +3494,6 @@ name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
-
-[[package]]
-name = "slow_primes"
-version = "0.1.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58267dd2fbaa6dceecba9e3e106d2d90a2b02497c0e8b01b8759beccf5113938"
-dependencies = [
- "num",
-]
 
 [[package]]
 name = "smallvec"

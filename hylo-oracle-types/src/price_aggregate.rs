@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
 };
@@ -19,7 +21,6 @@ pub const DEFAULT_MAX_PRICE_BAND_BPS: u16 = 500;
 pub const MIN_EXPONENT: i16 = -9;
 pub const MAX_EXPONENT: i16 = -2;
 pub const MAX_PRICE_AGGREGATE_SAMPLES: usize = 8;
-pub const MAX_BASIS_POINTS: u16 = 10_000;
 
 /// Method for aggregating price samples.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,13 +28,13 @@ pub enum AggregationMethod {
   SimpleAverage,
 }
 
-/// Slot count, second count, and confidence limit in basis points.
+/// Slot count, second count, and confidence ratio.
 /// Absent fields use the aggregate defaults.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct ValidationConfig {
   pub slots: Option<u64>,
   pub secs: Option<u64>,
-  pub confidence: Option<u16>,
+  pub confidence: Option<UFix64<N9>>,
 }
 
 /// Trading session recorded with a price sample.
@@ -138,12 +139,12 @@ impl PriceSample {
     current_timestamp_us: u64,
     max_staleness_slots: Option<u64>,
     max_staleness_secs: Option<u64>,
-    max_confidence_bps: Option<u16>,
+    max_confidence: Option<UFix64<N9>>,
   ) -> Result<(), PriceAggregateError> {
     self.validate_price()?;
     self.validate_slot_age(current_slot, max_staleness_slots)?;
     self.validate_timestamp(current_timestamp_us, max_staleness_secs)?;
-    self.validate_confidence(max_confidence_bps)
+    self.validate_confidence(max_confidence)
   }
 
   fn validate_price(&self) -> Result<(), PriceAggregateError> {
@@ -187,21 +188,48 @@ impl PriceSample {
 
   fn validate_confidence(
     &self,
-    max_confidence_bps: Option<u16>,
+    max_confidence: Option<UFix64<N9>>,
   ) -> Result<(), PriceAggregateError> {
     let price = PriceSample::normalized(self.price, self.exponent)?;
     let confidence = PriceSample::normalized(self.confidence, self.exponent)?;
-    let basis_points =
-      UFix64::<Z0>::new(u64::from(MAX_BASIS_POINTS)).convert::<N9>();
-    let max_confidence = UFix64::<Z0>::new(u64::from(
-      max_confidence_bps.unwrap_or(DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS),
-    ))
-    .convert::<N9>();
-    let confidence_bps = confidence
-      .mul_div_floor(basis_points, price)
+    let default_max_confidence = UFix64::<N9>::new(
+      u64::from(DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS) * 100_000,
+    );
+    let confidence_ratio: fix::prelude::Fix<
+      u64,
+      fix::prelude::typenum::UInt<
+        fix::prelude::typenum::UInt<
+          fix::prelude::typenum::UInt<
+            fix::prelude::typenum::UInt<
+              fix::prelude::typenum::UTerm,
+              fix::prelude::typenum::B1,
+            >,
+            fix::prelude::typenum::B0,
+          >,
+          fix::prelude::typenum::B1,
+        >,
+        fix::prelude::typenum::B0,
+      >,
+      fix::prelude::typenum::NInt<
+        fix::prelude::typenum::UInt<
+          fix::prelude::typenum::UInt<
+            fix::prelude::typenum::UInt<
+              fix::prelude::typenum::UInt<
+                fix::prelude::typenum::UTerm,
+                fix::prelude::typenum::B1,
+              >,
+              fix::prelude::typenum::B0,
+            >,
+            fix::prelude::typenum::B0,
+          >,
+          fix::prelude::typenum::B1,
+        >,
+      >,
+    > = confidence
+      .mul_div_floor(UFix64::one(), price)
       .ok_or(PriceAggregateError::InvalidPrice)?;
 
-    (confidence_bps <= max_confidence)
+    (confidence_ratio <= max_confidence.unwrap_or(default_max_confidence))
       .then_some(())
       .ok_or(PriceAggregateError::ConfidenceExceededLimit)
   }
@@ -211,7 +239,7 @@ impl PriceSample {
   /// # Errors
   ///
   /// * The exponent is outside the supported range.
-  fn validate_exponent(exponent: i16) -> Result<(), PriceAggregateError> {
+  pub fn validate_exponent(exponent: i16) -> Result<(), PriceAggregateError> {
     (MIN_EXPONENT..=MAX_EXPONENT)
       .contains(&exponent)
       .then_some(())
@@ -224,6 +252,16 @@ impl PriceSample {
   Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
 )]
 pub struct PriceAggregateSamples([PriceSample; MAX_PRICE_AGGREGATE_SAMPLES]);
+
+impl PriceAggregateSamples {
+  /// Wraps the fixed sample array stored by the oracle account.
+  #[must_use]
+  pub const fn new(
+    samples: [PriceSample; MAX_PRICE_AGGREGATE_SAMPLES],
+  ) -> PriceAggregateSamples {
+    PriceAggregateSamples(samples)
+  }
+}
 
 enum SampleStatus {
   Fresh,

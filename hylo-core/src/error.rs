@@ -289,4 +289,7 @@ pub enum CoreError {
   // `exo_registry`
   #[msg("No route between the mint pair.")]
   UnroutablePair,
+  // `feeds`
+  #[msg("No feed config found for mint.")]
+  UnknownFeedMint,
 }

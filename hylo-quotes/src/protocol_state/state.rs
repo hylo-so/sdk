@@ -18,18 +18,20 @@ use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::par_tolerance::ParTolerance;
-use hylo_core::pyth::{
-  query_pyth_oracle, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
+use hylo_core::oracle::{
+  query_price_aggregate, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
 };
+use hylo_core::par_tolerance::ParTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_idl::oracle::accounts::PriceAggregate;
+use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL, USDC};
+use hylo_oracle_types::FeedConfig;
 
 use crate::protocol_state::accounts::{decode, decode_clock};
+use crate::protocol_state::price_aggregate::latest_timestamp_secs;
 use crate::protocol_state::{read_exo_entries, ExoPairState, ProtocolAccounts};
 use crate::LST;
 
@@ -155,7 +157,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     shyusd_mint: Mint,
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
-    sol_usd: &PriceUpdateV2,
+    sol_usd: &PriceAggregate,
     exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
     usdc_pair: UsdcPairState,
     jitosol_stake_pool: SplStakePool,
@@ -163,7 +165,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
   ) -> Result<ProtocolState<C>> {
-    let sol_usd_publish_time = sol_usd.price_message.publish_time;
+    let sol_usd_publish_time = latest_timestamp_secs(sol_usd)?;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context =
@@ -271,7 +273,7 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
   clock: C,
   hylo: &Hylo,
   xsol_mint: &Mint,
-  sol_usd: &PriceUpdateV2,
+  sol_usd: &PriceAggregate,
 ) -> Result<LstExchangeContext<C>> {
   let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
   let oracle_config = OracleConfig::new(
@@ -303,15 +305,18 @@ fn build_usdc_pair_state(
   accounts: &ProtocolAccounts,
 ) -> Result<UsdcPairState> {
   let usdc_pair: UsdcPair = decode(&accounts.usdc_pair, "UsdcPair")?;
-  let usdc_usd: PriceUpdateV2 =
-    decode(&accounts.usdc_usd_pyth, "USDC/USD Pyth feed")?;
+  let usdc_usd: PriceAggregate =
+    decode(&accounts.usdc_usd_pyth, "USDC/USD aggregate")?;
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_usd_spot = query_pyth_oracle(clock, &usdc_usd, oracle_config)
-    .map(|oracle| oracle.spot);
+  let usdc_feed_config =
+    FeedConfig::by_mint(USDC::MINT).ok_or(CoreError::UnknownFeedMint)?;
+  let usdc_usd_spot =
+    query_price_aggregate(clock, &usdc_usd, usdc_feed_config, oracle_config)
+      .map(|oracle| oracle.spot);
   let usdc_vault: TokenAccount = decode(&accounts.usdc_vault, "USDC vault")?;
 
   let virtual_stablecoin: VirtualStablecoin =
@@ -352,8 +357,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let xsol_mint: Mint = decode(&accounts.xsol_mint, "XSOL mint")?;
     let pool_config: PoolConfig = decode(&accounts.pool_config, "Pool config")?;
     let hyusd_pool: TokenAccount = decode(&accounts.hyusd_pool, "HYUSD pool")?;
-    let sol_usd: PriceUpdateV2 =
-      decode(&accounts.sol_usd_pyth, "SOL/USD Pyth feed")?;
+    let sol_usd: PriceAggregate =
+      decode(&accounts.sol_usd_pyth, "SOL/USD aggregate")?;
     let clock = decode_clock(&accounts.clock)?;
     let usdc_pair = build_usdc_pair_state(&clock, accounts)?;
     let jitosol_stake_pool =

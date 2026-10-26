@@ -9,17 +9,17 @@ use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::router::types::ExoEntry;
-use hylo_core::pyth::OracleConfig;
+use hylo_core::oracle::OracleConfig;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
+use hylo_idl::oracle::accounts::PriceAggregate;
 use hylo_idl::pda;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
-use crate::protocol_state::exo_registry::exo_pyth_feed_by_mint;
+use crate::protocol_state::price_aggregate::latest_timestamp_secs;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
 /// Accounts fetched per registry entry, the [`ExoPairAccounts`] field count.
@@ -48,19 +48,12 @@ pub struct ExoPairState<C: SolanaClock> {
   pub oracle_interval_secs: u64,
 }
 
-/// Checks that the pair's oracle matches the feed the SDK fetches for its
-/// collateral.
+/// Checks that the pair's oracle is the aggregate PDA for its collateral.
 fn validate_exo_pair_oracle(exo_pair: &ExoPair) -> Result<()> {
-  let feed = exo_pyth_feed_by_mint(exo_pair.collateral_mint)?;
   ensure!(
-    exo_pair.oracle == feed.address,
-    "Exo pair oracle {} does not match SDK feed {}",
+    exo_pair.oracle == pda::price_aggregate(exo_pair.collateral_mint),
+    "Exo pair oracle {} does not match aggregate PDA for {}",
     exo_pair.oracle,
-    feed.address,
-  );
-  ensure!(
-    exo_pair.oracle_feed_id == feed.feed_id,
-    "Exo pair feed id does not match SDK feed for {}",
     exo_pair.collateral_mint,
   );
   Ok(())
@@ -125,8 +118,8 @@ impl ExoPairAccounts {
       decode(&self.levercoin_mint, "Exo levercoin mint")?;
     let collateral_mint: Mint =
       decode(&self.collateral_mint, "Exo collateral mint")?;
-    let oracle: PriceUpdateV2 =
-      decode(&self.oracle, "Exo collateral/USD Pyth feed")?;
+    let oracle: PriceAggregate =
+      decode(&self.oracle, "Exo collateral/USD aggregate")?;
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
@@ -147,6 +140,7 @@ impl ExoPairAccounts {
       exo_pair.sell_curve_config.into(),
       exo_pair.buy_curve_config.into(),
       exo_pair.levercoin_market_cap_limit.try_into()?,
+      exo_pair.collateral_mint,
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
@@ -156,7 +150,7 @@ impl ExoPairAccounts {
       pool_drawdown: exo_pair.pool_drawdown.into(),
       borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
       supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle_publish_time: oracle.price_message.publish_time,
+      oracle_publish_time: latest_timestamp_secs(&oracle)?,
       oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
   }

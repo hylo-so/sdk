@@ -6,11 +6,11 @@ use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
 use anyhow::{ensure, Context, Result};
 use hylo_core::error::CoreError;
-use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
   Exo, StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
+use hylo_oracle_types::SOL_MINT;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::exo_pair::EXO_PAIR_ACCOUNTS;
@@ -121,10 +121,10 @@ impl ProtocolAccounts {
     XSOL::MINT,
     pda::POOL_CONFIG,
     pda::HYUSD_POOL,
-    hylo_core::pyth::SOL_USD.address,
+    pda::price_aggregate(SOL_MINT),
     sysvar::clock::ID,
     pda::USDC_PAIR,
-    pda::USDC_USD_PYTH_FEED,
+    pda::price_aggregate(USDC::MINT),
     JITOSOL::POOL_STATE,
     HYLOSOL::POOL_STATE,
     pda::lst_vault(JITOSOL::MINT),
@@ -141,7 +141,7 @@ impl ProtocolAccounts {
     [
       pda::HYLO,
       XSOL::MINT,
-      hylo_core::pyth::SOL_USD.address,
+      pda::price_aggregate(SOL_MINT),
       sysvar::clock::ID,
     ]
   }
@@ -151,13 +151,13 @@ impl ProtocolAccounts {
   /// Order: exo pair, vault, levercoin mint, collateral mint, collateral/USD
   /// feed, clock.
   #[must_use]
-  pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 6] {
+  pub fn exo_pubkeys<E: Exo>() -> [Pubkey; 6] {
     [
       pda::exo_pair(E::MINT),
       pda::exo_vault(E::MINT),
       pda::exo_levercoin_mint(E::MINT),
       E::MINT,
-      E::FEED.address,
+      pda::price_aggregate(E::MINT),
       sysvar::clock::ID,
     ]
   }

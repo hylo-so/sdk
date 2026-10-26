@@ -22,7 +22,6 @@ hylo-fix.workspace = true
 hylo-idl.workspace = true
 itertools.workspace = true
 mpl-token-metadata.workspace = true
-pyth-solana-receiver-sdk.workspace = true
 serde_json.workspace = true
 solana-address-lookup-table-interface.workspace = true
 solana-rpc-client.workspace = true

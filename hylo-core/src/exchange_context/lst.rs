@@ -1,6 +1,7 @@
 use anchor_spl::token::Mint;
 use fix::prelude::*;
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_idl::oracle::accounts::PriceAggregate;
+use hylo_oracle_types::{FeedConfig, SOL_MINT};
 
 use super::{ExchangeContext, ProjectedState};
 use crate::collateral_ratio::{CollateralRatio, CR};
@@ -18,7 +19,9 @@ use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
-use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
+use crate::oracle::{
+  query_price_aggregate, OracleConfig, OraclePrice, PriceRange,
+};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
@@ -104,15 +107,21 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
-    sol_usd_pyth_feed: &PriceUpdateV2,
+    sol_usd_aggregate: &PriceAggregate,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
   ) -> Result<LstExchangeContext<C>, CoreError> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
-    let sol_usd_oracle =
-      query_pyth_oracle(&clock, sol_usd_pyth_feed, oracle_config)?;
+    let feed_config =
+      FeedConfig::by_mint(SOL_MINT).ok_or(CoreError::UnknownFeedMint)?;
+    let sol_usd_oracle = query_price_aggregate(
+      &clock,
+      sol_usd_aggregate,
+      feed_config,
+      oracle_config,
+    )?;
     let sol_usd_price = sol_usd_oracle.price_range()?;
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =

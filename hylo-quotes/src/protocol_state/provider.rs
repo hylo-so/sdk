@@ -9,7 +9,6 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
-use hylo_core::pyth::PythOracle;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
 use hylo_idl::{pda, with_exo_pairs};
@@ -79,9 +78,7 @@ impl RpcStateProvider {
   ///
   /// # Errors
   /// Returns error if the fetch or deserialization fails.
-  pub async fn fetch_exo_pair<E: Exo + PythOracle>(
-    &self,
-  ) -> Result<ExoPairState<Clock>> {
+  pub async fn fetch_exo_pair<E: Exo>(&self) -> Result<ExoPairState<Clock>> {
     let pubkeys = ProtocolAccounts::exo_pubkeys::<E>();
     let data = self
       .rpc_client
