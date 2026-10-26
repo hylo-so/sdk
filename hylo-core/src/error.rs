@@ -36,23 +36,23 @@ pub enum CoreError {
   SolLstPriceConversion,
   #[msg("Arithmetic error during LST to LST conversion.")]
   LstLstPriceConversion,
-  // `pyth`
+  // `oracle`
   #[msg("Oracle confidence interval is too wide.")]
-  PythOracleConfidence,
+  OracleConfidence,
   #[msg("Oracle exponent is out of range.")]
-  PythOracleExponent,
+  OracleExponent,
   #[msg("Oracle yielded a negative price which can't be unsigned.")]
-  PythOracleNegativePrice,
+  OracleInvalidPrice,
   #[msg("Oracle time is negative.")]
-  PythOracleNegativeTime,
+  OracleNegativeTime,
   #[msg("Oracle did not yield a price within the configured age window.")]
-  PythOracleOutdated,
+  OracleOutdated,
   #[msg("Oracle price is out of range.")]
-  PythOraclePriceRange,
+  OraclePriceRange,
   #[msg("Oracle publish slot greater than current slot.")]
-  PythOracleSlotInvalid,
+  OracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
-  PythOracleVerificationLevel,
+  OracleVerificationLevel,
   // `nav`
   #[msg("Overflow while computing collateral ratio.")]
   CollateralRatioOverflow,
@@ -292,4 +292,17 @@ pub enum CoreError {
   // `feeds`
   #[msg("No feed config found for mint.")]
   UnknownFeedMint,
+  // `oracle::price_aggregate`
+  #[msg("Arithmetic error.")]
+  OracleArithmetic,
+  #[msg("Unable to cast safely.")]
+  OracleConversion,
+  #[msg("Non-regular price sample has no valid reference feed.")]
+  OracleInvalidReferenceFeed,
+  #[msg("No fresh price samples are available.")]
+  OracleNoFreshPriceSamples,
+  #[msg("Price sample exceeds its reference price band.")]
+  OraclePriceBandExceeded,
+  #[msg("Price sample index exceeds aggregate capacity.")]
+  OracleSampleCapacityExceeded,
 }

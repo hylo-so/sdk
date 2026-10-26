@@ -10,6 +10,7 @@ use fix::prelude::{
 use fix::typenum::Z0;
 
 use super::{FeedConfig, FeedSourceConfig};
+use crate::error::CoreError;
 
 pub const DEFAULT_MAX_STALENESS_SLOTS: u64 = 30;
 pub const DEFAULT_MAX_STALENESS_SECS: u64 = 5;
@@ -72,26 +73,8 @@ pub struct PriceSample {
   pub market_session: MarketSession,
 }
 
-/// Failure while validating or aggregating price samples.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PriceAggregateError {
-  ArithmeticOverflow,
-  ConfidenceExceededLimit,
-  ConversionError,
-  ExponentOutOfRange,
-  InvalidPrice,
-  InvalidReferenceFeed,
-  NoFreshPriceSamples,
-  PriceBandExceeded,
-  SampleCapacityExceeded,
-  StalePriceSample,
-}
-
 impl PriceSample {
-  fn normalized(
-    value: u64,
-    exponent: i16,
-  ) -> Result<UFix64<N9>, PriceAggregateError> {
+  fn normalized(value: u64, exponent: i16) -> Result<UFix64<N9>, CoreError> {
     PriceSample::validate_exponent(exponent)?;
 
     match exponent {
@@ -105,14 +88,14 @@ impl PriceSample {
       -9 => Some(UFix64::<N9>::new(value)),
       _ => None,
     }
-    .ok_or(PriceAggregateError::ArithmeticOverflow)
+    .ok_or(CoreError::OracleArithmetic)
   }
 
   fn validate_price_band(
     &self,
     reference: &PriceSample,
     price_band_bps: Option<u16>,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     let price = PriceSample::normalized(self.price, self.exponent)?;
     let reference_price =
       PriceSample::normalized(reference.price, reference.exponent)?;
@@ -121,11 +104,11 @@ impl PriceSample {
     ));
     let limit = reference_price
       .mul_div_floor(price_band, UFix64::<N4>::one())
-      .ok_or(PriceAggregateError::ArithmeticOverflow)?;
+      .ok_or(CoreError::OracleArithmetic)?;
 
     (price.abs_diff(&reference_price) <= limit)
       .then_some(())
-      .ok_or(PriceAggregateError::PriceBandExceeded)
+      .ok_or(CoreError::OraclePriceBandExceeded)
   }
 
   /// Checks the price, staleness, and confidence limits.
@@ -140,56 +123,56 @@ impl PriceSample {
     max_staleness_slots: Option<u64>,
     max_staleness_secs: Option<u64>,
     max_confidence: Option<UFix64<N9>>,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     self.validate_price()?;
     self.validate_slot_age(current_slot, max_staleness_slots)?;
     self.validate_timestamp(current_timestamp_us, max_staleness_secs)?;
     self.validate_confidence(max_confidence)
   }
 
-  fn validate_price(&self) -> Result<(), PriceAggregateError> {
+  fn validate_price(&self) -> Result<(), CoreError> {
     (self.price > 0)
       .then_some(())
-      .ok_or(PriceAggregateError::InvalidPrice)
+      .ok_or(CoreError::OracleInvalidPrice)
   }
 
   fn validate_slot_age(
     &self,
     current_slot: u64,
     max_staleness_slots: Option<u64>,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     let age = current_slot
       .checked_sub(self.posted_slot)
-      .ok_or(PriceAggregateError::StalePriceSample)?;
+      .ok_or(CoreError::OracleOutdated)?;
 
     (age <= max_staleness_slots.unwrap_or(DEFAULT_MAX_STALENESS_SLOTS))
       .then_some(())
-      .ok_or(PriceAggregateError::StalePriceSample)
+      .ok_or(CoreError::OracleOutdated)
   }
 
   fn validate_timestamp(
     &self,
     current_timestamp_us: u64,
     max_staleness_secs: Option<u64>,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     let age = current_timestamp_us
       .checked_sub(self.posted_timestamp_us)
-      .ok_or(PriceAggregateError::StalePriceSample)?;
+      .ok_or(CoreError::OracleOutdated)?;
     let limit = max_staleness_secs
       .map_or(Some(DEFAULT_MAX_STALENESS_SECS_US), |secs| {
         secs.checked_mul(MICROS_PER_SECOND)
       })
-      .ok_or(PriceAggregateError::ArithmeticOverflow)?;
+      .ok_or(CoreError::OracleArithmetic)?;
 
     (age <= limit)
       .then_some(())
-      .ok_or(PriceAggregateError::StalePriceSample)
+      .ok_or(CoreError::OracleOutdated)
   }
 
   fn validate_confidence(
     &self,
     max_confidence: Option<UFix64<N9>>,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     let price = PriceSample::normalized(self.price, self.exponent)?;
     let confidence = PriceSample::normalized(self.confidence, self.exponent)?;
     let default_max_confidence = UFix64::<N9>::new(
@@ -227,11 +210,11 @@ impl PriceSample {
       >,
     > = confidence
       .mul_div_floor(UFix64::one(), price)
-      .ok_or(PriceAggregateError::InvalidPrice)?;
+      .ok_or(CoreError::OracleInvalidPrice)?;
 
     (confidence_ratio <= max_confidence.unwrap_or(default_max_confidence))
       .then_some(())
-      .ok_or(PriceAggregateError::ConfidenceExceededLimit)
+      .ok_or(CoreError::OracleConfidence)
   }
 
   /// Checks whether an exponent has supported price precision.
@@ -239,11 +222,11 @@ impl PriceSample {
   /// # Errors
   ///
   /// * The exponent is outside the supported range.
-  pub fn validate_exponent(exponent: i16) -> Result<(), PriceAggregateError> {
+  pub fn validate_exponent(exponent: i16) -> Result<(), CoreError> {
     (MIN_EXPONENT..=MAX_EXPONENT)
       .contains(&exponent)
       .then_some(())
-      .ok_or(PriceAggregateError::ExponentOutOfRange)
+      .ok_or(CoreError::OracleExponent)
   }
 }
 
@@ -290,7 +273,7 @@ impl PriceAggregateSamples {
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
     feed_config: &FeedConfig,
-  ) -> Result<UFix64<N9>, PriceAggregateError> {
+  ) -> Result<UFix64<N9>, CoreError> {
     let mut samples = self.fresh_samples(
       current_slot,
       current_timestamp_us,
@@ -306,31 +289,27 @@ impl PriceAggregateSamples {
             PriceSample::normalized(sample.price, sample.exponent)
               .map(fix::Fix::widen::<u128>)
               .and_then(|price| {
-                sum
-                  .checked_add(&price)
-                  .ok_or(PriceAggregateError::ArithmeticOverflow)
+                sum.checked_add(&price).ok_or(CoreError::OracleArithmetic)
               })
               .and_then(|sum| {
                 count
                   .checked_add(1)
                   .map(|count| (sum, count))
-                  .ok_or(PriceAggregateError::ArithmeticOverflow)
+                  .ok_or(CoreError::OracleArithmetic)
               })
           },
         )?;
 
         (count > 0)
           .then_some(())
-          .ok_or(PriceAggregateError::NoFreshPriceSamples)
+          .ok_or(CoreError::OracleNoFreshPriceSamples)
           .and_then(|()| {
             sum
               .checked_div(&UFix128::<Z0>::new(u128::from(count)))
-              .ok_or(PriceAggregateError::ArithmeticOverflow)
+              .ok_or(CoreError::OracleArithmetic)
           })
           .and_then(|average| {
-            average
-              .narrow::<u64>()
-              .ok_or(PriceAggregateError::ConversionError)
+            average.narrow::<u64>().ok_or(CoreError::OracleConversion)
           })
       }
     }
@@ -342,7 +321,7 @@ impl PriceAggregateSamples {
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
     feed_config: &FeedConfig,
-  ) -> Result<impl Iterator<Item = &PriceSample>, PriceAggregateError> {
+  ) -> Result<impl Iterator<Item = &PriceSample>, CoreError> {
     self
       .0
       .iter()
@@ -359,7 +338,7 @@ impl PriceAggregateSamples {
           SampleStatus::Rejected => Ok(None),
         }
       })
-      .collect::<Result<Vec<_>, PriceAggregateError>>()
+      .collect::<Result<Vec<_>, CoreError>>()
       .map(|samples| samples.into_iter().flatten())
   }
 
@@ -370,7 +349,7 @@ impl PriceAggregateSamples {
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
-  ) -> Result<SampleStatus, PriceAggregateError> {
+  ) -> Result<SampleStatus, CoreError> {
     match self.validate_sample(
       sample,
       source,
@@ -386,14 +365,14 @@ impl PriceAggregateSamples {
     }
   }
 
-  fn rejects_sample(error: PriceAggregateError) -> bool {
+  fn rejects_sample(error: CoreError) -> bool {
     matches!(
       error,
-      PriceAggregateError::ConfidenceExceededLimit
-        | PriceAggregateError::InvalidPrice
-        | PriceAggregateError::InvalidReferenceFeed
-        | PriceAggregateError::PriceBandExceeded
-        | PriceAggregateError::StalePriceSample
+      CoreError::OracleConfidence
+        | CoreError::OracleInvalidPrice
+        | CoreError::OracleInvalidReferenceFeed
+        | CoreError::OraclePriceBandExceeded
+        | CoreError::OracleOutdated
     )
   }
 
@@ -404,7 +383,7 @@ impl PriceAggregateSamples {
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     match sample.market_session {
       MarketSession::Regular => sample.validate(
         current_slot,
@@ -422,16 +401,16 @@ impl PriceAggregateSamples {
         let index = usize::from(
           source
             .reference_feed
-            .ok_or(PriceAggregateError::InvalidReferenceFeed)?,
+            .ok_or(CoreError::OracleInvalidReferenceFeed)?,
         );
         let reference = self
           .0
           .get(index)
-          .ok_or(PriceAggregateError::InvalidReferenceFeed)?;
+          .ok_or(CoreError::OracleInvalidReferenceFeed)?;
 
         (reference.market_session == MarketSession::Regular)
           .then_some(())
-          .ok_or(PriceAggregateError::InvalidReferenceFeed)?;
+          .ok_or(CoreError::OracleInvalidReferenceFeed)?;
         reference.validate(
           current_slot,
           current_timestamp_us,
@@ -454,14 +433,14 @@ impl PriceAggregateSamples {
     &mut self,
     index: usize,
     sample: PriceSample,
-  ) -> Result<(), PriceAggregateError> {
+  ) -> Result<(), CoreError> {
     PriceSample::validate_exponent(sample.exponent)?;
 
     self
       .0
       .get_mut(index)
       .map(|slot| *slot = sample)
-      .ok_or(PriceAggregateError::SampleCapacityExceeded)
+      .ok_or(CoreError::OracleSampleCapacityExceeded)
   }
 }
 
@@ -473,8 +452,9 @@ mod tests {
 
   use super::{
     AggregationMethod, FeedConfig, FeedSourceConfig, MarketSession,
-    PriceAggregateError, PriceAggregateSamples, PriceSample, ValidationConfig,
+    PriceAggregateSamples, PriceSample, ValidationConfig,
   };
+  use crate::error::CoreError;
   use crate::oracle::{OracleSourceConfig, PythLazerFeedId};
 
   const SOURCE: FeedSourceConfig = FeedSourceConfig {
@@ -587,7 +567,7 @@ mod tests {
 
     assert_eq!(
       sample.validate_confidence(None),
-      Err(PriceAggregateError::ConfidenceExceededLimit),
+      Err(CoreError::OracleConfidence),
     );
   }
 

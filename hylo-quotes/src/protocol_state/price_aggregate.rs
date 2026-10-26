@@ -15,5 +15,5 @@ pub(crate) fn latest_timestamp_secs(aggregate: &PriceAggregate) -> Result<i64> {
     .max()
     .and_then(|timestamp_us| timestamp_us.checked_div(1_000_000))
     .and_then(|timestamp_secs| i64::try_from(timestamp_secs).ok())
-    .ok_or(CoreError::PythOracleOutdated.into())
+    .ok_or(CoreError::OracleOutdated.into())
 }

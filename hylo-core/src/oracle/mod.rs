@@ -15,9 +15,8 @@ pub use pyth_lazer::*;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
-  OracleConfToleranceInvalid, OracleIntervalSecsInvalid, PythOracleConfidence,
-  PythOracleExponent, PythOracleNegativePrice, PythOracleNegativeTime,
-  PythOracleOutdated, PythOraclePriceRange,
+  OracleConfToleranceInvalid, OracleIntervalSecsInvalid, OracleNegativeTime,
+  OracleOutdated, OraclePriceRange,
 };
 use crate::solana_clock::SolanaClock;
 
@@ -91,7 +90,7 @@ impl<Exp: Integer> PriceRange<Exp> {
     let (lower, upper) = price
       .checked_sub(&conf)
       .zip(price.checked_add(&conf))
-      .ok_or(PythOraclePriceRange)?;
+      .ok_or(OraclePriceRange)?;
     Ok(Self::new(lower, upper))
   }
 
@@ -117,12 +116,12 @@ pub fn validate_publish_time(
     if publish_time.is_positive() && clock_time.is_positive() {
       Ok((publish_time.unsigned_abs(), clock_time.unsigned_abs()))
     } else {
-      Err(PythOracleNegativeTime)
+      Err(OracleNegativeTime)
     }?;
   if publish_time.saturating_add(oracle_interval) >= clock_time {
     Ok(())
   } else {
-    Err(PythOracleOutdated)
+    Err(OracleOutdated)
   }
 }
 
@@ -151,9 +150,9 @@ pub fn query_price_aggregate<C: SolanaClock>(
   }: OracleConfig,
 ) -> Result<OraclePrice, CoreError> {
   let current_timestamp_us = u64::try_from(clock.unix_timestamp())
-    .map_err(|_| PythOracleNegativeTime)?
+    .map_err(|_| OracleNegativeTime)?
     .checked_mul(MICROS_PER_SECOND)
-    .ok_or(PythOracleNegativeTime)?;
+    .ok_or(OracleNegativeTime)?;
   let validation_config = ValidationConfig {
     slots: slot_interval(interval_secs),
     secs: Some(interval_secs),
@@ -177,23 +176,6 @@ fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
   let time: UFix64<N2> = UFix64::<Z0>::new(oracle_interval_secs).convert();
   let slot_time = UFix64::<N2>::new(20);
   time.checked_div(&slot_time).map(|interval| interval.bits)
-}
-
-impl From<PriceAggregateError> for CoreError {
-  fn from(error: PriceAggregateError) -> CoreError {
-    match error {
-      PriceAggregateError::ConfidenceExceededLimit => PythOracleConfidence,
-      PriceAggregateError::ExponentOutOfRange => PythOracleExponent,
-      PriceAggregateError::InvalidPrice => PythOracleNegativePrice,
-      PriceAggregateError::NoFreshPriceSamples
-      | PriceAggregateError::StalePriceSample => PythOracleOutdated,
-      PriceAggregateError::ArithmeticOverflow
-      | PriceAggregateError::ConversionError
-      | PriceAggregateError::InvalidReferenceFeed
-      | PriceAggregateError::PriceBandExceeded
-      | PriceAggregateError::SampleCapacityExceeded => PythOraclePriceRange,
-    }
-  }
 }
 
 #[cfg(test)]
