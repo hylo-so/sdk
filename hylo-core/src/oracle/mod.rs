@@ -1,11 +1,17 @@
+mod feed_config;
+mod feeds;
+mod oracle_source;
+mod price_aggregate;
+mod pyth_lazer;
+
+pub use feed_config::*;
+pub use feeds::*;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
 use hylo_idl::oracle::accounts::PriceAggregate;
-use hylo_idl::oracle::types::MarketSession as IdlMarketSession;
-use hylo_oracle_types::{
-  AggregationMethod, FeedConfig, MarketSession, PriceAggregateError,
-  PriceAggregateSamples, PriceSample, ValidationConfig, MICROS_PER_SECOND,
-};
+pub use oracle_source::*;
+pub use price_aggregate::*;
+pub use pyth_lazer::*;
 
 use crate::error::CoreError;
 use crate::error::CoreError::{
@@ -153,23 +159,8 @@ pub fn query_price_aggregate<C: SolanaClock>(
     secs: Some(interval_secs),
     confidence: Some(conf_tolerance),
   };
-  let spot = PriceAggregateSamples::new(aggregate.samples.map(|sample| {
-    PriceSample {
-      price: sample.price,
-      exponent: sample.exponent,
-      confidence: sample.confidence,
-      posted_slot: sample.posted_slot,
-      posted_timestamp_us: sample.posted_timestamp_us,
-      market_session: match sample.market_session {
-        IdlMarketSession::PreMarket => MarketSession::PreMarket,
-        IdlMarketSession::Regular => MarketSession::Regular,
-        IdlMarketSession::PostMarket => MarketSession::PostMarket,
-        IdlMarketSession::Overnight => MarketSession::Overnight,
-        IdlMarketSession::Closed => MarketSession::Closed,
-      },
-    }
-  }))
-  .price(
+  let samples = PriceAggregateSamples::from(aggregate.samples);
+  let spot = samples.price(
     AggregationMethod::SimpleAverage,
     clock.slot(),
     current_timestamp_us,
@@ -208,11 +199,7 @@ impl From<PriceAggregateError> for CoreError {
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Clock;
-  use hylo_idl::oracle::accounts::PriceAggregate;
-  use hylo_idl::oracle::types::{
-    MarketSession as IdlMarketSession, PriceSample as IdlPriceSample,
-  };
-  use hylo_oracle_types::FEEDS;
+  use hylo_idl::oracle::types::{MarketSession, PriceSample};
 
   use super::*;
 
@@ -224,13 +211,13 @@ mod tests {
       unix_timestamp: 10,
       ..Clock::default()
     };
-    let sample = IdlPriceSample {
+    let sample = PriceSample {
       price: 1_000_000_000,
       exponent: -9,
       confidence: 10_000_000,
       posted_slot: 100,
       posted_timestamp_us: 10_000_000,
-      market_session: IdlMarketSession::Regular,
+      market_session: MarketSession::Regular,
     };
     let aggregate = PriceAggregate {
       bump: 0,

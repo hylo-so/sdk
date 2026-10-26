@@ -1,8 +1,8 @@
 use anchor_lang::prelude::{pubkey, Pubkey};
 use static_assertions::const_assert;
 
-use crate::OracleSourceConfig::PythLazer;
-use crate::{FeedConfig, FeedSourceConfig, PythLazerFeedId};
+use super::OracleSourceConfig::PythLazer;
+use super::{FeedConfig, FeedSourceConfig, PythLazerFeedId};
 
 pub const SOL_MINT: Pubkey =
   pubkey!("So11111111111111111111111111111111111111112");
@@ -130,8 +130,8 @@ const_assert!(valid_feed_registry(FEEDS, 0));
 mod tests {
   use static_assertions::const_assert;
 
+  use super::super::{FeedSourceConfig, OracleSourceConfig, PythLazerFeedId};
   use super::{mint_absent_before, same_bytes, valid_reference_feeds, FEEDS};
-  use crate::{FeedSourceConfig, OracleSourceConfig, PythLazerFeedId};
 
   const fn source(reference_feed: Option<u8>) -> FeedSourceConfig {
     FeedSourceConfig {

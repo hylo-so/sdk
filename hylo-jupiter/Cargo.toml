@@ -26,7 +26,6 @@ hylo-fix.workspace = true
 hylo-idl.workspace = true
 hylo-jupiter-amm-interface.workspace = true
 hylo-quotes.workspace = true
-hylo-oracle-types.workspace = true
 rust_decimal.workspace = true
 solana-rpc-client.workspace = true
 tokio.workspace = true

@@ -1,7 +1,6 @@
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 use hylo_idl::oracle::accounts::PriceAggregate;
-use hylo_oracle_types::{FeedConfig, SOL_MINT};
 
 use super::{ExchangeContext, ProjectedState};
 use crate::collateral_ratio::{CollateralRatio, CR};
@@ -20,7 +19,8 @@ use crate::lst::sol_price::LstSolPrice;
 use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::oracle::{
-  query_price_aggregate, OracleConfig, OraclePrice, PriceRange,
+  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice, PriceRange,
+  SOL_MINT,
 };
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;

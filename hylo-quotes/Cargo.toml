@@ -21,7 +21,6 @@ hylo-clients.workspace = true
 hylo-core = { workspace = true, features = ["offchain"] }
 hylo-fix.workspace = true
 hylo-idl.workspace = true
-hylo-oracle-types.workspace = true
 serde.workspace = true
 solana-rpc-client.workspace = true
 tokio.workspace = true

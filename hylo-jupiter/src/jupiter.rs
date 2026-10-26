@@ -8,6 +8,7 @@ use fix::prelude::UFix64;
 use hylo_core::error::CoreError;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
+use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::idl::tokens::ExoRole::{
   Collateral, Levercoin, Stablecoin, Usdc,
@@ -17,15 +18,15 @@ use hylo_core::idl::tokens::{
 };
 use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::oracle::{query_price_aggregate, OracleConfig};
+use hylo_core::oracle::{
+  query_price_aggregate, FeedConfig, OracleConfig, SOL_MINT,
+};
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::oracle::accounts::PriceAggregate;
 use hylo_jupiter_amm_interface::{
   AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, Quote, QuoteParams,
   SwapAndAccountMetas, SwapParams,
 };
-use hylo_oracle_types::{FeedConfig, SOL_MINT};
 use hylo_quotes::protocol_state::{
   exo_entry_role, exo_pubkeys_from_entries, find_exo_entry, read_exo_entries,
   ExoPairAccounts, ExoPairState, ProtocolState, UsdcPairState,

@@ -1693,11 +1693,11 @@ dependencies = [
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
- "hylo-oracle-types",
  "itertools 0.14.0",
  "more-asserts",
  "proptest",
  "serde",
+ "static_assertions",
 ]
 
 [[package]]
@@ -1745,7 +1745,6 @@ dependencies = [
  "hylo-fix",
  "hylo-idl",
  "hylo-jupiter-amm-interface",
- "hylo-oracle-types",
  "hylo-quotes",
  "rust_decimal",
  "solana-rpc-client",
@@ -1768,15 +1767,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hylo-oracle-types"
-version = "2.7.2"
-dependencies = [
- "anchor-lang",
- "hylo-fix",
- "static_assertions",
-]
-
-[[package]]
 name = "hylo-quotes"
 version = "2.7.2"
 dependencies = [
@@ -1792,7 +1782,6 @@ dependencies = [
  "hylo-core",
  "hylo-fix",
  "hylo-idl",
- "hylo-oracle-types",
  "serde",
  "serde_json",
  "solana-rpc-client",
@@ -1840,7 +1829,6 @@ dependencies = [
  "hylo-core",
  "hylo-fix",
  "hylo-idl",
- "hylo-oracle-types",
  "solana-rpc-client",
  "thiserror 2.0.18",
  "tokio",

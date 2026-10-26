@@ -6,11 +6,11 @@ use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
 use anyhow::{ensure, Context, Result};
 use hylo_core::error::CoreError;
+use hylo_core::oracle::SOL_MINT;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
   Exo, StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
-use hylo_oracle_types::SOL_MINT;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::exo_pair::EXO_PAIR_ACCOUNTS;

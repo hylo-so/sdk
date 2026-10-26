@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::PythLazerFeedId;
+use super::PythLazerFeedId;
 
 /// Price source backing an observation.
 #[derive(

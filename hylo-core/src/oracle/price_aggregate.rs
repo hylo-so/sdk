@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
@@ -9,7 +9,7 @@ use fix::prelude::{
 };
 use fix::typenum::Z0;
 
-use crate::{FeedConfig, FeedSourceConfig};
+use super::{FeedConfig, FeedSourceConfig};
 
 pub const DEFAULT_MAX_STALENESS_SLOTS: u64 = 30;
 pub const DEFAULT_MAX_STALENESS_SECS: u64 = 5;
@@ -263,6 +263,14 @@ impl PriceAggregateSamples {
   }
 }
 
+impl Deref for PriceAggregateSamples {
+  type Target = [PriceSample; MAX_PRICE_AGGREGATE_SAMPLES];
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
 enum SampleStatus {
   Fresh,
   Rejected,
@@ -464,12 +472,10 @@ mod tests {
   use fix::typenum::N9;
 
   use super::{
-    AggregationMethod, MarketSession, PriceAggregateError,
-    PriceAggregateSamples, PriceSample, ValidationConfig,
+    AggregationMethod, FeedConfig, FeedSourceConfig, MarketSession,
+    PriceAggregateError, PriceAggregateSamples, PriceSample, ValidationConfig,
   };
-  use crate::{
-    FeedConfig, FeedSourceConfig, OracleSourceConfig, PythLazerFeedId,
-  };
+  use crate::oracle::{OracleSourceConfig, PythLazerFeedId};
 
   const SOURCE: FeedSourceConfig = FeedSourceConfig {
     source: OracleSourceConfig::PythLazer {
@@ -574,7 +580,9 @@ mod tests {
       price: 100_000_000_000,
       exponent: -9,
       confidence: 5_010_000_000,
-      ..PriceSample::default()
+      posted_slot: 0,
+      posted_timestamp_us: 0,
+      market_session: MarketSession::Regular,
     };
 
     assert_eq!(

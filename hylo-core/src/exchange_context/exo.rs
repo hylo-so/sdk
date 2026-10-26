@@ -2,7 +2,6 @@ use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 use hylo_idl::oracle::accounts::PriceAggregate;
-use hylo_oracle_types::FeedConfig;
 
 use super::{ExchangeContext, ProjectedState};
 use crate::collateral_ratio::{CollateralRatio, CR};
@@ -19,7 +18,7 @@ use crate::fees::curve_controller::{
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::oracle::{
-  query_price_aggregate, OracleConfig, OraclePrice, PriceRange,
+  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice, PriceRange,
 };
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;

@@ -4,7 +4,6 @@ members = [
     "hylo-core",
     "hylo-idl",
     "hylo-jupiter",
-    "hylo-oracle-types",
     "hylo-quotes",
     "hylo-stats",
 ]
@@ -32,7 +31,6 @@ hylo-core = { version = "2.7.1", path = "hylo-core" }
 hylo-fix = "0.8.0"
 hylo-idl = { version = "2.7.1", path = "hylo-idl" }
 hylo-jupiter = { version = "2.7.1", path = "hylo-jupiter" }
-hylo-oracle-types = { version = "2.7.1", path = "hylo-oracle-types" }
 hylo-quotes = { version = "2.7.1", path = "hylo-quotes" }
 hylo-stats = { version = "2.7.1", path = "hylo-stats" }
 itertools = "0.14.0"

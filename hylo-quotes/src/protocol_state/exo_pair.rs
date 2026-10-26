@@ -8,13 +8,13 @@ use fix::prelude::*;
 use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::ExoPair;
+use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::oracle::OracleConfig;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::oracle::accounts::PriceAggregate;
 use hylo_idl::pda;
 use serde::{Deserialize, Serialize};
 

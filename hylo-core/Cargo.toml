@@ -20,9 +20,9 @@ anchor-spl.workspace = true
 hylo-fix.workspace = true
 hylo-idl.workspace = true
 hylo-jupiter-amm-interface = { workspace = true, optional = true }
-hylo-oracle-types.workspace = true
 itertools.workspace = true
 serde.workspace = true
+static_assertions.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true

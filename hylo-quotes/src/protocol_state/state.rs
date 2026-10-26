@@ -16,19 +16,19 @@ use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
+use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::oracle::{
-  query_price_aggregate, validate_publish_time, OracleConfig, ORACLE_DIVISOR,
+  query_price_aggregate, validate_publish_time, FeedConfig, OracleConfig,
+  ORACLE_DIVISOR,
 };
 use hylo_core::par_tolerance::ParTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
-use hylo_idl::oracle::accounts::PriceAggregate;
 use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL, USDC};
-use hylo_oracle_types::FeedConfig;
 
 use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::price_aggregate::latest_timestamp_secs;

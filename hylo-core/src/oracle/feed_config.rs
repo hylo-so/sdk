@@ -1,6 +1,6 @@
 use anchor_lang::prelude::Pubkey;
 
-use crate::{OracleSourceConfig, PythLazerFeedId, FEEDS};
+use super::{OracleSourceConfig, PythLazerFeedId, FEEDS};
 
 /// Static configuration for one asset feed.
 pub struct FeedConfig {
