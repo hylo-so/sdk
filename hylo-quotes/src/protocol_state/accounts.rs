@@ -6,10 +6,9 @@ use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
 use anyhow::{ensure, Context, Result};
 use hylo_core::error::CoreError;
-use hylo_core::oracle::SOL_MINT;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
-  Exo, StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  Exo, StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, SOL, USDC, XSOL,
 };
 use serde::{Deserialize, Serialize};
 
@@ -121,7 +120,7 @@ impl ProtocolAccounts {
     XSOL::MINT,
     pda::POOL_CONFIG,
     pda::HYUSD_POOL,
-    pda::price_aggregate(SOL_MINT),
+    pda::price_aggregate(SOL::MINT),
     sysvar::clock::ID,
     pda::USDC_PAIR,
     pda::price_aggregate(USDC::MINT),
@@ -141,7 +140,7 @@ impl ProtocolAccounts {
     [
       pda::HYLO,
       XSOL::MINT,
-      pda::price_aggregate(SOL_MINT),
+      pda::price_aggregate(SOL::MINT),
       sysvar::clock::ID,
     ]
   }

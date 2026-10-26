@@ -39,6 +39,7 @@ pub struct SHYUSD;
 pub struct XSOL;
 pub struct JITOSOL;
 pub struct HYLOSOL;
+pub struct SOL;
 pub struct USDC;
 pub struct CBBTC;
 pub struct XBTC;
@@ -77,6 +78,11 @@ impl TokenMint for JITOSOL {
 impl TokenMint for HYLOSOL {
   type Exp = N9;
   const MINT: Pubkey = pubkey!("hy1oXYgrBW6PVcJ4s6s2FKavRdwgWTXdfE69AxT7kPT");
+}
+
+impl TokenMint for SOL {
+  type Exp = N9;
+  const MINT: Pubkey = pubkey!("So11111111111111111111111111111111111111112");
 }
 
 impl TokenMint for USDC {

@@ -18,13 +18,15 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::oracle::{
-  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice, SOL_MINT,
+  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice,
 };
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::pda;
-use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
+use hylo_idl::tokens::{
+  StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD, SOL,
+};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::earn_pool_stats::compute_stats;
@@ -82,7 +84,7 @@ impl StatsAccounts {
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
     pda::price_aggregate(CBBTC::MINT),
-    pda::price_aggregate(SOL_MINT),
+    pda::price_aggregate(SOL::MINT),
     sysvar::clock::ID,
   ];
 
@@ -317,7 +319,7 @@ pub fn build_stats_inputs(
     accounts.hylo.oracle_interval_secs,
     accounts.hylo.oracle_conf_tolerance.try_into()?,
   );
-  let sol_feed_config = FeedConfig::by_mint(SOL_MINT)
+  let sol_feed_config = FeedConfig::by_mint(SOL::MINT)
     .ok_or(hylo_core::error::CoreError::UnknownFeedMint)?;
   let sol_usd = query_price_aggregate(
     &accounts.clock,

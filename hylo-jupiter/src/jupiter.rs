@@ -14,13 +14,11 @@ use hylo_core::idl::tokens::ExoRole::{
   Collateral, Levercoin, Stablecoin, Usdc,
 };
 use hylo_core::idl::tokens::{
-  StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, SOL, USDC, XSOL,
 };
 use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::oracle::{
-  query_price_aggregate, FeedConfig, OracleConfig, SOL_MINT,
-};
+use hylo_core::oracle::{query_price_aggregate, FeedConfig, OracleConfig};
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
@@ -57,7 +55,7 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
   pda::lst_header(HYLOSOL::MINT),
   JITOSOL::POOL_STATE,
   HYLOSOL::POOL_STATE,
-  pda::price_aggregate(SOL_MINT),
+  pda::price_aggregate(SOL::MINT),
   SHYUSD::MINT,
   pda::HYUSD_POOL,
   pda::POOL_CONFIG,
@@ -133,7 +131,7 @@ impl HyloJupiter {
     let hylosol_header: LstHeader =
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
     let sol_usd: PriceAggregate =
-      account_map_get(account_map, &pda::price_aggregate(SOL_MINT))?;
+      account_map_get(account_map, &pda::price_aggregate(SOL::MINT))?;
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;

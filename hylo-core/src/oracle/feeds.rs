@@ -1,22 +1,14 @@
-use anchor_lang::prelude::{pubkey, Pubkey};
+use anchor_lang::prelude::Pubkey;
+use hylo_idl::tokens::{TokenMint, CBBTC, HYPE, SOL, USDC};
 use static_assertions::const_assert;
 
 use super::OracleSourceConfig::PythLazer;
 use super::{FeedConfig, FeedSourceConfig, PythLazerFeedId};
 
-pub const SOL_MINT: Pubkey =
-  pubkey!("So11111111111111111111111111111111111111112");
-pub const CBBTC_MINT: Pubkey =
-  pubkey!("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij");
-pub const USDC_MINT: Pubkey =
-  pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-pub const HYPE_MINT: Pubkey =
-  pubkey!("98sMhvDwXj1RQi5c5Mndm3vPe9cBqPrbLaufMXFNMh5g");
-
 pub const FEEDS: &[FeedConfig] = &[
   // SOL/USD
   FeedConfig {
-    mint: SOL_MINT,
+    mint: SOL::MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(6),
@@ -26,7 +18,7 @@ pub const FEEDS: &[FeedConfig] = &[
   },
   // BTC/USD
   FeedConfig {
-    mint: CBBTC_MINT,
+    mint: CBBTC::MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(1),
@@ -36,7 +28,7 @@ pub const FEEDS: &[FeedConfig] = &[
   },
   // USDC/USD
   FeedConfig {
-    mint: USDC_MINT,
+    mint: USDC::MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(7),
@@ -46,7 +38,7 @@ pub const FEEDS: &[FeedConfig] = &[
   },
   // HYPE/USD
   FeedConfig {
-    mint: HYPE_MINT,
+    mint: HYPE::MINT,
     feeds: &[FeedSourceConfig {
       source: PythLazer {
         feed_id: PythLazerFeedId(110),

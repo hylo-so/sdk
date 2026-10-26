@@ -1,6 +1,7 @@
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 use hylo_idl::oracle::accounts::PriceAggregate;
+use hylo_idl::tokens::{TokenMint, SOL};
 
 use super::{ExchangeContext, ProjectedState};
 use crate::collateral_ratio::{CollateralRatio, CR};
@@ -20,7 +21,6 @@ use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::oracle::{
   query_price_aggregate, FeedConfig, OracleConfig, OraclePrice, PriceRange,
-  SOL_MINT,
 };
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
@@ -115,7 +115,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   ) -> Result<LstExchangeContext<C>, CoreError> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
     let feed_config =
-      FeedConfig::by_mint(SOL_MINT).ok_or(CoreError::UnknownFeedMint)?;
+      FeedConfig::by_mint(SOL::MINT).ok_or(CoreError::UnknownFeedMint)?;
     let sol_usd_oracle = query_price_aggregate(
       &clock,
       sol_usd_aggregate,
