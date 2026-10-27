@@ -191,12 +191,14 @@ impl From<SlippageConfig> for hylo_idl::earn_pool::types::SlippageConfig {
   }
 }
 
+#[cfg(any(test, feature = "offchain"))]
 impl From<hylo_idl::earn_pool::types::DepositLimiter> for DepositLimiter {
   fn from(idl: hylo_idl::earn_pool::types::DepositLimiter) -> DepositLimiter {
     DepositLimiter::new(idl.limit.into())
   }
 }
 
+#[cfg(any(test, feature = "offchain"))]
 impl From<hylo_idl::earn_pool::types::WithdrawalLimiter> for WithdrawalLimiter {
   fn from(
     idl: hylo_idl::earn_pool::types::WithdrawalLimiter,
