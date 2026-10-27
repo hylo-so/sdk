@@ -4,6 +4,10 @@ use crate::limiter::deposit::DepositLimiter;
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
+use crate::oracle::{
+  MarketSession, OracleSource, PriceAggregateSamples, PriceSample,
+  MAX_PRICE_AGGREGATE_SAMPLES,
+};
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
@@ -263,5 +267,96 @@ impl From<BorrowRateCurveConfig>
       floor_rate: val.floor_rate.into(),
       ceil_rate: val.ceil_rate.into(),
     }
+  }
+}
+
+impl From<MarketSession> for hylo_idl::oracle::types::MarketSession {
+  fn from(val: MarketSession) -> Self {
+    match val {
+      MarketSession::PreMarket => {
+        hylo_idl::oracle::types::MarketSession::PreMarket
+      }
+      MarketSession::Regular => hylo_idl::oracle::types::MarketSession::Regular,
+      MarketSession::PostMarket => {
+        hylo_idl::oracle::types::MarketSession::PostMarket
+      }
+      MarketSession::Overnight => {
+        hylo_idl::oracle::types::MarketSession::Overnight
+      }
+      MarketSession::Closed => hylo_idl::oracle::types::MarketSession::Closed,
+    }
+  }
+}
+
+impl From<OracleSource> for hylo_idl::oracle::types::OracleSource {
+  fn from(val: OracleSource) -> Self {
+    match val {
+      OracleSource::PythLazer => {
+        hylo_idl::oracle::types::OracleSource::PythLazer
+      }
+    }
+  }
+}
+
+impl From<PriceSample> for hylo_idl::oracle::types::PriceSample {
+  fn from(val: PriceSample) -> Self {
+    hylo_idl::oracle::types::PriceSample {
+      price: val.price,
+      exponent: val.exponent,
+      confidence: val.confidence,
+      posted_slot: val.posted_slot,
+      posted_timestamp_us: val.posted_timestamp_us,
+      market_session: val.market_session.into(),
+    }
+  }
+}
+
+impl From<PriceAggregateSamples>
+  for [hylo_idl::oracle::types::PriceSample; MAX_PRICE_AGGREGATE_SAMPLES]
+{
+  fn from(val: PriceAggregateSamples) -> Self {
+    (*val).map(hylo_idl::oracle::types::PriceSample::from)
+  }
+}
+
+impl From<hylo_idl::oracle::types::MarketSession> for MarketSession {
+  fn from(idl: hylo_idl::oracle::types::MarketSession) -> MarketSession {
+    match idl {
+      hylo_idl::oracle::types::MarketSession::PreMarket => {
+        MarketSession::PreMarket
+      }
+      hylo_idl::oracle::types::MarketSession::Regular => MarketSession::Regular,
+      hylo_idl::oracle::types::MarketSession::PostMarket => {
+        MarketSession::PostMarket
+      }
+      hylo_idl::oracle::types::MarketSession::Overnight => {
+        MarketSession::Overnight
+      }
+      hylo_idl::oracle::types::MarketSession::Closed => MarketSession::Closed,
+    }
+  }
+}
+
+impl From<hylo_idl::oracle::types::PriceSample> for PriceSample {
+  fn from(idl: hylo_idl::oracle::types::PriceSample) -> PriceSample {
+    PriceSample {
+      price: idl.price,
+      exponent: idl.exponent,
+      confidence: idl.confidence,
+      posted_slot: idl.posted_slot,
+      posted_timestamp_us: idl.posted_timestamp_us,
+      market_session: idl.market_session.into(),
+    }
+  }
+}
+
+impl From<[hylo_idl::oracle::types::PriceSample; MAX_PRICE_AGGREGATE_SAMPLES]>
+  for PriceAggregateSamples
+{
+  fn from(
+    samples: [hylo_idl::oracle::types::PriceSample;
+      MAX_PRICE_AGGREGATE_SAMPLES],
+  ) -> PriceAggregateSamples {
+    PriceAggregateSamples::new(samples.map(PriceSample::from))
   }
 }
