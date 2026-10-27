@@ -18,7 +18,9 @@ use hylo_core::idl::tokens::{
 };
 use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::oracle::{query_price_aggregate, FeedConfig, OracleConfig};
+use hylo_core::oracle::{
+  query_price_aggregate, FeedConfig, OracleConfig, PriceAggregateSamples,
+};
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
@@ -70,7 +72,7 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
 fn usdc_state(
   clock: &ClockRef,
   usdc_pair: &UsdcPair,
-  usdc_usd: &PriceAggregate,
+  usdc_usd: &PriceAggregateSamples,
   usdc_vault: &TokenAccount,
 ) -> Result<UsdcPairState> {
   let usdc_oracle_config = OracleConfig::new(
@@ -130,8 +132,9 @@ impl HyloJupiter {
       account_map_get(account_map, &pda::lst_header(JITOSOL::MINT))?;
     let hylosol_header: LstHeader =
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
-    let sol_usd: PriceAggregate =
+    let sol_usd_aggregate: PriceAggregate =
       account_map_get(account_map, &pda::price_aggregate(SOL::MINT))?;
+    let sol_usd = PriceAggregateSamples::from(sol_usd_aggregate.samples);
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -144,8 +147,9 @@ impl HyloJupiter {
       account_map_get(account_map, &pda::lst_vault(HYLOSOL::MINT))?;
     let usdc_vault: TokenAccount =
       account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
-    let usdc_usd: PriceAggregate =
+    let usdc_usd_aggregate: PriceAggregate =
       account_map_get(account_map, &pda::price_aggregate(USDC::MINT))?;
+    let usdc_usd = PriceAggregateSamples::from(usdc_usd_aggregate.samples);
     let usdc_pair_state =
       usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;
     let jitosol_stake_pool = SplStakePool::from_bytes(

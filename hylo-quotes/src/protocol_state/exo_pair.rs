@@ -10,7 +10,7 @@ use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::idl::router::types::ExoEntry;
-use hylo_core::oracle::OracleConfig;
+use hylo_core::oracle::{OracleConfig, PriceAggregateSamples};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::util::normalize_mint_exp;
@@ -118,8 +118,9 @@ impl ExoPairAccounts {
       decode(&self.levercoin_mint, "Exo levercoin mint")?;
     let collateral_mint: Mint =
       decode(&self.collateral_mint, "Exo collateral mint")?;
-    let oracle: PriceAggregate =
+    let oracle_aggregate: PriceAggregate =
       decode(&self.oracle, "Exo collateral/USD aggregate")?;
+    let oracle = PriceAggregateSamples::from(oracle_aggregate.samples);
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,

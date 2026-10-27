@@ -19,6 +19,7 @@ use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::oracle::{
   query_price_aggregate, FeedConfig, OracleConfig, OraclePrice,
+  PriceAggregateSamples,
 };
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
@@ -240,13 +241,15 @@ fn exo_exchange_context(
     exo_pair.oracle_conf_tolerance.try_into()?,
   );
   let total_collateral = normalize_mint_exp(collateral_mint, exo_vault.amount)?;
+  let collateral_usd_samples =
+    PriceAggregateSamples::from(collateral_usd.samples);
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
     exo_pair.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     exo_pair.levercoin_fees.into(),
-    collateral_usd,
+    &collateral_usd_samples,
     exo_pair.virtual_stablecoin.into(),
     Some(levercoin_mint),
     exo_pair.sell_curve_config.into(),
@@ -321,9 +324,10 @@ pub fn build_stats_inputs(
   );
   let sol_feed_config = FeedConfig::by_mint(SOL::MINT)
     .ok_or(hylo_core::error::CoreError::UnknownFeedMint)?;
+  let sol_usd_samples = PriceAggregateSamples::from(accounts.sol_usd.samples);
   let sol_usd = query_price_aggregate(
     &accounts.clock,
-    &accounts.sol_usd,
+    &sol_usd_samples,
     sol_feed_config,
     oracle_config,
   )?;

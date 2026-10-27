@@ -9,6 +9,8 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::LstExchangeContext;
+use hylo_core::idl::oracle::accounts::PriceAggregate;
+use hylo_core::oracle::PriceAggregateSamples;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_idl::tokens::{Exo, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC};
 use hylo_idl::{pda, with_exo_pairs};
@@ -66,11 +68,15 @@ impl RpcStateProvider {
       }
       _ => Err(anyhow!("Missing LST account")),
     }?;
+    let sol_usd_aggregate: PriceAggregate =
+      decode(sol_usd, "SOL/USD aggregate")?;
+    let sol_usd_samples =
+      PriceAggregateSamples::from(sol_usd_aggregate.samples);
     build_lst_exchange_context(
       decode_clock(clock)?,
       &decode(hylo, "Hylo")?,
       &decode(xsol_mint, "XSOL mint")?,
-      &decode(sol_usd, "SOL/USD Pyth feed")?,
+      &sol_usd_samples,
     )
   }
 

@@ -1,15 +1,16 @@
 use anyhow::Result;
 use hylo_core::error::CoreError;
-use hylo_idl::oracle::accounts::PriceAggregate;
+use hylo_core::oracle::PriceAggregateSamples;
 
 /// Converts the newest sample time to seconds.
 ///
 /// # Errors
 /// * The aggregate has no samples
 /// * The time does not fit in `i64`
-pub(crate) fn latest_timestamp_secs(aggregate: &PriceAggregate) -> Result<i64> {
-  aggregate
-    .samples
+pub(crate) fn latest_timestamp_secs(
+  samples: &PriceAggregateSamples,
+) -> Result<i64> {
+  samples
     .iter()
     .map(|sample| sample.posted_timestamp_us)
     .max()

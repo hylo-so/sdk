@@ -1,7 +1,6 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
-use hylo_idl::oracle::accounts::PriceAggregate;
 
 use super::{ExchangeContext, ProjectedState};
 use crate::collateral_ratio::{CollateralRatio, CR};
@@ -18,7 +17,8 @@ use crate::fees::curve_controller::{
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::oracle::{
-  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice, PriceRange,
+  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice,
+  PriceAggregateSamples, PriceRange,
 };
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
@@ -106,7 +106,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
-    collateral_usd_aggregate: &PriceAggregate,
+    collateral_usd_samples: &PriceAggregateSamples,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,
@@ -118,7 +118,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       FeedConfig::by_mint(collateral_mint).ok_or(CoreError::UnknownFeedMint)?;
     let collateral_oracle = query_price_aggregate(
       &clock,
-      collateral_usd_aggregate,
+      collateral_usd_samples,
       feed_config,
       oracle_config,
     )?;

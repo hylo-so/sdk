@@ -8,7 +8,6 @@ pub use feed_config::*;
 pub use feeds::*;
 use fix::prelude::*;
 use fix::typenum::{Integer, Z0};
-use hylo_idl::oracle::accounts::PriceAggregate;
 pub use oracle_source::*;
 pub use price_aggregate::*;
 pub use pyth_lazer::*;
@@ -142,7 +141,7 @@ impl OraclePrice {
 /// Fetches the validated aggregate price for one feed.
 pub fn query_price_aggregate<C: SolanaClock>(
   clock: &C,
-  aggregate: &PriceAggregate,
+  samples: &PriceAggregateSamples,
   feed_config: &FeedConfig,
   OracleConfig {
     interval_secs,
@@ -158,7 +157,6 @@ pub fn query_price_aggregate<C: SolanaClock>(
     secs: Some(interval_secs),
     confidence: Some(conf_tolerance),
   };
-  let samples = PriceAggregateSamples::from(aggregate.samples);
   let spot = samples.price(
     AggregationMethod::SimpleAverage,
     clock.slot(),
@@ -181,7 +179,6 @@ fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::Clock;
-  use hylo_idl::oracle::types::{MarketSession, PriceSample};
 
   use super::*;
 
@@ -201,15 +198,11 @@ mod tests {
       posted_timestamp_us: 10_000_000,
       market_session: MarketSession::Regular,
     };
-    let aggregate = PriceAggregate {
-      bump: 0,
-      samples: [sample; 8],
-      _reserved: [0; 64],
-    };
+    let samples = PriceAggregateSamples::new([sample; 8]);
 
     let price = query_price_aggregate(
       &clock,
-      &aggregate,
+      &samples,
       &FEEDS[0],
       OracleConfig::new(60, UFix64::new(10_000_000)),
     )?;
