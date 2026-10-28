@@ -335,7 +335,7 @@ pub fn harvest_yield(
     stablecoin_fee_vault: pda::fee_vault(HYUSD::MINT),
     stablecoin_pool: pda::HYUSD_POOL,
     pool_auth: pda::POOL_AUTH,
-    sol_usd_pyth_feed: pda::SOL_USD_PYTH_FEED,
+    sol_usd_pyth_feed: pda::SOL_USD_PRICE_AGGREGATE,
     hylo_earn_pool: earn_pool::ID,
     lst_registry,
     lut_program: address_lookup_table::ID,
