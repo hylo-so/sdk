@@ -1696,6 +1696,7 @@ dependencies = [
  "itertools 0.14.0",
  "more-asserts",
  "proptest",
+ "pyth-lazer-protocol",
  "serde",
  "static_assertions",
 ]

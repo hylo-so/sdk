@@ -21,6 +21,7 @@ hylo-fix.workspace = true
 hylo-idl.workspace = true
 hylo-jupiter-amm-interface = { workspace = true, optional = true }
 itertools.workspace = true
+pyth-lazer-protocol.workspace = true
 serde.workspace = true
 static_assertions.workspace = true
 
