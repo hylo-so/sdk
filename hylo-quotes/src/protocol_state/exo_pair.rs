@@ -2,7 +2,7 @@
 
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount};
 use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExoExchangeContext;

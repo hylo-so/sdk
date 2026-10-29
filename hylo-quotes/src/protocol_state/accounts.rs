@@ -6,10 +6,9 @@ use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
 use anyhow::{ensure, Context, Result};
 use hylo_core::error::CoreError;
-use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
 use hylo_idl::tokens::{
-  Exo, StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
 };
 use serde::{Deserialize, Serialize};
 
@@ -142,22 +141,6 @@ impl ProtocolAccounts {
       pda::HYLO,
       XSOL::MINT,
       hylo_core::pyth::SOL_USD.address,
-      sysvar::clock::ID,
-    ]
-  }
-
-  /// Pubkey subset for one isolated exo pair.
-  ///
-  /// Order: exo pair, vault, levercoin mint, collateral mint, collateral/USD
-  /// feed, clock.
-  #[must_use]
-  pub fn exo_pubkeys<E: Exo + PythOracle>() -> [Pubkey; 6] {
-    [
-      pda::exo_pair(E::MINT),
-      pda::exo_vault(E::MINT),
-      pda::exo_levercoin_mint(E::MINT),
-      E::MINT,
-      E::FEED.address,
       sysvar::clock::ID,
     ]
   }

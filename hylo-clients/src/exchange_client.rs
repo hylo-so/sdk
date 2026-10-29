@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::Program;
+use anchor_spl::token;
 use anyhow::Result;
 use hylo_core::idl::exchange;
 use hylo_idl::exchange::client::args;
@@ -811,12 +812,14 @@ impl ExchangeClient {
     &self,
     collateral_mint: Pubkey,
     exo_usd_pyth_feed: Pubkey,
+    collateral_token_program: Pubkey,
     args: &args::RegisterExo,
   ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::register_exo(
       self.signer(),
       collateral_mint,
       exo_usd_pyth_feed,
+      collateral_token_program,
       args,
     );
     let memo = build_memo("register_exo", &instruction);
@@ -835,17 +838,20 @@ impl ExchangeClient {
     &self,
     collateral_mint: Pubkey,
     collateral_usd_pyth_feed: Pubkey,
+    collateral_token_program: Pubkey,
     args: &args::GenesisMintExo,
   ) -> Result<SignedTransaction> {
     let vault = self.signer();
     let levercoin_mint = pda::exo_levercoin_mint(collateral_mint);
     let dead_levercoin_ata =
-      ata_instruction(&vault, &pda::DEAD, &levercoin_mint);
-    let dead_stablecoin_ata = ata_instruction(&vault, &pda::DEAD, &HYUSD::MINT);
+      ata_instruction(&vault, &pda::DEAD, &levercoin_mint, &token::ID);
+    let dead_stablecoin_ata =
+      ata_instruction(&vault, &pda::DEAD, &HYUSD::MINT, &HYUSD::TOKEN_PROGRAM);
     let instruction = instruction_builders::genesis_mint_exo(
       vault,
       collateral_mint,
       collateral_usd_pyth_feed,
+      collateral_token_program,
       args,
     );
     let memo = build_memo("genesis_mint_exo", &instruction);
@@ -864,11 +870,13 @@ impl ExchangeClient {
     &self,
     treasury: Pubkey,
     fee_token_mint: Pubkey,
+    token_program: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::withdraw_fees(
       self.program.payer(),
       treasury,
       fee_token_mint,
+      token_program,
     );
     Ok(VersionedTransactionData::one(instruction))
   }
@@ -881,10 +889,12 @@ impl ExchangeClient {
     &self,
     collateral_mint: Pubkey,
     collateral_usd_pyth_feed: Pubkey,
+    collateral_token_program: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::harvest_borrow_rate(
       collateral_mint,
       collateral_usd_pyth_feed,
+      collateral_token_program,
     );
     Ok(VersionedTransactionData::one(instruction))
   }
@@ -919,10 +929,12 @@ impl ExchangeClient {
     &self,
     collateral_mint: Pubkey,
     collateral_usd_pyth_feed: Pubkey,
+    collateral_token_program: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::settle_virtual_stablecoin_exo(
       collateral_mint,
       collateral_usd_pyth_feed,
+      collateral_token_program,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

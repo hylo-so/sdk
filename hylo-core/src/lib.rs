@@ -18,6 +18,7 @@ pub mod idl_type_bridge;
 pub mod kani_generators;
 pub mod limiter;
 pub mod lst;
+pub mod mint_extensions;
 pub mod par_tolerance;
 pub mod pyth;
 pub mod rebalance;
