@@ -52,9 +52,7 @@ const fn valid_reference_feeds(
   feeds: &[FeedSourceConfig],
   index: usize,
 ) -> bool {
-  if index == feeds.len() {
-    true
-  } else {
+  index == feeds.len() || {
     let valid = match feeds[index].reference_feed {
       None => true,
       Some(reference) => {
