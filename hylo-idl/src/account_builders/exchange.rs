@@ -232,7 +232,7 @@ pub fn mint_levercoin_exo(
     levercoin_mint,
     collateral_usd_pyth_feed,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -271,7 +271,7 @@ pub fn mint_stablecoin_exo(
     stablecoin_mint: HYUSD::MINT,
     collateral_usd_pyth_feed,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -310,7 +310,7 @@ pub fn redeem_levercoin_exo(
     levercoin_mint,
     collateral_usd_pyth_feed,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -348,7 +348,7 @@ pub fn redeem_stablecoin_exo(
     stablecoin_mint: HYUSD::MINT,
     collateral_usd_pyth_feed,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -460,7 +460,7 @@ pub fn convert_lever_to_stable_exo(
     collateral_mint,
     collateral_usd_pyth_feed,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -497,7 +497,7 @@ pub fn convert_stable_to_lever_exo(
     collateral_mint,
     collateral_usd_pyth_feed,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
   }
@@ -662,7 +662,7 @@ pub fn swap_exo_to_usdc(
     collateral_usd_pyth_feed,
     usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,
@@ -709,7 +709,7 @@ pub fn swap_usdc_to_exo(
     collateral_usd_pyth_feed,
     usdc_usd_pyth_feed: pda::USDC_USD_PYTH_FEED,
     token_program: token::ID,
-    collateral_token_program,
+    collateral_token_program: Some(collateral_token_program),
     earn_pool: earn_pool::ID,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
     program: exchange::ID,

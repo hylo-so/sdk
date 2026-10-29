@@ -549,60 +549,7 @@
           }
         },
         {
-          "name": "collateral_vault",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "collateral_vault"
         },
         {
           "name": "fee_vault",
@@ -733,9 +680,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -765,7 +709,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -1230,60 +1179,7 @@
           }
         },
         {
-          "name": "collateral_vault",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "collateral_vault"
         },
         {
           "name": "fee_vault",
@@ -1414,9 +1310,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -1446,7 +1339,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -4080,117 +3978,11 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "fee_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "fee_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "user_collateral_ta",
@@ -4243,9 +4035,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -4275,7 +4064,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -4782,117 +4576,11 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "fee_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "fee_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "user_collateral_ta",
@@ -4936,9 +4624,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -4968,7 +4653,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -6370,117 +6060,11 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "fee_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "fee_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "user_levercoin_ta",
@@ -6533,9 +6117,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -6565,7 +6146,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -7022,117 +6608,11 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "fee_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "fee_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "user_stablecoin_ta",
@@ -7176,9 +6656,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "event_authority",
           "pda": {
             "seeds": [
@@ -7208,7 +6685,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -10323,60 +9805,7 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "usdc_collateral_vault",
@@ -10600,9 +10029,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "earn_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
@@ -10636,7 +10062,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -10970,60 +10401,7 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "usdc_collateral_vault",
@@ -11247,9 +10625,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "earn_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
@@ -11283,7 +10658,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
@@ -13178,60 +12558,7 @@
         },
         {
           "name": "collateral_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "vault_auth"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_token_program"
-              },
-              {
-                "kind": "account",
-                "path": "collateral_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "writable": true
         },
         {
           "name": "usdc_collateral_vault",
@@ -13455,9 +12782,6 @@
           "name": "token_program"
         },
         {
-          "name": "collateral_token_program"
-        },
-        {
           "name": "earn_pool",
           "address": "HysTabVUfmQBFcmzu1ctRd1Y1fxd66RBpboy1bmtDSQQ"
         },
@@ -13491,7 +12815,12 @@
           }
         },
         {
-          "name": "program"
+          "name": "program",
+          "address": "HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
         }
       ],
       "args": [
