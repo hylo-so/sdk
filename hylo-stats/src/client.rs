@@ -242,7 +242,7 @@ fn exo_exchange_context(
   );
   let total_collateral = normalize_mint_exp(collateral_mint, exo_vault.amount)?;
   let collateral_usd_samples =
-    PriceAggregateSamples::from(collateral_usd.samples);
+    PriceAggregateSamples::from(collateral_usd.samples.0);
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
@@ -324,7 +324,7 @@ pub fn build_stats_inputs(
   );
   let sol_feed_config = FeedConfig::by_mint(SOL::MINT)
     .ok_or(hylo_core::error::CoreError::UnknownFeedMint)?;
-  let sol_usd_samples = PriceAggregateSamples::from(accounts.sol_usd.samples);
+  let sol_usd_samples = PriceAggregateSamples::from(accounts.sol_usd.samples.0);
   let sol_usd = query_price_aggregate(
     &accounts.clock,
     &sol_usd_samples,

@@ -134,7 +134,7 @@ impl HyloJupiter {
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
     let sol_usd_aggregate: PriceAggregate =
       account_map_get(account_map, &pda::price_aggregate(SOL::MINT))?;
-    let sol_usd = PriceAggregateSamples::from(sol_usd_aggregate.samples);
+    let sol_usd = PriceAggregateSamples::from(sol_usd_aggregate.samples.0);
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -149,7 +149,7 @@ impl HyloJupiter {
       account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
     let usdc_usd_aggregate: PriceAggregate =
       account_map_get(account_map, &pda::price_aggregate(USDC::MINT))?;
-    let usdc_usd = PriceAggregateSamples::from(usdc_usd_aggregate.samples);
+    let usdc_usd = PriceAggregateSamples::from(usdc_usd_aggregate.samples.0);
     let usdc_pair_state =
       usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;
     let jitosol_stake_pool = SplStakePool::from_bytes(

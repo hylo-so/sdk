@@ -378,16 +378,18 @@
       "code": 6023,
       "name": "ConversionError",
       "msg": "Unable to cast safely."
+    },
+    {
+      "code": 6024,
+      "name": "UnableToUpdateSample",
+      "msg": "Unable to update price aggregate sample."
     }
   ],
   "types": [
     {
       "name": "MarketSession",
       "docs": [
-        "Trading session recorded with a price sample.",
-        "A session other than regular is checked against a reference sample.",
-        "",
-        "Not to be confused with [`pyth_lazer_protocol::api::MarketSession`]."
+        "Trading session recorded with a price sample."
       ],
       "type": {
         "kind": "enum",
@@ -439,14 +441,9 @@
           {
             "name": "samples",
             "type": {
-              "array": [
-                {
-                  "defined": {
-                    "name": "PriceSample"
-                  }
-                },
-                8
-              ]
+              "defined": {
+                "name": "PriceAggregateSamples"
+              }
             }
           },
           {
@@ -478,6 +475,27 @@
       }
     },
     {
+      "name": "PriceAggregateSamples",
+      "docs": [
+        "Samples posted for one feed, one slot per configured source."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "defined": {
+                  "name": "PriceSample"
+                }
+              },
+              8
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "PriceAggregateUpdated",
       "docs": [
         "Emitted whenever a price aggregate records a newer price, from any source."
@@ -503,8 +521,8 @@
     {
       "name": "PriceSample",
       "docs": [
-        "Source observation. Price and confidence share an exponent from -9 to -2.",
-        "A zero price is an unoccupied slot."
+        "Source observation with a shared price and confidence exponent.",
+        "A zero price marks an unoccupied slot."
       ],
       "type": {
         "kind": "struct",
@@ -542,56 +560,6 @@
     }
   ],
   "constants": [
-    {
-      "name": "DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS",
-      "type": "u16",
-      "value": "500"
-    },
-    {
-      "name": "DEFAULT_MAX_PRICE_BAND_BPS",
-      "type": "u16",
-      "value": "500"
-    },
-    {
-      "name": "DEFAULT_MAX_STALENESS_SECS",
-      "type": "u64",
-      "value": "5"
-    },
-    {
-      "name": "DEFAULT_MAX_STALENESS_SECS_US",
-      "type": "u64",
-      "value": "5000000"
-    },
-    {
-      "name": "DEFAULT_MAX_STALENESS_SLOTS",
-      "type": "u64",
-      "value": "30"
-    },
-    {
-      "name": "MAX_BASIS_POINTS",
-      "type": "u16",
-      "value": "10000"
-    },
-    {
-      "name": "MAX_EXPONENT",
-      "type": "i16",
-      "value": "-2"
-    },
-    {
-      "name": "MAX_PRICE_AGGREGATE_SAMPLES",
-      "type": "u8",
-      "value": "8"
-    },
-    {
-      "name": "MICROS_PER_SECOND",
-      "type": "u64",
-      "value": "1000000"
-    },
-    {
-      "name": "MIN_EXPONENT",
-      "type": "i16",
-      "value": "-9"
-    },
     {
       "name": "PRICE_AGGREGATE",
       "type": {

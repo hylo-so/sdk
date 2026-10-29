@@ -307,7 +307,7 @@ fn build_usdc_pair_state(
   let usdc_pair: UsdcPair = decode(&accounts.usdc_pair, "UsdcPair")?;
   let usdc_usd_aggregate: PriceAggregate =
     decode(&accounts.usdc_usd_pyth, "USDC/USD aggregate")?;
-  let usdc_usd = PriceAggregateSamples::from(usdc_usd_aggregate.samples);
+  let usdc_usd = PriceAggregateSamples::from(usdc_usd_aggregate.samples.0);
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
@@ -360,7 +360,7 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hyusd_pool: TokenAccount = decode(&accounts.hyusd_pool, "HYUSD pool")?;
     let sol_usd_aggregate: PriceAggregate =
       decode(&accounts.sol_usd_pyth, "SOL/USD aggregate")?;
-    let sol_usd = PriceAggregateSamples::from(sol_usd_aggregate.samples);
+    let sol_usd = PriceAggregateSamples::from(sol_usd_aggregate.samples.0);
     let clock = decode_clock(&accounts.clock)?;
     let usdc_pair = build_usdc_pair_state(&clock, accounts)?;
     let jitosol_stake_pool =

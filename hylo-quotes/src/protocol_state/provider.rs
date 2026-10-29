@@ -71,7 +71,7 @@ impl RpcStateProvider {
     let sol_usd_aggregate: PriceAggregate =
       decode(sol_usd, "SOL/USD aggregate")?;
     let sol_usd_samples =
-      PriceAggregateSamples::from(sol_usd_aggregate.samples);
+      PriceAggregateSamples::from(sol_usd_aggregate.samples.0);
     build_lst_exchange_context(
       decode_clock(clock)?,
       &decode(hylo, "Hylo")?,

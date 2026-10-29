@@ -120,7 +120,7 @@ impl ExoPairAccounts {
       decode(&self.collateral_mint, "Exo collateral mint")?;
     let oracle_aggregate: PriceAggregate =
       decode(&self.oracle, "Exo collateral/USD aggregate")?;
-    let oracle = PriceAggregateSamples::from(oracle_aggregate.samples);
+    let oracle = PriceAggregateSamples::from(oracle_aggregate.samples.0);
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
