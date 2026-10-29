@@ -8,6 +8,494 @@
   },
   "instructions": [
     {
+      "name": "accept_address_update",
+      "docs": [
+        "Accepts an approved oracle administrator address proposal.",
+        "",
+        "# Errors",
+        "",
+        "* The proposal has expired or is unapproved.",
+        "* The signer is not the proposed administrator."
+      ],
+      "discriminator": [
+        56,
+        65,
+        20,
+        139,
+        208,
+        230,
+        213,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "new_address",
+          "signer": true,
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "AcceptAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "approve_address_update",
+      "docs": [
+        "Approves an oracle administrator address proposal.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the oracle program's upgrade authority.",
+        "* The proposal has expired or is already approved."
+      ],
+      "discriminator": [
+        35,
+        60,
+        186,
+        56,
+        181,
+        237,
+        165,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "upgrade_authority",
+          "signer": true
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_address",
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "hylo_oracle",
+          "address": "hyorViHghDYU4Yd15DZFHDQXJBtzXqVHuypcvN3Gj7t"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ApproveAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "cancel_address_update",
+      "docs": [
+        "Cancels an oracle administrator address proposal.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the current oracle administrator."
+      ],
+      "discriminator": [
+        181,
+        122,
+        207,
+        111,
+        131,
+        188,
+        184,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "CancelAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "initialize_oracle",
+      "docs": [
+        "Initializes the oracle administration account.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the oracle program's upgrade authority."
+      ],
+      "discriminator": [
+        144,
+        223,
+        131,
+        120,
+        196,
+        253,
+        181,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "upgrade_authority",
+          "signer": true
+        },
+        {
+          "name": "oracle_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "hylo_oracle",
+          "address": "hyorViHghDYU4Yd15DZFHDQXJBtzXqVHuypcvN3Gj7t"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize_price_aggregate",
       "docs": [
         "Create and seed a price aggregate account for a registered feed.",
@@ -29,9 +517,12 @@
       ],
       "accounts": [
         {
-          "name": "payer",
+          "name": "admin",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
         },
         {
           "name": "price_aggregate",
@@ -61,6 +552,31 @@
               {
                 "kind": "arg",
                 "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -110,6 +626,160 @@
       ]
     },
     {
+      "name": "propose_address_update",
+      "docs": [
+        "Proposes an oracle administrator address.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the current oracle administrator.",
+        "* The proposal TTL is outside the accepted range."
+      ],
+      "discriminator": [
+        183,
+        253,
+        18,
+        185,
+        155,
+        67,
+        166,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_address"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        },
+        {
+          "name": "ttl_secs",
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ProposeAddressUpdateEvent"
+        }
+      }
+    },
+    {
       "name": "update_with_pyth_lazer",
       "docs": [
         "Verify one signed Pyth Lazer batch and store each feed's observation.",
@@ -122,7 +792,8 @@
         "* A feed is unknown, or its price aggregate account does not match or",
         "deserialize.",
         "* A feed property, price, confidence, exponent, or timestamp is invalid.",
-        "* The source index exceeds observation capacity, or the account write fails.",
+        "* The source index exceeds observation capacity, or the account write",
+        "fails.",
         "* The clock sysvar is unavailable.",
         "* An update event fails to emit."
       ],
@@ -217,6 +888,32 @@
   ],
   "accounts": [
     {
+      "name": "AddressUpdateProposal",
+      "discriminator": [
+        12,
+        31,
+        250,
+        50,
+        46,
+        210,
+        94,
+        182
+      ]
+    },
+    {
+      "name": "OracleConfig",
+      "discriminator": [
+        133,
+        196,
+        152,
+        50,
+        27,
+        21,
+        145,
+        254
+      ]
+    },
+    {
       "name": "PriceAggregate",
       "discriminator": [
         241,
@@ -231,6 +928,45 @@
     }
   ],
   "events": [
+    {
+      "name": "AcceptAddressUpdateEvent",
+      "discriminator": [
+        63,
+        130,
+        1,
+        235,
+        255,
+        47,
+        229,
+        210
+      ]
+    },
+    {
+      "name": "ApproveAddressUpdateEvent",
+      "discriminator": [
+        98,
+        91,
+        95,
+        138,
+        125,
+        114,
+        11,
+        245
+      ]
+    },
+    {
+      "name": "CancelAddressUpdateEvent",
+      "discriminator": [
+        240,
+        141,
+        179,
+        211,
+        245,
+        181,
+        23,
+        212
+      ]
+    },
     {
       "name": "PriceAggregateInitialized",
       "discriminator": [
@@ -255,6 +991,19 @@
         187,
         16,
         26
+      ]
+    },
+    {
+      "name": "ProposeAddressUpdateEvent",
+      "discriminator": [
+        46,
+        255,
+        33,
+        127,
+        122,
+        204,
+        96,
+        63
       ]
     }
   ],
@@ -383,9 +1132,146 @@
       "code": 6024,
       "name": "UnableToUpdateSample",
       "msg": "Unable to update price aggregate observation."
+    },
+    {
+      "code": 6025,
+      "name": "AddressChangeExpired",
+      "msg": "Address change proposal has expired."
+    },
+    {
+      "code": 6026,
+      "name": "AddressChangeTtlInvalid",
+      "msg": "Address change proposal's TTL not in configured range."
+    },
+    {
+      "code": 6027,
+      "name": "AddressChangeNotApproved",
+      "msg": "Address change proposal has not been approved."
+    },
+    {
+      "code": 6028,
+      "name": "AddressChangeAlreadyApproved",
+      "msg": "Address change proposal has already been approved."
+    },
+    {
+      "code": 6029,
+      "name": "AddressChangeUpgradeAuthority",
+      "msg": "Address change approver must be upgrade authority."
+    },
+    {
+      "code": 6030,
+      "name": "AdminNoop",
+      "msg": "Proposed administrator matches the current administrator."
     }
   ],
   "types": [
+    {
+      "name": "AcceptAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "old_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressField",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Admin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressUpdateProposal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal_time",
+            "type": "i64"
+          },
+          {
+            "name": "ttl_secs",
+            "type": "u64"
+          },
+          {
+            "name": "approved",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApproveAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CancelAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
     {
       "name": "MarketSession",
       "docs": [
@@ -408,6 +1294,34 @@
           },
           {
             "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleConfig",
+      "docs": [
+        "Oracle administration state."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
           }
         ]
       }
@@ -557,9 +1471,61 @@
           }
         ]
       }
+    },
+    {
+      "name": "ProposeAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "current_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal_time",
+            "type": "i64"
+          },
+          {
+            "name": "ttl_secs",
+            "type": "u64"
+          }
+        ]
+      }
     }
   ],
   "constants": [
+    {
+      "name": "ADDRESS_UPDATE_PROPOSAL",
+      "type": {
+        "array": [
+          "u8",
+          23
+        ]
+      },
+      "value": "[97, 100, 100, 114, 101, 115, 115, 95, 117, 112, 100, 97, 116, 101, 95, 112, 114, 111, 112, 111, 115, 97, 108]"
+    },
+    {
+      "name": "ORACLE_CONFIG",
+      "type": {
+        "array": [
+          "u8",
+          13
+        ]
+      },
+      "value": "[111, 114, 97, 99, 108, 101, 95, 99, 111, 110, 102, 105, 103]"
+    },
     {
       "name": "PRICE_AGGREGATE",
       "type": {
