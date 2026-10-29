@@ -21,7 +21,7 @@ use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::oracle::{
   query_price_aggregate, validate_publish_time, FeedConfig, OracleConfig,
-  PriceAggregateSamples, ORACLE_DIVISOR,
+  PriceAggregateObservations, ORACLE_DIVISOR,
 };
 use hylo_core::par_tolerance::ParTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
@@ -157,7 +157,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     shyusd_mint: Mint,
     pool_config: PoolConfig,
     hyusd_pool: TokenAccount,
-    sol_usd: &PriceAggregateSamples,
+    sol_usd: &PriceAggregateObservations,
     exo_pairs: HashMap<Pubkey, ExoPairState<C>>,
     usdc_pair: UsdcPairState,
     jitosol_stake_pool: SplStakePool,
@@ -273,7 +273,7 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
   clock: C,
   hylo: &Hylo,
   xsol_mint: &Mint,
-  sol_usd: &PriceAggregateSamples,
+  sol_usd: &PriceAggregateObservations,
 ) -> Result<LstExchangeContext<C>> {
   let total_sol_cache: TotalSolCache = hylo.total_sol_cache.into();
   let oracle_config = OracleConfig::new(
@@ -307,7 +307,8 @@ fn build_usdc_pair_state(
   let usdc_pair: UsdcPair = decode(&accounts.usdc_pair, "UsdcPair")?;
   let usdc_usd_aggregate: PriceAggregate =
     decode(&accounts.usdc_usd_pyth, "USDC/USD aggregate")?;
-  let usdc_usd = PriceAggregateSamples::from(usdc_usd_aggregate.samples.0);
+  let usdc_usd =
+    PriceAggregateObservations::from(usdc_usd_aggregate.observations.0);
 
   let oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
@@ -360,7 +361,8 @@ impl TryFrom<&ProtocolAccounts> for ProtocolState<Clock> {
     let hyusd_pool: TokenAccount = decode(&accounts.hyusd_pool, "HYUSD pool")?;
     let sol_usd_aggregate: PriceAggregate =
       decode(&accounts.sol_usd_pyth, "SOL/USD aggregate")?;
-    let sol_usd = PriceAggregateSamples::from(sol_usd_aggregate.samples.0);
+    let sol_usd =
+      PriceAggregateObservations::from(sol_usd_aggregate.observations.0);
     let clock = decode_clock(&accounts.clock)?;
     let usdc_pair = build_usdc_pair_state(&clock, accounts)?;
     let jitosol_stake_pool =

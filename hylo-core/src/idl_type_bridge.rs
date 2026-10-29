@@ -5,8 +5,8 @@ use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::oracle::{
-  MarketSession, OracleSource, PriceAggregateSamples, PriceSample,
-  MAX_PRICE_AGGREGATE_SAMPLES,
+  MarketSession, OracleSource, PriceAggregateObservations, PriceObservation,
+  MAX_PRICE_AGGREGATE_OBSERVATIONS,
 };
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
@@ -300,9 +300,9 @@ impl From<OracleSource> for hylo_idl::oracle::types::OracleSource {
   }
 }
 
-impl From<PriceSample> for hylo_idl::oracle::types::PriceSample {
-  fn from(val: PriceSample) -> Self {
-    hylo_idl::oracle::types::PriceSample {
+impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
+  fn from(val: PriceObservation) -> Self {
+    hylo_idl::oracle::types::PriceObservation {
       price: val.price,
       exponent: val.exponent,
       confidence: val.confidence,
@@ -313,11 +313,12 @@ impl From<PriceSample> for hylo_idl::oracle::types::PriceSample {
   }
 }
 
-impl From<PriceAggregateSamples>
-  for [hylo_idl::oracle::types::PriceSample; MAX_PRICE_AGGREGATE_SAMPLES]
+impl From<PriceAggregateObservations>
+  for [hylo_idl::oracle::types::PriceObservation;
+    MAX_PRICE_AGGREGATE_OBSERVATIONS]
 {
-  fn from(val: PriceAggregateSamples) -> Self {
-    (*val).map(hylo_idl::oracle::types::PriceSample::from)
+  fn from(val: PriceAggregateObservations) -> Self {
+    (*val).map(hylo_idl::oracle::types::PriceObservation::from)
   }
 }
 
@@ -339,9 +340,9 @@ impl From<hylo_idl::oracle::types::MarketSession> for MarketSession {
   }
 }
 
-impl From<hylo_idl::oracle::types::PriceSample> for PriceSample {
-  fn from(idl: hylo_idl::oracle::types::PriceSample) -> PriceSample {
-    PriceSample {
+impl From<hylo_idl::oracle::types::PriceObservation> for PriceObservation {
+  fn from(idl: hylo_idl::oracle::types::PriceObservation) -> PriceObservation {
+    PriceObservation {
       price: idl.price,
       exponent: idl.exponent,
       confidence: idl.confidence,
@@ -352,13 +353,16 @@ impl From<hylo_idl::oracle::types::PriceSample> for PriceSample {
   }
 }
 
-impl From<[hylo_idl::oracle::types::PriceSample; MAX_PRICE_AGGREGATE_SAMPLES]>
-  for PriceAggregateSamples
+impl
+  From<
+    [hylo_idl::oracle::types::PriceObservation;
+      MAX_PRICE_AGGREGATE_OBSERVATIONS],
+  > for PriceAggregateObservations
 {
   fn from(
-    samples: [hylo_idl::oracle::types::PriceSample;
-      MAX_PRICE_AGGREGATE_SAMPLES],
-  ) -> PriceAggregateSamples {
-    PriceAggregateSamples::new(samples.map(PriceSample::from))
+    observations: [hylo_idl::oracle::types::PriceObservation;
+      MAX_PRICE_AGGREGATE_OBSERVATIONS],
+  ) -> PriceAggregateObservations {
+    PriceAggregateObservations::new(observations.map(PriceObservation::from))
   }
 }

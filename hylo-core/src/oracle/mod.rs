@@ -141,7 +141,7 @@ impl OraclePrice {
 /// Fetches the validated aggregate price for one feed.
 pub fn query_price_aggregate<C: SolanaClock>(
   clock: &C,
-  samples: &PriceAggregateSamples,
+  observations: &PriceAggregateObservations,
   feed_config: &FeedConfig,
   OracleConfig {
     interval_secs,
@@ -157,7 +157,7 @@ pub fn query_price_aggregate<C: SolanaClock>(
     secs: Some(interval_secs),
     confidence: Some(conf_tolerance),
   };
-  let spot = samples.price(
+  let spot = observations.price(
     AggregationMethod::SimpleAverage,
     clock.slot(),
     current_timestamp_us,
@@ -190,7 +190,7 @@ mod tests {
       unix_timestamp: 10,
       ..Clock::default()
     };
-    let sample = PriceSample {
+    let observation = PriceObservation {
       price: 1_000_000_000,
       exponent: -9,
       confidence: 10_000_000,
@@ -198,11 +198,11 @@ mod tests {
       posted_timestamp_us: 10_000_000,
       market_session: MarketSession::Regular,
     };
-    let samples = PriceAggregateSamples::new([sample; 8]);
+    let observations = PriceAggregateObservations::new([observation; 8]);
 
     let price = query_price_aggregate(
       &clock,
-      &samples,
+      &observations,
       &FEEDS[0],
       OracleConfig::new(60, UFix64::new(10_000_000)),
     )?;

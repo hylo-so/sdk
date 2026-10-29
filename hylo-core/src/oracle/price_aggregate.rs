@@ -22,9 +22,9 @@ pub const DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS: u16 = 500;
 pub const DEFAULT_MAX_PRICE_BAND_BPS: u16 = 500;
 pub const MIN_EXPONENT: i16 = -9;
 pub const MAX_EXPONENT: i16 = -2;
-pub const MAX_PRICE_AGGREGATE_SAMPLES: usize = 8;
+pub const MAX_PRICE_AGGREGATE_OBSERVATIONS: usize = 8;
 
-/// Method for aggregating price samples.
+/// Method for aggregating price observations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AggregationMethod {
   SimpleAverage,
@@ -39,7 +39,7 @@ pub struct ValidationConfig {
   pub confidence: Option<UFix64<N9>>,
 }
 
-/// Trading session recorded with a price sample.
+/// Trading session recorded with a price observation.
 #[derive(
   Debug,
   Default,
@@ -77,7 +77,7 @@ impl From<LazerMarketSession> for MarketSession {
 #[derive(
   Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
 )]
-pub struct PriceSample {
+pub struct PriceObservation {
   pub price: u64,
   pub exponent: i16,
   pub confidence: u64,
@@ -86,9 +86,9 @@ pub struct PriceSample {
   pub market_session: MarketSession,
 }
 
-impl PriceSample {
+impl PriceObservation {
   fn normalized(value: u64, exponent: i16) -> Result<UFix64<N9>, CoreError> {
-    PriceSample::validate_exponent(exponent)?;
+    PriceObservation::validate_exponent(exponent)?;
 
     match exponent {
       -2 => UFix64::<N2>::new(value).checked_convert(),
@@ -106,12 +106,12 @@ impl PriceSample {
 
   fn validate_price_band(
     &self,
-    reference: &PriceSample,
+    reference: &PriceObservation,
     price_band_bps: Option<u16>,
   ) -> Result<(), CoreError> {
-    let price = PriceSample::normalized(self.price, self.exponent)?;
+    let price = PriceObservation::normalized(self.price, self.exponent)?;
     let reference_price =
-      PriceSample::normalized(reference.price, reference.exponent)?;
+      PriceObservation::normalized(reference.price, reference.exponent)?;
     let price_band = UFix64::<N4>::new(u64::from(
       price_band_bps.unwrap_or(DEFAULT_MAX_PRICE_BAND_BPS),
     ));
@@ -186,8 +186,9 @@ impl PriceSample {
     &self,
     max_confidence: Option<UFix64<N9>>,
   ) -> Result<(), CoreError> {
-    let price = PriceSample::normalized(self.price, self.exponent)?;
-    let confidence = PriceSample::normalized(self.confidence, self.exponent)?;
+    let price = PriceObservation::normalized(self.price, self.exponent)?;
+    let confidence =
+      PriceObservation::normalized(self.confidence, self.exponent)?;
     let default_max_confidence = UFix64::<N9>::new(
       u64::from(DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS) * 100_000,
     );
@@ -243,42 +244,44 @@ impl PriceSample {
   }
 }
 
-/// Samples posted for one feed, one slot per configured source.
+/// Observations posted for one feed, one slot per configured source.
 #[derive(
   Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
 )]
-pub struct PriceAggregateSamples([PriceSample; MAX_PRICE_AGGREGATE_SAMPLES]);
+pub struct PriceAggregateObservations(
+  [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS],
+);
 
-impl PriceAggregateSamples {
-  /// Wraps the fixed sample array stored by the oracle account.
+impl PriceAggregateObservations {
+  /// Wraps the fixed observation array stored by the oracle account.
   #[must_use]
   pub const fn new(
-    samples: [PriceSample; MAX_PRICE_AGGREGATE_SAMPLES],
-  ) -> PriceAggregateSamples {
-    PriceAggregateSamples(samples)
+    observations: [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS],
+  ) -> PriceAggregateObservations {
+    PriceAggregateObservations(observations)
   }
 }
 
-impl Deref for PriceAggregateSamples {
-  type Target = [PriceSample; MAX_PRICE_AGGREGATE_SAMPLES];
+impl Deref for PriceAggregateObservations {
+  type Target = [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS];
 
   fn deref(&self) -> &Self::Target {
     &self.0
   }
 }
 
-enum SampleStatus {
+enum ObservationStatus {
   Fresh,
   Rejected,
 }
 
-impl PriceAggregateSamples {
-  /// Combines fresh samples into a 9-decimal price.
+impl PriceAggregateObservations {
+  /// Combines fresh observations into a 9-decimal price.
   ///
   /// # Errors
   ///
   /// * The feed sources do not produce a fresh price.
-  /// * A sample price or the average overflows.
+  /// * An observation price or the average overflows.
   pub fn price(
     &self,
     aggregation_method: AggregationMethod,
@@ -287,7 +290,7 @@ impl PriceAggregateSamples {
     validation_config: ValidationConfig,
     feed_config: &FeedConfig,
   ) -> Result<UFix64<N9>, CoreError> {
-    let mut samples = self.fresh_samples(
+    let mut observations = self.fresh_observations(
       current_slot,
       current_timestamp_us,
       validation_config,
@@ -296,26 +299,29 @@ impl PriceAggregateSamples {
 
     match aggregation_method {
       AggregationMethod::SimpleAverage => {
-        let (sum, count) = samples.try_fold(
+        let (sum, count) = observations.try_fold(
           (UFix128::<N9>::new(0), 0_u8),
-          |(sum, count), sample| {
-            PriceSample::normalized(sample.price, sample.exponent)
-              .map(fix::Fix::widen::<u128>)
-              .and_then(|price| {
-                sum.checked_add(&price).ok_or(CoreError::OracleArithmetic)
-              })
-              .and_then(|sum| {
-                count
-                  .checked_add(1)
-                  .map(|count| (sum, count))
-                  .ok_or(CoreError::OracleArithmetic)
-              })
+          |(sum, count), observation| {
+            PriceObservation::normalized(
+              observation.price,
+              observation.exponent,
+            )
+            .map(fix::Fix::widen::<u128>)
+            .and_then(|price| {
+              sum.checked_add(&price).ok_or(CoreError::OracleArithmetic)
+            })
+            .and_then(|sum| {
+              count
+                .checked_add(1)
+                .map(|count| (sum, count))
+                .ok_or(CoreError::OracleArithmetic)
+            })
           },
         )?;
 
         (count > 0)
           .then_some(())
-          .ok_or(CoreError::OracleNoFreshPriceSamples)
+          .ok_or(CoreError::OracleNoFreshPriceObservations)
           .and_then(|()| {
             sum
               .checked_div(&UFix128::<Z0>::new(u128::from(count)))
@@ -328,57 +334,57 @@ impl PriceAggregateSamples {
     }
   }
 
-  fn fresh_samples(
+  fn fresh_observations(
     &self,
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
     feed_config: &FeedConfig,
-  ) -> Result<impl Iterator<Item = &PriceSample>, CoreError> {
+  ) -> Result<impl Iterator<Item = &PriceObservation>, CoreError> {
     self
       .0
       .iter()
       .zip(feed_config.feeds.iter())
-      .map(|(sample, source)| {
-        match self.sample_status(
-          sample,
+      .map(|(observation, source)| {
+        match self.observation_status(
+          observation,
           source,
           current_slot,
           current_timestamp_us,
           validation_config,
         )? {
-          SampleStatus::Fresh => Ok(Some(sample)),
-          SampleStatus::Rejected => Ok(None),
+          ObservationStatus::Fresh => Ok(Some(observation)),
+          ObservationStatus::Rejected => Ok(None),
         }
       })
       .collect::<Result<Vec<_>, CoreError>>()
-      .map(|samples| samples.into_iter().flatten())
+      .map(|observations| observations.into_iter().flatten())
   }
 
-  fn sample_status(
+  fn observation_status(
     &self,
-    sample: &PriceSample,
+    observation: &PriceObservation,
     source: &FeedSourceConfig,
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
-  ) -> Result<SampleStatus, CoreError> {
-    match self.validate_sample(
-      sample,
+  ) -> Result<ObservationStatus, CoreError> {
+    match self.validate_observation(
+      observation,
       source,
       current_slot,
       current_timestamp_us,
       validation_config,
     ) {
-      Ok(()) => Ok(SampleStatus::Fresh),
-      Err(error) if PriceAggregateSamples::rejects_sample(error) => {
-        Ok(SampleStatus::Rejected)
+      Ok(()) => Ok(ObservationStatus::Fresh),
+      Err(error) if PriceAggregateObservations::rejects_observation(error) => {
+        Ok(ObservationStatus::Rejected)
       }
       Err(error) => Err(error),
     }
   }
 
-  fn rejects_sample(error: CoreError) -> bool {
+  fn rejects_observation(error: CoreError) -> bool {
     matches!(
       error,
       CoreError::OracleConfidence
@@ -389,16 +395,16 @@ impl PriceAggregateSamples {
     )
   }
 
-  fn validate_sample(
+  fn validate_observation(
     &self,
-    sample: &PriceSample,
+    observation: &PriceObservation,
     source: &FeedSourceConfig,
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
   ) -> Result<(), CoreError> {
-    match sample.market_session {
-      MarketSession::Regular => sample.validate(
+    match observation.market_session {
+      MarketSession::Regular => observation.validate(
         current_slot,
         current_timestamp_us,
         validation_config.slots,
@@ -409,8 +415,8 @@ impl PriceAggregateSamples {
       | MarketSession::PostMarket
       | MarketSession::Overnight
       | MarketSession::Closed => {
-        sample.validate_price()?;
-        sample.validate_confidence(validation_config.confidence)?;
+        observation.validate_price()?;
+        observation.validate_confidence(validation_config.confidence)?;
         let index = usize::from(
           source
             .reference_feed
@@ -431,29 +437,29 @@ impl PriceAggregateSamples {
           validation_config.secs,
           validation_config.confidence,
         )?;
-        sample.validate_price_band(reference, None)
+        observation.validate_price_band(reference, None)
       }
     }
   }
 
-  /// Stores a sample at its configured source index.
+  /// Stores an observation at its configured source index.
   ///
   /// # Errors
   ///
-  /// * The source index exceeds the sample capacity.
-  /// * The sample exponent is outside the supported range.
-  pub fn update_sample(
+  /// * The source index exceeds the observation capacity.
+  /// * The observation exponent is outside the supported range.
+  pub fn update_observation(
     &mut self,
     index: usize,
-    sample: PriceSample,
+    observation: PriceObservation,
   ) -> Result<(), CoreError> {
-    PriceSample::validate_exponent(sample.exponent)?;
+    PriceObservation::validate_exponent(observation.exponent)?;
 
     self
       .0
       .get_mut(index)
-      .map(|slot| *slot = sample)
-      .ok_or(CoreError::OracleSampleCapacityExceeded)
+      .map(|slot| *slot = observation)
+      .ok_or(CoreError::OracleObservationCapacityExceeded)
   }
 }
 
@@ -466,7 +472,7 @@ mod tests {
 
   use super::{
     AggregationMethod, FeedConfig, FeedSourceConfig, MarketSession,
-    PriceAggregateSamples, PriceSample, ValidationConfig,
+    PriceAggregateObservations, PriceObservation, ValidationConfig,
   };
   use crate::error::CoreError;
   use crate::oracle::{OracleSourceConfig, PythLazerFeedId};
@@ -496,12 +502,12 @@ mod tests {
     ],
   };
 
-  fn sample(
+  fn observation(
     price: u64,
     posted_slot: u64,
     posted_timestamp_us: u64,
-  ) -> PriceSample {
-    PriceSample {
+  ) -> PriceObservation {
+    PriceObservation {
       price,
       exponent: -9,
       confidence: 0,
@@ -527,25 +533,25 @@ mod tests {
   }
 
   #[test]
-  fn price_averages_fresh_samples() {
+  fn price_averages_fresh_observations() {
     let current_slot = 1;
     let current_timestamp_us = 1_000_000;
-    let mut samples = PriceAggregateSamples::default();
-    assert!(samples
-      .update_sample(
+    let mut observations = PriceAggregateObservations::default();
+    assert!(observations
+      .update_observation(
         0,
-        sample(100_000_000_000, current_slot, current_timestamp_us)
+        observation(100_000_000_000, current_slot, current_timestamp_us)
       )
       .is_ok());
-    assert!(samples
-      .update_sample(
+    assert!(observations
+      .update_observation(
         1,
-        sample(200_000_000_000, current_slot, current_timestamp_us)
+        observation(200_000_000_000, current_slot, current_timestamp_us)
       )
       .is_ok());
 
     assert_eq!(
-      samples.price(
+      observations.price(
         AggregationMethod::SimpleAverage,
         current_slot,
         current_timestamp_us,
@@ -557,22 +563,22 @@ mod tests {
   }
 
   #[test]
-  fn price_excludes_stale_samples() {
+  fn price_excludes_stale_observations() {
     let current_slot = 31;
     let current_timestamp_us = 31_000_000;
-    let mut samples = PriceAggregateSamples::default();
-    assert!(samples
-      .update_sample(0, sample(100_000_000_000, 0, 0))
+    let mut observations = PriceAggregateObservations::default();
+    assert!(observations
+      .update_observation(0, observation(100_000_000_000, 0, 0))
       .is_ok());
-    assert!(samples
-      .update_sample(
+    assert!(observations
+      .update_observation(
         1,
-        sample(200_000_000_000, current_slot, current_timestamp_us)
+        observation(200_000_000_000, current_slot, current_timestamp_us)
       )
       .is_ok());
 
     assert_eq!(
-      samples.price(
+      observations.price(
         AggregationMethod::SimpleAverage,
         current_slot,
         current_timestamp_us,
@@ -585,7 +591,7 @@ mod tests {
 
   #[test]
   fn confidence_limit_uses_price_units() {
-    let sample = PriceSample {
+    let observation = PriceObservation {
       price: 100_000_000_000,
       exponent: -9,
       confidence: 5_010_000_000,
@@ -595,20 +601,20 @@ mod tests {
     };
 
     assert_eq!(
-      sample.validate_confidence(None),
+      observation.validate_confidence(None),
       Err(CoreError::OracleConfidence),
     );
   }
 
   #[test]
-  fn non_regular_samples_use_a_fresh_regular_reference() {
+  fn non_regular_observations_use_a_fresh_regular_reference() {
     let current_slot = 100;
     let current_timestamp_us = 100_000_000;
-    let mut samples = PriceAggregateSamples::default();
-    assert!(samples
-      .update_sample(
+    let mut observations = PriceAggregateObservations::default();
+    assert!(observations
+      .update_observation(
         1,
-        PriceSample {
+        PriceObservation {
           price: 10_000,
           exponent: -2,
           confidence: 1,
@@ -618,10 +624,10 @@ mod tests {
         },
       )
       .is_ok());
-    assert!(samples
-      .update_sample(
+    assert!(observations
+      .update_observation(
         0,
-        PriceSample {
+        PriceObservation {
           price: 105_000,
           exponent: -3,
           confidence: 1,
@@ -633,7 +639,7 @@ mod tests {
       .is_ok());
 
     assert_eq!(
-      samples.price(
+      observations.price(
         AggregationMethod::SimpleAverage,
         current_slot,
         current_timestamp_us,

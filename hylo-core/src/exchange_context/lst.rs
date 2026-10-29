@@ -20,7 +20,7 @@ use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::oracle::{
   query_price_aggregate, FeedConfig, OracleConfig, OraclePrice,
-  PriceAggregateSamples, PriceRange,
+  PriceAggregateObservations, PriceRange,
 };
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
@@ -107,7 +107,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
-    sol_usd_samples: &PriceAggregateSamples,
+    sol_usd_observations: &PriceAggregateObservations,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,
@@ -118,7 +118,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
       FeedConfig::by_mint(SOL::MINT).ok_or(CoreError::UnknownFeedMint)?;
     let sol_usd_oracle = query_price_aggregate(
       &clock,
-      sol_usd_samples,
+      sol_usd_observations,
       feed_config,
       oracle_config,
     )?;

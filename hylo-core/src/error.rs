@@ -297,12 +297,12 @@ pub enum CoreError {
   OracleArithmetic,
   #[msg("Unable to cast safely.")]
   OracleConversion,
-  #[msg("Non-regular price sample has no valid reference feed.")]
+  #[msg("Non-regular price observation has no valid reference feed.")]
   OracleInvalidReferenceFeed,
-  #[msg("No fresh price samples are available.")]
-  OracleNoFreshPriceSamples,
-  #[msg("Price sample exceeds its reference price band.")]
+  #[msg("No fresh price observations are available.")]
+  OracleNoFreshPriceObservations,
+  #[msg("Price observation exceeds its reference price band.")]
   OraclePriceBandExceeded,
-  #[msg("Price sample index exceeds aggregate capacity.")]
-  OracleSampleCapacityExceeded,
+  #[msg("Price observation index exceeds aggregate capacity.")]
+  OracleObservationCapacityExceeded,
 }

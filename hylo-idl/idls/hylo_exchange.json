@@ -21753,7 +21753,7 @@
     {
       "name": "MarketSession",
       "docs": [
-        "Trading session recorded with a price sample."
+        "Trading session recorded with a price observation."
       ],
       "type": {
         "kind": "enum",
@@ -22147,10 +22147,10 @@
             "type": "u8"
           },
           {
-            "name": "samples",
+            "name": "observations",
             "type": {
               "defined": {
-                "name": "PriceAggregateSamples"
+                "name": "PriceAggregateObservations"
               }
             }
           },
@@ -22167,9 +22167,9 @@
       }
     },
     {
-      "name": "PriceAggregateSamples",
+      "name": "PriceAggregateObservations",
       "docs": [
-        "Samples posted for one feed, one slot per configured source."
+        "Observations posted for one feed, one slot per configured source."
       ],
       "type": {
         "kind": "struct",
@@ -22178,7 +22178,7 @@
             "array": [
               {
                 "defined": {
-                  "name": "PriceSample"
+                  "name": "PriceObservation"
                 }
               },
               8
@@ -22188,7 +22188,7 @@
       }
     },
     {
-      "name": "PriceSample",
+      "name": "PriceObservation",
       "docs": [
         "Source observation with a shared price and confidence exponent.",
         "A zero price marks an unoccupied slot."

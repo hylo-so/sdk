@@ -122,7 +122,7 @@
         "* A feed is unknown, or its price aggregate account does not match or",
         "deserialize.",
         "* A feed property, price, confidence, exponent, or timestamp is invalid.",
-        "* The source index exceeds sample capacity, or the account write fails.",
+        "* The source index exceeds observation capacity, or the account write fails.",
         "* The clock sysvar is unavailable.",
         "* An update event fails to emit."
       ],
@@ -262,17 +262,17 @@
     {
       "code": 6000,
       "name": "InvalidPrice",
-      "msg": "Price sample price must be above 0."
+      "msg": "Price observation price must be above 0."
     },
     {
       "code": 6001,
       "name": "ExponentOutOfRange",
-      "msg": "Price sample exponent is out of allowed range."
+      "msg": "Price observation exponent is out of allowed range."
     },
     {
       "code": 6002,
       "name": "InvalidTimestamp",
-      "msg": "Price sample timestamp is not a valid timestamp."
+      "msg": "Price observation timestamp is not a valid timestamp."
     },
     {
       "code": 6003,
@@ -282,7 +282,7 @@
     {
       "code": 6004,
       "name": "PriceBandExceeded",
-      "msg": "Price sample exceeded the maximum price band."
+      "msg": "Price observation exceeded the maximum price band."
     },
     {
       "code": 6005,
@@ -337,7 +337,7 @@
     {
       "code": 6015,
       "name": "InvalidReferenceFeed",
-      "msg": "Price sample reference feed is missing or invalid."
+      "msg": "Price observation reference feed is missing or invalid."
     },
     {
       "code": 6016,
@@ -357,17 +357,17 @@
     {
       "code": 6019,
       "name": "SampleCapacityExceeded",
-      "msg": "Source index exceeds price aggregate sample capacity."
+      "msg": "Source index exceeds price aggregate observation capacity."
     },
     {
       "code": 6020,
-      "name": "NoFreshPriceSamples",
-      "msg": "All price samples are stale."
+      "name": "NoFreshPriceObservations",
+      "msg": "All price observations are stale."
     },
     {
       "code": 6021,
-      "name": "StalePriceSample",
-      "msg": "Price sample exceeded the maximum staleness."
+      "name": "StalePriceObservation",
+      "msg": "Price observation exceeded the maximum staleness."
     },
     {
       "code": 6022,
@@ -382,14 +382,14 @@
     {
       "code": 6024,
       "name": "UnableToUpdateSample",
-      "msg": "Unable to update price aggregate sample."
+      "msg": "Unable to update price aggregate observation."
     }
   ],
   "types": [
     {
       "name": "MarketSession",
       "docs": [
-        "Trading session recorded with a price sample."
+        "Trading session recorded with a price observation."
       ],
       "type": {
         "kind": "enum",
@@ -439,10 +439,10 @@
             "type": "u8"
           },
           {
-            "name": "samples",
+            "name": "observations",
             "type": {
               "defined": {
-                "name": "PriceAggregateSamples"
+                "name": "PriceAggregateObservations"
               }
             }
           },
@@ -475,9 +475,9 @@
       }
     },
     {
-      "name": "PriceAggregateSamples",
+      "name": "PriceAggregateObservations",
       "docs": [
-        "Samples posted for one feed, one slot per configured source."
+        "Observations posted for one feed, one slot per configured source."
       ],
       "type": {
         "kind": "struct",
@@ -486,7 +486,7 @@
             "array": [
               {
                 "defined": {
-                  "name": "PriceSample"
+                  "name": "PriceObservation"
                 }
               },
               8
@@ -519,7 +519,7 @@
       }
     },
     {
-      "name": "PriceSample",
+      "name": "PriceObservation",
       "docs": [
         "Source observation with a shared price and confidence exponent.",
         "A zero price marks an unoccupied slot."
