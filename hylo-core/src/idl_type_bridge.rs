@@ -10,6 +10,10 @@ use crate::oracle::{
   MarketSession, OracleSource, PriceAggregateObservations, PriceObservation,
   MAX_PRICE_AGGREGATE_OBSERVATIONS,
 };
+#[cfg(feature = "offchain")]
+use crate::oracle::{
+  OracleObservationConfig, PythLazerConfig, PythLazerFeedId,
+};
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
@@ -298,6 +302,30 @@ impl From<OracleSource> for hylo_idl::oracle::types::OracleSource {
       OracleSource::PythLazer => {
         hylo_idl::oracle::types::OracleSource::PythLazer
       }
+    }
+  }
+}
+
+#[cfg(feature = "offchain")]
+impl From<hylo_idl::oracle::types::OracleObservationConfig>
+  for OracleObservationConfig
+{
+  fn from(
+    idl: hylo_idl::oracle::types::OracleObservationConfig,
+  ) -> OracleObservationConfig {
+    OracleObservationConfig {
+      index: idl.index,
+      reference_index: idl.reference_index,
+    }
+  }
+}
+
+#[cfg(feature = "offchain")]
+impl From<hylo_idl::oracle::types::PythLazerConfig> for PythLazerConfig {
+  fn from(idl: hylo_idl::oracle::types::PythLazerConfig) -> PythLazerConfig {
+    PythLazerConfig {
+      feed_id: PythLazerFeedId(idl.feed_id.0),
+      observation: idl.observation.into(),
     }
   }
 }

@@ -10,7 +10,7 @@ use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::idl::router::types::ExoEntry;
-use hylo_core::oracle::{OracleConfig, PriceAggregateObservations};
+use hylo_core::oracle::{OracleConfig, PriceAggregateExt};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::util::normalize_mint_exp;
@@ -120,8 +120,6 @@ impl ExoPairAccounts {
       decode(&self.collateral_mint, "Exo collateral mint")?;
     let oracle_aggregate: PriceAggregate =
       decode(&self.oracle, "Exo collateral/USD aggregate")?;
-    let oracle =
-      PriceAggregateObservations::from(oracle_aggregate.observations.0);
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
@@ -136,13 +134,12 @@ impl ExoPairAccounts {
       exo_pair.stablecoin_mint_threshold.try_into()?,
       oracle_config,
       levercoin_fees,
-      &oracle,
+      &oracle_aggregate,
       virtual_stablecoin,
       Some(&levercoin_mint),
       exo_pair.sell_curve_config.into(),
       exo_pair.buy_curve_config.into(),
       exo_pair.levercoin_market_cap_limit.try_into()?,
-      exo_pair.collateral_mint,
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
@@ -152,7 +149,9 @@ impl ExoPairAccounts {
       pool_drawdown: exo_pair.pool_drawdown.into(),
       borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
       supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle_publish_time: latest_timestamp_secs(&oracle)?,
+      oracle_publish_time: latest_timestamp_secs(
+        &oracle_aggregate.price_observations(),
+      )?,
       oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
   }

@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 
-use super::PythLazerFeedId;
-
 /// Price source backing an observation.
 #[derive(
   AnchorSerialize,
@@ -15,9 +13,4 @@ use super::PythLazerFeedId;
 )]
 pub enum OracleSource {
   PythLazer,
-}
-
-/// Identifiers for one price source.
-pub enum OracleSourceConfig {
-  PythLazer { feed_id: PythLazerFeedId },
 }

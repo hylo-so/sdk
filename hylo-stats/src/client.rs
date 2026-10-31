@@ -17,10 +17,7 @@ use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::oracle::{
-  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice,
-  PriceAggregateObservations,
-};
+use hylo_core::oracle::{query_price_aggregate, OracleConfig, OraclePrice};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
@@ -241,21 +238,18 @@ fn exo_exchange_context(
     exo_pair.oracle_conf_tolerance.try_into()?,
   );
   let total_collateral = normalize_mint_exp(collateral_mint, exo_vault.amount)?;
-  let collateral_usd_observations =
-    PriceAggregateObservations::from(collateral_usd.observations.0);
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
     exo_pair.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     exo_pair.levercoin_fees.into(),
-    &collateral_usd_observations,
+    collateral_usd,
     exo_pair.virtual_stablecoin.into(),
     Some(levercoin_mint),
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
     exo_pair.levercoin_market_cap_limit.try_into()?,
-    exo_pair.collateral_mint,
   )?;
   Ok(exo_context)
 }
@@ -322,16 +316,8 @@ pub fn build_stats_inputs(
     accounts.hylo.oracle_interval_secs,
     accounts.hylo.oracle_conf_tolerance.try_into()?,
   );
-  let sol_feed_config = FeedConfig::by_mint(SOL::MINT)
-    .ok_or(hylo_core::error::CoreError::UnknownFeedMint)?;
-  let sol_usd_observations =
-    PriceAggregateObservations::from(accounts.sol_usd.observations.0);
-  let sol_usd = query_price_aggregate(
-    &accounts.clock,
-    &sol_usd_observations,
-    sol_feed_config,
-    oracle_config,
-  )?;
+  let sol_usd =
+    query_price_aggregate(&accounts.clock, &accounts.sol_usd, oracle_config)?;
   let lst_collateral_ratio =
     lst_collateral_ratio(&accounts.clock, &accounts.hylo, &sol_usd)?;
 

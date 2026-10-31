@@ -305,4 +305,8 @@ pub enum CoreError {
   OraclePriceBandExceeded,
   #[msg("Price observation index exceeds aggregate capacity.")]
   OracleObservationCapacityExceeded,
+  #[msg("Pyth Lazer feed ID is already configured.")]
+  OracleDuplicatePythLazerFeedId,
+  #[msg("Observation index is already configured.")]
+  OracleDuplicateObservationIndex,
 }

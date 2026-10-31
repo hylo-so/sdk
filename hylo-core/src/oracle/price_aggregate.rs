@@ -4,14 +4,15 @@ use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
 };
 use fix::prelude::{
-  CheckedAdd, CheckedDivFix, MulDiv, UFix128, UFix64, N2, N3, N4, N5, N6, N7,
-  N8, N9,
+  CheckedAdd, CheckedDivFix, CheckedSub, MulDiv, UFix128, UFix64, N2, N3, N4,
+  N5, N6, N7, N8, N9,
 };
-use fix::typenum::Z0;
+use fix::typenum::{Integer, Z0};
 use pyth_lazer_protocol::api::MarketSession as LazerMarketSession;
 
-use super::{FeedConfig, FeedSourceConfig};
+use super::OracleObservationConfig;
 use crate::error::CoreError;
+use crate::error::CoreError::OraclePriceRange;
 
 pub const DEFAULT_MAX_STALENESS_SLOTS: u64 = 30;
 pub const DEFAULT_MAX_STALENESS_SECS: u64 = 5;
@@ -23,6 +24,69 @@ pub const DEFAULT_MAX_PRICE_BAND_BPS: u16 = 500;
 pub const MIN_EXPONENT: i16 = -9;
 pub const MAX_EXPONENT: i16 = -2;
 pub const MAX_PRICE_AGGREGATE_OBSERVATIONS: usize = 8;
+
+/// Methods for reading oracle configuration from a price aggregate account.
+pub trait PriceAggregateExt {
+  /// Returns the observations stored in the aggregate.
+  fn price_observations(&self) -> PriceAggregateObservations;
+
+  /// Returns observation mappings for configured oracle source feeds.
+  fn observation_configs(&self) -> Vec<OracleObservationConfig>;
+}
+
+impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {
+  fn price_observations(&self) -> PriceAggregateObservations {
+    PriceAggregateObservations::from(self.observations.0)
+  }
+
+  fn observation_configs(&self) -> Vec<OracleObservationConfig> {
+    self
+      .pyth_lazer
+      .0
+      .iter()
+      .flatten()
+      .map(|config| OracleObservationConfig {
+        index: config.observation.index,
+        reference_index: config.observation.reference_index,
+      })
+      .collect()
+  }
+}
+
+/// Spread of an asset price, with a lower and upper quote.
+/// Use lower in minting, higher in redeeming.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PriceRange<Exp: Integer> {
+  pub lower: UFix64<Exp>,
+  pub upper: UFix64<Exp>,
+}
+
+impl<Exp: Integer> PriceRange<Exp> {
+  /// Builds a range around the price using the confidence interval.
+  pub fn from_conf(
+    price: UFix64<Exp>,
+    conf: UFix64<Exp>,
+  ) -> Result<PriceRange<Exp>, CoreError> {
+    let (lower, upper) = price
+      .checked_sub(&conf)
+      .zip(price.checked_add(&conf))
+      .ok_or(OraclePriceRange)?;
+    Ok(PriceRange { lower, upper })
+  }
+
+  /// Makes a range of one price, useful in test scenarios.
+  #[must_use]
+  pub fn one(price: UFix64<Exp>) -> PriceRange<Exp> {
+    PriceRange {
+      lower: price,
+      upper: price,
+    }
+  }
+
+  pub(crate) fn new(lower: UFix64<Exp>, upper: UFix64<Exp>) -> PriceRange<Exp> {
+    PriceRange { lower, upper }
+  }
+}
 
 /// Method for aggregating price observations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -244,7 +308,7 @@ impl PriceObservation {
   }
 }
 
-/// Observations posted for one feed, one slot per configured source.
+/// Fixed-size observation slots stored for one price aggregate.
 #[derive(
   Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
 )]
@@ -259,6 +323,22 @@ impl PriceAggregateObservations {
     observations: [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS],
   ) -> PriceAggregateObservations {
     PriceAggregateObservations(observations)
+  }
+
+  /// Returns the observation at an index.
+  ///
+  /// # Errors
+  ///
+  /// * The index exceeds the observation capacity.
+  #[must_use]
+  pub fn get_observation(
+    &self,
+    index: usize,
+  ) -> Result<&PriceObservation, CoreError> {
+    self
+      .0
+      .get(index)
+      .ok_or(CoreError::OracleObservationCapacityExceeded)
   }
 }
 
@@ -288,13 +368,13 @@ impl PriceAggregateObservations {
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
-    feed_config: &FeedConfig,
+    observation_configs: &[OracleObservationConfig],
   ) -> Result<UFix64<N9>, CoreError> {
     let mut observations = self.fresh_observations(
       current_slot,
       current_timestamp_us,
       validation_config,
-      feed_config,
+      observation_configs,
     )?;
 
     match aggregation_method {
@@ -339,16 +419,18 @@ impl PriceAggregateObservations {
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
-    feed_config: &FeedConfig,
+    observation_configs: &[OracleObservationConfig],
   ) -> Result<impl Iterator<Item = &PriceObservation>, CoreError> {
-    self
-      .0
+    observation_configs
       .iter()
-      .zip(feed_config.feeds.iter())
-      .map(|(observation, source)| {
+      .map(|source| {
+        let observation = self
+          .0
+          .get(usize::from(source.index))
+          .ok_or(CoreError::OracleInvalidReferenceFeed)?;
         match self.observation_status(
           observation,
-          source,
+          *source,
           current_slot,
           current_timestamp_us,
           validation_config,
@@ -364,7 +446,7 @@ impl PriceAggregateObservations {
   fn observation_status(
     &self,
     observation: &PriceObservation,
-    source: &FeedSourceConfig,
+    source: OracleObservationConfig,
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
@@ -398,7 +480,7 @@ impl PriceAggregateObservations {
   fn validate_observation(
     &self,
     observation: &PriceObservation,
-    source: &FeedSourceConfig,
+    source: OracleObservationConfig,
     current_slot: u64,
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
@@ -419,7 +501,7 @@ impl PriceAggregateObservations {
         observation.validate_confidence(validation_config.confidence)?;
         let index = usize::from(
           source
-            .reference_feed
+            .reference_index
             .ok_or(CoreError::OracleInvalidReferenceFeed)?,
         );
         let reference = self
@@ -442,7 +524,7 @@ impl PriceAggregateObservations {
     }
   }
 
-  /// Stores an observation at its configured source index.
+  /// Stores an observation at its configured observation index.
   ///
   /// # Errors
   ///
@@ -461,46 +543,54 @@ impl PriceAggregateObservations {
       .map(|slot| *slot = observation)
       .ok_or(CoreError::OracleObservationCapacityExceeded)
   }
+
+  /// Clears an observation at its configured observation index.
+  ///
+  /// # Errors
+  ///
+  /// * The source index exceeds the observation capacity.
+  pub fn clear_observation(&mut self, index: usize) -> Result<(), CoreError> {
+    self
+      .0
+      .get_mut(index)
+      .map(|slot| *slot = PriceObservation::default())
+      .ok_or(CoreError::OracleObservationCapacityExceeded)
+  }
 }
 
 #[cfg(test)]
 mod tests {
-  use anchor_lang::prelude::Pubkey;
   use fix::prelude::UFix64;
   use fix::typenum::N9;
   use pyth_lazer_protocol::api::MarketSession as LazerMarketSession;
 
   use super::{
-    AggregationMethod, FeedConfig, FeedSourceConfig, MarketSession,
+    AggregationMethod, MarketSession, OracleObservationConfig,
     PriceAggregateObservations, PriceObservation, ValidationConfig,
   };
   use crate::error::CoreError;
-  use crate::oracle::{OracleSourceConfig, PythLazerFeedId};
 
-  const SOURCE: FeedSourceConfig = FeedSourceConfig {
-    source: OracleSourceConfig::PythLazer {
-      feed_id: PythLazerFeedId(1),
+  const CONFIG: [OracleObservationConfig; 2] = [
+    OracleObservationConfig {
+      index: 0,
+      reference_index: None,
     },
-    reference_feed: None,
-  };
+    OracleObservationConfig {
+      index: 1,
+      reference_index: None,
+    },
+  ];
 
-  const CONFIG: FeedConfig = FeedConfig {
-    mint: Pubkey::new_from_array([0; 32]),
-    feeds: &[SOURCE, SOURCE],
-  };
-
-  const BANDED_CONFIG: FeedConfig = FeedConfig {
-    mint: Pubkey::new_from_array([0; 32]),
-    feeds: &[
-      FeedSourceConfig {
-        source: OracleSourceConfig::PythLazer {
-          feed_id: PythLazerFeedId(2),
-        },
-        reference_feed: Some(1),
-      },
-      SOURCE,
-    ],
-  };
+  const BANDED_CONFIG: [OracleObservationConfig; 2] = [
+    OracleObservationConfig {
+      index: 0,
+      reference_index: Some(1),
+    },
+    OracleObservationConfig {
+      index: 1,
+      reference_index: None,
+    },
+  ];
 
   fn observation(
     price: u64,

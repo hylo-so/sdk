@@ -1,4 +1,3 @@
-use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::Mint;
 use fix::prelude::*;
 
@@ -17,8 +16,8 @@ use crate::fees::curve_controller::{
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::oracle::{
-  query_price_aggregate, FeedConfig, OracleConfig, OraclePrice,
-  PriceAggregateObservations, PriceRange,
+  query_price_aggregate, OracleConfig, OraclePrice, PriceAggregateExt,
+  PriceRange,
 };
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
@@ -100,28 +99,21 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// # Errors
   /// * Oracle, curve, or stability controller validation
   #[allow(clippy::too_many_arguments)]
-  pub fn load(
+  pub fn load<P: PriceAggregateExt>(
     clock: C,
     total_collateral: UFix64<N9>,
     stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
-    collateral_usd_observations: &PriceAggregateObservations,
+    collateral_usd: &P,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
     levercoin_market_cap_limit: UFix64<N9>,
-    collateral_mint: Pubkey,
   ) -> Result<ExoExchangeContext<C>, CoreError> {
-    let feed_config =
-      FeedConfig::by_mint(collateral_mint).ok_or(CoreError::UnknownFeedMint)?;
-    let collateral_oracle = query_price_aggregate(
-      &clock,
-      collateral_usd_observations,
-      feed_config,
-      oracle_config,
-    )?;
+    let collateral_oracle =
+      query_price_aggregate(&clock, collateral_usd, oracle_config)?;
     let collateral_usd_price = collateral_oracle.price_range()?;
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =

@@ -12,8 +12,7 @@ pub fn initialize_oracle(
   admin: Pubkey,
   upgrade_authority: Pubkey,
 ) -> Instruction {
-  let accounts =
-    account_builders::initialize_oracle(admin, upgrade_authority);
+  let accounts = account_builders::initialize_oracle(admin, upgrade_authority);
   Instruction {
     program_id: oracle::ID,
     accounts: accounts.to_account_metas(None),
@@ -104,14 +103,16 @@ pub fn initialize_price_aggregate(admin: Pubkey, mint: Pubkey) -> Instruction {
 /// Builds the Pyth Lazer update instruction for `mints` in payload order.
 /// Each mint appends its price aggregate as a writable account.
 #[must_use]
-pub fn update_with_pyth_lazer(
+pub fn update_observation_with_pyth_lazer(
   payer: Pubkey,
   pyth_lazer_treasury: Pubkey,
   mints: &[Pubkey],
-  args: &args::UpdateWithPythLazer,
+  args: &args::UpdateObservationWithPythLazer,
 ) -> Instruction {
-  let accounts =
-    account_builders::update_with_pyth_lazer(payer, pyth_lazer_treasury);
+  let accounts = account_builders::update_observation_with_pyth_lazer(
+    payer,
+    pyth_lazer_treasury,
+  );
   let price_aggregates = mints
     .iter()
     .map(|mint| AccountMeta::new(pda::price_aggregate(*mint), false));

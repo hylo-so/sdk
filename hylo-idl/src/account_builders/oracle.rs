@@ -6,7 +6,7 @@ use pyth_lazer_solana_contract::{ID_CONST, STORAGE_ID};
 use crate::oracle::client::accounts::{
   AcceptAddressUpdate, ApproveAddressUpdate, CancelAddressUpdate,
   InitializeOracle, InitializePriceAggregate, ProposeAddressUpdate,
-  UpdateWithPythLazer,
+  UpdateObservationWithPythLazer,
 };
 use crate::{oracle, pda};
 
@@ -114,11 +114,11 @@ pub const fn cancel_address_update(admin: Pubkey) -> CancelAddressUpdate {
 
 /// Builds the fixed account context for a Pyth Lazer update.
 #[must_use]
-pub const fn update_with_pyth_lazer(
+pub const fn update_observation_with_pyth_lazer(
   payer: Pubkey,
   pyth_lazer_treasury: Pubkey,
-) -> UpdateWithPythLazer {
-  UpdateWithPythLazer {
+) -> UpdateObservationWithPythLazer {
+  UpdateObservationWithPythLazer {
     payer,
     pyth_lazer_program: ID_CONST,
     pyth_lazer_storage: STORAGE_ID,

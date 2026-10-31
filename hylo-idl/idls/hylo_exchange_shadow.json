@@ -22064,6 +22064,27 @@
       }
     },
     {
+      "name": "OracleObservationConfig",
+      "docs": [
+        "Observation indexes and an optional reference index."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "reference_index",
+            "type": {
+              "option": "u8"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "OraclePriceEvent",
       "docs": [
         "Serializable oracle price for event emission."
@@ -22137,11 +22158,15 @@
     {
       "name": "PriceAggregate",
       "docs": [
-        "Samples posted for one feed, one slot per configured source."
+        "Samples posted for one mint, with fixed observation and source capacities."
       ],
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
           {
             "name": "bump",
             "type": "u8"
@@ -22151,6 +22176,14 @@
             "type": {
               "defined": {
                 "name": "PriceAggregateObservations"
+              }
+            }
+          },
+          {
+            "name": "pyth_lazer",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeeds"
               }
             }
           },
@@ -22169,7 +22202,7 @@
     {
       "name": "PriceAggregateObservations",
       "docs": [
-        "Observations posted for one feed, one slot per configured source."
+        "Fixed-size observation slots stored for one price aggregate."
       ],
       "type": {
         "kind": "struct",
@@ -22255,6 +22288,68 @@
           {
             "name": "ttl_secs",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerConfig",
+      "docs": [
+        "Pyth Lazer feed and its observation mapping."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          },
+          {
+            "name": "observation",
+            "type": {
+              "defined": {
+                "name": "OracleObservationConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerFeedId",
+      "docs": [
+        "Pyth Lazer feed id (Lazer's numeric identifier)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          "u32"
+        ]
+      }
+    },
+    {
+      "name": "PythLazerFeeds",
+      "docs": [
+        "Fixed Pyth Lazer feed configuration slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "option": {
+                  "defined": {
+                    "name": "PythLazerConfig"
+                  }
+                }
+              },
+              3
+            ]
           }
         ]
       }

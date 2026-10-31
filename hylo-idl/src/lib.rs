@@ -181,18 +181,19 @@ mod tests {
     }));
 
     let treasury = Pubkey::new_unique();
-    let args = oracle::client::args::UpdateWithPythLazer {
+    let args = oracle::client::args::UpdateObservationWithPythLazer {
       channel_id: 4,
       message_data: vec![1, 2, 3],
       ed25519_instruction_index: 0,
       signature_index: 0,
     };
-    let update = oracle::instruction_builders::update_with_pyth_lazer(
-      admin,
-      treasury,
-      &[mint],
-      &args,
-    );
+    let update =
+      oracle::instruction_builders::update_observation_with_pyth_lazer(
+        admin,
+        treasury,
+        &[mint],
+        &args,
+      );
     assert_eq!(update.program_id, oracle::ID);
     assert!(update
       .accounts
