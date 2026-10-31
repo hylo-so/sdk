@@ -1,6 +1,8 @@
 use crate::borrow_rate::BorrowRateCurveConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
+#[cfg(any(test, feature = "offchain"))]
 use crate::limiter::deposit::DepositLimiter;
+#[cfg(any(test, feature = "offchain"))]
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
