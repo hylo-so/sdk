@@ -1,0 +1,1820 @@
+{
+  "address": "HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F",
+  "metadata": {
+    "name": "hylo_oracle",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Hylo Oracle Program"
+  },
+  "instructions": [
+    {
+      "name": "accept_address_update",
+      "docs": [
+        "Accepts an approved oracle administrator address proposal.",
+        "",
+        "# Errors",
+        "",
+        "* The proposal has expired or is unapproved.",
+        "* The signer is not the proposed administrator."
+      ],
+      "discriminator": [
+        56,
+        65,
+        20,
+        139,
+        208,
+        230,
+        213,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "new_address",
+          "signer": true,
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "AcceptAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "approve_address_update",
+      "docs": [
+        "Approves an oracle administrator address proposal.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the oracle program's upgrade authority.",
+        "* The proposal has expired or is already approved."
+      ],
+      "discriminator": [
+        35,
+        60,
+        186,
+        56,
+        181,
+        237,
+        165,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "upgrade_authority",
+          "signer": true
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_address",
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "hylo_oracle",
+          "address": "HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ApproveAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "cancel_address_update",
+      "docs": [
+        "Cancels an oracle administrator address proposal.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the current oracle administrator."
+      ],
+      "discriminator": [
+        181,
+        122,
+        207,
+        111,
+        131,
+        188,
+        184,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "CancelAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "initialize_oracle",
+      "docs": [
+        "Initializes the oracle administration account.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the oracle program's upgrade authority."
+      ],
+      "discriminator": [
+        144,
+        223,
+        131,
+        120,
+        196,
+        253,
+        181,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "upgrade_authority",
+          "signer": true
+        },
+        {
+          "name": "oracle_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "hylo_oracle",
+          "address": "HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_price_aggregate",
+      "docs": [
+        "Creates a price aggregate account for a mint.",
+        "",
+        "# Errors",
+        "",
+        "* Emitting the initialization event fails."
+      ],
+      "discriminator": [
+        78,
+        122,
+        200,
+        157,
+        158,
+        202,
+        23,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "price_aggregate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "propose_address_update",
+      "docs": [
+        "Proposes an oracle administrator address.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the current oracle administrator.",
+        "* The proposal TTL is outside the accepted range."
+      ],
+      "discriminator": [
+        183,
+        253,
+        18,
+        185,
+        155,
+        67,
+        166,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  100,
+                  114,
+                  101,
+                  115,
+                  115,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101,
+                  95,
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "address_field"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_address"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "address_field",
+          "type": {
+            "defined": {
+              "name": "AddressField"
+            }
+          }
+        },
+        {
+          "name": "ttl_secs",
+          "type": "u64"
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "ProposeAddressUpdateEvent"
+        }
+      }
+    },
+    {
+      "name": "update_observation_with_pyth_lazer",
+      "docs": [
+        "Verifies one signed Pyth Lazer batch and stores each configured",
+        "observation.",
+        "",
+        "# Errors",
+        "",
+        "* Pyth Lazer verification fails.",
+        "* The payload does not decode, names another channel, or lists a different",
+        "feed count than the remaining accounts.",
+        "* A feed is unknown, or its price aggregate account does not match or",
+        "deserialize.",
+        "* A feed property, price, confidence, exponent, or timestamp is invalid.",
+        "* The source index exceeds observation capacity, or the account write",
+        "fails.",
+        "* The clock sysvar is unavailable.",
+        "* An update event fails to emit."
+      ],
+      "discriminator": [
+        13,
+        223,
+        31,
+        67,
+        58,
+        213,
+        184,
+        158
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pyth_lazer_program",
+          "address": "pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt"
+        },
+        {
+          "name": "pyth_lazer_storage",
+          "address": "3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL"
+        },
+        {
+          "name": "pyth_lazer_treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "channel_id",
+          "type": "u8"
+        },
+        {
+          "name": "message_data",
+          "type": "bytes"
+        },
+        {
+          "name": "ed25519_instruction_index",
+          "type": "u16"
+        },
+        {
+          "name": "signature_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "update_pyth_lazer_config",
+      "docs": [
+        "Replaces or removes a Pyth Lazer configuration slot.",
+        "",
+        "# Errors",
+        "",
+        "* The signer is not the oracle administrator.",
+        "* The configuration slot or observation mapping is invalid.",
+        "* A feed ID or observation index is already configured."
+      ],
+      "discriminator": [
+        52,
+        235,
+        15,
+        216,
+        120,
+        170,
+        139,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "oracle_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "price_aggregate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "price_aggregate.mint",
+                "account": "PriceAggregate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "config_index",
+          "type": "u8"
+        },
+        {
+          "name": "config",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "PythLazerConfig"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AddressUpdateProposal",
+      "discriminator": [
+        12,
+        31,
+        250,
+        50,
+        46,
+        210,
+        94,
+        182
+      ]
+    },
+    {
+      "name": "OracleConfig",
+      "discriminator": [
+        133,
+        196,
+        152,
+        50,
+        27,
+        21,
+        145,
+        254
+      ]
+    },
+    {
+      "name": "PriceAggregate",
+      "discriminator": [
+        241,
+        179,
+        146,
+        72,
+        88,
+        141,
+        189,
+        245
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AcceptAddressUpdateEvent",
+      "discriminator": [
+        63,
+        130,
+        1,
+        235,
+        255,
+        47,
+        229,
+        210
+      ]
+    },
+    {
+      "name": "ApproveAddressUpdateEvent",
+      "discriminator": [
+        98,
+        91,
+        95,
+        138,
+        125,
+        114,
+        11,
+        245
+      ]
+    },
+    {
+      "name": "CancelAddressUpdateEvent",
+      "discriminator": [
+        240,
+        141,
+        179,
+        211,
+        245,
+        181,
+        23,
+        212
+      ]
+    },
+    {
+      "name": "PriceAggregateInitialized",
+      "discriminator": [
+        9,
+        210,
+        56,
+        212,
+        82,
+        27,
+        5,
+        184
+      ]
+    },
+    {
+      "name": "PriceAggregateUpdated",
+      "discriminator": [
+        114,
+        143,
+        94,
+        21,
+        212,
+        187,
+        16,
+        26
+      ]
+    },
+    {
+      "name": "ProposeAddressUpdateEvent",
+      "discriminator": [
+        46,
+        255,
+        33,
+        127,
+        122,
+        204,
+        96,
+        63
+      ]
+    },
+    {
+      "name": "PythLazerConfigUpdated",
+      "discriminator": [
+        195,
+        179,
+        76,
+        255,
+        233,
+        44,
+        88,
+        184
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidPrice",
+      "msg": "Price observation price must be above 0."
+    },
+    {
+      "code": 6001,
+      "name": "ExponentOutOfRange",
+      "msg": "Price observation exponent is out of allowed range."
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTimestamp",
+      "msg": "Price observation timestamp is not a valid timestamp."
+    },
+    {
+      "code": 6003,
+      "name": "ConfidenceExceededLimit",
+      "msg": "Confidence exceeded the maximum confidence interval."
+    },
+    {
+      "code": 6004,
+      "name": "PriceBandExceeded",
+      "msg": "Price observation exceeded the maximum price band."
+    },
+    {
+      "code": 6005,
+      "name": "InvalidLazerPayload",
+      "msg": "Verified Lazer payload could not be decoded."
+    },
+    {
+      "code": 6006,
+      "name": "UnexpectedLazerChannel",
+      "msg": "Verified Lazer payload used an unexpected channel."
+    },
+    {
+      "code": 6007,
+      "name": "MissingLazerPrice",
+      "msg": "Verified Lazer feed is missing price."
+    },
+    {
+      "code": 6008,
+      "name": "MissingLazerExponent",
+      "msg": "Verified Lazer feed is missing exponent."
+    },
+    {
+      "code": 6009,
+      "name": "MissingLazerConfidence",
+      "msg": "Verified Lazer feed is missing confidence."
+    },
+    {
+      "code": 6010,
+      "name": "InvalidLazerConfidence",
+      "msg": "Verified Lazer feed has invalid confidence."
+    },
+    {
+      "code": 6011,
+      "name": "MissingLazerFeedUpdateTimestamp",
+      "msg": "Verified Lazer feed is missing feed update timestamp."
+    },
+    {
+      "code": 6012,
+      "name": "MissingLazerMarketSession",
+      "msg": "Verified Lazer feed is missing market session."
+    },
+    {
+      "code": 6013,
+      "name": "DuplicateLazerProperty",
+      "msg": "Verified Lazer feed contained a required property more than once."
+    },
+    {
+      "code": 6014,
+      "name": "UnknownFeed",
+      "msg": "Price aggregate mint is invalid."
+    },
+    {
+      "code": 6015,
+      "name": "OracleSourceConfigurationValidationFailed",
+      "msg": "Oracle source configuration is invalid."
+    },
+    {
+      "code": 6016,
+      "name": "UnknownLazerFeed",
+      "msg": "Verified Lazer feed is not configured for the aggregate."
+    },
+    {
+      "code": 6017,
+      "name": "InvalidPriceAggregateAccount",
+      "msg": "PriceAggregate account does not match its feed's PDA identity."
+    },
+    {
+      "code": 6018,
+      "name": "RemainingAccountsMismatch",
+      "msg": "Remaining account count does not match the batch payload."
+    },
+    {
+      "code": 6019,
+      "name": "SampleCapacityExceeded",
+      "msg": "Source index exceeds price aggregate observation capacity."
+    },
+    {
+      "code": 6020,
+      "name": "InvalidPythLazerConfigIndex",
+      "msg": "Pyth Lazer configuration index exceeds its fixed capacity."
+    },
+    {
+      "code": 6021,
+      "name": "NoFreshPriceObservations",
+      "msg": "All price observations are stale."
+    },
+    {
+      "code": 6022,
+      "name": "StalePriceObservation",
+      "msg": "Price observation exceeded the maximum staleness."
+    },
+    {
+      "code": 6023,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow."
+    },
+    {
+      "code": 6024,
+      "name": "ConversionError",
+      "msg": "Unable to cast safely."
+    },
+    {
+      "code": 6025,
+      "name": "UnableToUpdateSample",
+      "msg": "Unable to update price aggregate observation."
+    },
+    {
+      "code": 6026,
+      "name": "AddressChangeExpired",
+      "msg": "Address change proposal has expired."
+    },
+    {
+      "code": 6027,
+      "name": "AddressChangeTtlInvalid",
+      "msg": "Address change proposal's TTL not in configured range."
+    },
+    {
+      "code": 6028,
+      "name": "AddressChangeNotApproved",
+      "msg": "Address change proposal has not been approved."
+    },
+    {
+      "code": 6029,
+      "name": "AddressChangeAlreadyApproved",
+      "msg": "Address change proposal has already been approved."
+    },
+    {
+      "code": 6030,
+      "name": "AddressChangeUpgradeAuthority",
+      "msg": "Address change approver must be upgrade authority."
+    },
+    {
+      "code": 6031,
+      "name": "AdminNoop",
+      "msg": "Proposed administrator matches the current administrator."
+    }
+  ],
+  "types": [
+    {
+      "name": "AcceptAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "old_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressField",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Admin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressUpdateProposal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal_time",
+            "type": "i64"
+          },
+          {
+            "name": "ttl_secs",
+            "type": "u64"
+          },
+          {
+            "name": "approved",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ApproveAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CancelAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketSession",
+      "docs": [
+        "Trading session recorded with a price observation."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PreMarket"
+          },
+          {
+            "name": "Regular"
+          },
+          {
+            "name": "PostMarket"
+          },
+          {
+            "name": "Overnight"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleConfig",
+      "docs": [
+        "Oracle administration state."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleObservationConfig",
+      "docs": [
+        "Observation indexes and an optional reference index."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "reference_index",
+            "type": {
+              "option": "u8"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleSource",
+      "docs": [
+        "Price source backing an observation."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PythLazer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregate",
+      "docs": [
+        "Samples posted for one mint, with fixed observation and source capacities."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "observations",
+            "type": {
+              "defined": {
+                "name": "PriceAggregateObservations"
+              }
+            }
+          },
+          {
+            "name": "pyth_lazer",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeeds"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregateInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregateObservations",
+      "docs": [
+        "Fixed-size observation slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "defined": {
+                  "name": "PriceObservation"
+                }
+              },
+              8
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregateUpdated",
+      "docs": [
+        "Emitted whenever a price aggregate records a newer price, from any source."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "source",
+            "type": {
+              "defined": {
+                "name": "OracleSource"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceObservation",
+      "docs": [
+        "Source observation with a shared price and confidence exponent.",
+        "A zero price marks an unoccupied slot."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
+          },
+          {
+            "name": "posted_slot",
+            "type": "u64"
+          },
+          {
+            "name": "posted_timestamp_us",
+            "type": "u64"
+          },
+          {
+            "name": "market_session",
+            "type": {
+              "defined": {
+                "name": "MarketSession"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProposeAddressUpdateEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address_field",
+            "type": {
+              "defined": {
+                "name": "AddressField"
+              }
+            }
+          },
+          {
+            "name": "current_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal_time",
+            "type": "i64"
+          },
+          {
+            "name": "ttl_secs",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerConfig",
+      "docs": [
+        "Pyth Lazer feed and its observation mapping."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          },
+          {
+            "name": "observation",
+            "type": {
+              "defined": {
+                "name": "OracleObservationConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerConfigUpdated",
+      "docs": [
+        "Pyth Lazer configuration stored on a price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "config_index",
+            "type": "u8"
+          },
+          {
+            "name": "config",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "PythLazerConfig"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerFeedId",
+      "docs": [
+        "Pyth Lazer feed id (Lazer's numeric identifier)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          "u32"
+        ]
+      }
+    },
+    {
+      "name": "PythLazerFeeds",
+      "docs": [
+        "Fixed Pyth Lazer feed configuration slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "option": {
+                  "defined": {
+                    "name": "PythLazerConfig"
+                  }
+                }
+              },
+              3
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "ADDRESS_UPDATE_PROPOSAL",
+      "type": {
+        "array": [
+          "u8",
+          23
+        ]
+      },
+      "value": "[97, 100, 100, 114, 101, 115, 115, 95, 117, 112, 100, 97, 116, 101, 95, 112, 114, 111, 112, 111, 115, 97, 108]"
+    },
+    {
+      "name": "ORACLE_CONFIG",
+      "type": {
+        "array": [
+          "u8",
+          13
+        ]
+      },
+      "value": "[111, 114, 97, 99, 108, 101, 95, 99, 111, 110, 102, 105, 103]"
+    },
+    {
+      "name": "PRICE_AGGREGATE",
+      "type": {
+        "array": [
+          "u8",
+          15
+        ]
+      },
+      "value": "[112, 114, 105, 99, 101, 95, 97, 103, 103, 114, 101, 103, 97, 116, 101]"
+    }
+  ]
+}

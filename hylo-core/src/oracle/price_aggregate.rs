@@ -34,6 +34,26 @@ pub trait PriceAggregateExt {
   fn observation_configs(&self) -> Vec<OracleObservationConfig>;
 }
 
+#[cfg(feature = "offchain")]
+impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {
+  fn price_observations(&self) -> PriceAggregateObservations {
+    PriceAggregateObservations::from(self.observations.0)
+  }
+
+  fn observation_configs(&self) -> Vec<OracleObservationConfig> {
+    self
+      .pyth_lazer
+      .0
+      .iter()
+      .flatten()
+      .map(|config| OracleObservationConfig {
+        index: config.observation.index,
+        reference_index: config.observation.reference_index,
+      })
+      .collect()
+  }
+}
+
 /// Spread of an asset price, with a lower and upper quote.
 /// Use lower in minting, higher in redeeming.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

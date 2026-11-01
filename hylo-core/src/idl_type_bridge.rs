@@ -1,9 +1,19 @@
 use crate::borrow_rate::BorrowRateCurveConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
+#[cfg(any(test, feature = "offchain"))]
 use crate::limiter::deposit::DepositLimiter;
+#[cfg(any(test, feature = "offchain"))]
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
+use crate::oracle::{
+  MarketSession, OracleSource, PriceAggregateObservations, PriceObservation,
+  MAX_PRICE_AGGREGATE_OBSERVATIONS,
+};
+#[cfg(feature = "offchain")]
+use crate::oracle::{
+  OracleObservationConfig, PythLazerConfig, PythLazerFeedId,
+};
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
@@ -187,12 +197,14 @@ impl From<SlippageConfig> for hylo_idl::earn_pool::types::SlippageConfig {
   }
 }
 
+#[cfg(any(test, feature = "offchain"))]
 impl From<hylo_idl::earn_pool::types::DepositLimiter> for DepositLimiter {
   fn from(idl: hylo_idl::earn_pool::types::DepositLimiter) -> DepositLimiter {
     DepositLimiter::new(idl.limit.into())
   }
 }
 
+#[cfg(any(test, feature = "offchain"))]
 impl From<hylo_idl::earn_pool::types::WithdrawalLimiter> for WithdrawalLimiter {
   fn from(
     idl: hylo_idl::earn_pool::types::WithdrawalLimiter,
@@ -263,5 +275,124 @@ impl From<BorrowRateCurveConfig>
       floor_rate: val.floor_rate.into(),
       ceil_rate: val.ceil_rate.into(),
     }
+  }
+}
+
+impl From<MarketSession> for hylo_idl::oracle::types::MarketSession {
+  fn from(val: MarketSession) -> Self {
+    match val {
+      MarketSession::PreMarket => {
+        hylo_idl::oracle::types::MarketSession::PreMarket
+      }
+      MarketSession::Regular => hylo_idl::oracle::types::MarketSession::Regular,
+      MarketSession::PostMarket => {
+        hylo_idl::oracle::types::MarketSession::PostMarket
+      }
+      MarketSession::Overnight => {
+        hylo_idl::oracle::types::MarketSession::Overnight
+      }
+      MarketSession::Closed => hylo_idl::oracle::types::MarketSession::Closed,
+    }
+  }
+}
+
+impl From<OracleSource> for hylo_idl::oracle::types::OracleSource {
+  fn from(val: OracleSource) -> Self {
+    match val {
+      OracleSource::PythLazer => {
+        hylo_idl::oracle::types::OracleSource::PythLazer
+      }
+    }
+  }
+}
+
+#[cfg(feature = "offchain")]
+impl From<hylo_idl::oracle::types::OracleObservationConfig>
+  for OracleObservationConfig
+{
+  fn from(
+    idl: hylo_idl::oracle::types::OracleObservationConfig,
+  ) -> OracleObservationConfig {
+    OracleObservationConfig {
+      index: idl.index,
+      reference_index: idl.reference_index,
+    }
+  }
+}
+
+#[cfg(feature = "offchain")]
+impl From<hylo_idl::oracle::types::PythLazerConfig> for PythLazerConfig {
+  fn from(idl: hylo_idl::oracle::types::PythLazerConfig) -> PythLazerConfig {
+    PythLazerConfig {
+      feed_id: PythLazerFeedId(idl.feed_id.0),
+      observation: idl.observation.into(),
+    }
+  }
+}
+
+impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
+  fn from(val: PriceObservation) -> Self {
+    hylo_idl::oracle::types::PriceObservation {
+      price: val.price,
+      exponent: val.exponent,
+      confidence: val.confidence,
+      posted_slot: val.posted_slot,
+      posted_timestamp_us: val.posted_timestamp_us,
+      market_session: val.market_session.into(),
+    }
+  }
+}
+
+impl From<PriceAggregateObservations>
+  for [hylo_idl::oracle::types::PriceObservation;
+    MAX_PRICE_AGGREGATE_OBSERVATIONS]
+{
+  fn from(val: PriceAggregateObservations) -> Self {
+    (*val).map(hylo_idl::oracle::types::PriceObservation::from)
+  }
+}
+
+impl From<hylo_idl::oracle::types::MarketSession> for MarketSession {
+  fn from(idl: hylo_idl::oracle::types::MarketSession) -> MarketSession {
+    match idl {
+      hylo_idl::oracle::types::MarketSession::PreMarket => {
+        MarketSession::PreMarket
+      }
+      hylo_idl::oracle::types::MarketSession::Regular => MarketSession::Regular,
+      hylo_idl::oracle::types::MarketSession::PostMarket => {
+        MarketSession::PostMarket
+      }
+      hylo_idl::oracle::types::MarketSession::Overnight => {
+        MarketSession::Overnight
+      }
+      hylo_idl::oracle::types::MarketSession::Closed => MarketSession::Closed,
+    }
+  }
+}
+
+impl From<hylo_idl::oracle::types::PriceObservation> for PriceObservation {
+  fn from(idl: hylo_idl::oracle::types::PriceObservation) -> PriceObservation {
+    PriceObservation {
+      price: idl.price,
+      exponent: idl.exponent,
+      confidence: idl.confidence,
+      posted_slot: idl.posted_slot,
+      posted_timestamp_us: idl.posted_timestamp_us,
+      market_session: idl.market_session.into(),
+    }
+  }
+}
+
+impl
+  From<
+    [hylo_idl::oracle::types::PriceObservation;
+      MAX_PRICE_AGGREGATE_OBSERVATIONS],
+  > for PriceAggregateObservations
+{
+  fn from(
+    observations: [hylo_idl::oracle::types::PriceObservation;
+      MAX_PRICE_AGGREGATE_OBSERVATIONS],
+  ) -> PriceAggregateObservations {
+    PriceAggregateObservations::new(observations.map(PriceObservation::from))
   }
 }
