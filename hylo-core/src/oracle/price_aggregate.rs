@@ -330,7 +330,6 @@ impl PriceAggregateObservations {
   /// # Errors
   ///
   /// * The index exceeds the observation capacity.
-  #[must_use]
   pub fn get_observation(
     &self,
     index: usize,
@@ -528,7 +527,7 @@ impl PriceAggregateObservations {
   ///
   /// # Errors
   ///
-  /// * The source index exceeds the observation capacity.
+  /// * The observation index exceeds the observation capacity.
   /// * The observation exponent is outside the supported range.
   pub fn update_observation(
     &mut self,
@@ -548,7 +547,7 @@ impl PriceAggregateObservations {
   ///
   /// # Errors
   ///
-  /// * The source index exceeds the observation capacity.
+  /// * The observation index exceeds the observation capacity.
   pub fn clear_observation(&mut self, index: usize) -> Result<(), CoreError> {
     self
       .0

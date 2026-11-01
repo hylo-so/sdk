@@ -24,6 +24,13 @@ impl OraclePrice {
 }
 
 /// Fetches the validated aggregate price for one feed.
+///
+/// # Errors
+///
+/// * The clock timestamp is negative or overflows microseconds.
+/// * An observation index or reference index is invalid.
+/// * No observations pass the configured validation.
+/// * Price aggregation overflows or cannot convert to the quote precision.
 pub fn query_price_aggregate<C: SolanaClock, P: PriceAggregateExt>(
   clock: &C,
   price_aggregate: &P,
