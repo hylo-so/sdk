@@ -1,6 +1,6 @@
 use anyhow::Result;
 use hylo_core::error::CoreError;
-use hylo_core::oracle::{MICROS_PER_SECOND, PriceAggregateObservations};
+use hylo_core::oracle::{PriceAggregateObservations, MICROS_PER_SECOND};
 
 /// Converts the newest observation time to seconds.
 ///
