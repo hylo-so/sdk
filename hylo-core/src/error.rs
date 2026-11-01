@@ -289,4 +289,32 @@ pub enum CoreError {
   // `exo_registry`
   #[msg("No route between the mint pair.")]
   UnroutablePair,
+  #[msg("Oracle confidence interval is too wide.")]
+  OracleConfidence,
+  #[msg("Oracle exponent is out of range.")]
+  OracleExponent,
+  #[msg("Oracle yielded a negative price which can't be unsigned.")]
+  OracleInvalidPrice,
+  #[msg("Oracle time is negative.")]
+  OracleNegativeTime,
+  #[msg("Oracle did not yield a price within the configured age window.")]
+  OracleOutdated,
+  #[msg("Oracle price is out of range.")]
+  OraclePriceRange,
+  #[msg("Arithmetic error.")]
+  OracleArithmetic,
+  #[msg("Unable to cast safely.")]
+  OracleConversion,
+  #[msg("Non-regular price observation has no valid reference feed.")]
+  OracleInvalidReferenceFeed,
+  #[msg("No fresh price observations are available.")]
+  OracleNoFreshPriceObservations,
+  #[msg("Price observation exceeds its reference price band.")]
+  OraclePriceBandExceeded,
+  #[msg("Price observation index exceeds aggregate capacity.")]
+  OracleObservationCapacityExceeded,
+  #[msg("Pyth Lazer feed ID is already configured.")]
+  OracleDuplicatePythLazerFeedId,
+  #[msg("Observation index is already configured.")]
+  OracleDuplicateObservationIndex,
 }
