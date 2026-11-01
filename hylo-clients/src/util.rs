@@ -87,13 +87,13 @@ where
     ixs
       .iter()
       .flat_map(|ix| &ix.instructions)
-      .find_map(|ix| match ix {
+      .filter_map(|ix| match ix {
         UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(
           UiPartiallyDecodedInstruction { data, .. },
         )) => bs58::decode(data).into_vec().ok(),
         _ => None,
       })
-      .filter(|bytes| bytes.len() >= 16 && &bytes[8..16] == E::DISCRIMINATOR)
+      .find(|bytes| bytes.len() >= 16 && &bytes[8..16] == E::DISCRIMINATOR)
       .context("Could not parse event from result")
       .and_then(|bytes| Ok(E::try_from_slice(&bytes[16..])?))
   } else {
@@ -216,4 +216,132 @@ pub fn ata_instruction(
   mint: &Pubkey,
 ) -> Instruction {
   create_associated_token_account_idempotent(payer, owner, mint, &token::ID)
+}
+
+#[cfg(test)]
+mod tests {
+  use std::io::{Read, Result as IoResult};
+
+  use anchor_lang::event::EVENT_IX_TAG_LE;
+  use anchor_lang::{AnchorDeserialize, Discriminator};
+  use anyhow::Result;
+  use serde_json::json;
+
+  use super::*;
+
+  #[derive(Debug, PartialEq)]
+  struct TestEvent(u64);
+
+  impl AnchorDeserialize for TestEvent {
+    fn deserialize_reader<R: Read>(reader: &mut R) -> IoResult<TestEvent> {
+      u64::deserialize_reader(reader).map(TestEvent)
+    }
+  }
+
+  impl Discriminator for TestEvent {
+    const DISCRIMINATOR: &'static [u8] = &[1, 2, 3, 4, 5, 6, 7, 8];
+  }
+
+  fn event_data(value: u64) -> String {
+    let bytes = EVENT_IX_TAG_LE
+      .iter()
+      .copied()
+      .chain(TestEvent::DISCRIMINATOR.iter().copied())
+      .chain(value.to_le_bytes())
+      .collect_vec();
+    bs58::encode(bytes).into_string()
+  }
+
+  fn simulation(
+    instruction_data: &[String],
+  ) -> Result<Response<RpcSimulateTransactionResult>> {
+    let instructions = instruction_data
+      .iter()
+      .map(|data| {
+        json!({
+          "programId": Pubkey::new_unique().to_string(),
+          "accounts": [],
+          "data": data,
+        })
+      })
+      .collect_vec();
+    Ok(serde_json::from_value(json!({
+      "context": { "slot": 1 },
+      "value": {
+        "err": null,
+        "logs": null,
+        "accounts": null,
+        "unitsConsumed": 42,
+        "returnData": null,
+        "innerInstructions": [{ "index": 0, "instructions": instructions }],
+      },
+    }))?)
+  }
+
+  #[test]
+  fn parse_event_skips_unrelated_inner_instructions() -> Result<()> {
+    let unrelated = bs58::encode([0; 24]).into_string();
+    let result = simulation(&[unrelated, event_data(7)])?;
+
+    assert_eq!(parse_event::<TestEvent>(&result)?, TestEvent(7));
+    Ok(())
+  }
+
+  #[test]
+  fn parse_event_skips_short_inner_instructions() -> Result<()> {
+    let short = bs58::encode([1, 2, 3]).into_string();
+    let result = simulation(&[short, event_data(7)])?;
+
+    assert_eq!(parse_event::<TestEvent>(&result)?, TestEvent(7));
+    Ok(())
+  }
+
+  #[test]
+  fn parse_event_returns_first_matching_event() -> Result<()> {
+    let result = simulation(&[event_data(7), event_data(9)])?;
+
+    assert_eq!(parse_event::<TestEvent>(&result)?, TestEvent(7));
+    Ok(())
+  }
+
+  #[test]
+  fn parse_event_rejects_responses_without_the_event() -> Result<()> {
+    let result =
+      simulation(&["0".to_owned(), bs58::encode([0; 24]).into_string()])?;
+
+    assert!(parse_event::<TestEvent>(&result).is_err());
+    Ok(())
+  }
+
+  #[test]
+  fn parse_event_preserves_matching_event_deserialization_errors() -> Result<()>
+  {
+    let malformed = bs58::encode(
+      EVENT_IX_TAG_LE
+        .iter()
+        .chain(TestEvent::DISCRIMINATOR)
+        .copied()
+        .collect_vec(),
+    )
+    .into_string();
+    let result = simulation(&[malformed, event_data(9)])?;
+    let error = parse_event::<TestEvent>(&result)
+      .expect_err("a matching event without its payload must fail");
+
+    assert_eq!(
+      error
+        .downcast_ref::<std::io::Error>()
+        .map(std::io::Error::kind),
+      Some(std::io::ErrorKind::InvalidInput)
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn parse_event_skips_invalid_base58() -> Result<()> {
+    let result = simulation(&["0".to_owned(), event_data(7)])?;
+
+    assert_eq!(parse_event::<TestEvent>(&result)?, TestEvent(7));
+    Ok(())
+  }
 }
