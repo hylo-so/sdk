@@ -9,12 +9,16 @@ mod codegen {
   anchor_lang::declare_program!(hylo_exchange);
   #[cfg(not(feature = "shadow"))]
   anchor_lang::declare_program!(hylo_router);
+  #[cfg(not(feature = "shadow"))]
+  anchor_lang::declare_program!(hylo_oracle);
   #[cfg(feature = "shadow")]
   anchor_lang::declare_program!(hylo_earn_pool_shadow);
   #[cfg(feature = "shadow")]
   anchor_lang::declare_program!(hylo_exchange_shadow);
   #[cfg(feature = "shadow")]
   anchor_lang::declare_program!(hylo_router_shadow);
+  #[cfg(feature = "shadow")]
+  anchor_lang::declare_program!(hylo_oracle_shadow);
 }
 
 pub mod pda;
@@ -51,13 +55,22 @@ pub mod router {
   pub use super::instruction_builders::router as instruction_builders;
 }
 
+pub mod oracle {
+  pub use super::account_builders::oracle as account_builders;
+  #[cfg(not(feature = "shadow"))]
+  pub use super::codegen::hylo_oracle::*;
+  #[cfg(feature = "shadow")]
+  pub use super::codegen::hylo_oracle_shadow::*;
+  pub use super::instruction_builders::oracle as instruction_builders;
+}
+
 #[cfg(test)]
 mod tests {
   use anchor_lang::prelude::{pubkey, Pubkey};
   use anchor_lang::{Discriminator, Id, ToAccountMetas};
   use const_crypto::sha2::Sha256;
 
-  use crate::{earn_pool, exchange, pda, router};
+  use crate::{earn_pool, exchange, oracle, pda, router};
 
   #[cfg(not(feature = "shadow"))]
   mod expected {
@@ -68,6 +81,8 @@ mod tests {
       pubkey!("HYEXCHtHkBagdStcJCp3xbbb9B7sdMdWXFNj6mdsG4hn");
     pub const ROUTER: Pubkey =
       pubkey!("hyRouTRDAgn65xyyJ3L5c4k5SFmSdr3NxDV8Euzjy3f");
+    pub const ORACLE: Pubkey =
+      pubkey!("hyorViHghDYU4Yd15DZFHDQXJBtzXqVHuypcvN3Gj7t");
   }
 
   #[cfg(feature = "shadow")]
@@ -79,6 +94,8 @@ mod tests {
       pubkey!("hyshEX5sNEYhnYPMm8MwMThhBRPuLN3rjoYDbC9esPQ");
     pub const ROUTER: Pubkey =
       pubkey!("HyshRo2hkqXGcyCfKU22zhSBPMwokmAnEoxDGeVQz7d");
+    pub const ORACLE: Pubkey =
+      pubkey!("HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F");
   }
 
   #[test]
@@ -86,6 +103,7 @@ mod tests {
     assert_eq!(earn_pool::ID, expected::EARN_POOL);
     assert_eq!(exchange::ID, expected::EXCHANGE);
     assert_eq!(router::ID, expected::ROUTER);
+    assert_eq!(oracle::ID, expected::ORACLE);
   }
 
   #[test]
@@ -93,6 +111,7 @@ mod tests {
     assert_eq!(earn_pool::program::HyloEarnPool::id(), expected::EARN_POOL);
     assert_eq!(exchange::program::HyloExchange::id(), expected::EXCHANGE);
     assert_eq!(router::program::HyloRouter::id(), expected::ROUTER);
+    assert_eq!(oracle::program::HyloOracle::id(), expected::ORACLE);
   }
 
   #[test]
@@ -141,5 +160,134 @@ mod tests {
       .to_account_metas(None)
       .is_empty());
     assert_eq!(router::client::args::RouteV2::DISCRIMINATOR, &route_v2[..8]);
+  }
+
+  #[test]
+  fn oracle_price_aggregate_matches_program_seeds() {
+    let mint = Pubkey::new_unique();
+    let (expected_aggregate, _bump) = Pubkey::find_program_address(
+      &[&oracle::constants::PRICE_AGGREGATE, mint.as_ref()],
+      &oracle::ID,
+    );
+    assert_eq!(pda::price_aggregate(mint), expected_aggregate);
+    assert_eq!(pda::ORACLE_EVENT_AUTHORITY, pda::event_auth(oracle::ID));
+
+    let admin = Pubkey::new_unique();
+    let initialize =
+      oracle::instruction_builders::initialize_price_aggregate(admin, mint);
+    assert_eq!(initialize.program_id, oracle::ID);
+    assert!(initialize.accounts.iter().any(|account| {
+      account.pubkey == expected_aggregate && account.is_writable
+    }));
+
+    let treasury = Pubkey::new_unique();
+    let args = oracle::client::args::UpdateObservationWithPythLazer {
+      channel_id: 4,
+      message_data: vec![1, 2, 3],
+      ed25519_instruction_index: 0,
+      signature_index: 0,
+    };
+    let update =
+      oracle::instruction_builders::update_observation_with_pyth_lazer(
+        admin,
+        treasury,
+        &[mint],
+        &args,
+      );
+    assert_eq!(update.program_id, oracle::ID);
+    assert!(update
+      .accounts
+      .iter()
+      .any(|account| { account.pubkey == treasury && account.is_writable }));
+    assert!(update.accounts.iter().any(|account| {
+      account.pubkey == expected_aggregate && account.is_writable
+    }));
+  }
+
+  #[test]
+  fn oracle_admin_update_builders_match_program_seeds() {
+    let admin = Pubkey::new_unique();
+    let upgrade_authority = Pubkey::new_unique();
+    let new_admin = Pubkey::new_unique();
+    let expected_config = Pubkey::find_program_address(
+      &[&oracle::constants::ORACLE_CONFIG],
+      &oracle::ID,
+    )
+    .0;
+    let expected_proposal = Pubkey::find_program_address(
+      &[
+        &oracle::constants::ADDRESS_UPDATE_PROPOSAL,
+        &[oracle::types::AddressField::Admin as u8],
+      ],
+      &oracle::ID,
+    )
+    .0;
+
+    assert_eq!(pda::oracle_config(), expected_config);
+    assert_eq!(
+      pda::oracle_address_update_proposal(oracle::types::AddressField::Admin),
+      expected_proposal
+    );
+
+    let initialize =
+      oracle::instruction_builders::initialize_oracle(admin, upgrade_authority);
+    assert_eq!(initialize.program_id, oracle::ID);
+    assert!(initialize.accounts.iter().any(|account| {
+      account.pubkey == expected_config && account.is_writable
+    }));
+    assert!(initialize
+      .accounts
+      .iter()
+      .any(|account| account.pubkey == pda::ORACLE_PROGRAM_DATA));
+
+    let propose = oracle::instruction_builders::propose_address_update(
+      admin,
+      oracle::types::AddressField::Admin,
+      new_admin,
+      2 * 60 * 60,
+    );
+    assert_eq!(propose.program_id, oracle::ID);
+    assert!(propose.accounts.iter().any(|account| {
+      account.pubkey == expected_config && !account.is_writable
+    }));
+    assert!(propose.accounts.iter().any(|account| {
+      account.pubkey == expected_proposal && account.is_writable
+    }));
+
+    let approve = oracle::instruction_builders::approve_address_update(
+      upgrade_authority,
+      new_admin,
+      oracle::types::AddressField::Admin,
+    );
+    assert_eq!(approve.program_id, oracle::ID);
+    assert!(approve.accounts.iter().any(|account| {
+      account.pubkey == expected_proposal && account.is_writable
+    }));
+    assert!(approve
+      .accounts
+      .iter()
+      .any(|account| account.pubkey == pda::ORACLE_PROGRAM_DATA));
+
+    let accept = oracle::instruction_builders::accept_address_update(
+      new_admin,
+      admin,
+      oracle::types::AddressField::Admin,
+    );
+    assert_eq!(accept.program_id, oracle::ID);
+    assert!(accept.accounts.iter().any(|account| {
+      account.pubkey == expected_config && account.is_writable
+    }));
+    assert!(accept.accounts.iter().any(|account| {
+      account.pubkey == expected_proposal && account.is_writable
+    }));
+
+    let cancel = oracle::instruction_builders::cancel_address_update(
+      admin,
+      oracle::types::AddressField::Admin,
+    );
+    assert_eq!(cancel.program_id, oracle::ID);
+    assert!(cancel.accounts.iter().any(|account| {
+      account.pubkey == expected_proposal && account.is_writable
+    }));
   }
 }
