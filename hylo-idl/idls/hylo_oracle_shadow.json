@@ -1106,6 +1106,19 @@
       ]
     },
     {
+      "name": "ObservationUpdated",
+      "discriminator": [
+        15,
+        113,
+        103,
+        34,
+        143,
+        217,
+        244,
+        35
+      ]
+    },
+    {
       "name": "PriceAggregateInitialized",
       "discriminator": [
         9,
@@ -1116,19 +1129,6 @@
         27,
         5,
         184
-      ]
-    },
-    {
-      "name": "PriceAggregateUpdated",
-      "discriminator": [
-        114,
-        143,
-        94,
-        21,
-        212,
-        187,
-        16,
-        26
       ]
     },
     {
@@ -1455,6 +1455,29 @@
       }
     },
     {
+      "name": "ObservationUpdated",
+      "docs": [
+        "Emitted whenever a price aggregate records a newer price, from any source."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "source",
+            "type": {
+              "defined": {
+                "name": "OracleSource"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "OracleConfig",
       "docs": [
         "Oracle administration state."
@@ -1594,29 +1617,6 @@
               },
               8
             ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceAggregateUpdated",
-      "docs": [
-        "Emitted whenever a price aggregate records a newer price, from any source."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "price_aggregate",
-            "type": "pubkey"
-          },
-          {
-            "name": "source",
-            "type": {
-              "defined": {
-                "name": "OracleSource"
-              }
-            }
           }
         ]
       }
