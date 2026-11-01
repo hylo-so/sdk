@@ -34,7 +34,6 @@ pub trait PriceAggregateExt {
   fn observation_configs(&self) -> Vec<OracleObservationConfig>;
 }
 
-#[cfg(feature = "offchain")]
 impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {
   fn price_observations(&self) -> PriceAggregateObservations {
     PriceAggregateObservations::from(self.observations.0)
@@ -82,6 +81,10 @@ impl<Exp: Integer> PriceRange<Exp> {
       lower: price,
       upper: price,
     }
+  }
+
+  pub(crate) fn new(lower: UFix64<Exp>, upper: UFix64<Exp>) -> PriceRange<Exp> {
+    PriceRange { lower, upper }
   }
 }
 

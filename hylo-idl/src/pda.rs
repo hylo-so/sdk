@@ -1,4 +1,4 @@
-use anchor_lang::prelude::{bpf_loader_upgradeable, pubkey, Pubkey};
+use anchor_lang::prelude::{bpf_loader_upgradeable, Pubkey};
 use anchor_spl::associated_token::spl_associated_token_account;
 use anchor_spl::token;
 use const_crypto::ed25519;
@@ -251,15 +251,6 @@ pub const SOL_USD_PRICE_AGGREGATE: Pubkey = price_aggregate(SOL::MINT);
 pub const USDC_USD_PRICE_AGGREGATE: Pubkey = price_aggregate(USDC::MINT);
 
 pub const BTC_USD_PRICE_AGGREGATE: Pubkey = price_aggregate(CBBTC::MINT);
-
-pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7AviUf9nL62mcxNbQGKm4nKDQnPjswo6c5MX4D57HmyE");
-
-pub const USDC_USD_PYTH_FEED: Pubkey =
-  pubkey!("6HAuqASbHEh4w4REJEUUUCginTLfj1kwCh215ZLtMkrT");
-
-pub const BTC_USD_PYTH_FEED: Pubkey =
-  pubkey!("APgzQGGdv2qCgBkX6aHVkrGePtBVDDg68GiqaM7rmtf5");
 
 pub const DEAD: Pubkey = pda!(exchange::ID, exchange::constants::DEAD);
 

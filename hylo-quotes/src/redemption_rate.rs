@@ -178,7 +178,7 @@ where
 {
   gate(
     state.sol_usd_in_stablecoin_oracle_window(),
-    CoreError::PythOracleOutdated,
+    CoreError::OracleOutdated,
   )?;
   let context = &state.exchange_context;
   let lst_out = FeeBase::<HYUSD, L>::fee_base(state, reference_hyusd)?;
@@ -221,7 +221,7 @@ where
   let pair = state.exo_pair::<E>()?;
   gate(
     pair.collateral_usd_in_stablecoin_oracle_window(),
-    CoreError::PythOracleOutdated,
+    CoreError::OracleOutdated,
   )?;
   let collateral_out = FeeBase::<HYUSD, E>::fee_base(state, reference_hyusd)?;
   validate_burn(
