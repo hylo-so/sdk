@@ -4,7 +4,6 @@ use anchor_client::solana_sdk::instruction::Instruction;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_lang::ToAccountMetas;
 use anyhow::Result;
-use hylo_core::pyth::PythOracle;
 use hylo_core::slippage_config::SlippageConfig;
 use hylo_idl::earn_pool::account_builders as ep_account_builders;
 use hylo_idl::exchange::account_builders;
@@ -14,7 +13,7 @@ use hylo_idl::tokens::{
   StakePool, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, ONYC, PST,
   SHYUSD, USDC, WETH, XBTC, XETH, XHYPE, XONYC, XPST, XSOL, XZEC, ZEC,
 };
-use hylo_idl::with_exo_pairs;
+use hylo_idl::{pda, with_exo_pairs};
 
 use super::{InstructionBuilder, RouterArgs, RouterClient};
 use crate::util::{
@@ -170,7 +169,7 @@ macro_rules! exo_router_instructions {
       account_builders::mint_stablecoin_exo(
         user,
         $exo::MINT,
-        $exo::FEED.address,
+        pda::price_aggregate($exo::MINT),
       )
     });
 
@@ -183,7 +182,7 @@ macro_rules! exo_router_instructions {
         account_builders::mint_levercoin_exo(
           user,
           $exo::MINT,
-          $exo::FEED.address,
+          pda::price_aggregate($exo::MINT),
         )
       }
     );
@@ -192,7 +191,7 @@ macro_rules! exo_router_instructions {
       account_builders::redeem_stablecoin_exo(
         user,
         $exo::MINT,
-        $exo::FEED.address,
+        pda::price_aggregate($exo::MINT),
       )
     });
 
@@ -200,7 +199,7 @@ macro_rules! exo_router_instructions {
       account_builders::redeem_levercoin_exo(
         user,
         $exo::MINT,
-        $exo::FEED.address,
+        pda::price_aggregate($exo::MINT),
       )
     });
 
@@ -213,7 +212,7 @@ macro_rules! exo_router_instructions {
         account_builders::convert_stable_to_lever_exo(
           user,
           $exo::MINT,
-          $exo::FEED.address,
+          pda::price_aggregate($exo::MINT),
         )
       }
     );
@@ -227,17 +226,25 @@ macro_rules! exo_router_instructions {
         account_builders::convert_lever_to_stable_exo(
           user,
           $exo::MINT,
-          $exo::FEED.address,
+          pda::price_aggregate($exo::MINT),
         )
       }
     );
 
     router_instruction!($exo, USDC, BASE_LOOKUP_TABLES, USDC::MINT, |user| {
-      account_builders::swap_exo_to_usdc(user, $exo::MINT, $exo::FEED.address)
+      account_builders::swap_exo_to_usdc(
+        user,
+        $exo::MINT,
+        pda::price_aggregate($exo::MINT),
+      )
     });
 
     router_instruction!(USDC, $exo, BASE_LOOKUP_TABLES, $exo::MINT, |user| {
-      account_builders::swap_usdc_to_exo(user, $exo::MINT, $exo::FEED.address)
+      account_builders::swap_usdc_to_exo(
+        user,
+        $exo::MINT,
+        pda::price_aggregate($exo::MINT),
+      )
     });
     )+
   };

@@ -793,7 +793,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -890,7 +890,8 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "stablecoin_mint",
@@ -1572,7 +1573,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -1669,7 +1670,8 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "stablecoin_mint",
@@ -2246,7 +2248,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -2807,7 +2809,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "hylo_earn_pool",
@@ -3163,7 +3165,8 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "hylo_earn_pool",
@@ -4225,7 +4228,8 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -4694,7 +4698,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -5103,7 +5107,8 @@
           ]
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "token_program",
@@ -5518,7 +5523,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -5928,7 +5933,8 @@
           ]
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "token_program",
@@ -6452,7 +6458,8 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -7346,7 +7353,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -7730,7 +7737,8 @@
           "name": "lst_mint"
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "token_program",
@@ -8120,7 +8128,7 @@
           ]
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -8505,7 +8513,8 @@
           "name": "lst_mint"
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "token_program",
@@ -9029,7 +9038,8 @@
           "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -9449,7 +9459,7 @@
           "writable": true
         },
         {
-          "name": "exo_usd_pyth_feed"
+          "name": "exo_usd_price_aggregate"
         },
         {
           "name": "metadata_program",
@@ -10469,7 +10479,7 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
           "name": "token_program",
@@ -10828,7 +10838,8 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
           "name": "token_program",
@@ -11306,7 +11317,8 @@
           }
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -12033,10 +12045,11 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -12777,10 +12790,11 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -13960,10 +13974,12 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -14642,10 +14658,12 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -15382,10 +15400,11 @@
           }
         },
         {
-          "name": "collateral_usd_pyth_feed"
+          "name": "collateral_usd_price_aggregate"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -16064,10 +16083,12 @@
           }
         },
         {
-          "name": "sol_usd_pyth_feed"
+          "name": "sol_usd_price_aggregate",
+          "address": "3rCMjA6zSCLA89N3Zutwdet9ttaT6g3fUZjbjUsrrJR3"
         },
         {
-          "name": "usdc_usd_pyth_feed"
+          "name": "usdc_usd_price_aggregate",
+          "address": "5dCWufEeoY5uhFPKVRtnnGn3FfyWGS1UoaD1vm5zt5RU"
         },
         {
           "name": "token_program",
@@ -19606,16 +19627,16 @@
       ]
     },
     {
-      "name": "PriceUpdateV2",
+      "name": "PriceAggregate",
       "discriminator": [
-        34,
         241,
-        35,
-        99,
-        157,
-        126,
-        244,
-        205
+        179,
+        146,
+        72,
+        88,
+        141,
+        189,
+        245
       ]
     },
     {
@@ -21761,6 +21782,32 @@
       }
     },
     {
+      "name": "MarketSession",
+      "docs": [
+        "Trading session recorded with a price observation."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PreMarket"
+          },
+          {
+            "name": "Regular"
+          },
+          {
+            "name": "PostMarket"
+          },
+          {
+            "name": "Overnight"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
       "name": "MintLevercoinExoEvent",
       "type": {
         "kind": "struct",
@@ -22048,6 +22095,27 @@
       }
     },
     {
+      "name": "OracleObservationConfig",
+      "docs": [
+        "Observation indexes and an optional reference index."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "reference_index",
+            "type": {
+              "option": "u8"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "OraclePriceEvent",
       "docs": [
         "Serializable oracle price for event emission."
@@ -22119,109 +22187,106 @@
       }
     },
     {
-      "name": "PriceFeedMessage",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "feed_id",
-            "docs": [
-              "`FeedId` but avoid the type alias because of compatibility issues with Anchor's `idl-build` feature."
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "price",
-            "type": "i64"
-          },
-          {
-            "name": "conf",
-            "type": "u64"
-          },
-          {
-            "name": "exponent",
-            "type": "i32"
-          },
-          {
-            "name": "publish_time",
-            "docs": [
-              "The timestamp of this price update in seconds"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "prev_publish_time",
-            "docs": [
-              "The timestamp of the previous price update. This field is intended to allow users to",
-              "identify the single unique price update for any moment in time:",
-              "for any time t, the unique update is the one such that prev_publish_time < t <= publish_time.",
-              "",
-              "Note that there may not be such an update while we are migrating to the new message-sending logic,",
-              "as some price updates on pythnet may not be sent to other chains (because the message-sending",
-              "logic may not have triggered). We can solve this problem by making the message-sending mandatory",
-              "(which we can do once publishers have migrated over).",
-              "",
-              "Additionally, this field may be equal to publish_time if the message is sent on a slot where",
-              "where the aggregation was unsuccesful. This problem will go away once all publishers have",
-              "migrated over to a recent version of pyth-agent."
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "ema_price",
-            "type": "i64"
-          },
-          {
-            "name": "ema_conf",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceUpdateV2",
+      "name": "PriceAggregate",
       "docs": [
-        "A price update account. This account is used by the Pyth Receiver program to store a verified price update from a Pyth price feed.",
-        "It contains:",
-        "- `write_authority`: The write authority for this account. This authority can close this account to reclaim rent or update the account to contain a different price update.",
-        "- `verification_level`: The [`VerificationLevel`] of this price update. This represents how many Wormhole guardian signatures have been verified for this price update.",
-        "- `price_message`: The actual price update.",
-        "- `posted_slot`: The slot at which this price update was posted."
+        "Samples posted for one mint, with fixed observation and source capacities."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "write_authority",
+            "name": "mint",
             "type": "pubkey"
           },
           {
-            "name": "verification_level",
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "observations",
             "type": {
               "defined": {
-                "name": "VerificationLevel"
+                "name": "PriceAggregateObservations"
               }
             }
           },
           {
-            "name": "price_message",
+            "name": "pyth_lazer",
             "type": {
               "defined": {
-                "name": "PriceFeedMessage"
+                "name": "PythLazerFeeds"
               }
             }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceAggregateObservations",
+      "docs": [
+        "Fixed-size observation slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "defined": {
+                  "name": "PriceObservation"
+                }
+              },
+              8
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceObservation",
+      "docs": [
+        "Source observation with a shared price and confidence exponent.",
+        "A zero price marks an unoccupied slot."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
           },
           {
             "name": "posted_slot",
             "type": "u64"
+          },
+          {
+            "name": "posted_timestamp_us",
+            "type": "u64"
+          },
+          {
+            "name": "market_session",
+            "type": {
+              "defined": {
+                "name": "MarketSession"
+              }
+            }
           }
         ]
       }
@@ -22254,6 +22319,68 @@
           {
             "name": "ttl_secs",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerConfig",
+      "docs": [
+        "Pyth Lazer feed and its observation mapping."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          },
+          {
+            "name": "observation",
+            "type": {
+              "defined": {
+                "name": "OracleObservationConfig"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerFeedId",
+      "docs": [
+        "Pyth Lazer feed id (Lazer's numeric identifier)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          "u32"
+        ]
+      }
+    },
+    {
+      "name": "PythLazerFeeds",
+      "docs": [
+        "Fixed Pyth Lazer feed configuration slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "option": {
+                  "defined": {
+                    "name": "PythLazerConfig"
+                  }
+                }
+              },
+              3
+            ]
           }
         ]
       }
@@ -23618,39 +23745,6 @@
                 91
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "VerificationLevel",
-      "docs": [
-        "Pyth price updates are bridged to all blockchains via Wormhole.",
-        "Using the price updates on another chain requires verifying the signatures of the Wormhole guardians.",
-        "The usual process is to check the signatures for two thirds of the total number of guardians, but this can be cumbersome on Solana because of the transaction size limits,",
-        "so we also allow for partial verification.",
-        "",
-        "This enum represents how much a price update has been verified:",
-        "- If `Full`, we have verified the signatures for two thirds of the current guardians.",
-        "- If `Partial`, only `num_signatures` guardian signatures have been checked.",
-        "",
-        "# Warning",
-        "Using partially verified price updates is dangerous, as it lowers the threshold of guardians that need to collude to produce a malicious price update."
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Partial",
-            "fields": [
-              {
-                "name": "num_signatures",
-                "type": "u8"
-              }
-            ]
-          },
-          {
-            "name": "Full"
           }
         ]
       }

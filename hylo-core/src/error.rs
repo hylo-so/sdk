@@ -36,23 +36,23 @@ pub enum CoreError {
   SolLstPriceConversion,
   #[msg("Arithmetic error during LST to LST conversion.")]
   LstLstPriceConversion,
-  // `pyth`
+  // `oracle`
   #[msg("Oracle confidence interval is too wide.")]
-  PythOracleConfidence,
+  OracleConfidence,
   #[msg("Oracle exponent is out of range.")]
-  PythOracleExponent,
+  OracleExponent,
   #[msg("Oracle yielded a negative price which can't be unsigned.")]
-  PythOracleNegativePrice,
+  OracleInvalidPrice,
   #[msg("Oracle time is negative.")]
-  PythOracleNegativeTime,
+  OracleNegativeTime,
   #[msg("Oracle did not yield a price within the configured age window.")]
-  PythOracleOutdated,
+  OracleOutdated,
   #[msg("Oracle price is out of range.")]
-  PythOraclePriceRange,
+  OraclePriceRange,
   #[msg("Oracle publish slot greater than current slot.")]
-  PythOracleSlotInvalid,
+  OracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
-  PythOracleVerificationLevel,
+  OracleVerificationLevel,
   // `nav`
   #[msg("Overflow while computing collateral ratio.")]
   CollateralRatioOverflow,
@@ -289,18 +289,10 @@ pub enum CoreError {
   // `exo_registry`
   #[msg("No route between the mint pair.")]
   UnroutablePair,
-  #[msg("Oracle confidence interval is too wide.")]
-  OracleConfidence,
-  #[msg("Oracle exponent is out of range.")]
-  OracleExponent,
-  #[msg("Oracle yielded a negative price which can't be unsigned.")]
-  OracleInvalidPrice,
-  #[msg("Oracle time is negative.")]
-  OracleNegativeTime,
-  #[msg("Oracle did not yield a price within the configured age window.")]
-  OracleOutdated,
-  #[msg("Oracle price is out of range.")]
-  OraclePriceRange,
+  // `feeds`
+  #[msg("No feed config found for mint.")]
+  UnknownFeedMint,
+  // `oracle::price_aggregate`
   #[msg("Arithmetic error.")]
   OracleArithmetic,
   #[msg("Unable to cast safely.")]

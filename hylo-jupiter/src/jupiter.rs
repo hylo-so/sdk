@@ -8,16 +8,17 @@ use fix::prelude::UFix64;
 use hylo_core::error::CoreError;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
+use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::idl::tokens::ExoRole::{
   Collateral, Levercoin, Stablecoin, Usdc,
 };
 use hylo_core::idl::tokens::{
-  StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XSOL,
+  StakePool, TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, SOL, USDC, XSOL,
 };
 use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig, SOL_USD};
+use hylo_core::oracle::{query_price_aggregate, OracleConfig};
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
@@ -25,11 +26,10 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  find_exo_entry, read_exo_entries, ExoPairAccounts, ExoPairState,
-  ProtocolState, UsdcPairState, EXO_PAIR_ACCOUNTS,
+  exo_entry_role, exo_pubkeys_from_entries, find_exo_entry, read_exo_entries,
+  ExoPairAccounts, ExoPairState, ProtocolState, UsdcPairState,
+  EXO_PAIR_ACCOUNTS,
 };
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
 use crate::account_metas;
 use crate::util::{
@@ -55,12 +55,12 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
   pda::lst_header(HYLOSOL::MINT),
   JITOSOL::POOL_STATE,
   HYLOSOL::POOL_STATE,
-  SOL_USD.address,
+  pda::price_aggregate(SOL::MINT),
   SHYUSD::MINT,
   pda::HYUSD_POOL,
   pda::POOL_CONFIG,
   pda::USDC_PAIR,
-  pda::USDC_USD_PYTH_FEED,
+  pda::price_aggregate(USDC::MINT),
   pda::lst_vault(JITOSOL::MINT),
   pda::lst_vault(HYLOSOL::MINT),
   pda::usdc_vault(USDC::MINT),
@@ -70,15 +70,16 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
 fn usdc_state(
   clock: &ClockRef,
   usdc_pair: &UsdcPair,
-  usdc_usd: &PriceUpdateV2,
+  usdc_usd: &PriceAggregate,
   usdc_vault: &TokenAccount,
 ) -> Result<UsdcPairState> {
   let usdc_oracle_config = OracleConfig::new(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_usd_spot = query_pyth_oracle(clock, usdc_usd, usdc_oracle_config)
-    .map(|oracle| oracle.spot);
+  let usdc_usd_spot =
+    query_price_aggregate(clock, usdc_usd, usdc_oracle_config)
+      .map(|oracle| oracle.spot);
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
   let reserve_gate = ReserveGate::validated(
@@ -123,8 +124,8 @@ impl HyloJupiter {
       account_map_get(account_map, &pda::lst_header(JITOSOL::MINT))?;
     let hylosol_header: LstHeader =
       account_map_get(account_map, &pda::lst_header(HYLOSOL::MINT))?;
-    let sol_usd: PriceUpdateV2 =
-      account_map_get(account_map, &SOL_USD.address)?;
+    let sol_usd_aggregate: PriceAggregate =
+      account_map_get(account_map, &pda::price_aggregate(SOL::MINT))?;
     let shyusd_mint: Mint = account_map_get(account_map, &SHYUSD::MINT)?;
     let hyusd_pool: TokenAccount =
       account_map_get(account_map, &pda::HYUSD_POOL)?;
@@ -137,10 +138,10 @@ impl HyloJupiter {
       account_map_get(account_map, &pda::lst_vault(HYLOSOL::MINT))?;
     let usdc_vault: TokenAccount =
       account_map_get(account_map, &pda::usdc_vault(USDC::MINT))?;
-    let usdc_usd: PriceUpdateV2 =
-      account_map_get(account_map, &pda::USDC_USD_PYTH_FEED)?;
+    let usdc_usd_aggregate: PriceAggregate =
+      account_map_get(account_map, &pda::price_aggregate(USDC::MINT))?;
     let usdc_pair_state =
-      usdc_state(&self.clock, &usdc_pair, &usdc_usd, &usdc_vault)?;
+      usdc_state(&self.clock, &usdc_pair, &usdc_usd_aggregate, &usdc_vault)?;
     let jitosol_stake_pool = SplStakePool::from_bytes(
       &keyed_account(account_map, &JITOSOL::POOL_STATE)?.data,
     )?;
@@ -157,7 +158,7 @@ impl HyloJupiter {
       shyusd_mint,
       pool_config,
       hyusd_pool,
-      &sol_usd,
+      &sol_usd_aggregate,
       self.exo_pairs(account_map, entries)?,
       usdc_pair_state,
       jitosol_stake_pool,
@@ -201,7 +202,7 @@ impl HyloJupiter {
     let entry = find_exo_entry(&self.exo_entries, source, destination)
       .ok_or(CoreError::UnroutablePair)?;
     let collateral = entry.collateral_mint;
-    let oracle = exo_pyth_feed_by_mint(collateral)?.address;
+    let oracle = pda::price_aggregate(collateral);
     let roles = (
       exo_entry_role(entry, source)?,
       exo_entry_role(entry, destination)?,
