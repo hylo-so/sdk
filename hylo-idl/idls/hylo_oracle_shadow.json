@@ -1236,8 +1236,8 @@
     },
     {
       "code": 6015,
-      "name": "InvalidReferenceFeed",
-      "msg": "Price observation reference feed is missing or invalid."
+      "name": "OracleSourceConfigurationValidationFailed",
+      "msg": "Oracle source configuration is invalid."
     },
     {
       "code": 6016,
@@ -1266,66 +1266,56 @@
     },
     {
       "code": 6021,
-      "name": "DuplicatePythLazerFeedId",
-      "msg": "Pyth Lazer feed id is already configured for this aggregate."
-    },
-    {
-      "code": 6022,
-      "name": "DuplicateObservationIndex",
-      "msg": "Observation index is already configured for this aggregate."
-    },
-    {
-      "code": 6023,
       "name": "NoFreshPriceObservations",
       "msg": "All price observations are stale."
     },
     {
-      "code": 6024,
+      "code": 6022,
       "name": "StalePriceObservation",
       "msg": "Price observation exceeded the maximum staleness."
     },
     {
-      "code": 6025,
+      "code": 6023,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow."
     },
     {
-      "code": 6026,
+      "code": 6024,
       "name": "ConversionError",
       "msg": "Unable to cast safely."
     },
     {
-      "code": 6027,
+      "code": 6025,
       "name": "UnableToUpdateSample",
       "msg": "Unable to update price aggregate observation."
     },
     {
-      "code": 6028,
+      "code": 6026,
       "name": "AddressChangeExpired",
       "msg": "Address change proposal has expired."
     },
     {
-      "code": 6029,
+      "code": 6027,
       "name": "AddressChangeTtlInvalid",
       "msg": "Address change proposal's TTL not in configured range."
     },
     {
-      "code": 6030,
+      "code": 6028,
       "name": "AddressChangeNotApproved",
       "msg": "Address change proposal has not been approved."
     },
     {
-      "code": 6031,
+      "code": 6029,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
     },
     {
-      "code": 6032,
+      "code": 6030,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
     },
     {
-      "code": 6033,
+      "code": 6031,
       "name": "AdminNoop",
       "msg": "Proposed administrator matches the current administrator."
     }
