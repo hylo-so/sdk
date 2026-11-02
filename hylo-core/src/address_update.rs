@@ -2,6 +2,8 @@ use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace, Pubkey,
 };
 
+use crate::error::CoreError;
+
 const MIN_TTL_SECS: u64 = 2 * 60 * 60;
 const MAX_TTL_SECS: u64 = 30 * 24 * 60 * 60;
 
@@ -32,17 +34,6 @@ impl AsRef<[u8]> for AddressField {
   }
 }
 
-/// Address rotation failures.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AddressUpdateError {
-  InvalidTtl,
-  UnchangedAddress,
-  Expired,
-  AlreadyApproved,
-  NotApproved,
-  UnsupportedField,
-}
-
 /// State containing addresses selected for rotation.
 pub trait RotatableAddresses {
   /// Returns the address selected for rotation.
@@ -53,7 +44,7 @@ pub trait RotatableAddresses {
   fn get_address(
     &self,
     address_field: AddressField,
-  ) -> Result<Pubkey, AddressUpdateError>;
+  ) -> Result<Pubkey, CoreError>;
 
   /// Replaces the address selected for rotation.
   ///
@@ -64,7 +55,7 @@ pub trait RotatableAddresses {
     &mut self,
     address_field: AddressField,
     address: Pubkey,
-  ) -> Result<(), AddressUpdateError>;
+  ) -> Result<(), CoreError>;
 }
 
 /// Pending address rotation.
@@ -101,14 +92,14 @@ impl AddressUpdateProposalData {
     new_address: Pubkey,
     proposal_time: i64,
     ttl_secs: u64,
-  ) -> Result<AddressUpdateProposal, AddressUpdateError> {
+  ) -> Result<AddressUpdateProposal, CoreError> {
     (current_address != new_address)
       .then_some(())
-      .ok_or(AddressUpdateError::UnchangedAddress)?;
+      .ok_or(CoreError::AddressUpdateUnchangedAddress)?;
     (MIN_TTL_SECS..=MAX_TTL_SECS)
       .contains(&ttl_secs)
       .then_some(())
-      .ok_or(AddressUpdateError::InvalidTtl)?;
+      .ok_or(CoreError::AddressUpdateInvalidTtl)?;
     Ok(AddressUpdateProposal {
       address_field,
       new_address,
@@ -136,14 +127,14 @@ impl AddressUpdateProposalData {
   /// # Errors
   ///
   /// * The proposal is inactive or already approved.
-  pub fn approve(&mut self, clock_time: i64) -> Result<(), AddressUpdateError> {
+  pub fn approve(&mut self, clock_time: i64) -> Result<(), CoreError> {
     self
       .is_active(clock_time)
       .then_some(())
-      .ok_or(AddressUpdateError::Expired)?;
+      .ok_or(CoreError::AddressUpdateExpired)?;
     (!self.approved)
       .then_some(())
-      .ok_or(AddressUpdateError::AlreadyApproved)?;
+      .ok_or(CoreError::AddressUpdateAlreadyApproved)?;
     self.approved = true;
     Ok(())
   }
@@ -153,17 +144,14 @@ impl AddressUpdateProposalData {
   /// # Errors
   ///
   /// * The proposal is inactive or has not been approved.
-  pub fn validate_acceptance(
-    &self,
-    clock_time: i64,
-  ) -> Result<(), AddressUpdateError> {
+  pub fn validate_acceptance(&self, clock_time: i64) -> Result<(), CoreError> {
     self
       .is_active(clock_time)
       .then_some(())
-      .ok_or(AddressUpdateError::Expired)?;
+      .ok_or(CoreError::AddressUpdateExpired)?;
     self
       .approved
       .then_some(())
-      .ok_or(AddressUpdateError::NotApproved)
+      .ok_or(CoreError::AddressUpdateNotApproved)
   }
 }
