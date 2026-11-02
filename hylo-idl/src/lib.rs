@@ -290,4 +290,41 @@ mod tests {
       account.pubkey == expected_proposal && account.is_writable
     }));
   }
+  #[test]
+  fn oracle_address_update_builders_use_selected_field_seed() {
+    let admin = Pubkey::new_unique();
+    let upgrade_authority = Pubkey::new_unique();
+    let new_address = Pubkey::new_unique();
+    let check = |field: oracle::types::AddressField| {
+      let expected = pda::oracle_address_update_proposal(field);
+      let propose = oracle::instruction_builders::propose_address_update(
+        admin,
+        field,
+        new_address,
+        7_200,
+      );
+      let approve = oracle::instruction_builders::approve_address_update(
+        upgrade_authority,
+        new_address,
+        field,
+      );
+      let accept = oracle::instruction_builders::accept_address_update(
+        new_address,
+        admin,
+        field,
+      );
+      let cancel =
+        oracle::instruction_builders::cancel_address_update(admin, field);
+      assert!([propose, approve, accept, cancel]
+        .iter()
+        .all(|instruction| {
+          instruction
+            .accounts
+            .iter()
+            .any(|account| account.pubkey == expected)
+        }));
+    };
+    check(oracle::types::AddressField::Treasury);
+    check(oracle::types::AddressField::PauseAuthority);
+  }
 }
