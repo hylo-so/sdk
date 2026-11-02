@@ -19,7 +19,6 @@ use hylo_idl::pda;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
-use crate::protocol_state::price_aggregate::latest_timestamp_secs;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
 /// Accounts fetched per registry entry, the [`ExoPairAccounts`] field count.
@@ -149,9 +148,9 @@ impl ExoPairAccounts {
       pool_drawdown: exo_pair.pool_drawdown.into(),
       borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
       supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle_publish_time: latest_timestamp_secs(
-        &oracle_aggregate.price_observations(),
-      )?,
+      oracle_publish_time: oracle_aggregate
+        .price_observations()
+        .latest_timestamp_secs()?,
       oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
   }

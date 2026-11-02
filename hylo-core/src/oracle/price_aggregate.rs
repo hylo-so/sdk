@@ -307,6 +307,21 @@ impl PriceAggregateObservations {
       .get(index)
       .ok_or(CoreError::OracleObservationCapacityExceeded)
   }
+
+  /// Converts the newest posted timestamp to seconds.
+  ///
+  /// # Errors
+  ///
+  /// * The timestamp does not fit in `i64`.
+  pub fn latest_timestamp_secs(&self) -> Result<i64, CoreError> {
+    self
+      .iter()
+      .map(|observation| observation.posted_timestamp_us)
+      .max()
+      .and_then(|timestamp_us| timestamp_us.checked_div(MICROS_PER_SECOND))
+      .and_then(|timestamp_secs| i64::try_from(timestamp_secs).ok())
+      .ok_or(CoreError::OracleOutdated)
+  }
 }
 
 impl Deref for PriceAggregateObservations {

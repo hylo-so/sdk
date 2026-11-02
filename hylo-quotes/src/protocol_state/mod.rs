@@ -1,7 +1,6 @@
 mod accounts;
 mod exo_pair;
 mod exo_registry;
-mod price_aggregate;
 mod provider;
 mod state;
 
