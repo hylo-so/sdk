@@ -17,7 +17,7 @@ use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::oracle::{query_price_aggregate, OracleConfig, OraclePrice};
+use hylo_core::oracle::{OracleConfig, OraclePrice, PriceAggregateExt};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
@@ -316,8 +316,9 @@ pub fn build_stats_inputs(
     accounts.hylo.oracle_interval_secs,
     accounts.hylo.oracle_conf_tolerance.try_into()?,
   );
-  let sol_usd =
-    query_price_aggregate(&accounts.clock, &accounts.sol_usd, oracle_config)?;
+  let sol_usd = accounts
+    .sol_usd
+    .query_price(&accounts.clock, oracle_config)?;
   let lst_collateral_ratio =
     lst_collateral_ratio(&accounts.clock, &accounts.hylo, &sol_usd)?;
 

@@ -21,8 +21,7 @@ use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::oracle::{
-  query_price_aggregate, validate_publish_time, OracleConfig,
-  PriceAggregateExt, ORACLE_DIVISOR,
+  validate_publish_time, OracleConfig, PriceAggregateExt, ORACLE_DIVISOR,
 };
 use hylo_core::par_tolerance::ParTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
@@ -316,9 +315,9 @@ fn build_usdc_pair_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_usd_spot =
-    query_price_aggregate(clock, &usdc_usd_aggregate, oracle_config)
-      .map(|oracle| oracle.spot);
+  let usdc_usd_spot = usdc_usd_aggregate
+    .query_price(clock, oracle_config)
+    .map(|oracle| oracle.spot);
   let usdc_vault: TokenAccount = decode(&accounts.usdc_vault, "USDC vault")?;
 
   let virtual_stablecoin: VirtualStablecoin =

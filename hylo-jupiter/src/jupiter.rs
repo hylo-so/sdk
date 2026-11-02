@@ -18,7 +18,7 @@ use hylo_core::idl::tokens::{
 };
 use hylo_core::idl::{pda, router};
 use hylo_core::lst::stake_pool::SplStakePool;
-use hylo_core::oracle::{query_price_aggregate, OracleConfig};
+use hylo_core::oracle::{OracleConfig, PriceAggregateExt};
 use hylo_core::reserve_gate::ReserveGate;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_jupiter_amm_interface::{
@@ -77,9 +77,9 @@ fn usdc_state(
     usdc_pair.oracle_interval_secs,
     usdc_pair.oracle_conf_tolerance.try_into()?,
   );
-  let usdc_usd_spot =
-    query_price_aggregate(clock, usdc_usd, usdc_oracle_config)
-      .map(|oracle| oracle.spot);
+  let usdc_usd_spot = usdc_usd
+    .query_price(clock, usdc_oracle_config)
+    .map(|oracle| oracle.spot);
   let virtual_stablecoin: VirtualStablecoin =
     usdc_pair.virtual_stablecoin.into();
   let reserve_gate = ReserveGate::validated(
