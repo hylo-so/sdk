@@ -78,7 +78,7 @@ pub trait RotatableAddresses {
   AnchorDeserialize,
   InitSpace,
 )]
-pub struct AddressUpdateProposal {
+pub struct AddressUpdateProposalData {
   pub address_field: AddressField,
   pub new_address: Pubkey,
   pub proposal_time: i64,
@@ -86,7 +86,10 @@ pub struct AddressUpdateProposal {
   pub approved: bool,
 }
 
-impl AddressUpdateProposal {
+/// Pending address rotation shared with program-owned accounts.
+pub type AddressUpdateProposal = AddressUpdateProposalData;
+
+impl AddressUpdateProposalData {
   /// Creates a proposal for an address change.
   ///
   /// # Errors
