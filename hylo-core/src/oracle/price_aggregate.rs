@@ -256,37 +256,7 @@ impl PriceObservation {
     let default_max_confidence = UFix64::<N9>::new(
       u64::from(DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS) * 100_000,
     );
-    let confidence_ratio: fix::prelude::Fix<
-      u64,
-      fix::prelude::typenum::UInt<
-        fix::prelude::typenum::UInt<
-          fix::prelude::typenum::UInt<
-            fix::prelude::typenum::UInt<
-              fix::prelude::typenum::UTerm,
-              fix::prelude::typenum::B1,
-            >,
-            fix::prelude::typenum::B0,
-          >,
-          fix::prelude::typenum::B1,
-        >,
-        fix::prelude::typenum::B0,
-      >,
-      fix::prelude::typenum::NInt<
-        fix::prelude::typenum::UInt<
-          fix::prelude::typenum::UInt<
-            fix::prelude::typenum::UInt<
-              fix::prelude::typenum::UInt<
-                fix::prelude::typenum::UTerm,
-                fix::prelude::typenum::B1,
-              >,
-              fix::prelude::typenum::B0,
-            >,
-            fix::prelude::typenum::B0,
-          >,
-          fix::prelude::typenum::B1,
-        >,
-      >,
-    > = confidence
+    let confidence_ratio = confidence
       .mul_div_floor(UFix64::one(), price)
       .ok_or(CoreError::OracleInvalidPrice)?;
 
