@@ -22,7 +22,7 @@ use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::oracle::{
   query_price_aggregate, validate_publish_time, OracleConfig,
-  PriceAggregateObservations, ORACLE_DIVISOR,
+  PriceAggregateExt, ORACLE_DIVISOR,
 };
 use hylo_core::par_tolerance::ParTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
@@ -32,7 +32,6 @@ use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::tokens::{Exo, TokenMint, HYLOSOL, JITOSOL};
 
 use crate::protocol_state::accounts::{decode, decode_clock};
-use crate::protocol_state::price_aggregate::latest_timestamp_secs;
 use crate::protocol_state::{read_exo_entries, ExoPairState, ProtocolAccounts};
 use crate::LST;
 
@@ -169,9 +168,8 @@ impl<C: SolanaClock> ProtocolState<C> {
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
   ) -> Result<ProtocolState<C>> {
-    let sol_usd_observations =
-      PriceAggregateObservations::from(sol_usd.observations.0);
-    let sol_usd_publish_time = latest_timestamp_secs(&sol_usd_observations)?;
+    let sol_usd_publish_time =
+      sol_usd.price_observations().latest_timestamp_secs()?;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context =
