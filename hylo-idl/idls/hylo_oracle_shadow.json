@@ -1256,7 +1256,7 @@
     },
     {
       "code": 6019,
-      "name": "SampleCapacityExceeded",
+      "name": "ObservationCapacityExceeded",
       "msg": "Source index exceeds price aggregate observation capacity."
     },
     {
@@ -1286,7 +1286,7 @@
     },
     {
       "code": 6025,
-      "name": "UnableToUpdateSample",
+      "name": "UnableToUpdateObservation",
       "msg": "Unable to update price aggregate observation."
     },
     {
@@ -1543,7 +1543,8 @@
     {
       "name": "PriceAggregate",
       "docs": [
-        "Samples posted for one mint, with fixed observation and source capacities."
+        "Observations posted for one mint, with fixed observation and source",
+        "capacities."
       ],
       "type": {
         "kind": "struct",

@@ -22189,7 +22189,8 @@
     {
       "name": "PriceAggregate",
       "docs": [
-        "Samples posted for one mint, with fixed observation and source capacities."
+        "Observations posted for one mint, with fixed observation and source",
+        "capacities."
       ],
       "type": {
         "kind": "struct",
