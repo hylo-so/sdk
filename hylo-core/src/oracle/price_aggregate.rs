@@ -232,9 +232,7 @@ impl PriceObservation {
     current_timestamp_us: u64,
     max_staleness_secs: Option<u64>,
   ) -> Result<(), CoreError> {
-    let age = current_timestamp_us
-      .checked_sub(self.posted_timestamp_us)
-      .ok_or(CoreError::OracleOutdated)?;
+    let age = current_timestamp_us.saturating_sub(self.posted_timestamp_us);
     let limit = max_staleness_secs
       .map_or(Some(DEFAULT_MAX_STALENESS_SECS_US), |secs| {
         secs.checked_mul(MICROS_PER_SECOND)
