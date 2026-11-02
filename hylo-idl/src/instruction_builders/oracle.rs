@@ -28,7 +28,8 @@ pub fn propose_address_update(
   new_address: Pubkey,
   ttl_secs: u64,
 ) -> Instruction {
-  let accounts = account_builders::propose_address_update(admin, new_address);
+  let accounts =
+    account_builders::propose_address_update(admin, new_address, address_field);
   let args = args::ProposeAddressUpdate {
     address_field,
     ttl_secs,
@@ -47,8 +48,11 @@ pub fn approve_address_update(
   new_address: Pubkey,
   address_field: oracle::types::AddressField,
 ) -> Instruction {
-  let accounts =
-    account_builders::approve_address_update(upgrade_authority, new_address);
+  let accounts = account_builders::approve_address_update(
+    upgrade_authority,
+    new_address,
+    address_field,
+  );
   let args = args::ApproveAddressUpdate { address_field };
   Instruction {
     program_id: oracle::ID,
@@ -64,7 +68,8 @@ pub fn accept_address_update(
   admin: Pubkey,
   address_field: oracle::types::AddressField,
 ) -> Instruction {
-  let accounts = account_builders::accept_address_update(new_address, admin);
+  let accounts =
+    account_builders::accept_address_update(new_address, admin, address_field);
   let args = args::AcceptAddressUpdate { address_field };
   Instruction {
     program_id: oracle::ID,
@@ -79,7 +84,7 @@ pub fn cancel_address_update(
   admin: Pubkey,
   address_field: oracle::types::AddressField,
 ) -> Instruction {
-  let accounts = account_builders::cancel_address_update(admin);
+  let accounts = account_builders::cancel_address_update(admin, address_field);
   let args = args::CancelAddressUpdate { address_field };
   Instruction {
     program_id: oracle::ID,

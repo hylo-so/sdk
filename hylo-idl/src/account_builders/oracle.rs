@@ -47,13 +47,12 @@ pub const fn initialize_price_aggregate(
 pub const fn propose_address_update(
   admin: Pubkey,
   new_address: Pubkey,
+  address_field: oracle::types::AddressField,
 ) -> ProposeAddressUpdate {
   ProposeAddressUpdate {
     admin,
     oracle_config: pda::oracle_config(),
-    proposal: pda::oracle_address_update_proposal(
-      oracle::types::AddressField::Admin,
-    ),
+    proposal: pda::oracle_address_update_proposal(address_field),
     new_address,
     system_program: system_program::ID,
     event_authority: pda::ORACLE_EVENT_AUTHORITY,
@@ -66,12 +65,11 @@ pub const fn propose_address_update(
 pub const fn approve_address_update(
   upgrade_authority: Pubkey,
   new_address: Pubkey,
+  address_field: oracle::types::AddressField,
 ) -> ApproveAddressUpdate {
   ApproveAddressUpdate {
     upgrade_authority,
-    proposal: pda::oracle_address_update_proposal(
-      oracle::types::AddressField::Admin,
-    ),
+    proposal: pda::oracle_address_update_proposal(address_field),
     new_address,
     program_data: pda::ORACLE_PROGRAM_DATA,
     hylo_oracle: oracle::ID,
@@ -85,14 +83,13 @@ pub const fn approve_address_update(
 pub const fn accept_address_update(
   new_address: Pubkey,
   admin: Pubkey,
+  address_field: oracle::types::AddressField,
 ) -> AcceptAddressUpdate {
   AcceptAddressUpdate {
     new_address,
     admin,
     oracle_config: pda::oracle_config(),
-    proposal: pda::oracle_address_update_proposal(
-      oracle::types::AddressField::Admin,
-    ),
+    proposal: pda::oracle_address_update_proposal(address_field),
     event_authority: pda::ORACLE_EVENT_AUTHORITY,
     program: oracle::ID,
   }
@@ -100,13 +97,14 @@ pub const fn accept_address_update(
 
 /// Builds the account context for cancelling an oracle administrator update.
 #[must_use]
-pub const fn cancel_address_update(admin: Pubkey) -> CancelAddressUpdate {
+pub const fn cancel_address_update(
+  admin: Pubkey,
+  address_field: oracle::types::AddressField,
+) -> CancelAddressUpdate {
   CancelAddressUpdate {
     admin,
     oracle_config: pda::oracle_config(),
-    proposal: pda::oracle_address_update_proposal(
-      oracle::types::AddressField::Admin,
-    ),
+    proposal: pda::oracle_address_update_proposal(address_field),
     event_authority: pda::ORACLE_EVENT_AUTHORITY,
     program: oracle::ID,
   }

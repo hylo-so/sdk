@@ -1318,6 +1318,11 @@
       "code": 6031,
       "name": "AdminNoop",
       "msg": "Proposed administrator matches the current administrator."
+    },
+    {
+      "code": 6032,
+      "name": "UnsupportedAddressField",
+      "msg": "Address field is not supported."
     }
   ],
   "types": [
@@ -1347,17 +1352,48 @@
     },
     {
       "name": "AddressField",
+      "docs": [
+        "Address selected for rotation."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
           {
             "name": "Admin"
+          },
+          {
+            "name": "Treasury"
+          },
+          {
+            "name": "PauseAuthority"
           }
         ]
       }
     },
     {
       "name": "AddressUpdateProposal",
+      "docs": [
+        "Pending oracle address rotation."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "data",
+            "type": {
+              "defined": {
+                "name": "AddressUpdateProposalData"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AddressUpdateProposalData",
+      "docs": [
+        "Pending address rotation."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
