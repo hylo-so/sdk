@@ -17,10 +17,7 @@ use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
-use crate::oracle::{
-  query_price_aggregate, OracleConfig, OraclePrice, PriceAggregateExt,
-  PriceRange,
-};
+use crate::oracle::{OracleConfig, OraclePrice, PriceAggregateExt, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
@@ -113,7 +110,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     buy_curve_config: RebalanceCurveConfig,
   ) -> Result<LstExchangeContext<C>, CoreError> {
     let total_sol = total_sol_cache.get_validated(clock.epoch())?;
-    let sol_usd_oracle = query_price_aggregate(&clock, sol_usd, oracle_config)?;
+    let sol_usd_oracle = sol_usd.query_price(&clock, oracle_config)?;
     let sol_usd_price = sol_usd_oracle.price_range()?;
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =

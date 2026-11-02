@@ -10,9 +10,10 @@ use fix::prelude::{
 use fix::typenum::{Integer, Z0};
 use pyth_lazer_protocol::api::MarketSession as LazerMarketSession;
 
-use super::OracleObservationConfig;
+use super::{OracleConfig, OracleObservationConfig, OraclePrice};
 use crate::error::CoreError;
-use crate::error::CoreError::OraclePriceRange;
+use crate::error::CoreError::{OracleNegativeTime, OraclePriceRange};
+use crate::solana_clock::SolanaClock;
 
 pub const DEFAULT_MAX_STALENESS_SLOTS: u64 = 30;
 pub const DEFAULT_MAX_STALENESS_SECS: u64 = 5;
@@ -32,6 +33,50 @@ pub trait PriceAggregateExt {
 
   /// Returns observation mappings for configured oracle source feeds.
   fn observation_configs(&self) -> Vec<OracleObservationConfig>;
+
+  /// Fetches the validated aggregate price for one feed.
+  ///
+  /// # Errors
+  ///
+  /// * The clock timestamp is negative or overflows microseconds.
+  /// * An observation index or reference index is invalid.
+  /// * No observations pass the configured validation.
+  /// * Price aggregation overflows or cannot convert to the quote precision.
+  fn query_price<C: SolanaClock>(
+    &self,
+    clock: &C,
+    OracleConfig {
+      interval_secs,
+      conf_tolerance,
+    }: OracleConfig,
+  ) -> Result<OraclePrice, CoreError> {
+    let current_timestamp_us = u64::try_from(clock.unix_timestamp())
+      .map_err(|_| OracleNegativeTime)?
+      .checked_mul(MICROS_PER_SECOND)
+      .ok_or(OracleNegativeTime)?;
+    let validation_config = ValidationConfig {
+      slots: slot_interval(interval_secs),
+      secs: Some(interval_secs),
+      confidence: Some(conf_tolerance),
+    };
+    let spot = self.price_observations().price(
+      AggregationMethod::SimpleAverage,
+      clock.slot(),
+      current_timestamp_us,
+      validation_config,
+      &self.observation_configs(),
+    )?;
+    Ok(OraclePrice {
+      spot,
+      conf: UFix64::new(0),
+    })
+  }
+}
+
+fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
+  let time: UFix64<N2> = UFix64::<Z0>::new(oracle_interval_secs).convert();
+  let slot_time = UFix64::<N2>::new(20);
+  time.checked_div(&slot_time).map(|interval| interval.bits)
 }
 
 impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {

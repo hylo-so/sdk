@@ -15,10 +15,7 @@ use crate::fees::curve_controller::{
 };
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
-use crate::oracle::{
-  query_price_aggregate, OracleConfig, OraclePrice, PriceAggregateExt,
-  PriceRange,
-};
+use crate::oracle::{OracleConfig, OraclePrice, PriceAggregateExt, PriceRange};
 use crate::rebalance::mode::RebalanceMode;
 use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
@@ -113,7 +110,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     levercoin_market_cap_limit: UFix64<N9>,
   ) -> Result<ExoExchangeContext<C>, CoreError> {
     let collateral_oracle =
-      query_price_aggregate(&clock, collateral_usd, oracle_config)?;
+      collateral_usd.query_price(&clock, oracle_config)?;
     let collateral_usd_price = collateral_oracle.price_range()?;
     let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
     let stablecoin_redeem_fees =
