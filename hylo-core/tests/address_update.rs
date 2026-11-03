@@ -93,8 +93,8 @@ fn proposal_serialization_preserves_existing_field_layout() {
 }
 
 #[test]
-fn proposal_bridges_preserve_all_fields_for_both_programs() {
-  use hylo_idl::{exchange, oracle};
+fn proposal_bridges_preserve_all_fields_for_exchange() {
+  use hylo_idl::exchange;
 
   let check = |field| {
     let proposal = AddressUpdateProposal::new(
@@ -107,10 +107,7 @@ fn proposal_bridges_preserve_all_fields_for_both_programs() {
     .unwrap();
     let exchange_proposal: exchange::types::AddressUpdateProposalData =
       proposal.into();
-    let oracle_proposal: oracle::types::AddressUpdateProposalData =
-      proposal.into();
     assert_eq!(AddressUpdateProposal::from(exchange_proposal), proposal);
-    assert_eq!(AddressUpdateProposal::from(oracle_proposal), proposal);
   };
   check(AddressField::Admin);
   check(AddressField::Treasury);

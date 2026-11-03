@@ -2,10 +2,6 @@ use hylo_idl::exchange::types::{
   AddressField as ExchangeAddressField,
   AddressUpdateProposalData as ExchangeAddressUpdateProposal,
 };
-use hylo_idl::oracle::types::{
-  AddressField as OracleAddressField,
-  AddressUpdateProposalData as OracleAddressUpdateProposal,
-};
 
 use crate::address_update::{AddressField, AddressUpdateProposal};
 use crate::borrow_rate::BorrowRateCurveConfig;
@@ -442,50 +438,6 @@ impl From<ExchangeAddressUpdateProposal> for AddressUpdateProposal {
 impl From<AddressUpdateProposal> for ExchangeAddressUpdateProposal {
   fn from(proposal: AddressUpdateProposal) -> ExchangeAddressUpdateProposal {
     ExchangeAddressUpdateProposal {
-      address_field: proposal.address_field.into(),
-      new_address: proposal.new_address,
-      proposal_time: proposal.proposal_time,
-      ttl_secs: proposal.ttl_secs,
-      approved: proposal.approved,
-    }
-  }
-}
-
-impl From<OracleAddressField> for AddressField {
-  fn from(field: OracleAddressField) -> AddressField {
-    match field {
-      OracleAddressField::Admin => AddressField::Admin,
-      OracleAddressField::Treasury => AddressField::Treasury,
-      OracleAddressField::PauseAuthority => AddressField::PauseAuthority,
-    }
-  }
-}
-
-impl From<AddressField> for OracleAddressField {
-  fn from(field: AddressField) -> OracleAddressField {
-    match field {
-      AddressField::Admin => OracleAddressField::Admin,
-      AddressField::Treasury => OracleAddressField::Treasury,
-      AddressField::PauseAuthority => OracleAddressField::PauseAuthority,
-    }
-  }
-}
-
-impl From<OracleAddressUpdateProposal> for AddressUpdateProposal {
-  fn from(proposal: OracleAddressUpdateProposal) -> AddressUpdateProposal {
-    AddressUpdateProposal {
-      address_field: proposal.address_field.into(),
-      new_address: proposal.new_address,
-      proposal_time: proposal.proposal_time,
-      ttl_secs: proposal.ttl_secs,
-      approved: proposal.approved,
-    }
-  }
-}
-
-impl From<AddressUpdateProposal> for OracleAddressUpdateProposal {
-  fn from(proposal: AddressUpdateProposal) -> OracleAddressUpdateProposal {
-    OracleAddressUpdateProposal {
       address_field: proposal.address_field.into(),
       new_address: proposal.new_address,
       proposal_time: proposal.proposal_time,
