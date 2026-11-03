@@ -16,6 +16,7 @@ use hylo_core::exchange_context::LstExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::earn_pool::accounts::PoolConfig;
 use hylo_core::idl::exchange::accounts::{Hylo, LstHeader, UsdcPair};
+use hylo_core::idl::exchange::types::EarnPoolDepositLock;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::par_tolerance::ParTolerance;
@@ -92,6 +93,9 @@ pub struct ProtocolState<C: SolanaClock> {
 
   /// Earn pool configuration
   pub pool_config: PoolConfig,
+
+  /// Earn pool deposit lock.
+  pub earn_pool_deposit_lock: EarnPoolDepositLock,
 
   /// HYUSD earn pool token account
   pub hyusd_pool: TokenAccount,
@@ -176,6 +180,7 @@ impl<C: SolanaClock> ProtocolState<C> {
       xsol_mint,
       shyusd_mint,
       pool_config,
+      earn_pool_deposit_lock: hylo.earn_pool_deposit_lock,
       hyusd_pool,
       fetched_at,
       lst_swap_config,

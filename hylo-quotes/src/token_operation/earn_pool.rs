@@ -12,6 +12,7 @@ use hylo_core::fees::controller::FeeExtract;
 use hylo_core::limiter::deposit::DepositLimiter;
 use hylo_core::limiter::withdraw::WithdrawalLimiter;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_idl::exchange::types::EarnPoolDepositLock;
 use hylo_idl::tokens::{TokenMint, HYUSD, SHYUSD};
 
 use crate::protocol_state::ProtocolState;
@@ -26,6 +27,10 @@ impl<C: SolanaClock> TokenOperation<HYUSD, SHYUSD> for ProtocolState<C> {
   fn preconditions(&self) -> Result<(), CoreError> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!self.pool_config.paused, CoreError::PairPaused)?;
+    gate(
+      matches!(self.earn_pool_deposit_lock, EarnPoolDepositLock::Unlocked),
+      CoreError::OperationDisabled,
+    )?;
     gate(
       self.hyusd_pool.amount > 0 || self.shyusd_mint.supply == 0,
       CoreError::OperationDisabled,
