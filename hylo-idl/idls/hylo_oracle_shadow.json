@@ -8,494 +8,6 @@
   },
   "instructions": [
     {
-      "name": "accept_address_update",
-      "docs": [
-        "Accepts an approved oracle administrator address proposal.",
-        "",
-        "# Errors",
-        "",
-        "* The proposal has expired or is unapproved.",
-        "* The signer is not the proposed administrator."
-      ],
-      "discriminator": [
-        56,
-        65,
-        20,
-        139,
-        208,
-        230,
-        213,
-        188
-      ],
-      "accounts": [
-        {
-          "name": "new_address",
-          "signer": true,
-          "relations": [
-            "proposal"
-          ]
-        },
-        {
-          "name": "admin",
-          "writable": true,
-          "relations": [
-            "oracle_config"
-          ]
-        },
-        {
-          "name": "oracle_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "proposal",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  97,
-                  100,
-                  100,
-                  114,
-                  101,
-                  115,
-                  115,
-                  95,
-                  117,
-                  112,
-                  100,
-                  97,
-                  116,
-                  101,
-                  95,
-                  112,
-                  114,
-                  111,
-                  112,
-                  111,
-                  115,
-                  97,
-                  108
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "address_field"
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "address_field",
-          "type": {
-            "defined": {
-              "name": "AddressField"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "AcceptAddressUpdateEvent"
-        }
-      }
-    },
-    {
-      "name": "approve_address_update",
-      "docs": [
-        "Approves an oracle administrator address proposal.",
-        "",
-        "# Errors",
-        "",
-        "* The signer is not the oracle program's upgrade authority.",
-        "* The proposal has expired or is already approved."
-      ],
-      "discriminator": [
-        35,
-        60,
-        186,
-        56,
-        181,
-        237,
-        165,
-        27
-      ],
-      "accounts": [
-        {
-          "name": "upgrade_authority",
-          "signer": true
-        },
-        {
-          "name": "proposal",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  97,
-                  100,
-                  100,
-                  114,
-                  101,
-                  115,
-                  115,
-                  95,
-                  117,
-                  112,
-                  100,
-                  97,
-                  116,
-                  101,
-                  95,
-                  112,
-                  114,
-                  111,
-                  112,
-                  111,
-                  115,
-                  97,
-                  108
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "address_field"
-              }
-            ]
-          }
-        },
-        {
-          "name": "new_address",
-          "relations": [
-            "proposal"
-          ]
-        },
-        {
-          "name": "program_data"
-        },
-        {
-          "name": "hylo_oracle",
-          "address": "HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "address_field",
-          "type": {
-            "defined": {
-              "name": "AddressField"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "ApproveAddressUpdateEvent"
-        }
-      }
-    },
-    {
-      "name": "cancel_address_update",
-      "docs": [
-        "Cancels an oracle administrator address proposal.",
-        "",
-        "# Errors",
-        "",
-        "* The signer is not the current oracle administrator."
-      ],
-      "discriminator": [
-        181,
-        122,
-        207,
-        111,
-        131,
-        188,
-        184,
-        205
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "oracle_config"
-          ]
-        },
-        {
-          "name": "oracle_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "proposal",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  97,
-                  100,
-                  100,
-                  114,
-                  101,
-                  115,
-                  115,
-                  95,
-                  117,
-                  112,
-                  100,
-                  97,
-                  116,
-                  101,
-                  95,
-                  112,
-                  114,
-                  111,
-                  112,
-                  111,
-                  115,
-                  97,
-                  108
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "address_field"
-              }
-            ]
-          }
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "address_field",
-          "type": {
-            "defined": {
-              "name": "AddressField"
-            }
-          }
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "CancelAddressUpdateEvent"
-        }
-      }
-    },
-    {
-      "name": "initialize_oracle",
-      "docs": [
-        "Initializes the oracle administration account.",
-        "",
-        "# Errors",
-        "",
-        "* The signer is not the oracle program's upgrade authority."
-      ],
-      "discriminator": [
-        144,
-        223,
-        131,
-        120,
-        196,
-        253,
-        181,
-        99
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "upgrade_authority",
-          "signer": true
-        },
-        {
-          "name": "oracle_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "program_data"
-        },
-        {
-          "name": "hylo_oracle",
-          "address": "HySHy1kwAfZbPAfB3zutXgrBXsXQHdtqA1GJu24W4b9F"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initialize_price_aggregate",
       "docs": [
         "Creates a price aggregate account for a mint.",
@@ -520,7 +32,7 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "oracle_config"
+            "hylo"
           ]
         },
         {
@@ -556,29 +68,8 @@
           }
         },
         {
-          "name": "oracle_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "name": "hylo",
+          "address": "Argb8UxD4yUC4DVjw471XVj7VhXoJhB16n5htGEjTyox"
         },
         {
           "name": "system_program",
@@ -623,160 +114,6 @@
           "type": "pubkey"
         }
       ]
-    },
-    {
-      "name": "propose_address_update",
-      "docs": [
-        "Proposes an oracle administrator address.",
-        "",
-        "# Errors",
-        "",
-        "* The signer is not the current oracle administrator.",
-        "* The proposal TTL is outside the accepted range."
-      ],
-      "discriminator": [
-        183,
-        253,
-        18,
-        185,
-        155,
-        67,
-        166,
-        35
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "oracle_config"
-          ]
-        },
-        {
-          "name": "oracle_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "proposal",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  97,
-                  100,
-                  100,
-                  114,
-                  101,
-                  115,
-                  115,
-                  95,
-                  117,
-                  112,
-                  100,
-                  97,
-                  116,
-                  101,
-                  95,
-                  112,
-                  114,
-                  111,
-                  112,
-                  111,
-                  115,
-                  97,
-                  108
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "address_field"
-              }
-            ]
-          }
-        },
-        {
-          "name": "new_address"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "address_field",
-          "type": {
-            "defined": {
-              "name": "AddressField"
-            }
-          }
-        },
-        {
-          "name": "ttl_secs",
-          "type": "u64"
-        }
-      ],
-      "returns": {
-        "defined": {
-          "name": "ProposeAddressUpdateEvent"
-        }
-      }
     },
     {
       "name": "update_observation_with_pyth_lazer",
@@ -892,7 +229,7 @@
         "",
         "# Errors",
         "",
-        "* The signer is not the oracle administrator.",
+        "* The signer is not the exchange administrator.",
         "* The configuration slot or observation mapping is invalid.",
         "* A feed ID or observation index is already configured."
       ],
@@ -912,33 +249,12 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "oracle_config"
+            "hylo"
           ]
         },
         {
-          "name": "oracle_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "name": "hylo",
+          "address": "Argb8UxD4yUC4DVjw471XVj7VhXoJhB16n5htGEjTyox"
         },
         {
           "name": "price_aggregate",
@@ -1026,29 +342,16 @@
   ],
   "accounts": [
     {
-      "name": "AddressUpdateProposal",
+      "name": "Hylo",
       "discriminator": [
-        12,
-        31,
-        250,
-        50,
-        46,
+        114,
+        161,
+        169,
         210,
-        94,
-        182
-      ]
-    },
-    {
-      "name": "OracleConfig",
-      "discriminator": [
-        133,
-        196,
-        152,
-        50,
-        27,
-        21,
-        145,
-        254
+        204,
+        175,
+        149,
+        174
       ]
     },
     {
@@ -1066,45 +369,6 @@
     }
   ],
   "events": [
-    {
-      "name": "AcceptAddressUpdateEvent",
-      "discriminator": [
-        63,
-        130,
-        1,
-        235,
-        255,
-        47,
-        229,
-        210
-      ]
-    },
-    {
-      "name": "ApproveAddressUpdateEvent",
-      "discriminator": [
-        98,
-        91,
-        95,
-        138,
-        125,
-        114,
-        11,
-        245
-      ]
-    },
-    {
-      "name": "CancelAddressUpdateEvent",
-      "discriminator": [
-        240,
-        141,
-        179,
-        211,
-        245,
-        181,
-        23,
-        212
-      ]
-    },
     {
       "name": "ObservationUpdated",
       "discriminator": [
@@ -1129,19 +393,6 @@
         27,
         5,
         184
-      ]
-    },
-    {
-      "name": "ProposeAddressUpdateEvent",
-      "discriminator": [
-        46,
-        255,
-        33,
-        127,
-        122,
-        204,
-        96,
-        63
       ]
     },
     {
@@ -1288,101 +539,49 @@
       "code": 6025,
       "name": "UnableToUpdateObservation",
       "msg": "Unable to update price aggregate observation."
-    },
-    {
-      "code": 6026,
-      "name": "AddressChangeExpired",
-      "msg": "Address change proposal has expired."
-    },
-    {
-      "code": 6027,
-      "name": "AddressChangeTtlInvalid",
-      "msg": "Address change proposal's TTL not in configured range."
-    },
-    {
-      "code": 6028,
-      "name": "AddressChangeNotApproved",
-      "msg": "Address change proposal has not been approved."
-    },
-    {
-      "code": 6029,
-      "name": "AddressChangeAlreadyApproved",
-      "msg": "Address change proposal has already been approved."
-    },
-    {
-      "code": 6030,
-      "name": "AddressChangeUpgradeAuthority",
-      "msg": "Address change approver must be upgrade authority."
-    },
-    {
-      "code": 6031,
-      "name": "AdminNoop",
-      "msg": "Proposed administrator matches the current administrator."
-    },
-    {
-      "code": 6032,
-      "name": "UnsupportedAddressField",
-      "msg": "Address field is not supported."
     }
   ],
   "types": [
     {
-      "name": "AcceptAddressUpdateEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "address_field",
-            "type": {
-              "defined": {
-                "name": "AddressField"
-              }
-            }
-          },
-          {
-            "name": "old_address",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_address",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "AddressField",
+      "name": "EarnPoolDepositLock",
       "docs": [
-        "Address selected for rotation."
+        "Earn pool deposit lock, engaged by a loss absorption that empties the pool."
       ],
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Admin"
+            "name": "Unlocked"
           },
           {
-            "name": "Treasury"
-          },
-          {
-            "name": "PauseAuthority"
+            "name": "Locked"
           }
         ]
       }
     },
     {
-      "name": "AddressUpdateProposal",
+      "name": "FeePair",
       "docs": [
-        "Pending oracle address rotation."
+        "Represents the spread of fees between mint and redeem for protocol tokens.",
+        "All fees must be in basis points to represent a fractional percentage",
+        "directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "data",
+            "name": "mint",
             "type": {
               "defined": {
-                "name": "AddressUpdateProposalData"
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "redeem",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
               }
             }
           }
@@ -1390,76 +589,265 @@
       }
     },
     {
-      "name": "AddressUpdateProposalData",
+      "name": "HarvestCache",
       "docs": [
-        "Pending address rotation."
+        "Records epoch harvest information for offchain consumers."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "address_field",
-            "type": {
-              "defined": {
-                "name": "AddressField"
-              }
-            }
-          },
-          {
-            "name": "new_address",
-            "type": "pubkey"
-          },
-          {
-            "name": "proposal_time",
-            "type": "i64"
-          },
-          {
-            "name": "ttl_secs",
+            "name": "epoch",
             "type": "u64"
           },
           {
-            "name": "approved",
+            "name": "stability_pool_cap",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_to_pool",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Hylo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_registry",
+            "type": "pubkey"
+          },
+          {
+            "name": "stablecoin_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "levercoin_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "stablecoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "stablecoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "levercoin_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "registry_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "total_sol_cache_bump",
+            "type": "u8"
+          },
+          {
+            "name": "oracle_interval_secs",
+            "type": "u64"
+          },
+          {
+            "name": "stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
+              }
+            }
+          },
+          {
+            "name": "levercoin_fees",
+            "type": {
+              "defined": {
+                "name": "LevercoinFees"
+              }
+            }
+          },
+          {
+            "name": "total_sol_cache",
+            "type": {
+              "defined": {
+                "name": "TotalSolCache"
+              }
+            }
+          },
+          {
+            "name": "yield_harvest_cache",
+            "type": {
+              "defined": {
+                "name": "HarvestCache"
+              }
+            }
+          },
+          {
+            "name": "yield_harvest_config",
+            "type": {
+              "defined": {
+                "name": "YieldHarvestConfig"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_mint_threshold",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "_unused_1",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "oracle_conf_tolerance",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "sol_usd_oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "lst_swap_fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "virtual_stablecoin",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
+          },
+          {
+            "name": "lst_buy_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "lst_sell_curve_config",
+            "type": {
+              "defined": {
+                "name": "RebalanceCurveConfig"
+              }
+            }
+          },
+          {
+            "name": "protocol_paused",
             "type": "bool"
+          },
+          {
+            "name": "lst_pair_paused",
+            "type": "bool"
+          },
+          {
+            "name": "_unused_2",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "pool_drawdown",
+            "type": {
+              "defined": {
+                "name": "PoolDrawdown"
+              }
+            }
+          },
+          {
+            "name": "earn_pool_deposit_lock",
+            "type": {
+              "defined": {
+                "name": "EarnPoolDepositLock"
+              }
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                12
+              ]
+            }
           }
         ]
       }
     },
     {
-      "name": "ApproveAddressUpdateEvent",
+      "name": "LevercoinFees",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "address_field",
+            "name": "normal",
             "type": {
               "defined": {
-                "name": "AddressField"
+                "name": "FeePair"
               }
             }
           },
           {
-            "name": "new_address",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "CancelAddressUpdateEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "address_field",
+            "name": "sell_zone_1",
             "type": {
               "defined": {
-                "name": "AddressField"
+                "name": "FeePair"
               }
             }
           },
           {
-            "name": "new_address",
-            "type": "pubkey"
+            "name": "sell_zone_2",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
           }
         ]
       }
@@ -1514,34 +902,6 @@
       }
     },
     {
-      "name": "OracleConfig",
-      "docs": [
-        "Oracle administration state."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "reserved",
-            "type": {
-              "array": [
-                "u8",
-                256
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "OracleObservationConfig",
       "docs": [
         "Observation indexes and an optional reference index."
@@ -1572,6 +932,25 @@
         "variants": [
           {
             "name": "PythLazer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolDrawdown",
+      "docs": [
+        "Outstanding hyUSD debt owed to the earn pool after a Depeg absorption."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ledger",
+            "type": {
+              "defined": {
+                "name": "VirtualStablecoin"
+              }
+            }
           }
         ]
       }
@@ -1699,38 +1078,6 @@
       }
     },
     {
-      "name": "ProposeAddressUpdateEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "address_field",
-            "type": {
-              "defined": {
-                "name": "AddressField"
-              }
-            }
-          },
-          {
-            "name": "current_address",
-            "type": "pubkey"
-          },
-          {
-            "name": "new_address",
-            "type": "pubkey"
-          },
-          {
-            "name": "proposal_time",
-            "type": "i64"
-          },
-          {
-            "name": "ttl_secs",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "PythLazerConfig",
       "docs": [
         "Pyth Lazer feed and its observation mapping."
@@ -1820,29 +1167,149 @@
           }
         ]
       }
+    },
+    {
+      "name": "RebalanceCurveConfig",
+      "docs": [
+        "Floor/ceil deviation percentages for rebalance price curve construction."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "floor_pct",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "ceil_pct",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StablecoinFees",
+      "docs": [
+        "**Deprecated** — retained only for `Hylo` account deserialization."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "normal",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          },
+          {
+            "name": "mode_1",
+            "type": {
+              "defined": {
+                "name": "FeePair"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TotalSolCache",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "current_update_epoch",
+            "type": "u64"
+          },
+          {
+            "name": "total_sol",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UFixValue64",
+      "docs": [
+        "A value-space `Fix` where base is always 10 and bits are a concrete type.",
+        "Intended for serialized storage in Solana accounts where generics won't work."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bits",
+            "type": "u64"
+          },
+          {
+            "name": "exp",
+            "type": "i8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VirtualStablecoin",
+      "docs": [
+        "Simple counter representing the supply of a \"virtual\" stablecoin."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "supply",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "YieldHarvestConfig",
+      "docs": [
+        "Captures yield harvest configuration as two basis point values:"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ceil_mult",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
+          }
+        ]
+      }
     }
   ],
   "constants": [
-    {
-      "name": "ADDRESS_UPDATE_PROPOSAL",
-      "type": {
-        "array": [
-          "u8",
-          23
-        ]
-      },
-      "value": "[97, 100, 100, 114, 101, 115, 115, 95, 117, 112, 100, 97, 116, 101, 95, 112, 114, 111, 112, 111, 115, 97, 108]"
-    },
-    {
-      "name": "ORACLE_CONFIG",
-      "type": {
-        "array": [
-          "u8",
-          13
-        ]
-      },
-      "value": "[111, 114, 97, 99, 108, 101, 95, 99, 111, 110, 102, 105, 103]"
-    },
     {
       "name": "PRICE_AGGREGATE",
       "type": {
