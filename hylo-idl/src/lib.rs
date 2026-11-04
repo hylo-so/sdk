@@ -179,7 +179,7 @@ mod tests {
     assert!(initialize
       .accounts
       .iter()
-      .any(|account| { account.pubkey == pda::HYLO && !account.is_writable }));
+      .any(|account| account.pubkey == pda::HYLO && !account.is_writable));
     assert!(initialize.accounts.iter().any(|account| {
       account.pubkey == expected_aggregate && account.is_writable
     }));
