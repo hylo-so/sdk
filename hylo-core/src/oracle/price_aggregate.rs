@@ -8,7 +8,6 @@ use fix::prelude::{
   N5, N6, N7, N8, N9,
 };
 use fix::typenum::{Integer, Z0};
-use pyth_lazer_protocol::api::MarketSession as LazerMarketSession;
 
 use super::{OracleConfig, OracleObservationConfig, OraclePrice};
 use crate::error::CoreError;
@@ -167,18 +166,6 @@ pub enum MarketSession {
   PostMarket,
   Overnight,
   Closed,
-}
-
-impl From<LazerMarketSession> for MarketSession {
-  fn from(session: LazerMarketSession) -> MarketSession {
-    match session {
-      LazerMarketSession::PreMarket => MarketSession::PreMarket,
-      LazerMarketSession::Regular => MarketSession::Regular,
-      LazerMarketSession::PostMarket => MarketSession::PostMarket,
-      LazerMarketSession::OverNight => MarketSession::Overnight,
-      LazerMarketSession::Closed => MarketSession::Closed,
-    }
-  }
 }
 
 /// Source observation with a shared price and confidence exponent.
@@ -589,7 +576,6 @@ impl PriceAggregateObservations {
 mod tests {
   use fix::prelude::UFix64;
   use fix::typenum::N9;
-  use pyth_lazer_protocol::api::MarketSession as LazerMarketSession;
 
   use super::{
     AggregationMethod, MarketSession, OracleObservationConfig,
@@ -632,21 +618,6 @@ mod tests {
       posted_timestamp_us,
       market_session: MarketSession::Regular,
     }
-  }
-
-  #[test]
-  fn lazer_market_session_conversion_preserves_variant() {
-    [
-      (LazerMarketSession::PreMarket, MarketSession::PreMarket),
-      (LazerMarketSession::Regular, MarketSession::Regular),
-      (LazerMarketSession::PostMarket, MarketSession::PostMarket),
-      (LazerMarketSession::OverNight, MarketSession::Overnight),
-      (LazerMarketSession::Closed, MarketSession::Closed),
-    ]
-    .into_iter()
-    .for_each(|(source, expected)| {
-      assert_eq!(MarketSession::from(source), expected);
-    });
   }
 
   #[test]

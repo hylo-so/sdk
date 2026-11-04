@@ -1,11 +1,11 @@
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::solana_program::sysvar::instructions;
 use anchor_lang::system_program;
-use pyth_lazer_solana_contract::{ID_CONST, STORAGE_ID};
 
 use crate::oracle::client::accounts::{
   InitializePriceAggregate, UpdateObservationWithPythLazer,
 };
+use crate::pda::{PYTH_LAZER_PROGRAM, PYTH_LAZER_STORAGE};
 use crate::{oracle, pda};
 
 /// Builds the account context for creating the price aggregate for `mint`.
@@ -32,8 +32,8 @@ pub const fn update_observation_with_pyth_lazer(
 ) -> UpdateObservationWithPythLazer {
   UpdateObservationWithPythLazer {
     payer,
-    pyth_lazer_program: ID_CONST,
-    pyth_lazer_storage: STORAGE_ID,
+    pyth_lazer_program: PYTH_LAZER_PROGRAM,
+    pyth_lazer_storage: PYTH_LAZER_STORAGE,
     pyth_lazer_treasury,
     system_program: system_program::ID,
     instructions_sysvar: instructions::ID,
