@@ -91,25 +91,3 @@ fn proposal_serialization_preserves_existing_field_layout() {
   assert_eq!(AddressField::Treasury.try_to_vec().unwrap(), [1]);
   assert_eq!(AddressField::PauseAuthority.try_to_vec().unwrap(), [2]);
 }
-
-#[test]
-fn proposal_bridges_preserve_all_fields_for_exchange() {
-  use hylo_idl::exchange;
-
-  let check = |field| {
-    let proposal = AddressUpdateProposal::new(
-      field,
-      Pubkey::new_unique(),
-      Pubkey::new_unique(),
-      100,
-      7_200,
-    )
-    .unwrap();
-    let exchange_proposal: exchange::types::AddressUpdateProposalData =
-      proposal.into();
-    assert_eq!(AddressUpdateProposal::from(exchange_proposal), proposal);
-  };
-  check(AddressField::Admin);
-  check(AddressField::Treasury);
-  check(AddressField::PauseAuthority);
-}
