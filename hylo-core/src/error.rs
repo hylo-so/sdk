@@ -309,17 +309,4 @@ pub enum CoreError {
   OracleDuplicatePythLazerFeedId,
   #[msg("Observation index is already configured.")]
   OracleDuplicateObservationIndex,
-  // `address_update`
-  #[msg("Address change proposal's TTL not in configured range.")]
-  AddressUpdateInvalidTtl,
-  #[msg("Proposed address matches the current address.")]
-  AddressUpdateUnchangedAddress,
-  #[msg("Address change proposal has expired.")]
-  AddressUpdateExpired,
-  #[msg("Address change proposal has already been approved.")]
-  AddressUpdateAlreadyApproved,
-  #[msg("Address change proposal has not been approved.")]
-  AddressUpdateNotApproved,
-  #[msg("Address field is not supported.")]
-  AddressUpdateUnsupportedField,
 }

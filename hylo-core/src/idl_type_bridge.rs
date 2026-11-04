@@ -1,9 +1,3 @@
-use hylo_idl::exchange::types::{
-  AddressField as ExchangeAddressField,
-  AddressUpdateProposalData as ExchangeAddressUpdateProposal,
-};
-
-use crate::address_update::{AddressField, AddressUpdateProposal};
 use crate::borrow_rate::BorrowRateCurveConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 #[cfg(any(test, feature = "offchain"))]
@@ -400,49 +394,5 @@ impl
       MAX_PRICE_AGGREGATE_OBSERVATIONS],
   ) -> PriceAggregateObservations {
     PriceAggregateObservations::new(observations.map(PriceObservation::from))
-  }
-}
-
-impl From<ExchangeAddressField> for AddressField {
-  fn from(field: ExchangeAddressField) -> AddressField {
-    match field {
-      ExchangeAddressField::Admin => AddressField::Admin,
-      ExchangeAddressField::Treasury => AddressField::Treasury,
-      ExchangeAddressField::PauseAuthority => AddressField::PauseAuthority,
-    }
-  }
-}
-
-impl From<AddressField> for ExchangeAddressField {
-  fn from(field: AddressField) -> ExchangeAddressField {
-    match field {
-      AddressField::Admin => ExchangeAddressField::Admin,
-      AddressField::Treasury => ExchangeAddressField::Treasury,
-      AddressField::PauseAuthority => ExchangeAddressField::PauseAuthority,
-    }
-  }
-}
-
-impl From<ExchangeAddressUpdateProposal> for AddressUpdateProposal {
-  fn from(proposal: ExchangeAddressUpdateProposal) -> AddressUpdateProposal {
-    AddressUpdateProposal {
-      address_field: proposal.address_field.into(),
-      new_address: proposal.new_address,
-      proposal_time: proposal.proposal_time,
-      ttl_secs: proposal.ttl_secs,
-      approved: proposal.approved,
-    }
-  }
-}
-
-impl From<AddressUpdateProposal> for ExchangeAddressUpdateProposal {
-  fn from(proposal: AddressUpdateProposal) -> ExchangeAddressUpdateProposal {
-    ExchangeAddressUpdateProposal {
-      address_field: proposal.address_field.into(),
-      new_address: proposal.new_address,
-      proposal_time: proposal.proposal_time,
-      ttl_secs: proposal.ttl_secs,
-      approved: proposal.approved,
-    }
   }
 }
