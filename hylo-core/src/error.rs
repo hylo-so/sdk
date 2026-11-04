@@ -36,23 +36,23 @@ pub enum CoreError {
   SolLstPriceConversion,
   #[msg("Arithmetic error during LST to LST conversion.")]
   LstLstPriceConversion,
-  // `pyth`
+  // `oracle`
   #[msg("Oracle confidence interval is too wide.")]
-  PythOracleConfidence,
+  OracleConfidence,
   #[msg("Oracle exponent is out of range.")]
-  PythOracleExponent,
+  OracleExponent,
   #[msg("Oracle yielded a negative price which can't be unsigned.")]
-  PythOracleNegativePrice,
+  OracleInvalidPrice,
   #[msg("Oracle time is negative.")]
-  PythOracleNegativeTime,
+  OracleNegativeTime,
   #[msg("Oracle did not yield a price within the configured age window.")]
-  PythOracleOutdated,
+  OracleOutdated,
   #[msg("Oracle price is out of range.")]
-  PythOraclePriceRange,
+  OraclePriceRange,
   #[msg("Oracle publish slot greater than current slot.")]
-  PythOracleSlotInvalid,
+  OracleSlotInvalid,
   #[msg("Oracle price update is not fully verified.")]
-  PythOracleVerificationLevel,
+  OracleVerificationLevel,
   // `nav`
   #[msg("Overflow while computing collateral ratio.")]
   CollateralRatioOverflow,
@@ -289,4 +289,37 @@ pub enum CoreError {
   // `exo_registry`
   #[msg("No route between the mint pair.")]
   UnroutablePair,
+  // `feeds`
+  #[msg("No feed config found for mint.")]
+  UnknownFeedMint,
+  // `oracle::price_aggregate`
+  #[msg("Arithmetic error.")]
+  OracleArithmetic,
+  #[msg("Unable to cast safely.")]
+  OracleConversion,
+  #[msg("Non-regular price observation has no valid reference feed.")]
+  OracleInvalidReferenceFeed,
+  #[msg("No fresh price observations are available.")]
+  OracleNoFreshPriceObservations,
+  #[msg("Price observation exceeds its reference price band.")]
+  OraclePriceBandExceeded,
+  #[msg("Price observation index exceeds aggregate capacity.")]
+  OracleObservationCapacityExceeded,
+  #[msg("Pyth Lazer feed ID is already configured.")]
+  OracleDuplicatePythLazerFeedId,
+  #[msg("Observation index is already configured.")]
+  OracleDuplicateObservationIndex,
+  // `address_update`
+  #[msg("Address change proposal's TTL not in configured range.")]
+  AddressUpdateInvalidTtl,
+  #[msg("Proposed address matches the current address.")]
+  AddressUpdateUnchangedAddress,
+  #[msg("Address change proposal has expired.")]
+  AddressUpdateExpired,
+  #[msg("Address change proposal has already been approved.")]
+  AddressUpdateAlreadyApproved,
+  #[msg("Address change proposal has not been approved.")]
+  AddressUpdateNotApproved,
+  #[msg("Address field is not supported.")]
+  AddressUpdateUnsupportedField,
 }

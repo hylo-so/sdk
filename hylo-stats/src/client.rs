@@ -13,16 +13,18 @@ use fix::prelude::*;
 use hylo_core::collateral_ratio::{CollateralRatio, CR};
 use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
+use hylo_core::idl::oracle::accounts::PriceAggregate;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
-use hylo_core::pyth::{query_pyth_oracle, OracleConfig, OraclePrice};
+use hylo_core::oracle::{OracleConfig, OraclePrice, PriceAggregateExt};
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::pda;
-use hylo_idl::tokens::{StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD};
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use hylo_idl::tokens::{
+  StakePool, TokenMint, CBBTC, HYLOSOL, JITOSOL, SHYUSD, SOL,
+};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::earn_pool_stats::compute_stats;
@@ -54,8 +56,8 @@ pub struct StatsAccounts {
   pub exo_collateral_mint: Mint,
   pub exo_vault: TokenAccount,
   pub exo_levercoin_mint: Mint,
-  pub btc_usd: PriceUpdateV2,
-  pub sol_usd: PriceUpdateV2,
+  pub btc_usd: PriceAggregate,
+  pub sol_usd: PriceAggregate,
   pub clock: Clock,
 }
 
@@ -79,8 +81,8 @@ impl StatsAccounts {
     CBBTC::MINT,
     pda::exo_vault(CBBTC::MINT),
     pda::exo_levercoin_mint(CBBTC::MINT),
-    pda::BTC_USD_PYTH_FEED,
-    pda::SOL_USD_PYTH_FEED,
+    pda::price_aggregate(CBBTC::MINT),
+    pda::price_aggregate(SOL::MINT),
     sysvar::clock::ID,
   ];
 
@@ -122,10 +124,10 @@ impl StatsAccounts {
       exo_levercoin_mint: Mint::try_deserialize(
         &mut accounts[12].data.as_slice(),
       )?,
-      btc_usd: PriceUpdateV2::try_deserialize(
+      btc_usd: PriceAggregate::try_deserialize(
         &mut accounts[13].data.as_slice(),
       )?,
-      sol_usd: PriceUpdateV2::try_deserialize(
+      sol_usd: PriceAggregate::try_deserialize(
         &mut accounts[14].data.as_slice(),
       )?,
       clock: bincode::deserialize(&accounts[15].data)
@@ -229,7 +231,7 @@ fn exo_exchange_context(
   collateral_mint: &Mint,
   exo_vault: &TokenAccount,
   levercoin_mint: &Mint,
-  collateral_usd: &PriceUpdateV2,
+  collateral_usd: &PriceAggregate,
 ) -> Result<ExoExchangeContext<Clock>> {
   let oracle_config = OracleConfig::new(
     exo_pair.oracle_interval_secs,
@@ -314,8 +316,9 @@ pub fn build_stats_inputs(
     accounts.hylo.oracle_interval_secs,
     accounts.hylo.oracle_conf_tolerance.try_into()?,
   );
-  let sol_usd =
-    query_pyth_oracle(&accounts.clock, &accounts.sol_usd, oracle_config)?;
+  let sol_usd = accounts
+    .sol_usd
+    .query_price(&accounts.clock, oracle_config)?;
   let lst_collateral_ratio =
     lst_collateral_ratio(&accounts.clock, &accounts.hylo, &sol_usd)?;
 

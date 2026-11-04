@@ -3,7 +3,7 @@ use fix::typenum::Integer;
 
 use crate::fees::curves::{MINT_FEE_INV, REDEEM_FEE_LN};
 use crate::fees::interp::FixInterp;
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 
 #[must_use]
 pub fn any_ufix64<Exp: Integer>() -> UFix64<Exp> {

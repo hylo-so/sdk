@@ -1,6 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
 
+pub mod address_update;
 pub mod asset_swap_config;
 pub mod borrow_rate;
 #[cfg(feature = "offchain")]
@@ -12,14 +13,13 @@ pub mod error;
 pub mod exchange_context;
 pub mod exchange_math;
 pub mod fees;
-#[cfg(feature = "offchain")]
 pub mod idl_type_bridge;
 #[cfg(kani)]
 pub mod kani_generators;
 pub mod limiter;
 pub mod lst;
+pub mod oracle;
 pub mod par_tolerance;
-pub mod pyth;
 pub mod rebalance;
 pub mod reserve_gate;
 pub mod slippage_config;

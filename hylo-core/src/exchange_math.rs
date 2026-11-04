@@ -5,7 +5,7 @@ use crate::error::CoreError::{
   LevercoinMarketCapArithmetic, MaxMintable, MaxRedeemable, MaxSwappable,
   StablecoinNav, TargetCollateralRatioTooLow, TotalValueLocked,
 };
-use crate::pyth::PriceRange;
+use crate::oracle::PriceRange;
 
 /// Multiples total SOL by the given spot price to get TVL.
 pub fn total_value_locked(

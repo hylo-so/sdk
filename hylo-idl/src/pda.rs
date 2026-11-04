@@ -1,12 +1,12 @@
-use anchor_lang::prelude::{bpf_loader_upgradeable, pubkey, Pubkey};
+use anchor_lang::prelude::{bpf_loader_upgradeable, Pubkey};
 use anchor_spl::associated_token::spl_associated_token_account;
 use anchor_spl::token;
 use const_crypto::ed25519;
 use solana_address_lookup_table_interface::program as address_lookup_table;
 
 use crate::exchange::types::AddressField;
-use crate::tokens::{TokenMint, HYUSD, SHYUSD, USDC, XSOL};
-use crate::{earn_pool, exchange, router};
+use crate::tokens::{TokenMint, CBBTC, HYUSD, SHYUSD, SOL, USDC, XSOL};
+use crate::{earn_pool, exchange, oracle, router};
 
 macro_rules! pda {
   ($program_id:expr, $base:expr) => {{
@@ -162,6 +162,11 @@ pub const fn event_auth(program_id: Pubkey) -> Pubkey {
 }
 
 #[must_use]
+pub const fn price_aggregate(mint: Pubkey) -> Pubkey {
+  pda!(oracle::ID, oracle::constants::PRICE_AGGREGATE, mint)
+}
+
+#[must_use]
 pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
 }
@@ -220,14 +225,13 @@ pub const EARN_POOL_PROGRAM_DATA: Pubkey = progdata(earn_pool::ID);
 
 pub const EXCHANGE_PROGRAM_DATA: Pubkey = progdata(exchange::ID);
 
-pub const SOL_USD_PYTH_FEED: Pubkey =
-  pubkey!("7AviUf9nL62mcxNbQGKm4nKDQnPjswo6c5MX4D57HmyE");
+pub const ORACLE_PROGRAM_DATA: Pubkey = progdata(oracle::ID);
 
-pub const USDC_USD_PYTH_FEED: Pubkey =
-  pubkey!("6HAuqASbHEh4w4REJEUUUCginTLfj1kwCh215ZLtMkrT");
+pub const SOL_USD_PRICE_AGGREGATE: Pubkey = price_aggregate(SOL::MINT);
 
-pub const BTC_USD_PYTH_FEED: Pubkey =
-  pubkey!("APgzQGGdv2qCgBkX6aHVkrGePtBVDDg68GiqaM7rmtf5");
+pub const USDC_USD_PRICE_AGGREGATE: Pubkey = price_aggregate(USDC::MINT);
+
+pub const BTC_USD_PRICE_AGGREGATE: Pubkey = price_aggregate(CBBTC::MINT);
 
 pub const DEAD: Pubkey = pda!(exchange::ID, exchange::constants::DEAD);
 
@@ -236,6 +240,8 @@ pub const EXCHANGE_EVENT_AUTHORITY: Pubkey = event_auth(exchange::ID);
 pub const EARN_POOL_EVENT_AUTHORITY: Pubkey = event_auth(earn_pool::ID);
 
 pub const ROUTER_EVENT_AUTHORITY: Pubkey = event_auth(router::ID);
+
+pub const ORACLE_EVENT_AUTHORITY: Pubkey = event_auth(oracle::ID);
 
 pub const EXO_REGISTRY: Pubkey =
   pda!(router::ID, router::constants::EXO_REGISTRY);

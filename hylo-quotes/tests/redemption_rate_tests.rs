@@ -462,18 +462,18 @@ fn rejected_usdc_oracle_drops_only_the_usdc_lane() -> Result<()> {
   let state = load_state()?;
   let state = ProtocolState {
     usdc_pair: UsdcPairState {
-      usdc_usd_spot: Err(CoreError::PythOracleConfidence),
+      usdc_usd_spot: Err(CoreError::OracleConfidence),
       ..state.usdc_pair
     },
     ..state
   };
   assert_eq!(
     TokenOperation::<HYUSD, USDC>::compute_output(&state, REFERENCE).err(),
-    Some(CoreError::PythOracleConfidence)
+    Some(CoreError::OracleConfidence)
   );
   assert_eq!(
     TokenOperation::<USDC, HYUSD>::compute_output(&state, REFERENCE).err(),
-    Some(CoreError::PythOracleConfidence)
+    Some(CoreError::OracleConfidence)
   );
 
   let rate = RedemptionRate::new(&state, REFERENCE)?;
