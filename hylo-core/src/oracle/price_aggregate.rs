@@ -58,17 +58,13 @@ pub trait PriceAggregateExt {
       secs: Some(interval_secs),
       confidence: Some(conf_tolerance),
     };
-    let spot = self.price_observations().price(
+    self.price_observations().price(
       AggregationMethod::SimpleAverage,
       clock.slot(),
       current_timestamp_us,
       validation_config,
       &self.observation_configs(),
-    )?;
-    Ok(OraclePrice {
-      spot,
-      conf: UFix64::new(0),
-    })
+    )
   }
 }
 
@@ -370,7 +366,8 @@ enum ObservationStatus {
 }
 
 impl PriceAggregateObservations {
-  /// Combines fresh observations into a 9-decimal price.
+  /// Combines fresh observations into a 9-decimal spot price with the widest
+  /// confidence among them.
   ///
   /// # Errors
   ///
@@ -383,7 +380,7 @@ impl PriceAggregateObservations {
     current_timestamp_us: u64,
     validation_config: ValidationConfig,
     observation_configs: &[OracleObservationConfig],
-  ) -> Result<UFix64<N9>, CoreError> {
+  ) -> Result<OraclePrice, CoreError> {
     let mut observations = self.fresh_observations(
       current_slot,
       current_timestamp_us,
@@ -393,27 +390,32 @@ impl PriceAggregateObservations {
 
     match aggregation_method {
       AggregationMethod::SimpleAverage => {
-        let (sum, count) = observations.try_fold(
-          (UFix128::<N9>::new(0), 0_u8),
-          |(sum, count), observation| {
-            PriceObservation::normalized(
+        let (sum, count, conf) = observations.try_fold(
+          (UFix128::<N9>::new(0), 0_u8, UFix64::<N9>::new(0)),
+          |(sum, count, conf), observation| -> Result<_, CoreError> {
+            let price = PriceObservation::normalized(
               observation.price,
               observation.exponent,
-            )
-            .map(fix::Fix::widen::<u128>)
-            .and_then(|price| {
-              sum.checked_add(&price).ok_or(CoreError::OracleArithmetic)
-            })
-            .and_then(|sum| {
-              count
-                .checked_add(1)
-                .map(|count| (sum, count))
-                .ok_or(CoreError::OracleArithmetic)
-            })
+            )?
+            .widen::<u128>();
+            let sum =
+              sum.checked_add(&price).ok_or(CoreError::OracleArithmetic)?;
+            let count =
+              count.checked_add(1).ok_or(CoreError::OracleArithmetic)?;
+            let observation_conf = PriceObservation::normalized(
+              observation.confidence,
+              observation.exponent,
+            )?;
+            let conf = if observation_conf > conf {
+              observation_conf
+            } else {
+              conf
+            };
+            Ok((sum, count, conf))
           },
         )?;
 
-        (count > 0)
+        let spot = (count > 0)
           .then_some(())
           .ok_or(CoreError::OracleNoFreshPriceObservations)
           .and_then(|()| {
@@ -423,7 +425,8 @@ impl PriceAggregateObservations {
           })
           .and_then(|average| {
             average.narrow::<u64>().ok_or(CoreError::OracleConversion)
-          })
+          })?;
+        Ok(OraclePrice { spot, conf })
       }
     }
   }
@@ -565,7 +568,7 @@ mod tests {
   use fix::typenum::N9;
 
   use super::{
-    AggregationMethod, MarketSession, OracleObservationConfig,
+    AggregationMethod, MarketSession, OracleObservationConfig, OraclePrice,
     PriceAggregateObservations, PriceObservation, ValidationConfig,
   };
   use crate::error::CoreError;
@@ -633,7 +636,39 @@ mod tests {
         ValidationConfig::default(),
         &CONFIG,
       ),
-      Ok(UFix64::<N9>::new(150_000_000_000)),
+      Ok(OraclePrice {
+        spot: UFix64::<N9>::new(150_000_000_000),
+        conf: UFix64::zero(),
+      }),
+    );
+  }
+
+  #[test]
+  fn price_reports_widest_confidence() {
+    let current_slot = 1;
+    let current_timestamp_us = 1_000_000;
+    let mut observations = PriceAggregateObservations::default();
+    let mut narrow =
+      observation(100_000_000_000, current_slot, current_timestamp_us);
+    narrow.confidence = 1_000_000_000;
+    let mut wide =
+      observation(100_000_000_000, current_slot, current_timestamp_us);
+    wide.confidence = 2_000_000_000;
+    assert!(observations.update_observation(0, narrow).is_ok());
+    assert!(observations.update_observation(1, wide).is_ok());
+
+    assert_eq!(
+      observations.price(
+        AggregationMethod::SimpleAverage,
+        current_slot,
+        current_timestamp_us,
+        ValidationConfig::default(),
+        &CONFIG,
+      ),
+      Ok(OraclePrice {
+        spot: UFix64::<N9>::new(100_000_000_000),
+        conf: UFix64::<N9>::new(2_000_000_000),
+      }),
     );
   }
 
@@ -660,7 +695,10 @@ mod tests {
         ValidationConfig::default(),
         &CONFIG,
       ),
-      Ok(UFix64::<N9>::new(200_000_000_000)),
+      Ok(OraclePrice {
+        spot: UFix64::<N9>::new(200_000_000_000),
+        conf: UFix64::zero(),
+      }),
     );
   }
 
@@ -721,7 +759,10 @@ mod tests {
         ValidationConfig::default(),
         &BANDED_CONFIG,
       ),
-      Ok(UFix64::<N9>::new(102_500_000_000)),
+      Ok(OraclePrice {
+        spot: UFix64::<N9>::new(102_500_000_000),
+        conf: UFix64::<N9>::new(10_000_000),
+      }),
     );
   }
 }

@@ -74,7 +74,7 @@ mod tests {
       .query_price(&clock, OracleConfig::new(60, UFix64::new(10_000_000)))?;
 
     assert_eq!(price.spot, UFix64::new(1_000_000_000));
-    assert_eq!(price.conf, UFix64::zero());
+    assert_eq!(price.conf, UFix64::new(10_000_000));
     Ok(())
   }
 }
