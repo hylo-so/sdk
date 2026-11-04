@@ -167,25 +167,6 @@ pub const fn price_aggregate(mint: Pubkey) -> Pubkey {
 }
 
 #[must_use]
-pub const fn oracle_config() -> Pubkey {
-  pda!(oracle::ID, oracle::constants::ORACLE_CONFIG)
-}
-
-#[must_use]
-pub const fn oracle_address_update_proposal(
-  field: oracle::types::AddressField,
-) -> Pubkey {
-  let (key, _bump) = ed25519::derive_program_address(
-    &[
-      oracle::constants::ADDRESS_UPDATE_PROPOSAL.as_slice(),
-      &[field as u8],
-    ],
-    oracle::ID.as_array(),
-  );
-  Pubkey::new_from_array(key)
-}
-
-#[must_use]
 pub const fn exo_pair(collateral_mint: Pubkey) -> Pubkey {
   pda!(exchange::ID, exchange::constants::EXO_PAIR, collateral_mint)
 }

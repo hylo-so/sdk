@@ -176,6 +176,10 @@ mod tests {
     let initialize =
       oracle::instruction_builders::initialize_price_aggregate(admin, mint);
     assert_eq!(initialize.program_id, oracle::ID);
+    assert!(initialize
+      .accounts
+      .iter()
+      .any(|account| account.pubkey == pda::HYLO && !account.is_writable));
     assert!(initialize.accounts.iter().any(|account| {
       account.pubkey == expected_aggregate && account.is_writable
     }));
@@ -202,129 +206,5 @@ mod tests {
     assert!(update.accounts.iter().any(|account| {
       account.pubkey == expected_aggregate && account.is_writable
     }));
-  }
-
-  #[test]
-  fn oracle_admin_update_builders_match_program_seeds() {
-    let admin = Pubkey::new_unique();
-    let upgrade_authority = Pubkey::new_unique();
-    let new_admin = Pubkey::new_unique();
-    let expected_config = Pubkey::find_program_address(
-      &[&oracle::constants::ORACLE_CONFIG],
-      &oracle::ID,
-    )
-    .0;
-    let expected_proposal = Pubkey::find_program_address(
-      &[
-        &oracle::constants::ADDRESS_UPDATE_PROPOSAL,
-        &[oracle::types::AddressField::Admin as u8],
-      ],
-      &oracle::ID,
-    )
-    .0;
-
-    assert_eq!(pda::oracle_config(), expected_config);
-    assert_eq!(
-      pda::oracle_address_update_proposal(oracle::types::AddressField::Admin),
-      expected_proposal
-    );
-
-    let initialize =
-      oracle::instruction_builders::initialize_oracle(admin, upgrade_authority);
-    assert_eq!(initialize.program_id, oracle::ID);
-    assert!(initialize.accounts.iter().any(|account| {
-      account.pubkey == expected_config && account.is_writable
-    }));
-    assert!(initialize
-      .accounts
-      .iter()
-      .any(|account| account.pubkey == pda::ORACLE_PROGRAM_DATA));
-
-    let propose = oracle::instruction_builders::propose_address_update(
-      admin,
-      oracle::types::AddressField::Admin,
-      new_admin,
-      2 * 60 * 60,
-    );
-    assert_eq!(propose.program_id, oracle::ID);
-    assert!(propose.accounts.iter().any(|account| {
-      account.pubkey == expected_config && !account.is_writable
-    }));
-    assert!(propose.accounts.iter().any(|account| {
-      account.pubkey == expected_proposal && account.is_writable
-    }));
-
-    let approve = oracle::instruction_builders::approve_address_update(
-      upgrade_authority,
-      new_admin,
-      oracle::types::AddressField::Admin,
-    );
-    assert_eq!(approve.program_id, oracle::ID);
-    assert!(approve.accounts.iter().any(|account| {
-      account.pubkey == expected_proposal && account.is_writable
-    }));
-    assert!(approve
-      .accounts
-      .iter()
-      .any(|account| account.pubkey == pda::ORACLE_PROGRAM_DATA));
-
-    let accept = oracle::instruction_builders::accept_address_update(
-      new_admin,
-      admin,
-      oracle::types::AddressField::Admin,
-    );
-    assert_eq!(accept.program_id, oracle::ID);
-    assert!(accept.accounts.iter().any(|account| {
-      account.pubkey == expected_config && account.is_writable
-    }));
-    assert!(accept.accounts.iter().any(|account| {
-      account.pubkey == expected_proposal && account.is_writable
-    }));
-
-    let cancel = oracle::instruction_builders::cancel_address_update(
-      admin,
-      oracle::types::AddressField::Admin,
-    );
-    assert_eq!(cancel.program_id, oracle::ID);
-    assert!(cancel.accounts.iter().any(|account| {
-      account.pubkey == expected_proposal && account.is_writable
-    }));
-  }
-  #[test]
-  fn oracle_address_update_builders_use_selected_field_seed() {
-    let admin = Pubkey::new_unique();
-    let upgrade_authority = Pubkey::new_unique();
-    let new_address = Pubkey::new_unique();
-    let check = |field: oracle::types::AddressField| {
-      let expected = pda::oracle_address_update_proposal(field);
-      let propose = oracle::instruction_builders::propose_address_update(
-        admin,
-        field,
-        new_address,
-        7_200,
-      );
-      let approve = oracle::instruction_builders::approve_address_update(
-        upgrade_authority,
-        new_address,
-        field,
-      );
-      let accept = oracle::instruction_builders::accept_address_update(
-        new_address,
-        admin,
-        field,
-      );
-      let cancel =
-        oracle::instruction_builders::cancel_address_update(admin, field);
-      assert!([propose, approve, accept, cancel]
-        .iter()
-        .all(|instruction| {
-          instruction
-            .accounts
-            .iter()
-            .any(|account| account.pubkey == expected)
-        }));
-    };
-    check(oracle::types::AddressField::Treasury);
-    check(oracle::types::AddressField::PauseAuthority);
   }
 }
