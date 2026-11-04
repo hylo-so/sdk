@@ -470,7 +470,7 @@ impl<C: SolanaClock> TokenOperation<HYUSD, XSOL> for ProtocolState<C> {
     self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.exchange_context.levercoin_mint_enabled(),
+      self.exchange_context.stable_to_lever_conversion_enabled(),
       CoreError::OperationDisabled,
     )
   }
@@ -535,7 +535,7 @@ impl<C: SolanaClock> TokenOperation<XSOL, HYUSD> for ProtocolState<C> {
     self.lst_pair_gates()?;
     gate(self.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      self.exchange_context.stablecoin_mint_enabled(),
+      self.exchange_context.lever_to_stable_conversion_enabled(),
       CoreError::OperationDisabled,
     )
   }
@@ -1115,7 +1115,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let pair = self.exo_pair::<E>()?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      pair.context.levercoin_mint_enabled(),
+      pair.context.stable_to_lever_conversion_enabled(),
       CoreError::OperationDisabled,
     )
   }
@@ -1190,7 +1190,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     let pair = self.exo_pair::<E>()?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
-      pair.context.stablecoin_mint_enabled(),
+      pair.context.lever_to_stable_conversion_enabled(),
       CoreError::OperationDisabled,
     )
   }

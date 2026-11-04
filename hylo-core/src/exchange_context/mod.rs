@@ -82,6 +82,18 @@ pub trait ExchangeContext {
     self.rebalance_mode() != RebalanceMode::Depeg
   }
 
+  /// Stablecoin to levercoin conversion: levercoin mintable and stablecoin
+  /// not, so CR is below the stablecoin mint threshold and above Depeg.
+  fn stable_to_lever_conversion_enabled(&self) -> bool {
+    self.levercoin_mint_enabled() && !self.stablecoin_mint_enabled()
+  }
+
+  /// Levercoin to stablecoin conversion: CR at or above the stablecoin mint
+  /// threshold.
+  fn lever_to_stable_conversion_enabled(&self) -> bool {
+    self.stablecoin_mint_enabled()
+  }
+
   /// Sell-side rebalance price curve from oracle spot.
   ///
   /// # Errors
