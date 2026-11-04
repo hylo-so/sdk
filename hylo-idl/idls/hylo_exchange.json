@@ -9516,15 +9516,6 @@
       ],
       "args": [
         {
-          "name": "oracle_feed_id",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
           "name": "oracle_interval_secs",
           "type": "u64"
         },
@@ -20576,11 +20567,6 @@
       "code": 6048,
       "name": "VirtualStablecoinExceedsVault",
       "msg": "Virtual stablecoin supply exceeds USDC vault balance."
-    },
-    {
-      "code": 6049,
-      "name": "UnsupportedAddressField",
-      "msg": "Address field is not supported."
     }
   ],
   "types": [
@@ -20610,9 +20596,6 @@
     },
     {
       "name": "AddressField",
-      "docs": [
-        "Address selected for rotation."
-      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -20630,28 +20613,6 @@
     },
     {
       "name": "AddressUpdateProposal",
-      "docs": [
-        "Pending exchange address rotation."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "data",
-            "type": {
-              "defined": {
-                "name": "AddressUpdateProposalData"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AddressUpdateProposalData",
-      "docs": [
-        "Pending address rotation."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -21031,7 +20992,7 @@
             "type": "pubkey"
           },
           {
-            "name": "oracle_feed_id",
+            "name": "_oracle_feed_id",
             "type": {
               "array": [
                 "u8",
