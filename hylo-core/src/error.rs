@@ -309,4 +309,6 @@ pub enum CoreError {
   OracleDuplicatePythLazerFeedId,
   #[msg("Observation index is already configured.")]
   OracleDuplicateObservationIndex,
+  #[msg("Every Pyth Lazer feed slot is occupied.")]
+  OraclePythLazerFeedsFull,
 }

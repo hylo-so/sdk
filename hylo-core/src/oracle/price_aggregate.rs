@@ -557,19 +557,6 @@ impl PriceAggregateObservations {
       .map(|slot| *slot = observation)
       .ok_or(CoreError::OracleObservationCapacityExceeded)
   }
-
-  /// Clears an observation at its configured observation index.
-  ///
-  /// # Errors
-  ///
-  /// * The observation index exceeds the observation capacity.
-  pub fn clear_observation(&mut self, index: usize) -> Result<(), CoreError> {
-    self
-      .0
-      .get_mut(index)
-      .map(|slot| *slot = PriceObservation::default())
-      .ok_or(CoreError::OracleObservationCapacityExceeded)
-  }
 }
 
 #[cfg(test)]
