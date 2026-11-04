@@ -1660,7 +1660,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-clients"
-version = "2.7.5"
+version = "2.7.6"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1685,7 +1685,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-core"
-version = "2.7.5"
+version = "2.7.6"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1719,7 +1719,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-idl"
-version = "2.7.5"
+version = "2.7.6"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1734,7 +1734,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-jupiter"
-version = "2.7.5"
+version = "2.7.6"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1769,7 +1769,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-quotes"
-version = "2.7.5"
+version = "2.7.6"
 dependencies = [
  "anchor-client",
  "anchor-lang",
@@ -1820,7 +1820,7 @@ dependencies = [
 
 [[package]]
 name = "hylo-stats"
-version = "2.7.5"
+version = "2.7.6"
 dependencies = [
  "anchor-client",
  "anchor-lang",
