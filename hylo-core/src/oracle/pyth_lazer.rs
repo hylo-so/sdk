@@ -19,7 +19,16 @@ use crate::error::CoreError;
 pub struct PythLazerFeedId(pub u32);
 
 /// Pyth Lazer feed and the latest observation posted from it.
-#[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
+#[derive(
+  Debug,
+  Clone,
+  Copy,
+  PartialEq,
+  Eq,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+)]
 pub struct PythLazerSlot {
   pub feed_id: PythLazerFeedId,
   pub observation: PriceObservation,
@@ -30,9 +39,19 @@ pub const MAX_PYTH_LAZER_FEEDS: usize = 3;
 
 /// Fixed Pyth Lazer feed slots stored for one price aggregate.
 #[derive(
-  Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
+  Debug,
+  Default,
+  Clone,
+  Copy,
+  PartialEq,
+  Eq,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
 )]
-pub struct PythLazerFeeds([Option<PythLazerSlot>; MAX_PYTH_LAZER_FEEDS]);
+pub struct PythLazerFeeds(
+  pub(crate) [Option<PythLazerSlot>; MAX_PYTH_LAZER_FEEDS],
+);
 
 impl PythLazerFeeds {
   /// Creates empty Pyth Lazer feed slots.

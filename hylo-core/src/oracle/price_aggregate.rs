@@ -170,7 +170,15 @@ pub enum MarketSession {
 /// Source observation with a shared price and confidence exponent.
 /// A zero price marks a feed that has not posted yet.
 #[derive(
-  Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
+  Debug,
+  Default,
+  Clone,
+  Copy,
+  PartialEq,
+  Eq,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
 )]
 pub struct PriceObservation {
   pub price: u64,

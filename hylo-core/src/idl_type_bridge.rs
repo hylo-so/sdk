@@ -6,7 +6,10 @@ use crate::limiter::deposit::DepositLimiter;
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
-use crate::oracle::{MarketSession, PriceObservation};
+use crate::oracle::{
+  MarketSession, PriceObservation, PythLazerFeedId, PythLazerFeeds,
+  PythLazerSlot,
+};
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
@@ -330,5 +333,49 @@ impl From<hylo_idl::oracle::types::PriceObservation> for PriceObservation {
       posted_timestamp_us: idl.posted_timestamp_us,
       market_session: idl.market_session.into(),
     }
+  }
+}
+
+impl From<PythLazerFeedId> for hylo_idl::oracle::types::PythLazerFeedId {
+  fn from(val: PythLazerFeedId) -> Self {
+    hylo_idl::oracle::types::PythLazerFeedId(val.0)
+  }
+}
+
+impl From<hylo_idl::oracle::types::PythLazerFeedId> for PythLazerFeedId {
+  fn from(idl: hylo_idl::oracle::types::PythLazerFeedId) -> PythLazerFeedId {
+    PythLazerFeedId(idl.0)
+  }
+}
+
+impl From<PythLazerSlot> for hylo_idl::oracle::types::PythLazerSlot {
+  fn from(val: PythLazerSlot) -> Self {
+    hylo_idl::oracle::types::PythLazerSlot {
+      feed_id: val.feed_id.into(),
+      observation: val.observation.into(),
+    }
+  }
+}
+
+impl From<hylo_idl::oracle::types::PythLazerSlot> for PythLazerSlot {
+  fn from(idl: hylo_idl::oracle::types::PythLazerSlot) -> PythLazerSlot {
+    PythLazerSlot {
+      feed_id: idl.feed_id.into(),
+      observation: idl.observation.into(),
+    }
+  }
+}
+
+impl From<PythLazerFeeds> for hylo_idl::oracle::types::PythLazerFeeds {
+  fn from(val: PythLazerFeeds) -> Self {
+    hylo_idl::oracle::types::PythLazerFeeds(
+      val.0.map(|slot| slot.map(Into::into)),
+    )
+  }
+}
+
+impl From<hylo_idl::oracle::types::PythLazerFeeds> for PythLazerFeeds {
+  fn from(idl: hylo_idl::oracle::types::PythLazerFeeds) -> PythLazerFeeds {
+    PythLazerFeeds(idl.0.map(|slot| slot.map(Into::into)))
   }
 }
