@@ -49,9 +49,7 @@ pub const MAX_PYTH_LAZER_FEEDS: usize = 3;
   AnchorDeserialize,
   InitSpace,
 )]
-pub struct PythLazerFeeds(
-  pub(crate) [Option<PythLazerSlot>; MAX_PYTH_LAZER_FEEDS],
-);
+pub struct PythLazerFeeds(pub [Option<PythLazerSlot>; MAX_PYTH_LAZER_FEEDS]);
 
 impl PythLazerFeeds {
   /// Creates empty Pyth Lazer feed slots.
