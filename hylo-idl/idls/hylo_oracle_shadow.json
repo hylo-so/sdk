@@ -10,12 +10,12 @@
     {
       "name": "add_pyth_lazer_feed",
       "docs": [
-        "Stores a Pyth Lazer feed in the first free configuration slot.",
+        "Stores a Pyth Lazer feed in the first free slot.",
         "",
         "# Errors",
         "",
         "* The signer is not the exchange administrator.",
-        "* The observation mapping is out of range or already configured.",
+        "* The feed ID is already configured.",
         "* Every feed slot is occupied."
       ],
       "discriminator": [
@@ -819,7 +819,7 @@
     {
       "name": "ObservationUpdated",
       "docs": [
-        "Emitted whenever a price aggregate records a newer price, from any source."
+        "Emitted whenever a Pyth Lazer feed posts a newer observation."
       ],
       "type": {
         "kind": "struct",
@@ -861,8 +861,7 @@
     {
       "name": "PriceAggregate",
       "docs": [
-        "Observations posted for one mint, with fixed observation and source",
-        "capacities."
+        "Latest observation from each feed configured for one mint."
       ],
       "type": {
         "kind": "struct",
@@ -915,7 +914,7 @@
       "name": "PriceObservation",
       "docs": [
         "Source observation with a shared price and confidence exponent.",
-        "A zero price marks an unoccupied slot."
+        "A zero price marks a feed that has not posted yet."
       ],
       "type": {
         "kind": "struct",
@@ -993,7 +992,7 @@
     {
       "name": "PythLazerFeeds",
       "docs": [
-        "Fixed Pyth Lazer feed configuration slots stored for one price aggregate."
+        "Fixed Pyth Lazer feed slots stored for one price aggregate."
       ],
       "type": {
         "kind": "struct",
