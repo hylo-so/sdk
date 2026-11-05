@@ -4,7 +4,7 @@ use anchor_lang::{InstructionData, ToAccountMetas};
 
 use crate::oracle::account_builders;
 use crate::oracle::client::args;
-use crate::oracle::types::PythLazerConfig;
+use crate::oracle::types::PythLazerFeedId;
 use crate::{oracle, pda};
 
 /// Builds the instruction that creates the price aggregate for `mint`.
@@ -25,10 +25,10 @@ pub fn initialize_price_aggregate(admin: Pubkey, mint: Pubkey) -> Instruction {
 pub fn add_pyth_lazer_feed(
   admin: Pubkey,
   mint: Pubkey,
-  config: PythLazerConfig,
+  feed_id: PythLazerFeedId,
 ) -> Instruction {
   let accounts = account_builders::add_pyth_lazer_feed(admin, mint);
-  let args = args::AddPythLazerFeed { config };
+  let args = args::AddPythLazerFeed { feed_id };
   Instruction {
     program_id: oracle::ID,
     accounts: accounts.to_account_metas(None),

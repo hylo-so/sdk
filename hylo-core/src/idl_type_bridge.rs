@@ -6,14 +6,7 @@ use crate::limiter::deposit::DepositLimiter;
 use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
-use crate::oracle::{
-  MarketSession, OracleSource, PriceAggregateObservations, PriceObservation,
-  MAX_PRICE_AGGREGATE_OBSERVATIONS,
-};
-#[cfg(feature = "offchain")]
-use crate::oracle::{
-  OracleObservationConfig, PythLazerConfig, PythLazerFeedId,
-};
+use crate::oracle::{MarketSession, PriceObservation};
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
@@ -296,40 +289,6 @@ impl From<MarketSession> for hylo_idl::oracle::types::MarketSession {
   }
 }
 
-impl From<OracleSource> for hylo_idl::oracle::types::OracleSource {
-  fn from(val: OracleSource) -> Self {
-    match val {
-      OracleSource::PythLazer => {
-        hylo_idl::oracle::types::OracleSource::PythLazer
-      }
-    }
-  }
-}
-
-#[cfg(feature = "offchain")]
-impl From<hylo_idl::oracle::types::OracleObservationConfig>
-  for OracleObservationConfig
-{
-  fn from(
-    idl: hylo_idl::oracle::types::OracleObservationConfig,
-  ) -> OracleObservationConfig {
-    OracleObservationConfig {
-      index: idl.index,
-      reference_index: idl.reference_index,
-    }
-  }
-}
-
-#[cfg(feature = "offchain")]
-impl From<hylo_idl::oracle::types::PythLazerConfig> for PythLazerConfig {
-  fn from(idl: hylo_idl::oracle::types::PythLazerConfig) -> PythLazerConfig {
-    PythLazerConfig {
-      feed_id: PythLazerFeedId(idl.feed_id.0),
-      observation: idl.observation.into(),
-    }
-  }
-}
-
 impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
   fn from(val: PriceObservation) -> Self {
     hylo_idl::oracle::types::PriceObservation {
@@ -340,15 +299,6 @@ impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
       posted_timestamp_us: val.posted_timestamp_us,
       market_session: val.market_session.into(),
     }
-  }
-}
-
-impl From<PriceAggregateObservations>
-  for [hylo_idl::oracle::types::PriceObservation;
-    MAX_PRICE_AGGREGATE_OBSERVATIONS]
-{
-  fn from(val: PriceAggregateObservations) -> Self {
-    (*val).map(hylo_idl::oracle::types::PriceObservation::from)
   }
 }
 
@@ -380,19 +330,5 @@ impl From<hylo_idl::oracle::types::PriceObservation> for PriceObservation {
       posted_timestamp_us: idl.posted_timestamp_us,
       market_session: idl.market_session.into(),
     }
-  }
-}
-
-impl
-  From<
-    [hylo_idl::oracle::types::PriceObservation;
-      MAX_PRICE_AGGREGATE_OBSERVATIONS],
-  > for PriceAggregateObservations
-{
-  fn from(
-    observations: [hylo_idl::oracle::types::PriceObservation;
-      MAX_PRICE_AGGREGATE_OBSERVATIONS],
-  ) -> PriceAggregateObservations {
-    PriceAggregateObservations::new(observations.map(PriceObservation::from))
   }
 }

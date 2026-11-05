@@ -2,7 +2,7 @@ use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
 };
 
-use super::{OracleObservationConfig, MAX_PRICE_AGGREGATE_OBSERVATIONS};
+use super::PriceObservation;
 use crate::error::CoreError;
 
 /// Pyth Lazer feed id (Lazer's numeric identifier).
@@ -18,208 +18,145 @@ use crate::error::CoreError;
 )]
 pub struct PythLazerFeedId(pub u32);
 
-#[derive(
-  Debug,
-  Clone,
-  Copy,
-  AnchorSerialize,
-  AnchorDeserialize,
-  InitSpace,
-  PartialEq,
-  Eq,
-)]
-/// Pyth Lazer feed and its observation mapping.
-pub struct PythLazerConfig {
+/// Pyth Lazer feed and the latest observation posted from it.
+#[derive(Debug, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace)]
+pub struct PythLazerSlot {
   pub feed_id: PythLazerFeedId,
-  pub observation: OracleObservationConfig,
+  pub observation: PriceObservation,
 }
 
 /// Three feeds per price aggregate.
 pub const MAX_PYTH_LAZER_FEEDS: usize = 3;
 
-/// Fixed Pyth Lazer feed configuration slots stored for one price aggregate.
+/// Fixed Pyth Lazer feed slots stored for one price aggregate.
 #[derive(
   Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
 )]
-pub struct PythLazerFeeds([Option<PythLazerConfig>; MAX_PYTH_LAZER_FEEDS]);
+pub struct PythLazerFeeds([Option<PythLazerSlot>; MAX_PYTH_LAZER_FEEDS]);
 
 impl PythLazerFeeds {
-  /// Creates empty Pyth Lazer feed configuration slots.
+  /// Creates empty Pyth Lazer feed slots.
   #[must_use]
   pub fn new() -> PythLazerFeeds {
     PythLazerFeeds([None; MAX_PYTH_LAZER_FEEDS])
   }
 
-  /// Returns configured feeds in slot order.
-  pub fn configs(&self) -> impl Iterator<Item = &PythLazerConfig> {
+  /// Returns occupied slots in slot order.
+  pub fn slots(&self) -> impl Iterator<Item = &PythLazerSlot> {
     self.0.iter().flatten()
   }
 
-  /// Returns the configuration for a feed ID.
+  /// Returns the observations of occupied slots in slot order.
+  pub fn observations(&self) -> impl Iterator<Item = PriceObservation> + '_ {
+    self.slots().map(|slot| slot.observation)
+  }
+
+  /// Returns the slot for a feed ID.
   #[must_use]
-  pub fn get_config(
-    &self,
+  pub fn get(&self, feed_id: PythLazerFeedId) -> Option<&PythLazerSlot> {
+    self.slots().find(|slot| slot.feed_id == feed_id)
+  }
+
+  /// Returns the slot for a feed ID mutably.
+  pub fn get_mut(
+    &mut self,
     feed_id: PythLazerFeedId,
-  ) -> Option<&PythLazerConfig> {
-    self.configs().find(|config| config.feed_id == feed_id)
+  ) -> Option<&mut PythLazerSlot> {
+    self
+      .0
+      .iter_mut()
+      .flatten()
+      .find(|slot| slot.feed_id == feed_id)
   }
 
   /// Stores a feed in the first free slot and returns the slot index.
   ///
   /// # Errors
   ///
-  /// * The observation or reference index exceeds observation capacity, or the
-  ///   reference index matches the observation index.
-  /// * The feed ID or observation index is already configured.
+  /// * The feed ID is already configured.
   /// * Every slot is occupied.
-  pub fn add(&mut self, config: PythLazerConfig) -> Result<usize, CoreError> {
-    Self::validate_observation_index(config.observation.index)?;
-    Self::validate_reference_index(config)?;
-    self.validate_unique_feed_id(config.feed_id)?;
-    self.validate_unique_observation_index(config.observation.index)?;
-    let slot = self
+  pub fn add(&mut self, feed_id: PythLazerFeedId) -> Result<usize, CoreError> {
+    self
+      .get(feed_id)
+      .is_none()
+      .then_some(())
+      .ok_or(CoreError::OracleDuplicatePythLazerFeedId)?;
+    let index = self
       .0
       .iter()
       .position(Option::is_none)
       .ok_or(CoreError::OraclePythLazerFeedsFull)?;
-    self.0[slot] = Some(config);
-    Ok(slot)
-  }
-
-  fn validate_observation_index(
-    observation_index: u8,
-  ) -> Result<(), CoreError> {
-    (usize::from(observation_index) < MAX_PRICE_AGGREGATE_OBSERVATIONS)
-      .then_some(())
-      .ok_or(CoreError::OracleObservationCapacityExceeded)
-  }
-
-  fn validate_reference_index(
-    config: PythLazerConfig,
-  ) -> Result<(), CoreError> {
-    config
-      .observation
-      .reference_index
-      .is_none_or(|reference_index| {
-        usize::from(reference_index) < MAX_PRICE_AGGREGATE_OBSERVATIONS
-          && reference_index != config.observation.index
-      })
-      .then_some(())
-      .ok_or(CoreError::OracleInvalidReferenceFeed)
-  }
-
-  fn validate_unique_feed_id(
-    &self,
-    feed_id: PythLazerFeedId,
-  ) -> Result<(), CoreError> {
-    self
-      .configs()
-      .all(|config| config.feed_id != feed_id)
-      .then_some(())
-      .ok_or(CoreError::OracleDuplicatePythLazerFeedId)
-  }
-
-  fn validate_unique_observation_index(
-    &self,
-    observation_index: u8,
-  ) -> Result<(), CoreError> {
-    self
-      .configs()
-      .all(|config| config.observation.index != observation_index)
-      .then_some(())
-      .ok_or(CoreError::OracleDuplicateObservationIndex)
+    self.0[index] = Some(PythLazerSlot {
+      feed_id,
+      observation: PriceObservation::default(),
+    });
+    Ok(index)
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::{
-    OracleObservationConfig, PythLazerConfig, PythLazerFeedId, PythLazerFeeds,
-    MAX_PYTH_LAZER_FEEDS,
-  };
+  use super::{PythLazerFeedId, PythLazerFeeds, MAX_PYTH_LAZER_FEEDS};
   use crate::error::CoreError;
 
-  fn config(feed_id: u32, index: u8) -> PythLazerConfig {
-    PythLazerConfig {
-      feed_id: PythLazerFeedId(feed_id),
-      observation: OracleObservationConfig {
-        index,
-        reference_index: None,
-      },
-    }
+  fn full() -> Result<PythLazerFeeds, CoreError> {
+    let mut feeds = PythLazerFeeds::new();
+    feeds.add(PythLazerFeedId(1))?;
+    feeds.add(PythLazerFeedId(2))?;
+    feeds.add(PythLazerFeedId(3))?;
+    Ok(feeds)
   }
 
   #[test]
   fn add_fills_slots_in_order() {
     let mut feeds = PythLazerFeeds::new();
-    assert_eq!(feeds.add(config(1, 0)), Ok(0));
-    assert_eq!(feeds.add(config(2, 1)), Ok(1));
-    assert_eq!(feeds.add(config(3, 2)), Ok(2));
-    assert_eq!(feeds.configs().count(), MAX_PYTH_LAZER_FEEDS);
-    assert_eq!(feeds.get_config(PythLazerFeedId(2)), Some(&config(2, 1)));
+    assert_eq!(feeds.add(PythLazerFeedId(1)), Ok(0));
+    assert_eq!(feeds.add(PythLazerFeedId(2)), Ok(1));
+    assert_eq!(feeds.add(PythLazerFeedId(3)), Ok(2));
+    assert_eq!(feeds.slots().count(), MAX_PYTH_LAZER_FEEDS);
+    assert_eq!(
+      feeds.get(PythLazerFeedId(2)).map(|slot| slot.feed_id),
+      Some(PythLazerFeedId(2))
+    );
   }
 
   #[test]
-  fn add_rejects_when_full() {
-    let mut feeds = PythLazerFeeds::new();
-    (0..MAX_PYTH_LAZER_FEEDS).for_each(|slot| {
-      let slot = u8::try_from(slot).unwrap();
-      feeds.add(config(u32::from(slot), slot)).unwrap();
-    });
+  fn add_rejects_when_full() -> Result<(), CoreError> {
+    let mut feeds = full()?;
     assert_eq!(
-      feeds.add(config(9, 7)),
+      feeds.add(PythLazerFeedId(9)),
       Err(CoreError::OraclePythLazerFeedsFull)
     );
+    Ok(())
   }
 
   #[test]
-  fn add_rejects_duplicate_feed_id() {
+  fn add_rejects_duplicate_feed_id() -> Result<(), CoreError> {
     let mut feeds = PythLazerFeeds::new();
-    feeds.add(config(1, 0)).unwrap();
+    feeds.add(PythLazerFeedId(1))?;
     assert_eq!(
-      feeds.add(config(1, 1)),
+      feeds.add(PythLazerFeedId(1)),
       Err(CoreError::OracleDuplicatePythLazerFeedId)
     );
+    Ok(())
   }
 
   #[test]
-  fn add_rejects_duplicate_observation_index() {
+  fn get_mut_writes_the_slot_observation() -> Result<(), CoreError> {
     let mut feeds = PythLazerFeeds::new();
-    feeds.add(config(1, 0)).unwrap();
+    feeds.add(PythLazerFeedId(1))?;
+    let slot = feeds
+      .get_mut(PythLazerFeedId(1))
+      .ok_or(CoreError::OracleNoFreshPriceObservations)?;
+    slot.observation.price = 7;
     assert_eq!(
-      feeds.add(config(2, 0)),
-      Err(CoreError::OracleDuplicateObservationIndex)
+      feeds
+        .observations()
+        .map(|observation| observation.price)
+        .next(),
+      Some(7)
     );
-  }
-
-  #[test]
-  fn add_rejects_out_of_range_indexes() {
-    let mut feeds = PythLazerFeeds::new();
-    assert_eq!(
-      feeds.add(config(1, 8)),
-      Err(CoreError::OracleObservationCapacityExceeded)
-    );
-    let self_reference = PythLazerConfig {
-      feed_id: PythLazerFeedId(1),
-      observation: OracleObservationConfig {
-        index: 0,
-        reference_index: Some(0),
-      },
-    };
-    assert_eq!(
-      feeds.add(self_reference),
-      Err(CoreError::OracleInvalidReferenceFeed)
-    );
-    let out_of_range_reference = PythLazerConfig {
-      feed_id: PythLazerFeedId(1),
-      observation: OracleObservationConfig {
-        index: 0,
-        reference_index: Some(8),
-      },
-    };
-    assert_eq!(
-      feeds.add(out_of_range_reference),
-      Err(CoreError::OracleInvalidReferenceFeed)
-    );
+    assert!(feeds.get_mut(PythLazerFeedId(2)).is_none());
+    Ok(())
   }
 }

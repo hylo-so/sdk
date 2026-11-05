@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use anchor_lang::prelude::{
   borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
 };
@@ -9,7 +7,7 @@ use fix::prelude::{
 };
 use fix::typenum::{Integer, Z0};
 
-use super::{OracleConfig, OracleObservationConfig, OraclePrice};
+use super::{OracleConfig, OraclePrice};
 use crate::error::CoreError;
 use crate::error::CoreError::{OracleNegativeTime, OraclePriceRange};
 use crate::solana_clock::SolanaClock;
@@ -23,22 +21,17 @@ pub const DEFAULT_MAX_CONFIDENCE_INTERVAL_BPS: u16 = 500;
 pub const DEFAULT_MAX_PRICE_BAND_BPS: u16 = 500;
 pub const MIN_EXPONENT: i16 = -9;
 pub const MAX_EXPONENT: i16 = -2;
-pub const MAX_PRICE_AGGREGATE_OBSERVATIONS: usize = 8;
 
-/// Methods for reading oracle configuration from a price aggregate account.
+/// Methods for reading prices from a price aggregate account.
 pub trait PriceAggregateExt {
-  /// Returns the observations stored in the aggregate.
-  fn price_observations(&self) -> PriceAggregateObservations;
+  /// Returns every observation stored in the aggregate.
+  fn observations(&self) -> impl Iterator<Item = PriceObservation>;
 
-  /// Returns observation mappings for configured oracle source feeds.
-  fn observation_configs(&self) -> Vec<OracleObservationConfig>;
-
-  /// Fetches the validated aggregate price for one feed.
+  /// Fetches the validated aggregate price.
   ///
   /// # Errors
   ///
   /// * The clock timestamp is negative or overflows microseconds.
-  /// * An observation index or reference index is invalid.
   /// * No observations pass the configured validation.
   /// * Price aggregation overflows or cannot convert to the quote precision.
   fn query_price<C: SolanaClock>(
@@ -57,14 +50,31 @@ pub trait PriceAggregateExt {
       slots: slot_interval(interval_secs),
       secs: Some(interval_secs),
       confidence: Some(conf_tolerance),
+      price_band_bps: None,
     };
-    self.price_observations().price(
+    aggregate_price(
+      self.observations(),
       AggregationMethod::SimpleAverage,
       clock.slot(),
       current_timestamp_us,
       validation_config,
-      &self.observation_configs(),
     )
+  }
+
+  /// Converts the newest posted timestamp to seconds.
+  ///
+  /// # Errors
+  ///
+  /// * The aggregate has no observations.
+  /// * The timestamp does not fit in `i64`.
+  fn latest_timestamp_secs(&self) -> Result<i64, CoreError> {
+    self
+      .observations()
+      .map(|observation| observation.posted_timestamp_us)
+      .max()
+      .and_then(|timestamp_us| timestamp_us.checked_div(MICROS_PER_SECOND))
+      .and_then(|timestamp_secs| i64::try_from(timestamp_secs).ok())
+      .ok_or(CoreError::OracleOutdated)
   }
 }
 
@@ -75,21 +85,13 @@ fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
 }
 
 impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {
-  fn price_observations(&self) -> PriceAggregateObservations {
-    PriceAggregateObservations::from(self.observations.0)
-  }
-
-  fn observation_configs(&self) -> Vec<OracleObservationConfig> {
+  fn observations(&self) -> impl Iterator<Item = PriceObservation> {
     self
       .pyth_lazer
       .0
       .iter()
       .flatten()
-      .map(|config| OracleObservationConfig {
-        index: config.observation.index,
-        reference_index: config.observation.reference_index,
-      })
-      .collect()
+      .map(|slot| PriceObservation::from(slot.observation))
   }
 }
 
@@ -134,13 +136,14 @@ pub enum AggregationMethod {
   SimpleAverage,
 }
 
-/// Slot count, second count, and confidence ratio.
+/// Slot count, second count, confidence ratio, and price band.
 /// Absent fields use the aggregate defaults.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct ValidationConfig {
   pub slots: Option<u64>,
   pub secs: Option<u64>,
   pub confidence: Option<UFix64<N9>>,
+  pub price_band_bps: Option<u16>,
 }
 
 /// Trading session recorded with a price observation.
@@ -165,7 +168,7 @@ pub enum MarketSession {
 }
 
 /// Source observation with a shared price and confidence exponent.
-/// A zero price marks an unoccupied slot.
+/// A zero price marks a feed that has not posted yet.
 #[derive(
   Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
 )]
@@ -176,6 +179,13 @@ pub struct PriceObservation {
   pub posted_slot: u64,
   pub posted_timestamp_us: u64,
   pub market_session: MarketSession,
+}
+
+/// Observation price and confidence converted to 9 decimals.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NormalizedObservation {
+  price: UFix64<N9>,
+  confidence: UFix64<N9>,
 }
 
 impl PriceObservation {
@@ -196,14 +206,19 @@ impl PriceObservation {
     .ok_or(CoreError::OracleArithmetic)
   }
 
+  fn normalize(&self) -> Result<NormalizedObservation, CoreError> {
+    Ok(NormalizedObservation {
+      price: PriceObservation::normalized(self.price, self.exponent)?,
+      confidence: PriceObservation::normalized(self.confidence, self.exponent)?,
+    })
+  }
+
   fn validate_price_band(
     &self,
-    reference: &PriceObservation,
+    reference_price: UFix64<N9>,
     price_band_bps: Option<u16>,
   ) -> Result<(), CoreError> {
     let price = PriceObservation::normalized(self.price, self.exponent)?;
-    let reference_price =
-      PriceObservation::normalized(reference.price, reference.exponent)?;
     let price_band = UFix64::<N4>::new(u64::from(
       price_band_bps.unwrap_or(DEFAULT_MAX_PRICE_BAND_BPS),
     ));
@@ -304,261 +319,142 @@ impl PriceObservation {
   }
 }
 
-/// Fixed-size observation slots stored for one price aggregate.
-#[derive(
-  Debug, Default, Clone, Copy, AnchorSerialize, AnchorDeserialize, InitSpace,
-)]
-pub struct PriceAggregateObservations(
-  [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS],
-);
-
-impl PriceAggregateObservations {
-  /// Wraps the fixed observation array stored by the oracle account.
-  #[must_use]
-  pub const fn new(
-    observations: [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS],
-  ) -> PriceAggregateObservations {
-    PriceAggregateObservations(observations)
-  }
-
-  /// Returns the observation at an index.
-  ///
-  /// # Errors
-  ///
-  /// * The index exceeds the observation capacity.
-  pub fn get_observation(
-    &self,
-    index: usize,
-  ) -> Result<&PriceObservation, CoreError> {
-    self
-      .0
-      .get(index)
-      .ok_or(CoreError::OracleObservationCapacityExceeded)
-  }
-
-  /// Converts the newest posted timestamp to seconds.
-  ///
-  /// # Errors
-  ///
-  /// * The timestamp does not fit in `i64`.
-  pub fn latest_timestamp_secs(&self) -> Result<i64, CoreError> {
-    self
-      .iter()
-      .map(|observation| observation.posted_timestamp_us)
-      .max()
-      .and_then(|timestamp_us| timestamp_us.checked_div(MICROS_PER_SECOND))
-      .and_then(|timestamp_secs| i64::try_from(timestamp_secs).ok())
-      .ok_or(CoreError::OracleOutdated)
-  }
-}
-
-impl Deref for PriceAggregateObservations {
-  type Target = [PriceObservation; MAX_PRICE_AGGREGATE_OBSERVATIONS];
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-enum ObservationStatus {
-  Fresh,
-  Rejected,
-}
-
-impl PriceAggregateObservations {
-  /// Combines fresh observations into a 9-decimal spot price with the widest
-  /// confidence among them.
-  ///
-  /// # Errors
-  ///
-  /// * The feed sources do not produce a fresh price.
-  /// * An observation price or the average overflows.
-  pub fn price(
-    &self,
-    aggregation_method: AggregationMethod,
-    current_slot: u64,
-    current_timestamp_us: u64,
-    validation_config: ValidationConfig,
-    observation_configs: &[OracleObservationConfig],
-  ) -> Result<OraclePrice, CoreError> {
-    let mut observations = self.fresh_observations(
-      current_slot,
-      current_timestamp_us,
-      validation_config,
-      observation_configs,
-    )?;
-
-    match aggregation_method {
-      AggregationMethod::SimpleAverage => {
-        let (sum, count, conf) = observations.try_fold(
-          (UFix128::<N9>::new(0), 0_u8, UFix64::<N9>::new(0)),
-          |(sum, count, conf), observation| -> Result<_, CoreError> {
-            let price = PriceObservation::normalized(
-              observation.price,
-              observation.exponent,
-            )?
-            .widen::<u128>();
-            let sum =
-              sum.checked_add(&price).ok_or(CoreError::OracleArithmetic)?;
-            let count =
-              count.checked_add(1).ok_or(CoreError::OracleArithmetic)?;
-            let observation_conf = PriceObservation::normalized(
-              observation.confidence,
-              observation.exponent,
-            )?;
-            let conf = if observation_conf > conf {
-              observation_conf
-            } else {
-              conf
-            };
-            Ok((sum, count, conf))
-          },
-        )?;
-
-        let spot = (count > 0)
-          .then_some(())
-          .ok_or(CoreError::OracleNoFreshPriceObservations)
-          .and_then(|()| {
-            sum
-              .checked_div(&UFix128::<Z0>::new(u128::from(count)))
-              .ok_or(CoreError::OracleArithmetic)
-          })
-          .and_then(|average| {
-            average.narrow::<u64>().ok_or(CoreError::OracleConversion)
-          })?;
-        Ok(OraclePrice { spot, conf })
-      }
-    }
-  }
-
-  fn fresh_observations(
-    &self,
-    current_slot: u64,
-    current_timestamp_us: u64,
-    validation_config: ValidationConfig,
-    observation_configs: &[OracleObservationConfig],
-  ) -> Result<impl Iterator<Item = &PriceObservation>, CoreError> {
-    observation_configs
-      .iter()
-      .map(|source| {
-        let observation = self
-          .0
-          .get(usize::from(source.index))
-          .ok_or(CoreError::OracleInvalidReferenceFeed)?;
-        match self.observation_status(
-          observation,
-          *source,
-          current_slot,
-          current_timestamp_us,
-          validation_config,
-        )? {
-          ObservationStatus::Fresh => Ok(Some(observation)),
-          ObservationStatus::Rejected => Ok(None),
-        }
-      })
-      .collect::<Result<Vec<_>, CoreError>>()
-      .map(|observations| observations.into_iter().flatten())
-  }
-
-  fn observation_status(
-    &self,
-    observation: &PriceObservation,
-    source: OracleObservationConfig,
-    current_slot: u64,
-    current_timestamp_us: u64,
-    validation_config: ValidationConfig,
-  ) -> Result<ObservationStatus, CoreError> {
-    match self.validate_observation(
-      observation,
-      source,
-      current_slot,
-      current_timestamp_us,
-      validation_config,
-    ) {
-      Ok(()) => Ok(ObservationStatus::Fresh),
-      Err(error) if PriceAggregateObservations::rejects_observation(error) => {
-        Ok(ObservationStatus::Rejected)
-      }
-      Err(error) => Err(error),
-    }
-  }
-
-  fn rejects_observation(error: CoreError) -> bool {
-    matches!(
-      error,
-      CoreError::OracleConfidence
-        | CoreError::OracleInvalidPrice
-        | CoreError::OracleInvalidReferenceFeed
-        | CoreError::OraclePriceBandExceeded
-        | CoreError::OracleOutdated
-    )
-  }
-
-  fn validate_observation(
-    &self,
-    observation: &PriceObservation,
-    source: OracleObservationConfig,
-    current_slot: u64,
-    current_timestamp_us: u64,
-    validation_config: ValidationConfig,
-  ) -> Result<(), CoreError> {
-    match observation.market_session {
-      MarketSession::Regular => observation.validate(
+/// Combines fresh observations into a 9-decimal spot price with the widest
+/// confidence among them.
+///
+/// Observations posted in a regular market session pass on price, staleness,
+/// and confidence. Observations posted outside a regular session must also sit
+/// within the price band of the average of the fresh regular observations.
+///
+/// # Errors
+///
+/// * No observation passes validation.
+/// * An observation price or the average overflows.
+pub fn aggregate_price(
+  observations: impl Iterator<Item = PriceObservation>,
+  aggregation_method: AggregationMethod,
+  current_slot: u64,
+  current_timestamp_us: u64,
+  validation_config: ValidationConfig,
+) -> Result<OraclePrice, CoreError> {
+  let observations: Vec<PriceObservation> = observations.collect();
+  let regular = observations
+    .iter()
+    .filter(|observation| observation.market_session == MarketSession::Regular)
+    .filter_map(|observation| {
+      fresh(
+        observation,
         current_slot,
         current_timestamp_us,
-        validation_config.slots,
-        validation_config.secs,
-        validation_config.confidence,
-      ),
-      MarketSession::PreMarket
-      | MarketSession::PostMarket
-      | MarketSession::Overnight
-      | MarketSession::Closed => {
-        observation.validate_price()?;
-        observation.validate_confidence(validation_config.confidence)?;
-        let index = usize::from(
-          source
-            .reference_index
-            .ok_or(CoreError::OracleInvalidReferenceFeed)?,
-        );
-        let reference = self
-          .0
-          .get(index)
-          .ok_or(CoreError::OracleInvalidReferenceFeed)?;
-
-        (reference.market_session == MarketSession::Regular)
-          .then_some(())
-          .ok_or(CoreError::OracleInvalidReferenceFeed)?;
-        reference.validate(
-          current_slot,
-          current_timestamp_us,
-          validation_config.slots,
-          validation_config.secs,
+        validation_config,
+      )
+      .transpose()
+    })
+    .collect::<Result<Vec<_>, CoreError>>()?;
+  let reference_price = combine(aggregation_method, regular.iter().copied())
+    .ok()
+    .map(|price| price.spot);
+  let banded = observations
+    .iter()
+    .filter(|observation| observation.market_session != MarketSession::Regular)
+    .filter_map(|observation| {
+      reference_price.and_then(|reference_price| {
+        banded(
+          observation,
+          reference_price,
           validation_config.confidence,
-        )?;
-        observation.validate_price_band(reference, None)
-      }
-    }
+          validation_config.price_band_bps,
+        )
+        .transpose()
+      })
+    })
+    .collect::<Result<Vec<_>, CoreError>>()?;
+  combine(aggregation_method, regular.into_iter().chain(banded))
+}
+
+fn fresh(
+  observation: &PriceObservation,
+  current_slot: u64,
+  current_timestamp_us: u64,
+  validation_config: ValidationConfig,
+) -> Result<Option<NormalizedObservation>, CoreError> {
+  match observation.validate(
+    current_slot,
+    current_timestamp_us,
+    validation_config.slots,
+    validation_config.secs,
+    validation_config.confidence,
+  ) {
+    Ok(()) => observation.normalize().map(Some),
+    Err(error) if rejects_observation(error) => Ok(None),
+    Err(error) => Err(error),
   }
+}
 
-  /// Stores an observation at its configured observation index.
-  ///
-  /// # Errors
-  ///
-  /// * The observation index exceeds the observation capacity.
-  /// * The observation exponent is outside the supported range.
-  pub fn update_observation(
-    &mut self,
-    index: usize,
-    observation: PriceObservation,
-  ) -> Result<(), CoreError> {
-    PriceObservation::validate_exponent(observation.exponent)?;
+fn banded(
+  observation: &PriceObservation,
+  reference_price: UFix64<N9>,
+  max_confidence: Option<UFix64<N9>>,
+  price_band_bps: Option<u16>,
+) -> Result<Option<NormalizedObservation>, CoreError> {
+  let validation = observation
+    .validate_price()
+    .and_then(|()| observation.validate_confidence(max_confidence))
+    .and_then(|()| {
+      observation.validate_price_band(reference_price, price_band_bps)
+    });
+  match validation {
+    Ok(()) => observation.normalize().map(Some),
+    Err(error) if rejects_observation(error) => Ok(None),
+    Err(error) => Err(error),
+  }
+}
 
-    self
-      .0
-      .get_mut(index)
-      .map(|slot| *slot = observation)
-      .ok_or(CoreError::OracleObservationCapacityExceeded)
+fn rejects_observation(error: CoreError) -> bool {
+  matches!(
+    error,
+    CoreError::OracleConfidence
+      | CoreError::OracleInvalidPrice
+      | CoreError::OraclePriceBandExceeded
+      | CoreError::OracleOutdated
+  )
+}
+
+fn combine(
+  aggregation_method: AggregationMethod,
+  mut observations: impl Iterator<Item = NormalizedObservation>,
+) -> Result<OraclePrice, CoreError> {
+  match aggregation_method {
+    AggregationMethod::SimpleAverage => {
+      let (sum, count, conf) = observations.try_fold(
+        (UFix128::<N9>::new(0), 0_u8, UFix64::<N9>::new(0)),
+        |(sum, count, conf), observation| -> Result<_, CoreError> {
+          let sum = sum
+            .checked_add(&observation.price.widen::<u128>())
+            .ok_or(CoreError::OracleArithmetic)?;
+          let count =
+            count.checked_add(1).ok_or(CoreError::OracleArithmetic)?;
+          let conf = if observation.confidence > conf {
+            observation.confidence
+          } else {
+            conf
+          };
+          Ok((sum, count, conf))
+        },
+      )?;
+      let spot = (count > 0)
+        .then_some(())
+        .ok_or(CoreError::OracleNoFreshPriceObservations)
+        .and_then(|()| {
+          sum
+            .checked_div(&UFix128::<Z0>::new(u128::from(count)))
+            .ok_or(CoreError::OracleArithmetic)
+        })
+        .and_then(|average| {
+          average.narrow::<u64>().ok_or(CoreError::OracleConversion)
+        })?;
+      Ok(OraclePrice { spot, conf })
+    }
   }
 }
 
@@ -568,32 +464,10 @@ mod tests {
   use fix::typenum::N9;
 
   use super::{
-    AggregationMethod, MarketSession, OracleObservationConfig, OraclePrice,
-    PriceAggregateObservations, PriceObservation, ValidationConfig,
+    aggregate_price, AggregationMethod, MarketSession, OraclePrice,
+    PriceObservation, ValidationConfig,
   };
   use crate::error::CoreError;
-
-  const CONFIG: [OracleObservationConfig; 2] = [
-    OracleObservationConfig {
-      index: 0,
-      reference_index: None,
-    },
-    OracleObservationConfig {
-      index: 1,
-      reference_index: None,
-    },
-  ];
-
-  const BANDED_CONFIG: [OracleObservationConfig; 2] = [
-    OracleObservationConfig {
-      index: 0,
-      reference_index: Some(1),
-    },
-    OracleObservationConfig {
-      index: 1,
-      reference_index: None,
-    },
-  ];
 
   fn observation(
     price: u64,
@@ -610,32 +484,28 @@ mod tests {
     }
   }
 
+  fn price(
+    observations: &[PriceObservation],
+    current_slot: u64,
+    current_timestamp_us: u64,
+  ) -> Result<OraclePrice, CoreError> {
+    aggregate_price(
+      observations.iter().copied(),
+      AggregationMethod::SimpleAverage,
+      current_slot,
+      current_timestamp_us,
+      ValidationConfig::default(),
+    )
+  }
+
   #[test]
   fn price_averages_fresh_observations() {
-    let current_slot = 1;
-    let current_timestamp_us = 1_000_000;
-    let mut observations = PriceAggregateObservations::default();
-    assert!(observations
-      .update_observation(
-        0,
-        observation(100_000_000_000, current_slot, current_timestamp_us)
-      )
-      .is_ok());
-    assert!(observations
-      .update_observation(
-        1,
-        observation(200_000_000_000, current_slot, current_timestamp_us)
-      )
-      .is_ok());
-
+    let observations = [
+      observation(100_000_000_000, 1, 1_000_000),
+      observation(200_000_000_000, 1, 1_000_000),
+    ];
     assert_eq!(
-      observations.price(
-        AggregationMethod::SimpleAverage,
-        current_slot,
-        current_timestamp_us,
-        ValidationConfig::default(),
-        &CONFIG,
-      ),
+      price(&observations, 1, 1_000_000),
       Ok(OraclePrice {
         spot: UFix64::<N9>::new(150_000_000_000),
         conf: UFix64::zero(),
@@ -645,26 +515,12 @@ mod tests {
 
   #[test]
   fn price_reports_widest_confidence() {
-    let current_slot = 1;
-    let current_timestamp_us = 1_000_000;
-    let mut observations = PriceAggregateObservations::default();
-    let mut narrow =
-      observation(100_000_000_000, current_slot, current_timestamp_us);
+    let mut narrow = observation(100_000_000_000, 1, 1_000_000);
     narrow.confidence = 1_000_000_000;
-    let mut wide =
-      observation(100_000_000_000, current_slot, current_timestamp_us);
+    let mut wide = observation(100_000_000_000, 1, 1_000_000);
     wide.confidence = 2_000_000_000;
-    assert!(observations.update_observation(0, narrow).is_ok());
-    assert!(observations.update_observation(1, wide).is_ok());
-
     assert_eq!(
-      observations.price(
-        AggregationMethod::SimpleAverage,
-        current_slot,
-        current_timestamp_us,
-        ValidationConfig::default(),
-        &CONFIG,
-      ),
+      price(&[narrow, wide], 1, 1_000_000),
       Ok(OraclePrice {
         spot: UFix64::<N9>::new(100_000_000_000),
         conf: UFix64::<N9>::new(2_000_000_000),
@@ -674,31 +530,28 @@ mod tests {
 
   #[test]
   fn price_excludes_stale_observations() {
-    let current_slot = 31;
-    let current_timestamp_us = 31_000_000;
-    let mut observations = PriceAggregateObservations::default();
-    assert!(observations
-      .update_observation(0, observation(100_000_000_000, 0, 0))
-      .is_ok());
-    assert!(observations
-      .update_observation(
-        1,
-        observation(200_000_000_000, current_slot, current_timestamp_us)
-      )
-      .is_ok());
-
+    let observations = [
+      observation(100_000_000_000, 0, 0),
+      observation(200_000_000_000, 31, 31_000_000),
+    ];
     assert_eq!(
-      observations.price(
-        AggregationMethod::SimpleAverage,
-        current_slot,
-        current_timestamp_us,
-        ValidationConfig::default(),
-        &CONFIG,
-      ),
+      price(&observations, 31, 31_000_000),
       Ok(OraclePrice {
         spot: UFix64::<N9>::new(200_000_000_000),
         conf: UFix64::zero(),
       }),
+    );
+  }
+
+  #[test]
+  fn price_fails_without_fresh_observations() {
+    assert_eq!(
+      price(&[observation(100_000_000_000, 0, 0)], 31, 31_000_000),
+      Err(CoreError::OracleNoFreshPriceObservations),
+    );
+    assert_eq!(
+      price(&[PriceObservation::default()], 1, 1_000_000),
+      Err(CoreError::OracleNoFreshPriceObservations),
     );
   }
 
@@ -720,49 +573,54 @@ mod tests {
   }
 
   #[test]
-  fn non_regular_observations_use_a_fresh_regular_reference() {
-    let current_slot = 100;
-    let current_timestamp_us = 100_000_000;
-    let mut observations = PriceAggregateObservations::default();
-    assert!(observations
-      .update_observation(
-        1,
-        PriceObservation {
-          price: 10_000,
-          exponent: -2,
-          confidence: 1,
-          posted_slot: current_slot,
-          posted_timestamp_us: current_timestamp_us,
-          market_session: MarketSession::Regular,
-        },
-      )
-      .is_ok());
-    assert!(observations
-      .update_observation(
-        0,
-        PriceObservation {
-          price: 105_000,
-          exponent: -3,
-          confidence: 1,
-          posted_slot: 1,
-          posted_timestamp_us: 1,
-          market_session: MarketSession::Closed,
-        },
-      )
-      .is_ok());
-
+  fn non_regular_observations_band_against_fresh_regular_ones() {
+    let regular = PriceObservation {
+      price: 10_000,
+      exponent: -2,
+      confidence: 1,
+      posted_slot: 100,
+      posted_timestamp_us: 100_000_000,
+      market_session: MarketSession::Regular,
+    };
+    let closed = PriceObservation {
+      price: 105_000,
+      exponent: -3,
+      confidence: 1,
+      posted_slot: 1,
+      posted_timestamp_us: 1,
+      market_session: MarketSession::Closed,
+    };
     assert_eq!(
-      observations.price(
-        AggregationMethod::SimpleAverage,
-        current_slot,
-        current_timestamp_us,
-        ValidationConfig::default(),
-        &BANDED_CONFIG,
-      ),
+      price(&[regular, closed], 100, 100_000_000),
       Ok(OraclePrice {
         spot: UFix64::<N9>::new(102_500_000_000),
         conf: UFix64::<N9>::new(10_000_000),
       }),
+    );
+  }
+
+  #[test]
+  fn non_regular_observations_outside_the_band_are_excluded() {
+    let regular = observation(100_000_000_000, 100, 100_000_000);
+    let mut closed = observation(110_000_000_000, 1, 1);
+    closed.market_session = MarketSession::Closed;
+    assert_eq!(
+      price(&[regular, closed], 100, 100_000_000),
+      Ok(OraclePrice {
+        spot: UFix64::<N9>::new(100_000_000_000),
+        conf: UFix64::zero(),
+      }),
+    );
+  }
+
+  #[test]
+  fn non_regular_observations_need_a_fresh_regular_reference() {
+    let stale_regular = observation(100_000_000_000, 0, 0);
+    let mut closed = observation(100_000_000_000, 1, 1);
+    closed.market_session = MarketSession::Closed;
+    assert_eq!(
+      price(&[stale_regular, closed], 100, 100_000_000),
+      Err(CoreError::OracleNoFreshPriceObservations),
     );
   }
 }

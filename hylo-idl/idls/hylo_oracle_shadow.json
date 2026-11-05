@@ -109,10 +109,10 @@
       ],
       "args": [
         {
-          "name": "config",
+          "name": "feed_id",
           "type": {
             "defined": {
-              "name": "PythLazerConfig"
+              "name": "PythLazerFeedId"
             }
           }
         }
@@ -829,47 +829,12 @@
             "type": "pubkey"
           },
           {
-            "name": "source",
+            "name": "feed_id",
             "type": {
               "defined": {
-                "name": "OracleSource"
+                "name": "PythLazerFeedId"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OracleObservationConfig",
-      "docs": [
-        "Observation indexes and an optional reference index."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "index",
-            "type": "u8"
-          },
-          {
-            "name": "reference_index",
-            "type": {
-              "option": "u8"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OracleSource",
-      "docs": [
-        "Price source backing an observation."
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "PythLazer"
           }
         ]
       }
@@ -911,14 +876,6 @@
             "type": "u8"
           },
           {
-            "name": "observations",
-            "type": {
-              "defined": {
-                "name": "PriceAggregateObservations"
-              }
-            }
-          },
-          {
             "name": "pyth_lazer",
             "type": {
               "defined": {
@@ -950,27 +907,6 @@
           {
             "name": "price_aggregate",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceAggregateObservations",
-      "docs": [
-        "Fixed-size observation slots stored for one price aggregate."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "array": [
-              {
-                "defined": {
-                  "name": "PriceObservation"
-                }
-              },
-              8
-            ]
           }
         ]
       }
@@ -1016,33 +952,6 @@
       }
     },
     {
-      "name": "PythLazerConfig",
-      "docs": [
-        "Pyth Lazer feed and its observation mapping."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "feed_id",
-            "type": {
-              "defined": {
-                "name": "PythLazerFeedId"
-              }
-            }
-          },
-          {
-            "name": "observation",
-            "type": {
-              "defined": {
-                "name": "OracleObservationConfig"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "PythLazerFeedAdded",
       "docs": [
         "Pyth Lazer feed stored on a price aggregate."
@@ -1055,14 +964,14 @@
             "type": "pubkey"
           },
           {
-            "name": "config_index",
+            "name": "slot_index",
             "type": "u8"
           },
           {
-            "name": "config",
+            "name": "feed_id",
             "type": {
               "defined": {
-                "name": "PythLazerConfig"
+                "name": "PythLazerFeedId"
               }
             }
           }
@@ -1094,12 +1003,39 @@
               {
                 "option": {
                   "defined": {
-                    "name": "PythLazerConfig"
+                    "name": "PythLazerSlot"
                   }
                 }
               },
               3
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlot",
+      "docs": [
+        "Pyth Lazer feed and the latest observation posted from it."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          },
+          {
+            "name": "observation",
+            "type": {
+              "defined": {
+                "name": "PriceObservation"
+              }
+            }
           }
         ]
       }

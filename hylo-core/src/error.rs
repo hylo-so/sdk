@@ -297,18 +297,12 @@ pub enum CoreError {
   OracleArithmetic,
   #[msg("Unable to cast safely.")]
   OracleConversion,
-  #[msg("Non-regular price observation has no valid reference feed.")]
-  OracleInvalidReferenceFeed,
   #[msg("No fresh price observations are available.")]
   OracleNoFreshPriceObservations,
   #[msg("Price observation exceeds its reference price band.")]
   OraclePriceBandExceeded,
-  #[msg("Price observation index exceeds aggregate capacity.")]
-  OracleObservationCapacityExceeded,
   #[msg("Pyth Lazer feed ID is already configured.")]
   OracleDuplicatePythLazerFeedId,
-  #[msg("Observation index is already configured.")]
-  OracleDuplicateObservationIndex,
   #[msg("Every Pyth Lazer feed slot is occupied.")]
   OraclePythLazerFeedsFull,
 }
