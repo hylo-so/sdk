@@ -8,25 +8,24 @@
   },
   "instructions": [
     {
-      "name": "add_pyth_lazer_feed",
+      "name": "clear_pyth_lazer_slot",
       "docs": [
-        "Stores a Pyth Lazer feed in the first free slot.",
+        "Clears an occupied Pyth Lazer slot.",
         "",
         "# Errors",
-        "",
         "* The signer is not the exchange administrator.",
-        "* The feed ID is already configured.",
-        "* Every feed slot is occupied."
+        "* The index is out of range.",
+        "* The slot is empty."
       ],
       "discriminator": [
-        23,
-        120,
-        191,
-        131,
-        227,
-        60,
-        200,
-        230
+        174,
+        223,
+        32,
+        91,
+        150,
+        179,
+        226,
+        146
       ],
       "accounts": [
         {
@@ -109,12 +108,8 @@
       ],
       "args": [
         {
-          "name": "feed_id",
-          "type": {
-            "defined": {
-              "name": "PythLazerFeedId"
-            }
-          }
+          "name": "slot_index",
+          "type": "u8"
         }
       ]
     },
@@ -124,7 +119,6 @@
         "Creates a price aggregate account for a mint.",
         "",
         "# Errors",
-        "",
         "* The signer is not the exchange administrator."
       ],
       "discriminator": [
@@ -227,17 +221,131 @@
       ]
     },
     {
+      "name": "set_pyth_lazer_slot",
+      "docs": [
+        "Stores a Pyth Lazer feed in an empty slot.",
+        "",
+        "# Errors",
+        "* The signer is not the exchange administrator.",
+        "* The index is out of range.",
+        "* The slot is occupied.",
+        "* The feed ID is already configured."
+      ],
+      "discriminator": [
+        171,
+        230,
+        244,
+        175,
+        68,
+        42,
+        184,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "address": "9cd2sAfbBvKs4SX9YKo4dcjwP3TgTVQ8dT5koshGcDND"
+        },
+        {
+          "name": "price_aggregate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "price_aggregate.mint",
+                "account": "PriceAggregate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "slot_index",
+          "type": "u8"
+        },
+        {
+          "name": "feed_id",
+          "type": {
+            "defined": {
+              "name": "PythLazerFeedId"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "update_observations_with_pyth_lazer",
       "docs": [
         "Verifies one signed Pyth Lazer batch and stores each feed into the price",
         "aggregate at the same position in the remaining accounts.",
         "",
         "# Errors",
-        "",
         "* Pyth Lazer verification fails.",
         "* The payload does not decode or names another channel.",
-        "* The remaining accounts do not match the feed count, repeat an aggregate,",
-        "or fail to deserialize as a price aggregate at its mint PDA.",
+        "* The remaining accounts do not match the feed count, repeat an account,",
+        "or fail the price aggregate constraints.",
         "* A feed is not configured on its aggregate.",
         "* A feed property, price, or timestamp is invalid."
       ],
@@ -263,9 +371,6 @@
         },
         {
           "name": "pyth_lazer_treasury",
-          "docs": [
-            "inside the verification CPI"
-          ],
           "writable": true
         },
         {
@@ -389,16 +494,29 @@
       ]
     },
     {
-      "name": "PythLazerFeedAdded",
+      "name": "PythLazerSlotCleared",
       "discriminator": [
-        53,
-        157,
-        54,
-        59,
-        190,
+        117,
+        175,
+        40,
+        103,
+        216,
+        15,
+        76,
+        187
+      ]
+    },
+    {
+      "name": "PythLazerSlotSet",
+      "discriminator": [
+        139,
+        142,
+        7,
         234,
-        39,
-        6
+        73,
+        145,
+        32,
+        113
       ]
     }
   ],
@@ -465,16 +583,11 @@
     },
     {
       "code": 6012,
-      "name": "InvalidPriceAggregateAccount",
-      "msg": "PriceAggregate account does not match its mint PDA."
-    },
-    {
-      "code": 6013,
       "name": "RemainingAccountsMismatch",
       "msg": "Remaining account count does not match the batch payload."
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "DuplicatePriceAggregateAccount",
       "msg": "PriceAggregate account appears more than once."
     }
@@ -875,10 +988,10 @@
             "type": "u8"
           },
           {
-            "name": "pyth_lazer",
+            "name": "pyth_lazer_slots",
             "type": {
               "defined": {
-                "name": "PythLazerFeeds"
+                "name": "PythLazerSlots"
               }
             }
           },
@@ -951,33 +1064,6 @@
       }
     },
     {
-      "name": "PythLazerFeedAdded",
-      "docs": [
-        "Pyth Lazer feed stored on a price aggregate."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "price_aggregate",
-            "type": "pubkey"
-          },
-          {
-            "name": "slot_index",
-            "type": "u8"
-          },
-          {
-            "name": "feed_id",
-            "type": {
-              "defined": {
-                "name": "PythLazerFeedId"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "PythLazerFeedId",
       "docs": [
         "Pyth Lazer feed id (Lazer's numeric identifier)."
@@ -986,29 +1072,6 @@
         "kind": "struct",
         "fields": [
           "u32"
-        ]
-      }
-    },
-    {
-      "name": "PythLazerFeeds",
-      "docs": [
-        "Fixed Pyth Lazer feed slots stored for one price aggregate."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "array": [
-              {
-                "option": {
-                  "defined": {
-                    "name": "PythLazerSlot"
-                  }
-                }
-              },
-              3
-            ]
-          }
         ]
       }
     },
@@ -1035,6 +1098,83 @@
                 "name": "PriceObservation"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlotCleared",
+      "docs": [
+        "Pyth Lazer feed cleared from a price aggregate slot."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "slot_index",
+            "type": "u8"
+          },
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlotSet",
+      "docs": [
+        "Pyth Lazer feed stored in a price aggregate slot."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "slot_index",
+            "type": "u8"
+          },
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlots",
+      "docs": [
+        "Fixed Pyth Lazer slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "option": {
+                  "defined": {
+                    "name": "PythLazerSlot"
+                  }
+                }
+              },
+              3
+            ]
           }
         ]
       }

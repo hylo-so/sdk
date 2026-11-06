@@ -366,16 +366,16 @@ impl From<hylo_idl::oracle::types::PythLazerSlot> for PythLazerSlot {
   }
 }
 
-impl From<PythLazerSlots> for hylo_idl::oracle::types::PythLazerFeeds {
+impl From<PythLazerSlots> for hylo_idl::oracle::types::PythLazerSlots {
   fn from(val: PythLazerSlots) -> Self {
-    hylo_idl::oracle::types::PythLazerFeeds(
+    hylo_idl::oracle::types::PythLazerSlots(
       val.0.map(|slot| slot.map(Into::into)),
     )
   }
 }
 
-impl From<hylo_idl::oracle::types::PythLazerFeeds> for PythLazerSlots {
-  fn from(idl: hylo_idl::oracle::types::PythLazerFeeds) -> PythLazerSlots {
+impl From<hylo_idl::oracle::types::PythLazerSlots> for PythLazerSlots {
+  fn from(idl: hylo_idl::oracle::types::PythLazerSlots) -> PythLazerSlots {
     PythLazerSlots(idl.0.map(|slot| slot.map(Into::into)))
   }
 }

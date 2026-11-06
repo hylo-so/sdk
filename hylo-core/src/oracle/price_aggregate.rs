@@ -95,7 +95,7 @@ fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
 
 impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {
   fn pyth_lazer_slots(&self) -> PythLazerSlots {
-    self.pyth_lazer.into()
+    self.pyth_lazer_slots.into()
   }
 }
 

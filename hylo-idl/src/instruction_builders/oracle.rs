@@ -19,16 +19,37 @@ pub fn initialize_price_aggregate(admin: Pubkey, mint: Pubkey) -> Instruction {
   }
 }
 
-/// Builds the instruction that adds a Pyth Lazer feed to the price aggregate
-/// for `mint`.
+/// Builds the instruction that stores a Pyth Lazer feed in a slot of the
+/// price aggregate for `mint`.
 #[must_use]
-pub fn add_pyth_lazer_feed(
+pub fn set_pyth_lazer_slot(
   admin: Pubkey,
   mint: Pubkey,
+  slot_index: u8,
   feed_id: PythLazerFeedId,
 ) -> Instruction {
-  let accounts = account_builders::add_pyth_lazer_feed(admin, mint);
-  let args = args::AddPythLazerFeed { feed_id };
+  let accounts = account_builders::set_pyth_lazer_slot(admin, mint);
+  let args = args::SetPythLazerSlot {
+    slot_index,
+    feed_id,
+  };
+  Instruction {
+    program_id: oracle::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+/// Builds the instruction that clears a Pyth Lazer slot of the price
+/// aggregate for `mint`.
+#[must_use]
+pub fn clear_pyth_lazer_slot(
+  admin: Pubkey,
+  mint: Pubkey,
+  slot_index: u8,
+) -> Instruction {
+  let accounts = account_builders::clear_pyth_lazer_slot(admin, mint);
+  let args = args::ClearPythLazerSlot { slot_index };
   Instruction {
     program_id: oracle::ID,
     accounts: accounts.to_account_metas(None),

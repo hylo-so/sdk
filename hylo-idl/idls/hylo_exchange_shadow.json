@@ -22238,10 +22238,10 @@
             "type": "u8"
           },
           {
-            "name": "pyth_lazer",
+            "name": "pyth_lazer_slots",
             "type": {
               "defined": {
-                "name": "PythLazerFeeds"
+                "name": "PythLazerSlots"
               }
             }
           },
@@ -22342,29 +22342,6 @@
       }
     },
     {
-      "name": "PythLazerFeeds",
-      "docs": [
-        "Fixed Pyth Lazer feed slots stored for one price aggregate."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "array": [
-              {
-                "option": {
-                  "defined": {
-                    "name": "PythLazerSlot"
-                  }
-                }
-              },
-              3
-            ]
-          }
-        ]
-      }
-    },
-    {
       "name": "PythLazerSlot",
       "docs": [
         "Pyth Lazer feed and the latest observation posted from it."
@@ -22387,6 +22364,29 @@
                 "name": "PriceObservation"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlots",
+      "docs": [
+        "Fixed Pyth Lazer slots stored for one price aggregate."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              {
+                "option": {
+                  "defined": {
+                    "name": "PythLazerSlot"
+                  }
+                }
+              },
+              3
+            ]
           }
         ]
       }
