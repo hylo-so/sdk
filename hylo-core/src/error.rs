@@ -297,29 +297,16 @@ pub enum CoreError {
   OracleArithmetic,
   #[msg("Unable to cast safely.")]
   OracleConversion,
-  #[msg("Non-regular price observation has no valid reference feed.")]
-  OracleInvalidReferenceFeed,
   #[msg("No fresh price observations are available.")]
   OracleNoFreshPriceObservations,
   #[msg("Price observation exceeds its reference price band.")]
   OraclePriceBandExceeded,
-  #[msg("Price observation index exceeds aggregate capacity.")]
-  OracleObservationCapacityExceeded,
   #[msg("Pyth Lazer feed ID is already configured.")]
   OracleDuplicatePythLazerFeedId,
-  #[msg("Observation index is already configured.")]
-  OracleDuplicateObservationIndex,
-  // `address_update`
-  #[msg("Address change proposal's TTL not in configured range.")]
-  AddressUpdateInvalidTtl,
-  #[msg("Proposed address matches the current address.")]
-  AddressUpdateUnchangedAddress,
-  #[msg("Address change proposal has expired.")]
-  AddressUpdateExpired,
-  #[msg("Address change proposal has already been approved.")]
-  AddressUpdateAlreadyApproved,
-  #[msg("Address change proposal has not been approved.")]
-  AddressUpdateNotApproved,
-  #[msg("Address field is not supported.")]
-  AddressUpdateUnsupportedField,
+  #[msg("Pyth Lazer slot index is out of range.")]
+  OraclePythLazerSlotOutOfRange,
+  #[msg("Pyth Lazer slot is already occupied.")]
+  OraclePythLazerSlotOccupied,
+  #[msg("Pyth Lazer slot is empty.")]
+  OraclePythLazerSlotEmpty,
 }

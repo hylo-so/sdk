@@ -23,22 +23,15 @@ mod tests {
 
   use super::*;
   use crate::oracle::{
-    OracleConfig, OracleObservationConfig, PriceAggregateExt,
-    PriceAggregateObservations, MAX_PRICE_AGGREGATE_OBSERVATIONS,
+    MarketSession, OracleConfig, PriceAggregateExt, PriceObservation,
+    PythLazerFeedId, PythLazerSlot, PythLazerSlots,
   };
 
-  struct TestPriceAggregate {
-    observations: PriceAggregateObservations,
-    observation_configs: Vec<OracleObservationConfig>,
-  }
+  struct TestPriceAggregate(PythLazerSlots);
 
   impl PriceAggregateExt for TestPriceAggregate {
-    fn price_observations(&self) -> PriceAggregateObservations {
-      self.observations
-    }
-
-    fn observation_configs(&self) -> Vec<OracleObservationConfig> {
-      self.observation_configs.clone()
+    fn pyth_lazer_slots(&self) -> PythLazerSlots {
+      self.0
     }
   }
 
@@ -50,31 +43,28 @@ mod tests {
       unix_timestamp: 10,
       ..Clock::default()
     };
-    let observation = super::super::PriceObservation {
+    let observation = PriceObservation {
       price: 1_000_000_000,
       exponent: -9,
       confidence: 10_000_000,
       posted_slot: 100,
       posted_timestamp_us: 10_000_000,
-      market_session: super::super::MarketSession::Regular,
+      market_session: MarketSession::Regular,
     };
-    let observations = PriceAggregateObservations::new(
-      [observation; MAX_PRICE_AGGREGATE_OBSERVATIONS],
-    );
-
-    let price_aggregate = TestPriceAggregate {
-      observations,
-      observation_configs: vec![OracleObservationConfig {
-        index: 0,
-        reference_index: None,
-      }],
-    };
+    let price_aggregate = TestPriceAggregate(PythLazerSlots([
+      Some(PythLazerSlot {
+        feed_id: PythLazerFeedId(1),
+        observation,
+      }),
+      None,
+      None,
+    ]));
 
     let price = price_aggregate
       .query_price(&clock, OracleConfig::new(60, UFix64::new(10_000_000)))?;
 
     assert_eq!(price.spot, UFix64::new(1_000_000_000));
-    assert_eq!(price.conf, UFix64::zero());
+    assert_eq!(price.conf, UFix64::new(10_000_000));
     Ok(())
   }
 }

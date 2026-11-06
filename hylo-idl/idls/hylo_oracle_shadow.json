@@ -8,240 +8,24 @@
   },
   "instructions": [
     {
-      "name": "initialize_price_aggregate",
+      "name": "clear_pyth_lazer_slot",
       "docs": [
-        "Creates a price aggregate account for a mint.",
+        "Clears an occupied Pyth Lazer slot.",
         "",
         "# Errors",
-        "",
-        "* Emitting the initialization event fails."
-      ],
-      "discriminator": [
-        78,
-        122,
-        200,
-        157,
-        158,
-        202,
-        23,
-        103
-      ],
-      "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "hylo"
-          ]
-        },
-        {
-          "name": "price_aggregate",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  105,
-                  99,
-                  101,
-                  95,
-                  97,
-                  103,
-                  103,
-                  114,
-                  101,
-                  103,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "hylo",
-          "address": "Argb8UxD4yUC4DVjw471XVj7VhXoJhB16n5htGEjTyox"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "mint",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
-      "name": "update_observation_with_pyth_lazer",
-      "docs": [
-        "Verifies one signed Pyth Lazer batch and stores each configured",
-        "observation.",
-        "",
-        "# Errors",
-        "",
-        "* Pyth Lazer verification fails.",
-        "* The payload does not decode, names another channel, or lists a different",
-        "feed count than the remaining accounts.",
-        "* A feed is unknown, or its price aggregate account does not match or",
-        "deserialize.",
-        "* A feed property, price, confidence, exponent, or timestamp is invalid.",
-        "* The source index exceeds observation capacity, or the account write",
-        "fails.",
-        "* The clock sysvar is unavailable.",
-        "* An update event fails to emit."
-      ],
-      "discriminator": [
-        13,
-        223,
-        31,
-        67,
-        58,
-        213,
-        184,
-        158
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "pyth_lazer_program",
-          "address": "pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt"
-        },
-        {
-          "name": "pyth_lazer_storage",
-          "address": "3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL"
-        },
-        {
-          "name": "pyth_lazer_treasury",
-          "writable": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
-        },
-        {
-          "name": "event_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  95,
-                  95,
-                  101,
-                  118,
-                  101,
-                  110,
-                  116,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "program"
-        }
-      ],
-      "args": [
-        {
-          "name": "channel_id",
-          "type": "u8"
-        },
-        {
-          "name": "message_data",
-          "type": "bytes"
-        },
-        {
-          "name": "ed25519_instruction_index",
-          "type": "u16"
-        },
-        {
-          "name": "signature_index",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "update_pyth_lazer_config",
-      "docs": [
-        "Replaces or removes a Pyth Lazer configuration slot.",
-        "",
-        "# Errors",
-        "",
         "* The signer is not the exchange administrator.",
-        "* The configuration slot or observation mapping is invalid.",
-        "* A feed ID or observation index is already configured."
+        "* The index is out of range.",
+        "* The slot is empty."
       ],
       "discriminator": [
-        52,
-        235,
-        15,
-        216,
-        120,
-        170,
-        139,
-        240
+        174,
+        223,
+        32,
+        91,
+        150,
+        179,
+        226,
+        146
       ],
       "accounts": [
         {
@@ -324,18 +108,332 @@
       ],
       "args": [
         {
-          "name": "config_index",
+          "name": "slot_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize_price_aggregate",
+      "docs": [
+        "Creates a price aggregate account for a mint.",
+        "",
+        "# Errors",
+        "* The signer is not the exchange administrator."
+      ],
+      "discriminator": [
+        78,
+        122,
+        200,
+        157,
+        158,
+        202,
+        23,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "address": "Argb8UxD4yUC4DVjw471XVj7VhXoJhB16n5htGEjTyox"
+        },
+        {
+          "name": "price_aggregate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_pyth_lazer_slot",
+      "docs": [
+        "Stores a Pyth Lazer feed in an empty slot.",
+        "",
+        "# Errors",
+        "* The signer is not the exchange administrator.",
+        "* The index is out of range.",
+        "* The slot is occupied.",
+        "* The feed ID is already configured."
+      ],
+      "discriminator": [
+        171,
+        230,
+        244,
+        175,
+        68,
+        42,
+        184,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "address": "Argb8UxD4yUC4DVjw471XVj7VhXoJhB16n5htGEjTyox"
+        },
+        {
+          "name": "price_aggregate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "price_aggregate.mint",
+                "account": "PriceAggregate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "slot_index",
           "type": "u8"
         },
         {
-          "name": "config",
+          "name": "feed_id",
           "type": {
-            "option": {
-              "defined": {
-                "name": "PythLazerConfig"
-              }
+            "defined": {
+              "name": "PythLazerFeedId"
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "update_observations_with_pyth_lazer",
+      "docs": [
+        "Verifies one signed Pyth Lazer batch and stores each feed into the price",
+        "aggregate at the same position in the remaining accounts.",
+        "",
+        "# Errors",
+        "* Pyth Lazer verification fails.",
+        "* The payload does not decode or names another channel.",
+        "* The remaining accounts do not match the feed count, repeat an account,",
+        "or fail the price aggregate constraints.",
+        "* A feed is not configured on its aggregate.",
+        "* A feed property, price, or timestamp is invalid."
+      ],
+      "discriminator": [
+        229,
+        215,
+        31,
+        205,
+        177,
+        129,
+        47,
+        0
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pyth_lazer_storage",
+          "address": "3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL"
+        },
+        {
+          "name": "pyth_lazer_treasury",
+          "writable": true
+        },
+        {
+          "name": "pyth_lazer_program",
+          "address": "pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "channel_id",
+          "type": "u8"
+        },
+        {
+          "name": "message_data",
+          "type": "bytes"
+        },
+        {
+          "name": "ed25519_instruction_index",
+          "type": "u16"
+        },
+        {
+          "name": "signature_index",
+          "type": "u8"
         }
       ]
     }
@@ -396,16 +494,29 @@
       ]
     },
     {
-      "name": "PythLazerConfigUpdated",
+      "name": "PythLazerSlotCleared",
       "discriminator": [
-        195,
-        179,
+        117,
+        175,
+        40,
+        103,
+        216,
+        15,
         76,
-        255,
-        233,
-        44,
-        88,
-        184
+        187
+      ]
+    },
+    {
+      "name": "PythLazerSlotSet",
+      "discriminator": [
+        139,
+        142,
+        7,
+        234,
+        73,
+        145,
+        32,
+        113
       ]
     }
   ],
@@ -417,128 +528,68 @@
     },
     {
       "code": 6001,
-      "name": "ExponentOutOfRange",
-      "msg": "Price observation exponent is out of allowed range."
+      "name": "InvalidTimestamp",
+      "msg": "Price observation timestamp is not newer than the stored one."
     },
     {
       "code": 6002,
-      "name": "InvalidTimestamp",
-      "msg": "Price observation timestamp is not a valid timestamp."
-    },
-    {
-      "code": 6003,
-      "name": "ConfidenceExceededLimit",
-      "msg": "Confidence exceeded the maximum confidence interval."
-    },
-    {
-      "code": 6004,
-      "name": "PriceBandExceeded",
-      "msg": "Price observation exceeded the maximum price band."
-    },
-    {
-      "code": 6005,
       "name": "InvalidLazerPayload",
       "msg": "Verified Lazer payload could not be decoded."
     },
     {
-      "code": 6006,
+      "code": 6003,
       "name": "UnexpectedLazerChannel",
       "msg": "Verified Lazer payload used an unexpected channel."
     },
     {
-      "code": 6007,
+      "code": 6004,
       "name": "MissingLazerPrice",
       "msg": "Verified Lazer feed is missing price."
     },
     {
-      "code": 6008,
+      "code": 6005,
       "name": "MissingLazerExponent",
       "msg": "Verified Lazer feed is missing exponent."
     },
     {
-      "code": 6009,
+      "code": 6006,
       "name": "MissingLazerConfidence",
       "msg": "Verified Lazer feed is missing confidence."
     },
     {
-      "code": 6010,
+      "code": 6007,
       "name": "InvalidLazerConfidence",
       "msg": "Verified Lazer feed has invalid confidence."
     },
     {
-      "code": 6011,
+      "code": 6008,
       "name": "MissingLazerFeedUpdateTimestamp",
       "msg": "Verified Lazer feed is missing feed update timestamp."
     },
     {
-      "code": 6012,
+      "code": 6009,
       "name": "MissingLazerMarketSession",
       "msg": "Verified Lazer feed is missing market session."
     },
     {
-      "code": 6013,
+      "code": 6010,
       "name": "DuplicateLazerProperty",
       "msg": "Verified Lazer feed contained a required property more than once."
     },
     {
-      "code": 6014,
-      "name": "UnknownFeed",
-      "msg": "Price aggregate mint is invalid."
-    },
-    {
-      "code": 6015,
-      "name": "OracleSourceConfigurationValidationFailed",
-      "msg": "Oracle source configuration is invalid."
-    },
-    {
-      "code": 6016,
+      "code": 6011,
       "name": "UnknownLazerFeed",
       "msg": "Verified Lazer feed is not configured for the aggregate."
     },
     {
-      "code": 6017,
-      "name": "InvalidPriceAggregateAccount",
-      "msg": "PriceAggregate account does not match its feed's PDA identity."
-    },
-    {
-      "code": 6018,
+      "code": 6012,
       "name": "RemainingAccountsMismatch",
       "msg": "Remaining account count does not match the batch payload."
     },
     {
-      "code": 6019,
-      "name": "ObservationCapacityExceeded",
-      "msg": "Source index exceeds price aggregate observation capacity."
-    },
-    {
-      "code": 6020,
-      "name": "InvalidPythLazerConfigIndex",
-      "msg": "Pyth Lazer configuration index exceeds its fixed capacity."
-    },
-    {
-      "code": 6021,
-      "name": "NoFreshPriceObservations",
-      "msg": "All price observations are stale."
-    },
-    {
-      "code": 6022,
-      "name": "StalePriceObservation",
-      "msg": "Price observation exceeded the maximum staleness."
-    },
-    {
-      "code": 6023,
-      "name": "ArithmeticOverflow",
-      "msg": "Arithmetic overflow."
-    },
-    {
-      "code": 6024,
-      "name": "ConversionError",
-      "msg": "Unable to cast safely."
-    },
-    {
-      "code": 6025,
-      "name": "UnableToUpdateObservation",
-      "msg": "Unable to update price aggregate observation."
+      "code": 6013,
+      "name": "DuplicatePriceAggregateAccount",
+      "msg": "PriceAggregate account appears more than once."
     }
   ],
   "types": [
@@ -881,7 +932,7 @@
     {
       "name": "ObservationUpdated",
       "docs": [
-        "Emitted whenever a price aggregate records a newer price, from any source."
+        "Emitted whenever a Pyth Lazer feed posts a newer observation."
       ],
       "type": {
         "kind": "struct",
@@ -891,47 +942,12 @@
             "type": "pubkey"
           },
           {
-            "name": "source",
+            "name": "feed_id",
             "type": {
               "defined": {
-                "name": "OracleSource"
+                "name": "PythLazerFeedId"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OracleObservationConfig",
-      "docs": [
-        "Observation indexes and an optional reference index."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "index",
-            "type": "u8"
-          },
-          {
-            "name": "reference_index",
-            "type": {
-              "option": "u8"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OracleSource",
-      "docs": [
-        "Price source backing an observation."
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "PythLazer"
           }
         ]
       }
@@ -958,8 +974,7 @@
     {
       "name": "PriceAggregate",
       "docs": [
-        "Observations posted for one mint, with fixed observation and source",
-        "capacities."
+        "Latest observation from each feed configured for one mint."
       ],
       "type": {
         "kind": "struct",
@@ -973,18 +988,10 @@
             "type": "u8"
           },
           {
-            "name": "observations",
+            "name": "pyth_lazer_slots",
             "type": {
               "defined": {
-                "name": "PriceAggregateObservations"
-              }
-            }
-          },
-          {
-            "name": "pyth_lazer",
-            "type": {
-              "defined": {
-                "name": "PythLazerFeeds"
+                "name": "PythLazerSlots"
               }
             }
           },
@@ -1017,31 +1024,10 @@
       }
     },
     {
-      "name": "PriceAggregateObservations",
-      "docs": [
-        "Fixed-size observation slots stored for one price aggregate."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "array": [
-              {
-                "defined": {
-                  "name": "PriceObservation"
-                }
-              },
-              8
-            ]
-          }
-        ]
-      }
-    },
-    {
       "name": "PriceObservation",
       "docs": [
         "Source observation with a shared price and confidence exponent.",
-        "A zero price marks an unoccupied slot."
+        "A zero price marks a feed that has not posted yet."
       ],
       "type": {
         "kind": "struct",
@@ -1078,9 +1064,21 @@
       }
     },
     {
-      "name": "PythLazerConfig",
+      "name": "PythLazerFeedId",
       "docs": [
-        "Pyth Lazer feed and its observation mapping."
+        "Pyth Lazer feed id (Lazer's numeric identifier)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          "u32"
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlot",
+      "docs": [
+        "Pyth Lazer feed and the latest observation posted from it."
       ],
       "type": {
         "kind": "struct",
@@ -1097,7 +1095,7 @@
             "name": "observation",
             "type": {
               "defined": {
-                "name": "OracleObservationConfig"
+                "name": "PriceObservation"
               }
             }
           }
@@ -1105,9 +1103,9 @@
       }
     },
     {
-      "name": "PythLazerConfigUpdated",
+      "name": "PythLazerSlotCleared",
       "docs": [
-        "Pyth Lazer configuration stored on a price aggregate."
+        "Pyth Lazer feed cleared from a price aggregate slot."
       ],
       "type": {
         "kind": "struct",
@@ -1117,16 +1115,14 @@
             "type": "pubkey"
           },
           {
-            "name": "config_index",
+            "name": "slot_index",
             "type": "u8"
           },
           {
-            "name": "config",
+            "name": "feed_id",
             "type": {
-              "option": {
-                "defined": {
-                  "name": "PythLazerConfig"
-                }
+              "defined": {
+                "name": "PythLazerFeedId"
               }
             }
           }
@@ -1134,21 +1130,36 @@
       }
     },
     {
-      "name": "PythLazerFeedId",
+      "name": "PythLazerSlotSet",
       "docs": [
-        "Pyth Lazer feed id (Lazer's numeric identifier)."
+        "Pyth Lazer feed stored in a price aggregate slot."
       ],
       "type": {
         "kind": "struct",
         "fields": [
-          "u32"
+          {
+            "name": "price_aggregate",
+            "type": "pubkey"
+          },
+          {
+            "name": "slot_index",
+            "type": "u8"
+          },
+          {
+            "name": "feed_id",
+            "type": {
+              "defined": {
+                "name": "PythLazerFeedId"
+              }
+            }
+          }
         ]
       }
     },
     {
-      "name": "PythLazerFeeds",
+      "name": "PythLazerSlots",
       "docs": [
-        "Fixed Pyth Lazer feed configuration slots stored for one price aggregate."
+        "Fixed Pyth Lazer slots stored for one price aggregate."
       ],
       "type": {
         "kind": "struct",
@@ -1158,7 +1169,7 @@
               {
                 "option": {
                   "defined": {
-                    "name": "PythLazerConfig"
+                    "name": "PythLazerSlot"
                   }
                 }
               },
