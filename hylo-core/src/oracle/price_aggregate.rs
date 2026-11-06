@@ -1,5 +1,6 @@
 use anchor_lang::prelude::{
-  borsh, AnchorDeserialize, AnchorSerialize, InitSpace,
+  borsh, Account, AccountDeserialize, AccountSerialize, AnchorDeserialize,
+  AnchorSerialize, InitSpace,
 };
 use fix::prelude::{
   CheckedAdd, CheckedDivFix, CheckedSub, MulDiv, UFix128, UFix64, N2, N3, N4,
@@ -7,7 +8,7 @@ use fix::prelude::{
 };
 use fix::typenum::{Integer, Z0};
 
-use super::{OracleConfig, OraclePrice};
+use super::{OracleConfig, OraclePrice, PythLazerSlots};
 use crate::error::CoreError;
 use crate::error::CoreError::{OracleNegativeTime, OraclePriceRange};
 use crate::solana_clock::SolanaClock;
@@ -24,13 +25,22 @@ pub const MAX_EXPONENT: i16 = -2;
 
 /// Methods for reading prices from a price aggregate account.
 pub trait PriceAggregateExt {
+  /// Returns the Pyth Lazer slots stored in the aggregate.
+  fn pyth_lazer_slots(&self) -> PythLazerSlots;
+
   /// Returns every observation stored in the aggregate.
-  fn observations(&self) -> impl Iterator<Item = PriceObservation>;
+  fn observations(&self) -> impl Iterator<Item = PriceObservation> {
+    self
+      .pyth_lazer_slots()
+      .0
+      .into_iter()
+      .flatten()
+      .map(|slot| slot.observation)
+  }
 
   /// Fetches the validated aggregate price.
   ///
   /// # Errors
-  ///
   /// * The clock timestamp is negative or overflows microseconds.
   /// * No observations pass the configured validation.
   /// * Price aggregation overflows or cannot convert to the quote precision.
@@ -64,7 +74,6 @@ pub trait PriceAggregateExt {
   /// Converts the newest posted timestamp to seconds.
   ///
   /// # Errors
-  ///
   /// * The aggregate has no observations.
   /// * The timestamp does not fit in `i64`.
   fn latest_timestamp_secs(&self) -> Result<i64, CoreError> {
@@ -85,13 +94,23 @@ fn slot_interval(oracle_interval_secs: u64) -> Option<u64> {
 }
 
 impl PriceAggregateExt for hylo_idl::oracle::accounts::PriceAggregate {
-  fn observations(&self) -> impl Iterator<Item = PriceObservation> {
-    self
-      .pyth_lazer
-      .0
-      .iter()
-      .flatten()
-      .map(|slot| PriceObservation::from(slot.observation))
+  fn pyth_lazer_slots(&self) -> PythLazerSlots {
+    self.pyth_lazer.into()
+  }
+}
+
+impl<T: PriceAggregateExt + ?Sized> PriceAggregateExt for Box<T> {
+  fn pyth_lazer_slots(&self) -> PythLazerSlots {
+    T::pyth_lazer_slots(self)
+  }
+}
+
+impl<T> PriceAggregateExt for Account<'_, T>
+where
+  T: PriceAggregateExt + AccountSerialize + AccountDeserialize + Clone,
+{
+  fn pyth_lazer_slots(&self) -> PythLazerSlots {
+    T::pyth_lazer_slots(self)
   }
 }
 

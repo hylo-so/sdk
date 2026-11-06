@@ -7,8 +7,8 @@ use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::oracle::{
-  MarketSession, PriceObservation, PythLazerFeedId, PythLazerFeeds,
-  PythLazerSlot,
+  MarketSession, PriceObservation, PythLazerFeedId, PythLazerSlot,
+  PythLazerSlots,
 };
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
@@ -366,16 +366,16 @@ impl From<hylo_idl::oracle::types::PythLazerSlot> for PythLazerSlot {
   }
 }
 
-impl From<PythLazerFeeds> for hylo_idl::oracle::types::PythLazerFeeds {
-  fn from(val: PythLazerFeeds) -> Self {
+impl From<PythLazerSlots> for hylo_idl::oracle::types::PythLazerFeeds {
+  fn from(val: PythLazerSlots) -> Self {
     hylo_idl::oracle::types::PythLazerFeeds(
       val.0.map(|slot| slot.map(Into::into)),
     )
   }
 }
 
-impl From<hylo_idl::oracle::types::PythLazerFeeds> for PythLazerFeeds {
-  fn from(idl: hylo_idl::oracle::types::PythLazerFeeds) -> PythLazerFeeds {
-    PythLazerFeeds(idl.0.map(|slot| slot.map(Into::into)))
+impl From<hylo_idl::oracle::types::PythLazerFeeds> for PythLazerSlots {
+  fn from(idl: hylo_idl::oracle::types::PythLazerFeeds) -> PythLazerSlots {
+    PythLazerSlots(idl.0.map(|slot| slot.map(Into::into)))
   }
 }
