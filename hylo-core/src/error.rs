@@ -303,8 +303,10 @@ pub enum CoreError {
   OraclePriceBandExceeded,
   #[msg("Pyth Lazer feed ID is already configured.")]
   OracleDuplicatePythLazerFeedId,
-  #[msg("Every Pyth Lazer slot is occupied.")]
-  OraclePythLazerSlotsFull,
-  #[msg("Pyth Lazer slot is empty or out of range.")]
+  #[msg("Pyth Lazer slot index is out of range.")]
+  OraclePythLazerSlotOutOfRange,
+  #[msg("Pyth Lazer slot is already occupied.")]
+  OraclePythLazerSlotOccupied,
+  #[msg("Pyth Lazer slot is empty.")]
   OraclePythLazerSlotEmpty,
 }

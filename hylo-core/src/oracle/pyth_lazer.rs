@@ -89,37 +89,48 @@ impl PythLazerSlots {
       .find(|slot| slot.feed_id == feed_id)
   }
 
-  /// Stores a feed in the first free slot and returns the slot index.
+  /// Stores a feed with a default observation in an empty slot.
   ///
   /// # Errors
+  /// * The index is out of range.
+  /// * The slot is occupied.
   /// * The feed ID is already configured.
-  /// * Every slot is occupied.
-  pub fn add(&mut self, feed_id: PythLazerFeedId) -> Result<u8, CoreError> {
+  pub fn set(
+    &mut self,
+    index: u8,
+    feed_id: PythLazerFeedId,
+  ) -> Result<(), CoreError> {
     self
       .slot_for_feed(feed_id)
       .is_none()
       .then_some(())
       .ok_or(CoreError::OracleDuplicatePythLazerFeedId)?;
-    let (index, slot) = (0u8..)
-      .zip(self.0.iter_mut())
-      .find(|(_, slot)| slot.is_none())
-      .ok_or(CoreError::OraclePythLazerSlotsFull)?;
+    let slot = self
+      .0
+      .get_mut(usize::from(index))
+      .ok_or(CoreError::OraclePythLazerSlotOutOfRange)?;
+    slot
+      .is_none()
+      .then_some(())
+      .ok_or(CoreError::OraclePythLazerSlotOccupied)?;
     *slot = Some(PythLazerSlot {
       feed_id,
       observation: PriceObservation::default(),
     });
-    Ok(index)
+    Ok(())
   }
 
-  /// Clears the slot at an index and returns its contents.
+  /// Clears an occupied slot and returns its contents.
   ///
   /// # Errors
-  /// * The index is out of range or the slot is empty.
-  pub fn remove(&mut self, index: u8) -> Result<PythLazerSlot, CoreError> {
+  /// * The index is out of range.
+  /// * The slot is empty.
+  pub fn clear(&mut self, index: u8) -> Result<PythLazerSlot, CoreError> {
     self
       .0
       .get_mut(usize::from(index))
-      .and_then(Option::take)
+      .ok_or(CoreError::OraclePythLazerSlotOutOfRange)?
+      .take()
       .ok_or(CoreError::OraclePythLazerSlotEmpty)
   }
 }
@@ -131,74 +142,90 @@ mod tests {
 
   fn full() -> Result<PythLazerSlots, CoreError> {
     let mut slots = PythLazerSlots::default();
-    slots.add(PythLazerFeedId(1))?;
-    slots.add(PythLazerFeedId(2))?;
-    slots.add(PythLazerFeedId(3))?;
+    slots.set(0, PythLazerFeedId(1))?;
+    slots.set(1, PythLazerFeedId(2))?;
+    slots.set(2, PythLazerFeedId(3))?;
     Ok(slots)
   }
 
   #[test]
-  fn add_fills_slots_in_order() {
+  fn set_fills_the_indexed_slot() -> Result<(), CoreError> {
     let mut slots = PythLazerSlots::default();
-    assert_eq!(slots.add(PythLazerFeedId(1)), Ok(0));
-    assert_eq!(slots.add(PythLazerFeedId(2)), Ok(1));
-    assert_eq!(slots.add(PythLazerFeedId(3)), Ok(2));
-    assert_eq!(slots.occupied().count(), PYTH_LAZER_SLOT_COUNT);
+    slots.set(2, PythLazerFeedId(1))?;
+    assert_eq!(slots.slot(0), None);
     assert_eq!(
-      slots.slot(1).map(|slot| slot.feed_id),
-      Some(PythLazerFeedId(2))
+      slots.slot(2).map(|slot| slot.feed_id),
+      Some(PythLazerFeedId(1))
     );
+    assert_eq!(slots.occupied().count(), 1);
     assert_eq!(
       slots
-        .slot_for_feed(PythLazerFeedId(2))
+        .slot_for_feed(PythLazerFeedId(1))
         .map(|slot| slot.feed_id),
-      Some(PythLazerFeedId(2))
-    );
-  }
-
-  #[test]
-  fn add_rejects_when_full() -> Result<(), CoreError> {
-    let mut slots = full()?;
-    assert_eq!(
-      slots.add(PythLazerFeedId(9)),
-      Err(CoreError::OraclePythLazerSlotsFull)
+      Some(PythLazerFeedId(1))
     );
     Ok(())
   }
 
   #[test]
-  fn add_rejects_duplicate_feed_id() -> Result<(), CoreError> {
+  fn set_rejects_out_of_range_index() {
     let mut slots = PythLazerSlots::default();
-    slots.add(PythLazerFeedId(1))?;
     assert_eq!(
-      slots.add(PythLazerFeedId(1)),
+      slots.set(3, PythLazerFeedId(1)),
+      Err(CoreError::OraclePythLazerSlotOutOfRange)
+    );
+  }
+
+  #[test]
+  fn set_rejects_occupied_slot() -> Result<(), CoreError> {
+    let mut slots = full()?;
+    assert_eq!(
+      slots.set(1, PythLazerFeedId(9)),
+      Err(CoreError::OraclePythLazerSlotOccupied)
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn set_rejects_duplicate_feed_id() -> Result<(), CoreError> {
+    let mut slots = PythLazerSlots::default();
+    slots.set(0, PythLazerFeedId(1))?;
+    assert_eq!(
+      slots.set(1, PythLazerFeedId(1)),
       Err(CoreError::OracleDuplicatePythLazerFeedId)
     );
     Ok(())
   }
 
   #[test]
-  fn remove_clears_slot_and_add_refills_it() -> Result<(), CoreError> {
+  fn clear_empties_the_slot_and_set_refills_it() -> Result<(), CoreError> {
     let mut slots = full()?;
-    let removed = slots.remove(1)?;
-    assert_eq!(removed.feed_id, PythLazerFeedId(2));
+    let cleared = slots.clear(1)?;
+    assert_eq!(cleared.feed_id, PythLazerFeedId(2));
     assert_eq!(slots.slot(1), None);
     assert_eq!(slots.occupied().count(), PYTH_LAZER_SLOT_COUNT - 1);
-    assert_eq!(slots.add(PythLazerFeedId(9)), Ok(1));
+    slots.set(1, PythLazerFeedId(9))?;
+    assert_eq!(
+      slots.slot(1).map(|slot| slot.feed_id),
+      Some(PythLazerFeedId(9))
+    );
     Ok(())
   }
 
   #[test]
-  fn remove_rejects_empty_or_out_of_range() {
+  fn clear_rejects_empty_or_out_of_range() {
     let mut slots = PythLazerSlots::default();
-    assert_eq!(slots.remove(0), Err(CoreError::OraclePythLazerSlotEmpty));
-    assert_eq!(slots.remove(3), Err(CoreError::OraclePythLazerSlotEmpty));
+    assert_eq!(slots.clear(0), Err(CoreError::OraclePythLazerSlotEmpty));
+    assert_eq!(
+      slots.clear(3),
+      Err(CoreError::OraclePythLazerSlotOutOfRange)
+    );
   }
 
   #[test]
   fn slot_for_feed_mut_writes_the_slot_observation() -> Result<(), CoreError> {
     let mut slots = PythLazerSlots::default();
-    slots.add(PythLazerFeedId(1))?;
+    slots.set(0, PythLazerFeedId(1))?;
     let slot = slots
       .slot_for_feed_mut(PythLazerFeedId(1))
       .ok_or(CoreError::OraclePythLazerSlotEmpty)?;
