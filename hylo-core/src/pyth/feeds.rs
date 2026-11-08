@@ -75,14 +75,10 @@ pub const ETH_USD: PythFeed = PythFeed::new([
   247, 159, 88, 37, 18, 109, 102, 84, 128, 135, 70, 52, 253, 10, 206,
 ]);
 
-/// `Crypto.SPCXX/USD` shard 0 on the legacy Pyth oracle program.
-pub const SPCX_USD: PythFeed = PythFeed {
-  feed_id: [
-    232, 226, 35, 74, 6, 178, 136, 254, 221, 228, 58, 233, 69, 12, 178, 136,
-    136, 110, 203, 50, 89, 173, 47, 65, 208, 6, 127, 2, 36, 74, 1, 1,
-  ],
-  address: pubkey!("6u5tiC8JdcLdgMjoJE7QTf8suHyVmxbKZW4TLnhFr1fk"),
-};
+pub const SPCX_USD: PythFeed = PythFeed::new([
+  232, 226, 35, 74, 6, 178, 136, 254, 221, 228, 58, 233, 69, 12, 178, 136, 136,
+  110, 203, 50, 89, 173, 47, 65, 208, 6, 127, 2, 36, 74, 1, 1,
+]);
 
 pub const PAXG_USD: PythFeed = PythFeed::new([
   39, 55, 23, 180, 148, 48, 144, 111, 75, 12, 35, 14, 153, 170, 16, 7, 248, 55,
