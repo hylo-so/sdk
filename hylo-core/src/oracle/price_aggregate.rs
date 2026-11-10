@@ -3,8 +3,7 @@ use anchor_lang::prelude::{
   AnchorSerialize, InitSpace,
 };
 use fix::prelude::{
-  CheckedAdd, CheckedDivFix, CheckedSub, MulDiv, UFix128, UFix64, N2, N3, N4,
-  N5, N6, N7, N8, N9,
+  CheckedAdd, CheckedDivFix, CheckedSub, MulDiv, UFix128, UFix64, N2, N4, N9,
 };
 use fix::typenum::{Integer, Z0};
 
@@ -12,6 +11,7 @@ use super::{OracleConfig, OraclePrice, PythLazerSlots};
 use crate::error::CoreError;
 use crate::error::CoreError::{OracleNegativeTime, OraclePriceRange};
 use crate::solana_clock::SolanaClock;
+use crate::util::normalize_exp;
 
 pub const DEFAULT_MAX_STALENESS_SLOTS: u64 = 30;
 pub const DEFAULT_MAX_STALENESS_SECS: u64 = 5;
@@ -219,18 +219,11 @@ impl PriceObservation {
   fn normalized(value: u64, exponent: i16) -> Result<UFix64<N9>, CoreError> {
     PriceObservation::validate_exponent(exponent)?;
 
-    match exponent {
-      -2 => UFix64::<N2>::new(value).checked_convert(),
-      -3 => UFix64::<N3>::new(value).checked_convert(),
-      -4 => UFix64::<N4>::new(value).checked_convert(),
-      -5 => UFix64::<N5>::new(value).checked_convert(),
-      -6 => UFix64::<N6>::new(value).checked_convert(),
-      -7 => UFix64::<N7>::new(value).checked_convert(),
-      -8 => UFix64::<N8>::new(value).checked_convert(),
-      -9 => Some(UFix64::<N9>::new(value)),
-      _ => None,
-    }
-    .ok_or(CoreError::OracleArithmetic)
+    exponent
+      .checked_neg()
+      .and_then(|decimals| u8::try_from(decimals).ok())
+      .and_then(|decimals| normalize_exp(decimals, value))
+      .ok_or(CoreError::OracleArithmetic)
   }
 
   fn normalize(&self) -> Result<NormalizedObservation, CoreError> {
