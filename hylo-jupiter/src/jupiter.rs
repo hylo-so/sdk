@@ -25,8 +25,8 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  exo_entry_pubkeys, exo_entry_role, read_exo_entries, ExoPairState, ExoRoute,
-  ProtocolState, UsdcPairState,
+  exo_entry_role, read_exo_entries, ExoPairState, ExoRoute, ProtocolState,
+  UsdcPairState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
@@ -75,12 +75,15 @@ fn exo_pair_state(
     .oracle
     .and_then(|key| account_map.get(&key))
     .map(|oracle| {
-      let [exo_pair, vault, levercoin_mint, collateral_mint] =
-        exo_entry_pubkeys(&route.entry);
+      let ExoEntry {
+        collateral_mint,
+        levercoin_mint,
+        ..
+      } = route.entry;
       ExoPairState::from_accounts(
         &route.entry,
-        keyed_account(account_map, &exo_pair)?,
-        keyed_account(account_map, &vault)?,
+        keyed_account(account_map, &pda::exo_pair(collateral_mint))?,
+        keyed_account(account_map, &pda::exo_vault(collateral_mint))?,
         keyed_account(account_map, &levercoin_mint)?,
         keyed_account(account_map, &collateral_mint)?,
         oracle,
