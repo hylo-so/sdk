@@ -25,9 +25,9 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  find_exo_entry, read_exo_entries, ExoPairAccounts, ExoPairState,
-  ProtocolState, UsdcPairState, EXO_PAIR_ACCOUNTS,
+  exo_entry_pubkeys, exo_entry_role, exo_pubkeys_from_entries, find_exo_entry,
+  read_exo_entries, ExoEntryAccounts, ExoPairState, ProtocolState,
+  UsdcPairState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
@@ -65,6 +65,21 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
   pda::lst_vault(HYLOSOL::MINT),
   pda::usdc_vault(USDC::MINT),
 ];
+
+/// Entry accounts of each registry entry, `None` until all are in the map.
+fn exo_entry_accounts(
+  account_map: &AccountMap,
+  entries: &[ExoEntry],
+) -> Result<Vec<Option<ExoEntryAccounts>>> {
+  entries
+    .iter()
+    .map(|entry| {
+      let fetched =
+        exo_entry_pubkeys(entry).map(|key| account_map.get(&key).cloned());
+      ExoEntryAccounts::from_fetched(&fetched)
+    })
+    .collect()
+}
 
 /// Builds the USDC exchange state from a Jupiter account snapshot.
 fn usdc_state(
@@ -115,6 +130,7 @@ impl HyloJupiter {
     &self,
     account_map: &AccountMap,
     entries: &[ExoEntry],
+    entry_accounts: Vec<Option<ExoEntryAccounts>>,
   ) -> Result<ProtocolState<ClockRef>> {
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
@@ -158,7 +174,7 @@ impl HyloJupiter {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      self.exo_pairs(account_map, entries)?,
+      self.exo_pairs(account_map, entries, entry_accounts)?,
       usdc_pair_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -167,26 +183,29 @@ impl HyloJupiter {
     )
   }
 
-  /// Loads the pair state of each entry from the map.
+  /// Loads the pair state of each entry whose accounts are all in the map.
+  ///
+  /// A pair is left out until its oracle has been fetched, which is only
+  /// known once the pair account itself has been.
   fn exo_pairs(
     &self,
     account_map: &AccountMap,
     entries: &[ExoEntry],
+    entry_accounts: Vec<Option<ExoEntryAccounts>>,
   ) -> Result<HashMap<Pubkey, ExoPairState<ClockRef>>> {
-    exo_pubkeys_from_entries(entries)?
-      .chunks(EXO_PAIR_ACCOUNTS)
-      .zip(entries)
-      .map(|(keys, entry)| {
-        let fetched = keys
-          .iter()
-          .map(|key| account_map.get(key).cloned())
-          .collect::<Vec<_>>();
-        let raw =
-          ExoPairAccounts::from_fetched(&fetched).with_context(|| {
-            format!("exo pair accounts for {}", entry.collateral_mint)
-          })?;
-        let pair = raw.pair_state(entry, self.clock.clone())?;
-        Ok((pair.collateral_mint, pair))
+    entries
+      .iter()
+      .zip(entry_accounts)
+      .filter_map(|(entry, accounts)| {
+        let accounts = accounts?;
+        let oracle = account_map.get(&accounts.oracle())?.clone();
+        let pair = accounts
+          .with_oracle(oracle)
+          .pair_state(entry, self.clock.clone())
+          .with_context(|| {
+            format!("exo pair state for {}", entry.collateral_mint)
+          });
+        Some(pair.map(|pair| (pair.collateral_mint, pair)))
       })
       .collect()
   }
@@ -201,7 +220,12 @@ impl HyloJupiter {
     let entry = find_exo_entry(&self.exo_entries, source, destination)
       .ok_or(CoreError::UnroutablePair)?;
     let collateral = entry.collateral_mint;
-    let oracle = exo_pyth_feed_by_mint(collateral)?.address;
+    let oracle = self
+      .state
+      .as_ref()
+      .context("state not set")?
+      .exo_pair_by_mint(collateral)?
+      .oracle;
     let roles = (
       exo_entry_role(entry, source)?,
       exo_entry_role(entry, destination)?,
@@ -246,7 +270,7 @@ impl Amm for HyloJupiter {
     Self: Sized,
   {
     let exo_entries = read_exo_entries(&keyed_account.account.data)?;
-    let exo_account_keys = exo_pubkeys_from_entries(&exo_entries)?;
+    let exo_account_keys = exo_pubkeys_from_entries(&exo_entries);
     Ok(HyloJupiter {
       clock: amm_context.clock_ref.clone(),
       state: None,
@@ -292,8 +316,17 @@ impl Amm for HyloJupiter {
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     let registry = keyed_account(account_map, &pda::EXO_REGISTRY)?;
     let entries = read_exo_entries(&registry.data)?;
-    self.state = Some(self.build_state(account_map, &entries)?);
-    self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
+    let entry_accounts = exo_entry_accounts(account_map, &entries)?;
+    self.exo_account_keys = exo_pubkeys_from_entries(&entries)
+      .into_iter()
+      .chain(
+        entry_accounts
+          .iter()
+          .flatten()
+          .map(ExoEntryAccounts::oracle),
+      )
+      .collect();
+    self.state = self.build_state(account_map, &entries, entry_accounts).ok();
     self.exo_entries = entries;
     Ok(())
   }
@@ -497,6 +530,9 @@ mod tests {
     let amm_context = load_amm_context(&client).await?;
     let mut amm =
       HyloJupiter::from_keyed_account(&jupiter_account, &amm_context)?;
+    let account_map =
+      load_account_map(&client, &amm.get_accounts_to_update()).await?;
+    amm.update(&account_map)?;
     let account_map =
       load_account_map(&client, &amm.get_accounts_to_update()).await?;
     amm.update(&account_map)?;

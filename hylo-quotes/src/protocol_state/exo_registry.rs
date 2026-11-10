@@ -6,32 +6,10 @@ use anyhow::{Context, Result};
 use hylo_core::error::CoreError;
 use hylo_core::idl::router::accounts::ExoRegistry;
 use hylo_core::idl::router::types::ExoEntry;
-use hylo_core::pyth::{PythFeed, PythOracle};
-use hylo_idl::tokens::{
-  exo_role, ExoRole, TokenMint, CBBTC, HYPE, ONYC, PST, WETH, ZEC,
-};
-use hylo_idl::{pda, with_exo_pairs};
+use hylo_idl::pda;
+use hylo_idl::tokens::{exo_role, ExoRole};
 
 use crate::protocol_state::exo_pair::EXO_PAIR_ACCOUNTS;
-
-macro_rules! exo_pyth_feed_dispatch {
-  ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
-    /// Collateral/USD Pyth feed for an exo collateral mint known at runtime.
-    ///
-    /// # Errors
-    /// * Mint backs no exo pair
-    pub fn exo_pyth_feed_by_mint(
-      collateral_mint: Pubkey,
-    ) -> Result<PythFeed, CoreError> {
-      match collateral_mint {
-        $(<$exo>::MINT => Ok(<$exo>::FEED),)+
-        _ => Err(CoreError::UnknownExoMint),
-      }
-    }
-  };
-}
-
-with_exo_pairs!(exo_pyth_feed_dispatch);
 
 /// Decodes the registered entries from raw registry account data.
 ///
@@ -78,27 +56,19 @@ pub fn exo_entry_role(
     .ok_or(CoreError::UnknownExoMint)
 }
 
-/// [`EXO_PAIR_ACCOUNTS`] pubkeys per registry entry, in `ExoPairAccounts`
-/// field order.
-///
-/// # Errors
-/// * Collateral mint has no feed
-pub fn exo_pubkeys_from_entries(
-  entries: &[ExoEntry],
-) -> Result<Vec<Pubkey>, CoreError> {
-  entries.iter().try_fold(
-    Vec::with_capacity(entries.len() * EXO_PAIR_ACCOUNTS),
-    |mut keys, entry| {
-      let feed = exo_pyth_feed_by_mint(entry.collateral_mint)?;
-      let entry_keys: [Pubkey; EXO_PAIR_ACCOUNTS] = [
-        pda::exo_pair(entry.collateral_mint),
-        pda::exo_vault(entry.collateral_mint),
-        entry.levercoin_mint,
-        entry.collateral_mint,
-        feed.address,
-      ];
-      keys.extend(entry_keys);
-      Ok(keys)
-    },
-  )
+/// Pubkeys of one registry entry, in `ExoEntryAccounts` field order.
+#[must_use]
+pub fn exo_entry_pubkeys(entry: &ExoEntry) -> [Pubkey; EXO_PAIR_ACCOUNTS] {
+  [
+    pda::exo_pair(entry.collateral_mint),
+    pda::exo_vault(entry.collateral_mint),
+    entry.levercoin_mint,
+    entry.collateral_mint,
+  ]
+}
+
+/// [`exo_entry_pubkeys`] of every entry, concatenated.
+#[must_use]
+pub fn exo_pubkeys_from_entries(entries: &[ExoEntry]) -> Vec<Pubkey> {
+  entries.iter().flat_map(exo_entry_pubkeys).collect()
 }

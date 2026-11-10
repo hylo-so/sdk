@@ -4,7 +4,7 @@ use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::{Clock, Pubkey};
 use anchor_lang::solana_program::sysvar;
 use anchor_lang::AccountDeserialize;
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result};
 use hylo_core::error::CoreError;
 use hylo_core::pyth::PythOracle;
 use hylo_idl::pda;
@@ -13,7 +13,6 @@ use hylo_idl::tokens::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::protocol_state::exo_pair::EXO_PAIR_ACCOUNTS;
 use crate::protocol_state::ExoPairAccounts;
 
 /// Deserializes an Anchor account, named `name` in errors.
@@ -104,7 +103,8 @@ pub struct ProtocolAccounts {
   /// Canonical router-owned exo registry
   pub exo_registry: Account,
 
-  /// Raw accounts per registry entry
+  /// Raw accounts per registry entry, absent from snapshots
+  #[serde(skip)]
   pub exo_accounts: Vec<ExoPairAccounts>,
 }
 
@@ -162,25 +162,15 @@ impl ProtocolAccounts {
     ]
   }
 
-  /// Build from RPC-fetched accounts in [`ProtocolAccounts::PUBKEYS`] order,
-  /// followed by [`EXO_PAIR_ACCOUNTS`] accounts per registry entry.
+  /// Build from RPC-fetched accounts in [`ProtocolAccounts::PUBKEYS`] order
+  /// and the raw accounts of each registry entry.
   ///
   /// # Errors
-  /// * Fewer accounts than [`ProtocolAccounts::PUBKEYS`]
   /// * Any account is missing
   pub fn from_fetched(
     accounts: &[Option<Account>],
+    exo_accounts: Vec<ExoPairAccounts>,
   ) -> Result<ProtocolAccounts> {
-    const BASE: usize = ProtocolAccounts::PUBKEYS.len();
-    ensure!(
-      accounts.len() >= BASE,
-      "Expected at least {BASE} accounts, got {}",
-      accounts.len()
-    );
-    let exo_accounts = accounts[BASE..]
-      .chunks(EXO_PAIR_ACCOUNTS)
-      .map(ExoPairAccounts::from_fetched)
-      .collect::<Result<Vec<_>>>()?;
     Ok(ProtocolAccounts {
       hylo: fetched_account(accounts, 0, "Hylo account")?,
       jitosol_header: fetched_account(accounts, 1, "JitoSOL header")?,

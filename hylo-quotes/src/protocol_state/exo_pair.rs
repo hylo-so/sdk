@@ -3,7 +3,7 @@
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
@@ -16,22 +16,28 @@ use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::pda;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
-use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
-use crate::protocol_state::exo_registry::exo_pyth_feed_by_mint;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
-/// Accounts fetched per registry entry, the [`ExoPairAccounts`] field count.
-pub const EXO_PAIR_ACCOUNTS: usize = 5;
+/// Accounts derivable from a registry entry, the [`ExoEntryAccounts`]
+/// field count.
+pub const EXO_PAIR_ACCOUNTS: usize = 4;
 
-/// Raw accounts for one registry entry, in fetch order.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExoPairAccounts {
-  pub exo_pair: Account,
+/// Accounts derivable from one registry entry, in fetch order, with the
+/// pair decoded.
+#[derive(Debug, Clone)]
+pub struct ExoEntryAccounts {
+  pub exo_pair: ExoPair,
   pub vault: Account,
   pub levercoin_mint: Account,
   pub collateral_mint: Account,
+}
+
+/// Entry accounts plus the oracle the pair names.
+#[derive(Debug, Clone)]
+pub struct ExoPairAccounts {
+  pub entry: ExoEntryAccounts,
   pub oracle: Account,
 }
 
@@ -39,6 +45,7 @@ pub struct ExoPairAccounts {
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
   pub collateral_mint: Pubkey,
+  pub oracle: Pubkey,
   pub context: ExoExchangeContext<C>,
   pub paused: bool,
   pub pool_drawdown: PoolDrawdown,
@@ -48,19 +55,15 @@ pub struct ExoPairState<C: SolanaClock> {
   pub oracle_interval_secs: u64,
 }
 
-/// Checks that the pair's oracle matches the feed the SDK fetches for its
-/// collateral.
-fn validate_exo_pair_oracle(exo_pair: &ExoPair) -> Result<()> {
-  let feed = exo_pyth_feed_by_mint(exo_pair.collateral_mint)?;
+/// Checks that the fetched oracle carries the feed id the pair expects.
+fn validate_exo_pair_oracle(
+  exo_pair: &ExoPair,
+  oracle: &PriceUpdateV2,
+) -> Result<()> {
   ensure!(
-    exo_pair.oracle == feed.address,
-    "Exo pair oracle {} does not match SDK feed {}",
+    exo_pair.oracle_feed_id == oracle.price_message.feed_id,
+    "Exo pair oracle {} feed id does not match pair for {}",
     exo_pair.oracle,
-    feed.address,
-  );
-  ensure!(
-    exo_pair.oracle_feed_id == feed.feed_id,
-    "Exo pair feed id does not match SDK feed for {}",
     exo_pair.collateral_mint,
   );
   Ok(())
@@ -83,26 +86,45 @@ fn validate_entry(entry: &ExoEntry, exo_pair: &ExoPair) -> Result<()> {
   Ok(())
 }
 
-impl ExoPairAccounts {
-  /// Builds from five fetched accounts in field order.
+impl ExoEntryAccounts {
+  /// Builds from [`EXO_PAIR_ACCOUNTS`] fetched accounts in field order, or
+  /// `None` unless every account is present.
   ///
   /// # Errors
-  /// * Wrong count or any account missing
-  pub fn from_fetched(accounts: &[Option<Account>]) -> Result<ExoPairAccounts> {
+  /// * Pair deserialization
+  pub fn from_fetched(
+    accounts: &[Option<Account>],
+  ) -> Result<Option<ExoEntryAccounts>> {
     match accounts {
-      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint), Some(oracle)] => {
-        Ok(ExoPairAccounts {
-          exo_pair: exo_pair.clone(),
+      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint)] => {
+        Ok(Some(ExoEntryAccounts {
+          exo_pair: decode(exo_pair, "Exo pair")?,
           vault: vault.clone(),
           levercoin_mint: levercoin_mint.clone(),
           collateral_mint: collateral_mint.clone(),
-          oracle: oracle.clone(),
-        })
+        }))
       }
-      _ => Err(anyhow!("Exo pair accounts missing")),
+      _ => Ok(None),
     }
   }
 
+  /// Oracle pubkey the pair names.
+  #[must_use]
+  pub fn oracle(&self) -> Pubkey {
+    self.exo_pair.oracle
+  }
+
+  /// Attaches the fetched oracle account.
+  #[must_use]
+  pub fn with_oracle(self, oracle: Account) -> ExoPairAccounts {
+    ExoPairAccounts {
+      entry: self,
+      oracle,
+    }
+  }
+}
+
+impl ExoPairAccounts {
   /// Decodes the accounts, checks them against the registry entry, and
   /// loads the pair state under `clock`.
   ///
@@ -110,23 +132,23 @@ impl ExoPairAccounts {
   /// * Account deserialization
   /// * Pair collateral differs from the entry
   /// * Entry levercoin mint is not the pair's levercoin PDA
-  /// * Pair oracle differs from the SDK feed
+  /// * Oracle feed id differs from the pair's
   /// * Vault balance normalization, context load, or fixed-point conversion
   pub fn pair_state<C: SolanaClock>(
     &self,
     entry: &ExoEntry,
     clock: C,
   ) -> Result<ExoPairState<C>> {
-    let exo_pair: ExoPair = decode(&self.exo_pair, "Exo pair")?;
-    validate_entry(entry, &exo_pair)?;
-    validate_exo_pair_oracle(&exo_pair)?;
-    let vault: TokenAccount = decode(&self.vault, "Exo vault")?;
+    let exo_pair = &self.entry.exo_pair;
+    validate_entry(entry, exo_pair)?;
+    let vault: TokenAccount = decode(&self.entry.vault, "Exo vault")?;
     let levercoin_mint: Mint =
-      decode(&self.levercoin_mint, "Exo levercoin mint")?;
+      decode(&self.entry.levercoin_mint, "Exo levercoin mint")?;
     let collateral_mint: Mint =
-      decode(&self.collateral_mint, "Exo collateral mint")?;
+      decode(&self.entry.collateral_mint, "Exo collateral mint")?;
     let oracle: PriceUpdateV2 =
       decode(&self.oracle, "Exo collateral/USD Pyth feed")?;
+    validate_exo_pair_oracle(exo_pair, &oracle)?;
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
@@ -151,6 +173,7 @@ impl ExoPairAccounts {
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
       collateral_mint: exo_pair.collateral_mint,
+      oracle: exo_pair.oracle,
       context,
       paused: exo_pair.paused,
       pool_drawdown: exo_pair.pool_drawdown.into(),
