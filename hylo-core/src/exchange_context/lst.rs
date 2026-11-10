@@ -97,13 +97,13 @@ impl<C: SolanaClock> LstExchangeContext<C> {
   /// # Errors
   /// * Oracle, cache, curve, or stability controller validation
   #[allow(clippy::too_many_arguments)]
-  pub fn load<P: PriceAggregateExt>(
+  pub fn load(
     clock: C,
     total_sol_cache: &TotalSolCache,
     stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
-    sol_usd: &P,
+    sol_usd: &impl PriceAggregateExt,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,

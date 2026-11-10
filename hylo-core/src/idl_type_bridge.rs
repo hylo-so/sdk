@@ -1,9 +1,3 @@
-use hylo_idl::exchange::types::{
-  AddressField as ExchangeAddressField,
-  AddressUpdateProposalData as ExchangeAddressUpdateProposal,
-};
-
-use crate::address_update::{AddressField, AddressUpdateProposal};
 use crate::borrow_rate::BorrowRateCurveConfig;
 use crate::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 #[cfg(any(test, feature = "offchain"))]
@@ -13,12 +7,8 @@ use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::oracle::{
-  MarketSession, OracleSource, PriceAggregateObservations, PriceObservation,
-  MAX_PRICE_AGGREGATE_OBSERVATIONS,
-};
-#[cfg(feature = "offchain")]
-use crate::oracle::{
-  OracleObservationConfig, PythLazerConfig, PythLazerFeedId,
+  MarketSession, PriceObservation, PythLazerFeedId, PythLazerSlot,
+  PythLazerSlots,
 };
 use crate::par_tolerance::ParTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
@@ -302,40 +292,6 @@ impl From<MarketSession> for hylo_idl::oracle::types::MarketSession {
   }
 }
 
-impl From<OracleSource> for hylo_idl::oracle::types::OracleSource {
-  fn from(val: OracleSource) -> Self {
-    match val {
-      OracleSource::PythLazer => {
-        hylo_idl::oracle::types::OracleSource::PythLazer
-      }
-    }
-  }
-}
-
-#[cfg(feature = "offchain")]
-impl From<hylo_idl::oracle::types::OracleObservationConfig>
-  for OracleObservationConfig
-{
-  fn from(
-    idl: hylo_idl::oracle::types::OracleObservationConfig,
-  ) -> OracleObservationConfig {
-    OracleObservationConfig {
-      index: idl.index,
-      reference_index: idl.reference_index,
-    }
-  }
-}
-
-#[cfg(feature = "offchain")]
-impl From<hylo_idl::oracle::types::PythLazerConfig> for PythLazerConfig {
-  fn from(idl: hylo_idl::oracle::types::PythLazerConfig) -> PythLazerConfig {
-    PythLazerConfig {
-      feed_id: PythLazerFeedId(idl.feed_id.0),
-      observation: idl.observation.into(),
-    }
-  }
-}
-
 impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
   fn from(val: PriceObservation) -> Self {
     hylo_idl::oracle::types::PriceObservation {
@@ -346,15 +302,6 @@ impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
       posted_timestamp_us: val.posted_timestamp_us,
       market_session: val.market_session.into(),
     }
-  }
-}
-
-impl From<PriceAggregateObservations>
-  for [hylo_idl::oracle::types::PriceObservation;
-    MAX_PRICE_AGGREGATE_OBSERVATIONS]
-{
-  fn from(val: PriceAggregateObservations) -> Self {
-    (*val).map(hylo_idl::oracle::types::PriceObservation::from)
   }
 }
 
@@ -389,60 +336,46 @@ impl From<hylo_idl::oracle::types::PriceObservation> for PriceObservation {
   }
 }
 
-impl
-  From<
-    [hylo_idl::oracle::types::PriceObservation;
-      MAX_PRICE_AGGREGATE_OBSERVATIONS],
-  > for PriceAggregateObservations
-{
-  fn from(
-    observations: [hylo_idl::oracle::types::PriceObservation;
-      MAX_PRICE_AGGREGATE_OBSERVATIONS],
-  ) -> PriceAggregateObservations {
-    PriceAggregateObservations::new(observations.map(PriceObservation::from))
+impl From<PythLazerFeedId> for hylo_idl::oracle::types::PythLazerFeedId {
+  fn from(val: PythLazerFeedId) -> Self {
+    hylo_idl::oracle::types::PythLazerFeedId(val.0)
   }
 }
 
-impl From<ExchangeAddressField> for AddressField {
-  fn from(field: ExchangeAddressField) -> AddressField {
-    match field {
-      ExchangeAddressField::Admin => AddressField::Admin,
-      ExchangeAddressField::Treasury => AddressField::Treasury,
-      ExchangeAddressField::PauseAuthority => AddressField::PauseAuthority,
+impl From<hylo_idl::oracle::types::PythLazerFeedId> for PythLazerFeedId {
+  fn from(idl: hylo_idl::oracle::types::PythLazerFeedId) -> PythLazerFeedId {
+    PythLazerFeedId(idl.0)
+  }
+}
+
+impl From<PythLazerSlot> for hylo_idl::oracle::types::PythLazerSlot {
+  fn from(val: PythLazerSlot) -> Self {
+    hylo_idl::oracle::types::PythLazerSlot {
+      feed_id: val.feed_id.into(),
+      observation: val.observation.into(),
     }
   }
 }
 
-impl From<AddressField> for ExchangeAddressField {
-  fn from(field: AddressField) -> ExchangeAddressField {
-    match field {
-      AddressField::Admin => ExchangeAddressField::Admin,
-      AddressField::Treasury => ExchangeAddressField::Treasury,
-      AddressField::PauseAuthority => ExchangeAddressField::PauseAuthority,
+impl From<hylo_idl::oracle::types::PythLazerSlot> for PythLazerSlot {
+  fn from(idl: hylo_idl::oracle::types::PythLazerSlot) -> PythLazerSlot {
+    PythLazerSlot {
+      feed_id: idl.feed_id.into(),
+      observation: idl.observation.into(),
     }
   }
 }
 
-impl From<ExchangeAddressUpdateProposal> for AddressUpdateProposal {
-  fn from(proposal: ExchangeAddressUpdateProposal) -> AddressUpdateProposal {
-    AddressUpdateProposal {
-      address_field: proposal.address_field.into(),
-      new_address: proposal.new_address,
-      proposal_time: proposal.proposal_time,
-      ttl_secs: proposal.ttl_secs,
-      approved: proposal.approved,
-    }
+impl From<PythLazerSlots> for hylo_idl::oracle::types::PythLazerSlots {
+  fn from(val: PythLazerSlots) -> Self {
+    hylo_idl::oracle::types::PythLazerSlots(
+      val.0.map(|slot| slot.map(Into::into)),
+    )
   }
 }
 
-impl From<AddressUpdateProposal> for ExchangeAddressUpdateProposal {
-  fn from(proposal: AddressUpdateProposal) -> ExchangeAddressUpdateProposal {
-    ExchangeAddressUpdateProposal {
-      address_field: proposal.address_field.into(),
-      new_address: proposal.new_address,
-      proposal_time: proposal.proposal_time,
-      ttl_secs: proposal.ttl_secs,
-      approved: proposal.approved,
-    }
+impl From<hylo_idl::oracle::types::PythLazerSlots> for PythLazerSlots {
+  fn from(idl: hylo_idl::oracle::types::PythLazerSlots) -> PythLazerSlots {
+    PythLazerSlots(idl.0.map(|slot| slot.map(Into::into)))
   }
 }

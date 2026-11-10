@@ -9459,7 +9459,72 @@
           "writable": true
         },
         {
-          "name": "exo_usd_price_aggregate"
+          "name": "exo_usd_price_aggregate",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  105,
+                  99,
+                  101,
+                  95,
+                  97,
+                  103,
+                  103,
+                  114,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                252,
+                48,
+                29,
+                77,
+                151,
+                255,
+                108,
+                212,
+                219,
+                165,
+                209,
+                24,
+                89,
+                86,
+                210,
+                48,
+                0,
+                238,
+                230,
+                56,
+                58,
+                183,
+                94,
+                109,
+                85,
+                188,
+                197,
+                13,
+                163,
+                74,
+                210,
+                14
+              ]
+            }
+          }
         },
         {
           "name": "metadata_program",
@@ -9515,15 +9580,6 @@
         }
       ],
       "args": [
-        {
-          "name": "oracle_feed_id",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
         {
           "name": "oracle_interval_secs",
           "type": "u64"
@@ -20576,11 +20632,6 @@
       "code": 6048,
       "name": "VirtualStablecoinExceedsVault",
       "msg": "Virtual stablecoin supply exceeds USDC vault balance."
-    },
-    {
-      "code": 6049,
-      "name": "UnsupportedAddressField",
-      "msg": "Address field is not supported."
     }
   ],
   "types": [
@@ -20610,9 +20661,6 @@
     },
     {
       "name": "AddressField",
-      "docs": [
-        "Address selected for rotation."
-      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -20630,28 +20678,6 @@
     },
     {
       "name": "AddressUpdateProposal",
-      "docs": [
-        "Pending exchange address rotation."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "data",
-            "type": {
-              "defined": {
-                "name": "AddressUpdateProposalData"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AddressUpdateProposalData",
-      "docs": [
-        "Pending address rotation."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -21031,7 +21057,7 @@
             "type": "pubkey"
           },
           {
-            "name": "oracle_feed_id",
+            "name": "_oracle_feed_id",
             "type": {
               "array": [
                 "u8",
@@ -22125,27 +22151,6 @@
       }
     },
     {
-      "name": "OracleObservationConfig",
-      "docs": [
-        "Observation indexes and an optional reference index."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "index",
-            "type": "u8"
-          },
-          {
-            "name": "reference_index",
-            "type": {
-              "option": "u8"
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "OraclePriceEvent",
       "docs": [
         "Serializable oracle price for event emission."
@@ -22219,8 +22224,7 @@
     {
       "name": "PriceAggregate",
       "docs": [
-        "Observations posted for one mint, with fixed observation and source",
-        "capacities."
+        "Latest observation from each feed configured for one mint."
       ],
       "type": {
         "kind": "struct",
@@ -22234,18 +22238,10 @@
             "type": "u8"
           },
           {
-            "name": "observations",
+            "name": "pyth_lazer_slots",
             "type": {
               "defined": {
-                "name": "PriceAggregateObservations"
-              }
-            }
-          },
-          {
-            "name": "pyth_lazer",
-            "type": {
-              "defined": {
-                "name": "PythLazerFeeds"
+                "name": "PythLazerSlots"
               }
             }
           },
@@ -22254,30 +22250,9 @@
             "type": {
               "array": [
                 "u8",
-                64
+                512
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceAggregateObservations",
-      "docs": [
-        "Fixed-size observation slots stored for one price aggregate."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "array": [
-              {
-                "defined": {
-                  "name": "PriceObservation"
-                }
-              },
-              8
-            ]
           }
         ]
       }
@@ -22286,7 +22261,7 @@
       "name": "PriceObservation",
       "docs": [
         "Source observation with a shared price and confidence exponent.",
-        "A zero price marks an unoccupied slot."
+        "A zero price marks a feed that has not posted yet."
       ],
       "type": {
         "kind": "struct",
@@ -22355,9 +22330,21 @@
       }
     },
     {
-      "name": "PythLazerConfig",
+      "name": "PythLazerFeedId",
       "docs": [
-        "Pyth Lazer feed and its observation mapping."
+        "Pyth Lazer feed id (Lazer's numeric identifier)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          "u32"
+        ]
+      }
+    },
+    {
+      "name": "PythLazerSlot",
+      "docs": [
+        "Pyth Lazer feed and the latest observation posted from it."
       ],
       "type": {
         "kind": "struct",
@@ -22374,7 +22361,7 @@
             "name": "observation",
             "type": {
               "defined": {
-                "name": "OracleObservationConfig"
+                "name": "PriceObservation"
               }
             }
           }
@@ -22382,21 +22369,9 @@
       }
     },
     {
-      "name": "PythLazerFeedId",
+      "name": "PythLazerSlots",
       "docs": [
-        "Pyth Lazer feed id (Lazer's numeric identifier)."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          "u32"
-        ]
-      }
-    },
-    {
-      "name": "PythLazerFeeds",
-      "docs": [
-        "Fixed Pyth Lazer feed configuration slots stored for one price aggregate."
+        "Fixed Pyth Lazer slots stored for one price aggregate."
       ],
       "type": {
         "kind": "struct",
@@ -22406,7 +22381,7 @@
               {
                 "option": {
                   "defined": {
-                    "name": "PythLazerConfig"
+                    "name": "PythLazerSlot"
                   }
                 }
               },

@@ -1,7 +1,6 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
 
-pub mod address_update;
 pub mod asset_swap_config;
 pub mod borrow_rate;
 #[cfg(feature = "offchain")]

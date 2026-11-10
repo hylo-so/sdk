@@ -148,9 +148,7 @@ impl ExoPairAccounts {
       pool_drawdown: exo_pair.pool_drawdown.into(),
       borrow_rate_harvest_epoch: exo_pair.borrow_rate_harvest_cache.epoch,
       supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
-      oracle_publish_time: oracle_aggregate
-        .price_observations()
-        .latest_timestamp_secs()?,
+      oracle_publish_time: oracle_aggregate.latest_timestamp_secs()?,
       oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
   }

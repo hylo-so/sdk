@@ -31,15 +31,8 @@ pub fn max_scaled_input<Exp: Integer, RExp: Integer>(
   }
 }
 
-/// Bridges runtime mint decimals to typed `UFix64<N9>`.
-///
-/// # Errors
-/// * Unsupported decimal count or conversion overflow
-pub fn normalize_mint_exp(
-  mint: &Mint,
-  amount: u64,
-) -> Result<UFix64<N9>, CoreError> {
-  match mint.decimals {
+pub(crate) fn normalize_exp(decimals: u8, amount: u64) -> Option<UFix64<N9>> {
+  match decimals {
     2 => UFix64::<N2>::new(amount).checked_convert(),
     3 => UFix64::<N3>::new(amount).checked_convert(),
     4 => UFix64::<N4>::new(amount).checked_convert(),
@@ -51,7 +44,17 @@ pub fn normalize_mint_exp(
     10 => UFix64::<N10>::new(amount).checked_convert(),
     _ => None,
   }
-  .ok_or(ExoAmountNormalization)
+}
+
+/// Bridges runtime mint decimals to typed `UFix64<N9>`.
+///
+/// # Errors
+/// * Unsupported decimal count or conversion overflow
+pub fn normalize_mint_exp(
+  mint: &Mint,
+  amount: u64,
+) -> Result<UFix64<N9>, CoreError> {
+  normalize_exp(mint.decimals, amount).ok_or(ExoAmountNormalization)
 }
 
 /// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
