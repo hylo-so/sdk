@@ -66,17 +66,19 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
   pda::usdc_vault(USDC::MINT),
 ];
 
-/// Entry accounts of each registry entry, `None` until all are in the map.
-fn exo_entry_accounts(
+/// Registry entries whose accounts are all in the map, with those accounts.
+fn exo_entry_accounts<'a>(
   account_map: &AccountMap,
-  entries: &[ExoEntry],
-) -> Result<Vec<Option<ExoEntryAccounts>>> {
+  entries: &'a [ExoEntry],
+) -> Result<Vec<(&'a ExoEntry, ExoEntryAccounts)>> {
   entries
     .iter()
-    .map(|entry| {
+    .filter_map(|entry| {
       let fetched =
         exo_entry_pubkeys(entry).map(|key| account_map.get(&key).cloned());
       ExoEntryAccounts::from_fetched(&fetched)
+        .map(|accounts| accounts.map(|accounts| (entry, accounts)))
+        .transpose()
     })
     .collect()
 }
@@ -125,12 +127,11 @@ pub struct HyloJupiter {
 
 impl HyloJupiter {
   /// Decodes the enshrined accounts and builds the protocol state with
-  /// the pairs of `entries`.
+  /// the pairs of `entry_accounts`.
   fn build_state(
     &self,
     account_map: &AccountMap,
-    entries: &[ExoEntry],
-    entry_accounts: Vec<Option<ExoEntryAccounts>>,
+    entry_accounts: Vec<(&ExoEntry, ExoEntryAccounts)>,
   ) -> Result<ProtocolState<ClockRef>> {
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
@@ -174,7 +175,7 @@ impl HyloJupiter {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      self.exo_pairs(account_map, entries, entry_accounts)?,
+      self.exo_pairs(account_map, entry_accounts)?,
       usdc_pair_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -183,21 +184,18 @@ impl HyloJupiter {
     )
   }
 
-  /// Loads the pair state of each entry whose accounts are all in the map.
+  /// Loads the pair state of each entry whose oracle is in the map.
   ///
-  /// A pair is left out until its oracle has been fetched, which is only
-  /// known once the pair account itself has been.
+  /// The oracle is only known once the pair account has been fetched, so a
+  /// pair is left out for one refresh after its entry appears.
   fn exo_pairs(
     &self,
     account_map: &AccountMap,
-    entries: &[ExoEntry],
-    entry_accounts: Vec<Option<ExoEntryAccounts>>,
+    entry_accounts: Vec<(&ExoEntry, ExoEntryAccounts)>,
   ) -> Result<HashMap<Pubkey, ExoPairState<ClockRef>>> {
-    entries
-      .iter()
-      .zip(entry_accounts)
+    entry_accounts
+      .into_iter()
       .filter_map(|(entry, accounts)| {
-        let accounts = accounts?;
         let oracle = account_map.get(&accounts.oracle())?.clone();
         let pair = accounts
           .with_oracle(oracle)
@@ -319,14 +317,9 @@ impl Amm for HyloJupiter {
     let entry_accounts = exo_entry_accounts(account_map, &entries)?;
     self.exo_account_keys = exo_pubkeys_from_entries(&entries)
       .into_iter()
-      .chain(
-        entry_accounts
-          .iter()
-          .flatten()
-          .map(ExoEntryAccounts::oracle),
-      )
+      .chain(entry_accounts.iter().map(|(_, accounts)| accounts.oracle()))
       .collect();
-    self.state = self.build_state(account_map, &entries, entry_accounts).ok();
+    self.state = self.build_state(account_map, entry_accounts).ok();
     self.exo_entries = entries;
     Ok(())
   }
