@@ -18,8 +18,8 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::{
-  build_lst_exchange_context, exo_pubkeys_from_entries, read_exo_entries,
-  ExoEntryAccounts, ExoPairAccounts, ExoPairState, ProtocolAccounts,
+  build_lst_exchange_context, exo_pair_oracle, exo_pubkeys_from_entries,
+  read_exo_entries, ExoPairAccounts, ExoPairState, ProtocolAccounts,
   ProtocolState, EXO_PAIR_ACCOUNTS,
 };
 
@@ -90,13 +90,11 @@ impl RpcStateProvider {
       .get_multiple_accounts(&pubkeys)
       .await
       .context("Failed to fetch exo accounts from RPC")?;
-    let (clock, pair_accounts) =
-      data.split_last().context("Missing exo account")?;
-    let (oracle, entry_accounts) =
-      pair_accounts.split_last().context("Missing exo account")?;
-    let raw = ExoEntryAccounts::from_fetched(entry_accounts)?
-      .context("Missing exo account")?
-      .with_oracle(oracle.clone().context("Missing exo oracle")?);
+    let [entry_accounts @ .., oracle, clock]: [Option<Account>;
+      EXO_PAIR_ACCOUNTS + 2] = data
+      .try_into()
+      .map_err(|_| anyhow!("Missing exo account"))?;
+    let raw = ExoPairAccounts::from_fetched(&entry_accounts, oracle)?;
     let clock = clock.as_ref().context("Missing clock account")?;
     raw.pair_state(&E::EXO_ENTRY, decode_clock(clock)?)
   }
@@ -162,13 +160,16 @@ impl RpcStateProvider {
     let entry_accounts = exo_data
       .chunks(EXO_PAIR_ACCOUNTS)
       .map(|chunk| {
-        ExoEntryAccounts::from_fetched(chunk)?.context("Missing exo account")
+        <&[Option<Account>; EXO_PAIR_ACCOUNTS]>::try_from(chunk)
+          .map_err(|_| anyhow!("Exo pair accounts missing"))
       })
       .collect::<Result<Vec<_>>>()?;
     let oracle_keys = entry_accounts
       .iter()
-      .map(ExoEntryAccounts::oracle)
-      .collect::<Vec<_>>();
+      .map(|[exo_pair, ..]| {
+        exo_pair_oracle(exo_pair.as_ref().context("Missing exo pair")?)
+      })
+      .collect::<Result<Vec<_>>>()?;
     let oracles = self
       .rpc_client
       .get_multiple_accounts(&oracle_keys)
@@ -177,9 +178,7 @@ impl RpcStateProvider {
     entry_accounts
       .into_iter()
       .zip(oracles)
-      .map(|(entry, oracle)| {
-        Ok(entry.with_oracle(oracle.context("Missing exo oracle")?))
-      })
+      .map(|(accounts, oracle)| ExoPairAccounts::from_fetched(accounts, oracle))
       .collect()
   }
 }

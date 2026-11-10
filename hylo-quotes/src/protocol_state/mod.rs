@@ -6,7 +6,7 @@ mod state;
 
 pub use accounts::ProtocolAccounts;
 pub use exo_pair::{
-  ExoEntryAccounts, ExoPairAccounts, ExoPairState, EXO_PAIR_ACCOUNTS,
+  exo_pair_oracle, ExoPairAccounts, ExoPairState, EXO_PAIR_ACCOUNTS,
 };
 pub use exo_registry::{
   exo_entry_pubkeys, exo_entry_role, exo_pubkeys_from_entries, find_exo_entry,

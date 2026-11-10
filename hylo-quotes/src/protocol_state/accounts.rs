@@ -103,8 +103,7 @@ pub struct ProtocolAccounts {
   /// Canonical router-owned exo registry
   pub exo_registry: Account,
 
-  /// Raw accounts per registry entry, absent from snapshots
-  #[serde(skip)]
+  /// Raw accounts per registry entry
   pub exo_accounts: Vec<ExoPairAccounts>,
 }
 

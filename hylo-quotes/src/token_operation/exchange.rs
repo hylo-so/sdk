@@ -2095,9 +2095,9 @@ macro_rules! enshrined_routes {
       /// # Errors
       /// * [`CoreError::UnroutablePair`] when no route joins the mints
       /// * Route gated in current state or protocol arithmetic
-      pub fn runtime_quote(
+      pub fn runtime_quote<'a>(
         &self,
-        entries: &[ExoEntry],
+        entries: impl IntoIterator<Item = &'a ExoEntry>,
         input_mint: Pubkey,
         output_mint: Pubkey,
         amount: u64,

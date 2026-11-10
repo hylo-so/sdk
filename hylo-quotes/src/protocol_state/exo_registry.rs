@@ -32,13 +32,13 @@ pub fn read_exo_entries(data: &[u8]) -> Result<Vec<ExoEntry>> {
 
 /// Entry whose collateral or levercoin is `mint_a` or `mint_b`.
 #[must_use]
-pub fn find_exo_entry(
-  entries: &[ExoEntry],
+pub fn find_exo_entry<'a>(
+  entries: impl IntoIterator<Item = &'a ExoEntry>,
   mint_a: Pubkey,
   mint_b: Pubkey,
-) -> Option<&ExoEntry> {
+) -> Option<&'a ExoEntry> {
   let mints = [mint_a, mint_b];
-  entries.iter().find(|entry| {
+  entries.into_iter().find(|entry| {
     mints.contains(&entry.collateral_mint)
       || mints.contains(&entry.levercoin_mint)
   })

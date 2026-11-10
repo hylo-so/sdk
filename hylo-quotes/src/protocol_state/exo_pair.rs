@@ -3,7 +3,7 @@
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
-use anyhow::{ensure, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExoExchangeContext;
 use hylo_core::fees::controller::LevercoinFees;
@@ -16,28 +16,30 @@ use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
 use hylo_idl::pda;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
-/// Accounts derivable from a registry entry, the [`ExoEntryAccounts`]
-/// field count.
+/// Accounts derivable from a registry entry, fetched before the oracle.
 pub const EXO_PAIR_ACCOUNTS: usize = 4;
 
-/// Accounts derivable from one registry entry, in fetch order, with the
-/// pair decoded.
-#[derive(Debug, Clone)]
-pub struct ExoEntryAccounts {
-  pub exo_pair: ExoPair,
+/// Oracle pubkey recorded in a fetched exo pair account.
+///
+/// # Errors
+/// * Account deserialization
+pub fn exo_pair_oracle(exo_pair: &Account) -> Result<Pubkey> {
+  decode::<ExoPair>(exo_pair, "Exo pair").map(|pair| pair.oracle)
+}
+
+/// Raw accounts for one registry entry, in fetch order, plus the oracle
+/// the pair names.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExoPairAccounts {
+  pub exo_pair: Account,
   pub vault: Account,
   pub levercoin_mint: Account,
   pub collateral_mint: Account,
-}
-
-/// Entry accounts plus the oracle the pair names.
-#[derive(Debug, Clone)]
-pub struct ExoPairAccounts {
-  pub entry: ExoEntryAccounts,
   pub oracle: Account,
 }
 
@@ -86,45 +88,31 @@ fn validate_entry(entry: &ExoEntry, exo_pair: &ExoPair) -> Result<()> {
   Ok(())
 }
 
-impl ExoEntryAccounts {
-  /// Builds from [`EXO_PAIR_ACCOUNTS`] fetched accounts in field order, or
-  /// `None` unless every account is present.
+impl ExoPairAccounts {
+  /// Builds from [`EXO_PAIR_ACCOUNTS`] fetched accounts in field order and
+  /// the fetched oracle.
   ///
   /// # Errors
-  /// * Pair deserialization
+  /// * Any account missing
   pub fn from_fetched(
-    accounts: &[Option<Account>],
-  ) -> Result<Option<ExoEntryAccounts>> {
-    match accounts {
-      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint)] => {
-        Ok(Some(ExoEntryAccounts {
-          exo_pair: decode(exo_pair, "Exo pair")?,
-          vault: vault.clone(),
-          levercoin_mint: levercoin_mint.clone(),
-          collateral_mint: collateral_mint.clone(),
-        }))
-      }
-      _ => Ok(None),
+    accounts: &[Option<Account>; EXO_PAIR_ACCOUNTS],
+    oracle: Option<Account>,
+  ) -> Result<ExoPairAccounts> {
+    match (accounts, oracle) {
+      (
+        [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint)],
+        Some(oracle),
+      ) => Ok(ExoPairAccounts {
+        exo_pair: exo_pair.clone(),
+        vault: vault.clone(),
+        levercoin_mint: levercoin_mint.clone(),
+        collateral_mint: collateral_mint.clone(),
+        oracle,
+      }),
+      _ => Err(anyhow!("Exo pair accounts missing")),
     }
   }
 
-  /// Oracle pubkey the pair names.
-  #[must_use]
-  pub fn oracle(&self) -> Pubkey {
-    self.exo_pair.oracle
-  }
-
-  /// Attaches the fetched oracle account.
-  #[must_use]
-  pub fn with_oracle(self, oracle: Account) -> ExoPairAccounts {
-    ExoPairAccounts {
-      entry: self,
-      oracle,
-    }
-  }
-}
-
-impl ExoPairAccounts {
   /// Decodes the accounts, checks them against the registry entry, and
   /// loads the pair state under `clock`.
   ///
@@ -139,16 +127,16 @@ impl ExoPairAccounts {
     entry: &ExoEntry,
     clock: C,
   ) -> Result<ExoPairState<C>> {
-    let exo_pair = &self.entry.exo_pair;
-    validate_entry(entry, exo_pair)?;
-    let vault: TokenAccount = decode(&self.entry.vault, "Exo vault")?;
+    let exo_pair: ExoPair = decode(&self.exo_pair, "Exo pair")?;
+    validate_entry(entry, &exo_pair)?;
+    let vault: TokenAccount = decode(&self.vault, "Exo vault")?;
     let levercoin_mint: Mint =
-      decode(&self.entry.levercoin_mint, "Exo levercoin mint")?;
+      decode(&self.levercoin_mint, "Exo levercoin mint")?;
     let collateral_mint: Mint =
-      decode(&self.entry.collateral_mint, "Exo collateral mint")?;
+      decode(&self.collateral_mint, "Exo collateral mint")?;
     let oracle: PriceUpdateV2 =
       decode(&self.oracle, "Exo collateral/USD Pyth feed")?;
-    validate_exo_pair_oracle(exo_pair, &oracle)?;
+    validate_exo_pair_oracle(&exo_pair, &oracle)?;
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
