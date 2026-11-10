@@ -50,10 +50,8 @@ pub enum ExtensionPolicy {
 #[must_use]
 pub const fn mint_extension_class(ext: ExtensionType) -> ExtensionPolicy {
   match ext {
-    TransferHook | Pausable => ExtensionPolicy::Guard,
-    TransferFeeConfig | ScaledUiAmount | InterestBearingConfig => {
-      ExtensionPolicy::Adjust
-    }
+    TransferFeeConfig | TransferHook | Pausable => ExtensionPolicy::Guard,
+    ScaledUiAmount | InterestBearingConfig => ExtensionPolicy::Adjust,
     PermanentDelegate | DefaultAccountState => ExtensionPolicy::Policy,
     MintCloseAuthority
     | ConfidentialTransferMint
@@ -131,6 +129,14 @@ fn validate_extension_configuration(
   ext: ExtensionType,
 ) -> Result<(), CoreError> {
   match ext {
+    TransferFeeConfig => {
+      let config = mint.get_extension::<TransferFeeConfigExtension>()?;
+      if u16::from(config.newer_transfer_fee.transfer_fee_basis_points) > 0 {
+        Err(MintExtensionDisallowedConfig)
+      } else {
+        Ok(())
+      }
+    }
     TransferHook => {
       let hook = mint.get_extension::<TransferHookConfig>()?;
       // check if hook program ID is not set
@@ -346,11 +352,18 @@ mod tests {
   }
 
   #[test]
-  fn nonzero_transfer_fee_is_valid() {
-    let data = mint_with!(TransferFeeConfigExtension, |config| {
-      config.newer_transfer_fee.transfer_fee_basis_points = 100.into();
+  fn nonzero_newer_transfer_fee_is_rejected() {
+    [1_u16, 10_000].into_iter().for_each(|basis_points| {
+      let data = mint_with!(TransferFeeConfigExtension, |config| {
+        config.newer_transfer_fee.transfer_fee_basis_points =
+          basis_points.into();
+        config.newer_transfer_fee.epoch = u64::MAX.into();
+      });
+      assert_eq!(
+        validate_collateral_mint_extensions(&data),
+        Err(MintExtensionDisallowedConfig)
+      );
     });
-    assert_eq!(validate_collateral_mint_extensions(&data), Ok(()));
   }
 
   #[test]
@@ -521,7 +534,7 @@ mod tests {
     assert_eq!(mint_extension_class(MemoTransfer), ExtensionPolicy::Reject);
     assert_eq!(
       mint_extension_class(TransferFeeConfig),
-      ExtensionPolicy::Adjust
+      ExtensionPolicy::Guard
     );
     assert_eq!(
       mint_extension_class(InterestBearingConfig),
