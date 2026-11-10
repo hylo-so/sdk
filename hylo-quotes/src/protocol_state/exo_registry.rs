@@ -15,7 +15,7 @@ use hylo_idl::{pda, with_exo_pairs};
 
 use crate::protocol_state::exo_pair::{exo_pair_oracle, EXO_PAIR_ACCOUNTS};
 
-pub(crate) const EXO_ENTRY_ACCOUNTS: usize = 4;
+pub(crate) const EXO_ENTRY_PUBKEYS_LEN: usize = 4;
 
 macro_rules! exo_pyth_feed_dispatch {
   ($(($exo:ident, $lever:ident, $exp:ty)),+ $(,)?) => {
@@ -92,7 +92,7 @@ pub fn exo_entry_role(
 
 /// Derives the account pubkeys of one registry entry.
 #[must_use]
-pub fn exo_entry_pubkeys(entry: &ExoEntry) -> [Pubkey; EXO_ENTRY_ACCOUNTS] {
+pub fn exo_entry_pubkeys(entry: &ExoEntry) -> [Pubkey; EXO_ENTRY_PUBKEYS_LEN] {
   [
     pda::exo_pair(entry.collateral_mint),
     pda::exo_vault(entry.collateral_mint),

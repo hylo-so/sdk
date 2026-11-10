@@ -19,7 +19,7 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 use crate::protocol_state::accounts::{decode, decode_clock};
 use crate::protocol_state::exo_pair::exo_pair_oracle;
-use crate::protocol_state::exo_registry::EXO_ENTRY_ACCOUNTS;
+use crate::protocol_state::exo_registry::EXO_ENTRY_PUBKEYS_LEN;
 use crate::protocol_state::{
   build_lst_exchange_context, exo_entry_pubkeys, read_exo_entries,
   ExoPairAccounts, ExoPairState, ProtocolAccounts, ProtocolState,
@@ -104,7 +104,7 @@ impl RpcStateProvider {
     exo_data: &[Option<Account>],
   ) -> Result<Vec<Option<Account>>> {
     let oracle_keys = exo_data
-      .chunks(EXO_ENTRY_ACCOUNTS)
+      .chunks(EXO_ENTRY_PUBKEYS_LEN)
       .map(|entry_accounts| {
         entry_accounts
           .first()
@@ -167,7 +167,7 @@ impl StateProvider<Clock> for RpcStateProvider {
       .context("Missing protocol accounts")?;
     let oracles = self.fetch_exo_oracles(exo_data).await?;
     let exo_accounts = exo_data
-      .chunks(EXO_ENTRY_ACCOUNTS)
+      .chunks(EXO_ENTRY_PUBKEYS_LEN)
       .zip(oracles)
       .flat_map(|(entry_accounts, oracle)| {
         entry_accounts.iter().cloned().chain(once(oracle))
