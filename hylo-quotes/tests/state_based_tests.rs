@@ -35,7 +35,7 @@ pub async fn dump_protocol_accounts() -> Result<()> {
     "tests/data/protocol-state-{}-{}.json",
     epoch.epoch, epoch.slot_index
   );
-  let protocol_accounts = ProtocolAccounts::from_fetched(&accounts, vec![])?;
+  let protocol_accounts = ProtocolAccounts::from_fetched(&accounts)?;
   let file = File::create_new(filename)?;
   to_writer(file, &protocol_accounts)?;
   Ok(())

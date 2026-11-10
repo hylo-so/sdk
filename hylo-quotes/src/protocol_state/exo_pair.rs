@@ -21,19 +21,15 @@ use serde::{Deserialize, Serialize};
 use crate::protocol_state::accounts::decode;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
-/// Accounts derivable from a registry entry, fetched before the oracle.
-pub const EXO_PAIR_ACCOUNTS: usize = 4;
+/// Field count of [`ExoPairAccounts`].
+pub const EXO_PAIR_ACCOUNTS: usize = 5;
 
-/// Oracle pubkey recorded in a fetched exo pair account.
-///
-/// # Errors
-/// * Account deserialization
-pub fn exo_pair_oracle(exo_pair: &Account) -> Result<Pubkey> {
+/// Reads the oracle pubkey from an exo pair account.
+pub(crate) fn exo_pair_oracle(exo_pair: &Account) -> Result<Pubkey> {
   decode::<ExoPair>(exo_pair, "Exo pair").map(|pair| pair.oracle)
 }
 
-/// Raw accounts for one registry entry, in fetch order, plus the oracle
-/// the pair names.
+/// Raw accounts for one exo pair.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExoPairAccounts {
   pub exo_pair: Account,
@@ -47,7 +43,6 @@ pub struct ExoPairAccounts {
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
   pub collateral_mint: Pubkey,
-  pub oracle: Pubkey,
   pub context: ExoExchangeContext<C>,
   pub paused: bool,
   pub pool_drawdown: PoolDrawdown,
@@ -89,26 +84,21 @@ fn validate_entry(entry: &ExoEntry, exo_pair: &ExoPair) -> Result<()> {
 }
 
 impl ExoPairAccounts {
-  /// Builds from [`EXO_PAIR_ACCOUNTS`] fetched accounts in field order and
-  /// the fetched oracle.
+  /// Builds from five fetched accounts in field order.
   ///
   /// # Errors
-  /// * Any account missing
-  pub fn from_fetched(
-    accounts: &[Option<Account>; EXO_PAIR_ACCOUNTS],
-    oracle: Option<Account>,
-  ) -> Result<ExoPairAccounts> {
-    match (accounts, oracle) {
-      (
-        [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint)],
-        Some(oracle),
-      ) => Ok(ExoPairAccounts {
-        exo_pair: exo_pair.clone(),
-        vault: vault.clone(),
-        levercoin_mint: levercoin_mint.clone(),
-        collateral_mint: collateral_mint.clone(),
-        oracle,
-      }),
+  /// * Wrong count or any account missing
+  pub fn from_fetched(accounts: &[Option<Account>]) -> Result<ExoPairAccounts> {
+    match accounts {
+      [Some(exo_pair), Some(vault), Some(levercoin_mint), Some(collateral_mint), Some(oracle)] => {
+        Ok(ExoPairAccounts {
+          exo_pair: exo_pair.clone(),
+          vault: vault.clone(),
+          levercoin_mint: levercoin_mint.clone(),
+          collateral_mint: collateral_mint.clone(),
+          oracle: oracle.clone(),
+        })
+      }
       _ => Err(anyhow!("Exo pair accounts missing")),
     }
   }
@@ -161,7 +151,6 @@ impl ExoPairAccounts {
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
       collateral_mint: exo_pair.collateral_mint,
-      oracle: exo_pair.oracle,
       context,
       paused: exo_pair.paused,
       pool_drawdown: exo_pair.pool_drawdown.into(),
