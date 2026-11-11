@@ -14,7 +14,7 @@ use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::util::{denormalize_mint_exp, normalize_mint_exp};
+use hylo_core::util::{denormalize_mint_amount, normalize_mint_exp};
 use hylo_core::virtual_stablecoin::{validate_burn, VirtualStablecoin};
 use hylo_idl::pda;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -241,11 +241,7 @@ impl<C: SolanaClock> ExoPairState<C> {
     &self,
     collateral: UFix64<N9>,
   ) -> Result<UFixValue64, CoreError> {
-    let bits = denormalize_mint_exp(&self.collateral_mint_info, collateral)
-      .map_err(|_| CoreError::TokenAmountPrecision)?;
-    let decimals = i8::try_from(self.collateral_mint_info.decimals)
-      .map_err(|_| CoreError::TokenAmountPrecision)?;
-    Ok(UFixValue64::new(bits, -decimals))
+    denormalize_mint_amount(&self.collateral_mint_info, collateral)
   }
 
   /// Quotes redemption with strict fees without checking pause or freshness.
@@ -405,13 +401,13 @@ mod tests {
       mint_with_decimals(&pair.collateral_mint_info, 10)?;
     assert_eq!(
       pair.collateral_amount(UFix64::new(u64::MAX)),
-      Err(CoreError::TokenAmountPrecision),
+      Err(CoreError::ExoAmountNormalization),
     );
     pair.collateral_mint_info =
       mint_with_decimals(&pair.collateral_mint_info, 11)?;
     assert_eq!(
       pair.collateral_amount(UFix64::one()),
-      Err(CoreError::TokenAmountPrecision),
+      Err(CoreError::ExoAmountNormalization),
     );
     Ok(())
   }

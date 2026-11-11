@@ -196,8 +196,7 @@ fn lane_usd_out_is_amount_times_lower_price() -> Result<()> {
 
   let jitosol = lane(&rate, JITOSOL::MINT)?;
   let jitosol_price: LstSolPrice = state.jitosol_header.price_sol.into();
-  let jitosol_usd = jitosol
-    .amount_out
+  let jitosol_usd = UFix64::<N9>::try_from(jitosol.amount_out)?
     .mul_floor(
       jitosol_price.get_epoch_price(state.exchange_context.clock.epoch())?,
     )
@@ -211,9 +210,9 @@ fn lane_usd_out_is_amount_times_lower_price() -> Result<()> {
     .context
     .collateral_usd_price
     .lower;
-  let cbbtc_usd = cbbtc
-    .amount_out
-    .mul_floor(cbbtc_lower)
+  let cbbtc_usd = UFix64::<N8>::try_from(cbbtc.amount_out)?
+    .checked_convert::<N9>()
+    .and_then(|amount| amount.mul_floor(cbbtc_lower))
     .ok_or_else(|| anyhow!("cbbtc usd_out overflows"))?;
   assert_eq!(cbbtc.usd_out, cbbtc_usd);
   Ok(())
@@ -229,10 +228,13 @@ fn in_domain_lane_equals_strict_quote() -> Result<()> {
     TokenOperation::<HYUSD, JITOSOL>::compute_output(&state, REFERENCE)?;
   let cbbtc =
     TokenOperation::<HYUSD, CBBTC>::compute_output(&state, REFERENCE)?;
-  assert_eq!(lane(&rate, JITOSOL::MINT)?.amount_out, jitosol.out_amount);
   assert_eq!(
-    Some(lane(&rate, CBBTC::MINT)?.amount_out),
-    cbbtc.out_amount.checked_convert::<N9>()
+    lane(&rate, JITOSOL::MINT)?.amount_out,
+    jitosol.out_amount.into()
+  );
+  assert_eq!(
+    lane(&rate, CBBTC::MINT)?.amount_out,
+    cbbtc.out_amount.into()
   );
   assert_eq!(lane(&rate, JITOSOL::MINT)?.execution, Ok(()));
   assert_eq!(lane(&rate, CBBTC::MINT)?.execution, Ok(()));
@@ -510,9 +512,9 @@ fn usdc_lane_prices_at_spot_capped_at_par() -> Result<()> {
   let below_par =
     RedemptionRate::new(&with_spot(UFix64::new(970_000_000))?, REFERENCE)?;
   let below_lane = lane(&below_par, USDC::MINT)?;
-  let expected = below_lane
-    .amount_out
-    .mul_floor(UFix64::new(970_000_000))
+  let expected = UFix64::<N6>::try_from(below_lane.amount_out)?
+    .checked_convert::<N9>()
+    .and_then(|usdc| usdc.mul_floor(UFix64::new(970_000_000)))
     .ok_or_else(|| anyhow!("usdc usd_out overflows"))?;
   assert_eq!(below_lane.usd_out, expected);
   assert_eq!(below_lane.execution, Err(CoreError::ParToleranceExceeded));

@@ -44,8 +44,8 @@ pub struct RedemptionLane {
   pub mint: Pubkey,
   /// Outcome of the strict quote at the reference amount.
   pub execution: Result<(), CoreError>,
-  /// Net collateral out, rounded to mint precision and normalized.
-  pub amount_out: UFix64<N9>,
+  /// Net collateral out in the lane token's decimals.
+  pub amount_out: UFixValue64,
   /// USD value of `amount_out` at the lower oracle bound.
   pub usd_out: UFix64<N9>,
   /// USD per hyUSD through this lane.
@@ -58,7 +58,7 @@ impl RedemptionLane {
   fn new(
     mint: Pubkey,
     execution: Result<(), CoreError>,
-    amount_out: UFix64<N9>,
+    amount_out: UFixValue64,
     usd_out: UFix64<N9>,
     reference_hyusd: UFix64<N6>,
     shyusd_hyusd_rate: UFix64<N6>,
@@ -204,7 +204,7 @@ where
   RedemptionLane::new(
     L::MINT,
     execution,
-    amount_out,
+    amount_out.into(),
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
@@ -246,7 +246,7 @@ fn exo_lane<C: SolanaClock>(
   RedemptionLane::new(
     pair.collateral_mint,
     execution,
-    rounded_collateral,
+    amount_out,
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
@@ -263,12 +263,11 @@ fn usdc_lane<C: SolanaClock>(
     state,
     reference_hyusd,
   )?
-  .out_amount
-  .checked_convert::<N9>()
-  .ok_or(CoreError::RedemptionRateOverflow)?;
+  .out_amount;
   let spot = state.usdc_pair.usdc_usd_spot?.min(UFix64::one());
   let usd_out = amount_out
-    .mul_floor(spot)
+    .checked_convert::<N9>()
+    .and_then(|usdc| usdc.mul_floor(spot))
     .ok_or(CoreError::RedemptionRateOverflow)?;
   let execution =
     TokenOperation::<HYUSD, USDC>::compute_output(state, reference_hyusd)
@@ -276,7 +275,7 @@ fn usdc_lane<C: SolanaClock>(
   RedemptionLane::new(
     USDC::MINT,
     execution,
-    amount_out,
+    amount_out.into(),
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,

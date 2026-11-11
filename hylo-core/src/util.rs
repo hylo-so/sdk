@@ -78,6 +78,29 @@ pub fn denormalize_mint_exp(
   .ok_or(ExoAmountNormalization)
 }
 
+/// Converts typed `UFix64<N9>` to the mint's native decimals.
+///
+/// # Errors
+/// * Unsupported decimal count or conversion overflow
+pub fn denormalize_mint_amount(
+  mint: &Mint,
+  amount: UFix64<N9>,
+) -> Result<UFixValue64, CoreError> {
+  match mint.decimals {
+    2 => amount.checked_convert::<N2>().map(UFixValue64::from),
+    3 => amount.checked_convert::<N3>().map(UFixValue64::from),
+    4 => amount.checked_convert::<N4>().map(UFixValue64::from),
+    5 => amount.checked_convert::<N5>().map(UFixValue64::from),
+    6 => amount.checked_convert::<N6>().map(UFixValue64::from),
+    7 => amount.checked_convert::<N7>().map(UFixValue64::from),
+    8 => amount.checked_convert::<N8>().map(UFixValue64::from),
+    9 => Some(amount.into()),
+    10 => amount.checked_convert::<N10>().map(UFixValue64::from),
+    _ => None,
+  }
+  .ok_or(ExoAmountNormalization)
+}
+
 /// Converts typed `UFix64<N9>` back to a raw `u64` in the mint's native
 /// decimals, rounding up.
 ///
