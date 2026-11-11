@@ -194,26 +194,6 @@ impl<C: SolanaClock> ExoPairState<C> {
     })
   }
 
-  /// Checks pause, harvest, and oracle freshness for redemption.
-  ///
-  /// # Errors
-  /// * Protocol or pair paused, harvest overdue, or oracle stale
-  pub(crate) fn redemption_preconditions(
-    &self,
-    protocol_paused: bool,
-  ) -> Result<(), CoreError> {
-    gate(!protocol_paused, CoreError::ProtocolPaused)?;
-    gate(!self.paused, CoreError::PairPaused)?;
-    gate(
-      self.borrow_rate_harvest_epoch == self.context.clock.epoch(),
-      CoreError::BorrowRateHarvestNotRun,
-    )?;
-    gate(
-      self.collateral_usd_in_stablecoin_oracle_window(),
-      CoreError::PythOracleOutdated,
-    )
-  }
-
   /// Computes collateral owed before fees within the vault balance.
   ///
   /// # Errors
@@ -465,35 +445,6 @@ mod tests {
     })?;
     pair.supply_floor = pair.context.virtual_stablecoin_supply()?;
     assert!(pair.redemption_quote(in_amount).is_err());
-    Ok(())
-  }
-
-  #[test]
-  fn redemption_preconditions_preserve_gate_order() -> Result<()> {
-    let mut pair = pair()?;
-    pair.paused = true;
-    pair.borrow_rate_harvest_epoch = pair.context.clock.epoch + 1;
-    pair.oracle_publish_time = 0;
-    assert_eq!(
-      pair.redemption_preconditions(true),
-      Err(CoreError::ProtocolPaused)
-    );
-    assert_eq!(
-      pair.redemption_preconditions(false),
-      Err(CoreError::PairPaused)
-    );
-    pair.paused = false;
-    assert_eq!(
-      pair.redemption_preconditions(false),
-      Err(CoreError::BorrowRateHarvestNotRun)
-    );
-    pair.borrow_rate_harvest_epoch = pair.context.clock.epoch;
-    assert_eq!(
-      pair.redemption_preconditions(false),
-      Err(CoreError::PythOracleOutdated)
-    );
-    pair.oracle_publish_time = pair.context.clock.unix_timestamp;
-    assert_eq!(pair.redemption_preconditions(false), Ok(()));
     Ok(())
   }
 }

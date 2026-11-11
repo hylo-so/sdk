@@ -239,8 +239,14 @@ fn exo_lane<C: SolanaClock>(
     .context
     .exo_conversion()
     .exo_to_usd(rounded_collateral)?;
-  let execution = pair
-    .redemption_preconditions(state.protocol_paused)
+  let execution = state
+    .exo_pair_gates(pair)
+    .and_then(|()| {
+      gate(
+        pair.collateral_usd_in_stablecoin_oracle_window(),
+        CoreError::PythOracleOutdated,
+      )
+    })
     .and_then(|()| pair.redemption_quote(reference_hyusd))
     .map(|_| ());
   RedemptionLane::new(

@@ -24,7 +24,9 @@ use hylo_idl::tokens::{
 };
 use hylo_idl::with_exo_pairs;
 
-use crate::protocol_state::{exo_entry_role, find_exo_entry, ProtocolState};
+use crate::protocol_state::{
+  exo_entry_role, find_exo_entry, ExoPairState, ProtocolState,
+};
 use crate::token_operation::{
   atom_rate, gate, past_zero, FeeBase, LstSwapOperationOutput,
   MintOperationOutput, OperationOutput, RedeemOperationOutput,
@@ -69,9 +71,14 @@ impl<C: SolanaClock> ProtocolState<C> {
     )
   }
 
-  /// Pause, harvest, and oracle-binding gates for an exo pair's routes.
-  fn exo_pair_gates<E: Exo>(&self) -> Result<(), CoreError> {
-    let pair = self.exo_pair::<E>()?;
+  /// Checks protocol pause, pair pause, and borrow harvest in order.
+  ///
+  /// # Errors
+  /// * Protocol or pair paused, or borrow harvest overdue
+  pub(crate) fn exo_pair_gates(
+    &self,
+    pair: &ExoPairState<C>,
+  ) -> Result<(), CoreError> {
     gate(!self.protocol_paused, CoreError::ProtocolPaused)?;
     gate(!pair.paused, CoreError::PairPaused)?;
     gate(
@@ -765,8 +772,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn mint_stablecoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
     gate(
       pair.collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
@@ -849,9 +856,12 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn redeem_stablecoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self
-      .exo_pair::<E>()?
-      .redemption_preconditions(self.protocol_paused)
+    let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
+    gate(
+      pair.collateral_usd_in_stablecoin_oracle_window(),
+      CoreError::PythOracleOutdated,
+    )
   }
 
   /// Collateral owed for `in_amount` hyUSD, checked against the pair's
@@ -923,8 +933,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn mint_levercoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.levercoin_mint_enabled(),
@@ -1006,8 +1016,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn redeem_levercoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.rebalance_mode() != RebalanceMode::Depeg,
@@ -1086,8 +1096,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn convert_stable_to_lever_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.stable_to_lever_conversion_enabled(),
@@ -1161,8 +1171,8 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn convert_lever_to_stable_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
     gate(pair.pool_drawdown.is_repaid(), CoreError::DrawdownNotRepaid)?;
     gate(
       pair.context.lever_to_stable_conversion_enabled(),
@@ -1522,9 +1532,9 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn swap_exo_to_usdc_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
-    self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
+    self.usdc_pair_gates()?;
     gate(
       pair.collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
@@ -1621,9 +1631,9 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn swap_usdc_to_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
-    self.usdc_pair_gates()?;
     let pair = self.exo_pair::<E>()?;
+    self.exo_pair_gates(pair)?;
+    self.usdc_pair_gates()?;
     gate(
       pair.collateral_usd_in_stablecoin_oracle_window(),
       CoreError::PythOracleOutdated,
