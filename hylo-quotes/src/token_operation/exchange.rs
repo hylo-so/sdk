@@ -849,13 +849,9 @@ impl<C: SolanaClock> ProtocolState<C> {
   fn redeem_stablecoin_exo_preconditions<E: Exo + PythOracle>(
     &self,
   ) -> Result<(), CoreError> {
-    self.exo_pair_gates::<E>()?;
-    gate(
-      self
-        .exo_pair::<E>()?
-        .collateral_usd_in_stablecoin_oracle_window(),
-      CoreError::PythOracleOutdated,
-    )
+    self
+      .exo_pair::<E>()?
+      .redemption_preconditions(self.protocol_paused)
   }
 
   /// Collateral owed for `in_amount` hyUSD, checked against the pair's
@@ -864,17 +860,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     &self,
     in_amount: UFix64<N6>,
   ) -> Result<UFix64<N9>, CoreError> {
-    let pair = self.exo_pair::<E>()?;
-    let stablecoin_nav = pair.context.stablecoin_nav()?;
-    let collateral_out = pair
-      .context
-      .exo_conversion()
-      .token_to_exo(in_amount, stablecoin_nav)?;
-    gate(
-      collateral_out <= pair.context.total_collateral,
-      CoreError::InsufficientLiquidity,
-    )?;
-    Ok(collateral_out)
+    self.exo_pair::<E>()?.redemption_fee_base(in_amount)
   }
 
   fn redeem_stablecoin_exo_quote<E: Exo + PythOracle>(
@@ -885,28 +871,17 @@ impl<C: SolanaClock> ProtocolState<C> {
     UFix64<E::Exp>: FixExt,
   {
     let pair = self.exo_pair::<E>()?;
-    let collateral_out = self.redeem_stablecoin_exo_fee_base::<E>(in_amount)?;
-    let FeeExtract {
-      fees_extracted,
-      amount_remaining,
-    } = pair.context.stablecoin_redeem_fee(collateral_out)?;
-    validate_burn(
-      pair.context.virtual_stablecoin_supply()?,
-      in_amount,
-      pair.supply_floor,
-    )?;
-    let out_amount: UFix64<E::Exp> = amount_remaining
-      .checked_convert()
-      .ok_or(CoreError::TokenAmountPrecision)?;
+    let quote = pair.redemption_quote(in_amount)?;
     Ok(OperationOutput {
-      in_amount,
-      out_amount,
-      fee_amount: fees_extracted,
-      fee_mint: E::MINT,
-      fee_base: collateral_out,
-      marginal_rate: atom_rate::<N6, E::Exp>(
-        pair.context.stablecoin_redeem_marginal(in_amount)?,
-      ),
+      in_amount: quote.in_amount,
+      out_amount: quote
+        .out_amount
+        .checked_convert()
+        .ok_or(CoreError::TokenAmountPrecision)?,
+      fee_amount: quote.fee_amount,
+      fee_mint: quote.fee_mint,
+      fee_base: quote.fee_base,
+      marginal_rate: atom_rate::<N9, E::Exp>(quote.marginal_rate),
     })
   }
 

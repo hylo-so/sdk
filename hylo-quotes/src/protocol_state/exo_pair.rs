@@ -5,21 +5,24 @@ use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
-use hylo_core::exchange_context::ExoExchangeContext;
-use hylo_core::fees::controller::LevercoinFees;
+use fix::typenum::Integer;
+use hylo_core::error::CoreError;
+use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
+use hylo_core::fees::controller::{FeeExtract, LevercoinFees};
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::util::normalize_mint_exp;
-use hylo_core::virtual_stablecoin::VirtualStablecoin;
+use hylo_core::util::{denormalize_mint_exp, normalize_mint_exp};
+use hylo_core::virtual_stablecoin::{validate_burn, VirtualStablecoin};
 use hylo_idl::pda;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
+use crate::token_operation::{gate, RedeemOperationOutput};
 
 /// Field count of [`ExoPairAccounts`].
 pub const EXO_PAIR_ACCOUNTS: usize = 5;
@@ -191,6 +194,94 @@ impl<C: SolanaClock> ExoPairState<C> {
     })
   }
 
+  /// Checks pause, harvest, and oracle freshness for redemption.
+  ///
+  /// # Errors
+  /// * Protocol or pair paused, harvest overdue, or oracle stale
+  pub(crate) fn redemption_preconditions(
+    &self,
+    protocol_paused: bool,
+  ) -> Result<(), CoreError> {
+    gate(!protocol_paused, CoreError::ProtocolPaused)?;
+    gate(!self.paused, CoreError::PairPaused)?;
+    gate(
+      self.borrow_rate_harvest_epoch == self.context.clock.epoch(),
+      CoreError::BorrowRateHarvestNotRun,
+    )?;
+    gate(
+      self.collateral_usd_in_stablecoin_oracle_window(),
+      CoreError::PythOracleOutdated,
+    )
+  }
+
+  /// Computes collateral owed before fees within the vault balance.
+  ///
+  /// # Errors
+  /// * NAV, conversion, or insufficient collateral
+  pub(crate) fn redemption_fee_base(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let collateral_out = self
+      .context
+      .exo_conversion()
+      .token_to_exo(in_amount, self.context.stablecoin_nav()?)?;
+    gate(
+      collateral_out <= self.context.total_collateral,
+      CoreError::InsufficientLiquidity,
+    )?;
+    Ok(collateral_out)
+  }
+
+  /// Converts collateral to its mint precision, rounding down.
+  ///
+  /// # Errors
+  /// * Unsupported decimals or conversion overflow
+  pub(crate) fn collateral_amount(
+    &self,
+    collateral: UFix64<N9>,
+  ) -> Result<UFixValue64, CoreError> {
+    let bits = denormalize_mint_exp(&self.collateral_mint_info, collateral)
+      .map_err(|_| CoreError::TokenAmountPrecision)?;
+    let decimals = i8::try_from(self.collateral_mint_info.decimals)
+      .map_err(|_| CoreError::TokenAmountPrecision)?;
+    Ok(UFixValue64::new(bits, -decimals))
+  }
+
+  /// Quotes redemption with strict fees without checking pause or freshness.
+  /// Rounds collateral to mint precision before normalizing the output.
+  ///
+  /// # Errors
+  /// * Liquidity, fee, burn floor, precision, or marginal rate failure
+  pub(crate) fn redemption_quote(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    let collateral_out = self.redemption_fee_base(in_amount)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = self.context.stablecoin_redeem_fee(collateral_out)?;
+    validate_burn(
+      self.context.virtual_stablecoin_supply()?,
+      in_amount,
+      self.supply_floor,
+    )?;
+    let collateral_amount = self.collateral_amount(amount_remaining)?;
+    let out_amount =
+      normalize_mint_exp(&self.collateral_mint_info, collateral_amount.bits)?;
+    let marginal_rate = self.context.stablecoin_redeem_marginal(in_amount)?
+      * 10_f64.powi(N6::to_i32() - N9::to_i32());
+    Ok(RedeemOperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: self.collateral_mint,
+      fee_base: collateral_out,
+      marginal_rate,
+    })
+  }
+
   /// Tests this pair's collateral feed against the stablecoin oracle window.
   #[must_use]
   pub fn collateral_usd_in_stablecoin_oracle_window(&self) -> bool {
@@ -199,5 +290,214 @@ impl<C: SolanaClock> ExoPairState<C> {
       self.oracle_interval_secs,
       self.context.clock.unix_timestamp(),
     )
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use anchor_client::solana_sdk::account::Account;
+  use anchor_lang::prelude::Clock;
+  use anchor_lang::solana_program::program_pack::Pack;
+  use anchor_lang::AccountDeserialize;
+  use anchor_spl::token::spl_token::state::Mint as SplMint;
+  use anchor_spl::token::Mint;
+  use anyhow::{anyhow, Error as AnyhowError, Result};
+  use fix::prelude::*;
+  use hylo_core::error::CoreError;
+  use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
+  use hylo_core::fees::controller::{FeePair, LevercoinFees};
+  use hylo_core::pyth::OracleConfig;
+  use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
+  use hylo_core::rebalance::pricing::RebalanceCurveConfig;
+  use hylo_core::util::normalize_mint_exp;
+  use hylo_core::virtual_stablecoin::VirtualStablecoin;
+  use hylo_idl::tokens::{TokenMint, CBBTC};
+  use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+  use serde::Deserialize;
+
+  use super::ExoPairState;
+  use crate::protocol_state::accounts::{decode, decode_clock};
+
+  #[derive(Deserialize)]
+  struct Snapshot {
+    clock: Account,
+    btc_usd_pyth: Account,
+    xbtc_mint: Account,
+  }
+
+  fn pair() -> Result<ExoPairState<Clock>> {
+    let accounts: Snapshot = serde_json::from_str(include_str!(
+      "../../tests/data/protocol-state-1039-295160.json"
+    ))?;
+    let clock = decode_clock(&accounts.clock)?;
+    let oracle: PriceUpdateV2 = decode(&accounts.btc_usd_pyth, "BTC oracle")?;
+    let levercoin_mint: Mint = decode(&accounts.xbtc_mint, "xBTC mint")?;
+    let fees =
+      FeePair::new(UFix64::<N4>::new(10).into(), UFix64::<N4>::new(10).into());
+    let curve = RebalanceCurveConfig::new(
+      UFix64::<N9>::new(10_000_000).into(),
+      UFix64::<N9>::new(20_000_000).into(),
+    );
+    let context = ExoExchangeContext::load(
+      clock.clone(),
+      UFix64::new(20_000_000_000),
+      UFix64::new(1_200_000_000),
+      OracleConfig::new(600, UFix64::new(100_000_000)),
+      LevercoinFees {
+        normal: fees,
+        sell_zone_1: fees,
+        sell_zone_2: fees,
+      },
+      &oracle,
+      VirtualStablecoin {
+        supply: UFix64::<N6>::new(1_000_000_000_000).into(),
+      },
+      Some(&levercoin_mint),
+      curve,
+      curve,
+      UFix64::new(1_000_000_000_000_000_000),
+    )?;
+    Ok(ExoPairState {
+      collateral_mint: CBBTC::MINT,
+      collateral_mint_info: mint_with_decimals(&levercoin_mint, 8)?,
+      context,
+      paused: false,
+      pool_drawdown: PoolDrawdown::default(),
+      borrow_rate_harvest_epoch: clock.epoch,
+      supply_floor: UFix64::one(),
+      oracle_publish_time: oracle.price_message.publish_time,
+      oracle_interval_secs: 600,
+    })
+  }
+
+  fn mint_with_decimals(mint: &Mint, decimals: u8) -> Result<Mint> {
+    let mint = SplMint { decimals, ..**mint };
+    let mut data = [0_u8; SplMint::LEN];
+    SplMint::pack(mint, &mut data)?;
+    Ok(Mint::try_deserialize(&mut data.as_slice())?)
+  }
+
+  #[test]
+  fn collateral_amount_preserves_mint_precision() -> Result<()> {
+    let pair = pair()?;
+    [2_u8, 6, 8, 9, 10].into_iter().try_for_each(|decimals| {
+      let mut pair = pair.clone();
+      pair.collateral_mint_info =
+        mint_with_decimals(&pair.collateral_mint_info, decimals)?;
+      let amount = pair.collateral_amount(UFix64::new(123_456_789))?;
+      let expected = match decimals {
+        2 => (12, 120_000_000),
+        6 => (123_456, 123_456_000),
+        8 => (12_345_678, 123_456_780),
+        9 => (123_456_789, 123_456_789),
+        _ => (1_234_567_890, 123_456_789),
+      };
+      assert_eq!(amount.bits, expected.0);
+      assert_eq!(i32::from(amount.exp), -i32::from(decimals));
+      assert_eq!(
+        normalize_mint_exp(&pair.collateral_mint_info, amount.bits)?.bits,
+        expected.1,
+      );
+      Ok::<(), AnyhowError>(())
+    })?;
+    let mut pair = pair;
+    pair.collateral_mint_info =
+      mint_with_decimals(&pair.collateral_mint_info, 10)?;
+    assert_eq!(
+      pair.collateral_amount(UFix64::new(u64::MAX)),
+      Err(CoreError::TokenAmountPrecision),
+    );
+    pair.collateral_mint_info =
+      mint_with_decimals(&pair.collateral_mint_info, 11)?;
+    assert_eq!(
+      pair.collateral_amount(UFix64::one()),
+      Err(CoreError::TokenAmountPrecision),
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn redemption_quote_matches_typed_calculation() -> Result<()> {
+    let mut pair = pair()?;
+    let in_amount = UFix64::<N6>::new(1_000_000_000);
+    pair.context.total_collateral = pair
+      .context
+      .virtual_stablecoin_supply()?
+      .checked_convert::<N9>()
+      .and_then(|supply| {
+        supply.mul_div_floor(
+          UFix64::new(1_400_000_000),
+          pair.context.collateral_usd_price.lower,
+        )
+      })
+      .ok_or_else(|| anyhow!("collateral overflow"))?;
+    let collateral_out = pair
+      .context
+      .exo_conversion()
+      .token_to_exo(in_amount, pair.context.stablecoin_nav()?)?;
+    let fees = pair.context.stablecoin_redeem_fee(collateral_out)?;
+    let expected: UFix64<N8> = fees
+      .amount_remaining
+      .checked_convert()
+      .ok_or_else(|| anyhow!("amount overflow"))?;
+    let quote = pair.redemption_quote(in_amount)?;
+    assert_eq!(quote.in_amount, in_amount);
+    assert_eq!(quote.out_amount.checked_convert::<N8>(), Some(expected));
+    assert_eq!(expected.checked_convert::<N9>(), Some(quote.out_amount));
+    assert_eq!(quote.fee_amount, fees.fees_extracted);
+    assert_eq!(quote.fee_base, collateral_out);
+    assert_eq!(quote.fee_mint, CBBTC::MINT);
+    assert_eq!(
+      quote.marginal_rate.to_bits(),
+      (pair.context.stablecoin_redeem_marginal(in_amount)? * 1000.0).to_bits()
+    );
+    [9, 10].into_iter().try_for_each(|decimals| {
+      let pair = ExoPairState {
+        collateral_mint_info: mint_with_decimals(
+          &pair.collateral_mint_info,
+          decimals,
+        )?,
+        ..pair.clone()
+      };
+      let normalized = pair.redemption_quote(in_amount)?;
+      assert_eq!(normalized.out_amount, fees.amount_remaining);
+      assert_eq!(
+        normalized.marginal_rate.to_bits(),
+        quote.marginal_rate.to_bits()
+      );
+      Ok::<(), AnyhowError>(())
+    })?;
+    pair.supply_floor = pair.context.virtual_stablecoin_supply()?;
+    assert!(pair.redemption_quote(in_amount).is_err());
+    Ok(())
+  }
+
+  #[test]
+  fn redemption_preconditions_preserve_gate_order() -> Result<()> {
+    let mut pair = pair()?;
+    pair.paused = true;
+    pair.borrow_rate_harvest_epoch = pair.context.clock.epoch + 1;
+    pair.oracle_publish_time = 0;
+    assert_eq!(
+      pair.redemption_preconditions(true),
+      Err(CoreError::ProtocolPaused)
+    );
+    assert_eq!(
+      pair.redemption_preconditions(false),
+      Err(CoreError::PairPaused)
+    );
+    pair.paused = false;
+    assert_eq!(
+      pair.redemption_preconditions(false),
+      Err(CoreError::BorrowRateHarvestNotRun)
+    );
+    pair.borrow_rate_harvest_epoch = pair.context.clock.epoch;
+    assert_eq!(
+      pair.redemption_preconditions(false),
+      Err(CoreError::PythOracleOutdated)
+    );
+    pair.oracle_publish_time = pair.context.clock.unix_timestamp;
+    assert_eq!(pair.redemption_preconditions(false), Ok(()));
+    Ok(())
   }
 }

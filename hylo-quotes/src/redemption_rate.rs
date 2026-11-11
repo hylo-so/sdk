@@ -29,12 +29,11 @@ use hylo_core::error::CoreError;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
+use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
-use hylo_idl::tokens::{
-  Exo, TokenMint, CBBTC, HYLOSOL, HYPE, HYUSD, JITOSOL, SHYUSD, USDC,
-};
+use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC};
 
-use crate::protocol_state::ProtocolState;
+use crate::protocol_state::{ExoPairState, ProtocolState};
 use crate::token_operation::{gate, FeeBase, TokenOperation};
 use crate::{Local, LST};
 
@@ -45,8 +44,8 @@ pub struct RedemptionLane {
   pub mint: Pubkey,
   /// Outcome of the strict quote at the reference amount.
   pub execution: Result<(), CoreError>,
-  /// Net collateral out in the lane token's decimals.
-  pub amount_out: UFixValue64,
+  /// Net collateral out, rounded to mint precision and normalized.
+  pub amount_out: UFix64<N9>,
   /// USD value of `amount_out` at the lower oracle bound.
   pub usd_out: UFix64<N9>,
   /// USD per hyUSD through this lane.
@@ -59,7 +58,7 @@ impl RedemptionLane {
   fn new(
     mint: Pubkey,
     execution: Result<(), CoreError>,
-    amount_out: UFixValue64,
+    amount_out: UFix64<N9>,
     usd_out: UFix64<N9>,
     reference_hyusd: UFix64<N6>,
     shyusd_hyusd_rate: UFix64<N6>,
@@ -137,11 +136,15 @@ impl RedemptionRate {
     let lanes: BTreeSet<RedemptionLane> = [
       lst_lane::<JITOSOL, C>(state, reference_hyusd, shyusd_hyusd_rate),
       lst_lane::<HYLOSOL, C>(state, reference_hyusd, shyusd_hyusd_rate),
-      exo_lane::<CBBTC, C>(state, reference_hyusd, shyusd_hyusd_rate),
-      exo_lane::<HYPE, C>(state, reference_hyusd, shyusd_hyusd_rate),
       usdc_lane(state, reference_hyusd, shyusd_hyusd_rate),
     ]
     .into_iter()
+    .chain(
+      state
+        .exo_pairs
+        .values()
+        .map(|pair| exo_lane(state, pair, reference_hyusd, shyusd_hyusd_rate)),
+    )
     .filter_map(Result::ok)
     .collect();
     let best = lanes.last().cloned().ok_or(CoreError::NoRedemptionLane)?;
@@ -201,7 +204,7 @@ where
   RedemptionLane::new(
     L::MINT,
     execution,
-    amount_out.into(),
+    amount_out,
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
@@ -209,46 +212,41 @@ where
 }
 
 /// Prices `reference_hyusd` through an exo lane at the lower oracle bound.
-fn exo_lane<E, C>(
+fn exo_lane<C: SolanaClock>(
   state: &ProtocolState<C>,
+  pair: &ExoPairState<C>,
   reference_hyusd: UFix64<N6>,
   shyusd_hyusd_rate: UFix64<N6>,
-) -> Result<RedemptionLane, CoreError>
-where
-  E: Exo,
-  C: SolanaClock,
-  UFix64<E::Exp>: FixExt,
-  ProtocolState<C>: FeeBase<HYUSD, E> + TokenOperation<HYUSD, E, FeeExp = N9>,
-{
-  let pair = state.exo_pair::<E>()?;
+) -> Result<RedemptionLane, CoreError> {
   gate(
     pair.collateral_usd_in_stablecoin_oracle_window(),
     CoreError::PythOracleOutdated,
   )?;
-  let collateral_out = FeeBase::<HYUSD, E>::fee_base(state, reference_hyusd)?;
+  let collateral_out = pair.redemption_fee_base(reference_hyusd)?;
   validate_burn(
     pair.context.virtual_stablecoin_supply()?,
     reference_hyusd,
     pair.supply_floor,
   )?;
-  let amount_out: UFix64<E::Exp> = pair
+  let collateral_remaining = pair
     .context
     .saturating_stablecoin_redeem_fee(collateral_out)?
-    .amount_remaining
-    .checked_convert()
-    .ok_or(CoreError::TokenAmountPrecision)?;
-  let usd_out = pair.context.exo_conversion().exo_to_usd(
-    amount_out
-      .checked_convert::<N9>()
-      .ok_or(CoreError::TokenAmountPrecision)?,
-  )?;
-  let execution =
-    TokenOperation::<HYUSD, E>::compute_output(state, reference_hyusd)
-      .map(|_| ());
+    .amount_remaining;
+  let amount_out = pair.collateral_amount(collateral_remaining)?;
+  let rounded_collateral =
+    normalize_mint_exp(&pair.collateral_mint_info, amount_out.bits)?;
+  let usd_out = pair
+    .context
+    .exo_conversion()
+    .exo_to_usd(rounded_collateral)?;
+  let execution = pair
+    .redemption_preconditions(state.protocol_paused)
+    .and_then(|()| pair.redemption_quote(reference_hyusd))
+    .map(|_| ());
   RedemptionLane::new(
-    E::MINT,
+    pair.collateral_mint,
     execution,
-    amount_out.into(),
+    rounded_collateral,
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
@@ -265,11 +263,12 @@ fn usdc_lane<C: SolanaClock>(
     state,
     reference_hyusd,
   )?
-  .out_amount;
+  .out_amount
+  .checked_convert::<N9>()
+  .ok_or(CoreError::RedemptionRateOverflow)?;
   let spot = state.usdc_pair.usdc_usd_spot?.min(UFix64::one());
   let usd_out = amount_out
-    .checked_convert::<N9>()
-    .and_then(|usdc| usdc.mul_floor(spot))
+    .mul_floor(spot)
     .ok_or(CoreError::RedemptionRateOverflow)?;
   let execution =
     TokenOperation::<HYUSD, USDC>::compute_output(state, reference_hyusd)
@@ -277,7 +276,7 @@ fn usdc_lane<C: SolanaClock>(
   RedemptionLane::new(
     USDC::MINT,
     execution,
-    amount_out.into(),
+    amount_out,
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
