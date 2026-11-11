@@ -56,9 +56,10 @@ pub struct RedemptionLane {
 }
 
 impl RedemptionLane {
-  fn new<OUT: TokenMint>(
+  fn new(
+    mint: Pubkey,
     execution: Result<(), CoreError>,
-    amount_out: UFix64<OUT::Exp>,
+    amount_out: UFixValue64,
     usd_out: UFix64<N9>,
     reference_hyusd: UFix64<N6>,
     shyusd_hyusd_rate: UFix64<N6>,
@@ -72,9 +73,9 @@ impl RedemptionLane {
       .and_then(|exit| exit.mul_floor(hyusd_usd_rate))
       .ok_or(CoreError::RedemptionRateOverflow)?;
     Ok(RedemptionLane {
-      mint: OUT::MINT,
+      mint,
       execution,
-      amount_out: amount_out.into(),
+      amount_out,
       usd_out,
       hyusd_usd_rate,
       shyusd_usd_rate,
@@ -197,9 +198,10 @@ where
   let execution =
     TokenOperation::<HYUSD, L>::compute_output(state, reference_hyusd)
       .map(|_| ());
-  RedemptionLane::new::<L>(
+  RedemptionLane::new(
+    L::MINT,
     execution,
-    amount_out,
+    amount_out.into(),
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
@@ -243,9 +245,10 @@ where
   let execution =
     TokenOperation::<HYUSD, E>::compute_output(state, reference_hyusd)
       .map(|_| ());
-  RedemptionLane::new::<E>(
+  RedemptionLane::new(
+    E::MINT,
     execution,
-    amount_out,
+    amount_out.into(),
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
@@ -271,9 +274,10 @@ fn usdc_lane<C: SolanaClock>(
   let execution =
     TokenOperation::<HYUSD, USDC>::compute_output(state, reference_hyusd)
       .map(|_| ());
-  RedemptionLane::new::<USDC>(
+  RedemptionLane::new(
+    USDC::MINT,
     execution,
-    amount_out,
+    amount_out.into(),
     usd_out,
     reference_hyusd,
     shyusd_hyusd_rate,
