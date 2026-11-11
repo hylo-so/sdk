@@ -19,13 +19,17 @@ use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
-use crate::protocol_state::exo_registry::exo_pyth_feed_by_mint;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
 
-/// Accounts fetched per registry entry, the [`ExoPairAccounts`] field count.
+/// Field count of [`ExoPairAccounts`].
 pub const EXO_PAIR_ACCOUNTS: usize = 5;
 
-/// Raw accounts for one registry entry, in fetch order.
+/// Reads the oracle pubkey from an exo pair account.
+pub(crate) fn exo_pair_oracle(exo_pair: &Account) -> Result<Pubkey> {
+  decode::<ExoPair>(exo_pair, "Exo pair").map(|pair| pair.oracle)
+}
+
+/// Raw accounts for one exo pair.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExoPairAccounts {
   pub exo_pair: Account,
@@ -48,19 +52,15 @@ pub struct ExoPairState<C: SolanaClock> {
   pub oracle_interval_secs: u64,
 }
 
-/// Checks that the pair's oracle matches the feed the SDK fetches for its
-/// collateral.
-fn validate_exo_pair_oracle(exo_pair: &ExoPair) -> Result<()> {
-  let feed = exo_pyth_feed_by_mint(exo_pair.collateral_mint)?;
+/// Checks that the fetched oracle carries the feed id the pair expects.
+fn validate_exo_pair_oracle(
+  exo_pair: &ExoPair,
+  oracle: &PriceUpdateV2,
+) -> Result<()> {
   ensure!(
-    exo_pair.oracle == feed.address,
-    "Exo pair oracle {} does not match SDK feed {}",
+    exo_pair.oracle_feed_id == oracle.price_message.feed_id,
+    "Exo pair oracle {} feed id does not match pair for {}",
     exo_pair.oracle,
-    feed.address,
-  );
-  ensure!(
-    exo_pair.oracle_feed_id == feed.feed_id,
-    "Exo pair feed id does not match SDK feed for {}",
     exo_pair.collateral_mint,
   );
   Ok(())
@@ -110,23 +110,51 @@ impl ExoPairAccounts {
   /// * Account deserialization
   /// * Pair collateral differs from the entry
   /// * Entry levercoin mint is not the pair's levercoin PDA
-  /// * Pair oracle differs from the SDK feed
+  /// * Oracle feed id differs from the pair's
   /// * Vault balance normalization, context load, or fixed-point conversion
   pub fn pair_state<C: SolanaClock>(
     &self,
     entry: &ExoEntry,
     clock: C,
   ) -> Result<ExoPairState<C>> {
-    let exo_pair: ExoPair = decode(&self.exo_pair, "Exo pair")?;
+    ExoPairState::from_accounts(
+      entry,
+      &self.exo_pair,
+      &self.vault,
+      &self.levercoin_mint,
+      &self.collateral_mint,
+      &self.oracle,
+      clock,
+    )
+  }
+}
+
+impl<C: SolanaClock> ExoPairState<C> {
+  /// Decodes the accounts, checks them against the registry entry, and
+  /// loads the pair state under `clock`.
+  ///
+  /// # Errors
+  /// * Account deserialization
+  /// * Pair collateral differs from the entry
+  /// * Entry levercoin mint is not the pair's levercoin PDA
+  /// * Oracle feed id differs from the pair's
+  /// * Vault balance normalization, context load, or fixed-point conversion
+  pub fn from_accounts(
+    entry: &ExoEntry,
+    exo_pair: &Account,
+    vault: &Account,
+    levercoin_mint: &Account,
+    collateral_mint: &Account,
+    oracle: &Account,
+    clock: C,
+  ) -> Result<ExoPairState<C>> {
+    let exo_pair: ExoPair = decode(exo_pair, "Exo pair")?;
     validate_entry(entry, &exo_pair)?;
-    validate_exo_pair_oracle(&exo_pair)?;
-    let vault: TokenAccount = decode(&self.vault, "Exo vault")?;
-    let levercoin_mint: Mint =
-      decode(&self.levercoin_mint, "Exo levercoin mint")?;
-    let collateral_mint: Mint =
-      decode(&self.collateral_mint, "Exo collateral mint")?;
-    let oracle: PriceUpdateV2 =
-      decode(&self.oracle, "Exo collateral/USD Pyth feed")?;
+    let vault: TokenAccount = decode(vault, "Exo vault")?;
+    let levercoin_mint: Mint = decode(levercoin_mint, "Exo levercoin mint")?;
+    let collateral_mint: Mint = decode(collateral_mint, "Exo collateral mint")?;
+    let oracle: PriceUpdateV2 = decode(oracle, "Exo collateral/USD Pyth feed")?;
+    validate_exo_pair_oracle(&exo_pair, &oracle)?;
     let total_collateral = normalize_mint_exp(&collateral_mint, vault.amount)?;
     let oracle_config = OracleConfig::new(
       exo_pair.oracle_interval_secs,
@@ -160,9 +188,7 @@ impl ExoPairAccounts {
       oracle_interval_secs: exo_pair.oracle_interval_secs,
     })
   }
-}
 
-impl<C: SolanaClock> ExoPairState<C> {
   /// Tests this pair's collateral feed against the stablecoin oracle window.
   #[must_use]
   pub fn collateral_usd_in_stablecoin_oracle_window(&self) -> bool {

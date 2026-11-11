@@ -25,9 +25,8 @@ use hylo_jupiter_amm_interface::{
   SwapAndAccountMetas, SwapParams,
 };
 use hylo_quotes::protocol_state::{
-  exo_entry_role, exo_pubkeys_from_entries, exo_pyth_feed_by_mint,
-  find_exo_entry, read_exo_entries, ExoPairAccounts, ExoPairState,
-  ProtocolState, UsdcPairState, EXO_PAIR_ACCOUNTS,
+  exo_entry_role, read_exo_entries, ExoPairState, ExoRoute, ProtocolState,
+  UsdcPairState,
 };
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
@@ -65,6 +64,37 @@ const ENSHRINED_ACCOUNTS: [Pubkey; 16] = [
   pda::lst_vault(HYLOSOL::MINT),
   pda::usdc_vault(USDC::MINT),
 ];
+
+/// Loads the pair state of `route` once its oracle account is in the map.
+fn load_exo_pair_state(
+  route: &ExoRoute,
+  account_map: &AccountMap,
+  clock: ClockRef,
+) -> Result<Option<ExoPairState<ClockRef>>> {
+  route
+    .oracle
+    .and_then(|key| account_map.get(&key))
+    .map(|oracle| {
+      let ExoEntry {
+        collateral_mint,
+        levercoin_mint,
+        ..
+      } = route.entry;
+      ExoPairState::from_accounts(
+        &route.entry,
+        keyed_account(account_map, &pda::exo_pair(collateral_mint))?,
+        keyed_account(account_map, &pda::exo_vault(collateral_mint))?,
+        keyed_account(account_map, &levercoin_mint)?,
+        keyed_account(account_map, &collateral_mint)?,
+        oracle,
+        clock,
+      )
+      .with_context(|| {
+        format!("exo pair state for {}", route.entry.collateral_mint)
+      })
+    })
+    .transpose()
+}
 
 /// Builds the USDC exchange state from a Jupiter account snapshot.
 fn usdc_state(
@@ -104,17 +134,18 @@ fn usdc_state(
 pub struct HyloJupiter {
   clock: ClockRef,
   state: Option<ProtocolState<ClockRef>>,
-  exo_entries: Vec<ExoEntry>,
-  exo_account_keys: Vec<Pubkey>,
+  exo_routes: Vec<ExoRoute>,
 }
 
 impl HyloJupiter {
-  /// Decodes the enshrined accounts and builds the protocol state with
-  /// the pairs of `entries`.
+  fn exo_entries(&self) -> impl Iterator<Item = &ExoEntry> {
+    self.exo_routes.iter().map(|route| &route.entry)
+  }
+
+  /// Decodes the enshrined accounts and builds the protocol state.
   fn build_state(
     &self,
     account_map: &AccountMap,
-    entries: &[ExoEntry],
   ) -> Result<ProtocolState<ClockRef>> {
     let hylo: Hylo = account_map_get(account_map, &pda::HYLO)?;
     let hyusd_mint: Mint = account_map_get(account_map, &HYUSD::MINT)?;
@@ -158,7 +189,7 @@ impl HyloJupiter {
       pool_config,
       hyusd_pool,
       &sol_usd,
-      self.exo_pairs(account_map, entries)?,
+      self.load_exo_pair_states(account_map)?,
       usdc_pair_state,
       jitosol_stake_pool,
       hylosol_stake_pool,
@@ -167,27 +198,18 @@ impl HyloJupiter {
     )
   }
 
-  /// Loads the pair state of each entry from the map.
-  fn exo_pairs(
+  /// Loads the pair state of each route from the map.
+  fn load_exo_pair_states(
     &self,
     account_map: &AccountMap,
-    entries: &[ExoEntry],
   ) -> Result<HashMap<Pubkey, ExoPairState<ClockRef>>> {
-    exo_pubkeys_from_entries(entries)?
-      .chunks(EXO_PAIR_ACCOUNTS)
-      .zip(entries)
-      .map(|(keys, entry)| {
-        let fetched = keys
-          .iter()
-          .map(|key| account_map.get(key).cloned())
-          .collect::<Vec<_>>();
-        let raw =
-          ExoPairAccounts::from_fetched(&fetched).with_context(|| {
-            format!("exo pair accounts for {}", entry.collateral_mint)
-          })?;
-        let pair = raw.pair_state(entry, self.clock.clone())?;
-        Ok((pair.collateral_mint, pair))
+    self
+      .exo_routes
+      .iter()
+      .filter_map(|route| {
+        load_exo_pair_state(route, account_map, self.clock.clone()).transpose()
       })
+      .map(|pair| pair.map(|pair| (pair.collateral_mint, pair)))
       .collect()
   }
 
@@ -198,10 +220,14 @@ impl HyloJupiter {
     source: Pubkey,
     destination: Pubkey,
   ) -> Result<SwapAndAccountMetas> {
-    let entry = find_exo_entry(&self.exo_entries, source, destination)
+    let route = self
+      .exo_routes
+      .iter()
+      .find(|route| route.owns_either(source, destination))
       .ok_or(CoreError::UnroutablePair)?;
+    let entry = &route.entry;
     let collateral = entry.collateral_mint;
-    let oracle = exo_pyth_feed_by_mint(collateral)?.address;
+    let oracle = route.oracle.context("exo pair oracle not set")?;
     let roles = (
       exo_entry_role(entry, source)?,
       exo_entry_role(entry, destination)?,
@@ -245,13 +271,17 @@ impl Amm for HyloJupiter {
   where
     Self: Sized,
   {
-    let exo_entries = read_exo_entries(&keyed_account.account.data)?;
-    let exo_account_keys = exo_pubkeys_from_entries(&exo_entries)?;
+    let exo_routes = read_exo_entries(&keyed_account.account.data)?
+      .into_iter()
+      .map(|entry| ExoRoute {
+        entry,
+        oracle: None,
+      })
+      .collect();
     Ok(HyloJupiter {
       clock: amm_context.clock_ref.clone(),
       state: None,
-      exo_entries,
-      exo_account_keys,
+      exo_routes,
     })
   }
 
@@ -272,8 +302,7 @@ impl Amm for HyloJupiter {
       .into_iter()
       .chain(
         self
-          .exo_entries
-          .iter()
+          .exo_entries()
           .flat_map(|entry| [entry.collateral_mint, entry.levercoin_mint]),
       )
       .collect::<BTreeSet<_>>()
@@ -285,23 +314,27 @@ impl Amm for HyloJupiter {
     ENSHRINED_ACCOUNTS
       .into_iter()
       .chain(once(pda::EXO_REGISTRY))
-      .chain(self.exo_account_keys.iter().copied())
+      .chain(self.exo_routes.iter().flat_map(ExoRoute::pubkeys))
       .collect()
   }
 
   fn update(&mut self, account_map: &AccountMap) -> Result<()> {
     let registry = keyed_account(account_map, &pda::EXO_REGISTRY)?;
-    let entries = read_exo_entries(&registry.data)?;
-    self.state = Some(self.build_state(account_map, &entries)?);
-    self.exo_account_keys = exo_pubkeys_from_entries(&entries)?;
-    self.exo_entries = entries;
+    self.exo_routes = read_exo_entries(&registry.data)?
+      .into_iter()
+      .map(|entry| {
+        let exo_pair = account_map.get(&pda::exo_pair(entry.collateral_mint));
+        ExoRoute::new(entry, exo_pair)
+      })
+      .collect::<Result<Vec<_>>>()?;
+    self.state = Some(self.build_state(account_map)?);
     Ok(())
   }
 
   fn quote(&self, params: &QuoteParams) -> Result<Quote> {
     let state = self.state.as_ref().context("state not set")?;
     let quote = state.runtime_quote(
-      &self.exo_entries,
+      self.exo_entries(),
       params.input_mint,
       params.output_mint,
       params.amount,
@@ -497,6 +530,13 @@ mod tests {
     let amm_context = load_amm_context(&client).await?;
     let mut amm =
       HyloJupiter::from_keyed_account(&jupiter_account, &amm_context)?;
+
+    // Entry accounts
+    let account_map =
+      load_account_map(&client, &amm.get_accounts_to_update()).await?;
+    amm.update(&account_map)?;
+
+    // Oracle accounts
     let account_map =
       load_account_map(&client, &amm.get_accounts_to_update()).await?;
     amm.update(&account_map)?;
