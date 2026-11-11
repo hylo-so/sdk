@@ -213,17 +213,6 @@ impl<C: SolanaClock> ExoPairState<C> {
     Ok(collateral_out)
   }
 
-  /// Converts collateral to its mint precision, rounding down.
-  ///
-  /// # Errors
-  /// * Unsupported decimals or conversion overflow
-  pub(crate) fn collateral_amount(
-    &self,
-    collateral: UFix64<N9>,
-  ) -> Result<UFixValue64, CoreError> {
-    denormalize_mint_amount(&self.collateral_mint_info, collateral)
-  }
-
   /// Quotes redemption with strict fees without checking pause or freshness.
   /// Rounds collateral to mint precision before normalizing the output.
   ///
@@ -243,7 +232,8 @@ impl<C: SolanaClock> ExoPairState<C> {
       in_amount,
       self.supply_floor,
     )?;
-    let collateral_amount = self.collateral_amount(amount_remaining)?;
+    let collateral_amount =
+      denormalize_mint_amount(&self.collateral_mint_info, amount_remaining)?;
     let out_amount =
       normalize_mint_exp(&self.collateral_mint_info, collateral_amount.bits)?;
     let marginal_rate = self.context.stablecoin_redeem_marginal(in_amount)?
@@ -279,13 +269,11 @@ mod tests {
   use anchor_spl::token::Mint;
   use anyhow::{anyhow, Error as AnyhowError, Result};
   use fix::prelude::*;
-  use hylo_core::error::CoreError;
   use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
   use hylo_core::fees::controller::{FeePair, LevercoinFees};
   use hylo_core::pyth::OracleConfig;
   use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
   use hylo_core::rebalance::pricing::RebalanceCurveConfig;
-  use hylo_core::util::normalize_mint_exp;
   use hylo_core::virtual_stablecoin::VirtualStablecoin;
   use hylo_idl::tokens::{TokenMint, CBBTC};
   use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
@@ -351,45 +339,6 @@ mod tests {
     let mut data = [0_u8; SplMint::LEN];
     SplMint::pack(mint, &mut data)?;
     Ok(Mint::try_deserialize(&mut data.as_slice())?)
-  }
-
-  #[test]
-  fn collateral_amount_preserves_mint_precision() -> Result<()> {
-    let pair = pair()?;
-    [2_u8, 6, 8, 9, 10].into_iter().try_for_each(|decimals| {
-      let mut pair = pair.clone();
-      pair.collateral_mint_info =
-        mint_with_decimals(&pair.collateral_mint_info, decimals)?;
-      let amount = pair.collateral_amount(UFix64::new(123_456_789))?;
-      let expected = match decimals {
-        2 => (12, 120_000_000),
-        6 => (123_456, 123_456_000),
-        8 => (12_345_678, 123_456_780),
-        9 => (123_456_789, 123_456_789),
-        _ => (1_234_567_890, 123_456_789),
-      };
-      assert_eq!(amount.bits, expected.0);
-      assert_eq!(i32::from(amount.exp), -i32::from(decimals));
-      assert_eq!(
-        normalize_mint_exp(&pair.collateral_mint_info, amount.bits)?.bits,
-        expected.1,
-      );
-      Ok::<(), AnyhowError>(())
-    })?;
-    let mut pair = pair;
-    pair.collateral_mint_info =
-      mint_with_decimals(&pair.collateral_mint_info, 10)?;
-    assert_eq!(
-      pair.collateral_amount(UFix64::new(u64::MAX)),
-      Err(CoreError::ExoAmountNormalization),
-    );
-    pair.collateral_mint_info =
-      mint_with_decimals(&pair.collateral_mint_info, 11)?;
-    assert_eq!(
-      pair.collateral_amount(UFix64::one()),
-      Err(CoreError::ExoAmountNormalization),
-    );
-    Ok(())
   }
 
   #[test]

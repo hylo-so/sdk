@@ -29,7 +29,7 @@ use hylo_core::error::CoreError;
 use hylo_core::exchange_context::ExchangeContext;
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::util::normalize_mint_exp;
+use hylo_core::util::{denormalize_mint_amount, normalize_mint_exp};
 use hylo_core::virtual_stablecoin::{validate_burn, SUPPLY_FLOOR};
 use hylo_idl::tokens::{TokenMint, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC};
 
@@ -232,7 +232,8 @@ fn exo_lane<C: SolanaClock>(
     .context
     .saturating_stablecoin_redeem_fee(collateral_out)?
     .amount_remaining;
-  let amount_out = pair.collateral_amount(collateral_remaining)?;
+  let amount_out =
+    denormalize_mint_amount(&pair.collateral_mint_info, collateral_remaining)?;
   let rounded_collateral =
     normalize_mint_exp(&pair.collateral_mint_info, amount_out.bits)?;
   let usd_out = pair
