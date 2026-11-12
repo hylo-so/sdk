@@ -99,6 +99,40 @@ impl RpcStateProvider {
     raw.pair_state(&E::EXO_ENTRY, decode_clock(clock)?)
   }
 
+  /// Fetches protocol accounts and every registered exo pair's accounts.
+  ///
+  /// # Errors
+  /// * RPC request, missing account, or deserialization failure
+  pub async fn fetch_accounts(&self) -> Result<ProtocolAccounts> {
+    let registry_account = self
+      .rpc_client
+      .get_account(&pda::EXO_REGISTRY)
+      .await
+      .context("Failed to fetch exo registry from RPC")?;
+    let entries = read_exo_entries(&registry_account.data)?;
+    let keys = ProtocolAccounts::PUBKEYS
+      .into_iter()
+      .chain(entries.iter().flat_map(exo_entry_pubkeys))
+      .collect::<Vec<_>>();
+    let account_data = self
+      .rpc_client
+      .get_multiple_accounts(&keys)
+      .await
+      .context("Failed to fetch accounts from RPC")?;
+    let (base, exo_data) = account_data
+      .split_at_checked(ProtocolAccounts::PUBKEYS.len())
+      .context("Missing protocol accounts")?;
+    let oracles = self.fetch_exo_oracles(exo_data).await?;
+    let exo_accounts = exo_data
+      .chunks(EXO_ENTRY_PUBKEYS_LEN)
+      .zip(oracles)
+      .flat_map(|(entry_accounts, oracle)| {
+        entry_accounts.iter().cloned().chain(once(oracle))
+      });
+    let fetched = base.iter().cloned().chain(exo_accounts).collect::<Vec<_>>();
+    ProtocolAccounts::from_fetched(&fetched)
+  }
+
   async fn fetch_exo_oracles(
     &self,
     exo_data: &[Option<Account>],
@@ -147,33 +181,7 @@ with_exo_pairs!(exo_pair_dispatch);
 #[async_trait]
 impl StateProvider<Clock> for RpcStateProvider {
   async fn fetch_state(&self) -> Result<ProtocolState<Clock>> {
-    let registry_account = self
-      .rpc_client
-      .get_account(&pda::EXO_REGISTRY)
-      .await
-      .context("Failed to fetch exo registry from RPC")?;
-    let entries = read_exo_entries(&registry_account.data)?;
-    let keys = ProtocolAccounts::PUBKEYS
-      .into_iter()
-      .chain(entries.iter().flat_map(exo_entry_pubkeys))
-      .collect::<Vec<_>>();
-    let account_data = self
-      .rpc_client
-      .get_multiple_accounts(&keys)
-      .await
-      .context("Failed to fetch accounts from RPC")?;
-    let (base, exo_data) = account_data
-      .split_at_checked(ProtocolAccounts::PUBKEYS.len())
-      .context("Missing protocol accounts")?;
-    let oracles = self.fetch_exo_oracles(exo_data).await?;
-    let exo_accounts = exo_data
-      .chunks(EXO_ENTRY_PUBKEYS_LEN)
-      .zip(oracles)
-      .flat_map(|(entry_accounts, oracle)| {
-        entry_accounts.iter().cloned().chain(once(oracle))
-      });
-    let fetched = base.iter().cloned().chain(exo_accounts).collect::<Vec<_>>();
-    let accounts = ProtocolAccounts::from_fetched(&fetched)?;
+    let accounts = self.fetch_accounts().await?;
     ProtocolState::try_from(&accounts)
   }
 }

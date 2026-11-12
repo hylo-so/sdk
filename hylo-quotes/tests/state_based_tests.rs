@@ -6,13 +6,14 @@
 mod common;
 
 use std::fs::File;
+use std::sync::Arc;
 
 use anyhow::Result;
 use common::load_state;
 use fix::prelude::*;
 use hylo_clients::prelude::CommitmentConfig;
 use hylo_idl::tokens::{HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_quotes::prelude::{ProtocolAccounts, TokenOperationExt};
+use hylo_quotes::prelude::{RpcStateProvider, TokenOperationExt};
 use serde_json::to_writer;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
@@ -23,19 +24,18 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 /// * Protocol accounts construction
 /// * File IO
 pub async fn dump_protocol_accounts() -> Result<()> {
-  let rpc_client = RpcClient::new_with_commitment(
+  let rpc_client = Arc::new(RpcClient::new_with_commitment(
     "https://api.mainnet-beta.solana.com".to_string(),
     CommitmentConfig::confirmed(),
-  );
-  let accounts = rpc_client
-    .get_multiple_accounts(&ProtocolAccounts::PUBKEYS)
+  ));
+  let protocol_accounts = RpcStateProvider::new(Arc::clone(&rpc_client))
+    .fetch_accounts()
     .await?;
   let epoch = rpc_client.get_epoch_info().await?;
   let filename = format!(
     "tests/data/protocol-state-{}-{}.json",
     epoch.epoch, epoch.slot_index
   );
-  let protocol_accounts = ProtocolAccounts::from_fetched(&accounts)?;
   let file = File::create_new(filename)?;
   to_writer(file, &protocol_accounts)?;
   Ok(())
