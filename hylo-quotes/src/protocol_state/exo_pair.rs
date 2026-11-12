@@ -5,7 +5,6 @@ use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
-use fix::typenum::Integer;
 use hylo_core::error::CoreError;
 use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
 use hylo_core::fees::controller::{FeeExtract, LevercoinFees};
@@ -22,7 +21,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
-use crate::token_operation::{gate, RedeemOperationOutput};
+use crate::token_operation::{atom_rate, gate, RedeemOperationOutput};
 
 /// Field count of [`ExoPairAccounts`].
 pub const EXO_PAIR_ACCOUNTS: usize = 5;
@@ -236,8 +235,8 @@ impl<C: SolanaClock> ExoPairState<C> {
       denormalize_mint_amount(&self.collateral_mint_info, amount_remaining)?;
     let out_amount =
       normalize_mint_exp(&self.collateral_mint_info, collateral_amount.bits)?;
-    let marginal_rate = self.context.stablecoin_redeem_marginal(in_amount)?
-      * 10_f64.powi(N6::to_i32() - N9::to_i32());
+    let marginal_rate =
+      atom_rate::<N6, N9>(self.context.stablecoin_redeem_marginal(in_amount)?);
     Ok(RedeemOperationOutput {
       in_amount,
       out_amount,
