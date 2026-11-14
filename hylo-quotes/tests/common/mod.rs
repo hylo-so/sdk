@@ -13,7 +13,7 @@ use serde_json::from_reader;
 /// * File IO, JSON, or state construction
 pub fn load_state() -> Result<ProtocolState<Clock>> {
   let path = format!(
-    "{}/tests/data/protocol-state-1039-295160.json",
+    "{}/tests/data/protocol-state-1084-204870.json",
     env!("CARGO_MANIFEST_DIR")
   );
   let file = File::open(path)?;

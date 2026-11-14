@@ -39,7 +39,9 @@ pub(crate) fn linear_rate<InExp: Integer, OutExp: Integer>(
 
 /// Scales a token-level marginal rate to atoms:
 /// `rate * 10^(out_decimals - in_decimals)`.
-fn atom_rate<InExp: Integer, OutExp: Integer>(token_rate: f64) -> f64 {
+pub(crate) fn atom_rate<InExp: Integer, OutExp: Integer>(
+  token_rate: f64,
+) -> f64 {
   token_rate * 10f64.powi(InExp::to_i32() - OutExp::to_i32())
 }
 

@@ -5,21 +5,23 @@ use anchor_lang::prelude::Pubkey;
 use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
-use hylo_core::exchange_context::ExoExchangeContext;
-use hylo_core::fees::controller::LevercoinFees;
+use hylo_core::error::CoreError;
+use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
+use hylo_core::fees::controller::{FeeExtract, LevercoinFees};
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::OracleConfig;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
-use hylo_core::util::normalize_mint_exp;
-use hylo_core::virtual_stablecoin::VirtualStablecoin;
+use hylo_core::util::{denormalize_mint_amount, normalize_mint_exp};
+use hylo_core::virtual_stablecoin::{validate_burn, VirtualStablecoin};
 use hylo_idl::pda;
 use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 use serde::{Deserialize, Serialize};
 
 use crate::protocol_state::accounts::decode;
 use crate::protocol_state::state::in_stablecoin_oracle_window;
+use crate::token_operation::{atom_rate, gate, RedeemOperationOutput};
 
 /// Field count of [`ExoPairAccounts`].
 pub const EXO_PAIR_ACCOUNTS: usize = 5;
@@ -43,6 +45,7 @@ pub struct ExoPairAccounts {
 #[derive(Clone)]
 pub struct ExoPairState<C: SolanaClock> {
   pub collateral_mint: Pubkey,
+  pub collateral_mint_info: Mint,
   pub context: ExoExchangeContext<C>,
   pub paused: bool,
   pub pool_drawdown: PoolDrawdown,
@@ -179,6 +182,7 @@ impl<C: SolanaClock> ExoPairState<C> {
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
       collateral_mint: exo_pair.collateral_mint,
+      collateral_mint_info: collateral_mint,
       context,
       paused: exo_pair.paused,
       pool_drawdown: exo_pair.pool_drawdown.into(),
@@ -186,6 +190,60 @@ impl<C: SolanaClock> ExoPairState<C> {
       supply_floor: exo_pair.virtual_stablecoin_supply_floor.try_into()?,
       oracle_publish_time: oracle.price_message.publish_time,
       oracle_interval_secs: exo_pair.oracle_interval_secs,
+    })
+  }
+
+  /// Computes collateral owed before fees within the vault balance.
+  ///
+  /// # Errors
+  /// * NAV, conversion, or insufficient collateral
+  pub(crate) fn redemption_fee_base(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let collateral_out = self
+      .context
+      .exo_conversion()
+      .token_to_exo(in_amount, self.context.stablecoin_nav()?)?;
+    gate(
+      collateral_out <= self.context.total_collateral,
+      CoreError::InsufficientLiquidity,
+    )?;
+    Ok(collateral_out)
+  }
+
+  /// Quotes redemption with strict fees without checking pause or freshness.
+  /// Rounds collateral to mint precision before normalizing the output.
+  ///
+  /// # Errors
+  /// * Liquidity, fee, burn floor, precision, or marginal rate failure
+  pub(crate) fn redemption_quote(
+    &self,
+    in_amount: UFix64<N6>,
+  ) -> Result<RedeemOperationOutput, CoreError> {
+    let collateral_out = self.redemption_fee_base(in_amount)?;
+    let FeeExtract {
+      fees_extracted,
+      amount_remaining,
+    } = self.context.stablecoin_redeem_fee(collateral_out)?;
+    validate_burn(
+      self.context.virtual_stablecoin_supply()?,
+      in_amount,
+      self.supply_floor,
+    )?;
+    let collateral_amount =
+      denormalize_mint_amount(&self.collateral_mint_info, amount_remaining)?;
+    let out_amount =
+      normalize_mint_exp(&self.collateral_mint_info, collateral_amount.bits)?;
+    let marginal_rate =
+      atom_rate::<N6, N9>(self.context.stablecoin_redeem_marginal(in_amount)?);
+    Ok(RedeemOperationOutput {
+      in_amount,
+      out_amount,
+      fee_amount: fees_extracted,
+      fee_mint: self.collateral_mint,
+      fee_base: collateral_out,
+      marginal_rate,
     })
   }
 

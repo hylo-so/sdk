@@ -3,16 +3,19 @@
 //! Prices move with every snapshot, so these assert that a route produces
 //! output, not what it produces.
 
+#![cfg(not(feature = "shadow"))]
+
 mod common;
 
 use std::fs::File;
+use std::sync::Arc;
 
 use anyhow::Result;
 use common::load_state;
 use fix::prelude::*;
 use hylo_clients::prelude::CommitmentConfig;
 use hylo_idl::tokens::{HYLOSOL, HYUSD, JITOSOL, SHYUSD, XSOL};
-use hylo_quotes::prelude::{ProtocolAccounts, TokenOperationExt};
+use hylo_quotes::prelude::{RpcStateProvider, TokenOperationExt};
 use serde_json::to_writer;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
@@ -23,19 +26,18 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 /// * Protocol accounts construction
 /// * File IO
 pub async fn dump_protocol_accounts() -> Result<()> {
-  let rpc_client = RpcClient::new_with_commitment(
+  let rpc_client = Arc::new(RpcClient::new_with_commitment(
     "https://api.mainnet-beta.solana.com".to_string(),
     CommitmentConfig::confirmed(),
-  );
-  let accounts = rpc_client
-    .get_multiple_accounts(&ProtocolAccounts::PUBKEYS)
+  ));
+  let protocol_accounts = RpcStateProvider::new(Arc::clone(&rpc_client))
+    .fetch_accounts()
     .await?;
   let epoch = rpc_client.get_epoch_info().await?;
   let filename = format!(
     "tests/data/protocol-state-{}-{}.json",
     epoch.epoch, epoch.slot_index
   );
-  let protocol_accounts = ProtocolAccounts::from_fetched(&accounts)?;
   let file = File::create_new(filename)?;
   to_writer(file, &protocol_accounts)?;
   Ok(())
@@ -48,7 +50,6 @@ async fn dump_snapshot() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn jitosol_to_xsol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N9>::new(1_000_000_000);
@@ -58,7 +59,6 @@ fn jitosol_to_xsol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn xsol_to_jitosol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N6>::new(1_000_000);
@@ -68,7 +68,6 @@ fn xsol_to_jitosol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn hyusd_to_xsol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N6>::new(1_000_000);
@@ -78,7 +77,6 @@ fn hyusd_to_xsol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn jitosol_to_hylosol() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N9>::new(1_000_000_000);
@@ -88,7 +86,6 @@ fn jitosol_to_hylosol() -> Result<()> {
 }
 
 #[test]
-#[ignore = "snapshot predates reserve gate; re-snapshot after redeploy"]
 fn hyusd_to_shyusd() -> Result<()> {
   let state = load_state()?;
   let amount_in = UFix64::<N6>::new(1_000_000);
