@@ -3,6 +3,8 @@
 //! Prices move with every snapshot, so these assert that a route produces
 //! output, not what it produces.
 
+#![cfg(not(feature = "shadow"))]
+
 mod common;
 
 use std::fs::File;

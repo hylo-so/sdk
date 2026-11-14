@@ -1,5 +1,7 @@
 //! State derived hyUSD and sHYUSD redemption rates.
 
+#![cfg(not(feature = "shadow"))]
+
 mod common;
 
 use std::iter::once;
