@@ -505,3 +505,90 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       .ok_or(RebalanceSwapPnl)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use anchor_lang::prelude::Clock;
+
+  use super::*;
+  use crate::error::CoreError::RequestedStablecoinOverMaxMintable;
+  use crate::fees::controller::FeePair;
+
+  /// Mainnet xONYC pair at slot 469352016, CR 1.6988 after a levercoin mint.
+  fn context() -> Result<ExoExchangeContext<Clock>, CoreError> {
+    let total_collateral = UFix64::new(2_613_846_088_166);
+    let collateral_oracle = OraclePrice {
+      spot: UFix64::new(1_165_813_250),
+      conf: UFix64::new(10),
+    };
+    let collateral_usd_price = collateral_oracle.price_range()?;
+    let mut virtual_stablecoin = VirtualStablecoin::new();
+    virtual_stablecoin.mint(UFix64::new(1_793_794_979))?;
+    let collateral_ratio = CollateralRatio::new(
+      total_collateral,
+      collateral_usd_price.lower,
+      virtual_stablecoin.supply()?,
+    )?;
+    let fees = |redeem| {
+      FeePair::new(UFixValue64::new(0, -4), UFixValue64::new(redeem, -4))
+    };
+    let curve = |floor, ceil| {
+      RebalanceCurveConfig::new(
+        UFixValue64::new(floor, -9),
+        UFixValue64::new(ceil, -9),
+      )
+    };
+    Ok(ExoExchangeContext {
+      clock: Clock::default(),
+      total_collateral,
+      collateral_oracle,
+      collateral_usd_price,
+      virtual_stablecoin,
+      levercoin_supply: Some(UFix64::new(1_250_403_756)),
+      collateral_ratio,
+      stablecoin_mint_threshold: UFix64::new(1_500_000_000),
+      rebalance_mode: RebalanceMode::from_cr(collateral_ratio),
+      levercoin_fees: LevercoinFees {
+        normal: fees(20),
+        sell_zone_1: fees(20),
+        sell_zone_2: fees(400),
+      },
+      stablecoin_mint_fees: InterpolatedMintFees::new(mint_fee_curve()?),
+      stablecoin_redeem_fees: InterpolatedRedeemFees::new(redeem_fee_curve()?),
+      sell_curve_config: curve(1_500_000, 200_000),
+      buy_curve_config: curve(1, 200_000),
+      levercoin_market_cap_limit: UFix64::new(1_000_000_000_000_000),
+    })
+  }
+
+  #[test]
+  fn swap_caps_at_mint_threshold() -> Result<(), CoreError> {
+    let context = context()?;
+    assert!(context.lever_to_stable_conversion_enabled());
+    let max = context.max_swappable_stablecoin()?;
+    assert_eq!(max, UFix64::new(237_709_272));
+    let supply = context.virtual_stablecoin_supply()?.checked_add(&max);
+    let projected = supply.map(|supply| {
+      CollateralRatio::new(
+        context.total_collateral,
+        context.collateral_usd_price.lower,
+        supply,
+      )
+    });
+    assert_eq!(
+      projected.map(|cr| cr.map(|cr| cr.at_least(UFix64::new(1_500_000_000)))),
+      Some(Ok(true)),
+    );
+    Ok(())
+  }
+
+  /// This swap executed on mainnet and left the pair at CR 1.4910.
+  #[test]
+  fn swap_rejects_below_mint_threshold() -> Result<(), CoreError> {
+    assert_eq!(
+      context()?.validate_stablecoin_swap_amount(UFix64::new(249_991_704)),
+      Err(RequestedStablecoinOverMaxMintable),
+    );
+    Ok(())
+  }
+}

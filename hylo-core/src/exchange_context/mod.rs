@@ -429,14 +429,13 @@ pub trait ExchangeContext {
   }
 
   /// Maximum stablecoin swappable from levercoin before hitting the
-  /// lowest CR threshold.
+  /// configured stablecoin mint threshold.
   ///
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = RebalanceMode::SellZone1
-      .active_range()
-      .end()?
+    let target = self
+      .stablecoin_mint_threshold()
       .checked_convert()
       .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(
