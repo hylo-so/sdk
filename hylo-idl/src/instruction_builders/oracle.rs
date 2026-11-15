@@ -19,19 +19,21 @@ pub fn initialize_price_aggregate(admin: Pubkey, mint: Pubkey) -> Instruction {
   }
 }
 
-/// Builds the instruction that stores a Pyth Lazer feed in a slot of the
-/// price aggregate for `mint`.
+/// Builds the instruction that stores a Pyth Lazer feed and its exponent in
+/// a slot of the price aggregate for `mint`.
 #[must_use]
 pub fn set_pyth_lazer_slot(
   admin: Pubkey,
   mint: Pubkey,
   slot_index: u8,
   feed_id: PythLazerFeedId,
+  exponent: i16,
 ) -> Instruction {
   let accounts = account_builders::set_pyth_lazer_slot(admin, mint);
   let args = args::SetPythLazerSlot {
     slot_index,
     feed_id,
+    exponent,
   };
   Instruction {
     program_id: oracle::ID,

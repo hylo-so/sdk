@@ -22260,7 +22260,7 @@
     {
       "name": "PriceObservation",
       "docs": [
-        "Source observation with a shared price and confidence exponent.",
+        "Source observation with price and confidence in the feed exponent.",
         "A zero price marks a feed that has not posted yet."
       ],
       "type": {
@@ -22269,10 +22269,6 @@
           {
             "name": "price",
             "type": "u64"
-          },
-          {
-            "name": "exponent",
-            "type": "i16"
           },
           {
             "name": "confidence",
@@ -22344,7 +22340,8 @@
     {
       "name": "PythLazerSlot",
       "docs": [
-        "Pyth Lazer feed and the latest observation posted from it."
+        "Pyth Lazer feed, its price exponent, and the latest observation posted",
+        "from it."
       ],
       "type": {
         "kind": "struct",
@@ -22356,6 +22353,10 @@
                 "name": "PythLazerFeedId"
               }
             }
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
           },
           {
             "name": "observation",

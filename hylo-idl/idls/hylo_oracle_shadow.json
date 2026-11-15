@@ -9,14 +9,6 @@
   "instructions": [
     {
       "name": "clear_pyth_lazer_slot",
-      "docs": [
-        "Clears an occupied Pyth Lazer slot.",
-        "",
-        "# Errors",
-        "* The signer is not the exchange administrator.",
-        "* The index is out of range.",
-        "* The slot is empty."
-      ],
       "discriminator": [
         174,
         223,
@@ -115,12 +107,6 @@
     },
     {
       "name": "initialize_price_aggregate",
-      "docs": [
-        "Creates a price aggregate account for a mint.",
-        "",
-        "# Errors",
-        "* The signer is not the exchange administrator."
-      ],
       "discriminator": [
         78,
         122,
@@ -222,15 +208,6 @@
     },
     {
       "name": "set_pyth_lazer_slot",
-      "docs": [
-        "Stores a Pyth Lazer feed in an empty slot.",
-        "",
-        "# Errors",
-        "* The signer is not the exchange administrator.",
-        "* The index is out of range.",
-        "* The slot is occupied.",
-        "* The feed ID is already configured."
-      ],
       "discriminator": [
         171,
         230,
@@ -332,23 +309,15 @@
               "name": "PythLazerFeedId"
             }
           }
+        },
+        {
+          "name": "exponent",
+          "type": "i16"
         }
       ]
     },
     {
       "name": "update_observations_with_pyth_lazer",
-      "docs": [
-        "Verifies one signed Pyth Lazer batch and stores each feed into the price",
-        "aggregate at the same position in the remaining accounts.",
-        "",
-        "# Errors",
-        "* Pyth Lazer verification fails.",
-        "* The payload does not decode or names another channel.",
-        "* The remaining accounts do not match the feed count, repeat an account,",
-        "or fail the price aggregate constraints.",
-        "* A feed is not configured on its aggregate.",
-        "* A feed property, price, or timestamp is invalid."
-      ],
       "discriminator": [
         229,
         215,
@@ -528,66 +497,76 @@
     },
     {
       "code": 6001,
-      "name": "InvalidTimestamp",
-      "msg": "Price observation timestamp is not newer than the stored one."
+      "name": "FeedUpdateAfterEnvelope",
+      "msg": "Feed update timestamp is later than its payload envelope."
     },
     {
       "code": 6002,
+      "name": "StaleFeedUpdate",
+      "msg": "Feed update timestamp is not newer than the stored observation."
+    },
+    {
+      "code": 6003,
       "name": "InvalidLazerPayload",
       "msg": "Verified Lazer payload could not be decoded."
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "UnexpectedLazerChannel",
       "msg": "Verified Lazer payload used an unexpected channel."
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "MissingLazerPrice",
       "msg": "Verified Lazer feed is missing price."
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "MissingLazerExponent",
       "msg": "Verified Lazer feed is missing exponent."
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "MissingLazerConfidence",
       "msg": "Verified Lazer feed is missing confidence."
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "InvalidLazerConfidence",
       "msg": "Verified Lazer feed has invalid confidence."
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "MissingLazerFeedUpdateTimestamp",
       "msg": "Verified Lazer feed is missing feed update timestamp."
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "MissingLazerMarketSession",
       "msg": "Verified Lazer feed is missing market session."
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "DuplicateLazerProperty",
       "msg": "Verified Lazer feed contained a required property more than once."
     },
     {
-      "code": 6011,
+      "code": 6012,
+      "name": "UnexpectedLazerExponent",
+      "msg": "Verified Lazer feed exponent differs from its slot."
+    },
+    {
+      "code": 6013,
       "name": "UnknownLazerFeed",
       "msg": "Verified Lazer feed is not configured for the aggregate."
     },
     {
-      "code": 6012,
+      "code": 6014,
       "name": "RemainingAccountsMismatch",
       "msg": "Remaining account count does not match the batch payload."
     },
     {
-      "code": 6013,
+      "code": 6015,
       "name": "DuplicatePriceAggregateAccount",
       "msg": "PriceAggregate account appears more than once."
     }
@@ -1026,7 +1005,7 @@
     {
       "name": "PriceObservation",
       "docs": [
-        "Source observation with a shared price and confidence exponent.",
+        "Source observation with price and confidence in the feed exponent.",
         "A zero price marks a feed that has not posted yet."
       ],
       "type": {
@@ -1035,10 +1014,6 @@
           {
             "name": "price",
             "type": "u64"
-          },
-          {
-            "name": "exponent",
-            "type": "i16"
           },
           {
             "name": "confidence",
@@ -1078,7 +1053,8 @@
     {
       "name": "PythLazerSlot",
       "docs": [
-        "Pyth Lazer feed and the latest observation posted from it."
+        "Pyth Lazer feed, its price exponent, and the latest observation posted",
+        "from it."
       ],
       "type": {
         "kind": "struct",
@@ -1090,6 +1066,10 @@
                 "name": "PythLazerFeedId"
               }
             }
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
           },
           {
             "name": "observation",
@@ -1152,6 +1132,10 @@
                 "name": "PythLazerFeedId"
               }
             }
+          },
+          {
+            "name": "exponent",
+            "type": "i16"
           }
         ]
       }
