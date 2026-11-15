@@ -18,7 +18,8 @@ use crate::error::CoreError;
 )]
 pub struct PythLazerFeedId(pub u32);
 
-/// Pyth Lazer feed and the latest observation posted from it.
+/// Pyth Lazer feed, its price exponent, and the latest observation posted
+/// from it.
 #[derive(
   Debug,
   Clone,
@@ -31,6 +32,7 @@ pub struct PythLazerFeedId(pub u32);
 )]
 pub struct PythLazerSlot {
   pub feed_id: PythLazerFeedId,
+  pub exponent: i16,
   pub observation: PriceObservation,
 }
 
@@ -95,6 +97,7 @@ impl PythLazerSlots {
   /// Stores a feed with a default observation in an empty slot.
   ///
   /// # Errors
+  /// * The exponent is outside the supported range.
   /// * The feed ID has already been configured to a slot.
   /// * The given index is out of range.
   /// * The slot is already occupied.
@@ -102,7 +105,9 @@ impl PythLazerSlots {
     &mut self,
     index: u8,
     feed_id: PythLazerFeedId,
+    exponent: i16,
   ) -> Result<(), CoreError> {
+    PriceObservation::validate_exponent(exponent)?;
     self
       .slot_for_feed(feed_id)
       .is_none()
@@ -115,6 +120,7 @@ impl PythLazerSlots {
       .ok_or(CoreError::OraclePythLazerSlotOccupied)?;
     *slot = Some(PythLazerSlot {
       feed_id,
+      exponent,
       observation: PriceObservation::default(),
     });
     Ok(())
@@ -139,10 +145,14 @@ mod tests {
     PriceObservation, PythLazerFeedId, PythLazerSlot, PythLazerSlots,
   };
   use crate::error::CoreError;
+  use crate::oracle::{MAX_EXPONENT, MIN_EXPONENT};
+
+  const EXPONENT: i16 = -8;
 
   fn slot(feed_id: u32, price: u64) -> PythLazerSlot {
     PythLazerSlot {
       feed_id: PythLazerFeedId(feed_id),
+      exponent: EXPONENT,
       observation: PriceObservation {
         price,
         ..PriceObservation::default()
@@ -157,16 +167,30 @@ mod tests {
   #[test]
   fn set_fills_the_indexed_slot() -> Result<(), CoreError> {
     let mut slots = PythLazerSlots::default();
-    slots.set(2, PythLazerFeedId(1))?;
+    slots.set(2, PythLazerFeedId(1), EXPONENT)?;
     assert_eq!(slots, PythLazerSlots([None, None, Some(slot(1, 0))]));
     Ok(())
+  }
+
+  #[test]
+  fn set_rejects_unsupported_exponent() {
+    let mut slots = PythLazerSlots::default();
+    assert_eq!(
+      slots.set(0, PythLazerFeedId(1), MAX_EXPONENT + 1),
+      Err(CoreError::OracleExponent)
+    );
+    assert_eq!(
+      slots.set(0, PythLazerFeedId(1), MIN_EXPONENT - 1),
+      Err(CoreError::OracleExponent)
+    );
+    assert_eq!(slots, PythLazerSlots::default());
   }
 
   #[test]
   fn set_rejects_out_of_range_index() {
     let mut slots = PythLazerSlots::default();
     assert_eq!(
-      slots.set(3, PythLazerFeedId(1)),
+      slots.set(3, PythLazerFeedId(1), EXPONENT),
       Err(CoreError::OraclePythLazerSlotOutOfRange)
     );
     assert_eq!(slots, PythLazerSlots::default());
@@ -176,7 +200,7 @@ mod tests {
   fn set_rejects_occupied_slot() {
     let mut slots = full();
     assert_eq!(
-      slots.set(1, PythLazerFeedId(9)),
+      slots.set(1, PythLazerFeedId(9), EXPONENT),
       Err(CoreError::OraclePythLazerSlotOccupied)
     );
     assert_eq!(slots, full());
@@ -186,7 +210,7 @@ mod tests {
   fn set_rejects_duplicate_feed_id() {
     let mut slots = PythLazerSlots([Some(slot(1, 0)), None, None]);
     assert_eq!(
-      slots.set(1, PythLazerFeedId(1)),
+      slots.set(1, PythLazerFeedId(1), EXPONENT),
       Err(CoreError::OracleDuplicatePythLazerFeedId)
     );
     assert_eq!(slots, PythLazerSlots([Some(slot(1, 0)), None, None]));
@@ -201,7 +225,7 @@ mod tests {
       slots,
       PythLazerSlots([Some(slot(1, 0)), None, Some(slot(3, 0))])
     );
-    slots.set(1, PythLazerFeedId(2))?;
+    slots.set(1, PythLazerFeedId(2), EXPONENT)?;
     assert_eq!(slots, full());
     Ok(())
   }

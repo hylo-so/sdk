@@ -45,7 +45,6 @@ mod tests {
     };
     let observation = PriceObservation {
       price: 1_000_000_000,
-      exponent: -9,
       confidence: 10_000_000,
       posted_slot: 100,
       posted_timestamp_us: 10_000_000,
@@ -54,6 +53,7 @@ mod tests {
     let price_aggregate = TestPriceAggregate(PythLazerSlots([
       Some(PythLazerSlot {
         feed_id: PythLazerFeedId(1),
+        exponent: -9,
         observation,
       }),
       None,

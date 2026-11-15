@@ -292,19 +292,6 @@ impl From<MarketSession> for hylo_idl::oracle::types::MarketSession {
   }
 }
 
-impl From<PriceObservation> for hylo_idl::oracle::types::PriceObservation {
-  fn from(val: PriceObservation) -> Self {
-    hylo_idl::oracle::types::PriceObservation {
-      price: val.price,
-      exponent: val.exponent,
-      confidence: val.confidence,
-      posted_slot: val.posted_slot,
-      posted_timestamp_us: val.posted_timestamp_us,
-      market_session: val.market_session.into(),
-    }
-  }
-}
-
 impl From<hylo_idl::oracle::types::MarketSession> for MarketSession {
   fn from(idl: hylo_idl::oracle::types::MarketSession) -> MarketSession {
     match idl {
@@ -327,7 +314,6 @@ impl From<hylo_idl::oracle::types::PriceObservation> for PriceObservation {
   fn from(idl: hylo_idl::oracle::types::PriceObservation) -> PriceObservation {
     PriceObservation {
       price: idl.price,
-      exponent: idl.exponent,
       confidence: idl.confidence,
       posted_slot: idl.posted_slot,
       posted_timestamp_us: idl.posted_timestamp_us,
@@ -352,7 +338,14 @@ impl From<PythLazerSlot> for hylo_idl::oracle::types::PythLazerSlot {
   fn from(val: PythLazerSlot) -> Self {
     hylo_idl::oracle::types::PythLazerSlot {
       feed_id: val.feed_id.into(),
-      observation: val.observation.into(),
+      observation: hylo_idl::oracle::types::PriceObservation {
+        price: val.observation.price,
+        exponent: val.exponent,
+        confidence: val.observation.confidence,
+        posted_slot: val.observation.posted_slot,
+        posted_timestamp_us: val.observation.posted_timestamp_us,
+        market_session: val.observation.market_session.into(),
+      },
     }
   }
 }
@@ -361,6 +354,7 @@ impl From<hylo_idl::oracle::types::PythLazerSlot> for PythLazerSlot {
   fn from(idl: hylo_idl::oracle::types::PythLazerSlot) -> PythLazerSlot {
     PythLazerSlot {
       feed_id: idl.feed_id.into(),
+      exponent: idl.observation.exponent,
       observation: idl.observation.into(),
     }
   }
