@@ -185,14 +185,14 @@ mod tests {
     }));
 
     let treasury = Pubkey::new_unique();
-    let args = oracle::client::args::UpdateObservationWithPythLazer {
+    let args = oracle::client::args::UpdateObservationsWithPythLazer {
       channel_id: 4,
       message_data: vec![1, 2, 3],
       ed25519_instruction_index: 0,
       signature_index: 0,
     };
     let update =
-      oracle::instruction_builders::update_observation_with_pyth_lazer(
+      oracle::instruction_builders::update_observations_with_pyth_lazer(
         admin,
         treasury,
         &[mint],

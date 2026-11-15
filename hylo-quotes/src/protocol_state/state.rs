@@ -167,8 +167,7 @@ impl<C: SolanaClock> ProtocolState<C> {
     jitosol_vault_balance: UFix64<N9>,
     hylosol_vault_balance: UFix64<N9>,
   ) -> Result<ProtocolState<C>> {
-    let sol_usd_publish_time =
-      sol_usd.price_observations().latest_timestamp_secs()?;
+    let sol_usd_publish_time = sol_usd.latest_timestamp_secs()?;
     let fetched_at = clock.unix_timestamp();
     let lst_swap_config = AssetSwapConfig::new(hylo.lst_swap_fee.into())?;
     let exchange_context =

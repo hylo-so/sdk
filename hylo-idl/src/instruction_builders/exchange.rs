@@ -308,11 +308,11 @@ pub fn settle_virtual_stablecoin_usdc() -> Instruction {
 #[must_use]
 pub fn settle_virtual_stablecoin_exo(
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
 ) -> Instruction {
   let accounts = account_builders::settle_virtual_stablecoin_exo(
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   let args = args::SettleVirtualStablecoinExo {};
   Instruction {
@@ -392,11 +392,14 @@ pub fn swap_lst_to_lst(
 pub fn register_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  exo_usd_pyth_feed: Pubkey,
+  exo_usd_price_aggregate: Pubkey,
   args: &args::RegisterExo,
 ) -> Instruction {
-  let accounts =
-    account_builders::register_exo(admin, collateral_mint, exo_usd_pyth_feed);
+  let accounts = account_builders::register_exo(
+    admin,
+    collateral_mint,
+    exo_usd_price_aggregate,
+  );
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -408,13 +411,13 @@ pub fn register_exo(
 pub fn mint_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::MintLevercoinExo,
 ) -> Instruction {
   let accounts = account_builders::mint_levercoin_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -427,13 +430,13 @@ pub fn mint_levercoin_exo(
 pub fn mint_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::MintStablecoinExo,
 ) -> Instruction {
   let accounts = account_builders::mint_stablecoin_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -446,13 +449,13 @@ pub fn mint_stablecoin_exo(
 pub fn redeem_levercoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::RedeemLevercoinExo,
 ) -> Instruction {
   let accounts = account_builders::redeem_levercoin_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -465,13 +468,13 @@ pub fn redeem_levercoin_exo(
 pub fn redeem_stablecoin_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::RedeemStablecoinExo,
 ) -> Instruction {
   let accounts = account_builders::redeem_stablecoin_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -484,13 +487,13 @@ pub fn redeem_stablecoin_exo(
 pub fn genesis_mint_exo(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::GenesisMintExo,
 ) -> Instruction {
   let accounts = account_builders::genesis_mint_exo(
     admin,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -502,11 +505,11 @@ pub fn genesis_mint_exo(
 #[must_use]
 pub fn harvest_borrow_rate(
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
 ) -> Instruction {
   let accounts = account_builders::harvest_borrow_rate(
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   let args = args::HarvestBorrowRate {};
   Instruction {
@@ -520,13 +523,13 @@ pub fn harvest_borrow_rate(
 pub fn convert_lever_to_stable_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::ConvertLeverToStableExo,
 ) -> Instruction {
   let accounts = account_builders::convert_lever_to_stable_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -539,13 +542,13 @@ pub fn convert_lever_to_stable_exo(
 pub fn convert_stable_to_lever_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::ConvertStableToLeverExo,
 ) -> Instruction {
   let accounts = account_builders::convert_stable_to_lever_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1018,10 +1021,11 @@ pub fn update_exo_levercoin_market_cap_limit(
 #[must_use]
 pub fn initialize_usdc(
   admin: Pubkey,
-  usdc_usd_pyth_feed: Pubkey,
+  usdc_usd_price_aggregate: Pubkey,
   args: &args::InitializeUsdc,
 ) -> Instruction {
-  let accounts = account_builders::initialize_usdc(admin, usdc_usd_pyth_feed);
+  let accounts =
+    account_builders::initialize_usdc(admin, usdc_usd_price_aggregate);
   Instruction {
     program_id: exchange::ID,
     accounts: accounts.to_account_metas(None),
@@ -1216,13 +1220,13 @@ pub fn initialize_pool_drawdown_exo(
 pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::SwapExoToUsdc,
 ) -> Instruction {
   let accounts = account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1235,13 +1239,13 @@ pub fn swap_exo_to_usdc(
 pub fn swap_exo_to_usdc_all(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::SwapExoToUsdcAll,
 ) -> Instruction {
   let accounts = account_builders::swap_exo_to_usdc(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,
@@ -1254,13 +1258,13 @@ pub fn swap_exo_to_usdc_all(
 pub fn swap_usdc_to_exo(
   user: Pubkey,
   collateral_mint: Pubkey,
-  collateral_usd_pyth_feed: Pubkey,
+  collateral_usd_price_aggregate: Pubkey,
   args: &args::SwapUsdcToExo,
 ) -> Instruction {
   let accounts = account_builders::swap_usdc_to_exo(
     user,
     collateral_mint,
-    collateral_usd_pyth_feed,
+    collateral_usd_price_aggregate,
   );
   Instruction {
     program_id: exchange::ID,

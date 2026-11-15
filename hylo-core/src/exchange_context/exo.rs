@@ -96,13 +96,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   /// # Errors
   /// * Oracle, curve, or stability controller validation
   #[allow(clippy::too_many_arguments)]
-  pub fn load<P: PriceAggregateExt>(
+  pub fn load(
     clock: C,
     total_collateral: UFix64<N9>,
     stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
-    collateral_usd: &P,
+    collateral_usd: &impl PriceAggregateExt,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
     sell_curve_config: RebalanceCurveConfig,

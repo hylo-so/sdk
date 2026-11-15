@@ -1,4 +1,4 @@
-use anchor_lang::prelude::{bpf_loader_upgradeable, Pubkey};
+use anchor_lang::prelude::{bpf_loader_upgradeable, pubkey, Pubkey};
 use anchor_spl::associated_token::spl_associated_token_account;
 use anchor_spl::token;
 use const_crypto::ed25519;
@@ -248,3 +248,8 @@ pub const EXO_REGISTRY: Pubkey =
 
 pub const USDC_PAIR: Pubkey =
   pda!(exchange::ID, exchange::constants::USDC_PAIR);
+
+pub const PYTH_LAZER_PROGRAM: Pubkey =
+  pubkey!("pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt");
+
+pub const PYTH_LAZER_STORAGE: Pubkey = pda!(PYTH_LAZER_PROGRAM, b"storage");

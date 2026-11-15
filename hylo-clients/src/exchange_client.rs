@@ -745,12 +745,12 @@ impl ExchangeClient {
   /// * Failed to build transaction instructions
   pub async fn initialize_usdc(
     &self,
-    usdc_usd_pyth_feed: Pubkey,
+    usdc_usd_price_aggregate: Pubkey,
     args: &args::InitializeUsdc,
   ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::initialize_usdc(
       self.signer(),
-      usdc_usd_pyth_feed,
+      usdc_usd_price_aggregate,
       args,
     );
     let memo = build_memo("initialize_usdc", &instruction);
@@ -810,13 +810,13 @@ impl ExchangeClient {
   pub async fn register_exo(
     &self,
     collateral_mint: Pubkey,
-    exo_usd_pyth_feed: Pubkey,
+    exo_usd_price_aggregate: Pubkey,
     args: &args::RegisterExo,
   ) -> Result<SignedTransaction> {
     let instruction = instruction_builders::register_exo(
       self.signer(),
       collateral_mint,
-      exo_usd_pyth_feed,
+      exo_usd_price_aggregate,
       args,
     );
     let memo = build_memo("register_exo", &instruction);
@@ -834,7 +834,7 @@ impl ExchangeClient {
   pub async fn genesis_mint_exo(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_price_aggregate: Pubkey,
     args: &args::GenesisMintExo,
   ) -> Result<SignedTransaction> {
     let vault = self.signer();
@@ -845,7 +845,7 @@ impl ExchangeClient {
     let instruction = instruction_builders::genesis_mint_exo(
       vault,
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_price_aggregate,
       args,
     );
     let memo = build_memo("genesis_mint_exo", &instruction);
@@ -880,11 +880,11 @@ impl ExchangeClient {
   pub fn harvest_borrow_rate(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_price_aggregate: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::harvest_borrow_rate(
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_price_aggregate,
     );
     Ok(VersionedTransactionData::one(instruction))
   }
@@ -918,11 +918,11 @@ impl ExchangeClient {
   pub fn settle_virtual_stablecoin_exo(
     &self,
     collateral_mint: Pubkey,
-    collateral_usd_pyth_feed: Pubkey,
+    collateral_usd_price_aggregate: Pubkey,
   ) -> Result<VersionedTransactionData> {
     let instruction = instruction_builders::settle_virtual_stablecoin_exo(
       collateral_mint,
-      collateral_usd_pyth_feed,
+      collateral_usd_price_aggregate,
     );
     Ok(VersionedTransactionData::one(instruction))
   }

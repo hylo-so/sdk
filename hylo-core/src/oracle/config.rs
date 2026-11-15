@@ -9,7 +9,7 @@ use crate::error::CoreError::{
 const MIN_INTERVAL_SECS: u64 = 1;
 const MAX_INTERVAL_SECS: u64 = 60;
 const MIN_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(0);
-const MAX_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(50_000_000);
+pub(crate) const MAX_CONF_TOLERANCE: UFix64<N9> = UFix64::constant(50_000_000);
 
 /// Divides oracle secs to a tighter tolerance.
 pub const ORACLE_DIVISOR: u64 = 4;
