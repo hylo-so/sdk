@@ -16,7 +16,7 @@
         };
         let
           sharedBuildInputs = [ libiconv pkg-config gcc openssl ];
-          rustStable = rust-bin.stable."1.88.0".default.override {
+          rustStable = rust-bin.stable."1.97.1".default.override {
             extensions = [ "rust-analyzer" "rust-src" ];
           };
           shellTools =
