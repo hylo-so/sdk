@@ -47,6 +47,11 @@ use crate::HyloJupiter;
 const EVENT_CPI_PREFIX: [u8; 8] = 0x1d9a_cb51_2ea5_45e4_u64.to_le_bytes();
 const PROGRAM_IDS: [Pubkey; 3] = [exchange::ID, earn_pool::ID, router::ID];
 
+fn rpc_url() -> String {
+  std::env::var("RPC_URL")
+    .unwrap_or_else(|_| "https://api.mainnet.solana.com".to_string())
+}
+
 fn keypair_from_surfpool(keypair: &SurfpoolKeypair) -> Result<Keypair> {
   Ok(Keypair::try_from(keypair.to_bytes().as_slice())?)
 }
@@ -143,10 +148,8 @@ fn load_amm(surfnet: &Surfnet, client: &RpcClient) -> Result<HyloJupiter> {
   let context = AmmContext {
     clock_ref: clock.into(),
   };
-  let upstream = RpcClient::new_with_commitment(
-    std::env::var("RPC_URL").context("RPC_URL must be set")?,
-    CommitmentConfig::confirmed(),
-  );
+  let upstream =
+    RpcClient::new_with_commitment(rpc_url(), CommitmentConfig::confirmed());
   let mut amm = HyloJupiter::from_keyed_account(
     &KeyedAccount {
       key: pda::EXO_REGISTRY,
@@ -417,9 +420,8 @@ async fn load() -> Result<Surfnet> {
         .transpose()
     })
     .collect::<Result<Vec<_>>>()?;
-  let rpc_url = std::env::var("RPC_URL").context("RPC_URL must be set")?;
   let surfnet = Surfnet::builder()
-    .remote_rpc_url(rpc_url)
+    .remote_rpc_url(rpc_url())
     .block_production_mode(BlockProductionMode::Manual)
     .start()
     .await?;
