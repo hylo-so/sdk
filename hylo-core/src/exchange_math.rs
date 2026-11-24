@@ -234,7 +234,6 @@ fn depeg_stablecoin_nav_inner(
 
 #[cfg(test)]
 mod tests {
-  use fix::prelude::*;
   use proptest::prelude::*;
 
   use super::*;
