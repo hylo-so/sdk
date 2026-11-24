@@ -35,7 +35,7 @@ use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
   max_buyable_collateral, max_sellable_collateral, midpoint,
 };
-use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
@@ -102,6 +102,7 @@ pub trait ExchangeContext {
     SellPriceCurve::new(
       self.collateral_oracle_price(),
       self.sell_curve_config(),
+      self.rebalance_tolerance(),
     )
   }
 
@@ -110,7 +111,11 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Curve construction failure
   fn rebalance_buy_curve(&self) -> Result<BuyPriceCurve, CoreError> {
-    BuyPriceCurve::new(self.collateral_oracle_price(), self.buy_curve_config())
+    BuyPriceCurve::new(
+      self.collateral_oracle_price(),
+      self.buy_curve_config(),
+      self.rebalance_tolerance(),
+    )
   }
 
   /// Returns true if sell-side rebalancing is active at the current CR.
@@ -132,7 +137,10 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = RebalanceMode::Neutral.active_range().start()?;
+    let target_cr = self
+      .rebalance_tolerance()
+      .active_range(RebalanceMode::Neutral)
+      .start()?;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -150,7 +158,10 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = RebalanceMode::BuyZone1.active_range().start()?;
+    let target_cr = self
+      .rebalance_tolerance()
+      .active_range(RebalanceMode::BuyZone1)
+      .start()?;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -170,7 +181,10 @@ pub trait ExchangeContext {
   /// * Curve or arithmetic failure
   fn rebalance_buy_target_cr(&self) -> Result<UFix64<N9>, CoreError> {
     match self.rebalance_mode() {
-      RebalanceMode::BuyZone2 => RebalanceMode::BuyZone1.active_range().end(),
+      RebalanceMode::BuyZone2 => self
+        .rebalance_tolerance()
+        .active_range(RebalanceMode::BuyZone1)
+        .end(),
       RebalanceMode::BuyZone1 => {
         let spot = self.collateral_oracle_price().spot;
         let cr_spot = self.rebalance_buy_curve()?.cr_at_price(spot)?;
@@ -206,9 +220,10 @@ pub trait ExchangeContext {
   /// * Curve or arithmetic failure
   fn rebalance_sell_target_cr(&self) -> Result<UFix64<N9>, CoreError> {
     match self.rebalance_mode() {
-      RebalanceMode::SellZone2 => {
-        RebalanceMode::SellZone1.active_range().start()
-      }
+      RebalanceMode::SellZone2 => self
+        .rebalance_tolerance()
+        .active_range(RebalanceMode::SellZone1)
+        .start(),
       RebalanceMode::SellZone1 => {
         let spot = self.collateral_oracle_price().spot;
         let cr_spot = self.rebalance_sell_curve()?.cr_at_price(spot)?;
@@ -242,6 +257,9 @@ pub trait ExchangeContext {
 
   /// Current levercoin supply.
   fn levercoin_supply(&self) -> Result<UFix64<N6>, CoreError>;
+
+  /// Tolerance defining the CR range of each rebalance mode.
+  fn rebalance_tolerance(&self) -> RebalanceTolerance;
 
   /// Current rebalance mode, computed at construction.
   fn rebalance_mode(&self) -> RebalanceMode;
@@ -374,7 +392,7 @@ pub trait ExchangeContext {
       self.collateral_usd_price().lower,
       new_stablecoin,
     )?;
-    Ok(RebalanceMode::from_cr(projected_cr))
+    Ok(self.rebalance_tolerance().mode(projected_cr))
   }
 
   /// Worse of the current and projected rebalance modes, so a transaction
@@ -434,8 +452,9 @@ pub trait ExchangeContext {
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = RebalanceMode::SellZone1
-      .active_range()
+    let target = self
+      .rebalance_tolerance()
+      .active_range(RebalanceMode::SellZone1)
       .end()?
       .checked_convert()
       .ok_or(MaxSwappable)?;
@@ -459,8 +478,9 @@ pub trait ExchangeContext {
       Ok(self.total_collateral())
     } else {
       let atom = UFix64::new(1);
-      let last_depeg_cr = RebalanceMode::SellZone2
-        .active_range()
+      let last_depeg_cr = self
+        .rebalance_tolerance()
+        .active_range(RebalanceMode::SellZone2)
         .start()?
         .checked_sub(&atom)
         .ok_or(CollateralRatioOverflow)?;
@@ -531,8 +551,9 @@ pub trait ExchangeContext {
     &self,
     requested: UFix64<N6>,
   ) -> Result<UFix64<N6>, CoreError> {
-    let target = RebalanceMode::SellZone2
-      .active_range()
+    let target = self
+      .rebalance_tolerance()
+      .active_range(RebalanceMode::SellZone2)
       .end()?
       .checked_convert()
       .ok_or(MaxMintable)?;

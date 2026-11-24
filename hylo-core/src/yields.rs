@@ -11,6 +11,7 @@ use crate::error::CoreError::{
   YieldHarvestConfigValidation, YieldHarvestMultiplier,
 };
 use crate::fees::controller::FeeExtract;
+use crate::rebalance::mode::RebalanceTolerance;
 
 /// 1000 bps (10%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
@@ -80,8 +81,16 @@ impl YieldHarvestConfig {
   /// # Errors
   /// * CR below the curve domain
   /// * Conversion or arithmetic
-  pub fn multiple(&self, cr: CollateralRatio) -> Result<UFix64<N9>, CoreError> {
-    let curve = buy_zone_curve(self.floor_mult(), self.ceil_mult()?)?;
+  pub fn multiple(
+    &self,
+    cr: CollateralRatio,
+    rebalance_tolerance: RebalanceTolerance,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let curve = buy_zone_curve(
+      self.floor_mult(),
+      self.ceil_mult()?,
+      rebalance_tolerance,
+    )?;
     saturating_apply_curve(&curve, cr)
   }
 
@@ -94,8 +103,9 @@ impl YieldHarvestConfig {
     &self,
     amount: UFix64<N9>,
     cr: CollateralRatio,
+    rebalance_tolerance: RebalanceTolerance,
   ) -> Result<UFix64<N9>, CoreError> {
-    let multiple = self.multiple(cr)?;
+    let multiple = self.multiple(cr, rebalance_tolerance)?;
     amount.mul_ceil(multiple).ok_or(YieldHarvestMultiplier)
   }
 
@@ -165,6 +175,7 @@ mod tests {
   const ONE: UFix64<N9> = UFix64::constant(1_000_000_000);
   const TWO: UFix64<N9> = UFix64::constant(2_000_000_000);
   const FEE: UFix64<N4> = UFix64::constant(500);
+  const WIDE: RebalanceTolerance = RebalanceTolerance::Wide;
 
   fn config(ceil_mult: UFix64<N9>) -> YieldHarvestConfig {
     YieldHarvestConfig {
@@ -191,20 +202,23 @@ mod tests {
   #[test]
   fn multiple_shape() -> Result<(), CoreError> {
     let config = config(TWO);
-    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
-    let buy_zone_1_end = RebalanceMode::BuyZone1.active_range().end()?;
+    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
+    let buy_zone_1_end = WIDE.active_range(RebalanceMode::BuyZone1).end()?;
     let below = CR::Finite(UFix64::new(neutral_start.bits - 1));
-    assert_eq!(config.multiple(below), Err(CoreError::InterpOutOfDomain));
-    assert_eq!(config.multiple(CR::Finite(neutral_start))?, ONE);
-    assert_eq!(config.multiple(CR::Finite(buy_zone_1_end))?, TWO);
-    assert_eq!(config.multiple(CR::Infinite)?, TWO);
+    assert_eq!(
+      config.multiple(below, WIDE),
+      Err(CoreError::InterpOutOfDomain)
+    );
+    assert_eq!(config.multiple(CR::Finite(neutral_start), WIDE)?, ONE);
+    assert_eq!(config.multiple(CR::Finite(buy_zone_1_end), WIDE)?, TWO);
+    assert_eq!(config.multiple(CR::Infinite, WIDE)?, TWO);
     Ok(())
   }
 
   #[test]
   fn apply_multiple_at_ceil() -> Result<(), CoreError> {
     let sol_in = UFix64::<N9>::new(1_234_567_890_123);
-    let sol_out = config(TWO).apply_multiple(sol_in, CR::Infinite)?;
+    let sol_out = config(TWO).apply_multiple(sol_in, CR::Infinite, WIDE)?;
     assert_eq!(sol_out, UFix64::new(2_469_135_780_246));
     Ok(())
   }

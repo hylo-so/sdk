@@ -17,6 +17,7 @@ use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, OraclePrice};
+use hylo_core::rebalance::mode::RebalanceTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
@@ -248,6 +249,7 @@ fn exo_exchange_context(
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
     exo_pair.levercoin_market_cap_limit.try_into()?,
+    RebalanceTolerance::Wide,
   )?;
   Ok(exo_context)
 }
@@ -359,6 +361,7 @@ pub fn build_stats_inputs(
       borrow_rate_fee: accounts.exo_pair.borrow_rate_fee.try_into()?,
       collateral_ratio: exo_context.collateral_ratio(),
       levercoin_market_cap: exo_context.levercoin_market_cap()?,
+      rebalance_tolerance: exo_context.rebalance_tolerance(),
     }],
     sol_usd_spot: sol_usd.spot,
     outstanding_drawdown,

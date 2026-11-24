@@ -4,6 +4,7 @@ use anchor_lang::prelude::Pubkey;
 use fix::prelude::*;
 use hylo_core::borrow_rate::BorrowRateCurveConfig;
 use hylo_core::collateral_ratio::CR;
+use hylo_core::rebalance::mode::RebalanceTolerance;
 use hylo_core::yields::{HarvestCache, YieldHarvestConfig};
 
 /// Snapshot of one harvest stream from its onchain [`HarvestCache`]:
@@ -33,6 +34,7 @@ pub struct ExoSnapshot {
   pub borrow_rate_fee: UFix64<N4>,
   pub collateral_ratio: CR,
   pub levercoin_market_cap: UFix64<N9>,
+  pub rebalance_tolerance: RebalanceTolerance,
 }
 
 /// Deserialized onchain inputs for

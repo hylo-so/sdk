@@ -11,7 +11,7 @@ use crate::error::CoreError::{
   BorrowRateApply, BorrowRateValidation, InterpFeeConversion,
 };
 use crate::fees::interp::{FixInterp, Point};
-use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
 use crate::rebalance::pricing::narrow;
 
 /// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
@@ -45,19 +45,13 @@ pub struct BorrowRateCurveConfig {
 pub fn buy_zone_curve(
   floor: UFix64<N9>,
   ceil: UFix64<N9>,
+  rebalance_tolerance: RebalanceTolerance,
 ) -> Result<FixInterp<3, N9>, CoreError> {
-  let neutral_start = RebalanceMode::Neutral
-    .active_range()
-    .start()
-    .and_then(narrow)?;
-  let buy_zone_1_start = RebalanceMode::BuyZone1
-    .active_range()
-    .start()
-    .and_then(narrow)?;
-  let buy_zone_1_end = RebalanceMode::BuyZone1
-    .active_range()
-    .end()
-    .and_then(narrow)?;
+  let neutral = rebalance_tolerance.active_range(RebalanceMode::Neutral);
+  let buy_zone_1 = rebalance_tolerance.active_range(RebalanceMode::BuyZone1);
+  let neutral_start = neutral.start().and_then(narrow)?;
+  let buy_zone_1_start = buy_zone_1.start().and_then(narrow)?;
+  let buy_zone_1_end = buy_zone_1.end().and_then(narrow)?;
   let floor = narrow(floor)?;
   let ceil = narrow(ceil)?;
   FixInterp::from_points([
@@ -118,8 +112,16 @@ impl BorrowRateCurveConfig {
   /// # Errors
   /// * CR below the curve domain
   /// * Conversion or arithmetic
-  pub fn rate(&self, cr: CollateralRatio) -> Result<UFix64<N9>, CoreError> {
-    let curve = buy_zone_curve(self.floor_rate()?, self.ceil_rate()?)?;
+  pub fn rate(
+    &self,
+    cr: CollateralRatio,
+    rebalance_tolerance: RebalanceTolerance,
+  ) -> Result<UFix64<N9>, CoreError> {
+    let curve = buy_zone_curve(
+      self.floor_rate()?,
+      self.ceil_rate()?,
+      rebalance_tolerance,
+    )?;
     saturating_apply_curve(&curve, cr)
   }
 
@@ -134,8 +136,9 @@ impl BorrowRateCurveConfig {
     amount: UFix64<N9>,
     cr: CollateralRatio,
     elapsed_epochs: UFix64<Z0>,
+    rebalance_tolerance: RebalanceTolerance,
   ) -> Result<UFix64<N9>, CoreError> {
-    let rate = self.rate(cr)?;
+    let rate = self.rate(cr, rebalance_tolerance)?;
     amount
       .mul_div_floor(rate, UFix64::one())
       .and_then(|base| base.checked_mul(&elapsed_epochs))
@@ -201,6 +204,7 @@ mod tests {
 
   const FLOOR: UFix64<N9> = UFix64::constant(384_620);
   const CEIL: UFix64<N9> = MAX_RATE;
+  const WIDE: RebalanceTolerance = RebalanceTolerance::Wide;
 
   fn config(floor: UFix64<N9>, ceil: UFix64<N9>) -> BorrowRateCurveConfig {
     BorrowRateCurveConfig::new(floor.into(), ceil.into())
@@ -212,28 +216,32 @@ mod tests {
 
   #[test]
   fn rate_neg_below_neutral() -> Result<(), CoreError> {
-    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
+    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
     let below = CR::Finite(UFix64::new(neutral_start.bits - 1));
-    assert_eq!(test_config().rate(below), Err(CoreError::InterpOutOfDomain));
+    assert_eq!(
+      test_config().rate(below, WIDE),
+      Err(CoreError::InterpOutOfDomain)
+    );
     Ok(())
   }
 
   #[test]
   fn rate_floor_through_neutral() -> Result<(), CoreError> {
     let config = test_config();
-    let neutral = RebalanceMode::Neutral.active_range();
+    let neutral = WIDE.active_range(RebalanceMode::Neutral);
     let neutral_mid = CR::Finite(UFix64::constant(1_500_000_000));
-    assert_eq!(config.rate(CR::Finite(neutral.start()?))?, FLOOR);
-    assert_eq!(config.rate(neutral_mid)?, FLOOR);
-    assert_eq!(config.rate(CR::Finite(neutral.end()?))?, FLOOR);
+    assert_eq!(config.rate(CR::Finite(neutral.start()?), WIDE)?, FLOOR);
+    assert_eq!(config.rate(neutral_mid, WIDE)?, FLOOR);
+    assert_eq!(config.rate(CR::Finite(neutral.end()?), WIDE)?, FLOOR);
     Ok(())
   }
 
   #[test]
   fn rate_ramp_within_bounds() -> Result<(), CoreError> {
-    let buy_zone_1_start = RebalanceMode::BuyZone1.active_range().start()?;
+    let buy_zone_1_start =
+      WIDE.active_range(RebalanceMode::BuyZone1).start()?;
     let inside = CR::Finite(UFix64::new(buy_zone_1_start.bits + 1));
-    let rate = test_config().rate(inside)?;
+    let rate = test_config().rate(inside, WIDE)?;
     assert_gt!(rate, FLOOR);
     assert_lt!(rate, CEIL);
     Ok(())
@@ -242,27 +250,44 @@ mod tests {
   #[test]
   fn rate_ceil_saturates() -> Result<(), CoreError> {
     let config = test_config();
-    let buy_zone_1_end = RebalanceMode::BuyZone1.active_range().end()?;
+    let buy_zone_1_end = WIDE.active_range(RebalanceMode::BuyZone1).end()?;
     let above = CR::Finite(UFix64::new(buy_zone_1_end.bits + 1));
-    assert_eq!(config.rate(CR::Finite(buy_zone_1_end))?, CEIL);
-    assert_eq!(config.rate(above)?, CEIL);
+    assert_eq!(config.rate(CR::Finite(buy_zone_1_end), WIDE)?, CEIL);
+    assert_eq!(config.rate(above, WIDE)?, CEIL);
     Ok(())
   }
 
   #[test]
   fn rate_ceil_at_infinite_cr() -> Result<(), CoreError> {
-    assert_eq!(test_config().rate(CR::Infinite)?, CEIL);
+    assert_eq!(test_config().rate(CR::Infinite, WIDE)?, CEIL);
+    Ok(())
+  }
+
+  #[test]
+  fn rate_ramp_starts_at_narrow_neutral_end() -> Result<(), CoreError> {
+    let narrow = RebalanceTolerance::Narrow;
+    let config = test_config();
+    let neutral = narrow.active_range(RebalanceMode::Neutral);
+    let below = CR::Finite(UFix64::new(neutral.start()?.bits - 1));
+    let inside = CR::Finite(UFix64::new(neutral.end()?.bits + 1));
+    assert_eq!(
+      config.rate(below, narrow),
+      Err(CoreError::InterpOutOfDomain)
+    );
+    assert_eq!(config.rate(CR::Finite(neutral.end()?), narrow)?, FLOOR);
+    assert_gt!(config.rate(inside, narrow)?, FLOOR);
     Ok(())
   }
 
   #[test]
   fn apply_borrow_rate_7_percent_annual() -> Result<(), CoreError> {
-    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
+    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
     let borrow = test_config().apply_borrow_rate(
       collateral,
       CR::Finite(neutral_start),
       UFix64::constant(1),
+      WIDE,
     )?;
     assert_eq!(borrow, UFix64::new(384_620_000_000));
     Ok(())
@@ -270,12 +295,13 @@ mod tests {
 
   #[test]
   fn apply_borrow_rate_multiple_epochs() -> Result<(), CoreError> {
-    let neutral_start = RebalanceMode::Neutral.active_range().start()?;
+    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
     let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
     let borrow = test_config().apply_borrow_rate(
       collateral,
       CR::Finite(neutral_start),
       UFix64::constant(5),
+      WIDE,
     )?;
     assert_eq!(borrow, UFix64::new(2_374_197_509_495));
     Ok(())

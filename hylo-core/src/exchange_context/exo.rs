@@ -17,7 +17,7 @@ use crate::fees::curve_controller::{
 use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
-use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
 use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
@@ -36,6 +36,7 @@ pub struct ExoExchangeContext<C> {
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: CR,
   stablecoin_mint_threshold: UFix64<N9>,
+  rebalance_tolerance: RebalanceTolerance,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
   pub stablecoin_mint_fees: InterpolatedMintFees,
@@ -78,6 +79,10 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.levercoin_supply.ok_or(LevercoinSupplyNotSet)
   }
 
+  fn rebalance_tolerance(&self) -> RebalanceTolerance {
+    self.rebalance_tolerance
+  }
+
   fn rebalance_mode(&self) -> RebalanceMode {
     self.rebalance_mode
   }
@@ -109,6 +114,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
     levercoin_market_cap_limit: UFix64<N9>,
+    rebalance_tolerance: RebalanceTolerance,
   ) -> Result<ExoExchangeContext<C>, CoreError> {
     let collateral_oracle =
       query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
@@ -123,7 +129,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_usd_price.lower,
       stablecoin_supply,
     )?;
-    let rebalance_mode = RebalanceMode::from_cr(collateral_ratio);
+    let rebalance_mode = rebalance_tolerance.mode(collateral_ratio);
     Ok(ExoExchangeContext {
       clock,
       total_collateral,
@@ -133,6 +139,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       levercoin_supply,
       collateral_ratio,
       stablecoin_mint_threshold,
+      rebalance_tolerance,
       rebalance_mode,
       levercoin_fees,
       stablecoin_mint_fees,

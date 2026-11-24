@@ -10,6 +10,7 @@ use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::OracleConfig;
+use hylo_core::rebalance::mode::RebalanceTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::util::normalize_mint_exp;
@@ -175,6 +176,7 @@ impl<C: SolanaClock> ExoPairState<C> {
       exo_pair.sell_curve_config.into(),
       exo_pair.buy_curve_config.into(),
       exo_pair.levercoin_market_cap_limit.try_into()?,
+      RebalanceTolerance::Wide,
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {
