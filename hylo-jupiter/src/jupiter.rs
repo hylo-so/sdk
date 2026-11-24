@@ -434,19 +434,10 @@ impl Amm for HyloJupiter {
 
 #[cfg(test)]
 mod tests {
-  use anchor_lang::pubkey;
-  use anyhow::anyhow;
+  use anyhow::{anyhow, Context, Result};
   use fix::prelude::*;
-  use hylo_clients::prelude::{
-    RouterArgs, TransactionSyntax, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD,
-    USDC, XBTC, XSOL,
-  };
-  use hylo_clients::program_client::ProgramClient;
-  use hylo_clients::util::build_test_router_client;
-  use hylo_core::idl::earn_pool::events::{
-    UserDepositEvent, UserWithdrawEvent,
-  };
-  use hylo_core::idl::exchange::events::{
+  use hylo_idl::earn_pool::events::{UserDepositEvent, UserWithdrawEvent};
+  use hylo_idl::exchange::events::{
     ConvertLeverToStableExoEvent, ConvertLeverToStableLstEvent,
     ConvertStableToLeverExoEvent, ConvertStableToLeverLstEvent,
     MintLevercoinExoEvent, MintLevercoinLstEvent, MintStablecoinExoEvent,
@@ -456,12 +447,15 @@ mod tests {
     SwapLstToLstEvent, SwapLstToUsdcEvent, SwapUsdcToExoEvent,
     SwapUsdcToLstEvent,
   };
-  use hylo_jupiter_amm_interface::{KeyedAccount, SwapMode};
+  use hylo_idl::tokens::{
+    TokenMint, CBBTC, HYLOSOL, HYUSD, JITOSOL, SHYUSD, USDC, XBTC, XSOL,
+  };
+  use hylo_idl::{earn_pool, exchange};
+  use hylo_jupiter_amm_interface::{QuoteParams, SwapMode};
   use rust_decimal::Decimal;
-  use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
-  use super::*;
-  use crate::util::{fee_pct_decimal, load_account_map, load_amm_context};
+  use crate::helpers::quote_and_simulate;
+  use crate::util::fee_pct_decimal;
 
   macro_rules! assert_mint {
     ($sim:expr, $quote:expr) => {
@@ -514,36 +508,7 @@ mod tests {
     };
   }
 
-  const TESTER: Pubkey =
-    pubkey!("GUX587fnbnZmqmq2hnav8r6siLczKS8wrp9QZRhuWeai");
-
-  async fn build_jupiter() -> Result<HyloJupiter> {
-    let url = std::env::var("RPC_URL")?;
-    let client = RpcClient::new(url);
-    let key = pda::EXO_REGISTRY;
-    let account = client.get_account(&key).await?;
-    let jupiter_account = KeyedAccount {
-      key,
-      account,
-      params: None,
-    };
-    let amm_context = load_amm_context(&client).await?;
-    let mut amm =
-      HyloJupiter::from_keyed_account(&jupiter_account, &amm_context)?;
-
-    // Entry accounts
-    let account_map =
-      load_account_map(&client, &amm.get_accounts_to_update()).await?;
-    amm.update(&account_map)?;
-
-    // Oracle accounts
-    let account_map =
-      load_account_map(&client, &amm.get_accounts_to_update()).await?;
-    amm.update(&account_map)?;
-    Ok(amm)
-  }
-
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn mint_hyusd_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -552,25 +517,14 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<JITOSOL, HYUSD>(RouterArgs {
-        amount: amount_lst.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<MintStablecoinLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<MintStablecoinLstEvent>(&quote_params, exchange::ID)
+        .await?;
     assert_mint!(sim, quote);
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn redeem_hyusd_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -579,25 +533,16 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYUSD, JITOSOL>(RouterArgs {
-        amount: amount_hyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<RedeemStablecoinLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<RedeemStablecoinLstEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     assert_redeem!(sim, quote);
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn mint_xsol_check() -> Result<()> {
     let amount_lst = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -606,25 +551,14 @@ mod tests {
       output_mint: XSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<JITOSOL, XSOL>(RouterArgs {
-        amount: amount_lst.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<MintLevercoinLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<MintLevercoinLstEvent>(&quote_params, exchange::ID)
+        .await?;
     assert_mint!(sim, quote);
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn redeem_xsol_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -633,25 +567,16 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<XSOL, JITOSOL>(RouterArgs {
-        amount: amount_xsol.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<RedeemLevercoinLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<RedeemLevercoinLstEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     assert_redeem!(sim, quote);
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn hyusd_xsol_swap_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -660,20 +585,11 @@ mod tests {
       output_mint: XSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYUSD, XSOL>(RouterArgs {
-        amount: amount_hyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<ConvertStableToLeverLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<ConvertStableToLeverLstEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
 
     // Input
     let fees: UFix64<N6> = sim.stablecoin_fees.try_into()?;
@@ -693,7 +609,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn xsol_hyusd_swap_check() -> Result<()> {
     let amount_xsol = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -702,20 +618,11 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<XSOL, HYUSD>(RouterArgs {
-        amount: amount_xsol.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<ConvertLeverToStableLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<ConvertLeverToStableLstEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
 
     // Input
     assert_eq!(sim.levercoin_burned.bits, quote.in_amount);
@@ -735,7 +642,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn shyusd_mint_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -744,20 +651,9 @@ mod tests {
       output_mint: SHYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYUSD, SHYUSD>(RouterArgs {
-        amount: amount_hyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<UserDepositEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<UserDepositEvent>(&quote_params, earn_pool::ID)
+        .await?;
 
     // Input
     assert_eq!(sim.stablecoin_deposited.bits, quote.in_amount);
@@ -773,7 +669,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn jitosol_to_hylosol_swap_check() -> Result<()> {
     let amount_in = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -782,20 +678,9 @@ mod tests {
       output_mint: HYLOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<JITOSOL, HYLOSOL>(RouterArgs {
-        amount: amount_in.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapLstToLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapLstToLstEvent>(&quote_params, exchange::ID)
+        .await?;
     assert_eq!(sim.lst_a_in.bits, quote.in_amount);
     assert_eq!(sim.lst_b_out.bits, quote.out_amount);
     assert_eq!(sim.lst_a_fees_extracted.bits, quote.fee_amount);
@@ -806,7 +691,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn hylosol_to_jitosol_swap_check() -> Result<()> {
     let amount_in = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -815,20 +700,9 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYLOSOL, JITOSOL>(RouterArgs {
-        amount: amount_in.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapLstToLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapLstToLstEvent>(&quote_params, exchange::ID)
+        .await?;
     assert_eq!(sim.lst_a_in.bits, quote.in_amount);
     assert_eq!(sim.lst_b_out.bits, quote.out_amount);
     assert_eq!(sim.lst_a_fees_extracted.bits, quote.fee_amount);
@@ -839,7 +713,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn jitosol_to_usdc_swap_check() -> Result<()> {
     let amount_in = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -848,20 +722,9 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<JITOSOL, USDC>(RouterArgs {
-        amount: amount_in.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapLstToUsdcEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapLstToUsdcEvent>(&quote_params, exchange::ID)
+        .await?;
     assert_eq!(sim.lst_deposited.bits, quote.in_amount);
     let usdc_withdrawn: UFix64<N9> = sim.usdc_withdrawn.try_into()?;
     let out: UFix64<N6> = usdc_withdrawn.checked_convert().context("N9->N6")?;
@@ -871,7 +734,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn usdc_to_jitosol_swap_check() -> Result<()> {
     let amount_in = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -880,20 +743,9 @@ mod tests {
       output_mint: JITOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<USDC, JITOSOL>(RouterArgs {
-        amount: amount_in.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapUsdcToLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapUsdcToLstEvent>(&quote_params, exchange::ID)
+        .await?;
     let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
     let in_amt: UFix64<N6> =
       usdc_deposited.checked_convert().context("N9->N6")?;
@@ -904,7 +756,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn hylosol_to_usdc_swap_check() -> Result<()> {
     let amount_in = UFix64::<N9>::one();
     let quote_params = QuoteParams {
@@ -913,20 +765,9 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYLOSOL, USDC>(RouterArgs {
-        amount: amount_in.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapLstToUsdcEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapLstToUsdcEvent>(&quote_params, exchange::ID)
+        .await?;
     assert_eq!(sim.lst_deposited.bits, quote.in_amount);
     let usdc_withdrawn: UFix64<N9> = sim.usdc_withdrawn.try_into()?;
     let out: UFix64<N6> = usdc_withdrawn.checked_convert().context("N9->N6")?;
@@ -936,7 +777,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn usdc_to_hylosol_swap_check() -> Result<()> {
     let amount_in = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -945,20 +786,9 @@ mod tests {
       output_mint: HYLOSOL::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<USDC, HYLOSOL>(RouterArgs {
-        amount: amount_in.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapUsdcToLstEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapUsdcToLstEvent>(&quote_params, exchange::ID)
+        .await?;
     let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
     let in_amt: UFix64<N6> =
       usdc_deposited.checked_convert().context("N9->N6")?;
@@ -969,7 +799,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn usdc_to_hyusd_mint_check() -> Result<()> {
     let amount_usdc = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -978,27 +808,17 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<USDC, HYUSD>(RouterArgs {
-        amount: amount_usdc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<MintStablecoinUsdcEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
-    let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
-    let usdc_fees: UFix64<N9> = sim.usdc_fees.try_into()?;
+    let (sim, quote) = quote_and_simulate::<MintStablecoinUsdcEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
+    let usdc_deposited: UFix64<N6> = sim.usdc_deposited.try_into()?;
+    let usdc_fees: UFix64<N6> = sim.usdc_fees.try_into()?;
     let fee_base = usdc_deposited
       .checked_add(&usdc_fees)
       .ok_or(anyhow!("fee_base"))?;
-    let in_amt: UFix64<N6> = fee_base.checked_convert().context("N9->N6")?;
-    assert_eq!(in_amt.bits, quote.in_amount);
+    assert_eq!(fee_base.bits, quote.in_amount);
     assert_eq!(sim.stablecoin_minted.bits, quote.out_amount);
     assert_eq!(sim.usdc_fees.bits, quote.fee_amount);
     let fee_pct = fee_pct_decimal(usdc_fees, fee_base)?;
@@ -1006,7 +826,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn hyusd_to_usdc_redeem_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1015,20 +835,11 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYUSD, USDC>(RouterArgs {
-        amount: amount_hyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<RedeemStablecoinUsdcEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<RedeemStablecoinUsdcEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     let burned: UFix64<N6> = sim.stablecoin_burned.try_into()?;
     let fees: UFix64<N6> = sim.stablecoin_fees.try_into()?;
     let fee_base = burned.checked_add(&fees).ok_or(anyhow!("fee_base"))?;
@@ -1040,7 +851,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn cbbtc_to_usdc_swap_check() -> Result<()> {
     let amount_cbbtc = UFix64::<N8>::one();
     let quote_params = QuoteParams {
@@ -1049,20 +860,9 @@ mod tests {
       output_mint: USDC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<CBBTC, USDC>(RouterArgs {
-        amount: amount_cbbtc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapExoToUsdcEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapExoToUsdcEvent>(&quote_params, exchange::ID)
+        .await?;
     let collateral_deposited: UFix64<N9> =
       sim.collateral_deposited.try_into()?;
     let in_amt: UFix64<N8> =
@@ -1076,7 +876,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn usdc_to_cbbtc_swap_check() -> Result<()> {
     let amount_usdc = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1085,20 +885,9 @@ mod tests {
       output_mint: CBBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<USDC, CBBTC>(RouterArgs {
-        amount: amount_usdc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<SwapUsdcToExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<SwapUsdcToExoEvent>(&quote_params, exchange::ID)
+        .await?;
     let usdc_deposited: UFix64<N9> = sim.usdc_deposited.try_into()?;
     let in_amt: UFix64<N6> =
       usdc_deposited.checked_convert().context("N9->N6")?;
@@ -1113,7 +902,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn cbbtc_to_hyusd_mint_check() -> Result<()> {
     let amount_cbbtc = UFix64::<N8>::one();
     let quote_params = QuoteParams {
@@ -1122,20 +911,9 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<CBBTC, HYUSD>(RouterArgs {
-        amount: amount_cbbtc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<MintStablecoinExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<MintStablecoinExoEvent>(&quote_params, exchange::ID)
+        .await?;
     let collateral_deposited: UFix64<N9> =
       sim.collateral_deposited.try_into()?;
     let fees: UFix64<N9> = sim.fees_deposited.try_into()?;
@@ -1151,7 +929,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn hyusd_to_cbbtc_redeem_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1160,20 +938,11 @@ mod tests {
       output_mint: CBBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYUSD, CBBTC>(RouterArgs {
-        amount: amount_hyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<RedeemStablecoinExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<RedeemStablecoinExoEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     assert_eq!(sim.redeemed.bits, quote.in_amount);
     let collateral_withdrawn: UFix64<N9> =
       sim.collateral_withdrawn.try_into()?;
@@ -1190,7 +959,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn cbbtc_to_xbtc_mint_check() -> Result<()> {
     let amount_cbbtc = UFix64::<N8>::one();
     let quote_params = QuoteParams {
@@ -1199,20 +968,9 @@ mod tests {
       output_mint: XBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<CBBTC, XBTC>(RouterArgs {
-        amount: amount_cbbtc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<MintLevercoinExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<MintLevercoinExoEvent>(&quote_params, exchange::ID)
+        .await?;
     let collateral_deposited: UFix64<N9> =
       sim.collateral_deposited.try_into()?;
     let fees: UFix64<N9> = sim.fees_deposited.try_into()?;
@@ -1228,7 +986,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn xbtc_to_cbbtc_redeem_check() -> Result<()> {
     let amount_xbtc = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1237,20 +995,11 @@ mod tests {
       output_mint: CBBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<XBTC, CBBTC>(RouterArgs {
-        amount: amount_xbtc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<RedeemLevercoinExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<RedeemLevercoinExoEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     assert_eq!(sim.redeemed.bits, quote.in_amount);
     let collateral_withdrawn: UFix64<N9> =
       sim.collateral_withdrawn.try_into()?;
@@ -1267,7 +1016,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn hyusd_to_xbtc_convert_check() -> Result<()> {
     let amount_hyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1276,20 +1025,11 @@ mod tests {
       output_mint: XBTC::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<HYUSD, XBTC>(RouterArgs {
-        amount: amount_hyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<ConvertStableToLeverExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<ConvertStableToLeverExoEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     let fees: UFix64<N6> = sim.stablecoin_fees.try_into()?;
     let burned: UFix64<N6> = sim.stablecoin_burned.try_into()?;
     let total_in = fees.checked_add(&burned).ok_or(anyhow!("total_in"))?;
@@ -1301,7 +1041,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn xbtc_to_hyusd_convert_check() -> Result<()> {
     let amount_xbtc = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1310,20 +1050,11 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<XBTC, HYUSD>(RouterArgs {
-        amount: amount_xbtc.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<ConvertLeverToStableExoEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) = quote_and_simulate::<ConvertLeverToStableExoEvent>(
+      &quote_params,
+      exchange::ID,
+    )
+    .await?;
     assert_eq!(sim.levercoin_burned.bits, quote.in_amount);
     assert_eq!(sim.stablecoin_minted_user.bits, quote.out_amount);
     assert_eq!(sim.stablecoin_minted_fees.bits, quote.fee_amount);
@@ -1335,7 +1066,7 @@ mod tests {
     Ok(())
   }
 
-  #[tokio::test]
+  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
   async fn shyusd_redeem_check() -> Result<()> {
     let amount_shyusd = UFix64::<N6>::one();
     let quote_params = QuoteParams {
@@ -1344,20 +1075,9 @@ mod tests {
       output_mint: HYUSD::MINT,
       swap_mode: SwapMode::ExactIn,
     };
-    let jup = build_jupiter().await?;
-    let hylo = build_test_router_client()?;
-    let args = hylo
-      .build_transaction_data::<SHYUSD, HYUSD>(RouterArgs {
-        amount: amount_shyusd.bits,
-        user: TESTER,
-        slippage_config: None,
-      })
-      .await?;
-    let tx = hylo.build_simulation_transaction(&TESTER, &args).await?;
-    let sim = hylo
-      .simulate_transaction_return::<UserWithdrawEvent>(&tx)
-      .await?;
-    let quote = jup.quote(&quote_params)?;
+    let (sim, quote) =
+      quote_and_simulate::<UserWithdrawEvent>(&quote_params, earn_pool::ID)
+        .await?;
 
     // Input
     assert_eq!(sim.lp_token_burned.bits, quote.in_amount);

@@ -1,13 +1,9 @@
 use anchor_client::solana_sdk::account::Account;
 use anchor_lang::prelude::{AccountDeserialize, Pubkey};
-use anchor_lang::solana_program::sysvar::clock::{self, Clock};
 use anyhow::{anyhow, Context, Result};
 use fix::prelude::UFix64;
-use hylo_jupiter_amm_interface::{
-  AccountMap, AmmContext, ClockRef, SwapMode, SwapParams,
-};
+use hylo_jupiter_amm_interface::{AccountMap, SwapMode, SwapParams};
 use rust_decimal::Decimal;
-use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 
 /// Fee percentage of `fee_base` taken as `fees_extracted`, both in atoms of
 /// the same mint.
@@ -60,39 +56,6 @@ pub fn account_map_get<A: AccountDeserialize>(
   let mut bytes = keyed_account(account_map, key)?.data.as_slice();
   let out = A::try_deserialize(&mut bytes)?;
   Ok(out)
-}
-
-/// Calls RPC to load given accounts into a map.
-///
-/// # Errors
-/// * RPC fails
-/// * One of the accounts is missing
-pub async fn load_account_map(
-  client: &RpcClient,
-  pubkeys: &[Pubkey],
-) -> Result<AccountMap> {
-  let accounts = client.get_multiple_accounts(pubkeys).await?;
-  pubkeys
-    .iter()
-    .zip(accounts)
-    .map(|(pubkey, account)| {
-      account
-        .ok_or_else(|| anyhow!("Account not found: {pubkey}"))
-        .map(|acc| (*pubkey, acc))
-    })
-    .collect::<Result<AccountMap>>()
-}
-
-/// Loads Solana clock information from RPC.
-///
-/// # Errors
-/// * RPC fails
-/// * Deserialization fails
-pub async fn load_amm_context(client: &RpcClient) -> Result<AmmContext> {
-  let clock_account = client.get_account(&clock::ID).await?;
-  let clock: Clock = bincode::deserialize(&clock_account.data)?;
-  let clock_ref = ClockRef::from(clock);
-  Ok(AmmContext { clock_ref })
 }
 
 /// Validates Jupiter swap parameters for Hylo compatibility.
