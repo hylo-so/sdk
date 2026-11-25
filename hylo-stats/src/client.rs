@@ -12,13 +12,11 @@ use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::collateral_ratio::{CollateralRatio, CR};
 use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
-use hylo_core::fees::controller::{FeePair, StablecoinFees};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
 use hylo_core::lst::total_sol_cache::TotalSolCache;
 use hylo_core::pyth::{query_pyth_oracle, OracleConfig, OraclePrice};
-use hylo_core::rebalance::mode::RebalanceTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::util::normalize_mint_exp;
 use hylo_core::virtual_stablecoin::VirtualStablecoin;
@@ -238,21 +236,19 @@ fn exo_exchange_context(
     exo_pair.oracle_conf_tolerance.try_into()?,
   );
   let total_collateral = normalize_mint_exp(collateral_mint, exo_vault.amount)?;
-  let zero_fees =
-    FeePair::new(UFix64::<N4>::zero().into(), UFix64::<N4>::zero().into());
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
     oracle_config,
     exo_pair.levercoin_fees.into(),
-    StablecoinFees::new(zero_fees, zero_fees),
+    exo_pair.stablecoin_fees.into(),
     collateral_usd,
     exo_pair.virtual_stablecoin.into(),
     Some(levercoin_mint),
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
     exo_pair.levercoin_market_cap_limit.try_into()?,
-    RebalanceTolerance::Wide,
+    exo_pair.rebalance_tolerance.into(),
   )?;
   Ok(exo_context)
 }

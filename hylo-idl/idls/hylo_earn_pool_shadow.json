@@ -3395,7 +3395,7 @@
             }
           },
           {
-            "name": "stablecoin_mint_threshold",
+            "name": "_unused_3",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -3673,13 +3673,13 @@
     {
       "name": "StablecoinFees",
       "docs": [
-        "**Deprecated** — retained only for `Hylo` account deserialization."
+        "Stablecoin fees for the zones one and two steps from Neutral."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "normal",
+            "name": "zone_1",
             "type": {
               "defined": {
                 "name": "FeePair"
@@ -3687,7 +3687,7 @@
             }
           },
           {
-            "name": "mode_1",
+            "name": "zone_2",
             "type": {
               "defined": {
                 "name": "FeePair"

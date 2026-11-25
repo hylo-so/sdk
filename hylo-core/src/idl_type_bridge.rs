@@ -5,6 +5,7 @@ use crate::limiter::withdraw::WithdrawalLimiter;
 use crate::lst::sol_price::LstSolPrice;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::par_tolerance::ParTolerance;
+use crate::rebalance::mode::RebalanceTolerance;
 use crate::rebalance::pnl::{RebalancePnl, RebalancePnlValue};
 use crate::rebalance::pool_drawdown::PoolDrawdown;
 use crate::rebalance::pricing::RebalanceCurveConfig;
@@ -20,7 +21,24 @@ impl From<hylo_idl::exchange::types::LstSolPrice> for LstSolPrice {
 
 impl From<hylo_idl::exchange::types::StablecoinFees> for StablecoinFees {
   fn from(idl: hylo_idl::exchange::types::StablecoinFees) -> StablecoinFees {
-    StablecoinFees::new(idl.normal.into(), idl.mode_1.into())
+    StablecoinFees::new(idl.zone_1.into(), idl.zone_2.into())
+  }
+}
+
+impl From<hylo_idl::exchange::types::RebalanceTolerance>
+  for RebalanceTolerance
+{
+  fn from(
+    idl: hylo_idl::exchange::types::RebalanceTolerance,
+  ) -> RebalanceTolerance {
+    match idl {
+      hylo_idl::exchange::types::RebalanceTolerance::Wide => {
+        RebalanceTolerance::Wide
+      }
+      hylo_idl::exchange::types::RebalanceTolerance::Narrow => {
+        RebalanceTolerance::Narrow
+      }
+    }
   }
 }
 
@@ -217,8 +235,23 @@ impl From<FeePair> for hylo_idl::exchange::types::FeePair {
 impl From<StablecoinFees> for hylo_idl::exchange::types::StablecoinFees {
   fn from(val: StablecoinFees) -> Self {
     hylo_idl::exchange::types::StablecoinFees {
-      normal: val.zone_1.into(),
-      mode_1: val.zone_2.into(),
+      zone_1: val.zone_1.into(),
+      zone_2: val.zone_2.into(),
+    }
+  }
+}
+
+impl From<RebalanceTolerance>
+  for hylo_idl::exchange::types::RebalanceTolerance
+{
+  fn from(val: RebalanceTolerance) -> Self {
+    match val {
+      RebalanceTolerance::Wide => {
+        hylo_idl::exchange::types::RebalanceTolerance::Wide
+      }
+      RebalanceTolerance::Narrow => {
+        hylo_idl::exchange::types::RebalanceTolerance::Narrow
+      }
     }
   }
 }

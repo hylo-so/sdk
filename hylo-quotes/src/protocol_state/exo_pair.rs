@@ -6,11 +6,10 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExoExchangeContext;
-use hylo_core::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
+use hylo_core::fees::controller::LevercoinFees;
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::OracleConfig;
-use hylo_core::rebalance::mode::RebalanceTolerance;
 use hylo_core::rebalance::pool_drawdown::PoolDrawdown;
 use hylo_core::solana_clock::SolanaClock;
 use hylo_core::util::normalize_mint_exp;
@@ -164,21 +163,19 @@ impl<C: SolanaClock> ExoPairState<C> {
     let virtual_stablecoin: VirtualStablecoin =
       exo_pair.virtual_stablecoin.into();
     let levercoin_fees: LevercoinFees = exo_pair.levercoin_fees.into();
-    let zero_fees =
-      FeePair::new(UFix64::<N4>::zero().into(), UFix64::<N4>::zero().into());
     let context = ExoExchangeContext::load(
       clock,
       total_collateral,
       oracle_config,
       levercoin_fees,
-      StablecoinFees::new(zero_fees, zero_fees),
+      exo_pair.stablecoin_fees.into(),
       &oracle,
       virtual_stablecoin,
       Some(&levercoin_mint),
       exo_pair.sell_curve_config.into(),
       exo_pair.buy_curve_config.into(),
       exo_pair.levercoin_market_cap_limit.try_into()?,
-      RebalanceTolerance::Wide,
+      exo_pair.rebalance_tolerance.into(),
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {

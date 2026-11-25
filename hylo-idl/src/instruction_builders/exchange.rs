@@ -609,11 +609,11 @@ pub fn update_oracle_interval(
 }
 
 #[must_use]
-pub fn update_lst_stablecoin_mint_threshold(
+pub fn update_lst_stablecoin_fees(
   admin: Pubkey,
-  args: &args::UpdateLstStablecoinMintThreshold,
+  args: &args::UpdateLstStablecoinFees,
 ) -> Instruction {
-  let accounts = accounts::UpdateLstStablecoinMintThreshold {
+  let accounts = accounts::UpdateLstStablecoinFees {
     admin,
     hylo: pda::HYLO,
     event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
@@ -915,12 +915,33 @@ pub fn update_exo_oracle_interval(
 }
 
 #[must_use]
-pub fn update_exo_stablecoin_mint_threshold(
+pub fn update_exo_stablecoin_fees(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::UpdateExoStablecoinMintThreshold,
+  args: &args::UpdateExoStablecoinFees,
 ) -> Instruction {
-  let accounts = accounts::UpdateExoStablecoinMintThreshold {
+  let accounts = accounts::UpdateExoStablecoinFees {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  };
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
+pub fn update_exo_rebalance_tolerance(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+  args: &args::UpdateExoRebalanceTolerance,
+) -> Instruction {
+  let accounts = accounts::UpdateExoRebalanceTolerance {
     admin,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),

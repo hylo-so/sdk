@@ -3901,10 +3901,10 @@
           "type": "u64"
         },
         {
-          "name": "stablecoin_mint_threshold",
+          "name": "stablecoin_fees",
           "type": {
             "defined": {
-              "name": "UFixValue64"
+              "name": "StablecoinFees"
             }
           }
         },
@@ -9527,14 +9527,6 @@
           }
         },
         {
-          "name": "stablecoin_mint_threshold",
-          "type": {
-            "defined": {
-              "name": "UFixValue64"
-            }
-          }
-        },
-        {
           "name": "borrow_rate_curve_config",
           "type": {
             "defined": {
@@ -9555,6 +9547,14 @@
           "type": {
             "defined": {
               "name": "LevercoinFees"
+            }
+          }
+        },
+        {
+          "name": "stablecoin_fees",
+          "type": {
+            "defined": {
+              "name": "StablecoinFees"
             }
           }
         },
@@ -9587,6 +9587,14 @@
           "type": {
             "defined": {
               "name": "UFixValue64"
+            }
+          }
+        },
+        {
+          "name": "rebalance_tolerance",
+          "type": {
+            "defined": {
+              "name": "RebalanceTolerance"
             }
           }
         }
@@ -17407,6 +17415,122 @@
       }
     },
     {
+      "name": "update_exo_rebalance_tolerance",
+      "discriminator": [
+        50,
+        158,
+        40,
+        37,
+        36,
+        60,
+        156,
+        180
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_rebalance_tolerance",
+          "type": {
+            "defined": {
+              "name": "RebalanceTolerance"
+            }
+          }
+        }
+      ],
+      "returns": {
+        "defined": {
+          "name": "UpdateRebalanceToleranceEvent"
+        }
+      }
+    },
+    {
       "name": "update_exo_sell_curve",
       "discriminator": [
         252,
@@ -17523,16 +17647,16 @@
       }
     },
     {
-      "name": "update_exo_stablecoin_mint_threshold",
+      "name": "update_exo_stablecoin_fees",
       "discriminator": [
-        87,
-        78,
+        65,
+        112,
+        26,
+        226,
         92,
-        99,
-        233,
-        87,
-        163,
-        180
+        199,
+        192,
+        132
       ],
       "accounts": [
         {
@@ -17624,17 +17748,17 @@
       ],
       "args": [
         {
-          "name": "new_stablecoin_mint_threshold",
+          "name": "new_stablecoin_fees",
           "type": {
             "defined": {
-              "name": "UFixValue64"
+              "name": "StablecoinFees"
             }
           }
         }
       ],
       "returns": {
         "defined": {
-          "name": "UpdateStablecoinMintThresholdEvent"
+          "name": "UpdateStablecoinFeesEvent"
         }
       }
     },
@@ -18098,16 +18222,16 @@
       }
     },
     {
-      "name": "update_lst_stablecoin_mint_threshold",
+      "name": "update_lst_stablecoin_fees",
       "discriminator": [
-        24,
-        139,
-        177,
-        147,
-        245,
-        31,
-        222,
-        189
+        192,
+        251,
+        160,
+        231,
+        174,
+        3,
+        89,
+        202
       ],
       "accounts": [
         {
@@ -18169,17 +18293,17 @@
       ],
       "args": [
         {
-          "name": "new_stablecoin_mint_threshold",
+          "name": "new_stablecoin_fees",
           "type": {
             "defined": {
-              "name": "UFixValue64"
+              "name": "StablecoinFees"
             }
           }
         }
       ],
       "returns": {
         "defined": {
-          "name": "UpdateStablecoinMintThresholdEvent"
+          "name": "UpdateStablecoinFeesEvent"
         }
       }
     },
@@ -20258,16 +20382,29 @@
       ]
     },
     {
-      "name": "UpdateStablecoinMintThresholdEvent",
+      "name": "UpdateRebalanceToleranceEvent",
       "discriminator": [
-        81,
-        104,
-        35,
-        118,
-        8,
-        9,
-        211,
-        62
+        224,
+        164,
+        101,
+        1,
+        176,
+        4,
+        166,
+        82
+      ]
+    },
+    {
+      "name": "UpdateStablecoinFeesEvent",
+      "discriminator": [
+        38,
+        140,
+        45,
+        231,
+        238,
+        94,
+        115,
+        249
       ]
     },
     {
@@ -20399,7 +20536,7 @@
     {
       "code": 6017,
       "name": "StablecoinMintDisabled",
-      "msg": "Stablecoin mint disabled. Collateral ratio is below minting threshold."
+      "msg": "Stablecoin mint disabled. Collateral ratio is at or below Neutral."
     },
     {
       "code": 6018,
@@ -20555,6 +20692,11 @@
       "code": 6048,
       "name": "VirtualStablecoinExceedsVault",
       "msg": "Virtual stablecoin supply exceeds USDC vault balance."
+    },
+    {
+      "code": 6049,
+      "name": "StablecoinRedeemDisabled",
+      "msg": "Stablecoin redeem disabled. Collateral ratio is at or above Neutral."
     }
   ],
   "types": [
@@ -21001,7 +21143,7 @@
             }
           },
           {
-            "name": "stablecoin_mint_threshold",
+            "name": "_unused_1",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -21093,11 +21235,27 @@
             }
           },
           {
+            "name": "rebalance_tolerance",
+            "type": {
+              "defined": {
+                "name": "RebalanceTolerance"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                91
+                54
               ]
             }
           }
@@ -21437,7 +21595,7 @@
             }
           },
           {
-            "name": "stablecoin_mint_threshold",
+            "name": "_unused_3",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -22320,6 +22478,20 @@
       }
     },
     {
+      "name": "RebalanceTolerance",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Wide"
+          },
+          {
+            "name": "Narrow"
+          }
+        ]
+      }
+    },
+    {
       "name": "RedeemLevercoinExoEvent",
       "type": {
         "kind": "struct",
@@ -22946,13 +23118,13 @@
     {
       "name": "StablecoinFees",
       "docs": [
-        "**Deprecated** — retained only for `Hylo` account deserialization."
+        "Stablecoin fees for the zones one and two steps from Neutral."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "normal",
+            "name": "zone_1",
             "type": {
               "defined": {
                 "name": "FeePair"
@@ -22960,7 +23132,7 @@
             }
           },
           {
-            "name": "mode_1",
+            "name": "zone_2",
             "type": {
               "defined": {
                 "name": "FeePair"
@@ -23470,23 +23642,47 @@
       }
     },
     {
-      "name": "UpdateStablecoinMintThresholdEvent",
+      "name": "UpdateRebalanceToleranceEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "old_stablecoin_mint_threshold",
+            "name": "old_rebalance_tolerance",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "RebalanceTolerance"
               }
             }
           },
           {
-            "name": "new_stablecoin_mint_threshold",
+            "name": "new_rebalance_tolerance",
             "type": {
               "defined": {
-                "name": "UFixValue64"
+                "name": "RebalanceTolerance"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateStablecoinFeesEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
+              }
+            }
+          },
+          {
+            "name": "new_stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
               }
             }
           }
