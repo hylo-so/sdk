@@ -169,6 +169,7 @@ impl FeeController for StablecoinFees {
     self.zone_1.validate()?;
     self.zone_2.validate()?;
     self.validate_min_fee()?;
+    self.validate_zone_order()?;
     Ok(self)
   }
 }
@@ -186,6 +187,13 @@ impl StablecoinFees {
         .then_some(())
         .ok_or(InvalidFees)
     })
+  }
+
+  fn validate_zone_order(&self) -> Result<(), CoreError> {
+    (self.zone_2.mint()? <= self.zone_1.mint()?
+      && self.zone_2.redeem()? <= self.zone_1.redeem()?)
+    .then_some(())
+    .ok_or(InvalidFees)
   }
 
   /// Redeem fee for `mode`. Returns the larger of the two zone fees in
@@ -340,6 +348,18 @@ mod tests {
       StablecoinFees::new(bps(20, 9), bps(20, 20)),
       StablecoinFees::new(bps(20, 20), bps(9, 20)),
       StablecoinFees::new(bps(20, 20), bps(20, 9)),
+    ]
+    .into_iter()
+    .for_each(|fees| {
+      assert_eq!(fees.validate().err(), Some(InvalidFees));
+    });
+  }
+
+  #[test]
+  fn stablecoin_fees_reject_zone_2_rate_above_zone_1() {
+    [
+      StablecoinFees::new(bps(20, 20), bps(21, 20)),
+      StablecoinFees::new(bps(20, 20), bps(20, 21)),
     ]
     .into_iter()
     .for_each(|fees| {
