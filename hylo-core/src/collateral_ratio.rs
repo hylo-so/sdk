@@ -64,20 +64,6 @@ impl CollateralRatio {
     }
   }
 
-  /// Converts to fee curve coordinates, truncating to `N5`.
-  ///
-  /// Saturates at `i64::MAX`, above every curve domain.
-  #[must_use]
-  pub fn fee_curve_x(self) -> IFix64<N5> {
-    match self {
-      CR::Infinite => IFix64::new(i64::MAX),
-      CR::Finite(cr) => cr
-        .convert::<N5>()
-        .narrow::<i64>()
-        .unwrap_or(IFix64::new(i64::MAX)),
-    }
-  }
-
   /// Tests a finite lower bound, which `Infinite` always satisfies.
   #[must_use]
   pub fn at_least(self, bound: UFix64<N9>) -> bool {
@@ -156,21 +142,18 @@ mod tests {
   fn infinite_saturates_curve_space() {
     let infinite = CR::Infinite;
     assert_eq!(infinite.price_curve_x(), IFix64::<N9>::new(i64::MAX));
-    assert_eq!(infinite.fee_curve_x(), IFix64::<N5>::new(i64::MAX));
   }
 
   #[test]
   fn finite_beyond_signed_range_saturates() {
     let cr = CR::Finite(UFix64::new(u64::MAX));
     assert_eq!(cr.price_curve_x(), IFix64::new(i64::MAX));
-    assert_lt!(cr.fee_curve_x(), IFix64::new(i64::MAX));
   }
 
   #[test]
   fn finite_in_range_converts_exactly() {
     let cr = CR::Finite(UFix64::constant(1_500_000_000));
     assert_eq!(cr.price_curve_x(), IFix64::constant(1_500_000_000));
-    assert_eq!(cr.fee_curve_x(), IFix64::constant(150_000));
   }
 
   #[test]
