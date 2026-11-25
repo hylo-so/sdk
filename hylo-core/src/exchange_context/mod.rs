@@ -417,15 +417,16 @@ pub trait ExchangeContext {
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 
-  /// Maximum mintable stablecoin before the collateral ratio reaches
-  /// `neutral_target_cr`.
+  /// Maximum mintable stablecoin before the collateral ratio reaches the
+  /// end of the Neutral range.
   ///
   /// # Errors
   /// * Arithmetic overflow
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
       .rebalance_tolerance()
-      .neutral_target_cr()
+      .active_range(RebalanceMode::Neutral)
+      .end()?
       .checked_convert()
       .ok_or(MaxMintable)?;
     max_mintable_stablecoin(
@@ -436,14 +437,18 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Maximum redeemable stablecoin before the collateral ratio reaches
-  /// `neutral_target_cr`.
+  /// Maximum redeemable stablecoin before the collateral ratio reaches the
+  /// start of the Neutral range.
   ///
   /// # Errors
   /// * Arithmetic overflow
   fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
+    let target = self
+      .rebalance_tolerance()
+      .active_range(RebalanceMode::Neutral)
+      .start()?;
     max_redeemable_stablecoin(
-      self.rebalance_tolerance().neutral_target_cr(),
+      target,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
       self.stablecoin_nav()?,
@@ -451,14 +456,15 @@ pub trait ExchangeContext {
   }
 
   /// Maximum stablecoin mintable from levercoin before the collateral ratio
-  /// reaches `neutral_target_cr`.
+  /// reaches the end of the Neutral range.
   ///
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_lever_to_stable_conversion(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
       .rebalance_tolerance()
-      .neutral_target_cr()
+      .active_range(RebalanceMode::Neutral)
+      .end()?
       .checked_convert()
       .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(
@@ -469,13 +475,17 @@ pub trait ExchangeContext {
   }
 
   /// Maximum stablecoin swappable to levercoin before the collateral ratio
-  /// reaches `neutral_target_cr`.
+  /// reaches the start of the Neutral range.
   ///
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_stable_to_lever_conversion(&self) -> Result<UFix64<N6>, CoreError> {
+    let target = self
+      .rebalance_tolerance()
+      .active_range(RebalanceMode::Neutral)
+      .start()?;
     max_swappable_to_levercoin(
-      self.rebalance_tolerance().neutral_target_cr(),
+      target,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
     )

@@ -265,36 +265,42 @@ mod tests {
   use crate::collateral_ratio::CollateralRatio;
   use crate::eq_tolerance;
   use crate::error::CoreError::LevercoinNav;
+  use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
   use crate::util::proptest::*;
 
   proptest! {
     #[test]
     fn max_mintable_props(
       state in protocol_state(()),
+      tolerance in prop_oneof![
+        Just(RebalanceTolerance::Wide),
+        Just(RebalanceTolerance::Narrow),
+      ],
     ) {
-      if let Some(target) = state.next_target_collateral_ratio().and_then(UFix64::checked_convert) {
-        // Skip unless target CR is above 100%, not realistic otherwise
-        if target > UFix64::<N2>::one() {
-          let total_sol = state.total_sol().expect("total_sol");
-          let max = max_mintable_stablecoin(
-            target.convert::<N2>(),
-            total_sol,
-            state.usd_sol_price,
-            state.stablecoin_amount,
-          )?;
-          let new_total_sol =
-            max.mul_div_ceil(UFix64::one(), state.usd_sol_price)
-            .and_then(|new_sol| new_sol.convert().checked_add(&total_sol))
-            .expect("new_total");
-          let new_stable = state.stablecoin_amount.checked_add(&max).expect("new_stable");
-          let new_cr = CollateralRatio::new(new_total_sol, state.usd_sol_price, new_stable)?;
-          // Checks new CR is within tolerance of 0.01
-          prop_assert!(
-            new_cr
-              .as_finite()
-              .is_some_and(|cr| eq_tolerance!(target, cr, N2, UFix64::new(1)))
-          );
-        }
+      let neutral_end = tolerance.active_range(RebalanceMode::Neutral).end()?;
+      let total_sol = state.total_sol().expect("total_sol");
+      let cr = CollateralRatio::new(total_sol, state.usd_sol_price, state.stablecoin_amount)?;
+      // Skip states at or below the Neutral end, where nothing is mintable
+      if cr.as_finite().is_some_and(|cr| cr > neutral_end) {
+        let target = neutral_end.convert::<N2>();
+        let max = max_mintable_stablecoin(
+          target,
+          total_sol,
+          state.usd_sol_price,
+          state.stablecoin_amount,
+        )?;
+        let new_total_sol =
+          max.mul_div_ceil(UFix64::one(), state.usd_sol_price)
+          .and_then(|new_sol| new_sol.convert().checked_add(&total_sol))
+          .expect("new_total");
+        let new_stable = state.stablecoin_amount.checked_add(&max).expect("new_stable");
+        let new_cr = CollateralRatio::new(new_total_sol, state.usd_sol_price, new_stable)?;
+        // Checks new CR is within tolerance of 0.01
+        prop_assert!(
+          new_cr
+            .as_finite()
+            .is_some_and(|cr| eq_tolerance!(target, cr, N2, UFix64::new(1)))
+        );
       }
     }
   }

@@ -127,12 +127,6 @@ impl RebalanceTolerance {
     }
   }
 
-  /// Collateral ratio limit for stablecoin mints, redeems, and conversions.
-  #[must_use]
-  pub const fn neutral_target_cr(self) -> UFix64<N9> {
-    UFix64::constant(1_500_000_000)
-  }
-
   #[must_use]
   pub const fn active_range(self, mode: RebalanceMode) -> CrRange {
     match mode {
@@ -265,16 +259,6 @@ mod tests {
     assert_eq!(narrow.mode(cr(1_450_000_000)), Neutral);
     assert_eq!(narrow.mode(cr(1_549_999_999)), Neutral);
     assert_eq!(narrow.mode(cr(1_550_000_000)), BuyZone1);
-  }
-
-  #[test]
-  fn neutral_target_inside_neutral() {
-    TOLERANCES.iter().for_each(|tolerance| {
-      assert_eq!(
-        tolerance.mode(CR::Finite(tolerance.neutral_target_cr())),
-        Neutral,
-      );
-    });
   }
 
   #[test]
