@@ -13,7 +13,7 @@ use crate::exchange::client::accounts::{
   SettleVirtualStablecoinExo, SettleVirtualStablecoinLst,
   SettleVirtualStablecoinUsdc, SwapExoToUsdc, SwapLstToLst, SwapLstToUsdc,
   SwapUsdcToExo, SwapUsdcToLst, UpdateExoLevercoinMarketCapLimit,
-  UpdateLstRebalanceFee, WithdrawFees,
+  UpdateLstRebalanceFee, WithdrawFees, WriteOffExoPoolDrawdown,
 };
 use crate::tokens::{TokenMint, HYUSD, USDC, XSOL};
 use crate::{earn_pool, exchange, pda};
@@ -819,6 +819,21 @@ pub fn initialize_pool_drawdown_exo(
   collateral_mint: Pubkey,
 ) -> InitializePoolDrawdownExo {
   InitializePoolDrawdownExo {
+    admin,
+    hylo: pda::HYLO,
+    exo_pair: pda::exo_pair(collateral_mint),
+    collateral_mint,
+    event_authority: pda::EXCHANGE_EVENT_AUTHORITY,
+    program: exchange::ID,
+  }
+}
+
+#[must_use]
+pub fn write_off_exo_pool_drawdown(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> WriteOffExoPoolDrawdown {
+  WriteOffExoPoolDrawdown {
     admin,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),

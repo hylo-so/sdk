@@ -1102,11 +1102,15 @@
             }
           },
           {
+            "name": "exo_pool_drawdown",
+            "type": "u64"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                12
+                4
               ]
             }
           }
@@ -1251,7 +1255,7 @@
     {
       "name": "StablecoinFees",
       "docs": [
-        "Stablecoin fees for the zones one and two steps from Neutral."
+        "Stablecoin mint and redeem fees per rebalance zone."
       ],
       "type": {
         "kind": "struct",

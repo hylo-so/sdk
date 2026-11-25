@@ -19674,6 +19674,114 @@
           "name": "WithdrawFeesEvent"
         }
       }
+    },
+    {
+      "name": "write_off_exo_pool_drawdown",
+      "discriminator": [
+        253,
+        136,
+        198,
+        32,
+        93,
+        212,
+        238,
+        18
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "hylo"
+          ]
+        },
+        {
+          "name": "hylo",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  121,
+                  108,
+                  111
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "exo_pair",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  111,
+                  95,
+                  112,
+                  97,
+                  105,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral_mint",
+          "relations": [
+            "exo_pair"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "WriteOffExoPoolDrawdownEvent"
+        }
+      }
     }
   ],
   "accounts": [
@@ -20445,6 +20553,19 @@
         177,
         89
       ]
+    },
+    {
+      "name": "WriteOffExoPoolDrawdownEvent",
+      "discriminator": [
+        122,
+        53,
+        220,
+        197,
+        11,
+        139,
+        32,
+        232
+      ]
     }
   ],
   "errors": [
@@ -20697,6 +20818,21 @@
       "code": 6049,
       "name": "StablecoinRedeemDisabled",
       "msg": "Stablecoin redeem disabled due to rebalance mode."
+    },
+    {
+      "code": 6050,
+      "name": "ExoPoolDrawdownOverflow",
+      "msg": "Overflow while adding to the exo pool drawdown sum."
+    },
+    {
+      "code": 6051,
+      "name": "ExoPoolDrawdownUnderflow",
+      "msg": "Underflow while subtracting from the exo pool drawdown sum."
+    },
+    {
+      "code": 6052,
+      "name": "ExoPairNotPaused",
+      "msg": "Exo pair must be paused to write off its pool drawdown."
     }
   ],
   "types": [
@@ -21687,11 +21823,15 @@
             }
           },
           {
+            "name": "exo_pool_drawdown",
+            "type": "u64"
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                12
+                4
               ]
             }
           }
@@ -23118,7 +23258,7 @@
     {
       "name": "StablecoinFees",
       "docs": [
-        "Stablecoin fees for the zones one and two steps from Neutral."
+        "Stablecoin mint and redeem fees per rebalance zone."
       ],
       "type": {
         "kind": "struct",
@@ -23890,6 +24030,26 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WriteOffExoPoolDrawdownEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "pool_drawdown_written_off",
+            "type": {
+              "defined": {
+                "name": "UFixValue64"
+              }
+            }
           }
         ]
       }

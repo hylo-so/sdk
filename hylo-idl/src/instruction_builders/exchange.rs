@@ -1234,6 +1234,21 @@ pub fn initialize_pool_drawdown_exo(
 }
 
 #[must_use]
+pub fn write_off_exo_pool_drawdown(
+  admin: Pubkey,
+  collateral_mint: Pubkey,
+) -> Instruction {
+  let accounts =
+    account_builders::write_off_exo_pool_drawdown(admin, collateral_mint);
+  let args = args::WriteOffExoPoolDrawdown {};
+  Instruction {
+    program_id: exchange::ID,
+    accounts: accounts.to_account_metas(None),
+    data: args.data(),
+  }
+}
+
+#[must_use]
 pub fn swap_exo_to_usdc(
   user: Pubkey,
   collateral_mint: Pubkey,

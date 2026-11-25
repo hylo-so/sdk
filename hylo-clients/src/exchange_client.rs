@@ -818,6 +818,23 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
+  /// Writes off the outstanding pool drawdown of a paused exo pair.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub async fn write_off_exo_pool_drawdown(
+    &self,
+    collateral_mint: Pubkey,
+  ) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::write_off_exo_pool_drawdown(
+      self.signer(),
+      collateral_mint,
+    );
+    let memo = build_memo("write_off_exo_pool_drawdown", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    self.sign(inner, memo).await
+  }
+
   /// Registers an exo collateral.
   ///
   /// # Errors
