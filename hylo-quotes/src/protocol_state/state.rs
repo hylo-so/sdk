@@ -287,9 +287,9 @@ pub fn build_lst_exchange_context<C: SolanaClock>(
   LstExchangeContext::load(
     clock,
     &total_sol_cache,
-    hylo.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     xsol_fees,
+    hylo.stablecoin_fees.into(),
     sol_usd,
     hylo.virtual_stablecoin.into(),
     Some(xsol_mint),

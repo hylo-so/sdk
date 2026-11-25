@@ -10,11 +10,9 @@ use crate::error::CoreError::{
   DestinationCollateral, DestinationStablecoin, LevercoinSupplyNotSet,
   RebalanceAmountExceeded, RebalanceSwapPnl, VirtualStablecoinBurnLimit,
 };
-use crate::fees::controller::{FeeController, FeeExtract, LevercoinFees};
-use crate::fees::curve_controller::{
-  InterpolatedFeeController, InterpolatedMintFees, InterpolatedRedeemFees,
+use crate::fees::controller::{
+  FeeController, FeeExtract, LevercoinFees, StablecoinFees,
 };
-use crate::fees::curves::{mint_fee_curve, redeem_fee_curve};
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
 use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
@@ -35,12 +33,10 @@ pub struct ExoExchangeContext<C> {
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: CR,
-  stablecoin_mint_threshold: UFix64<N9>,
   rebalance_tolerance: RebalanceTolerance,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
-  pub stablecoin_mint_fees: InterpolatedMintFees,
-  pub stablecoin_redeem_fees: InterpolatedRedeemFees,
+  stablecoin_fees: StablecoinFees,
   sell_curve_config: RebalanceCurveConfig,
   buy_curve_config: RebalanceCurveConfig,
   levercoin_market_cap_limit: UFix64<N9>,
@@ -57,10 +53,6 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
 
   fn collateral_oracle_price(&self) -> OraclePrice {
     self.collateral_oracle
-  }
-
-  fn stablecoin_mint_threshold(&self) -> UFix64<N9> {
-    self.stablecoin_mint_threshold
   }
 
   fn sell_curve_config(&self) -> &RebalanceCurveConfig {
@@ -94,6 +86,10 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
   fn levercoin_fees(&self) -> &LevercoinFees {
     &self.levercoin_fees
   }
+
+  fn stablecoin_fees(&self) -> &StablecoinFees {
+    &self.stablecoin_fees
+  }
 }
 
 impl<C: SolanaClock> ExoExchangeContext<C> {
@@ -105,9 +101,9 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
   pub fn load(
     clock: C,
     total_collateral: UFix64<N9>,
-    stablecoin_mint_threshold: UFix64<N9>,
     oracle_config: OracleConfig,
     levercoin_fees: LevercoinFees,
+    stablecoin_fees: StablecoinFees,
     collateral_usd_pyth_feed: &PriceUpdateV2,
     virtual_stablecoin: VirtualStablecoin,
     levercoin_mint: Option<&Mint>,
@@ -119,9 +115,6 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let collateral_oracle =
       query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
     let collateral_usd_price = collateral_oracle.price_range()?;
-    let stablecoin_mint_fees = InterpolatedMintFees::new(mint_fee_curve()?);
-    let stablecoin_redeem_fees =
-      InterpolatedRedeemFees::new(redeem_fee_curve()?);
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let stablecoin_supply = virtual_stablecoin.supply()?;
     let collateral_ratio = CollateralRatio::new(
@@ -138,144 +131,13 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
-      stablecoin_mint_threshold,
       rebalance_tolerance,
       rebalance_mode,
       levercoin_fees,
-      stablecoin_mint_fees,
-      stablecoin_redeem_fees,
+      stablecoin_fees,
       sell_curve_config,
       buy_curve_config,
       levercoin_market_cap_limit,
-    })
-  }
-
-  /// Stablecoin mint fee via interpolated curve at projected CR.
-  ///
-  /// # Errors
-  /// * Projection overflow, interpolation, or fee extraction
-  pub fn stablecoin_mint_fee(
-    &self,
-    collateral_amount_in: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>, CoreError> {
-    let projected = self.projected_mint_state(collateral_amount_in)?;
-    self
-      .stablecoin_mint_fees
-      .apply_fee(projected.collateral_ratio, collateral_amount_in)
-  }
-
-  /// Stablecoin mint fee rate at the projected CR.
-  ///
-  /// # Errors
-  /// * Projection overflow or curve lookup
-  #[cfg(feature = "offchain")]
-  pub fn stablecoin_mint_fee_rate(
-    &self,
-    collateral_amount_in: UFix64<N9>,
-  ) -> Result<UFix64<N5>, CoreError> {
-    let projected = self.projected_mint_state(collateral_amount_in)?;
-    self
-      .stablecoin_mint_fees
-      .fee_rate(projected.collateral_ratio)
-  }
-
-  /// Post-trade state used by the stablecoin mint fee projection.
-  pub fn projected_mint_state(
-    &self,
-    collateral_amount_in: UFix64<N9>,
-  ) -> Result<ProjectedState, CoreError> {
-    let total_collateral = self
-      .total_collateral
-      .checked_add(&collateral_amount_in)
-      .ok_or(DestinationCollateral)?;
-    let stablecoin_minted = self
-      .exo_conversion()
-      .exo_to_token(collateral_amount_in, self.stablecoin_nav()?)?;
-    let stablecoin_supply = stablecoin_minted
-      .checked_add(&self.virtual_stablecoin_supply()?)
-      .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = CollateralRatio::new(
-      total_collateral,
-      self.collateral_usd_price.lower,
-      stablecoin_supply,
-    )?;
-    Ok(ProjectedState {
-      total_collateral,
-      stablecoin_supply,
-      collateral_ratio,
-    })
-  }
-
-  /// Stablecoin redeem fee via interpolated curve at projected CR.
-  ///
-  /// # Errors
-  /// * Projection underflow, interpolation, or fee extraction
-  pub fn stablecoin_redeem_fee(
-    &self,
-    collateral_amount_out: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>, CoreError> {
-    let projected = self.projected_redeem_state(collateral_amount_out)?;
-    self
-      .stablecoin_redeem_fees
-      .apply_fee(projected.collateral_ratio, collateral_amount_out)
-  }
-
-  /// Stablecoin redeem fee rate at the projected CR.
-  ///
-  /// # Errors
-  /// * Projection underflow or curve lookup
-  #[cfg(feature = "offchain")]
-  pub fn stablecoin_redeem_fee_rate(
-    &self,
-    collateral_amount_out: UFix64<N9>,
-  ) -> Result<UFix64<N5>, CoreError> {
-    let projected = self.projected_redeem_state(collateral_amount_out)?;
-    self
-      .stablecoin_redeem_fees
-      .fee_rate(projected.collateral_ratio)
-  }
-
-  /// Stablecoin redeem fee at the projected CR, saturating at `y_max`.
-  ///
-  /// # Errors
-  /// * Projection underflow, interpolation, or fee extraction
-  #[cfg(feature = "offchain")]
-  pub fn saturating_stablecoin_redeem_fee(
-    &self,
-    collateral_amount_out: UFix64<N9>,
-  ) -> Result<FeeExtract<N9>, CoreError> {
-    let projected = self.projected_redeem_state(collateral_amount_out)?;
-    let fee_rate = self
-      .stablecoin_redeem_fees
-      .saturating_fee_rate(projected.collateral_ratio)?;
-    FeeExtract::new(fee_rate, collateral_amount_out)
-  }
-
-  /// Post-trade state used by the stablecoin redeem fee projection.
-  pub fn projected_redeem_state(
-    &self,
-    collateral_amount_out: UFix64<N9>,
-  ) -> Result<ProjectedState, CoreError> {
-    let total_collateral = self
-      .total_collateral
-      .checked_sub(&collateral_amount_out)
-      .ok_or(DestinationCollateral)?;
-    let stablecoin_redeemed = self
-      .exo_conversion()
-      .exo_to_token(collateral_amount_out, self.stablecoin_nav()?)?;
-    let stablecoin_supply = self
-      .virtual_stablecoin_supply()?
-      .checked_sub(&stablecoin_redeemed)
-      .ok_or(DestinationStablecoin)?;
-    let collateral_ratio = CollateralRatio::new(
-      total_collateral,
-      self.collateral_usd_price.lower,
-      stablecoin_supply,
-    )?;
-    Ok(ProjectedState {
-      total_collateral,
-      stablecoin_supply,
-      collateral_ratio,
     })
   }
 

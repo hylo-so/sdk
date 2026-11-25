@@ -15,7 +15,7 @@ use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
 use crate::rebalance::pricing::narrow;
 
 /// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
-const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
+pub(crate) const MAX_RATE: UFix64<N9> = UFix64::constant(1_648_352);
 
 /// Maximum fee exacted against borrow rate
 const MAX_FEE: UFix64<N4> = UFix64::constant(1_000);

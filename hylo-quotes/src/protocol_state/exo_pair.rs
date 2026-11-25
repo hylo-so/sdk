@@ -6,7 +6,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 use anyhow::{anyhow, ensure, Context, Result};
 use fix::prelude::*;
 use hylo_core::exchange_context::ExoExchangeContext;
-use hylo_core::fees::controller::LevercoinFees;
+use hylo_core::fees::controller::{FeePair, LevercoinFees, StablecoinFees};
 use hylo_core::idl::exchange::accounts::ExoPair;
 use hylo_core::idl::router::types::ExoEntry;
 use hylo_core::pyth::OracleConfig;
@@ -164,12 +164,14 @@ impl<C: SolanaClock> ExoPairState<C> {
     let virtual_stablecoin: VirtualStablecoin =
       exo_pair.virtual_stablecoin.into();
     let levercoin_fees: LevercoinFees = exo_pair.levercoin_fees.into();
+    let zero_fees =
+      FeePair::new(UFix64::<N4>::zero().into(), UFix64::<N4>::zero().into());
     let context = ExoExchangeContext::load(
       clock,
       total_collateral,
-      exo_pair.stablecoin_mint_threshold.try_into()?,
       oracle_config,
       levercoin_fees,
+      StablecoinFees::new(zero_fees, zero_fees),
       &oracle,
       virtual_stablecoin,
       Some(&levercoin_mint),

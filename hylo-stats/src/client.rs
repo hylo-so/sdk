@@ -12,6 +12,7 @@ use anyhow::Result;
 use fix::prelude::*;
 use hylo_core::collateral_ratio::{CollateralRatio, CR};
 use hylo_core::exchange_context::{ExchangeContext, ExoExchangeContext};
+use hylo_core::fees::controller::{FeePair, StablecoinFees};
 use hylo_core::idl::exchange::accounts::{ExoPair, Hylo, LstHeader};
 use hylo_core::lst::sol_price::LstSolPrice;
 use hylo_core::lst::stake_pool::SplStakePool;
@@ -237,12 +238,14 @@ fn exo_exchange_context(
     exo_pair.oracle_conf_tolerance.try_into()?,
   );
   let total_collateral = normalize_mint_exp(collateral_mint, exo_vault.amount)?;
+  let zero_fees =
+    FeePair::new(UFix64::<N4>::zero().into(), UFix64::<N4>::zero().into());
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
-    exo_pair.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     exo_pair.levercoin_fees.into(),
+    StablecoinFees::new(zero_fees, zero_fees),
     collateral_usd,
     exo_pair.virtual_stablecoin.into(),
     Some(levercoin_mint),

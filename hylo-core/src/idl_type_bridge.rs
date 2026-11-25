@@ -217,8 +217,8 @@ impl From<FeePair> for hylo_idl::exchange::types::FeePair {
 impl From<StablecoinFees> for hylo_idl::exchange::types::StablecoinFees {
   fn from(val: StablecoinFees) -> Self {
     hylo_idl::exchange::types::StablecoinFees {
-      normal: val.normal.into(),
-      mode_1: val.mode_1.into(),
+      normal: val.zone_1.into(),
+      mode_1: val.zone_2.into(),
     }
   }
 }

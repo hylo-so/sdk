@@ -267,11 +267,10 @@ fn fee_base_plus_strict_fee_equals_quote() -> Result<()> {
   let state = with_lst_cr(load_state()?, CR_IN_DOMAIN)?;
   let state = with_exo_cr::<CBBTC>(state, CR_IN_DOMAIN)?;
 
-  let lst_price: LstSolPrice = state.jitosol_header.price_sol.into();
   let lst_out = FeeBase::<HYUSD, JITOSOL>::fee_base(&state, REFERENCE)?;
   let lst_net = state
     .exchange_context
-    .stablecoin_redeem_fee(&lst_price, lst_out)?
+    .stablecoin_redeem_fee(lst_out)?
     .amount_remaining;
   let lst_quote =
     TokenOperation::<HYUSD, JITOSOL>::compute_output(&state, REFERENCE)?;

@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 use crate::error::CoreError;
 use crate::error::CoreError::{
   FeeExtraction, InvalidFees, NoValidLevercoinMintFee,
-  NoValidLevercoinRedeemFee, NoValidSwapFee,
+  NoValidLevercoinRedeemFee, NoValidStablecoinMintFee,
+  NoValidStablecoinRedeemFee, NoValidSwapFee,
 };
 use crate::rebalance::mode::RebalanceMode::{
   self, BuyZone1, BuyZone2, Depeg, Neutral, SellZone1, SellZone2,
@@ -125,10 +126,11 @@ impl<Exp> FeeExtract<Exp> {
   }
 }
 
-/// **Deprecated** — retained only for `Hylo` account deserialization.
+/// Stablecoin fees for the zones one and two steps from Neutral.
 #[derive(
   Clone,
   Copy,
+  PartialEq,
   InitSpace,
   AnchorSerialize,
   AnchorDeserialize,
@@ -136,14 +138,58 @@ impl<Exp> FeeExtract<Exp> {
   Deserialize,
 )]
 pub struct StablecoinFees {
-  pub normal: FeePair,
-  pub mode_1: FeePair,
+  pub zone_1: FeePair,
+  pub zone_2: FeePair,
+}
+
+impl FeeController for StablecoinFees {
+  /// Mint fee in the buy zones.
+  fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
+    match mode {
+      BuyZone1 => self.zone_1.mint(),
+      BuyZone2 => self.zone_2.mint(),
+      Depeg | SellZone2 | SellZone1 | Neutral => Err(NoValidStablecoinMintFee),
+    }
+  }
+
+  /// Redeem fee in the sell zones, zero in Depeg.
+  fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
+    match mode {
+      SellZone1 => self.zone_1.redeem(),
+      SellZone2 => self.zone_2.redeem(),
+      Depeg => Ok(UFix64::zero()),
+      Neutral | BuyZone1 | BuyZone2 => Err(NoValidStablecoinRedeemFee),
+    }
+  }
+
+  fn validate(self) -> Result<StablecoinFees, CoreError> {
+    self.zone_1.validate()?;
+    self.zone_2.validate()?;
+    Ok(self)
+  }
 }
 
 impl StablecoinFees {
   #[must_use]
-  pub fn new(normal: FeePair, mode_1: FeePair) -> StablecoinFees {
-    StablecoinFees { normal, mode_1 }
+  pub fn new(zone_1: FeePair, zone_2: FeePair) -> StablecoinFees {
+    StablecoinFees { zone_1, zone_2 }
+  }
+
+  /// Redeem fee holding the higher zone fee where redemption is closed.
+  ///
+  /// # Errors
+  /// * Fee conversion
+  #[cfg(feature = "offchain")]
+  pub fn saturating_redeem_fee(
+    &self,
+    mode: RebalanceMode,
+  ) -> Result<UFix64<N4>, CoreError> {
+    match mode {
+      Depeg | SellZone2 | SellZone1 => self.redeem_fee(mode),
+      Neutral | BuyZone1 | BuyZone2 => {
+        Ok(self.zone_1.redeem()?.max(self.zone_2.redeem()?))
+      }
+    }
   }
 }
 
@@ -253,6 +299,44 @@ mod tests {
     let amount = UFix64::<N9>::new(69_618_816_010);
     let out = FeeExtract::new(fee, amount);
     assert_eq!(out.err(), Some(FeeExtraction));
+  }
+
+  fn stablecoin_fees() -> StablecoinFees {
+    let bps = |mint, redeem| {
+      FeePair::new(
+        UFix64::<N4>::new(mint).into(),
+        UFix64::<N4>::new(redeem).into(),
+      )
+    };
+    StablecoinFees::new(bps(20, 15), bps(10, 5))
+  }
+
+  #[test]
+  fn stablecoin_mint_fee_only_in_buy_zones() -> Result<(), CoreError> {
+    let fees = stablecoin_fees();
+    assert_eq!(fees.mint_fee(BuyZone1)?, UFix64::new(20));
+    assert_eq!(fees.mint_fee(BuyZone2)?, UFix64::new(10));
+    [Depeg, SellZone2, SellZone1, Neutral]
+      .iter()
+      .for_each(|mode| {
+        assert_eq!(fees.mint_fee(*mode).err(), Some(NoValidStablecoinMintFee));
+      });
+    Ok(())
+  }
+
+  #[test]
+  fn stablecoin_redeem_fee_only_below_neutral() -> Result<(), CoreError> {
+    let fees = stablecoin_fees();
+    assert_eq!(fees.redeem_fee(SellZone1)?, UFix64::new(15));
+    assert_eq!(fees.redeem_fee(SellZone2)?, UFix64::new(5));
+    assert_eq!(fees.redeem_fee(Depeg)?, UFix64::zero());
+    [Neutral, BuyZone1, BuyZone2].iter().for_each(|mode| {
+      assert_eq!(
+        fees.redeem_fee(*mode).err(),
+        Some(NoValidStablecoinRedeemFee)
+      );
+    });
+    Ok(())
   }
 }
 

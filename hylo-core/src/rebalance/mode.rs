@@ -8,11 +8,7 @@ use fix::prelude::*;
 
 use crate::collateral_ratio::{CollateralRatio, CR};
 use crate::error::CoreError;
-use crate::error::CoreError::{
-  RangeUnexpectedBound, StablecoinMintThresholdInvalid,
-};
-use crate::fees::curve_controller::narrow_cr;
-use crate::fees::curves::mint_fee_curve;
+use crate::error::CoreError::RangeUnexpectedBound;
 
 #[derive(
   Debug,
@@ -131,6 +127,12 @@ impl RebalanceTolerance {
     }
   }
 
+  /// CR where trades moving toward Neutral stop.
+  #[must_use]
+  pub const fn neutral_target_cr(self) -> UFix64<N9> {
+    UFix64::constant(1_500_000_000)
+  }
+
   #[must_use]
   pub const fn active_range(self, mode: RebalanceMode) -> CrRange {
     match mode {
@@ -177,21 +179,6 @@ impl RebalanceTolerance {
       .unwrap_or(RebalanceMode::BuyZone2),
     }
   }
-}
-
-/// Checks that the given stablecoin mint threshold is within the mint fee
-/// curve's domain.
-///
-/// # Errors
-/// * Curve validation or threshold outside domain
-pub fn validate_stablecoin_mint_threshold(
-  stablecoin_mint_threshold: UFixValue64,
-) -> Result<UFixValue64, CoreError> {
-  mint_fee_curve()?
-    .domain()
-    .contains(&narrow_cr(stablecoin_mint_threshold.try_into()?)?)
-    .then_some(stablecoin_mint_threshold)
-    .ok_or(StablecoinMintThresholdInvalid)
 }
 
 #[cfg(test)]
@@ -281,22 +268,13 @@ mod tests {
   }
 
   #[test]
-  fn mint_threshold_must_be_in_curve_domain() {
-    let threshold = |bits| UFixValue64::new(bits, -9);
-    assert!(
-      validate_stablecoin_mint_threshold(threshold(1_500_000_000)).is_ok()
-    );
-    assert!(
-      validate_stablecoin_mint_threshold(threshold(1_700_000_000)).is_ok()
-    );
-    assert_eq!(
-      validate_stablecoin_mint_threshold(threshold(1_499_999_999)),
-      Err(StablecoinMintThresholdInvalid),
-    );
-    assert_eq!(
-      validate_stablecoin_mint_threshold(threshold(1_710_000_000)),
-      Err(StablecoinMintThresholdInvalid),
-    );
+  fn neutral_target_inside_neutral() {
+    TOLERANCES.iter().for_each(|tolerance| {
+      assert_eq!(
+        tolerance.mode(CR::Finite(tolerance.neutral_target_cr())),
+        Neutral,
+      );
+    });
   }
 
   #[test]

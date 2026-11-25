@@ -1,9 +1,11 @@
+use std::ops::RangeBounds;
+
 use fix::prelude::*;
 use fix::typenum::Integer;
 
-use crate::fees::curves::{MINT_FEE_INV, REDEEM_FEE_LN};
-use crate::fees::interp::FixInterp;
+use crate::borrow_rate::MAX_RATE;
 use crate::pyth::PriceRange;
+use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
 
 #[must_use]
 pub fn any_ufix64<Exp: Integer>() -> UFix64<Exp> {
@@ -42,31 +44,24 @@ pub fn narrow_price_range<Exp: Integer>() -> Option<PriceRange<Exp>> {
   Some(PriceRange::new(lower, upper))
 }
 
-fn deployed_curve_bounds() -> (i64, i64, i64, i64) {
-  let mint = FixInterp::from_points_unchecked(*MINT_FEE_INV);
-  let redeem = FixInterp::from_points_unchecked(*REDEEM_FEE_LN);
-  (
-    mint.x_min().bits.min(redeem.x_min().bits),
-    mint.x_max().bits.max(redeem.x_max().bits),
-    mint.y_min().bits.min(redeem.y_min().bits),
-    mint.y_max().bits.max(redeem.y_max().bits),
-  )
+/// Symbolic CR within the widest borrow rate curve domain.
+#[must_use]
+pub fn borrow_rate_curve_x() -> IFix64<N9> {
+  let x: IFix64<N9> = IFix64::new(kani::any());
+  kani::assume(x.narrow::<u64>().is_some_and(|cr| {
+    [RebalanceMode::Neutral, RebalanceMode::BuyZone1]
+      .iter()
+      .any(|mode| RebalanceTolerance::Wide.active_range(*mode).contains(&cr))
+  }));
+  x
 }
 
+/// Symbolic rate within the valid borrow rate range.
 #[must_use]
-pub fn deployed_curve_x() -> IFix64<N5> {
-  let (x_min, x_max, _, _) = deployed_curve_bounds();
-  let bits: i64 = kani::any();
-  kani::assume(bits >= x_min && bits <= x_max);
-  IFix64::new(bits)
-}
-
-#[must_use]
-pub fn deployed_curve_y() -> IFix64<N5> {
-  let (_, _, y_min, y_max) = deployed_curve_bounds();
-  let bits: i64 = kani::any();
-  kani::assume(bits >= y_min && bits <= y_max);
-  IFix64::new(bits)
+pub fn borrow_rate_curve_y() -> IFix64<N9> {
+  let y: IFix64<N9> = IFix64::new(kani::any());
+  kani::assume(y.narrow::<u64>().is_some_and(|rate| rate <= MAX_RATE));
+  y
 }
 
 #[must_use]

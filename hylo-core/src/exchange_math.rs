@@ -106,6 +106,30 @@ fn max_swappable_stablecoin_inner(
     .and_then(UFix64::checked_convert::<N6>)
 }
 
+/// Without changing TVL, computes how much stablecoin can be swapped to
+/// levercoin.
+///
+/// ```txt
+///                                       total_value_locked
+/// max_swappable = stablecoin_supply - -----------------------
+///                                     max_collateral_ratio
+/// ```
+///
+/// # Errors
+/// * Collateral ratio already above the maximum
+/// * Arithmetic overflow
+pub fn max_swappable_to_levercoin(
+  max_collateral_ratio: UFix64<N9>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  total_value_locked
+    .mul_div_ceil(UFix64::one(), max_collateral_ratio)
+    .and_then(UFix64::checked_convert_ceil::<N6>)
+    .and_then(|min_supply| stablecoin_supply.checked_sub(&min_supply))
+    .ok_or(MaxSwappable)
+}
+
 /// Stablecoin redeemable before the projected collateral ratio exceeds the
 /// given maximum.
 ///
@@ -485,6 +509,23 @@ mod tests {
     let expected = UFix64::new(335_000_000);
     let got = max_swappable_stablecoin(target_cr, tvl, stablecoin)?;
     assert_eq!(expected, got);
+    Ok(())
+  }
+
+  #[test]
+  fn max_swappable_to_levercoin_stops_at_max_cr() -> Result<(), CoreError> {
+    let max_cr = UFix64::<N9>::new(1_500_000_000);
+    let stablecoin = UFix64::<N6>::new(1_000_000_000_000);
+    let below = UFix64::<N9>::new(1_200_000_000_000_000);
+    let above = UFix64::<N9>::new(1_600_000_000_000_000);
+    assert_eq!(
+      max_swappable_to_levercoin(max_cr, below, stablecoin)?,
+      UFix64::new(200_000_000_000)
+    );
+    assert_eq!(
+      max_swappable_to_levercoin(max_cr, above, stablecoin).err(),
+      Some(MaxSwappable)
+    );
     Ok(())
   }
 }
