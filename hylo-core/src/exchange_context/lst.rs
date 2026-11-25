@@ -118,7 +118,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
       CollateralRatio::new(total_sol, sol_usd_price.lower, stablecoin_supply)?;
-    let rebalance_mode = RebalanceTolerance::Wide.mode(collateral_ratio);
+    let rebalance_mode = RebalanceTolerance::Wide.mode_at(collateral_ratio);
     Ok(LstExchangeContext {
       clock,
       total_sol,

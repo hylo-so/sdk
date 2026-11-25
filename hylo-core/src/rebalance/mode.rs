@@ -158,7 +158,7 @@ impl RebalanceTolerance {
   }
 
   #[must_use]
-  pub fn mode(self, cr: CollateralRatio) -> RebalanceMode {
+  pub fn mode_at(self, cr: CollateralRatio) -> RebalanceMode {
     match cr {
       CR::Infinite => RebalanceMode::BuyZone2,
       CR::Finite(cr) => [
@@ -223,7 +223,7 @@ mod tests {
           tolerance
             .active_range(*mode)
             .start()
-            .map(|cr| tolerance.mode(CR::Finite(cr))),
+            .map(|cr| tolerance.mode_at(CR::Finite(cr))),
           Ok(*mode),
         );
       });
@@ -236,8 +236,8 @@ mod tests {
       RebalanceMode::ALL.iter().for_each(|mode| {
         if let Ok(end) = tolerance.active_range(*mode).end() {
           let just_below = UFix64::new(end.bits - 1);
-          assert_ne!(tolerance.mode(CR::Finite(end)), *mode);
-          assert_eq!(tolerance.mode(CR::Finite(just_below)), *mode);
+          assert_ne!(tolerance.mode_at(CR::Finite(end)), *mode);
+          assert_eq!(tolerance.mode_at(CR::Finite(just_below)), *mode);
         }
       });
     });
@@ -246,8 +246,8 @@ mod tests {
   #[test]
   fn mode_extremes() {
     TOLERANCES.iter().for_each(|tolerance| {
-      assert_eq!(tolerance.mode(CR::Finite(UFix64::zero())), Depeg);
-      assert_eq!(tolerance.mode(CR::Infinite), BuyZone2);
+      assert_eq!(tolerance.mode_at(CR::Finite(UFix64::zero())), Depeg);
+      assert_eq!(tolerance.mode_at(CR::Infinite), BuyZone2);
     });
   }
 
@@ -255,10 +255,10 @@ mod tests {
   fn narrow_moves_neutral_edges() {
     let narrow = RebalanceTolerance::Narrow;
     let cr = |bits| CR::Finite(UFix64::constant(bits));
-    assert_eq!(narrow.mode(cr(1_449_999_999)), SellZone1);
-    assert_eq!(narrow.mode(cr(1_450_000_000)), Neutral);
-    assert_eq!(narrow.mode(cr(1_549_999_999)), Neutral);
-    assert_eq!(narrow.mode(cr(1_550_000_000)), BuyZone1);
+    assert_eq!(narrow.mode_at(cr(1_449_999_999)), SellZone1);
+    assert_eq!(narrow.mode_at(cr(1_450_000_000)), Neutral);
+    assert_eq!(narrow.mode_at(cr(1_549_999_999)), Neutral);
+    assert_eq!(narrow.mode_at(cr(1_550_000_000)), BuyZone1);
   }
 
   #[test]
@@ -282,7 +282,7 @@ mod proofs {
   use crate::kani_generators::any_ufix64;
   use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
 
-  /// `mode(cr)` returns a mode whose `active_range` contains `cr`.
+  /// `mode_at(cr)` returns a mode whose `active_range` contains `cr`.
   #[kani::proof]
   fn mode_contains_input() {
     let tolerance = if kani::any() {
@@ -291,7 +291,7 @@ mod proofs {
       RebalanceTolerance::Narrow
     };
     let cr: UFix64<N9> = any_ufix64();
-    let mode = tolerance.mode(CR::Finite(cr));
+    let mode = tolerance.mode_at(CR::Finite(cr));
     assert!(tolerance.active_range(mode).contains(&cr));
   }
 

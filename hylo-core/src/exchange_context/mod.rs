@@ -395,7 +395,7 @@ pub trait ExchangeContext {
       self.collateral_usd_price().lower,
       new_stablecoin,
     )?;
-    Ok(self.rebalance_tolerance().mode(projected_cr))
+    Ok(self.rebalance_tolerance().mode_at(projected_cr))
   }
 
   /// Worse of the current and projected rebalance modes, so a transaction

@@ -237,7 +237,7 @@ impl RebalancePriceController for SellPriceCurve {
 
   fn is_active(&self, cr: CollateralRatio) -> bool {
     (RebalanceMode::SellZone2..RebalanceMode::Neutral)
-      .contains(&self.rebalance_tolerance.mode(cr))
+      .contains(&self.rebalance_tolerance.mode_at(cr))
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError> {
@@ -321,7 +321,7 @@ impl RebalancePriceController for BuyPriceCurve {
   }
 
   fn is_active(&self, cr: CollateralRatio) -> bool {
-    self.rebalance_tolerance.mode(cr) > RebalanceMode::Neutral
+    self.rebalance_tolerance.mode_at(cr) > RebalanceMode::Neutral
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError> {

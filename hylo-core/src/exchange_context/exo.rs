@@ -122,7 +122,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_usd_price.lower,
       stablecoin_supply,
     )?;
-    let rebalance_mode = rebalance_tolerance.mode(collateral_ratio);
+    let rebalance_mode = rebalance_tolerance.mode_at(collateral_ratio);
     Ok(ExoExchangeContext {
       clock,
       total_collateral,

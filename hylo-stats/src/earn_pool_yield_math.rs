@@ -98,7 +98,7 @@ pub fn projected_lst_inflow(
   config: &YieldHarvestConfig,
 ) -> Result<UFix64<N6>> {
   let rebalance_tolerance = RebalanceTolerance::Wide;
-  if rebalance_tolerance.mode(collateral_ratio) < RebalanceMode::Neutral {
+  if rebalance_tolerance.mode_at(collateral_ratio) < RebalanceMode::Neutral {
     Ok(UFix64::zero())
   } else {
     let sol_yield = lst_sol_value
@@ -133,7 +133,7 @@ pub fn projected_borrow_inflow(
   fee: UFix64<N4>,
   rebalance_tolerance: RebalanceTolerance,
 ) -> Result<UFix64<N6>> {
-  if rebalance_tolerance.mode(collateral_ratio) < RebalanceMode::Neutral {
+  if rebalance_tolerance.mode_at(collateral_ratio) < RebalanceMode::Neutral {
     Ok(UFix64::zero())
   } else {
     let gross = config
