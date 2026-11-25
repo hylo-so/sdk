@@ -126,7 +126,7 @@ impl<Exp> FeeExtract<Exp> {
   }
 }
 
-/// Stablecoin fees for the zones one and two steps from Neutral.
+/// Stablecoin mint and redeem fees per rebalance zone.
 #[derive(
   Clone,
   Copy,
@@ -175,7 +175,8 @@ impl StablecoinFees {
     StablecoinFees { zone_1, zone_2 }
   }
 
-  /// Redeem fee holding the higher zone fee where redemption is closed.
+  /// Redeem fee for `mode`. Returns the larger of the two zone fees in
+  /// modes with no redeem fee.
   ///
   /// # Errors
   /// * Fee conversion

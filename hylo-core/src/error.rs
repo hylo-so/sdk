@@ -89,9 +89,9 @@ pub enum CoreError {
   NoValidLevercoinMintFee,
   #[msg("No valid redeem fee for levercoin due to Depeg.")]
   NoValidLevercoinRedeemFee,
-  #[msg("No valid stablecoin mint fee outside the buy zones.")]
+  #[msg("No valid stablecoin mint fee due to rebalance mode.")]
   NoValidStablecoinMintFee,
-  #[msg("No valid stablecoin redeem fee at or above Neutral.")]
+  #[msg("No valid stablecoin redeem fee due to rebalance mode.")]
   NoValidStablecoinRedeemFee,
   #[msg("No valid fee for swap due to SellZone2 or Depeg.")]
   NoValidSwapFee,

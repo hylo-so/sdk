@@ -127,7 +127,7 @@ impl RebalanceTolerance {
     }
   }
 
-  /// CR where trades moving toward Neutral stop.
+  /// Collateral ratio limit for stablecoin mints, redeems, and conversions.
   #[must_use]
   pub const fn neutral_target_cr(self) -> UFix64<N9> {
     UFix64::constant(1_500_000_000)

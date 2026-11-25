@@ -68,12 +68,13 @@ pub trait ExchangeContext {
   /// Buy-side rebalance curve configuration.
   fn buy_curve_config(&self) -> &RebalanceCurveConfig;
 
-  /// Confirm stablecoin mint capability; enabled above Neutral.
+  /// Confirm stablecoin mint capability; enabled in the buy zones.
   fn stablecoin_mint_enabled(&self) -> bool {
     self.rebalance_mode() > RebalanceMode::Neutral
   }
 
-  /// Confirm stablecoin redeem capability; enabled below Neutral.
+  /// Confirm stablecoin redeem capability; enabled in the sell zones and
+  /// Depeg.
   fn stablecoin_redeem_enabled(&self) -> bool {
     self.rebalance_mode() < RebalanceMode::Neutral
   }
@@ -83,13 +84,12 @@ pub trait ExchangeContext {
     self.rebalance_mode() != RebalanceMode::Depeg
   }
 
-  /// Stablecoin to levercoin conversion: enabled below Neutral and above
-  /// Depeg.
+  /// Stablecoin to levercoin conversion: enabled in the sell zones.
   fn stable_to_lever_conversion_enabled(&self) -> bool {
     self.levercoin_mint_enabled() && self.stablecoin_redeem_enabled()
   }
 
-  /// Levercoin to stablecoin conversion: enabled above Neutral.
+  /// Levercoin to stablecoin conversion: enabled in the buy zones.
   fn lever_to_stable_conversion_enabled(&self) -> bool {
     self.stablecoin_mint_enabled()
   }
@@ -417,8 +417,8 @@ pub trait ExchangeContext {
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 
-  /// Maximum mintable stablecoin before the projected collateral ratio
-  /// falls below the Neutral target.
+  /// Maximum mintable stablecoin before the collateral ratio reaches
+  /// `neutral_target_cr`.
   ///
   /// # Errors
   /// * Arithmetic overflow
@@ -436,8 +436,8 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Maximum redeemable stablecoin before the projected collateral ratio
-  /// exceeds the Neutral target. Zero once already above it.
+  /// Maximum redeemable stablecoin before the collateral ratio reaches
+  /// `neutral_target_cr`.
   ///
   /// # Errors
   /// * Arithmetic overflow
@@ -450,8 +450,8 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Maximum stablecoin out of a levercoin conversion before the projected
-  /// collateral ratio falls below the Neutral target.
+  /// Maximum stablecoin mintable from levercoin before the collateral ratio
+  /// reaches `neutral_target_cr`.
   ///
   /// # Errors
   /// * TVL computation or arithmetic failure
@@ -468,8 +468,8 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Maximum stablecoin into a levercoin conversion before the projected
-  /// collateral ratio exceeds the Neutral target.
+  /// Maximum stablecoin swappable to levercoin before the collateral ratio
+  /// reaches `neutral_target_cr`.
   ///
   /// # Errors
   /// * TVL computation or arithmetic failure
@@ -633,8 +633,8 @@ pub trait ExchangeContext {
     }
   }
 
-  /// Validates stablecoin out of a levercoin conversion against the
-  /// protocol max.
+  /// Validates a levercoin to stablecoin conversion against the protocol
+  /// max.
   ///
   /// # Errors
   /// * Amount exceeds the conversion max
@@ -650,7 +650,7 @@ pub trait ExchangeContext {
     }
   }
 
-  /// Validates stablecoin into a levercoin conversion against the protocol
+  /// Validates a stablecoin to levercoin conversion against the protocol
   /// max.
   ///
   /// # Errors
@@ -670,7 +670,7 @@ pub trait ExchangeContext {
   /// Stablecoin mint fee rate at the current rebalance mode.
   ///
   /// # Errors
-  /// * Mint closed in the current mode
+  /// * Rebalance mode has no mint fee
   fn stablecoin_mint_fee_rate(&self) -> Result<UFix64<N4>, CoreError> {
     self.stablecoin_fees().mint_fee(self.rebalance_mode())
   }
@@ -678,7 +678,8 @@ pub trait ExchangeContext {
   /// Stablecoin mint fee on input collateral.
   ///
   /// # Errors
-  /// * Mint closed in the current mode or fee extraction
+  /// * Rebalance mode has no mint fee
+  /// * Fee extraction
   fn stablecoin_mint_fee(
     &self,
     collateral_in: UFix64<N9>,
@@ -689,7 +690,7 @@ pub trait ExchangeContext {
   /// Stablecoin redeem fee rate at the current rebalance mode.
   ///
   /// # Errors
-  /// * Redeem closed in the current mode
+  /// * Rebalance mode has no redeem fee
   fn stablecoin_redeem_fee_rate(&self) -> Result<UFix64<N4>, CoreError> {
     self.stablecoin_fees().redeem_fee(self.rebalance_mode())
   }
@@ -697,7 +698,8 @@ pub trait ExchangeContext {
   /// Stablecoin redeem fee on output collateral.
   ///
   /// # Errors
-  /// * Redeem closed in the current mode or fee extraction
+  /// * Rebalance mode has no redeem fee
+  /// * Fee extraction
   fn stablecoin_redeem_fee(
     &self,
     collateral_out: UFix64<N9>,
@@ -705,8 +707,8 @@ pub trait ExchangeContext {
     FeeExtract::new(self.stablecoin_redeem_fee_rate()?, collateral_out)
   }
 
-  /// Stablecoin redeem fee on output collateral, charged at the higher zone
-  /// fee where redemption is closed.
+  /// Stablecoin redeem fee on output collateral. Applies the larger of the
+  /// two zone fees in modes with no redeem fee.
   ///
   /// # Errors
   /// * Fee conversion or extraction
