@@ -20,6 +20,9 @@ use crate::util::max_scaled_input;
 
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
 
+/// 10 bps (0.1%)
+const MIN_STABLECOIN_FEE: UFix64<N4> = UFix64::constant(10);
+
 /// Represents the spread of fees between mint and redeem for protocol tokens.
 /// All fees must be in basis points to represent a fractional percentage
 /// directly applicable to a token amount e.g. `0.XXXX` or `bips x 10^-4`.
@@ -165,6 +168,7 @@ impl FeeController for StablecoinFees {
   fn validate(self) -> Result<StablecoinFees, CoreError> {
     self.zone_1.validate()?;
     self.zone_2.validate()?;
+    self.validate_min_fee()?;
     Ok(self)
   }
 }
@@ -173,6 +177,15 @@ impl StablecoinFees {
   #[must_use]
   pub fn new(zone_1: FeePair, zone_2: FeePair) -> StablecoinFees {
     StablecoinFees { zone_1, zone_2 }
+  }
+
+  fn validate_min_fee(&self) -> Result<(), CoreError> {
+    [self.zone_1, self.zone_2].iter().try_for_each(|zone| {
+      (zone.mint()? >= MIN_STABLECOIN_FEE
+        && zone.redeem()? >= MIN_STABLECOIN_FEE)
+        .then_some(())
+        .ok_or(InvalidFees)
+    })
   }
 
   /// Redeem fee for `mode`. Returns the larger of the two zone fees in
@@ -302,14 +315,36 @@ mod tests {
     assert_eq!(out.err(), Some(FeeExtraction));
   }
 
+  fn bps(mint: u64, redeem: u64) -> FeePair {
+    FeePair::new(
+      UFix64::<N4>::new(mint).into(),
+      UFix64::<N4>::new(redeem).into(),
+    )
+  }
+
   fn stablecoin_fees() -> StablecoinFees {
-    let bps = |mint, redeem| {
-      FeePair::new(
-        UFix64::<N4>::new(mint).into(),
-        UFix64::<N4>::new(redeem).into(),
-      )
-    };
-    StablecoinFees::new(bps(20, 15), bps(10, 5))
+    StablecoinFees::new(bps(20, 15), bps(10, 10))
+  }
+
+  #[test]
+  fn stablecoin_fees_accept_min_fee() {
+    let at_min = StablecoinFees::new(bps(10, 10), bps(10, 10));
+    assert!(stablecoin_fees().validate().is_ok());
+    assert!(at_min.validate().is_ok());
+  }
+
+  #[test]
+  fn stablecoin_fees_reject_rate_below_min_fee() {
+    [
+      StablecoinFees::new(bps(9, 20), bps(20, 20)),
+      StablecoinFees::new(bps(20, 9), bps(20, 20)),
+      StablecoinFees::new(bps(20, 20), bps(9, 20)),
+      StablecoinFees::new(bps(20, 20), bps(20, 9)),
+    ]
+    .into_iter()
+    .for_each(|fees| {
+      assert_eq!(fees.validate().err(), Some(InvalidFees));
+    });
   }
 
   #[test]
@@ -329,7 +364,7 @@ mod tests {
   fn stablecoin_redeem_fee_only_below_neutral() -> Result<(), CoreError> {
     let fees = stablecoin_fees();
     assert_eq!(fees.redeem_fee(SellZone1)?, UFix64::new(15));
-    assert_eq!(fees.redeem_fee(SellZone2)?, UFix64::new(5));
+    assert_eq!(fees.redeem_fee(SellZone2)?, UFix64::new(10));
     assert_eq!(fees.redeem_fee(Depeg)?, UFix64::zero());
     [Neutral, BuyZone1, BuyZone2].iter().for_each(|mode| {
       assert_eq!(
