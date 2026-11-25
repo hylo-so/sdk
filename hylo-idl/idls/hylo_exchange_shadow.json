@@ -20536,7 +20536,7 @@
     {
       "code": 6017,
       "name": "StablecoinMintDisabled",
-      "msg": "Stablecoin mint disabled. Collateral ratio is at or below Neutral."
+      "msg": "Stablecoin mint disabled due to rebalance mode."
     },
     {
       "code": 6018,
@@ -20696,7 +20696,7 @@
     {
       "code": 6049,
       "name": "StablecoinRedeemDisabled",
-      "msg": "Stablecoin redeem disabled. Collateral ratio is at or above Neutral."
+      "msg": "Stablecoin redeem disabled due to rebalance mode."
     }
   ],
   "types": [
