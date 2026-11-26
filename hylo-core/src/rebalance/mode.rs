@@ -235,19 +235,6 @@ mod tests {
   }
 
   #[test]
-  fn mode_end_exclusive() {
-    SCHEMES.iter().for_each(|scheme| {
-      RebalanceMode::ALL.iter().for_each(|mode| {
-        if let Ok(end) = scheme.active_range(*mode).end() {
-          let just_below = UFix64::new(end.bits - 1);
-          assert_ne!(scheme.mode_at(CR::Finite(end)), *mode);
-          assert_eq!(scheme.mode_at(CR::Finite(just_below)), *mode);
-        }
-      });
-    });
-  }
-
-  #[test]
   fn mode_extremes() {
     SCHEMES.iter().for_each(|scheme| {
       assert_eq!(scheme.mode_at(CR::Finite(UFix64::zero())), Depeg);

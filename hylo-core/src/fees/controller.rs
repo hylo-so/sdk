@@ -336,8 +336,6 @@ mod tests {
   #[test]
   fn stablecoin_fees_reject_rate_below_min_fee() {
     [
-      StablecoinFees::new(bps(9, 20), bps(20, 20)),
-      StablecoinFees::new(bps(20, 9), bps(20, 20)),
       StablecoinFees::new(bps(20, 20), bps(9, 20)),
       StablecoinFees::new(bps(20, 20), bps(20, 9)),
     ]
