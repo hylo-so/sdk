@@ -5,6 +5,9 @@
       nix develop .#nightly --command bash -c "
         set -euo pipefail
         cargo-fmt --check
+      "
+      nix develop --command bash -c "
+        set -euo pipefail
         cargo-clippy --check --all-targets --all-features
         cargo-clippy --check --all-targets -p hylo-core --no-default-features
       "
@@ -17,6 +20,9 @@
       nix develop .#nightly --command bash -c "
         set -euo pipefail
         cargo-fmt
+      "
+      nix develop --command bash -c "
+        set -euo pipefail
         cargo-clippy --fix --all-targets --all-features
         cargo-clippy --fix --all-targets -p hylo-core --no-default-features
       "
