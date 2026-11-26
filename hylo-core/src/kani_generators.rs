@@ -1,5 +1,3 @@
-use std::ops::RangeBounds;
-
 use fix::prelude::*;
 use fix::typenum::Integer;
 
@@ -47,12 +45,17 @@ pub fn narrow_price_range<Exp: Integer>() -> Option<PriceRange<Exp>> {
 /// Symbolic CR within the widest borrow rate curve domain.
 #[must_use]
 pub fn borrow_rate_curve_x() -> IFix64<N9> {
+  let start = RebalanceScheme::Wide.neutral_start();
+  let end = RebalanceScheme::Wide
+    .active_range(RebalanceMode::BuyZone1)
+    .end()
+    .ok();
   let x: IFix64<N9> = IFix64::new(kani::any());
-  kani::assume(x.narrow::<u64>().is_some_and(|cr| {
-    [RebalanceMode::Neutral, RebalanceMode::BuyZone1]
-      .iter()
-      .any(|mode| RebalanceScheme::Wide.active_range(*mode).contains(&cr))
-  }));
+  kani::assume(
+    x.narrow::<u64>()
+      .zip(end)
+      .is_some_and(|(cr, end)| start <= cr && cr <= end),
+  );
   x
 }
 
