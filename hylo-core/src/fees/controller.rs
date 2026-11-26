@@ -196,8 +196,7 @@ impl StablecoinFees {
     .ok_or(InvalidFees)
   }
 
-  /// Redeem fee for `mode`. Returns the larger of the two zone fees in
-  /// modes with no redeem fee.
+  /// Redeem fee for `mode`. Modes above `SellZone1` take the `zone_1` fee.
   ///
   /// # Errors
   /// * Fee conversion
@@ -208,9 +207,7 @@ impl StablecoinFees {
   ) -> Result<UFix64<N4>, CoreError> {
     match mode {
       Depeg | SellZone2 | SellZone1 => self.redeem_fee(mode),
-      Neutral | BuyZone1 | BuyZone2 => {
-        Ok(self.zone_1.redeem()?.max(self.zone_2.redeem()?))
-      }
+      Neutral | BuyZone1 | BuyZone2 => self.zone_1.redeem(),
     }
   }
 }

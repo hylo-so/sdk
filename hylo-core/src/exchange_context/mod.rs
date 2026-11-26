@@ -706,8 +706,8 @@ pub trait ExchangeContext {
     FeeExtract::new(self.stablecoin_redeem_fee_rate()?, collateral_out)
   }
 
-  /// Stablecoin redeem fee on output collateral. Applies the larger of the
-  /// two zone fees in modes with no redeem fee.
+  /// Stablecoin redeem fee on output collateral. Modes above `SellZone1` take
+  /// the `zone_1` fee.
   ///
   /// # Errors
   /// * Fee conversion or extraction
