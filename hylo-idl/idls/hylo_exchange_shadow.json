@@ -20736,101 +20736,96 @@
     },
     {
       "code": 6033,
-      "name": "ExoMintNotInAllowlist",
-      "msg": "Mint is not in the exogenous collateral allowlist."
-    },
-    {
-      "code": 6034,
       "name": "AddressChangeExpired",
       "msg": "Address change proposal has expired."
     },
     {
-      "code": 6035,
+      "code": 6034,
       "name": "AddressChangeTtlInvalid",
       "msg": "Address change proposal's TTL not in configured range."
     },
     {
-      "code": 6036,
+      "code": 6035,
       "name": "AddressChangeNotApproved",
       "msg": "Address change proposal has not been approved."
     },
     {
-      "code": 6037,
+      "code": 6036,
       "name": "AddressChangeAlreadyApproved",
       "msg": "Address change proposal has already been approved."
     },
     {
-      "code": 6038,
+      "code": 6037,
       "name": "AddressChangeUpgradeAuthority",
       "msg": "Address change approver must be upgrade authority."
     },
     {
-      "code": 6039,
+      "code": 6038,
       "name": "TokenAmountPrecisionError",
       "msg": "Failed while converting precision for a token amount."
     },
     {
-      "code": 6040,
+      "code": 6039,
       "name": "SettleVirtualStablecoinUnderflow",
       "msg": "Underflow while computing virtual stablecoin delta."
     },
     {
-      "code": 6041,
+      "code": 6040,
       "name": "SettleVirtualStablecoinConversion",
       "msg": "Underflow while converting TVL to stablecoin."
     },
     {
-      "code": 6042,
+      "code": 6041,
       "name": "SettleVirtualStablecoinNoop",
       "msg": "Virtual stablecoin settlement noop: nothing to drawdown or repay."
     },
     {
-      "code": 6043,
+      "code": 6042,
       "name": "SettleRebalancePnlDisabled",
       "msg": "Rebalance PnL settlement disabled in Depeg mode."
     },
     {
-      "code": 6044,
+      "code": 6043,
       "name": "LstStakePoolNotSupported",
       "msg": "LST stake pool is not supported."
     },
     {
-      "code": 6045,
+      "code": 6044,
       "name": "ExoGenesisConstraints",
       "msg": "Exo pair genesis mint constraints not met."
     },
     {
-      "code": 6046,
+      "code": 6045,
       "name": "ExoGenesisCollateralRatio",
       "msg": "Error or constraint not met for collateral ratio for genesis."
     },
     {
-      "code": 6047,
+      "code": 6046,
       "name": "ExoPairZeroVirtualStablecoin",
       "msg": "Cannot unpause exo pair due to zero virtual stablecoin."
     },
     {
-      "code": 6048,
+      "code": 6047,
       "name": "VirtualStablecoinExceedsVault",
       "msg": "Virtual stablecoin supply exceeds USDC vault balance."
     },
     {
-      "code": 6049,
+      "code": 6048,
       "name": "StablecoinRedeemDisabled",
       "msg": "Stablecoin redeem disabled due to rebalance mode."
     },
     {
-      "code": 6050,
+      "code": 6049,
       "name": "ExoPoolDrawdownOverflow",
       "msg": "Overflow while adding to the exo pool drawdown sum."
     },
     {
-      "code": 6051,
+      "code": 6050,
       "name": "ExoPoolDrawdownUnderflow",
       "msg": "Underflow while subtracting from the exo pool drawdown sum."
     },
     {
-      "code": 6052,
+      "code": 6051,
       "name": "ExoPairNotPaused",
       "msg": "Exo pair must be paused to write off its pool drawdown."
     }
