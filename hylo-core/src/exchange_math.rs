@@ -279,9 +279,15 @@ mod tests {
     ) {
       let neutral_end = scheme.neutral_end();
       let total_sol = state.total_sol().expect("total_sol");
-      let cr = CollateralRatio::new(total_sol, state.usd_sol_price, state.stablecoin_amount)?;
-      // Skip states at or below the Neutral end, where nothing is mintable
-      if cr.as_finite().is_some_and(|cr| cr > neutral_end) {
+      let cr = CollateralRatio::new(total_sol, state.usd_sol_price, state.stablecoin_amount);
+      // Stablecoin is mintable only above `neutral_end`
+      let mintable = match cr {
+        Ok(CollateralRatio::Finite(cr)) => cr > neutral_end,
+        Ok(CollateralRatio::Infinite) => false,
+        // Overflows `UFix64<N9>`
+        Err(_) => true,
+      };
+      if mintable {
         let target = neutral_end.convert::<N2>();
         let max = max_mintable_stablecoin(
           target,
