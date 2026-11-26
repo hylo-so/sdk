@@ -250,11 +250,7 @@ mod tests {
     let inflow = projected_lst_inflow(
       UFix64::<N9>::new(100_000_000_000_000),
       UFix64::<N9>::new(500_000),
-      CR::Finite(
-        RebalanceTolerance::Wide
-          .active_range(RebalanceMode::Neutral)
-          .start()?,
-      ),
+      CR::Finite(RebalanceTolerance::Wide.neutral_start()),
       UFix64::<N9>::new(150_000_000_000),
       &harvest_config(2_000_000_000, 1_000),
     )?;
@@ -312,11 +308,7 @@ mod tests {
     );
     let inflow = projected_borrow_inflow(
       UFix64::<N9>::new(1_000_000_000_000_000),
-      CR::Finite(
-        RebalanceTolerance::Wide
-          .active_range(RebalanceMode::Neutral)
-          .start()?,
-      ),
+      CR::Finite(RebalanceTolerance::Wide.neutral_start()),
       &config,
       UFix64::<N4>::new(500),
       RebalanceTolerance::Wide,

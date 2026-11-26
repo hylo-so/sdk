@@ -137,10 +137,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = self
-      .rebalance_tolerance()
-      .active_range(RebalanceMode::Neutral)
-      .start()?;
+    let target_cr = self.rebalance_tolerance().neutral_start();
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -425,8 +422,7 @@ pub trait ExchangeContext {
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
       .rebalance_tolerance()
-      .active_range(RebalanceMode::Neutral)
-      .end()?
+      .neutral_end()
       .checked_convert()
       .ok_or(MaxMintable)?;
     max_mintable_stablecoin(
@@ -443,10 +439,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic overflow
   fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = self
-      .rebalance_tolerance()
-      .active_range(RebalanceMode::Neutral)
-      .start()?;
+    let target = self.rebalance_tolerance().neutral_start();
     max_redeemable_stablecoin(
       target,
       self.total_value_locked()?,
@@ -463,8 +456,7 @@ pub trait ExchangeContext {
   fn max_lever_to_stable_conversion(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
       .rebalance_tolerance()
-      .active_range(RebalanceMode::Neutral)
-      .end()?
+      .neutral_end()
       .checked_convert()
       .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(
@@ -480,10 +472,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_stable_to_lever_conversion(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = self
-      .rebalance_tolerance()
-      .active_range(RebalanceMode::Neutral)
-      .start()?;
+    let target = self.rebalance_tolerance().neutral_start();
     max_swappable_to_levercoin(
       target,
       self.total_value_locked()?,

@@ -113,14 +113,18 @@ impl RebalanceMode {
 }
 
 impl RebalanceTolerance {
-  const fn neutral_start(self) -> UFix64<N9> {
+  /// Lowest collateral ratio in the Neutral range.
+  #[must_use]
+  pub const fn neutral_start(self) -> UFix64<N9> {
     match self {
       RebalanceTolerance::Wide => UFix64::constant(1_350_000_000),
       RebalanceTolerance::Narrow => UFix64::constant(1_450_000_000),
     }
   }
 
-  const fn neutral_end(self) -> UFix64<N9> {
+  /// Collateral ratio at which the Neutral range ends, exclusive.
+  #[must_use]
+  pub const fn neutral_end(self) -> UFix64<N9> {
     match self {
       RebalanceTolerance::Wide => UFix64::constant(1_650_000_000),
       RebalanceTolerance::Narrow => UFix64::constant(1_550_000_000),

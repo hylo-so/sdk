@@ -47,9 +47,8 @@ pub fn buy_zone_curve(
   ceil: UFix64<N9>,
   rebalance_tolerance: RebalanceTolerance,
 ) -> Result<FixInterp<3, N9>, CoreError> {
-  let neutral = rebalance_tolerance.active_range(RebalanceMode::Neutral);
   let buy_zone_1 = rebalance_tolerance.active_range(RebalanceMode::BuyZone1);
-  let neutral_start = neutral.start().and_then(narrow)?;
+  let neutral_start = narrow(rebalance_tolerance.neutral_start())?;
   let buy_zone_1_start = buy_zone_1.start().and_then(narrow)?;
   let buy_zone_1_end = buy_zone_1.end().and_then(narrow)?;
   let floor = narrow(floor)?;
@@ -215,24 +214,22 @@ mod tests {
   }
 
   #[test]
-  fn rate_neg_below_neutral() -> Result<(), CoreError> {
-    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
+  fn rate_neg_below_neutral() {
+    let neutral_start = WIDE.neutral_start();
     let below = CR::Finite(UFix64::new(neutral_start.bits - 1));
     assert_eq!(
       test_config().rate(below, WIDE),
       Err(CoreError::InterpOutOfDomain)
     );
-    Ok(())
   }
 
   #[test]
   fn rate_floor_through_neutral() -> Result<(), CoreError> {
     let config = test_config();
-    let neutral = WIDE.active_range(RebalanceMode::Neutral);
     let neutral_mid = CR::Finite(UFix64::constant(1_500_000_000));
-    assert_eq!(config.rate(CR::Finite(neutral.start()?), WIDE)?, FLOOR);
+    assert_eq!(config.rate(CR::Finite(WIDE.neutral_start()), WIDE)?, FLOOR);
     assert_eq!(config.rate(neutral_mid, WIDE)?, FLOOR);
-    assert_eq!(config.rate(CR::Finite(neutral.end()?), WIDE)?, FLOOR);
+    assert_eq!(config.rate(CR::Finite(WIDE.neutral_end()), WIDE)?, FLOOR);
     Ok(())
   }
 
@@ -267,21 +264,23 @@ mod tests {
   fn rate_ramp_starts_at_narrow_neutral_end() -> Result<(), CoreError> {
     let narrow = RebalanceTolerance::Narrow;
     let config = test_config();
-    let neutral = narrow.active_range(RebalanceMode::Neutral);
-    let below = CR::Finite(UFix64::new(neutral.start()?.bits - 1));
-    let inside = CR::Finite(UFix64::new(neutral.end()?.bits + 1));
+    let below = CR::Finite(UFix64::new(narrow.neutral_start().bits - 1));
+    let inside = CR::Finite(UFix64::new(narrow.neutral_end().bits + 1));
     assert_eq!(
       config.rate(below, narrow),
       Err(CoreError::InterpOutOfDomain)
     );
-    assert_eq!(config.rate(CR::Finite(neutral.end()?), narrow)?, FLOOR);
+    assert_eq!(
+      config.rate(CR::Finite(narrow.neutral_end()), narrow)?,
+      FLOOR
+    );
     assert_gt!(config.rate(inside, narrow)?, FLOOR);
     Ok(())
   }
 
   #[test]
   fn apply_borrow_rate_7_percent_annual() -> Result<(), CoreError> {
-    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
+    let neutral_start = WIDE.neutral_start();
     let collateral = UFix64::<N9>::new(1_000_000_000_000_000);
     let borrow = test_config().apply_borrow_rate(
       collateral,
@@ -295,7 +294,7 @@ mod tests {
 
   #[test]
   fn apply_borrow_rate_multiple_epochs() -> Result<(), CoreError> {
-    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
+    let neutral_start = WIDE.neutral_start();
     let collateral = UFix64::<N9>::new(1_234_567_890_123_456);
     let borrow = test_config().apply_borrow_rate(
       collateral,

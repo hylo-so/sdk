@@ -202,7 +202,7 @@ mod tests {
   #[test]
   fn multiple_shape() -> Result<(), CoreError> {
     let config = config(TWO);
-    let neutral_start = WIDE.active_range(RebalanceMode::Neutral).start()?;
+    let neutral_start = WIDE.neutral_start();
     let buy_zone_1_end = WIDE.active_range(RebalanceMode::BuyZone1).end()?;
     let below = CR::Finite(UFix64::new(neutral_start.bits - 1));
     assert_eq!(
