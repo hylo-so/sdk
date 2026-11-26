@@ -25,6 +25,8 @@ use crate::rebalance::pricing::{
 use crate::solana_clock::SolanaClock;
 use crate::virtual_stablecoin::VirtualStablecoin;
 
+const REBALANCE_SCHEME: RebalanceScheme = RebalanceScheme::Wide;
+
 /// Exchange context for SOL/LST collateral pairs.
 #[derive(Clone)]
 pub struct LstExchangeContext<C> {
@@ -72,7 +74,7 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
   }
 
   fn rebalance_scheme(&self) -> RebalanceScheme {
-    RebalanceScheme::Wide
+    REBALANCE_SCHEME
   }
 
   fn rebalance_mode(&self) -> RebalanceMode {
@@ -118,7 +120,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
       CollateralRatio::new(total_sol, sol_usd_price.lower, stablecoin_supply)?;
-    let rebalance_mode = RebalanceScheme::Wide.mode_at(collateral_ratio);
+    let rebalance_mode = REBALANCE_SCHEME.mode_at(collateral_ratio);
     Ok(LstExchangeContext {
       clock,
       total_sol,

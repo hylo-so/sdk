@@ -155,10 +155,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = self
-      .rebalance_scheme()
-      .active_range(RebalanceMode::BuyZone1)
-      .start()?;
+    let target_cr = self.rebalance_scheme().neutral_end();
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -488,8 +485,7 @@ pub trait ExchangeContext {
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
       .rebalance_scheme()
-      .active_range(RebalanceMode::SellZone1)
-      .end()?
+      .neutral_start()
       .checked_convert()
       .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(
