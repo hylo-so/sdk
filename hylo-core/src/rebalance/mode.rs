@@ -55,7 +55,7 @@ impl Display for RebalanceMode {
   InitSpace,
   Default,
 )]
-pub enum RebalanceTolerance {
+pub enum RebalanceScheme {
   #[default]
   Wide,
   Narrow,
@@ -112,13 +112,13 @@ impl RebalanceMode {
   ];
 }
 
-impl RebalanceTolerance {
+impl RebalanceScheme {
   /// Lowest collateral ratio in the Neutral range.
   #[must_use]
   pub const fn neutral_start(self) -> UFix64<N9> {
     match self {
-      RebalanceTolerance::Wide => UFix64::constant(1_350_000_000),
-      RebalanceTolerance::Narrow => UFix64::constant(1_450_000_000),
+      RebalanceScheme::Wide => UFix64::constant(1_350_000_000),
+      RebalanceScheme::Narrow => UFix64::constant(1_450_000_000),
     }
   }
 
@@ -126,8 +126,8 @@ impl RebalanceTolerance {
   #[must_use]
   pub const fn neutral_end(self) -> UFix64<N9> {
     match self {
-      RebalanceTolerance::Wide => UFix64::constant(1_650_000_000),
-      RebalanceTolerance::Narrow => UFix64::constant(1_550_000_000),
+      RebalanceScheme::Wide => UFix64::constant(1_650_000_000),
+      RebalanceScheme::Narrow => UFix64::constant(1_550_000_000),
     }
   }
 
@@ -186,8 +186,8 @@ mod tests {
   use super::*;
   use crate::collateral_ratio::CR;
 
-  const TOLERANCES: [RebalanceTolerance; 2] =
-    [RebalanceTolerance::Wide, RebalanceTolerance::Narrow];
+  const SCHEMES: [RebalanceScheme; 2] =
+    [RebalanceScheme::Wide, RebalanceScheme::Narrow];
 
   #[test]
   fn mode_ordering() {
@@ -200,20 +200,20 @@ mod tests {
 
   #[test]
   fn ranges_are_contiguous() {
-    TOLERANCES.iter().for_each(|tolerance| {
+    SCHEMES.iter().for_each(|scheme| {
       RebalanceMode::ALL
         .iter()
         .zip(RebalanceMode::ALL.iter().skip(1))
         .for_each(|(lower, upper)| {
           assert_eq!(
-            tolerance.active_range(*lower).end(),
-            tolerance.active_range(*upper).start(),
-            "{tolerance:?}: {lower:?} -> {upper:?}",
+            scheme.active_range(*lower).end(),
+            scheme.active_range(*upper).start(),
+            "{scheme:?}: {lower:?} -> {upper:?}",
           );
         });
-      assert_eq!(tolerance.active_range(Depeg).start(), Ok(UFix64::zero()));
+      assert_eq!(scheme.active_range(Depeg).start(), Ok(UFix64::zero()));
       assert_eq!(
-        tolerance.active_range(BuyZone2).end(),
+        scheme.active_range(BuyZone2).end(),
         Err(RangeUnexpectedBound),
       );
     });
@@ -221,13 +221,13 @@ mod tests {
 
   #[test]
   fn mode_start_inclusive() {
-    TOLERANCES.iter().for_each(|tolerance| {
+    SCHEMES.iter().for_each(|scheme| {
       RebalanceMode::ALL.iter().for_each(|mode| {
         assert_eq!(
-          tolerance
+          scheme
             .active_range(*mode)
             .start()
-            .map(|cr| tolerance.mode_at(CR::Finite(cr))),
+            .map(|cr| scheme.mode_at(CR::Finite(cr))),
           Ok(*mode),
         );
       });
@@ -236,12 +236,12 @@ mod tests {
 
   #[test]
   fn mode_end_exclusive() {
-    TOLERANCES.iter().for_each(|tolerance| {
+    SCHEMES.iter().for_each(|scheme| {
       RebalanceMode::ALL.iter().for_each(|mode| {
-        if let Ok(end) = tolerance.active_range(*mode).end() {
+        if let Ok(end) = scheme.active_range(*mode).end() {
           let just_below = UFix64::new(end.bits - 1);
-          assert_ne!(tolerance.mode_at(CR::Finite(end)), *mode);
-          assert_eq!(tolerance.mode_at(CR::Finite(just_below)), *mode);
+          assert_ne!(scheme.mode_at(CR::Finite(end)), *mode);
+          assert_eq!(scheme.mode_at(CR::Finite(just_below)), *mode);
         }
       });
     });
@@ -249,15 +249,15 @@ mod tests {
 
   #[test]
   fn mode_extremes() {
-    TOLERANCES.iter().for_each(|tolerance| {
-      assert_eq!(tolerance.mode_at(CR::Finite(UFix64::zero())), Depeg);
-      assert_eq!(tolerance.mode_at(CR::Infinite), BuyZone2);
+    SCHEMES.iter().for_each(|scheme| {
+      assert_eq!(scheme.mode_at(CR::Finite(UFix64::zero())), Depeg);
+      assert_eq!(scheme.mode_at(CR::Infinite), BuyZone2);
     });
   }
 
   #[test]
   fn narrow_moves_neutral_edges() {
-    let narrow = RebalanceTolerance::Narrow;
+    let narrow = RebalanceScheme::Narrow;
     let cr = |bits| CR::Finite(UFix64::constant(bits));
     assert_eq!(narrow.mode_at(cr(1_449_999_999)), SellZone1);
     assert_eq!(narrow.mode_at(cr(1_450_000_000)), Neutral);
@@ -267,7 +267,7 @@ mod tests {
 
   #[test]
   fn active_range_is_half_open() {
-    let r = RebalanceTolerance::Wide.active_range(SellZone1);
+    let r = RebalanceScheme::Wide.active_range(SellZone1);
     assert_eq!(r.start(), Ok(UFix64::constant(1_200_000_000)));
     assert_eq!(r.end(), Ok(UFix64::constant(1_350_000_000)));
     assert!(r.contains(&UFix64::constant(1_200_000_000)));
@@ -284,33 +284,33 @@ mod proofs {
 
   use crate::collateral_ratio::CR;
   use crate::kani_generators::any_ufix64;
-  use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+  use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 
   /// `mode_at(cr)` returns a mode whose `active_range` contains `cr`.
   #[kani::proof]
   fn mode_contains_input() {
-    let tolerance = if kani::any() {
-      RebalanceTolerance::Wide
+    let scheme = if kani::any() {
+      RebalanceScheme::Wide
     } else {
-      RebalanceTolerance::Narrow
+      RebalanceScheme::Narrow
     };
     let cr: UFix64<N9> = any_ufix64();
-    let mode = tolerance.mode_at(CR::Finite(cr));
-    assert!(tolerance.active_range(mode).contains(&cr));
+    let mode = scheme.mode_at(CR::Finite(cr));
+    assert!(scheme.active_range(mode).contains(&cr));
   }
 
   /// Exactly one mode's `active_range` contains any given `cr` (partition).
   #[kani::proof]
   fn mode_zones_disjoint() {
-    let tolerance = if kani::any() {
-      RebalanceTolerance::Wide
+    let scheme = if kani::any() {
+      RebalanceScheme::Wide
     } else {
-      RebalanceTolerance::Narrow
+      RebalanceScheme::Narrow
     };
     let cr: UFix64<N9> = any_ufix64();
     let count = RebalanceMode::ALL
       .iter()
-      .filter(|m| tolerance.active_range(**m).contains(&cr))
+      .filter(|m| scheme.active_range(**m).contains(&cr))
       .count();
     assert_eq!(count, 1);
   }

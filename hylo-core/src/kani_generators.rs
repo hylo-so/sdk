@@ -5,7 +5,7 @@ use fix::typenum::Integer;
 
 use crate::borrow_rate::MAX_RATE;
 use crate::pyth::PriceRange;
-use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 
 #[must_use]
 pub fn any_ufix64<Exp: Integer>() -> UFix64<Exp> {
@@ -51,7 +51,7 @@ pub fn borrow_rate_curve_x() -> IFix64<N9> {
   kani::assume(x.narrow::<u64>().is_some_and(|cr| {
     [RebalanceMode::Neutral, RebalanceMode::BuyZone1]
       .iter()
-      .any(|mode| RebalanceTolerance::Wide.active_range(*mode).contains(&cr))
+      .any(|mode| RebalanceScheme::Wide.active_range(*mode).contains(&cr))
   }));
   x
 }

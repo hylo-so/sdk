@@ -11,7 +11,7 @@ use crate::error::CoreError::{
   YieldHarvestConfigValidation, YieldHarvestMultiplier,
 };
 use crate::fees::controller::FeeExtract;
-use crate::rebalance::mode::RebalanceTolerance;
+use crate::rebalance::mode::RebalanceScheme;
 
 /// 1000 bps (10%)
 const MAX_FEE: UFix64<N4> = UFix64::constant(1000);
@@ -84,13 +84,10 @@ impl YieldHarvestConfig {
   pub fn multiple(
     &self,
     cr: CollateralRatio,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<UFix64<N9>, CoreError> {
-    let curve = buy_zone_curve(
-      self.floor_mult(),
-      self.ceil_mult()?,
-      rebalance_tolerance,
-    )?;
+    let curve =
+      buy_zone_curve(self.floor_mult(), self.ceil_mult()?, rebalance_scheme)?;
     saturating_apply_curve(&curve, cr)
   }
 
@@ -103,9 +100,9 @@ impl YieldHarvestConfig {
     &self,
     amount: UFix64<N9>,
     cr: CollateralRatio,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<UFix64<N9>, CoreError> {
-    let multiple = self.multiple(cr, rebalance_tolerance)?;
+    let multiple = self.multiple(cr, rebalance_scheme)?;
     amount.mul_ceil(multiple).ok_or(YieldHarvestMultiplier)
   }
 
@@ -175,7 +172,7 @@ mod tests {
   const ONE: UFix64<N9> = UFix64::constant(1_000_000_000);
   const TWO: UFix64<N9> = UFix64::constant(2_000_000_000);
   const FEE: UFix64<N4> = UFix64::constant(500);
-  const WIDE: RebalanceTolerance = RebalanceTolerance::Wide;
+  const WIDE: RebalanceScheme = RebalanceScheme::Wide;
 
   fn config(ceil_mult: UFix64<N9>) -> YieldHarvestConfig {
     YieldHarvestConfig {

@@ -15,7 +15,7 @@ use crate::fees::controller::{
 };
 use crate::limiter::levercoin::LevercoinMarketCapLimiter;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
-use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
@@ -33,7 +33,7 @@ pub struct ExoExchangeContext<C> {
   pub virtual_stablecoin: VirtualStablecoin,
   levercoin_supply: Option<UFix64<N6>>,
   collateral_ratio: CR,
-  rebalance_tolerance: RebalanceTolerance,
+  rebalance_scheme: RebalanceScheme,
   rebalance_mode: RebalanceMode,
   levercoin_fees: LevercoinFees,
   stablecoin_fees: StablecoinFees,
@@ -71,8 +71,8 @@ impl<C: SolanaClock> ExchangeContext for ExoExchangeContext<C> {
     self.levercoin_supply.ok_or(LevercoinSupplyNotSet)
   }
 
-  fn rebalance_tolerance(&self) -> RebalanceTolerance {
-    self.rebalance_tolerance
+  fn rebalance_scheme(&self) -> RebalanceScheme {
+    self.rebalance_scheme
   }
 
   fn rebalance_mode(&self) -> RebalanceMode {
@@ -110,7 +110,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     sell_curve_config: RebalanceCurveConfig,
     buy_curve_config: RebalanceCurveConfig,
     levercoin_market_cap_limit: UFix64<N9>,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<ExoExchangeContext<C>, CoreError> {
     let collateral_oracle =
       query_pyth_oracle(&clock, collateral_usd_pyth_feed, oracle_config)?;
@@ -122,7 +122,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       collateral_usd_price.lower,
       stablecoin_supply,
     )?;
-    let rebalance_mode = rebalance_tolerance.mode_at(collateral_ratio);
+    let rebalance_mode = rebalance_scheme.mode_at(collateral_ratio);
     Ok(ExoExchangeContext {
       clock,
       total_collateral,
@@ -131,7 +131,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
       virtual_stablecoin,
       levercoin_supply,
       collateral_ratio,
-      rebalance_tolerance,
+      rebalance_scheme,
       rebalance_mode,
       levercoin_fees,
       stablecoin_fees,

@@ -36,7 +36,7 @@ use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
   max_buyable_collateral, max_sellable_collateral, midpoint,
 };
-use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
@@ -102,7 +102,7 @@ pub trait ExchangeContext {
     SellPriceCurve::new(
       self.collateral_oracle_price(),
       self.sell_curve_config(),
-      self.rebalance_tolerance(),
+      self.rebalance_scheme(),
     )
   }
 
@@ -114,7 +114,7 @@ pub trait ExchangeContext {
     BuyPriceCurve::new(
       self.collateral_oracle_price(),
       self.buy_curve_config(),
-      self.rebalance_tolerance(),
+      self.rebalance_scheme(),
     )
   }
 
@@ -137,7 +137,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = self.rebalance_tolerance().neutral_start();
+    let target_cr = self.rebalance_scheme().neutral_start();
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -156,7 +156,7 @@ pub trait ExchangeContext {
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>, CoreError> {
     let target_cr = self
-      .rebalance_tolerance()
+      .rebalance_scheme()
       .active_range(RebalanceMode::BuyZone1)
       .start()?;
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
@@ -179,7 +179,7 @@ pub trait ExchangeContext {
   fn rebalance_buy_target_cr(&self) -> Result<UFix64<N9>, CoreError> {
     match self.rebalance_mode() {
       RebalanceMode::BuyZone2 => self
-        .rebalance_tolerance()
+        .rebalance_scheme()
         .active_range(RebalanceMode::BuyZone1)
         .end(),
       RebalanceMode::BuyZone1 => {
@@ -218,7 +218,7 @@ pub trait ExchangeContext {
   fn rebalance_sell_target_cr(&self) -> Result<UFix64<N9>, CoreError> {
     match self.rebalance_mode() {
       RebalanceMode::SellZone2 => self
-        .rebalance_tolerance()
+        .rebalance_scheme()
         .active_range(RebalanceMode::SellZone1)
         .start(),
       RebalanceMode::SellZone1 => {
@@ -255,8 +255,8 @@ pub trait ExchangeContext {
   /// Current levercoin supply.
   fn levercoin_supply(&self) -> Result<UFix64<N6>, CoreError>;
 
-  /// Tolerance defining the CR range of each rebalance mode.
-  fn rebalance_tolerance(&self) -> RebalanceTolerance;
+  /// Scheme defining the CR range of each rebalance mode.
+  fn rebalance_scheme(&self) -> RebalanceScheme;
 
   /// Current rebalance mode, computed at construction.
   fn rebalance_mode(&self) -> RebalanceMode;
@@ -392,7 +392,7 @@ pub trait ExchangeContext {
       self.collateral_usd_price().lower,
       new_stablecoin,
     )?;
-    Ok(self.rebalance_tolerance().mode_at(projected_cr))
+    Ok(self.rebalance_scheme().mode_at(projected_cr))
   }
 
   /// Worse of the current and projected rebalance modes, so a transaction
@@ -421,7 +421,7 @@ pub trait ExchangeContext {
   /// * Arithmetic overflow
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
-      .rebalance_tolerance()
+      .rebalance_scheme()
       .neutral_end()
       .checked_convert()
       .ok_or(MaxMintable)?;
@@ -439,7 +439,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic overflow
   fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = self.rebalance_tolerance().neutral_start();
+    let target = self.rebalance_scheme().neutral_start();
     max_redeemable_stablecoin(
       target,
       self.total_value_locked()?,
@@ -455,7 +455,7 @@ pub trait ExchangeContext {
   /// * TVL computation or arithmetic failure
   fn max_lever_to_stable_conversion(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
-      .rebalance_tolerance()
+      .rebalance_scheme()
       .neutral_end()
       .checked_convert()
       .ok_or(MaxSwappable)?;
@@ -472,7 +472,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_stable_to_lever_conversion(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = self.rebalance_tolerance().neutral_start();
+    let target = self.rebalance_scheme().neutral_start();
     max_swappable_to_levercoin(
       target,
       self.total_value_locked()?,
@@ -487,7 +487,7 @@ pub trait ExchangeContext {
   /// * TVL computation or arithmetic failure
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
-      .rebalance_tolerance()
+      .rebalance_scheme()
       .active_range(RebalanceMode::SellZone1)
       .end()?
       .checked_convert()
@@ -513,7 +513,7 @@ pub trait ExchangeContext {
     } else {
       let atom = UFix64::new(1);
       let last_depeg_cr = self
-        .rebalance_tolerance()
+        .rebalance_scheme()
         .active_range(RebalanceMode::SellZone2)
         .start()?
         .checked_sub(&atom)
@@ -586,7 +586,7 @@ pub trait ExchangeContext {
     requested: UFix64<N6>,
   ) -> Result<UFix64<N6>, CoreError> {
     let target = self
-      .rebalance_tolerance()
+      .rebalance_scheme()
       .active_range(RebalanceMode::SellZone2)
       .end()?
       .checked_convert()

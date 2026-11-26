@@ -265,19 +265,19 @@ mod tests {
   use crate::collateral_ratio::CollateralRatio;
   use crate::eq_tolerance;
   use crate::error::CoreError::LevercoinNav;
-  use crate::rebalance::mode::RebalanceTolerance;
+  use crate::rebalance::mode::RebalanceScheme;
   use crate::util::proptest::*;
 
   proptest! {
     #[test]
     fn max_mintable_props(
       state in protocol_state(()),
-      tolerance in prop_oneof![
-        Just(RebalanceTolerance::Wide),
-        Just(RebalanceTolerance::Narrow),
+      scheme in prop_oneof![
+        Just(RebalanceScheme::Wide),
+        Just(RebalanceScheme::Narrow),
       ],
     ) {
-      let neutral_end = tolerance.neutral_end();
+      let neutral_end = scheme.neutral_end();
       let total_sol = state.total_sol().expect("total_sol");
       let cr = CollateralRatio::new(total_sol, state.usd_sol_price, state.stablecoin_amount)?;
       // Skip states at or below the Neutral end, where nothing is mintable

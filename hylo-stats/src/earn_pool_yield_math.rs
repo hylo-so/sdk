@@ -7,7 +7,7 @@ use hylo_core::borrow_rate::BorrowRateCurveConfig;
 use hylo_core::collateral_ratio::CollateralRatio;
 use hylo_core::fees::controller::FeeExtract;
 use hylo_core::lst::sol_price::LstSolPrice;
-use hylo_core::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use hylo_core::rebalance::mode::{RebalanceMode, RebalanceScheme};
 use hylo_core::yields::YieldHarvestConfig;
 
 use crate::error::StatsError::{
@@ -97,15 +97,15 @@ pub fn projected_lst_inflow(
   sol_usd_spot: UFix64<N9>,
   config: &YieldHarvestConfig,
 ) -> Result<UFix64<N6>> {
-  let rebalance_tolerance = RebalanceTolerance::Wide;
-  if rebalance_tolerance.mode_at(collateral_ratio) < RebalanceMode::Neutral {
+  let rebalance_scheme = RebalanceScheme::Wide;
+  if rebalance_scheme.mode_at(collateral_ratio) < RebalanceMode::Neutral {
     Ok(UFix64::zero())
   } else {
     let sol_yield = lst_sol_value
       .mul_floor(epoch_growth)
       .ok_or(ProjectedInflow)?;
     let usd_yield = config
-      .apply_multiple(sol_yield, collateral_ratio, rebalance_tolerance)?
+      .apply_multiple(sol_yield, collateral_ratio, rebalance_scheme)?
       .mul_floor(sol_usd_spot)
       .and_then(UFix64::checked_convert::<N6>)
       .ok_or(ProjectedInflow)?;
@@ -131,9 +131,9 @@ pub fn projected_borrow_inflow(
   collateral_ratio: CollateralRatio,
   config: &BorrowRateCurveConfig,
   fee: UFix64<N4>,
-  rebalance_tolerance: RebalanceTolerance,
+  rebalance_scheme: RebalanceScheme,
 ) -> Result<UFix64<N6>> {
-  if rebalance_tolerance.mode_at(collateral_ratio) < RebalanceMode::Neutral {
+  if rebalance_scheme.mode_at(collateral_ratio) < RebalanceMode::Neutral {
     Ok(UFix64::zero())
   } else {
     let gross = config
@@ -141,7 +141,7 @@ pub fn projected_borrow_inflow(
         levercoin_market_cap,
         collateral_ratio,
         UFix64::constant(1),
-        rebalance_tolerance,
+        rebalance_scheme,
       )?
       .checked_convert::<N6>()
       .ok_or(ProjectedInflow)?;
@@ -167,7 +167,7 @@ mod tests {
   use hylo_core::borrow_rate::BorrowRateCurveConfig;
   use hylo_core::collateral_ratio::CR;
   use hylo_core::lst::sol_price::LstSolPrice;
-  use hylo_core::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+  use hylo_core::rebalance::mode::{RebalanceMode, RebalanceScheme};
   use hylo_core::yields::YieldHarvestConfig;
 
   use super::*;
@@ -250,7 +250,7 @@ mod tests {
     let inflow = projected_lst_inflow(
       UFix64::<N9>::new(100_000_000_000_000),
       UFix64::<N9>::new(500_000),
-      CR::Finite(RebalanceTolerance::Wide.neutral_start()),
+      CR::Finite(RebalanceScheme::Wide.neutral_start()),
       UFix64::<N9>::new(150_000_000_000),
       &harvest_config(2_000_000_000, 1_000),
     )?;
@@ -308,10 +308,10 @@ mod tests {
     );
     let inflow = projected_borrow_inflow(
       UFix64::<N9>::new(1_000_000_000_000_000),
-      CR::Finite(RebalanceTolerance::Wide.neutral_start()),
+      CR::Finite(RebalanceScheme::Wide.neutral_start()),
       &config,
       UFix64::<N4>::new(500),
-      RebalanceTolerance::Wide,
+      RebalanceScheme::Wide,
     )?;
     assert_eq!(inflow, UFix64::<N6>::new(365_389_000));
     Ok(())
@@ -330,14 +330,13 @@ mod tests {
       RebalanceMode::SellZone1,
     ];
     below_neutral.iter().try_for_each(|mode| -> Result<()> {
-      let cr =
-        CR::Finite(RebalanceTolerance::Wide.active_range(*mode).start()?);
+      let cr = CR::Finite(RebalanceScheme::Wide.active_range(*mode).start()?);
       let inflow = projected_borrow_inflow(
         market_cap,
         cr,
         &config,
         UFix64::<N4>::new(500),
-        RebalanceTolerance::Wide,
+        RebalanceScheme::Wide,
       )?;
       assert_eq!(inflow, UFix64::zero(), "nonzero inflow in {mode}");
       Ok(())

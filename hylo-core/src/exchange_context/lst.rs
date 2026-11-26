@@ -17,7 +17,7 @@ use crate::lst::sol_price::LstSolPrice;
 use crate::lst::stake_pool::SplStakePool;
 use crate::lst::total_sol_cache::TotalSolCache;
 use crate::pyth::{query_pyth_oracle, OracleConfig, OraclePrice, PriceRange};
-use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 use crate::rebalance::pnl::RebalancePnl;
 use crate::rebalance::pricing::{
   RebalanceCurveConfig, RebalancePriceController,
@@ -71,8 +71,8 @@ impl<C: SolanaClock> ExchangeContext for LstExchangeContext<C> {
     self.levercoin_supply.ok_or(LevercoinNav)
   }
 
-  fn rebalance_tolerance(&self) -> RebalanceTolerance {
-    RebalanceTolerance::Wide
+  fn rebalance_scheme(&self) -> RebalanceScheme {
+    RebalanceScheme::Wide
   }
 
   fn rebalance_mode(&self) -> RebalanceMode {
@@ -118,7 +118,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let levercoin_supply = levercoin_mint.map(|m| UFix64::new(m.supply));
     let collateral_ratio =
       CollateralRatio::new(total_sol, sol_usd_price.lower, stablecoin_supply)?;
-    let rebalance_mode = RebalanceTolerance::Wide.mode_at(collateral_ratio);
+    let rebalance_mode = RebalanceScheme::Wide.mode_at(collateral_ratio);
     Ok(LstExchangeContext {
       clock,
       total_sol,

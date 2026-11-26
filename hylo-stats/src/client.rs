@@ -360,7 +360,7 @@ pub fn build_stats_inputs(
       borrow_rate_fee: accounts.exo_pair.borrow_rate_fee.try_into()?,
       collateral_ratio: exo_context.collateral_ratio(),
       levercoin_market_cap: exo_context.levercoin_market_cap()?,
-      rebalance_tolerance: exo_context.rebalance_tolerance(),
+      rebalance_scheme: exo_context.rebalance_scheme(),
     }],
     sol_usd_spot: sol_usd.spot,
     outstanding_drawdown,

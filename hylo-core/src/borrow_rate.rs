@@ -11,7 +11,7 @@ use crate::error::CoreError::{
   BorrowRateApply, BorrowRateValidation, InterpFeeConversion,
 };
 use crate::fees::interp::{FixInterp, Point};
-use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 use crate::rebalance::pricing::narrow;
 
 /// Maximum per-epoch rate (~30% annualized at 182 epochs/year)
@@ -45,10 +45,10 @@ pub struct BorrowRateCurveConfig {
 pub fn buy_zone_curve(
   floor: UFix64<N9>,
   ceil: UFix64<N9>,
-  rebalance_tolerance: RebalanceTolerance,
+  rebalance_scheme: RebalanceScheme,
 ) -> Result<FixInterp<3, N9>, CoreError> {
-  let buy_zone_1 = rebalance_tolerance.active_range(RebalanceMode::BuyZone1);
-  let neutral_start = narrow(rebalance_tolerance.neutral_start())?;
+  let buy_zone_1 = rebalance_scheme.active_range(RebalanceMode::BuyZone1);
+  let neutral_start = narrow(rebalance_scheme.neutral_start())?;
   let buy_zone_1_start = buy_zone_1.start().and_then(narrow)?;
   let buy_zone_1_end = buy_zone_1.end().and_then(narrow)?;
   let floor = narrow(floor)?;
@@ -114,13 +114,10 @@ impl BorrowRateCurveConfig {
   pub fn rate(
     &self,
     cr: CollateralRatio,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<UFix64<N9>, CoreError> {
-    let curve = buy_zone_curve(
-      self.floor_rate()?,
-      self.ceil_rate()?,
-      rebalance_tolerance,
-    )?;
+    let curve =
+      buy_zone_curve(self.floor_rate()?, self.ceil_rate()?, rebalance_scheme)?;
     saturating_apply_curve(&curve, cr)
   }
 
@@ -135,9 +132,9 @@ impl BorrowRateCurveConfig {
     amount: UFix64<N9>,
     cr: CollateralRatio,
     elapsed_epochs: UFix64<Z0>,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<UFix64<N9>, CoreError> {
-    let rate = self.rate(cr, rebalance_tolerance)?;
+    let rate = self.rate(cr, rebalance_scheme)?;
     amount
       .mul_div_floor(rate, UFix64::one())
       .and_then(|base| base.checked_mul(&elapsed_epochs))
@@ -203,7 +200,7 @@ mod tests {
 
   const FLOOR: UFix64<N9> = UFix64::constant(384_620);
   const CEIL: UFix64<N9> = MAX_RATE;
-  const WIDE: RebalanceTolerance = RebalanceTolerance::Wide;
+  const WIDE: RebalanceScheme = RebalanceScheme::Wide;
 
   fn config(floor: UFix64<N9>, ceil: UFix64<N9>) -> BorrowRateCurveConfig {
     BorrowRateCurveConfig::new(floor.into(), ceil.into())
@@ -262,7 +259,7 @@ mod tests {
 
   #[test]
   fn rate_ramp_starts_at_narrow_neutral_end() -> Result<(), CoreError> {
-    let narrow = RebalanceTolerance::Narrow;
+    let narrow = RebalanceScheme::Narrow;
     let config = test_config();
     let below = CR::Finite(UFix64::new(narrow.neutral_start().bits - 1));
     let inside = CR::Finite(UFix64::new(narrow.neutral_end().bits + 1));

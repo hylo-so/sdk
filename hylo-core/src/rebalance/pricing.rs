@@ -17,7 +17,7 @@ use crate::collateral_ratio::CollateralRatio;
 use crate::error::CoreError;
 use crate::fees::interp::{FixInterp, Point};
 use crate::pyth::OraclePrice;
-use crate::rebalance::mode::{RebalanceMode, RebalanceTolerance};
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 
 const MIN_DEVIATION_PCT: UFix64<N9> = UFix64::constant(1);
 pub const SELL_FLOOR_MAX_PCT: UFix64<N9> = UFix64::constant(5_000_000);
@@ -190,7 +190,7 @@ pub trait RebalancePriceController {
 #[derive(Debug, Clone)]
 pub struct SellPriceCurve {
   curve: FixInterp<2, N9>,
-  rebalance_tolerance: RebalanceTolerance,
+  rebalance_scheme: RebalanceScheme,
 }
 
 impl SellPriceCurve {
@@ -202,7 +202,7 @@ impl SellPriceCurve {
   pub fn new(
     OraclePrice { spot, .. }: OraclePrice,
     config: &RebalanceCurveConfig,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<SellPriceCurve, CoreError> {
     let floor_mult = config.floor_pct().and_then(complement)?;
     let ceil_mult = config.ceil_pct().and_then(markup)?;
@@ -210,8 +210,7 @@ impl SellPriceCurve {
       .mul_div_floor(floor_mult, UFix64::one())
       .zip(spot.mul_div_ceil(ceil_mult, UFix64::one()))
       .ok_or(CoreError::RebalancePriceConstruction)?;
-    let sell_zone_1 =
-      rebalance_tolerance.active_range(RebalanceMode::SellZone1);
+    let sell_zone_1 = rebalance_scheme.active_range(RebalanceMode::SellZone1);
     let curve = FixInterp::from_points([
       Point {
         x: narrow(sell_zone_1.start()?)?,
@@ -224,7 +223,7 @@ impl SellPriceCurve {
     ])?;
     SellPriceCurve {
       curve,
-      rebalance_tolerance,
+      rebalance_scheme,
     }
     .validate()
   }
@@ -237,7 +236,7 @@ impl RebalancePriceController for SellPriceCurve {
 
   fn is_active(&self, cr: CollateralRatio) -> bool {
     (RebalanceMode::SellZone2..RebalanceMode::Neutral)
-      .contains(&self.rebalance_tolerance.mode_at(cr))
+      .contains(&self.rebalance_scheme.mode_at(cr))
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError> {
@@ -276,7 +275,7 @@ impl RebalancePriceController for SellPriceCurve {
 #[derive(Debug, Clone)]
 pub struct BuyPriceCurve {
   curve: FixInterp<2, N9>,
-  rebalance_tolerance: RebalanceTolerance,
+  rebalance_scheme: RebalanceScheme,
 }
 
 impl BuyPriceCurve {
@@ -288,7 +287,7 @@ impl BuyPriceCurve {
   pub fn new(
     OraclePrice { spot, .. }: OraclePrice,
     config: &RebalanceCurveConfig,
-    rebalance_tolerance: RebalanceTolerance,
+    rebalance_scheme: RebalanceScheme,
   ) -> Result<BuyPriceCurve, CoreError> {
     let floor_mult = config.floor_pct().and_then(complement)?;
     let ceil_mult = config.ceil_pct().and_then(markup)?;
@@ -296,7 +295,7 @@ impl BuyPriceCurve {
       .mul_div_floor(floor_mult, UFix64::one())
       .zip(spot.mul_div_ceil(ceil_mult, UFix64::one()))
       .ok_or(CoreError::RebalancePriceConstruction)?;
-    let buy_zone_1 = rebalance_tolerance.active_range(RebalanceMode::BuyZone1);
+    let buy_zone_1 = rebalance_scheme.active_range(RebalanceMode::BuyZone1);
     let curve = FixInterp::from_points([
       Point {
         x: narrow(buy_zone_1.start()?)?,
@@ -309,7 +308,7 @@ impl BuyPriceCurve {
     ])?;
     BuyPriceCurve {
       curve,
-      rebalance_tolerance,
+      rebalance_scheme,
     }
     .validate()
   }
@@ -321,7 +320,7 @@ impl RebalancePriceController for BuyPriceCurve {
   }
 
   fn is_active(&self, cr: CollateralRatio) -> bool {
-    self.rebalance_tolerance.mode_at(cr) > RebalanceMode::Neutral
+    self.rebalance_scheme.mode_at(cr) > RebalanceMode::Neutral
   }
 
   fn price_inner(&self, cr: IFix64<N9>) -> Result<IFix64<N9>, CoreError> {
@@ -405,20 +404,20 @@ mod tests {
 
   #[test]
   fn sell_constructs() -> Result<(), CoreError> {
-    SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+    SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     Ok(())
   }
 
   #[test]
   fn buy_constructs() -> Result<(), CoreError> {
-    BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     Ok(())
   }
 
   #[test]
   fn sell_flat_below_domain() -> Result<(), CoreError> {
     let curve =
-      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(curve.price(CR_1_00)?, curve.price(CR_1_15)?);
     Ok(())
   }
@@ -426,7 +425,7 @@ mod tests {
   #[test]
   fn sell_inactive_above_domain() -> Result<(), CoreError> {
     let curve =
-      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(
       curve.price(CR_1_40).err(),
       Some(CoreError::RebalanceOutOfDomain)
@@ -437,7 +436,7 @@ mod tests {
   #[test]
   fn sell_endpoints() -> Result<(), CoreError> {
     let curve =
-      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     let at_floor = curve.price(CR_1_20)?;
     let at_ceil = curve.price(CR_1_35)?;
     assert_lt!(at_floor, at_ceil);
@@ -447,8 +446,7 @@ mod tests {
 
   #[test]
   fn buy_inactive_below_domain() -> Result<(), CoreError> {
-    let curve =
-      BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(
       curve.price(CR_1_60).err(),
       Some(CoreError::RebalanceOutOfDomain)
@@ -458,16 +456,14 @@ mod tests {
 
   #[test]
   fn buy_flat_above_domain() -> Result<(), CoreError> {
-    let curve =
-      BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(curve.price(CR_1_80)?, curve.price(CR_2_50)?);
     Ok(())
   }
 
   #[test]
   fn buy_flat_at_infinite_cr() -> Result<(), CoreError> {
-    let curve =
-      BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     assert!(curve.is_active(CR::Infinite));
     assert_eq!(curve.price(CR::Infinite)?, curve.price(CR_2_50)?);
     assert_eq!(curve.price_slope(CR::Infinite)?, IFix64::zero());
@@ -477,7 +473,7 @@ mod tests {
   #[test]
   fn sell_inactive_at_infinite_cr() -> Result<(), CoreError> {
     let curve =
-      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     assert!(!curve.is_active(CR::Infinite));
     assert_eq!(
       curve.price(CR::Infinite).err(),
@@ -488,8 +484,7 @@ mod tests {
 
   #[test]
   fn buy_endpoints() -> Result<(), CoreError> {
-    let curve =
-      BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     let at_floor = curve.price(CR_1_65)?;
     let at_ceil = curve.price(CR_1_75)?;
     assert_lt!(at_floor, at_ceil);
@@ -500,7 +495,7 @@ mod tests {
   #[test]
   fn sell_endpoint_values() -> Result<(), CoreError> {
     let curve =
-      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(curve.price(CR_1_20)?, UFix64::constant(144_937_098_276));
     assert_eq!(curve.price(CR_1_35)?, UFix64::constant(147_133_114_917));
     Ok(())
@@ -508,8 +503,7 @@ mod tests {
 
   #[test]
   fn buy_endpoint_values() -> Result<(), CoreError> {
-    let curve =
-      BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(curve.price(CR_1_65)?, UFix64::constant(145_669_103_823));
     assert_eq!(curve.price(CR_1_75)?, UFix64::constant(147_865_120_464));
     Ok(())
@@ -518,15 +512,14 @@ mod tests {
   #[test]
   fn sell_midpoint_value() -> Result<(), CoreError> {
     let curve =
-      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceTolerance::Wide)?;
+      SellPriceCurve::new(ORACLE, &SELL_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(curve.price(CR_1_275)?, UFix64::constant(146_035_106_597));
     Ok(())
   }
 
   #[test]
   fn buy_midpoint_value() -> Result<(), CoreError> {
-    let curve =
-      BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceTolerance::Wide)?;
+    let curve = BuyPriceCurve::new(ORACLE, &BUY_CONFIG, RebalanceScheme::Wide)?;
     assert_eq!(curve.price(CR_1_70)?, UFix64::constant(146_767_112_144));
     Ok(())
   }
@@ -584,7 +577,7 @@ mod tests {
       ceil_pct: SELL_CONFIG.ceil_pct,
     };
     assert_eq!(
-      SellPriceCurve::new(ORACLE, &config, RebalanceTolerance::Wide).err(),
+      SellPriceCurve::new(ORACLE, &config, RebalanceScheme::Wide).err(),
       Some(CoreError::RebalancePercentArithmetic)
     );
   }
@@ -633,7 +626,7 @@ mod tests {
     ) {
       let oracle = OraclePrice { spot, conf };
       if let Ok(curve) =
-        SellPriceCurve::new(oracle, &SELL_CONFIG, RebalanceTolerance::Wide)
+        SellPriceCurve::new(oracle, &SELL_CONFIG, RebalanceScheme::Wide)
       {
         let (floor, ceil) = spot_band(spot, &SELL_CONFIG)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
@@ -654,7 +647,7 @@ mod tests {
     ) {
       let oracle = OraclePrice { spot, conf };
       if let Ok(curve) =
-        BuyPriceCurve::new(oracle, &BUY_CONFIG, RebalanceTolerance::Wide)
+        BuyPriceCurve::new(oracle, &BUY_CONFIG, RebalanceScheme::Wide)
       {
         let (floor, ceil) = spot_band(spot, &BUY_CONFIG)
           .map_err(|e| TestCaseError::fail(format!("{e}")))?;
