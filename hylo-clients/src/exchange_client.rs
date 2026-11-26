@@ -657,21 +657,21 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
-  /// Updates the rebalance tolerance for an exo collateral.
+  /// Updates the rebalance scheme for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub async fn update_exo_rebalance_tolerance(
+  pub async fn update_exo_rebalance_scheme(
     &self,
     collateral_mint: Pubkey,
-    args: &args::UpdateExoRebalanceTolerance,
+    args: &args::UpdateExoRebalanceScheme,
   ) -> Result<SignedTransaction> {
-    let instruction = instruction_builders::update_exo_rebalance_tolerance(
+    let instruction = instruction_builders::update_exo_rebalance_scheme(
       self.signer(),
       collateral_mint,
       args,
     );
-    let memo = build_memo("update_exo_rebalance_tolerance", &instruction);
+    let memo = build_memo("update_exo_rebalance_scheme", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     self.sign(inner, memo).await
   }

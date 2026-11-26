@@ -936,12 +936,12 @@ pub fn update_exo_stablecoin_fees(
 }
 
 #[must_use]
-pub fn update_exo_rebalance_tolerance(
+pub fn update_exo_rebalance_scheme(
   admin: Pubkey,
   collateral_mint: Pubkey,
-  args: &args::UpdateExoRebalanceTolerance,
+  args: &args::UpdateExoRebalanceScheme,
 ) -> Instruction {
-  let accounts = accounts::UpdateExoRebalanceTolerance {
+  let accounts = accounts::UpdateExoRebalanceScheme {
     admin,
     hylo: pda::HYLO,
     exo_pair: pda::exo_pair(collateral_mint),

@@ -777,10 +777,10 @@
             }
           },
           {
-            "name": "rebalance_tolerance",
+            "name": "rebalance_scheme",
             "type": {
               "defined": {
-                "name": "RebalanceTolerance"
+                "name": "RebalanceScheme"
               }
             }
           },
@@ -1196,7 +1196,7 @@
       }
     },
     {
-      "name": "RebalanceTolerance",
+      "name": "RebalanceScheme",
       "type": {
         "kind": "enum",
         "variants": [

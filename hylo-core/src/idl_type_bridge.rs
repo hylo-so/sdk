@@ -25,15 +25,11 @@ impl From<hylo_idl::exchange::types::StablecoinFees> for StablecoinFees {
   }
 }
 
-impl From<hylo_idl::exchange::types::RebalanceTolerance> for RebalanceScheme {
-  fn from(
-    idl: hylo_idl::exchange::types::RebalanceTolerance,
-  ) -> RebalanceScheme {
+impl From<hylo_idl::exchange::types::RebalanceScheme> for RebalanceScheme {
+  fn from(idl: hylo_idl::exchange::types::RebalanceScheme) -> RebalanceScheme {
     match idl {
-      hylo_idl::exchange::types::RebalanceTolerance::Wide => {
-        RebalanceScheme::Wide
-      }
-      hylo_idl::exchange::types::RebalanceTolerance::Narrow => {
+      hylo_idl::exchange::types::RebalanceScheme::Wide => RebalanceScheme::Wide,
+      hylo_idl::exchange::types::RebalanceScheme::Narrow => {
         RebalanceScheme::Narrow
       }
     }
@@ -239,14 +235,12 @@ impl From<StablecoinFees> for hylo_idl::exchange::types::StablecoinFees {
   }
 }
 
-impl From<RebalanceScheme> for hylo_idl::exchange::types::RebalanceTolerance {
+impl From<RebalanceScheme> for hylo_idl::exchange::types::RebalanceScheme {
   fn from(val: RebalanceScheme) -> Self {
     match val {
-      RebalanceScheme::Wide => {
-        hylo_idl::exchange::types::RebalanceTolerance::Wide
-      }
+      RebalanceScheme::Wide => hylo_idl::exchange::types::RebalanceScheme::Wide,
       RebalanceScheme::Narrow => {
-        hylo_idl::exchange::types::RebalanceTolerance::Narrow
+        hylo_idl::exchange::types::RebalanceScheme::Narrow
       }
     }
   }

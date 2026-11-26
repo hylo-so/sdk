@@ -248,7 +248,7 @@ fn exo_exchange_context(
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
     exo_pair.levercoin_market_cap_limit.try_into()?,
-    exo_pair.rebalance_tolerance.into(),
+    exo_pair.rebalance_scheme.into(),
   )?;
   Ok(exo_context)
 }

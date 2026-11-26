@@ -175,7 +175,7 @@ impl<C: SolanaClock> ExoPairState<C> {
       exo_pair.sell_curve_config.into(),
       exo_pair.buy_curve_config.into(),
       exo_pair.levercoin_market_cap_limit.try_into()?,
-      exo_pair.rebalance_tolerance.into(),
+      exo_pair.rebalance_scheme.into(),
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {

@@ -9591,10 +9591,10 @@
           }
         },
         {
-          "name": "rebalance_tolerance",
+          "name": "rebalance_scheme",
           "type": {
             "defined": {
-              "name": "RebalanceTolerance"
+              "name": "RebalanceScheme"
             }
           }
         }
@@ -17415,16 +17415,16 @@
       }
     },
     {
-      "name": "update_exo_rebalance_tolerance",
+      "name": "update_exo_rebalance_scheme",
       "discriminator": [
-        50,
-        158,
-        40,
-        37,
-        36,
-        60,
-        156,
-        180
+        32,
+        87,
+        54,
+        172,
+        56,
+        199,
+        120,
+        231
       ],
       "accounts": [
         {
@@ -17516,17 +17516,17 @@
       ],
       "args": [
         {
-          "name": "new_rebalance_tolerance",
+          "name": "new_rebalance_scheme",
           "type": {
             "defined": {
-              "name": "RebalanceTolerance"
+              "name": "RebalanceScheme"
             }
           }
         }
       ],
       "returns": {
         "defined": {
-          "name": "UpdateRebalanceToleranceEvent"
+          "name": "UpdateRebalanceSchemeEvent"
         }
       }
     },
@@ -20490,16 +20490,16 @@
       ]
     },
     {
-      "name": "UpdateRebalanceToleranceEvent",
+      "name": "UpdateRebalanceSchemeEvent",
       "discriminator": [
-        224,
-        164,
+        215,
+        124,
+        47,
+        172,
         101,
-        1,
-        176,
-        4,
-        166,
-        82
+        212,
+        65,
+        252
       ]
     },
     {
@@ -21371,10 +21371,10 @@
             }
           },
           {
-            "name": "rebalance_tolerance",
+            "name": "rebalance_scheme",
             "type": {
               "defined": {
-                "name": "RebalanceTolerance"
+                "name": "RebalanceScheme"
               }
             }
           },
@@ -22618,7 +22618,7 @@
       }
     },
     {
-      "name": "RebalanceTolerance",
+      "name": "RebalanceScheme",
       "type": {
         "kind": "enum",
         "variants": [
@@ -23782,23 +23782,23 @@
       }
     },
     {
-      "name": "UpdateRebalanceToleranceEvent",
+      "name": "UpdateRebalanceSchemeEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "old_rebalance_tolerance",
+            "name": "old_rebalance_scheme",
             "type": {
               "defined": {
-                "name": "RebalanceTolerance"
+                "name": "RebalanceScheme"
               }
             }
           },
           {
-            "name": "new_rebalance_tolerance",
+            "name": "new_rebalance_scheme",
             "type": {
               "defined": {
-                "name": "RebalanceTolerance"
+                "name": "RebalanceScheme"
               }
             }
           }
