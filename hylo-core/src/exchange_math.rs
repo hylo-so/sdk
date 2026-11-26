@@ -106,12 +106,11 @@ fn max_swappable_stablecoin_inner(
     .and_then(UFix64::checked_convert::<N6>)
 }
 
-/// Without changing TVL, computes how much stablecoin can be swapped to
-/// levercoin.
+/// Stablecoin swappable to levercoin without changing TVL.
 ///
 /// ```txt
-///                                       total_value_locked
-/// max_swappable = stablecoin_supply - -----------------------
+///                                      total_value_locked
+/// max_swappable = stablecoin_supply - --------------------
 ///                                     max_collateral_ratio
 /// ```
 ///

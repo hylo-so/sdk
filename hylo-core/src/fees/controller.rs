@@ -146,7 +146,6 @@ pub struct StablecoinFees {
 }
 
 impl FeeController for StablecoinFees {
-  /// Mint fee in the buy zones.
   fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
     match mode {
       BuyZone1 => self.zone_1.mint(),
@@ -155,7 +154,6 @@ impl FeeController for StablecoinFees {
     }
   }
 
-  /// Redeem fee in the sell zones, zero in Depeg.
   fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
     match mode {
       SellZone1 => self.zone_1.redeem(),
@@ -190,8 +188,8 @@ impl StablecoinFees {
   }
 
   fn validate_zone_order(&self) -> Result<(), CoreError> {
-    (self.zone_2.mint()? <= self.zone_1.mint()?
-      && self.zone_2.redeem()? <= self.zone_1.redeem()?)
+    (self.zone_2.redeem()? <= self.zone_1.redeem()?
+      && self.zone_1.mint()? >= self.zone_2.mint()?)
     .then_some(())
     .ok_or(InvalidFees)
   }
@@ -229,7 +227,6 @@ pub struct LevercoinFees {
 }
 
 impl FeeController for LevercoinFees {
-  /// Determines minting fee based on
   fn mint_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
     match mode {
       Neutral | BuyZone1 | BuyZone2 => self.normal.mint(),
@@ -239,7 +236,6 @@ impl FeeController for LevercoinFees {
     }
   }
 
-  /// Determines fee to charge when redeeming `xSOL`.
   fn redeem_fee(&self, mode: RebalanceMode) -> Result<UFix64<N4>, CoreError> {
     match mode {
       Neutral | BuyZone1 | BuyZone2 => self.normal.redeem(),
@@ -249,7 +245,6 @@ impl FeeController for LevercoinFees {
     }
   }
 
-  /// Run validations
   fn validate(self) -> Result<LevercoinFees, CoreError> {
     self.normal.validate()?;
     self.sell_zone_1.validate()?;

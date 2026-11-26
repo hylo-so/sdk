@@ -26,14 +26,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let fee = self.stablecoin_mint_fee_rate()?.to_f64();
     let collateral_usd_lower = positive(self.collateral_usd_price.lower)?;
     let nav = positive(self.stablecoin_nav()?)?;
-
-    // stablecoin_out(x) = x * nav_rate * (1 - fee)
-    // where nav_rate = collateral_usd_lower / nav
-    let nav_rate = collateral_usd_lower.get() / nav.get();
-
-    // fee is constant in x
-    // stablecoin_out'(x) = nav_rate * (1 - fee)
-    positive_rate(nav_rate * (1.0 - fee))
+    positive_rate(collateral_usd_lower.get() / nav.get() * (1.0 - fee))
   }
 
   /// Marginal collateral output per stablecoin input.
@@ -49,14 +42,7 @@ impl<C: SolanaClock> ExoExchangeContext<C> {
     let fee = self.stablecoin_redeem_fee_rate()?.to_f64();
     let nav = positive(self.stablecoin_nav()?)?;
     let collateral_usd_upper = positive(self.collateral_usd_price.upper)?;
-
-    // collateral_out(x) = x * nav_rate * (1 - fee)
-    // where nav_rate = nav / collateral_usd_upper
-    let nav_rate = nav.get() / collateral_usd_upper.get();
-
-    // fee is constant in x
-    // collateral_out'(x) = nav_rate * (1 - fee)
-    positive_rate(nav_rate * (1.0 - fee))
+    positive_rate(nav.get() / collateral_usd_upper.get() * (1.0 - fee))
   }
 
   /// Marginal USDC output per collateral input.
@@ -215,14 +201,7 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
     let sol_usd_lower = positive(self.sol_usd_price.lower)?;
     let nav = positive(self.stablecoin_nav()?)?;
-
-    // stablecoin_out(x) = x * nav_rate * (1 - fee)
-    // where nav_rate = lst_sol * sol_usd_lower / nav
-    let nav_rate = lst_sol.get() * sol_usd_lower.get() / nav.get();
-
-    // fee is constant in x
-    // stablecoin_out'(x) = nav_rate * (1 - fee)
-    positive_rate(nav_rate * (1.0 - fee))
+    positive_rate(lst_sol.get() * sol_usd_lower.get() / nav.get() * (1.0 - fee))
   }
 
   /// Marginal LST output per stablecoin input.
@@ -242,14 +221,9 @@ impl<C: SolanaClock> LstExchangeContext<C> {
     let nav = positive(self.stablecoin_nav()?)?;
     let lst_sol = positive(lst_sol_price.get_epoch_price(self.clock.epoch())?)?;
     let sol_usd_upper = positive(self.sol_usd_price.upper)?;
-
-    // lst_out(x) = x * nav_rate * (1 - fee)
-    // where nav_rate = nav / (sol_usd_upper * lst_sol)
-    let nav_rate = nav.get() / (sol_usd_upper.get() * lst_sol.get());
-
-    // fee is constant in x
-    // lst_out'(x) = nav_rate * (1 - fee)
-    positive_rate(nav_rate * (1.0 - fee))
+    positive_rate(
+      nav.get() / (sol_usd_upper.get() * lst_sol.get()) * (1.0 - fee),
+    )
   }
 
   /// Marginal USDC output per LST input.
