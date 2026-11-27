@@ -595,6 +595,23 @@
       }
     },
     {
+      "name": "EarnPoolDepositLock",
+      "docs": [
+        "Earn pool deposit lock, engaged by a loss absorption that empties the pool."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unlocked"
+          },
+          {
+            "name": "Locked"
+          }
+        ]
+      }
+    },
+    {
       "name": "ExoEntry",
       "docs": [
         "Collateral mint paired with its levercoin mint."
@@ -668,7 +685,7 @@
             }
           },
           {
-            "name": "stablecoin_mint_threshold",
+            "name": "_unused_1",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -760,11 +777,27 @@
             }
           },
           {
+            "name": "rebalance_scheme",
+            "type": {
+              "defined": {
+                "name": "RebalanceScheme"
+              }
+            }
+          },
+          {
+            "name": "stablecoin_fees",
+            "type": {
+              "defined": {
+                "name": "StablecoinFees"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                91
+                54
               ]
             }
           }
@@ -977,7 +1010,7 @@
             }
           },
           {
-            "name": "stablecoin_mint_threshold",
+            "name": "_unused_3",
             "type": {
               "defined": {
                 "name": "UFixValue64"
@@ -1061,11 +1094,19 @@
             }
           },
           {
+            "name": "earn_pool_deposit_lock",
+            "type": {
+              "defined": {
+                "name": "EarnPoolDepositLock"
+              }
+            }
+          },
+          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                13
+                12
               ]
             }
           }
@@ -1151,6 +1192,20 @@
       }
     },
     {
+      "name": "RebalanceScheme",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Wide"
+          },
+          {
+            "name": "Narrow"
+          }
+        ]
+      }
+    },
+    {
       "name": "RegisterExoEntryEvent",
       "type": {
         "kind": "struct",
@@ -1196,13 +1251,13 @@
     {
       "name": "StablecoinFees",
       "docs": [
-        "**Deprecated** — retained only for `Hylo` account deserialization."
+        "Stablecoin mint and redeem fees per rebalance zone."
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "normal",
+            "name": "zone_1",
             "type": {
               "defined": {
                 "name": "FeePair"
@@ -1210,7 +1265,7 @@
             }
           },
           {
-            "name": "mode_1",
+            "name": "zone_2",
             "type": {
               "defined": {
                 "name": "FeePair"

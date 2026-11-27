@@ -257,37 +257,8 @@ impl<const RES: usize, Exp: Integer> FixInterp<RES, Exp> {
 
 #[cfg(test)]
 mod tests {
-  use std::fs::File;
-  use std::io::Write;
-
-  use itertools::Itertools;
-
   use super::*;
   use crate::error::CoreError;
-  use crate::fees::curves::{
-    mint_fee_curve, redeem_fee_curve, MINT_FEE_INV, REDEEM_FEE_LN,
-  };
-
-  fn assert_segments_preserve_endpoints(points: &[Point<N5>]) {
-    points
-      .iter()
-      .tuple_windows::<(_, _)>()
-      .for_each(|(p0, p1)| {
-        let seg = LineSegment(p0, p1);
-        assert_eq!(seg.lerp(p0.x), Some(p0.y));
-        assert_eq!(seg.lerp(p1.x), Some(p1.y));
-      });
-  }
-
-  #[test]
-  fn mint_curve_continuous_at_breakpoints() {
-    assert_segments_preserve_endpoints(MINT_FEE_INV);
-  }
-
-  #[test]
-  fn redeem_curve_continuous_at_breakpoints() {
-    assert_segments_preserve_endpoints(REDEEM_FEE_LN);
-  }
 
   #[test]
   fn from_points_insufficient_points() {
@@ -303,67 +274,25 @@ mod tests {
   }
 
   #[test]
-  fn from_points_valid_curves() -> anyhow::Result<()> {
-    mint_fee_curve()?;
-    redeem_fee_curve()?;
-    Ok(())
-  }
-
-  #[test]
-  fn interpolate_below_domain() -> anyhow::Result<()> {
-    let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(149_999);
+  fn interpolate_three_point_curve() -> anyhow::Result<()> {
+    let points = [
+      Point::<N5>::from_ints(0, 100),
+      Point::from_ints(100, 200),
+      Point::from_ints(200, 150),
+    ];
+    let interp = FixInterp::from_points(points)?;
     assert_eq!(
-      interp.interpolate(x).err(),
-      Some(CoreError::InterpOutOfDomain)
+      interp.interpolate(IFix64::constant(100))?,
+      IFix64::constant(200)
     );
-    Ok(())
-  }
-
-  #[test]
-  fn interpolate_above_domain() -> anyhow::Result<()> {
-    let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(170_001);
     assert_eq!(
-      interp.interpolate(x).err(),
-      Some(CoreError::InterpOutOfDomain)
+      interp.interpolate(IFix64::constant(150))?,
+      IFix64::constant(175)
     );
-    Ok(())
-  }
-
-  #[test]
-  fn interpolate_exact_first_point() -> anyhow::Result<()> {
-    let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(150_000);
-    let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(800));
-    Ok(())
-  }
-
-  #[test]
-  fn interpolate_exact_last_point() -> anyhow::Result<()> {
-    let interp = mint_fee_curve()?;
-    let x = IFix64::<N5>::constant(170_000);
-    let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(605));
-    Ok(())
-  }
-
-  #[test]
-  fn interpolate_exact_interior_point() -> anyhow::Result<()> {
-    let interp = redeem_fee_curve()?;
-    let x = IFix64::<N5>::constant(150_000);
-    let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(200));
-    Ok(())
-  }
-
-  #[test]
-  fn interpolate_midpoint() -> anyhow::Result<()> {
-    let interp = redeem_fee_curve()?;
-    let x = IFix64::<N5>::constant(131_000);
-    let y = interp.interpolate(x)?;
-    assert_eq!(y, IFix64::constant(23));
+    assert_eq!(
+      interp.interpolate(IFix64::constant(200))?,
+      IFix64::constant(150)
+    );
     Ok(())
   }
 
@@ -421,34 +350,6 @@ mod tests {
       assert_eq!(seg.lerp(x).and_then(|y| seg.inverse_lerp(y)), Some(x));
     });
   }
-
-  #[test]
-  #[ignore = "offline use not for CI"]
-  fn dump_mint_fee_curve() -> anyhow::Result<()> {
-    let interp = mint_fee_curve()?;
-    let mut f = File::create("mint_fee_curve.csv")?;
-    writeln!(f, "cr,fee")?;
-    (150_000..=170_000).try_for_each(|ix| -> anyhow::Result<()> {
-      let x = IFix64::<N5>::constant(ix);
-      let y = interp.interpolate(x)?;
-      writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
-      Ok(())
-    })
-  }
-
-  #[test]
-  #[ignore = "offline use not for CI"]
-  fn dump_redeem_fee_curve() -> anyhow::Result<()> {
-    let interp = redeem_fee_curve()?;
-    let mut f = File::create("redeem_fee_curve.csv")?;
-    writeln!(f, "cr,fee")?;
-    (130_000..=150_000).try_for_each(|ix| -> anyhow::Result<()> {
-      let x = IFix64::<N5>::constant(ix);
-      let y = interp.interpolate(x)?;
-      writeln!(f, "{}e-5,{}e-5", x.bits, y.bits)?;
-      Ok(())
-    })
-  }
 }
 
 #[cfg(kani)]
@@ -456,7 +357,7 @@ mod proofs {
   use fix::prelude::*;
 
   use crate::fees::interp::{LineSegment, Point};
-  use crate::kani_generators::{deployed_curve_x, deployed_curve_y};
+  use crate::kani_generators::{borrow_rate_curve_x, borrow_rate_curve_y};
 
   fn curve_coord() -> IFix64<N5> {
     let bits = kani::any_where(|b: &i64| *b >= 0 && *b < (1i64 << 8));
@@ -479,18 +380,18 @@ mod proofs {
     assert_eq!(seg.lerp(x), Some(expected));
   }
 
-  /// `lerp` is total on segments within the deployed fee curve domain.
+  /// `lerp` is total on segments within the borrow rate curve domain.
   #[kani::proof]
-  fn lerp_safe_on_deployed_curve_domain() {
-    let x0 = deployed_curve_x();
-    let x1 = deployed_curve_x();
+  fn lerp_safe_on_borrow_rate_curve_domain() {
+    let x0 = borrow_rate_curve_x();
+    let x1 = borrow_rate_curve_x();
     kani::assume(x0 < x1);
-    let y0 = deployed_curve_y();
-    let y1 = deployed_curve_y();
-    let x = deployed_curve_x();
+    let y0 = borrow_rate_curve_y();
+    let y1 = borrow_rate_curve_y();
+    let x = borrow_rate_curve_x();
     kani::assume(x >= x0 && x <= x1);
-    let p0 = Point::<N5> { x: x0, y: y0 };
-    let p1 = Point::<N5> { x: x1, y: y1 };
+    let p0 = Point::<N9> { x: x0, y: y0 };
+    let p1 = Point::<N9> { x: x1, y: y1 };
     let seg = LineSegment(&p0, &p1);
     assert!(seg.lerp(x).is_some());
   }

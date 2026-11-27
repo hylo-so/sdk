@@ -189,7 +189,7 @@ where
   )?;
   let lst_sol_price: LstSolPrice = state.lst_header::<L>()?.price_sol.into();
   let amount_out = context
-    .saturating_stablecoin_redeem_fee(&lst_sol_price, lst_out)?
+    .saturating_stablecoin_redeem_fee(lst_out)?
     .amount_remaining;
   let usd_out = context
     .token_conversion(&lst_sol_price)?

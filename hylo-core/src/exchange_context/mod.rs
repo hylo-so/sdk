@@ -21,21 +21,22 @@ use crate::error::CoreError::{
   DestinationStablecoin, LevercoinMarketCapArithmetic, LevercoinNav,
   MaxMintable, MaxSwappable, RebalanceBuySideTarget,
   RebalanceSellSideLiquidity, RequestedStablecoinOverMaxMintable,
-  VirtualStablecoinOverhang, VirtualStablecoinSurplus,
+  RequestedStablecoinOverMaxRedeemable, VirtualStablecoinOverhang,
+  VirtualStablecoinSurplus,
 };
 use crate::exchange_math::{
   depeg_stablecoin_nav, max_mintable_stablecoin, max_redeemable_stablecoin,
-  max_swappable_stablecoin, next_levercoin_mint_nav, next_levercoin_redeem_nav,
-  total_value_locked,
+  max_swappable_stablecoin, max_swappable_to_levercoin,
+  next_levercoin_mint_nav, next_levercoin_redeem_nav, total_value_locked,
 };
-use crate::fees::controller::{FeeExtract, LevercoinFees};
-use crate::fees::curve_controller::cr_from_curve;
-use crate::fees::curves::REDEEM_MAX_CR;
+use crate::fees::controller::{
+  FeeController, FeeExtract, LevercoinFees, StablecoinFees,
+};
 use crate::pyth::{OraclePrice, PriceRange};
 use crate::rebalance::math::{
   max_buyable_collateral, max_sellable_collateral, midpoint,
 };
-use crate::rebalance::mode::RebalanceMode;
+use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 use crate::rebalance::pricing::{
   BuyPriceCurve, RebalanceCurveConfig, RebalancePriceController, SellPriceCurve,
 };
@@ -67,14 +68,15 @@ pub trait ExchangeContext {
   /// Buy-side rebalance curve configuration.
   fn buy_curve_config(&self) -> &RebalanceCurveConfig;
 
-  /// Collateral ratio defining target leverage and stablecoin mint ability.
-  fn stablecoin_mint_threshold(&self) -> UFix64<N9>;
-
-  /// Confirm stablecoin mint capability based on configured normal mode CR.
+  /// Confirm stablecoin mint capability; enabled in the buy zones.
   fn stablecoin_mint_enabled(&self) -> bool {
-    self
-      .collateral_ratio()
-      .at_least(self.stablecoin_mint_threshold())
+    self.rebalance_mode() > RebalanceMode::Neutral
+  }
+
+  /// Confirm stablecoin redeem capability; enabled in the sell zones and
+  /// Depeg.
+  fn stablecoin_redeem_enabled(&self) -> bool {
+    self.rebalance_mode() < RebalanceMode::Neutral
   }
 
   /// Confirm levercoin mint capability; disabled only during Depeg.
@@ -82,14 +84,12 @@ pub trait ExchangeContext {
     self.rebalance_mode() != RebalanceMode::Depeg
   }
 
-  /// Stablecoin to levercoin conversion: levercoin mintable and stablecoin
-  /// not, so CR is below the stablecoin mint threshold and above Depeg.
+  /// Stablecoin to levercoin conversion: enabled in the sell zones.
   fn stable_to_lever_conversion_enabled(&self) -> bool {
-    self.levercoin_mint_enabled() && !self.stablecoin_mint_enabled()
+    self.levercoin_mint_enabled() && self.stablecoin_redeem_enabled()
   }
 
-  /// Levercoin to stablecoin conversion: CR at or above the stablecoin mint
-  /// threshold.
+  /// Levercoin to stablecoin conversion: enabled in the buy zones.
   fn lever_to_stable_conversion_enabled(&self) -> bool {
     self.stablecoin_mint_enabled()
   }
@@ -102,6 +102,7 @@ pub trait ExchangeContext {
     SellPriceCurve::new(
       self.collateral_oracle_price(),
       self.sell_curve_config(),
+      self.rebalance_scheme(),
     )
   }
 
@@ -110,7 +111,11 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Curve construction failure
   fn rebalance_buy_curve(&self) -> Result<BuyPriceCurve, CoreError> {
-    BuyPriceCurve::new(self.collateral_oracle_price(), self.buy_curve_config())
+    BuyPriceCurve::new(
+      self.collateral_oracle_price(),
+      self.buy_curve_config(),
+      self.rebalance_scheme(),
+    )
   }
 
   /// Returns true if sell-side rebalancing is active at the current CR.
@@ -132,7 +137,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_sell_liquidity(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = RebalanceMode::Neutral.active_range().start()?;
+    let target_cr = self.rebalance_scheme().neutral_start();
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -150,7 +155,7 @@ pub trait ExchangeContext {
   /// # Errors
   /// * Arithmetic or invalid stablecoin supply
   fn rebalance_buy_target(&self) -> Result<UFix64<N9>, CoreError> {
-    let target_cr = RebalanceMode::BuyZone1.active_range().start()?;
+    let target_cr = self.rebalance_scheme().neutral_end();
     let virtual_stablecoin = self.virtual_stablecoin_supply()?;
     let collateral_usd_price = self.collateral_oracle_price().spot;
     let total_collateral = self.total_collateral();
@@ -170,7 +175,10 @@ pub trait ExchangeContext {
   /// * Curve or arithmetic failure
   fn rebalance_buy_target_cr(&self) -> Result<UFix64<N9>, CoreError> {
     match self.rebalance_mode() {
-      RebalanceMode::BuyZone2 => RebalanceMode::BuyZone1.active_range().end(),
+      RebalanceMode::BuyZone2 => self
+        .rebalance_scheme()
+        .active_range(RebalanceMode::BuyZone1)
+        .end(),
       RebalanceMode::BuyZone1 => {
         let spot = self.collateral_oracle_price().spot;
         let cr_spot = self.rebalance_buy_curve()?.cr_at_price(spot)?;
@@ -206,9 +214,10 @@ pub trait ExchangeContext {
   /// * Curve or arithmetic failure
   fn rebalance_sell_target_cr(&self) -> Result<UFix64<N9>, CoreError> {
     match self.rebalance_mode() {
-      RebalanceMode::SellZone2 => {
-        RebalanceMode::SellZone1.active_range().start()
-      }
+      RebalanceMode::SellZone2 => self
+        .rebalance_scheme()
+        .active_range(RebalanceMode::SellZone1)
+        .start(),
       RebalanceMode::SellZone1 => {
         let spot = self.collateral_oracle_price().spot;
         let cr_spot = self.rebalance_sell_curve()?.cr_at_price(spot)?;
@@ -243,6 +252,9 @@ pub trait ExchangeContext {
   /// Current levercoin supply.
   fn levercoin_supply(&self) -> Result<UFix64<N6>, CoreError>;
 
+  /// Scheme defining the CR range of each rebalance mode.
+  fn rebalance_scheme(&self) -> RebalanceScheme;
+
   /// Current rebalance mode, computed at construction.
   fn rebalance_mode(&self) -> RebalanceMode;
 
@@ -251,6 +263,9 @@ pub trait ExchangeContext {
 
   /// Levercoin fee configuration.
   fn levercoin_fees(&self) -> &LevercoinFees;
+
+  /// Stablecoin fee configuration.
+  fn stablecoin_fees(&self) -> &StablecoinFees;
 
   /// TVL in USD.
   ///
@@ -374,7 +389,7 @@ pub trait ExchangeContext {
       self.collateral_usd_price().lower,
       new_stablecoin,
     )?;
-    Ok(RebalanceMode::from_cr(projected_cr))
+    Ok(self.rebalance_scheme().mode_at(projected_cr))
   }
 
   /// Worse of the current and projected rebalance modes, so a transaction
@@ -396,14 +411,15 @@ pub trait ExchangeContext {
     Ok(SwapConversion::new(self.stablecoin_nav()?, levercoin_nav))
   }
 
-  /// Maximum mintable stablecoin before hitting the configured
-  /// stablecoin mint threshold.
+  /// Maximum mintable stablecoin before the collateral ratio reaches the
+  /// end of the Neutral range.
   ///
   /// # Errors
   /// * Arithmetic overflow
   fn max_mintable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
     let target = self
-      .stablecoin_mint_threshold()
+      .rebalance_scheme()
+      .neutral_end()
       .checked_convert()
       .ok_or(MaxMintable)?;
     max_mintable_stablecoin(
@@ -414,17 +430,50 @@ pub trait ExchangeContext {
     )
   }
 
-  /// Maximum redeemable stablecoin before the projected collateral ratio
-  /// leaves the redeem fee curve domain. Zero once already above it.
+  /// Maximum redeemable stablecoin before the collateral ratio reaches the
+  /// start of the Neutral range.
   ///
   /// # Errors
   /// * Arithmetic overflow
   fn max_redeemable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
+    let target = self.rebalance_scheme().neutral_start();
     max_redeemable_stablecoin(
-      cr_from_curve(REDEEM_MAX_CR)?,
+      target,
       self.total_value_locked()?,
       self.virtual_stablecoin_supply()?,
       self.stablecoin_nav()?,
+    )
+  }
+
+  /// Maximum stablecoin mintable from levercoin before the collateral ratio
+  /// reaches the end of the Neutral range.
+  ///
+  /// # Errors
+  /// * TVL computation or arithmetic failure
+  fn max_lever_to_stable_conversion(&self) -> Result<UFix64<N6>, CoreError> {
+    let target = self
+      .rebalance_scheme()
+      .neutral_end()
+      .checked_convert()
+      .ok_or(MaxSwappable)?;
+    max_swappable_stablecoin(
+      target,
+      self.total_value_locked()?,
+      self.virtual_stablecoin_supply()?,
+    )
+  }
+
+  /// Maximum stablecoin swappable to levercoin before the collateral ratio
+  /// reaches the start of the Neutral range.
+  ///
+  /// # Errors
+  /// * TVL computation or arithmetic failure
+  fn max_stable_to_lever_conversion(&self) -> Result<UFix64<N6>, CoreError> {
+    let target = self.rebalance_scheme().neutral_start();
+    max_swappable_to_levercoin(
+      target,
+      self.total_value_locked()?,
+      self.virtual_stablecoin_supply()?,
     )
   }
 
@@ -434,9 +483,9 @@ pub trait ExchangeContext {
   /// # Errors
   /// * TVL computation or arithmetic failure
   fn max_swappable_stablecoin(&self) -> Result<UFix64<N6>, CoreError> {
-    let target = RebalanceMode::SellZone1
-      .active_range()
-      .end()?
+    let target = self
+      .rebalance_scheme()
+      .neutral_start()
       .checked_convert()
       .ok_or(MaxSwappable)?;
     max_swappable_stablecoin(
@@ -459,8 +508,9 @@ pub trait ExchangeContext {
       Ok(self.total_collateral())
     } else {
       let atom = UFix64::new(1);
-      let last_depeg_cr = RebalanceMode::SellZone2
-        .active_range()
+      let last_depeg_cr = self
+        .rebalance_scheme()
+        .active_range(RebalanceMode::SellZone2)
         .start()?
         .checked_sub(&atom)
         .ok_or(CollateralRatioOverflow)?;
@@ -531,8 +581,9 @@ pub trait ExchangeContext {
     &self,
     requested: UFix64<N6>,
   ) -> Result<UFix64<N6>, CoreError> {
-    let target = RebalanceMode::SellZone2
-      .active_range()
+    let target = self
+      .rebalance_scheme()
+      .active_range(RebalanceMode::SellZone2)
       .end()?
       .checked_convert()
       .ok_or(MaxMintable)?;
@@ -559,6 +610,112 @@ pub trait ExchangeContext {
     } else {
       Err(RequestedStablecoinOverMaxMintable)
     }
+  }
+
+  /// Validates a stablecoin redeem amount against the protocol max.
+  ///
+  /// # Errors
+  /// * Amount exceeds max redeemable
+  fn validate_stablecoin_redeem_amount(
+    &self,
+    requested: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let max = self.max_redeemable_stablecoin()?;
+    if requested <= max {
+      Ok(requested)
+    } else {
+      Err(RequestedStablecoinOverMaxRedeemable)
+    }
+  }
+
+  /// Validates a levercoin to stablecoin conversion against the protocol
+  /// max.
+  ///
+  /// # Errors
+  /// * Amount exceeds the conversion max
+  fn validate_lever_to_stable_conversion(
+    &self,
+    requested: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let max = self.max_lever_to_stable_conversion()?;
+    if requested <= max {
+      Ok(requested)
+    } else {
+      Err(RequestedStablecoinOverMaxMintable)
+    }
+  }
+
+  /// Validates a stablecoin to levercoin conversion against the protocol
+  /// max.
+  ///
+  /// # Errors
+  /// * Amount exceeds the conversion max
+  fn validate_stable_to_lever_conversion(
+    &self,
+    requested: UFix64<N6>,
+  ) -> Result<UFix64<N6>, CoreError> {
+    let max = self.max_stable_to_lever_conversion()?;
+    if requested <= max {
+      Ok(requested)
+    } else {
+      Err(RequestedStablecoinOverMaxRedeemable)
+    }
+  }
+
+  /// Stablecoin mint fee rate at the current rebalance mode.
+  ///
+  /// # Errors
+  /// * Rebalance mode has no mint fee
+  fn stablecoin_mint_fee_rate(&self) -> Result<UFix64<N4>, CoreError> {
+    self.stablecoin_fees().mint_fee(self.rebalance_mode())
+  }
+
+  /// Stablecoin mint fee on input collateral.
+  ///
+  /// # Errors
+  /// * Rebalance mode has no mint fee
+  /// * Fee extraction
+  fn stablecoin_mint_fee(
+    &self,
+    collateral_in: UFix64<N9>,
+  ) -> Result<FeeExtract<N9>, CoreError> {
+    FeeExtract::new(self.stablecoin_mint_fee_rate()?, collateral_in)
+  }
+
+  /// Stablecoin redeem fee rate at the current rebalance mode.
+  ///
+  /// # Errors
+  /// * Rebalance mode has no redeem fee
+  fn stablecoin_redeem_fee_rate(&self) -> Result<UFix64<N4>, CoreError> {
+    self.stablecoin_fees().redeem_fee(self.rebalance_mode())
+  }
+
+  /// Stablecoin redeem fee on output collateral.
+  ///
+  /// # Errors
+  /// * Rebalance mode has no redeem fee
+  /// * Fee extraction
+  fn stablecoin_redeem_fee(
+    &self,
+    collateral_out: UFix64<N9>,
+  ) -> Result<FeeExtract<N9>, CoreError> {
+    FeeExtract::new(self.stablecoin_redeem_fee_rate()?, collateral_out)
+  }
+
+  /// Stablecoin redeem fee on output collateral. Modes above `SellZone1` take
+  /// the `zone_1` fee.
+  ///
+  /// # Errors
+  /// * Fee conversion or extraction
+  #[cfg(feature = "offchain")]
+  fn saturating_stablecoin_redeem_fee(
+    &self,
+    collateral_out: UFix64<N9>,
+  ) -> Result<FeeExtract<N9>, CoreError> {
+    let rate = self
+      .stablecoin_fees()
+      .saturating_redeem_fee(self.rebalance_mode())?;
+    FeeExtract::new(rate, collateral_out)
   }
 
   /// Swap fee for levercoin-to-stablecoin direction.

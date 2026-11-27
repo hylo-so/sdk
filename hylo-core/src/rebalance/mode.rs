@@ -8,11 +8,7 @@ use fix::prelude::*;
 
 use crate::collateral_ratio::{CollateralRatio, CR};
 use crate::error::CoreError;
-use crate::error::CoreError::{
-  RangeUnexpectedBound, StablecoinMintThresholdInvalid,
-};
-use crate::fees::curve_controller::narrow_cr;
-use crate::fees::curves::mint_fee_curve;
+use crate::error::CoreError::RangeUnexpectedBound;
 
 #[derive(
   Debug,
@@ -46,6 +42,23 @@ impl Display for RebalanceMode {
       RebalanceMode::BuyZone2 => f.write_str("BuyZone2"),
     }
   }
+}
+
+#[derive(
+  Debug,
+  Clone,
+  Copy,
+  PartialEq,
+  Eq,
+  AnchorSerialize,
+  AnchorDeserialize,
+  InitSpace,
+  Default,
+)]
+pub enum RebalanceScheme {
+  #[default]
+  Wide,
+  Narrow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,10 +110,30 @@ impl RebalanceMode {
     RebalanceMode::BuyZone1,
     RebalanceMode::BuyZone2,
   ];
+}
+
+impl RebalanceScheme {
+  /// Lowest collateral ratio in the Neutral range.
+  #[must_use]
+  pub const fn neutral_start(self) -> UFix64<N9> {
+    match self {
+      RebalanceScheme::Wide => UFix64::constant(1_350_000_000),
+      RebalanceScheme::Narrow => UFix64::constant(1_450_000_000),
+    }
+  }
+
+  /// Collateral ratio at which the Neutral range ends, exclusive.
+  #[must_use]
+  pub const fn neutral_end(self) -> UFix64<N9> {
+    match self {
+      RebalanceScheme::Wide => UFix64::constant(1_650_000_000),
+      RebalanceScheme::Narrow => UFix64::constant(1_550_000_000),
+    }
+  }
 
   #[must_use]
-  pub const fn active_range(&self) -> CrRange {
-    match self {
+  pub const fn active_range(self, mode: RebalanceMode) -> CrRange {
+    match mode {
       RebalanceMode::Depeg => CrRange::new(
         Bound::Included(UFix64::constant(0)),
         Bound::Excluded(UFix64::constant(1_000_000_000)),
@@ -111,14 +144,14 @@ impl RebalanceMode {
       ),
       RebalanceMode::SellZone1 => CrRange::new(
         Bound::Included(UFix64::constant(1_200_000_000)),
-        Bound::Excluded(UFix64::constant(1_350_000_000)),
+        Bound::Excluded(self.neutral_start()),
       ),
       RebalanceMode::Neutral => CrRange::new(
-        Bound::Included(UFix64::constant(1_350_000_000)),
-        Bound::Excluded(UFix64::constant(1_650_000_000)),
+        Bound::Included(self.neutral_start()),
+        Bound::Excluded(self.neutral_end()),
       ),
       RebalanceMode::BuyZone1 => CrRange::new(
-        Bound::Included(UFix64::constant(1_650_000_000)),
+        Bound::Included(self.neutral_end()),
         Bound::Excluded(UFix64::constant(1_750_000_000)),
       ),
       RebalanceMode::BuyZone2 => CrRange::new(
@@ -129,7 +162,7 @@ impl RebalanceMode {
   }
 
   #[must_use]
-  pub fn from_cr(cr: CollateralRatio) -> RebalanceMode {
+  pub fn mode_at(self, cr: CollateralRatio) -> RebalanceMode {
     match cr {
       CR::Infinite => RebalanceMode::BuyZone2,
       CR::Finite(cr) => [
@@ -140,25 +173,10 @@ impl RebalanceMode {
         RebalanceMode::BuyZone1,
       ]
       .into_iter()
-      .find(|mode| mode.active_range().contains(&cr))
+      .find(|mode| self.active_range(*mode).contains(&cr))
       .unwrap_or(RebalanceMode::BuyZone2),
     }
   }
-}
-
-/// Checks that the given stablecoin mint threshold is within the mint fee
-/// curve's domain.
-///
-/// # Errors
-/// * Curve validation or threshold outside domain
-pub fn validate_stablecoin_mint_threshold(
-  stablecoin_mint_threshold: UFixValue64,
-) -> Result<UFixValue64, CoreError> {
-  mint_fee_curve()?
-    .domain()
-    .contains(&narrow_cr(stablecoin_mint_threshold.try_into()?)?)
-    .then_some(stablecoin_mint_threshold)
-    .ok_or(StablecoinMintThresholdInvalid)
 }
 
 #[cfg(test)]
@@ -167,6 +185,9 @@ mod tests {
 
   use super::*;
   use crate::collateral_ratio::CR;
+
+  const SCHEMES: [RebalanceScheme; 2] =
+    [RebalanceScheme::Wide, RebalanceScheme::Narrow];
 
   #[test]
   fn mode_ordering() {
@@ -179,72 +200,61 @@ mod tests {
 
   #[test]
   fn ranges_are_contiguous() {
-    RebalanceMode::ALL
-      .iter()
-      .zip(RebalanceMode::ALL.iter().skip(1))
-      .for_each(|(lower, upper)| {
-        assert_eq!(
-          lower.active_range().end(),
-          upper.active_range().start(),
-          "{lower:?} -> {upper:?}",
-        );
-      });
-    assert_eq!(Depeg.active_range().start(), Ok(UFix64::zero()));
-    assert_eq!(BuyZone2.active_range().end(), Err(RangeUnexpectedBound));
-  }
-
-  #[test]
-  fn from_cr_start_inclusive() {
-    RebalanceMode::ALL.iter().for_each(|mode| {
+    SCHEMES.iter().for_each(|scheme| {
+      RebalanceMode::ALL
+        .iter()
+        .zip(RebalanceMode::ALL.iter().skip(1))
+        .for_each(|(lower, upper)| {
+          assert_eq!(
+            scheme.active_range(*lower).end(),
+            scheme.active_range(*upper).start(),
+            "{scheme:?}: {lower:?} -> {upper:?}",
+          );
+        });
+      assert_eq!(scheme.active_range(Depeg).start(), Ok(UFix64::zero()));
       assert_eq!(
-        mode
-          .active_range()
-          .start()
-          .map(|cr| RebalanceMode::from_cr(CR::Finite(cr))),
-        Ok(*mode),
+        scheme.active_range(BuyZone2).end(),
+        Err(RangeUnexpectedBound),
       );
     });
   }
 
   #[test]
-  fn from_cr_end_exclusive() {
-    RebalanceMode::ALL.iter().for_each(|mode| {
-      if let Ok(end) = mode.active_range().end() {
-        let just_below = UFix64::new(end.bits - 1);
-        assert_ne!(RebalanceMode::from_cr(CR::Finite(end)), *mode);
-        assert_eq!(RebalanceMode::from_cr(CR::Finite(just_below)), *mode);
-      }
+  fn mode_start_inclusive() {
+    SCHEMES.iter().for_each(|scheme| {
+      RebalanceMode::ALL.iter().for_each(|mode| {
+        assert_eq!(
+          scheme
+            .active_range(*mode)
+            .start()
+            .map(|cr| scheme.mode_at(CR::Finite(cr))),
+          Ok(*mode),
+        );
+      });
     });
   }
 
   #[test]
-  fn from_cr_extremes() {
-    assert_eq!(RebalanceMode::from_cr(CR::Finite(UFix64::zero())), Depeg);
-    assert_eq!(RebalanceMode::from_cr(CR::Infinite), BuyZone2);
+  fn mode_extremes() {
+    SCHEMES.iter().for_each(|scheme| {
+      assert_eq!(scheme.mode_at(CR::Finite(UFix64::zero())), Depeg);
+      assert_eq!(scheme.mode_at(CR::Infinite), BuyZone2);
+    });
   }
 
   #[test]
-  fn mint_threshold_must_be_in_curve_domain() {
-    let threshold = |bits| UFixValue64::new(bits, -9);
-    assert!(
-      validate_stablecoin_mint_threshold(threshold(1_500_000_000)).is_ok()
-    );
-    assert!(
-      validate_stablecoin_mint_threshold(threshold(1_700_000_000)).is_ok()
-    );
-    assert_eq!(
-      validate_stablecoin_mint_threshold(threshold(1_499_999_999)),
-      Err(StablecoinMintThresholdInvalid),
-    );
-    assert_eq!(
-      validate_stablecoin_mint_threshold(threshold(1_710_000_000)),
-      Err(StablecoinMintThresholdInvalid),
-    );
+  fn narrow_moves_neutral_edges() {
+    let narrow = RebalanceScheme::Narrow;
+    let cr = |bits| CR::Finite(UFix64::constant(bits));
+    assert_eq!(narrow.mode_at(cr(1_449_999_999)), SellZone1);
+    assert_eq!(narrow.mode_at(cr(1_450_000_000)), Neutral);
+    assert_eq!(narrow.mode_at(cr(1_549_999_999)), Neutral);
+    assert_eq!(narrow.mode_at(cr(1_550_000_000)), BuyZone1);
   }
 
   #[test]
   fn active_range_is_half_open() {
-    let r = SellZone1.active_range();
+    let r = RebalanceScheme::Wide.active_range(SellZone1);
     assert_eq!(r.start(), Ok(UFix64::constant(1_200_000_000)));
     assert_eq!(r.end(), Ok(UFix64::constant(1_350_000_000)));
     assert!(r.contains(&UFix64::constant(1_200_000_000)));
@@ -261,23 +271,33 @@ mod proofs {
 
   use crate::collateral_ratio::CR;
   use crate::kani_generators::any_ufix64;
-  use crate::rebalance::mode::RebalanceMode;
+  use crate::rebalance::mode::{RebalanceMode, RebalanceScheme};
 
-  /// `from_cr(cr)` returns a mode whose `active_range` contains `cr`.
+  /// `mode_at(cr)` returns a mode whose `active_range` contains `cr`.
   #[kani::proof]
-  fn from_cr_mode_contains_input() {
+  fn mode_contains_input() {
+    let scheme = if kani::any() {
+      RebalanceScheme::Wide
+    } else {
+      RebalanceScheme::Narrow
+    };
     let cr: UFix64<N9> = any_ufix64();
-    let mode = RebalanceMode::from_cr(CR::Finite(cr));
-    assert!(mode.active_range().contains(&cr));
+    let mode = scheme.mode_at(CR::Finite(cr));
+    assert!(scheme.active_range(mode).contains(&cr));
   }
 
   /// Exactly one mode's `active_range` contains any given `cr` (partition).
   #[kani::proof]
   fn mode_zones_disjoint() {
+    let scheme = if kani::any() {
+      RebalanceScheme::Wide
+    } else {
+      RebalanceScheme::Narrow
+    };
     let cr: UFix64<N9> = any_ufix64();
     let count = RebalanceMode::ALL
       .iter()
-      .filter(|m| m.active_range().contains(&cr))
+      .filter(|m| scheme.active_range(**m).contains(&cr))
       .count();
     assert_eq!(count, 1);
   }

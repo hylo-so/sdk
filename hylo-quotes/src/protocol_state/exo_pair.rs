@@ -166,15 +166,16 @@ impl<C: SolanaClock> ExoPairState<C> {
     let context = ExoExchangeContext::load(
       clock,
       total_collateral,
-      exo_pair.stablecoin_mint_threshold.try_into()?,
       oracle_config,
       levercoin_fees,
+      exo_pair.stablecoin_fees.into(),
       &oracle,
       virtual_stablecoin,
       Some(&levercoin_mint),
       exo_pair.sell_curve_config.into(),
       exo_pair.buy_curve_config.into(),
       exo_pair.levercoin_market_cap_limit.try_into()?,
+      exo_pair.rebalance_scheme.into(),
     )
     .context("ExoExchangeContext::load")?;
     Ok(ExoPairState {

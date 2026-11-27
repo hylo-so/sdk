@@ -106,6 +106,29 @@ fn max_swappable_stablecoin_inner(
     .and_then(UFix64::checked_convert::<N6>)
 }
 
+/// Stablecoin swappable to levercoin without changing TVL.
+///
+/// ```txt
+///                                      total_value_locked
+/// max_swappable = stablecoin_supply - --------------------
+///                                     max_collateral_ratio
+/// ```
+///
+/// # Errors
+/// * Collateral ratio already above the maximum
+/// * Arithmetic overflow
+pub fn max_swappable_to_levercoin(
+  max_collateral_ratio: UFix64<N9>,
+  total_value_locked: UFix64<N9>,
+  stablecoin_supply: UFix64<N6>,
+) -> Result<UFix64<N6>, CoreError> {
+  total_value_locked
+    .mul_div_ceil(UFix64::one(), max_collateral_ratio)
+    .and_then(UFix64::checked_convert_ceil::<N6>)
+    .and_then(|min_supply| stablecoin_supply.checked_sub(&min_supply))
+    .ok_or(MaxSwappable)
+}
+
 /// Stablecoin redeemable before the projected collateral ratio exceeds the
 /// given maximum.
 ///
@@ -241,36 +264,48 @@ mod tests {
   use crate::collateral_ratio::CollateralRatio;
   use crate::eq_tolerance;
   use crate::error::CoreError::LevercoinNav;
+  use crate::rebalance::mode::RebalanceScheme;
   use crate::util::proptest::*;
 
   proptest! {
     #[test]
     fn max_mintable_props(
       state in protocol_state(()),
+      scheme in prop_oneof![
+        Just(RebalanceScheme::Wide),
+        Just(RebalanceScheme::Narrow),
+      ],
     ) {
-      if let Some(target) = state.next_target_collateral_ratio().and_then(UFix64::checked_convert) {
-        // Skip unless target CR is above 100%, not realistic otherwise
-        if target > UFix64::<N2>::one() {
-          let total_sol = state.total_sol().expect("total_sol");
-          let max = max_mintable_stablecoin(
-            target.convert::<N2>(),
-            total_sol,
-            state.usd_sol_price,
-            state.stablecoin_amount,
-          )?;
-          let new_total_sol =
-            max.mul_div_ceil(UFix64::one(), state.usd_sol_price)
-            .and_then(|new_sol| new_sol.convert().checked_add(&total_sol))
-            .expect("new_total");
-          let new_stable = state.stablecoin_amount.checked_add(&max).expect("new_stable");
-          let new_cr = CollateralRatio::new(new_total_sol, state.usd_sol_price, new_stable)?;
-          // Checks new CR is within tolerance of 0.01
-          prop_assert!(
-            new_cr
-              .as_finite()
-              .is_some_and(|cr| eq_tolerance!(target, cr, N2, UFix64::new(1)))
-          );
-        }
+      let neutral_end = scheme.neutral_end();
+      let total_sol = state.total_sol().expect("total_sol");
+      let cr = CollateralRatio::new(total_sol, state.usd_sol_price, state.stablecoin_amount);
+      // Stablecoin is mintable only above `neutral_end`
+      let mintable = match cr {
+        Ok(CollateralRatio::Finite(cr)) => cr > neutral_end,
+        Ok(CollateralRatio::Infinite) => false,
+        // Overflows `UFix64<N9>`
+        Err(_) => true,
+      };
+      if mintable {
+        let target = neutral_end.convert::<N2>();
+        let max = max_mintable_stablecoin(
+          target,
+          total_sol,
+          state.usd_sol_price,
+          state.stablecoin_amount,
+        )?;
+        let new_total_sol =
+          max.mul_div_ceil(UFix64::one(), state.usd_sol_price)
+          .and_then(|new_sol| new_sol.convert().checked_add(&total_sol))
+          .expect("new_total");
+        let new_stable = state.stablecoin_amount.checked_add(&max).expect("new_stable");
+        let new_cr = CollateralRatio::new(new_total_sol, state.usd_sol_price, new_stable)?;
+        // Checks new CR is within tolerance of 0.01
+        prop_assert!(
+          new_cr
+            .as_finite()
+            .is_some_and(|cr| eq_tolerance!(target, cr, N2, UFix64::new(1)))
+        );
       }
     }
   }
@@ -485,6 +520,23 @@ mod tests {
     let expected = UFix64::new(335_000_000);
     let got = max_swappable_stablecoin(target_cr, tvl, stablecoin)?;
     assert_eq!(expected, got);
+    Ok(())
+  }
+
+  #[test]
+  fn max_swappable_to_levercoin_stops_at_max_cr() -> Result<(), CoreError> {
+    let max_cr = UFix64::<N9>::new(1_500_000_000);
+    let stablecoin = UFix64::<N6>::new(1_000_000_000_000);
+    let below = UFix64::<N9>::new(1_200_000_000_000_000);
+    let above = UFix64::<N9>::new(1_600_000_000_000_000);
+    assert_eq!(
+      max_swappable_to_levercoin(max_cr, below, stablecoin)?,
+      UFix64::new(200_000_000_000)
+    );
+    assert_eq!(
+      max_swappable_to_levercoin(max_cr, above, stablecoin).err(),
+      Some(MaxSwappable)
+    );
     Ok(())
   }
 }

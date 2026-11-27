@@ -60,6 +60,7 @@ fn exo_snapshot_stats(
       snapshot.collateral_ratio,
       &snapshot.borrow_rate_curve_config,
       snapshot.borrow_rate_fee,
+      snapshot.rebalance_scheme,
     )?,
   })
 }
@@ -185,6 +186,7 @@ pub fn compute_stats(inputs: &StatsInputs) -> Result<EarnPoolStats> {
 mod tests {
   use anchor_lang::prelude::Pubkey;
   use hylo_core::borrow_rate::BorrowRateCurveConfig;
+  use hylo_core::rebalance::mode::RebalanceScheme;
   use hylo_core::yields::YieldHarvestConfig;
 
   use super::*;
@@ -212,6 +214,7 @@ mod tests {
       borrow_rate_fee: UFix64::<N4>::new(500),
       collateral_ratio: CR::Finite(UFix64::new(1_500_000_000)),
       levercoin_market_cap,
+      rebalance_scheme: RebalanceScheme::Wide,
     }
   }
 

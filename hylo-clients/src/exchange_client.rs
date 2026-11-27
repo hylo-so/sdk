@@ -291,20 +291,17 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
-  /// Updates the LST stablecoin mint threshold.
+  /// Updates the LST stablecoin fees.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub async fn update_lst_stablecoin_mint_threshold(
+  pub async fn update_lst_stablecoin_fees(
     &self,
-    args: &args::UpdateLstStablecoinMintThreshold,
+    args: &args::UpdateLstStablecoinFees,
   ) -> Result<SignedTransaction> {
     let instruction =
-      instruction_builders::update_lst_stablecoin_mint_threshold(
-        self.signer(),
-        args,
-      );
-    let memo = build_memo("update_lst_stablecoin_mint_threshold", &instruction);
+      instruction_builders::update_lst_stablecoin_fees(self.signer(), args);
+    let memo = build_memo("update_lst_stablecoin_fees", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     self.sign(inner, memo).await
   }
@@ -641,22 +638,40 @@ impl ExchangeClient {
     self.sign(inner, memo).await
   }
 
-  /// Updates the stablecoin mint threshold for an exo collateral.
+  /// Updates the stablecoin fees for an exo collateral.
   ///
   /// # Errors
   /// * Failed to build transaction instructions
-  pub async fn update_exo_stablecoin_mint_threshold(
+  pub async fn update_exo_stablecoin_fees(
     &self,
     collateral_mint: Pubkey,
-    args: &args::UpdateExoStablecoinMintThreshold,
+    args: &args::UpdateExoStablecoinFees,
   ) -> Result<SignedTransaction> {
-    let instruction =
-      instruction_builders::update_exo_stablecoin_mint_threshold(
-        self.signer(),
-        collateral_mint,
-        args,
-      );
-    let memo = build_memo("update_exo_stablecoin_mint_threshold", &instruction);
+    let instruction = instruction_builders::update_exo_stablecoin_fees(
+      self.signer(),
+      collateral_mint,
+      args,
+    );
+    let memo = build_memo("update_exo_stablecoin_fees", &instruction);
+    let inner = VersionedTransactionData::one(instruction);
+    self.sign(inner, memo).await
+  }
+
+  /// Updates the rebalance scheme for an exo collateral.
+  ///
+  /// # Errors
+  /// * Failed to build transaction instructions
+  pub async fn update_exo_rebalance_scheme(
+    &self,
+    collateral_mint: Pubkey,
+    args: &args::UpdateExoRebalanceScheme,
+  ) -> Result<SignedTransaction> {
+    let instruction = instruction_builders::update_exo_rebalance_scheme(
+      self.signer(),
+      collateral_mint,
+      args,
+    );
+    let memo = build_memo("update_exo_rebalance_scheme", &instruction);
     let inner = VersionedTransactionData::one(instruction);
     self.sign(inner, memo).await
   }

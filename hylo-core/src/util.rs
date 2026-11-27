@@ -118,7 +118,6 @@ pub mod proptest {
   use fix::prelude::*;
   use proptest::prelude::*;
 
-  use crate::collateral_ratio::CollateralRatio;
   use crate::pyth::PriceRange;
 
   /// Represents a possible state of the protocol, collateral, and tokens.
@@ -145,24 +144,6 @@ pub mod proptest {
       tvl
         .convert()
         .mul_div_floor(UFix64::one(), self.usd_sol_price)
-    }
-
-    #[must_use]
-    pub fn next_target_collateral_ratio(&self) -> Option<UFix64<N9>> {
-      let current = CollateralRatio::new(
-        self.total_sol()?,
-        self.usd_sol_price,
-        self.stablecoin_amount,
-      )
-      .ok()?
-      .as_finite()?;
-      let one = UFix64::<N9>::one();
-      let next = current.mul_div_ceil(UFix64::new(900_000_000), one)?;
-      if next < one {
-        None
-      } else {
-        Some(next)
-      }
     }
   }
 

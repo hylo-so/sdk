@@ -239,15 +239,16 @@ fn exo_exchange_context(
   let exo_context = ExoExchangeContext::load(
     clock.clone(),
     total_collateral,
-    exo_pair.stablecoin_mint_threshold.try_into()?,
     oracle_config,
     exo_pair.levercoin_fees.into(),
+    exo_pair.stablecoin_fees.into(),
     collateral_usd,
     exo_pair.virtual_stablecoin.into(),
     Some(levercoin_mint),
     exo_pair.sell_curve_config.into(),
     exo_pair.buy_curve_config.into(),
     exo_pair.levercoin_market_cap_limit.try_into()?,
+    exo_pair.rebalance_scheme.into(),
   )?;
   Ok(exo_context)
 }
@@ -359,6 +360,7 @@ pub fn build_stats_inputs(
       borrow_rate_fee: accounts.exo_pair.borrow_rate_fee.try_into()?,
       collateral_ratio: exo_context.collateral_ratio(),
       levercoin_market_cap: exo_context.levercoin_market_cap()?,
+      rebalance_scheme: exo_context.rebalance_scheme(),
     }],
     sol_usd_spot: sol_usd.spot,
     outstanding_drawdown,

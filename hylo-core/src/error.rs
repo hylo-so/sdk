@@ -89,9 +89,9 @@ pub enum CoreError {
   NoValidLevercoinMintFee,
   #[msg("No valid redeem fee for levercoin due to Depeg.")]
   NoValidLevercoinRedeemFee,
-  #[msg("No valid mint fee: projected CR below mint fee curve domain.")]
+  #[msg("No valid stablecoin mint fee due to rebalance mode.")]
   NoValidStablecoinMintFee,
-  #[msg("No valid redeem fee: projected CR above redeem fee curve domain.")]
+  #[msg("No valid stablecoin redeem fee due to rebalance mode.")]
   NoValidStablecoinRedeemFee,
   #[msg("No valid fee for swap due to SellZone2 or Depeg.")]
   NoValidSwapFee,
@@ -108,6 +108,8 @@ pub enum CoreError {
   DestinationStablecoin,
   #[msg("Requested amount of stablecoin over max mintable limit.")]
   RequestedStablecoinOverMaxMintable,
+  #[msg("Requested amount of stablecoin over max redeemable limit.")]
+  RequestedStablecoinOverMaxRedeemable,
   #[msg("Arithmetic error while computing virtual stablecoin overhang.")]
   VirtualStablecoinOverhang,
   #[msg("Arithmetic error while computing virtual stablecoin surplus.")]
@@ -143,12 +145,9 @@ pub enum CoreError {
   // `marginal`
   #[msg("Marginal rate is non-finite or non-positive.")]
   MarginalRateInvalid,
-  // `fees::curve_controller`
-  #[msg("Failed to convert collateral ratio from u64 to i64.")]
-  CollateralRatioConversion,
+  // `borrow_rate`
   #[msg("Failed to convert interpolated fee from i64 to u64.")]
   InterpFeeConversion,
-  // `borrow_rate`
   #[msg("Borrow rate configuration failed validation.")]
   BorrowRateValidation,
   #[msg("Arithmetic error while applying borrow rate.")]
@@ -203,8 +202,6 @@ pub enum CoreError {
   // `rebalance::mode`
   #[msg("Range boundary did not match the expected bound variant.")]
   RangeUnexpectedBound,
-  #[msg("Stablecoin mint threshold not in Neutral rebalance range.")]
-  StablecoinMintThresholdInvalid,
   #[msg("Rebalance reserve configuration is invalid.")]
   ReserveGateInvalid,
   // `limiter::levercoin`
