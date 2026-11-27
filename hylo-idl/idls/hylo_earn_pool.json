@@ -3487,15 +3487,11 @@
             }
           },
           {
-            "name": "exo_pool_drawdown",
-            "type": "u64"
-          },
-          {
             "name": "_reserved",
             "type": {
               "array": [
                 "u8",
-                4
+                12
               ]
             }
           }
