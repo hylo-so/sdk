@@ -8,3 +8,5 @@ target/
 **/*.MD
 !AGENTS.md
 .codebase-index/
+/hylo-jupiter/programs/
+.env

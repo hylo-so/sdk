@@ -2,6 +2,7 @@
 //!
 //! Requires `RPC_URL` environment variable.
 
+use std::future::{ready, Future};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -33,8 +34,8 @@ struct QuoteStrategyTestContext {
 }
 
 impl AsyncTestContext for QuoteStrategyTestContext {
-  async fn setup() -> Self {
-    Self::new().expect("Failed to create QuoteStrategyTestContext")
+  fn setup() -> impl Future<Output = Self> {
+    ready(Self::new().expect("Failed to create QuoteStrategyTestContext"))
   }
 }
 

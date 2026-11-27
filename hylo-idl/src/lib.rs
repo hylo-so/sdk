@@ -53,7 +53,7 @@ pub mod router {
 
 #[cfg(test)]
 mod tests {
-  use anchor_lang::prelude::{pubkey, Pubkey};
+  use anchor_lang::prelude::{pubkey, AccountMeta, Pubkey};
   use anchor_lang::{Discriminator, Id, ToAccountMetas};
   use const_crypto::sha2::Sha256;
 
@@ -137,9 +137,10 @@ mod tests {
     let route = Sha256::new().update(b"global:route").finalize();
     let route_v2 = Sha256::new().update(b"global:route_v2").finalize();
     assert_eq!(router::client::args::Route::DISCRIMINATOR, &route[..8]);
-    assert!(router::client::accounts::Route {}
-      .to_account_metas(None)
-      .is_empty());
+    assert_eq!(
+      router::client::accounts::Route {}.to_account_metas(None),
+      Vec::<AccountMeta>::new()
+    );
     assert_eq!(router::client::args::RouteV2::DISCRIMINATOR, &route_v2[..8]);
   }
 }

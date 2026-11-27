@@ -32,6 +32,12 @@ solana-rpc-client.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+bs58.workspace = true
+serde_json.workspace = true
+solana-rpc-client-api.workspace = true
+solana-transaction-status-client-types.workspace = true
+surfpool-sdk.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]
 workspace = true

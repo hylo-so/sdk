@@ -22,8 +22,8 @@ explicit entry, and `polish` / `lint` enter `.#nightly` themselves.
 
 | Shell | Contents | Used for |
 |-------|----------|----------|
-| `nix develop` | Rust stable 1.88.0 (+ `rust-analyzer`, `rust-src`), `evcxr`, `cargo-semver-checks` | build, test, publish |
-| `nix develop .#nightly` | nightly, `cargo-udeps` | `lint`, `polish`, `cargo +nightly udeps` |
+| `nix develop` | Rust stable 1.97.1 (+ `rust-analyzer`, `rust-src`), `evcxr`, `cargo-semver-checks` | build, test, publish |
+| `nix develop .#nightly` | latest nightly from the pinned rust-overlay, `cargo-udeps` | `lint`, `polish`, `cargo +nightly udeps` |
 | `nix develop .#kani` | `rustup`, `cmake` | `cargo kani` proofs |
 
 Shared `buildInputs`: `libiconv`, `pkg-config`, `gcc`, `openssl`.
@@ -46,13 +46,18 @@ lint     # Verify in CI check mode
 | `lint` | In `.#nightly`: the same three with `--check` |
 | `build` | `cargo build` |
 | `test-cargo` | `cargo test --workspace --exclude hylo-jupiter`; the same again with `--features shadow`; then `cargo test --doc` |
+| `test-jupiter` | In the default shell: `cargo test --locked --package hylo-jupiter --lib`; forwards Cargo arguments |
 | `verify` | In `.#kani`: `cargo kani "$@"` |
 | `publish` | Polls crates.io per crate, skips any already at the workspace version, then `cargo build --release` + `cargo doc --workspace --no-deps` + `cargo publish` for the rest |
 
 Both clippy passes matter. `hylo-core` must stay clean with default features
 off, because that build is the onchain-compatible one.
 
-`test-cargo` runs the workspace twice — once plain, once with `shadow`.
+`test-cargo` runs the workspace twice — once plain, once with `shadow` —
+excluding `hylo-jupiter` from both runs.
+
+The tests in `hylo-jupiter/src/jupiter.rs` run through `test-jupiter` or direct
+Cargo test commands. Workspace `polish` and `lint` check it with all features.
 
 Narrower runs:
 
@@ -135,7 +140,7 @@ Quoting strategies over protocol state or simulation.
 ### `hylo-jupiter`
 
 Jupiter AMM integration. `HyloJupiter`, one AMM over every route, and
-`account_metas`. Excluded from workspace tests.
+`account_metas`. Live parity tests use the separate `test-jupiter` command.
 
 ### `hylo-stats`
 
@@ -541,20 +546,26 @@ Preludes: `hylo_clients::prelude::*` for clients and tokens,
   examples in the `hylo-clients` and `hylo-quotes` crate roots must keep
   compiling.
 * Do not use the `flaky_test` macro. It was removed from the codebase.
-* `hylo-jupiter` is excluded from workspace tests.
+* `hylo-jupiter/src/jupiter.rs` compares all routes with
+  Surfpool execution using Jupiter's account metas. Run `nix run .#test-jupiter`
+  with `RPC_URL`. Optional program-ID-named binaries in
+  `hylo-jupiter/programs` override upstream programs.
 
 ---
 
 ## CI and versioning
 
-`.github/workflows/ci.yml`, three chained jobs:
+`.github/workflows/ci.yml`, three jobs:
 
 1. **`check-sdk-version`** (pull requests only) — `bin/check-sdk-version.sh`
    requires the workspace version be exactly one patch, minor, or major bump
    above `main`. Anything else fails the PR.
 2. **`build`** — Nix installer, magic-nix-cache, sccache, then
    `nix run .#lint` → `nix run .#build` → `nix run .#test-cargo`.
-3. **`publish`** — on push to `main` only, `nix run .#publish`.
+3. **`publish`** — on push to `main` only after `build` passes,
+   `nix run .#publish`.
+
+The Jupiter parity suite runs separately with optional local program binaries.
 
 Versioning is loose. Breaking API changes ship in minor bumps; a major bump
 is not required for them.

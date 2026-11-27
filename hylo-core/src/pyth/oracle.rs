@@ -257,7 +257,6 @@ pub fn query_pyth_price<C: SolanaClock>(
 
 #[cfg(test)]
 mod tests {
-  use fix::prelude::*;
   use proptest::prelude::*;
 
   use super::*;

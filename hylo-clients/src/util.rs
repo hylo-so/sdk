@@ -12,7 +12,6 @@ use anchor_client::solana_sdk::signature::Keypair;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::solana_sdk::transaction::VersionedTransaction;
 use anchor_client::solana_sdk::{bs58, pubkey};
-use anchor_client::Cluster;
 use anchor_lang::prelude::AccountMeta;
 use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent;
@@ -27,8 +26,6 @@ use solana_transaction_status_client_types::{
 };
 
 use crate::prelude::VersionedTransactionData;
-use crate::program_client::ProgramClient;
-use crate::router_client::RouterClient;
 
 pub trait LST: StakePool {}
 impl LST for JITOSOL {}
@@ -177,29 +174,6 @@ pub fn build_lst_registry(
   } else {
     Err(anyhow!("Malformed LST registry preamble."))
   }
-}
-
-/// Gets cluster from environment variables.
-///
-/// # Errors
-/// * Missing `RPC_URL` or `RPC_WS_URL` environment variables
-pub fn cluster_from_env() -> Result<Cluster> {
-  let url = std::env::var("RPC_URL")?;
-  let ws_url = std::env::var("RPC_WS_URL")?;
-  Ok(Cluster::Custom(url, ws_url))
-}
-
-/// Builds test router client with random keypair.
-///
-/// # Errors
-/// * Environment variable access
-/// * Client initialization
-pub fn build_test_router_client() -> Result<RouterClient> {
-  RouterClient::new_from_keypair(
-    cluster_from_env()?,
-    Keypair::new(),
-    CommitmentConfig::confirmed(),
-  )
 }
 
 /// Builds ATA creation instruction for a user and mint.

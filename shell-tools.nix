@@ -47,6 +47,14 @@
     '';
   };
 
+  test-jupiter = writeShellApplication {
+    name = "test-jupiter";
+    text = ''
+      nix develop --command cargo test --locked --package hylo-jupiter \
+        --lib "$@"
+    '';
+  };
+
   publish = writeShellApplication {
     name = "publish";
     runtimeInputs = [ curl jq gnused ];

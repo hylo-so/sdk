@@ -40,11 +40,10 @@ impl ComputeUnitInfo {
   pub fn from_simulation(cus: Option<u64>) -> Self {
     cus
       .filter(|cu| *cu > 0)
-      .map(|cu| ComputeUnitInfo {
+      .map_or_else(ComputeUnitInfo::default, |cu| ComputeUnitInfo {
         compute_units: cu,
         strategy: ComputeUnitStrategy::Simulated,
       })
-      .unwrap_or_default()
   }
 }
 
